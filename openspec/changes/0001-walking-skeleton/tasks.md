@@ -41,8 +41,9 @@
 ## 4. E2E, CI y documentación
 - [x] 4.1 Smoke E2E (Playwright, chromium, contra `vite preview`): carga sin errores de consola, existe el canvas
       y mantener la flecha derecha 500 ms aumenta `snapshot.player.x`
-- [ ] 4.2 CI: `guard:all` dentro de `verify`; comprobar que el workflow detecta `package.json` y pasa en el PR —
+- [x] 4.2 CI: `guard:all` dentro de `verify`; comprobar que el workflow detecta `package.json` y pasa en el PR —
       escenario: "Violación subida sin pre-commit" (se verifica en el verify-report con una rama de prueba)
+      — PR #2 en verde; rama de prueba (PR #3, cerrado) con `quality` en rojo, run 44525411723
 - [x] 4.3 README (instalación, ejecución, estructura), AGENTS.md §2 (comandos) y §3 (guardarraíl en pre-commit/CI,
       prohibido `--no-verify`, cambios en `main` solo por PR)
 - [x] 4.4 Medir tamaño del bundle y anotarlo para el verify-report

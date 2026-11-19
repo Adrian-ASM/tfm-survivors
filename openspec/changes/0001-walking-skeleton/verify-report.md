@@ -10,6 +10,13 @@
 S13 y S14; lo he comprobado con sondas propias, no con el diario. Siguen abiertos dos Warnings diferidos a propósito
 (W5: CI real; W8: trailers en los commits antiguos) y Suggestions sin efecto en el comportamiento.
 
+> **Anexo del orquestador (2026-11-19), evidencia de W5 / tarea 4.2.** CI real ejecutado:
+> - PR #2 (`change/0001-walking-skeleton`, HEAD `9e4e3c8`): `setup`, `quality` y `e2e` en verde (run 44525211484).
+> - PR #3 (rama desechable `test/w5-ci-violation`, `src/application/z.ts` con `Date.now()` subido con
+>   `--no-verify`): `quality` en rojo, `error 'Date.now' is restricted… usa el puerto Clock` en
+>   `src/application/z.ts` (run 44525411723). PR cerrado sin fusionar y rama borrada.
+> W5 pasa a **Resuelto**. Recuento tras el anexo: `C: 0 · W: 1 · S: 8` (queda W8, registrado).
+
 ---
 
 ## Segunda pasada (2026-11-19, HEAD `2afaf2d`)
