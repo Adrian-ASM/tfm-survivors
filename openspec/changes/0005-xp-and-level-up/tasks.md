@@ -90,7 +90,7 @@
 - [x] 1.24 Efectos de jugador a través de `Run` — escenarios: "Más velocidad", "Velocidad mejorada", "Velocidad en el
   nivel máximo", "Más radio de recogida", "Con la vida a medias" (vía `Run`), "La mejora no altera la
   invulnerabilidad", "Golpe letal tras la mejora"
-- [ ] 1.25 Snapshot ampliado y congelado (`gems`, `progression`, `offer`, `upgrades`) — escenarios: "Gemas en el
+- [x] 1.25 Snapshot ampliado y congelado (`gems`, `progression`, `offer`, `upgrades`) — escenarios: "Gemas en el
   snapshot", "Oferta en el snapshot", "Snapshot no mutable desde fuera" (con gemas y con oferta), "XP acumulada hasta
   el nivel 3"
 - [ ] 1.26 Determinismo con elecciones — escenarios: "Dos partidas idénticas", "Partida con progresión reproducible",
