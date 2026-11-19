@@ -10,10 +10,19 @@ export class TickRun {
     private readonly loop: FixedStepLoop = new FixedStepLoop(),
   ) {}
 
+  /**
+   * Con la partida eligiendo mejora o terminada no avanza ni acumula tiempo (spec simulation-loop):
+   * al elegir, el siguiente frame sigue con las reglas normales, sin ráfaga de recuperación. Si un
+   * tick abre una oferta a mitad de frame, el resto del frame se descarta.
+   */
   execute(elapsedMs: number, input: PlayerInput): RunSnapshot {
+    if (this.run.status !== 'running') {
+      this.loop.reset();
+      return this.run.snapshot();
+    }
     this.loop.advance(elapsedMs, () => {
       this.run.tick(input);
-      return true;
+      return this.run.status === 'running';
     });
     return this.run.snapshot();
   }
