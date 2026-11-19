@@ -7,7 +7,11 @@ import type { RandomGenerator } from '../shared/RandomGenerator';
 import type { Experience } from '../progression/Experience';
 import type { GemField } from '../progression/GemField';
 import type { XpGem } from '../progression/XpGem';
-import { ok, type DomainError, type Result } from '../shared/Result';
+import type { PlayerRules } from '../player/PlayerRules';
+import { err, ok, type DomainError, type Result } from '../shared/Result';
+import type { UpgradeChoiceError } from '../upgrade/UpgradeChoiceError';
+import { upgradedPlayer, upgradedWeapon } from '../upgrade/upgradeStats';
+import { WeaponType } from '../weapon/WeaponType';
 import { TICK_SECONDS } from '../shared/Tick';
 import { WaveDirector, type SpawnAttempt } from '../wave/WaveDirector';
 import { placeSpawn } from '../wave/placeSpawn';
@@ -21,7 +25,7 @@ import {
 import { Arsenal } from '../weapon/Arsenal';
 import type { Projectile } from '../weapon/Projectile';
 import type { PulseEcho } from '../weapon/PulseEcho';
-import { UpgradeBoard } from '../upgrade/UpgradeBoard';
+import type { UpgradeBoard } from '../upgrade/UpgradeBoard';
 import type {
   EnemySnapshot,
   GemSnapshot,
@@ -37,6 +41,7 @@ import {
   SETUP_POSITION_MUST_BE_FINITE,
   initialEnemies,
   initialExperience,
+  initialBoard,
   initialGems,
   initialPlayer,
   type RunSetup,
@@ -67,21 +72,28 @@ export class Run {
   private readonly arena: Arena;
   private readonly director: WaveDirector;
   private readonly arsenal: Arsenal;
+  private player: Player;
+  private readonly enemies: Enemy[];
+  private readonly gems: GemField;
+  private readonly experience: Experience;
   private readonly board: UpgradeBoard;
 
   private constructor(
     private readonly rules: RunRules,
     private readonly random: RandomGenerator,
-    private player: Player,
-    private readonly enemies: Enemy[],
-    private readonly gems: GemField,
-    private readonly experience: Experience,
+    initial: InitialState,
   ) {
     this.arena = rules.arena;
-    this.nextEnemyId = enemies.length;
+    this.player = initial.player;
+    this.enemies = initial.enemies;
+    this.gems = initial.gems;
+    this.experience = initial.experience;
+    this.board = initial.board;
+    this.nextEnemyId = this.enemies.length;
     this.director = new WaveDirector(rules.table, rules.spawn, random);
     this.arsenal = new Arsenal(rules.loadout, rules.pulseCapacity);
-    this.board = new UpgradeBoard(rules.upgrades);
+    for (const w of rules.loadout.weapons) this.retune(w.id);
+    this.player = this.player.withRules(this.effectivePlayer(), maxHealthBonus(rules, this.board));
   }
 
   static start(
@@ -99,8 +111,65 @@ export class Run {
     if (!gems.ok) return gems;
     const experience = initialExperience(rules.value, setup);
     if (!experience.ok) return experience;
-    const { value } = rules;
-    return ok(new Run(value, random, player.value, enemies.value, gems.value, experience.value));
+    const board = initialBoard(rules.value, setup);
+    if (!board.ok) return board;
+    return ok(
+      new Run(rules.value, random, {
+        player: player.value,
+        enemies: enemies.value,
+        gems: gems.value,
+        experience: experience.value,
+        board: board.value,
+      }),
+    );
+  }
+
+  /** Estado de la partida (lectura barata, sin snapshot). */
+  get status(): RunStatus {
+    return this.state;
+  }
+
+  /**
+   * Elige la opción `index` de la oferta abierta (spec upgrades): sube su nivel, aplica su efecto
+   * (rige desde el siguiente tick), cierra la oferta y abre la siguiente encolada sin ejecutar
+   * ticks; si no queda ninguna, la partida vuelve a en curso. Sin oferta o con un índice que no es
+   * un entero en [0, k − 1] devuelve un error y no cambia nada (ni consume azar).
+   */
+  chooseUpgrade(index: number): Result<void, UpgradeChoiceError> {
+    if (this.state !== 'choosing') return err({ code: 'no-offer' });
+    const picked = this.board.pick(index);
+    if (!picked.ok) return picked;
+    const { target, stat, perLevel } = picked.value;
+    if (target.kind === 'weapon') {
+      this.retune(target.weapon);
+    } else {
+      this.player = this.player.withRules(
+        this.effectivePlayer(),
+        stat === 'maxHealth' ? perLevel : 0,
+      );
+    }
+    this.experience.resolveOne();
+    this.state = 'running';
+    this.openNextOffer();
+    return ok(undefined);
+  }
+
+  /** Reglas efectivas del jugador desde la base de contenido (ADR-0008). */
+  private effectivePlayer(): PlayerRules {
+    return upgradedPlayer(this.rules.player, this.rules.upgrades, this.board.levels);
+  }
+
+  /**
+   * Tipo efectivo de un arma desde la base. La build de peor caso ya validó cualquier combinación
+   * alcanzable, así que un fallo aquí es un error de programación.
+   */
+  private retune(weaponId: string): void {
+    const base = this.rules.loadout.weapons.find((w) => w.id === weaponId);
+    if (!base) throw new Error(`Invariante rota: arma desconocida ${weaponId}`);
+    const config = upgradedWeapon(base, this.rules.upgrades, this.board.levels);
+    const type = WeaponType.create(config, weaponId);
+    if (!type.ok) throw new Error(`Invariante rota: ${type.error.message}`);
+    this.arsenal.retune(weaponId, type.value);
   }
 
   /**
@@ -244,6 +313,22 @@ export class Run {
     });
     return out;
   }
+}
+
+interface InitialState {
+  readonly player: Player;
+  readonly enemies: Enemy[];
+  readonly gems: GemField;
+  readonly experience: Experience;
+  readonly board: UpgradeBoard;
+}
+
+/** Vida máxima que suman las mejoras de `maxHealth` con los niveles actuales. */
+function maxHealthBonus(rules: RunRules, board: UpgradeBoard): number {
+  return rules.upgrades.upgrades.reduce(
+    (sum, u, i) => (u.stat === 'maxHealth' ? sum + u.perLevel * board.levelOf(i) : sum),
+    0,
+  );
 }
 
 function toEnemySnapshot(e: Enemy, damaged: boolean): EnemySnapshot {

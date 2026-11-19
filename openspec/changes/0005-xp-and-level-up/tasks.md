@@ -76,10 +76,10 @@
 - [x] 1.20 Apertura de oferta como último paso del tick y `pendingLevelUps` en `Experience` — escenarios: "Primera
   oferta", "El director actúa antes de abrir la oferta", "Ninguna disponible", "Sin pasar por eligiendo si no hay
   mejoras disponibles", "Eligiendo mejora y vuelta a en curso" (primera mitad)
-- [ ] 1.21 Congelado en `'choosing'`; ayudante `advance(run, ticks, input)` con la política de elección fija en
+- [x] 1.21 Congelado en `'choosing'`; ayudante `advance(run, ticks, input)` con la política de elección fija en
   `tests/support/runs.ts` — escenarios: "600 ticks con una oferta abierta", "La pausa no consume azar", "La
   invulnerabilidad no corre durante la pausa", "Input ignorado mientras se elige", "La pausa no adelanta la recarga"
-- [ ] 1.22 `Run.chooseUpgrade`: validación, efecto de arma, cola de ofertas y vuelta a en curso — escenarios:
+- [x] 1.22 `Run.chooseUpgrade`: validación, efecto de arma, cola de ofertas y vuelta a en curso — escenarios:
   "Elección válida", "Sin oferta abierta", "La segunda oferta tras la primera elección", "La disponibilidad se
   recalcula entre ofertas encoladas", "Continuación tras elegir", "Mejora de cadencia a mitad de recarga", "Cadencia
   mejorada sin reiniciar la carga", "Cadencia de Tests mejorada"

@@ -6,6 +6,7 @@ import { Experience } from '../progression/Experience';
 import { GemField } from '../progression/GemField';
 import { err, invalidConfig, ok, type DomainError, type Result } from '../shared/Result';
 import { Vector2 } from '../shared/Vector2';
+import { UpgradeBoard } from '../upgrade/UpgradeBoard';
 import { UNKNOWN_ENEMY_TYPE } from '../wave/WaveTable';
 import type { RunRules } from './RunConfig';
 
@@ -17,6 +18,9 @@ export const SETUP_GEM_VALUE_MUST_BE_INTEGER =
 export const SETUP_TOO_MANY_GEMS = 'Hay más gemas iniciales que el tope de gemas en el suelo.';
 export const SETUP_EXPERIENCE_OUT_OF_RANGE =
   'La experiencia inicial necesita un nivel entero ≥ 1 y una XP entera en [0, xpToNext).';
+export const SETUP_UNKNOWN_UPGRADE = 'Mejora inicial desconocida en el catálogo.';
+export const SETUP_UPGRADE_LEVEL_OUT_OF_RANGE =
+  'El nivel inicial de una mejora debe ser un entero en [0, maxLevel].';
 
 interface Point {
   readonly x: number;
@@ -25,7 +29,7 @@ interface Point {
 
 /**
  * Estado inicial opcional (tests, bench y futuros editores; la composición no lo usa): posición del
- * jugador, enemigos ya presentes, gemas en el suelo y experiencia. Los tipos se validan contra el
+ * jugador, enemigos ya presentes, gemas en el suelo, experiencia y niveles de mejora. Los tipos se validan contra el
  * catálogo y las posiciones de jugador y enemigos se recortan a la arena.
  */
 export interface RunSetup {
@@ -36,6 +40,11 @@ export interface RunSetup {
   readonly gems?: readonly (Point & { readonly value: number; readonly attracted?: boolean })[];
   /** Nivel y XP iniciales (por defecto, nivel 1 con XP 0), sin subidas pendientes. */
   readonly experience?: { readonly level: number; readonly xp: number };
+  /**
+   * Niveles iniciales de mejora por id (por defecto, 0), con sus efectos ya aplicados al empezar:
+   * como si se hubieran elegido antes del tick 1 (la vida máxima sube y la vida empieza llena).
+   */
+  readonly upgrades?: Readonly<Record<string, number>>;
 }
 
 const isFinitePoint = (p: Point): boolean => Number.isFinite(p.x) && Number.isFinite(p.y);
@@ -85,6 +94,24 @@ export function initialGems(rules: RunRules, setup: RunSetup): Result<GemField, 
     field.drop(g.x, g.y, g.value, g.attracted ?? false);
   }
   return ok(field);
+}
+
+export function initialBoard(rules: RunRules, setup: RunSetup): Result<UpgradeBoard, DomainError> {
+  const start = setup.upgrades ?? {};
+  const { upgrades } = rules.upgrades;
+  for (const [id, level] of Object.entries(start)) {
+    const u = upgrades.find((x) => x.id === id);
+    if (!u) return err(invalidConfig(`setup.upgrades.${id}`, SETUP_UNKNOWN_UPGRADE));
+    if (!Number.isInteger(level) || level < 0 || level > u.maxLevel) {
+      return err(invalidConfig(`setup.upgrades.${id}`, SETUP_UPGRADE_LEVEL_OUT_OF_RANGE));
+    }
+  }
+  return ok(
+    new UpgradeBoard(
+      rules.upgrades,
+      upgrades.map((u) => start[u.id] ?? 0),
+    ),
+  );
 }
 
 export function initialExperience(

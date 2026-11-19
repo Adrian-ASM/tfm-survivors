@@ -62,6 +62,49 @@ export function ticks(run: Run, n: number, input = PlayerInput.NONE): RunSnapsho
   return snaps;
 }
 
+/** Elige la opción 0 mientras haya una oferta abierta (política de elección fija). */
+export function chooseFirstWhileOpen(run: Run): number {
+  let choices = 0;
+  while (run.status === 'choosing') {
+    const r = run.chooseUpgrade(0);
+    if (!r.ok) throw new Error(`elección rechazada: ${r.error.code}`);
+    choices++;
+  }
+  return choices;
+}
+
+/**
+ * Ejecuta n ticks con la POLÍTICA DE ELECCIÓN FIJA de simulation-loop: antes de cada tick, si hay
+ * una oferta abierta, elige la opción 0 (también en las encoladas). "n ticks" son n ticks
+ * ejecutados. Devuelve los snapshots tras cada tick (índice 0 = primer tick ejecutado).
+ */
+export function advance(run: Run, n: number, input = PlayerInput.NONE): RunSnapshot[] {
+  const snaps: RunSnapshot[] = [];
+  for (let i = 0; i < n; i++) {
+    chooseFirstWhileOpen(run);
+    run.tick(input);
+    snaps.push(run.snapshot());
+  }
+  return snaps;
+}
+
+/**
+ * Como `advance`, sin guardar snapshots: llama a `each` con el número de tick ejecutado (y la
+ * partida tras él) y para cuando `each` devuelve true o la partida termina.
+ */
+export function play(
+  run: Run,
+  n: number,
+  each: (tick: number, run: Run) => boolean = () => false,
+  input = PlayerInput.NONE,
+): void {
+  for (let t = 1; t <= n; t++) {
+    chooseFirstWhileOpen(run);
+    run.tick(input);
+    if (each(t, run) || run.status === 'over') return;
+  }
+}
+
 /** Enemigo del snapshot por id (falla si no está). */
 export function enemyById(snap: RunSnapshot, id: number): EnemySnapshot {
   const e = snap.enemies.find((x) => x.id === id);
