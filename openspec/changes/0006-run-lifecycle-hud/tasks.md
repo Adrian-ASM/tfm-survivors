@@ -77,7 +77,7 @@
     la victoria cuenta y deja su gema".
   - run-state: "Muerte en el tick de la duración objetivo".
   - simulation-loop: "El tick de la victoria acaba tras el contacto" y "Las armas actúan en el tick de la victoria".
-- [ ] 1.12 Tiempo por ticks y ofertas. Escenarios: run-outcome "La elección de mejora no consume tiempo de
+- [x] 1.12 Tiempo por ticks y ofertas. Escenarios: run-outcome "La elección de mejora no consume tiempo de
   partida" y "Sin resultado mientras se elige mejora"; run-state "Oferta abierta justo antes del tick de la
   victoria" y "Eligiendo mejora y vuelta a en curso".
 - [ ] 1.13 Derrota frente a la duración. Escenarios: run-outcome "Derrota temprana", "La derrota no se convierte en

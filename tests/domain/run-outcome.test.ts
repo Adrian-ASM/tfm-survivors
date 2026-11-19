@@ -363,3 +363,60 @@ describe('Orden de los pasos en el tick de la victoria (spec simulation-loop)', 
     expect(last?.gems).toHaveLength(1);
   });
 });
+
+/** Gema atraída que el jugador de CORNER recoge exactamente en el tick n (6 px/tick). */
+const gemAt = (n: number) => ({ x: 100 + 21 + 6 * (n - 1) + 3, y: 100, value: 1, attracted: true });
+/** Nivel 1 con XP 4: la gema de `gemAt(n)` abre una oferta en el tick n. */
+const offerAt = (n: number): RunSetup => ({
+  player: CORNER,
+  gems: [gemAt(n)],
+  experience: { level: 1, xp: 4 },
+});
+
+describe('Tiempo de partida por ticks ejecutados (spec run-outcome)', () => {
+  it('Scenario: La elección de mejora no consume tiempo de partida (60 ticks, oferta en el 30)', () => {
+    const run = startRun(priorityConfig(1), offerAt(30));
+    const offered = ticks(run, 30).at(-1);
+    const during = ticks(run, 600).at(-1);
+    run.chooseUpgrade(0);
+
+    const before = ticks(run, 29).at(-1);
+    run.tick(PlayerInput.NONE);
+
+    expect([offered?.status, during?.tick]).toEqual(['choosing', 30]);
+    expect(before).toMatchObject({ tick: 59, status: 'running', outcome: null });
+    expect(run.snapshot()).toMatchObject({ tick: 60, status: 'over', outcome: 'won' });
+  });
+});
+
+describe('Invariante entre estado y resultado (spec run-outcome)', () => {
+  it('Scenario: Sin resultado mientras se elige mejora (oferta en el tick 10)', () => {
+    const last = ticks(startRun(priorityConfig(600), offerAt(10)), 10).at(-1);
+
+    expect(last).toMatchObject({ tick: 10, status: 'choosing', outcome: null });
+  });
+});
+
+describe('Estado de la partida con ofertas y duración (spec run-state)', () => {
+  it('Scenario: Oferta abierta justo antes del tick de la victoria (oferta en el 119)', () => {
+    const run = startRun(priorityConfig(2), offerAt(119));
+    ticks(run, 119);
+
+    const during = ticks(run, 600);
+    run.chooseUpgrade(0);
+    run.tick(PlayerInput.NONE);
+
+    expect(during.every((s) => s.tick === 119 && s.status === 'choosing' && !s.outcome)).toBe(true);
+    expect(run.snapshot()).toMatchObject({ tick: 120, status: 'over', outcome: 'won' });
+  });
+
+  it('Scenario: Eligiendo mejora y vuelta a en curso (sin resultado en ambos)', () => {
+    const run = startRun(priorityConfig(600), offerAt(5));
+    const offered = ticks(run, 5).at(-1);
+
+    run.chooseUpgrade(0);
+
+    expect([offered?.status, offered?.outcome]).toEqual(['choosing', null]);
+    expect([run.snapshot().status, run.snapshot().outcome]).toEqual(['running', null]);
+  });
+});
