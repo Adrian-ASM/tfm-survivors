@@ -164,7 +164,7 @@ export const DEFAULT_WAVES: RunConfig['waves'] = {
   segments: [
     { fromSecond: 0, budgetPerSecond: 1, types: ['bug'] },
     { fromSecond: 60, budgetPerSecond: 2, types: ['bug', 'merge-conflict'] },
-    { fromSecond: 180, budgetPerSecond: 3.5, types: ALL },
+    { fromSecond: 180, budgetPerSecond: 2.5, types: ALL },
     { fromSecond: 300, budgetPerSecond: 5, types: ALL },
     { fromSecond: 480, budgetPerSecond: 7, types: ALL },
   ],

@@ -184,4 +184,47 @@ con comprobar que la partida no está en `over` en el tick 36.000.
   ortogonal, opción B de la exploración, blindada por tipo) y reinicio por sustitución de la `Run`.
 
 ## Medición
-<Se rellena en la tarea 0 de apply: semillas, política, tick final por semilla y decisión.>
+Tarea 0.2 de apply. Contenido por defecto (`aDefaultConfig()`), semillas 1–10, movimiento `fleeInput`
+(`tests/support/policies.ts`). Formato: tick final / nivel / bajas (bajas = ids desaparecidos).
+
+**Antes** (contenido de 0005, tramo de 180 s a 3,5/s): ninguna semilla llega viva al tick 36.000.
+
+| Semilla | `fleeInput` + opción 0 | `fleeInput` + `guardrail` primero |
+|---|---|---|
+| 1 | 11650 / 11 / 224 | 12224 / 12 / 242 |
+| 2 | 12140 / 11 / 241 | 13648 / 12 / 257 |
+| 3 | 11744 / 11 / 228 | 10435 / 10 / 198 |
+| 4 | 12518 / 12 / 245 | 11769 / 11 / 225 |
+| 5 | 7478 / 8 / 135 | 7478 / 8 / 135 |
+| 6 | 11968 / 11 / 235 | 9257 / 10 / 170 |
+| 7 | 8337 / 9 / 157 | 8309 / 9 / 148 |
+| 8 | 11680 / 11 / 234 | 9058 / 9 / 170 |
+| 9 | 7315 / 8 / 133 | 8545 / 9 / 156 |
+| 10 | 8402 / 9 / 158 | 9553 / 10 / 181 |
+
+Semilla 42 quieta (input (0, 0), opción 0): muerte en el tick 4682 (78 s), nivel 3, 77 bajas.
+
+Todas las muertes caen entre 122 s y 227 s, antes del tramo de 480 s: los ajustes 1 y 2 previstos no las
+tocaban. Punto de control con el usuario (2026-11-20): **rebalancear el contenido con la duración de 600 s**,
+con el ajuste mínimo, la mediana por debajo de 600 s y la semilla 42 quieta muriendo en ≤ 120 s.
+
+Variantes medidas (presupuestos de los tramos 180 s / 300 s / 480 s; ganadas con opción 0 y con `guardrail`;
+mediana del tick final con opción 0):
+
+| Tramos | Ganadas (opción 0 / `guardrail`) | Mediana | Semilla 42 quieta |
+|---|---|---|---|
+| 3,5 / 5 / 7 (antes) | 0 / 0 | 11.665 | 4682 |
+| 3 / 3 / 4 | 0 / 0 | 11.726 | 4682 |
+| **2,5 / 5 / 7 (elegida)** | **1 / 0** | **12.078** | **4682** |
+| 2,5 / 3 / 4 | 1 / 0 | 12.078 | 4682 |
+| 2 / 2,5 / 3 | 3 / 1 | 13.931 | 4682 |
+
+**Cambio aplicado** (un solo valor): `content/waves.json`, tramo `fromSecond` 180, `budgetPerSecond` de 3,5 a
+2,5. El resto del contenido no cambia y la tabla sigue creciendo (1, 2, 2,5, 5, 7).
+
+**Después** (opción 0): semilla 2 gana en el tick 36.000 (nivel 32, 1.235 bajas). El resto muere: 1: 11983,
+3: 18725, 4: 12502, 5: 7478, 6: 12173, 7: 8337, 8: 13446, 9: 7315, 10: 8402. Mediana 12.078 ticks (≈ 201 s).
+Con `guardrail` primero no gana ninguna (mediana 9.405). Semilla 42 quieta: sin cambios (tick 4682, 78 s), así
+que el E2E de derrota usa ese plazo (≤ 120 s de juego).
+
+**Regresión** (tarea 1.18): semilla 2, `fleeInput` + opción 0 ⇒ victoria en el tick 36.000.

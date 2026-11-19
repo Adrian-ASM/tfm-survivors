@@ -10,7 +10,7 @@
   8 direcciones con `PlayerInput.of`. Con vector nulo devuelve `PlayerInput.NONE`. Test unitario con 3 casos (enemigo
   a la derecha ⇒ huye a la izquierda, pared y sin enemigos). Escenario: run-outcome "Partida ganada con estrategia
   documentada" (preparación).
-- [ ] 0.2 Medición con el código actual y el contenido por defecto (`aDefaultConfig()`), semillas 1–10:
+- [x] 0.2 Medición con el código actual y el contenido por defecto (`aDefaultConfig()`), semillas 1–10:
   - Estrategias: `fleeInput` + política de elección fija (opción 0) y, como alternativa, `fleeInput` + prioridad
     `guardrail`.
   - Por semilla se anota el tick en que termina (o 36.000 si sigue viva), el nivel y las bajas (contadas por ids
