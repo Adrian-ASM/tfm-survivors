@@ -108,3 +108,78 @@ describe('Run · paso de armas en el tick', () => {
     expect(snap.enemies[0]?.id).not.toBe(0);
   });
 });
+
+const ready = (s: RunSnapshot | undefined): boolean[] => (s?.weapons ?? []).map((w) => w.ready);
+
+describe('Run · snapshot con armas', () => {
+  it('Scenario: Armas equipadas en una partida nueva (linter y tests cargadas, sin disparos)', () => {
+    const snap = startRun(armed()).snapshot();
+    expect(snap.weapons).toEqual([
+      { id: 'linter', ready: true },
+      { id: 'tests', ready: true },
+    ]);
+    expect([snap.enemies, snap.projectiles, snap.pulses]).toEqual([[], [], []]);
+  });
+
+  it('Scenario: Carga de las armas en el snapshot (Linter 31–100, Tests 91–100)', () => {
+    const run = startRun(armed(DEFAULT_WEAPONS, bugType), {
+      enemies: [{ type: 'bug', x: PX + 50, y: PY, health: 4 }],
+    });
+    const snaps = ticks(run, 100);
+    expect(snaps[1]?.enemies).toEqual([]);
+    const linter = snaps.map((s) => s.weapons[0]?.ready);
+    const tests = snaps.map((s) => s.weapons[1]?.ready);
+    expect(linter).toEqual(Array.from({ length: 100 }, (_, i) => i + 1 >= 31));
+    expect(tests).toEqual(Array.from({ length: 100 }, (_, i) => i + 1 >= 91));
+    expect(ready(snaps[99])).toEqual([true, true]);
+  });
+
+  it('Scenario: Pulso identificado en el snapshot (disparo en 40, leído en 43)', () => {
+    // Bug lento (1 px/tick) que empieza a 139 px: entra en el radio del pulso (< 100) en el tick 40.
+    const slow = aProbeType({ id: 'bug', speed: 60, health: 100 });
+    const run = startRun(armed(weaponsOf([TESTS]), slow), {
+      enemies: [{ type: 'bug', x: PX + 139, y: PY }],
+    });
+    const snaps = ticks(run, 43);
+    expect(snaps.filter((s) => s.pulses.length > 0).map((s) => s.tick)).toEqual([40, 41, 42, 43]);
+    expect(snaps[42]?.pulses).toEqual([{ weapon: 'tests', firedAt: 40, x: PX, y: PY, radius: 90 }]);
+  });
+
+  it('indica daño reciente de T a T + 3 (hitFlashTicks 4)', () => {
+    const tough = aProbeType({ id: 'bug', speed: 60, health: 100 });
+    const run = startRun(armed(weaponsOf([TESTS]), tough), {
+      enemies: [{ type: 'bug', x: PX + 139, y: PY }],
+    });
+    const snaps = ticks(run, 45);
+    const flags = snaps.slice(38, 45).map((s) => s.enemies[0]?.damaged);
+    expect(flags).toEqual([false, true, true, true, true, false, false]);
+  });
+
+  it('Scenario: Snapshot no mutable desde fuera (proyectiles, pulsos y armas)', () => {
+    const tough = aProbeType({ health: 1000, speed: 0.001 });
+    const run = startRun(armed(DEFAULT_WEAPONS, tough), {
+      enemies: [{ type: 'probe', x: PX + 300, y: PY }],
+    });
+    ticks(run, 10);
+    const snap = run.snapshot();
+    const p = snap.projectiles[0];
+    expect(p).toBeDefined();
+    expect(() => {
+      (p as { x: number }).x = 0;
+    }).toThrow(TypeError);
+    expect(() => {
+      (snap.projectiles as unknown[]).length = 0;
+    }).toThrow(TypeError);
+    expect(() => {
+      (snap.pulses as unknown[]).push(1);
+    }).toThrow(TypeError);
+    expect(() => {
+      (snap.weapons[0] as { ready: boolean }).ready = false;
+    }).toThrow(TypeError);
+    expect(() => {
+      (snap.enemies[0] as { damaged: boolean }).damaged = true;
+    }).toThrow(TypeError);
+    ticks(run, 1);
+    expect(run.snapshot().projectiles[0]?.x).toBeCloseTo((p?.x ?? 0) + 8, 9);
+  });
+});

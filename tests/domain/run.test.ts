@@ -26,6 +26,7 @@ describe('Run', () => {
       enemies: [],
       projectiles: [],
       pulses: [],
+      weapons: [],
     });
   });
 
@@ -173,8 +174,8 @@ describe('Run · estado inicial opcional (RunSetup)', () => {
       ],
     });
     expect(run.snapshot().enemies).toEqual([
-      { id: 0, type: 'bug', x: 100, y: 270, radius: 10, health: 10 },
-      { id: 1, type: 'memory-leak', x: 938, y: 22, radius: 22, health: 45 },
+      { id: 0, type: 'bug', x: 100, y: 270, radius: 10, health: 10, damaged: false },
+      { id: 1, type: 'memory-leak', x: 938, y: 22, radius: 22, health: 45, damaged: false },
     ]);
   });
 

@@ -124,7 +124,9 @@ describe('Bajas, director y persecución', () => {
     const snap = ticks(run, 600).at(-1);
     expect(snap?.status).toBe('running');
     expect(snap?.player.health).toBeLessThan(1000);
-    expect(snap?.enemies).toEqual([{ id: 0, type: 'probe', ...CENTER, radius: 10, health: 5 }]);
+    expect(snap?.enemies).toEqual([
+      { id: 0, type: 'probe', ...CENTER, radius: 10, health: 5, damaged: false },
+    ]);
   });
 
   it('Un enemigo dado de baja deja de perseguir y no altera a los demás', () => {

@@ -60,7 +60,7 @@
   persecución", "Un enemigo recién aparecido no es objetivo en su tick de aparición", "Una baja libera el hueco
   antes del director"; AW "Disparo en el tick 1", "Cadencia con objetivo permanente", "La baja impide el contacto
   en ese tick", "Reposición en el mismo tick".
-- [ ] 4.3 Snapshot ampliado: `projectiles`, `pulses` (`weapon`, `firedAt`, centro, radio), `weapons` (`id`, `ready`),
+- [x] 4.3 Snapshot ampliado: `projectiles`, `pulses` (`weapon`, `firedAt`, centro, radio), `weapons` (`id`, `ready`),
   `EnemySnapshot.damaged`; todo congelado — SL "Partida recién creada", "Carga de las armas en el snapshot",
   "Pulso identificado en el snapshot", "Snapshot no mutable desde fuera"; AW "Armas equipadas en una partida nueva".
 - [ ] 4.4 Daño acumulado con las armas por defecto sobre `RunSetup` — AW "Ningún arma mata a un bug de un impacto",

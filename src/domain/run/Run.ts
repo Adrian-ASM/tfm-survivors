@@ -207,6 +207,9 @@ export class Run {
    */
   snapshot(): RunSnapshot {
     const { position, radius, health } = this.player;
+    const k = this.tickCount;
+    const flash = this.rules.loadout.hitFlashTicks;
+    const enemies = this.enemies.map((e) => toEnemySnapshot(e, e.damagedAt(k, flash)));
     return Object.freeze({
       tick: this.tickCount,
       status: this.state,
@@ -216,13 +219,28 @@ export class Run {
         radius,
         health: health.current,
         maxHealth: health.max,
-        invulnerable: this.player.isInvulnerableAfter(this.tickCount),
+        invulnerable: this.player.isInvulnerableAfter(k),
       }),
-      enemies: Object.freeze(this.enemies.map(toSnapshot)),
+      enemies: Object.freeze(enemies),
       projectiles: Object.freeze(this.arsenal.projectiles.map(toProjectileSnapshot)),
       pulses: Object.freeze(this.arsenal.pulses.map(toPulseSnapshot)),
+      weapons: Object.freeze(
+        this.arsenal.weapons.map((w) => Object.freeze({ id: w.type.id, ready: w.isChargedAt(k) })),
+      ),
     });
   }
+}
+
+function toEnemySnapshot(e: Enemy, damaged: boolean): EnemySnapshot {
+  return Object.freeze({
+    id: e.id,
+    type: e.type.id,
+    x: e.x,
+    y: e.y,
+    radius: e.radius,
+    health: e.hp,
+    damaged,
+  });
 }
 
 function toProjectileSnapshot(p: Projectile): ProjectileSnapshot {
@@ -236,16 +254,5 @@ function toPulseSnapshot(e: PulseEcho): PulseSnapshot {
     x: e.x,
     y: e.y,
     radius: e.radius,
-  });
-}
-
-function toSnapshot(e: Enemy): EnemySnapshot {
-  return Object.freeze({
-    id: e.id,
-    type: e.type.id,
-    x: e.x,
-    y: e.y,
-    radius: e.radius,
-    health: e.hp,
   });
 }
