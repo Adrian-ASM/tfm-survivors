@@ -118,7 +118,7 @@
   escenarios: "Catálogo por defecto", "Identificador repetido o lista vacía", "Valores inválidos" (upgrades), y los
   de 1.9–1.10 a través del loader
 - [x] 3.4 `GemLayer` sobre `SlotPool` — escenarios: "Recogidas y nuevas", "Tope de gemas pintado", "Todas recogidas"
-- [ ] 3.5 `xpBarFill` (pura) y `XpBar` (repinta solo si cambian valores) — escenarios: "Barra vacía al empezar",
+- [x] 3.5 `xpBarFill` (pura) y `XpBar` (repinta solo si cambian valores) — escenarios: "Barra vacía al empezar",
   "Relleno parcial", "Tras subir de nivel"
 - [ ] 3.6 `cardLayout` (pura) y `UpgradeOverlay` con dobles (relleno al cambiar la oferta, visibilidad, índice
   clicado) — escenarios: "Tres cartas", "Menos cartas" (2 cartas), "Sin oferta" (no visible)
