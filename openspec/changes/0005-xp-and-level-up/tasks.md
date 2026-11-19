@@ -126,7 +126,7 @@
   "Elegir con tecla", "Elegir con clic", "Menos cartas" (tecla 3 no hace nada), "Sin oferta" (teclas sin efecto)
 - [x] 3.8 `main.ts`: `SceneCapacity.gems`, `pulses` desde `rules.pulseCapacity`, `chooseUpgrade` a la escena;
   comprobación manual con `npm run dev` (gemas, barra, overlay, teclas y clic)
-- [ ] 3.9 Bench: caso "Peor caso con gemas" (300 atraídas a ≥ 400 px, 60 ticks) y política de elección 0 en los
+- [x] 3.9 Bench: caso "Peor caso con gemas" (300 atraídas a ≥ 400 px, 60 ticks) y política de elección 0 en los
   casos existentes; anotar resultados — escenarios: "Peor caso con gemas", "Tope de vivos alcanzado", "200 enemigos
   encima del jugador", "Peor caso con proyectiles"
 
