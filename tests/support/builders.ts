@@ -32,4 +32,30 @@ export const aRunConfig = (
   waves: DEFAULT_WAVES,
 });
 
+interface MutableType {
+  id: string;
+  speed: number;
+  radius: number;
+  cost: number;
+}
+interface MutableSegment {
+  fromSecond: number;
+  budgetPerSecond: number;
+  types: string[];
+}
+/** Contenido crudo con la forma de los 4 ficheros de content/, mutable para preparar casos inválidos. */
+export interface RawContent {
+  player: { speed: number; radius: number };
+  arena: { width: number; height: number; view: { width: number; height: number } };
+  enemies: { types: [MutableType, MutableType, MutableType] };
+  waves: {
+    maxAlive: number;
+    spawn: { margin: number; minDistance: number; maxAttempts: number };
+    segments: [MutableSegment, MutableSegment, ...MutableSegment[]];
+  };
+}
+
+/** Copia nueva del contenido por defecto en forma de ficheros (cada llamada es independiente). */
+export const rawContent = (): RawContent => structuredClone(aRunConfig()) as RawContent;
+
 export const TICK_MS = 1000 / 60;

@@ -1,0 +1,7 @@
+{
+  "types": [
+    { "id": "bug", "speed": 90, "radius": 10, "cost": 1 },
+    { "id": "memory-leak", "speed": 45, "radius": 22, "cost": 3 },
+    { "id": "merge-conflict", "speed": 70, "radius": 16, "cost": 2 }
+  ]
+}

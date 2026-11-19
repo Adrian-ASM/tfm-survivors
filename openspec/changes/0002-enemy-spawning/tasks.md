@@ -85,10 +85,10 @@
       "StartRun propaga el error de contenido"
 
 ## 5. Infraestructura
-- [ ] 5.1 `content/enemies.json`, `content/waves.json` y `view` en `content/arena.json` (valores del design);
+- [x] 5.1 `content/enemies.json`, `content/waves.json` y `view` en `content/arena.json` (valores del design);
       `src/infrastructure/content/schemas.ts` con zod `strictObject` y rangos por campo —
       `tests/infrastructure/content.test.ts` — ES "Velocidad cero", "Tope de vivos no entero", campos desconocidos
-- [ ] 5.2 `parseRunConfig({player, arena, enemies, waves})` con `superRefine` → `buildRunRules`
+- [x] 5.2 `parseRunConfig({player, arena, enemies, waves})` con `superRefine` → `buildRunRules`
       (`path = field.split('.')`); `loadRunConfig()` con los 4 JSON — mismo fichero — ES "Oleada con un tipo
       inexistente" (menciona `segfault`, no arranca), "Radio que no cabe en la arena", "Radio en el límite exacto",
       "Identificador duplicado", "Primer tramo que no empieza en 0", "Tramos desordenados o repetidos",

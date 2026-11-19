@@ -1,32 +1,24 @@
 import { z } from 'zod';
 import arenaJson from '../../../content/arena.json';
+import enemiesJson from '../../../content/enemies.json';
 import playerJson from '../../../content/player.json';
-import { Arena } from '../../domain/arena/Arena';
-import { RADIUS_MUST_FIT, SPEED_MUST_BE_POSITIVE, type RunConfig } from '../../domain/run/Run';
+import wavesJson from '../../../content/waves.json';
+import { buildRunRules, type RunConfig } from '../../domain/run/RunConfig';
 import { err, invalidConfig, ok, type DomainError, type Result } from '../../domain/shared/Result';
+import { ArenaSchema, EnemiesSchema, PlayerSchema, WavesSchema } from './schemas';
 
-// Validación del contenido antes de llegar al dominio (AGENTS.md §3.5-6): forma de cada fichero y, sobre el
-// conjunto, que el radio del jugador quepa en la arena. La regla de encaje es la del dominio (`Arena.fits`),
-// que además la mantiene en `Run.start` como defensa.
-const PlayerSchema = z.strictObject({
-  speed: z.number().positive({ error: SPEED_MUST_BE_POSITIVE }),
-  radius: z.number().positive(),
-});
-
-const ArenaSchema = z.strictObject({
-  width: z.number().int().positive(),
-  height: z.number().int().positive(),
-});
-
+// Validación del contenido antes de llegar al dominio (AGENTS.md §3.5-6): forma y rangos de cada fichero
+// (schemas.ts) y, sobre el conjunto, las reglas cruzadas. Estas tienen una sola implementación,
+// `buildRunRules` del dominio, que además las mantiene en `Run.start` como defensa.
 const RunConfigSchema = z
-  .object({ player: PlayerSchema, arena: ArenaSchema })
-  .superRefine(({ player, arena }, ctx) => {
-    const created = Arena.create(arena.width, arena.height);
-    if (created.ok && !created.value.fits(player.radius)) {
+  .object({ player: PlayerSchema, arena: ArenaSchema, enemies: EnemiesSchema, waves: WavesSchema })
+  .superRefine((config, ctx) => {
+    const rules = buildRunRules(config);
+    if (!rules.ok) {
       ctx.addIssue({
         code: 'custom',
-        path: ['player', 'radius'],
-        message: RADIUS_MUST_FIT,
+        path: rules.error.field.split('.'),
+        message: rules.error.message,
       });
     }
   });
@@ -34,6 +26,8 @@ const RunConfigSchema = z
 export function parseRunConfig(raw: {
   player: unknown;
   arena: unknown;
+  enemies: unknown;
+  waves: unknown;
 }): Result<RunConfig, DomainError> {
   const parsed = RunConfigSchema.safeParse(raw);
   if (parsed.success) return ok(parsed.data);
@@ -44,5 +38,10 @@ export function parseRunConfig(raw: {
 
 /** Contenido versionado en content/*.json, empaquetado por Vite. */
 export function loadRunConfig(): Result<RunConfig, DomainError> {
-  return parseRunConfig({ player: playerJson, arena: arenaJson });
+  return parseRunConfig({
+    player: playerJson,
+    arena: arenaJson,
+    enemies: enemiesJson,
+    waves: wavesJson,
+  });
 }
