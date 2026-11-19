@@ -9,7 +9,7 @@
 **Sprint Survivors**: juego 2D *survivors-like* para navegador (TFM del Máster de Desarrollo con IA).
 El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir de nivel se elige 1 de 3 mejoras.
 
-- **Stack**: TypeScript estricto · Vite · motor 2D por decidir en ADR-0001 (candidato: Phaser 4) · Vitest · Playwright · zod.
+- **Stack**: TypeScript estricto · Vite · **Phaser 4.2.1** (ADR-0001) · Vitest · Playwright · zod.
 - **Arquitectura**: Clean Architecture. El **núcleo de simulación es puro y determinista** (`src/domain`, `src/application`);
   el motor de juego es un **adaptador** (`src/infrastructure`). Ver `docs/adr/0002-nucleo-de-simulacion-puro.md`.
 - **Estado del proyecto**: fase de cimientos. Fuente de verdad del comportamiento: `openspec/specs/`.

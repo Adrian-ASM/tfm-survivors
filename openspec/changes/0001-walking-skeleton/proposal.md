@@ -3,7 +3,7 @@
 - **Estado**: aprobada por el autor (2026-11-19)
 - **Issue**: — (crear al subir el repo)
 - **Rama / worktree**: `change/0001-walking-skeleton`
-- **Bloqueado por**: ADR-0001 (motor). Se puede empezar todo salvo el adaptador de render.
+- **Bloqueado por**: — (ADR-0001 aceptada el 2026-11-19: Phaser 4.2.1).
 
 ## Problema
 El repositorio solo tiene contexto para agentes y documentación. No hay código, guardarraíles ejecutables ni despliegue,
