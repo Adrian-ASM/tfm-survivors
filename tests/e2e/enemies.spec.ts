@@ -8,7 +8,12 @@ interface EnemyView {
 interface Probe {
   __sprint?: {
     seed: number;
-    snapshot: { tick: number; enemies: EnemyView[] } | null;
+    snapshot: {
+      tick: number;
+      status: 'running' | 'over';
+      player: { health: number; maxHealth: number; invulnerable: boolean };
+      enemies: EnemyView[];
+    } | null;
   };
 }
 
@@ -57,6 +62,28 @@ test('?seed=42: semilla 42, aparecen enemigos dentro de la arena y sin errores n
     expect(e.y).toBeGreaterThanOrEqual(e.radius);
     expect(e.y).toBeLessThanOrEqual(ARENA.height - e.radius);
   }
+  expect(problems).toEqual([]);
+});
+
+test('Daño discreto por contacto: sin input, la vida baja en ≤ 20 s y sigue en curso', async ({
+  page,
+}) => {
+  test.setTimeout(45_000);
+  const problems = collect(page, ['error', 'warning']);
+  await page.goto('./?e2e&seed=42');
+  await expect.poll(async () => (await probe(page))?.snapshot?.tick ?? null).not.toBeNull();
+  const start = (await probe(page))?.snapshot?.player;
+  expect(start && start.health).toBe(start?.maxHealth);
+
+  await expect
+    .poll(async () => (await probe(page))?.snapshot?.player.health ?? Infinity, {
+      timeout: 20_000,
+    })
+    .toBeLessThan(start?.maxHealth ?? 0);
+
+  const snap = (await probe(page))?.snapshot;
+  expect(snap?.player.health).toBeGreaterThan(0);
+  expect(snap?.status).toBe('running');
   expect(problems).toEqual([]);
 });
 

@@ -138,7 +138,7 @@
       Cubre SL "Bajas en medio de la lista", "Todos dados de baja" y "Reposición tras bajas".
 
 ## 8. Composición
-- [ ] 8.1 Revisar `src/composition/main.ts` y `GameScene`: no deberían necesitar cambios, porque `maxAlive` sigue
+- [x] 8.1 Revisar `src/composition/main.ts` y `GameScene`: no deberían necesitar cambios, porque `maxAlive` sigue
       siendo la capacidad del pool. Verificar con `npm run dev` que la partida se congela al llegar a vida 0
       (comprobado con el probe `?e2e`). Cubre el criterio de éxito "en Pages, la partida se congela al llegar a
       vida 0".
@@ -156,7 +156,7 @@
       *design*.
 
 ## 10. E2E
-- [ ] 10.1 `tests/e2e/enemies.spec.ts` (o `health.spec.ts`), con `?e2e&seed=42` y sin input:
+- [x] 10.1 `tests/e2e/enemies.spec.ts` (o `health.spec.ts`), con `?e2e&seed=42` y sin input:
       - `probe.snapshot.player.health` baja de `maxHealth` en ≤ 20 s;
       - `status` es `'running'` mientras quede vida;
       - sin errores ni avisos de consola.
