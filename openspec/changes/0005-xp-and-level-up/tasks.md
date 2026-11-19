@@ -73,7 +73,7 @@
 - [x] 1.19 Paso de gemas tras el contacto y XP del tick — escenarios: "Gema de una baja junto al jugador", "El imán usa
   la posición del jugador ya movido", "Enemigos encima de una gema", "Muerte y subida de nivel en el mismo tick",
   "Gemas congeladas al terminar"
-- [ ] 1.20 Apertura de oferta como último paso del tick y `pendingLevelUps` en `Experience` — escenarios: "Primera
+- [x] 1.20 Apertura de oferta como último paso del tick y `pendingLevelUps` en `Experience` — escenarios: "Primera
   oferta", "El director actúa antes de abrir la oferta", "Ninguna disponible", "Sin pasar por eligiendo si no hay
   mejoras disponibles", "Eligiendo mejora y vuelta a en curso" (primera mitad)
 - [ ] 1.21 Congelado en `'choosing'`; ayudante `advance(run, ticks, input)` con la política de elección fija en

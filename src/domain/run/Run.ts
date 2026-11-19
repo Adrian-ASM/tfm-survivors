@@ -122,6 +122,21 @@ export class Run {
     if (xp > 0) this.experience.gain(xp);
     this.director.step(n, this.enemies.length, this.place);
     this.tickCount = n;
+    this.openNextOffer();
+  }
+
+  /**
+   * Último paso del tick (y tras cada elección): con subidas pendientes y sin oferta abierta,
+   * sortea la siguiente (único consumo de azar nuevo) y pasa a eligiendo. Sin mejoras disponibles
+   * las subidas quedan registradas, sin oferta ni pausa y sin consumir azar.
+   */
+  private openNextOffer(): void {
+    if (this.experience.pendingLevelUps === 0 || this.board.isOpen) return;
+    if (this.board.open(this.random)) {
+      this.state = 'choosing';
+    } else {
+      this.experience.clearPending();
+    }
   }
 
   /**
