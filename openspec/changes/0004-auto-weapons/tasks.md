@@ -55,7 +55,7 @@
 ## 4. Dominio: integración en `Run`
 - [x] 4.1 `RunSetup.enemies[i].health` (finito, 0 < h ≤ `type.health`, `SETUP_HEALTH_OUT_OF_RANGE`) — AW
   "Armas equipadas al inicio" (vida inicial fijada al preparar), ES "Vida inicial del tipo".
-- [ ] 4.2 `Run.tick` con el nuevo orden (armas tras la persecución, `removeDead()` una vez si hay bajas, contacto
+- [x] 4.2 `Run.tick` con el nuevo orden (armas tras la persecución, `removeDead()` una vez si hay bajas, contacto
   solo con vivos, director después); `run.test.ts` / `run-weapons.test.ts` — SL "Las armas apuntan tras la
   persecución", "Un enemigo recién aparecido no es objetivo en su tick de aparición", "Una baja libera el hueco
   antes del director"; AW "Disparo en el tick 1", "Cadencia con objetivo permanente", "La baja impide el contacto

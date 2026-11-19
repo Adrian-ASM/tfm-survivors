@@ -24,6 +24,8 @@ describe('Run', () => {
       status: 'running',
       player: { x: 480, y: 270, radius: 16, health: 100, maxHealth: 100, invulnerable: false },
       enemies: [],
+      projectiles: [],
+      pulses: [],
     });
   });
 

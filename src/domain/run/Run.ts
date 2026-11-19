@@ -18,7 +18,10 @@ import {
   type RunConfig,
   type RunRules,
 } from './RunConfig';
-import type { EnemySnapshot, RunSnapshot } from './RunSnapshot';
+import { Arsenal } from '../weapon/Arsenal';
+import type { Projectile } from '../weapon/Projectile';
+import type { PulseEcho } from '../weapon/PulseEcho';
+import type { EnemySnapshot, ProjectileSnapshot, PulseSnapshot, RunSnapshot } from './RunSnapshot';
 import type { RunStatus } from './RunStatus';
 
 export { TICK_SECONDS, RADIUS_MUST_FIT, SPEED_MUST_BE_POSITIVE, type RunConfig, type RunStatus };
@@ -92,6 +95,7 @@ export class Run {
   private nextEnemyId: number;
   private readonly arena: Arena;
   private readonly director: WaveDirector;
+  private readonly arsenal: Arsenal;
 
   private constructor(
     private readonly rules: RunRules,
@@ -102,6 +106,7 @@ export class Run {
     this.arena = rules.arena;
     this.nextEnemyId = enemies.length;
     this.director = new WaveDirector(rules.table, rules.spawn, random);
+    this.arsenal = new Arsenal(rules.loadout);
   }
 
   static start(
@@ -128,8 +133,8 @@ export class Run {
     this.player = this.player.move(input, TICK_SECONDS, this.arena);
     const { x, y } = this.player.position;
     for (const enemy of this.enemies) enemy.chase(x, y, TICK_SECONDS, this.arena);
+    if (this.arsenal.step(n, x, y, this.enemies) > 0) this.removeDead();
     const died = this.applyContact(n);
-    // (0004) Aquí irán el daño de armas y un único removeDead() por tick.
     if (!died) this.director.step(n, this.enemies.length, this.place);
     this.tickCount = n;
   }
@@ -214,8 +219,24 @@ export class Run {
         invulnerable: this.player.isInvulnerableAfter(this.tickCount),
       }),
       enemies: Object.freeze(this.enemies.map(toSnapshot)),
+      projectiles: Object.freeze(this.arsenal.projectiles.map(toProjectileSnapshot)),
+      pulses: Object.freeze(this.arsenal.pulses.map(toPulseSnapshot)),
     });
   }
+}
+
+function toProjectileSnapshot(p: Projectile): ProjectileSnapshot {
+  return Object.freeze({ id: p.id, x: p.x, y: p.y, radius: p.radius });
+}
+
+function toPulseSnapshot(e: PulseEcho): PulseSnapshot {
+  return Object.freeze({
+    weapon: e.weaponId,
+    firedAt: e.firedAt,
+    x: e.x,
+    y: e.y,
+    radius: e.radius,
+  });
 }
 
 function toSnapshot(e: Enemy): EnemySnapshot {
