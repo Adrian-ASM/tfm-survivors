@@ -96,7 +96,7 @@
   reposición).
 - [x] 6.2 Destello en `EnemyLayer` (`FLASH_COLOR`, repintar solo si cambia tipo o `damaged`); test con dobles —
   AW "Indicación visual de daño, proyectiles y pulsos" (destello).
-- [ ] 6.3 `ProjectileLayer` sobre `SlotPool` con capacidad `maxProjectiles`; test con dobles, sin sprites nuevos
+- [x] 6.3 `ProjectileLayer` sobre `SlotPool` con capacidad `maxProjectiles`; test con dobles, sin sprites nuevos
   tras crear — AW "Sprites de proyectiles".
 - [ ] 6.4 `PulseLayer` (anillos por índice, capacidad `pulseCapacity`) y función pura `pulseAlpha`; test en Node —
   AW "Duración del pulso" (pintado), "Indicación visual…" (un anillo por pulso).
