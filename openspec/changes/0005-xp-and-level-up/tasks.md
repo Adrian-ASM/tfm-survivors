@@ -41,7 +41,7 @@
 - [x] 1.8 `GemField.step` recogida estricta, suma de XP y compactación estable — escenarios: "Recogida de una gema",
   "Tangencia tras el imán no es recogida", "Varias gemas en el mismo tick", "Plaza liberada por una recogida",
   "Gemas en el snapshot" (orden g1, g3, g4)
-- [ ] 1.9 `upgrade/UpgradeType` y `UpgradeCatalog`: ids únicos, arma existente, compatibilidad `stat` ↔ objetivo
+- [x] 1.9 `upgrade/UpgradeType` y `UpgradeCatalog`: ids únicos, arma existente, compatibilidad `stat` ↔ objetivo
   (`TARGETING_STAT`), mensajes con el id — escenarios: "Identificador repetido o lista vacía" (repetido),
   "Arma inexistente", "Estadística incompatible"
 - [ ] 1.10 `UpgradeCatalog`: `perLevel` entero en `damage`/`cooldownTicks` y build de peor caso con `WeaponType.create`

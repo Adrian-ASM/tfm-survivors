@@ -1,6 +1,7 @@
 import type { RunConfig } from '../../src/domain/run/RunConfig';
 import type { WeaponsConfig } from '../../src/domain/weapon/WeaponLoadout';
 import type { WeaponTypeConfig } from '../../src/domain/weapon/WeaponType';
+import type { UpgradeTypeConfig } from '../../src/domain/upgrade/UpgradeType';
 
 /** Linter del contenido por defecto (spec auto-weapons): proyectil al más cercano en alcance. */
 export const LINTER: WeaponTypeConfig = {
@@ -18,6 +19,101 @@ export const TESTS: WeaponTypeConfig = {
   damage: 4,
   targeting: { mode: 'any-in-radius', radius: 90 },
   attack: { type: 'pulse', visualTicks: 8 },
+};
+
+/** Catálogo de mejoras por defecto (content/upgrades.json), en el orden de la spec. */
+export const DEFAULT_UPGRADE_LIST: readonly UpgradeTypeConfig[] = [
+  {
+    id: 'strict-rules',
+    name: 'Skill: reglas estrictas',
+    description: 'El Linter hace más daño.',
+    target: { kind: 'weapon', weapon: 'linter' },
+    stat: 'damage',
+    perLevel: 3,
+    maxLevel: 5,
+  },
+  {
+    id: 'fast-ci',
+    name: 'Skill: CI rápido',
+    description: 'El Linter dispara más a menudo.',
+    target: { kind: 'weapon', weapon: 'linter' },
+    stat: 'cooldownTicks',
+    perLevel: -4,
+    maxLevel: 5,
+  },
+  {
+    id: 'wide-analysis',
+    name: 'Skill: análisis amplio',
+    description: 'El Linter alcanza objetivos más lejanos.',
+    target: { kind: 'weapon', weapon: 'linter' },
+    stat: 'range',
+    perLevel: 60,
+    maxLevel: 5,
+  },
+  {
+    id: 'hard-asserts',
+    name: 'Skill: asserts estrictos',
+    description: 'Los Tests hacen más daño.',
+    target: { kind: 'weapon', weapon: 'tests' },
+    stat: 'damage',
+    perLevel: 2,
+    maxLevel: 5,
+  },
+  {
+    id: 'watch-mode',
+    name: 'Skill: modo watch',
+    description: 'Los Tests se lanzan más a menudo.',
+    target: { kind: 'weapon', weapon: 'tests' },
+    stat: 'cooldownTicks',
+    perLevel: -12,
+    maxLevel: 5,
+  },
+  {
+    id: 'coverage',
+    name: 'Skill: más cobertura',
+    description: 'El pulso de los Tests llega más lejos.',
+    target: { kind: 'weapon', weapon: 'tests' },
+    stat: 'radius',
+    perLevel: 15,
+    maxLevel: 5,
+  },
+  {
+    id: 'guardrail',
+    name: 'Guardrail',
+    description: 'Más vida máxima (y la misma cantidad de vida actual).',
+    target: { kind: 'player' },
+    stat: 'maxHealth',
+    perLevel: 20,
+    maxLevel: 5,
+  },
+  {
+    id: 'shortcuts',
+    name: 'Atajos de teclado',
+    description: 'Te mueves más rápido.',
+    target: { kind: 'player' },
+    stat: 'speed',
+    perLevel: 20,
+    maxLevel: 5,
+  },
+  {
+    id: 'context-window',
+    name: 'Ventana de contexto',
+    description: 'Atraes las gemas desde más lejos.',
+    target: { kind: 'player' },
+    stat: 'pickupRadius',
+    perLevel: 32,
+    maxLevel: 5,
+  },
+];
+
+/** Mejora de la lista por defecto por id, con cambios (para casos inválidos o de límite). */
+export const anUpgrade = (
+  id: string,
+  patch: Partial<UpgradeTypeConfig> = {},
+): UpgradeTypeConfig => {
+  const base = DEFAULT_UPGRADE_LIST.find((u) => u.id === id);
+  if (!base) throw new Error(`mejora desconocida: ${id}`);
+  return { ...base, ...patch };
 };
 
 /** Contenido de armas por defecto (content/weapons.json). */
