@@ -1,4 +1,4 @@
-# <Nombre del juego> · TFM Máster de Desarrollo con IA
+# Sprint Survivors · TFM Máster de Desarrollo con IA
 
 > Survivors-like 2D para navegador desarrollado con Spec-Driven Development, Clean Architecture y agentes de IA.
 
@@ -10,7 +10,8 @@
 | **Usuario de prueba** | No aplica en la fase 1 (sin login). |
 
 ## 1. Descripción general
-_Pendiente: concepto, temática y qué demuestra el proyecto. Ver `docs/gdd.md`._
+*Sprint Survivors*: una dev atrapada en un sprint infinito sobrevive a oleadas de *bugs*, *memory leaks* y
+*merge conflicts* con armas automáticas (linter, tests, refactor). Metáfora del propio TFM. Ver `docs/gdd.md`.
 
 ## 2. Stack tecnológico
 TypeScript estricto · Vite · motor 2D (ADR-0001) · Vitest · Playwright · zod · GitHub Actions + Pages ·

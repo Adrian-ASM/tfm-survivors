@@ -6,7 +6,7 @@
 
 ## 1. Visión general
 
-Juego 2D *survivors-like* para navegador (TFM del Máster de Desarrollo con IA).
+**Sprint Survivors**: juego 2D *survivors-like* para navegador (TFM del Máster de Desarrollo con IA).
 El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir de nivel se elige 1 de 3 mejoras.
 
 - **Stack**: TypeScript estricto · Vite · motor 2D por decidir en ADR-0001 (candidato: Phaser 4) · Vitest · Playwright · zod.

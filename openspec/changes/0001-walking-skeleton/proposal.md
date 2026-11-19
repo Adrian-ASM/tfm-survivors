@@ -1,6 +1,6 @@
 # Proposal · 0001-walking-skeleton
 
-- **Estado**: pendiente de aprobación
+- **Estado**: aprobada por el autor (2026-11-19)
 - **Issue**: — (crear al subir el repo)
 - **Rama / worktree**: `change/0001-walking-skeleton`
 - **Bloqueado por**: ADR-0001 (motor). Se puede empezar todo salvo el adaptador de render.

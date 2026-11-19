@@ -1,4 +1,4 @@
-# GDD-lite · borrador v0
+# GDD-lite · v1 (aprobado 2026-11-19)
 
 > Borrador generado a partir de la hoja de ruta. Lo refina el agente `game-designer`; las decisiones son del autor.
 
@@ -6,7 +6,8 @@
 *Survivors-like* 2D para navegador, partidas de ~10 minutos. El jugador solo se mueve; las armas atacan solas;
 las oleadas crecen; al subir de nivel elige 1 de 3 mejoras.
 
-**Temática candidata — "Bug Survivors"** (pendiente de decidir y de comprobar que el nombre está libre): una dev
+**Temática — "Sprint Survivors"** (decidida 2026-11-19; se descartó "Bug Survivors" por parecido con
+*Bug Bane Survivors* en Steam): una dev
 atrapada en un sprint infinito. Enemigos: *bugs*, *memory leaks*, *merge conflicts*. Armas: linter, tests, refactor.
 Jefe: "el incidente en producción a las 3 a. m.". Mejoras: *Spec*, *Skill*, *Guardrail*… Metáfora del propio TFM.
 
