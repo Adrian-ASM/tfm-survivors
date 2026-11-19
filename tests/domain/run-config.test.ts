@@ -35,9 +35,11 @@ import {
   TESTS,
   aRunConfig,
   anUpgrade,
+  withDuration,
   withUpgrades,
   withWeapons,
 } from '../support/builders';
+import { RUN_DURATION_MUST_BE_INTEGER } from '../../src/domain/run/RunDuration';
 
 type Waves = RunConfig['waves'];
 const withWaves = (waves: Partial<Waves>, spawn: Partial<Waves['spawn']> = {}): RunConfig => {
@@ -254,5 +256,25 @@ describe('buildRunRules · progresión y mejoras', () => {
     const b = buildRunRules(fast);
     expect(a.ok && a.value.pulseCapacity).toBe(1);
     expect(b.ok && b.value.pulseCapacity).toBe(2);
+  });
+});
+
+describe('buildRunRules · duración objetivo (spec run-outcome)', () => {
+  it('Scenario: Contenido por defecto (dominio): la duración son 36.000 ticks', () => {
+    const r = buildRunRules(aRunConfig());
+    expect(r.ok && r.value.duration.ticks).toBe(36_000);
+  });
+
+  it('withDuration cambia la duración (2 s ⇒ 120 ticks)', () => {
+    const r = buildRunRules(withDuration(aRunConfig(), 2));
+    expect(r.ok && r.value.duration.ticks).toBe(120);
+  });
+
+  it.each([0, -60, 600.5])('rechaza una duración inválida (%s)', (seconds) => {
+    expect(failure(withDuration(aRunConfig(), seconds))).toEqual({
+      code: 'invalid-config',
+      field: 'run.durationSeconds',
+      message: RUN_DURATION_MUST_BE_INTEGER,
+    });
   });
 });

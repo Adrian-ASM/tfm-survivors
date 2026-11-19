@@ -18,6 +18,7 @@ import {
   MAX_ALIVE_MUST_BE_INTEGER,
   MAX_BUDGET_MUST_BE_POSITIVE,
 } from '../../src/domain/wave/SpawnRules';
+import { RUN_DURATION_MUST_BE_INTEGER } from '../../src/domain/run/RunDuration';
 import { loadRunConfig, parseRunConfig } from '../../src/infrastructure/content/loadRunConfig';
 import { aDefaultConfig, aRunConfig, rawContent, type RawContent } from '../support/builders';
 import { StubRandom } from '../support/random';
@@ -339,6 +340,54 @@ describe('Contenido de enemigos y oleadas validado · reglas cruzadas (dominio d
       { fromSecond: 60, budgetPerSecond: 1, types: ['bug'] },
     ];
     expect(failure(raw).field).toBe('waves.segments.2.fromSecond');
+  });
+});
+
+describe('Duración objetivo validada (spec run-outcome)', () => {
+  const durationTicks = (raw: RawContent): number | false => {
+    const r = parseRunConfig(raw);
+    if (!r.ok) return false;
+    const rules = buildRunRules(r.value);
+    return rules.ok && rules.value.duration.ticks;
+  };
+
+  it('Scenario: Contenido por defecto (600 s ⇒ 36.000 ticks)', () => {
+    const r = loadRunConfig();
+    expect(r.ok && r.value.run.durationSeconds).toBe(600);
+    expect(r.ok && buildRunRules(r.value).ok).toBe(true);
+    expect(durationTicks(rawContent())).toBe(36_000);
+  });
+
+  it('Scenario: Duración mínima válida (1 s ⇒ 60 ticks)', () => {
+    const raw = rawContent();
+    raw.run.durationSeconds = 1;
+    expect(durationTicks(raw)).toBe(60);
+  });
+
+  it.each([0, -60])('Scenario: Duración cero o negativa (%s)', (seconds) => {
+    const raw = rawContent();
+    raw.run.durationSeconds = seconds;
+    expect(failure(raw)).toEqual({
+      code: 'invalid-config',
+      field: 'run.durationSeconds',
+      message: RUN_DURATION_MUST_BE_INTEGER,
+    });
+  });
+
+  it.each<[string, (r: RawContent) => void]>([
+    ['600,5', (r) => (r.run.durationSeconds = 600.5)],
+    ['"600"', (r) => Reflect.set(r.run, 'durationSeconds', '600')],
+    ['ausente', (r) => Reflect.deleteProperty(r.run, 'durationSeconds')],
+  ])('Scenario: Duración no entera o ausente (%s)', (_name, mutate) => {
+    const raw = rawContent();
+    mutate(raw);
+    expect(failure(raw).field).toBe('run.durationSeconds');
+  });
+
+  it('rechaza un campo extra en el fichero de partida', () => {
+    const raw = rawContent();
+    Reflect.set(raw.run, 'extra', 1);
+    expect(failure(raw).field).toMatch(/^run/);
   });
 });
 

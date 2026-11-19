@@ -176,6 +176,9 @@ export const DEFAULT_WAVES: RunConfig['waves'] = {
  */
 export const LONG_RUN_HEALTH = 1e9;
 
+/** Duración objetivo por defecto (content/run.json): 600 s = 36.000 ticks. */
+export const DEFAULT_RUN: RunConfig['run'] = { durationSeconds: 600 };
+
 type PlayerConfig = RunConfig['player'];
 
 /**
@@ -204,6 +207,13 @@ export const aRunConfig = (overrides: Partial<PlayerConfig> = {}): RunConfig => 
   weapons: NO_WEAPONS,
   progression: DEFAULT_PROGRESSION,
   upgrades: NO_UPGRADES,
+  run: DEFAULT_RUN,
+});
+
+/** El mismo contenido con otra duración objetivo en segundos (p. ej. 2 ⇒ 120 ticks). */
+export const withDuration = (config: RunConfig, durationSeconds: number): RunConfig => ({
+  ...config,
+  run: { durationSeconds },
 });
 
 /** El mismo contenido con otras armas (p. ej. `withWeapons(aRunConfig(), DEFAULT_WEAPONS)`). */
@@ -288,7 +298,7 @@ interface MutableUpgrade {
   maxLevel: number;
 }
 /**
- * Contenido crudo con la forma de los 7 ficheros de content/, mutable para preparar casos
+ * Contenido crudo con la forma de los 8 ficheros de content/, mutable para preparar casos
  * inválidos.
  */
 export interface RawContent {
@@ -320,6 +330,7 @@ export interface RawContent {
     maxGems: number;
   };
   upgrades: { upgrades: [MutableUpgrade, MutableUpgrade, ...MutableUpgrade[]] };
+  run: { durationSeconds: number };
 }
 
 /** Copia nueva del contenido por defecto en forma de ficheros (cada llamada es independiente). */

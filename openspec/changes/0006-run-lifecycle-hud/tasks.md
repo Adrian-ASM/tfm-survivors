@@ -39,7 +39,7 @@
   `RUN_DURATION_MUST_BE_INTEGER`. Test: 600 ⇒ 36.000; 1 ⇒ 60; 0, −60 y 600,5 ⇒ error que menciona `durationSeconds`.
   Escenarios: run-outcome "Duración mínima válida", "Duración cero o negativa" y "Duración no entera o ausente"
   (parte de dominio).
-- [ ] 1.2 `RunConfig.run` + `RunRules.duration` en `buildRunRules`. En `tests/support/builders.ts`: `DEFAULT_RUN`
+- [x] 1.2 `RunConfig.run` + `RunRules.duration` en `buildRunRules`. En `tests/support/builders.ts`: `DEFAULT_RUN`
   en `aRunConfig`, `withDuration(config, s)` y `RawContent.run`. Test: `buildRunRules` rechaza una duración
   inválida y expone `duration.ticks`. Escenario: run-outcome "Contenido por defecto" (dominio).
 - [ ] 1.3 `run/RunPhase.ts`: `RunOutcome`, la unión `RunPhase` y las constantes congeladas `RUNNING`, `CHOOSING`,
@@ -118,7 +118,7 @@
   "Primer frame de la partida nueva".
 
 ## 3. Infraestructura y composición
-- [ ] 3.1 `content/run.json` (`{ "durationSeconds": 600 }`), `RunSchema` estricto y la clave `run` en
+- [x] 3.1 `content/run.json` (`{ "durationSeconds": 600 }`), `RunSchema` estricto y la clave `run` en
   `loadRunConfig`/`parseRunConfig`. Tests en `content.test.ts`: por defecto ⇒ 36.000 ticks; 1 ⇒ 60; 0, −60, 600,5,
   `"600"`, ausente y campo extra ⇒ error con `durationSeconds`. Escenarios: run-outcome "Contenido por defecto",
   "Duración mínima válida", "Duración cero o negativa" y "Duración no entera o ausente".
