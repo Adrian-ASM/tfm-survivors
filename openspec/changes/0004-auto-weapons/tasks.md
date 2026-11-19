@@ -70,7 +70,7 @@
   `RunSetup.health` + arma de pulso de prueba (vida 1 en las víctimas) — SL "Bajas sin reordenar", "Reposición al
   final de la lista", "Baja del primero y del último"; ES "Identificador no reutilizado", "Golpear al jugador no
   quita vida al enemigo" (sin armas).
-- [ ] 4.6 Partida terminada con armas: `run-state.test.ts` — RS "600 ticks después de terminar", "Armas congeladas al
+- [x] 4.6 Partida terminada con armas: `run-state.test.ts` — RS "600 ticks después de terminar", "Armas congeladas al
   terminar", "La terminación no consume azar"; retirar el test de "Una partida sin defensa termina" (requisito
   REMOVED) o reconvertirlo con `NO_WEAPONS`.
 - [ ] 4.7 **Medición temprana (gate de equilibrio)**: test del núcleo con el contenido por defecto, semilla 42 e

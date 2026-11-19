@@ -86,7 +86,9 @@ describe('Partidas largas (10 min)', () => {
     expect(finalSnapshot(SPAWN_AUDIT, SEED, inputs)).toStrictEqual(audited.final);
   });
 
-  it('Jugador quieto con el contenido por defecto: termina con vida 0 (semilla 7)', () => {
+  // Requisito REMOVED en 0004 ("Una partida sin defensa termina"): se conserva como prueba del
+  // contacto sin armas (NO_WEAPONS en aRunConfig), no como regla del contenido por defecto.
+  it('Jugador quieto sin armas: termina con vida 0 (semilla 7)', () => {
     const run = start(aRunConfig(), SEED);
     let endedAt = 0;
     for (let n = 1; n <= TEN_MINUTES && endedAt === 0; n++) {
