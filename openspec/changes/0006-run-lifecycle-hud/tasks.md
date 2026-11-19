@@ -133,7 +133,7 @@
   dos snapshots", "Bajas que cambian entre snapshots", "Sin bajas", "Barra de XP dentro del HUD" y "El tiempo no
   corre mientras se elige mejora". Escenarios de leveling: "Barra vacía al empezar", "Relleno parcial" y "Tras subir
   de nivel" (siguen verdes).
-- [ ] 3.5 `phaser/resultsText.ts` (puro): `resultsView(snapshot)`. Escenarios de run-results: "Valores de borde",
+- [x] 3.5 `phaser/resultsText.ts` (puro): `resultsView(snapshot)`. Escenarios de run-results: "Valores de borde",
   "Más de una hora", "Overlay tras una derrota" y "Overlay tras una victoria" (contenido).
 - [ ] 3.6 `phaser/ResultsOverlay.ts` con dobles: visible si y solo si `over`, getter `view` y pintado solo cuando
   cambia la clave. Escenarios de run-results: "Sin overlay durante la partida" y "Aparece en el mismo frame en que
