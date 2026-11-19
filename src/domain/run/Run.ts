@@ -1,6 +1,7 @@
 import type { Arena } from '../arena/Arena';
 import { contactDamage } from '../collision/contact';
-import { Enemy } from '../enemy/Enemy';
+import type { Enemy } from '../enemy/Enemy';
+import { Horde } from '../enemy/Horde';
 import type { Player } from '../player/Player';
 import type { PlayerInput } from '../player/PlayerInput';
 import type { RandomGenerator } from '../shared/RandomGenerator';
@@ -66,12 +67,11 @@ export {
 export class Run {
   private tickCount = 0;
   private state: RunStatus = 'running';
-  private nextEnemyId: number;
   private readonly arena: Arena;
   private readonly director: WaveDirector;
   private readonly arsenal: Arsenal;
   private player: Player;
-  private readonly enemies: Enemy[];
+  private readonly horde: Horde;
   private readonly gems: GemField;
   private readonly experience: Experience;
   private readonly board: UpgradeBoard;
@@ -83,11 +83,10 @@ export class Run {
   ) {
     this.arena = rules.arena;
     this.player = initial.player;
-    this.enemies = initial.enemies;
+    this.horde = new Horde(initial.enemies, rules.arena);
     this.gems = initial.gems;
     this.experience = initial.experience;
     this.board = initial.board;
-    this.nextEnemyId = this.enemies.length;
     this.director = new WaveDirector(rules.table, rules.spawn, random);
     this.arsenal = new Arsenal(rules.loadout, rules.pulseCapacity);
     for (const w of rules.loadout.weapons) this.retune(w.id);
@@ -180,15 +179,15 @@ export class Run {
     const n = this.tickCount + 1;
     this.player = this.player.move(input, TICK_SECONDS, this.arena);
     const { x, y } = this.player.position;
-    for (const enemy of this.enemies) enemy.chase(x, y, TICK_SECONDS, this.arena);
-    if (this.arsenal.step(n, x, y, this.enemies) > 0) this.removeDead();
+    this.horde.chase(x, y, TICK_SECONDS);
+    if (this.arsenal.step(n, x, y, this.horde.alive) > 0) this.horde.removeDead(this.dropGem);
     if (this.applyContact(n)) {
       this.tickCount = n;
       return;
     }
     const xp = this.gems.step(x, y, this.player.radius, this.player.pickupRadius);
     if (xp > 0) this.experience.gain(xp);
-    this.director.step(n, this.enemies.length, this.place);
+    this.director.step(n, this.horde.alive.length, this.place);
     this.tickCount = n;
     this.openNextOffer();
   }
@@ -213,7 +212,7 @@ export class Run {
    */
   private applyContact(n: number): boolean {
     const { x, y } = this.player.position;
-    const damage = contactDamage(x, y, this.player.radius, this.enemies);
+    const damage = contactDamage(x, y, this.player.radius, this.horde.alive);
     if (damage === 0 || !this.player.canBeHitAt(n)) return false;
     this.player = this.player.hit(damage, n);
     if (!this.player.health.isDepleted) return false;
@@ -222,24 +221,12 @@ export class Run {
   }
 
   /**
-   * Compactación estable en el sitio (ADR-0006): O(n), sin asignar y conservando el orden de
-   * aparición de los vivos. Cada muerto suelta su gema en su posición, en orden de la lista
-   * (spec xp-gems); el muerto conserva posición y tipo hasta este pase.
+   * Cada muerto suelta su gema en su posición, en orden de la lista (spec xp-gems). Se crea una
+   * sola vez: no asigna por tick.
    */
-  private removeDead(): void {
-    let w = 0;
-    for (let r = 0; r < this.enemies.length; r++) {
-      const e = this.enemies[r];
-      if (!e) continue;
-      if (e.alive) {
-        if (w !== r) this.enemies[w] = e;
-        w++;
-      } else {
-        this.gems.drop(e.x, e.y, e.type.xp);
-      }
-    }
-    this.enemies.length = w;
-  }
+  private readonly dropGem = (dead: Enemy): void => {
+    this.gems.drop(dead.x, dead.y, dead.type.xp);
+  };
 
   /** Los enemigos nuevos van al final de la lista y no se mueven en el tick en que aparecen. */
   private readonly place: SpawnAttempt = (type) => {
@@ -251,8 +238,7 @@ export class Run {
       this.random,
     );
     if (!at) return false;
-    this.enemies.push(Enemy.spawn(this.nextEnemyId, type, at.x, at.y, this.arena));
-    this.nextEnemyId += 1;
+    this.horde.spawn(type, at.x, at.y);
     return true;
   };
 
@@ -264,7 +250,7 @@ export class Run {
     const { position, radius, health } = this.player;
     const k = this.tickCount;
     const flash = this.rules.loadout.hitFlashTicks;
-    const enemies = this.enemies.map((e) => toEnemySnapshot(e, e.damagedAt(k, flash)));
+    const enemies = this.horde.alive.map((e) => toEnemySnapshot(e, e.damagedAt(k, flash)));
     return Object.freeze({
       tick: this.tickCount,
       status: this.state,

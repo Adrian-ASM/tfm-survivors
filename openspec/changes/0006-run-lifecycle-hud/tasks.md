@@ -46,7 +46,7 @@
   `WON` y `LOST`. `RunStatus = RunPhase['status']`. Test: las 4 constantes están congeladas y cumplen la invariante,
   más un test de tipos (`expectTypeOf`): `over` ⇒ `outcome` no nulo. Escenario: run-outcome "Invariante entre estado
   y resultado" (modelo).
-- [ ] 1.4 `enemy/Horde.ts`: extraer de `Run.ts` la lista de vivos, `nextEnemyId`, `chase`, `spawn` y
+- [x] 1.4 `enemy/Horde.ts`: extraer de `Run.ts` la lista de vivos, `nextEnemyId`, `chase`, `spawn` y
   `removeDead(onDeath)` (compactación ADR-0006 sin cambios), con `kills`. Tests propios: orden estable, ids nunca
   reutilizados y 1 baja por muerto. Toda la batería actual sigue verde: la refactorización no cambia el
   comportamiento. Escenarios: simulation-loop "Bajas sin reordenar" y "Baja del primero y del último", run-outcome
