@@ -322,9 +322,11 @@ jugador pulse nada.
 #### Scenario: Jugador quieto con el contenido por defecto
 - **GIVEN** el contenido por defecto, semilla 7 e input (0, 0) en todos los ticks
 - **WHEN** se ejecutan 600 ticks (10 s)
-- **THEN** se ha creado ≥ 1 proyectil, se ha disparado ≥ 1 pulso y ≥ 1 enemigo ha quedado dado de baja por armas
+- **THEN** se ha creado ≥ 1 proyectil y ≥ 1 enemigo ha quedado dado de baja por armas
+- **AND** al seguir hasta el tick 1.800 (30 s), se ha disparado ≥ 1 pulso de Tests en algún tick ≤ 1.800
 
 #### Scenario: Comprobación en el navegador
 - **GIVEN** la build de producción servida con `?seed=7` y sin input del jugador
 - **WHEN** pasan 15 s de juego
 - **THEN** una prueba E2E o de snapshot observa ≥ 1 proyectil pintado y ≥ 1 enemigo dado de baja
+- **AND** no se exige ningún pulso en esos 15 s (el pulso se comprueba en el núcleo, en ≤ 1.800 ticks)

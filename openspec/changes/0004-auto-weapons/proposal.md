@@ -99,6 +99,14 @@ la misma semilla e inputs.
    golpea y solo mueren al llegar a 0; los valores de contenido garantizan que ninguna arma mata a un bug de un
    impacto.
 
+7. (Hallazgo de equilibrio en apply, tarea 4.7, decidido por el usuario) Medido en el núcleo con el contenido por
+   defecto y el jugador quieto: primer golpe en el tick 4.100 (seed 42; partida terminada en 4.815), 4.098 (seed 7;
+   terminada en 4.629) y 3.899–4.126 (seeds 1–3); primer pulso en 1.177 (seed 42) y 950 (seed 7). Con seed 7, en
+   600 ticks hay 16 proyectiles, 7 bajas y 0 pulsos: el Linter mata a los bugs antes de que entren en el radio de
+   Tests. No cambian los valores de contenido; se relajan los plazos de las specs: primer golpe ≤ 4.800 ticks en el
+   núcleo y ≤ 80 s en E2E (seguimos en curso tras él); pulso de Tests ≤ 1.800 ticks (30 s) en el núcleo. La E2E de
+   seed 7 (15 s) solo exige proyectiles y bajas, no pulsos.
+
 ## Decisiones abiertas (a confirmar en este gate; valor por defecto propuesto)
 1. **Feedback visual mínimo**: proyectiles como círculos pequeños, pulso como anillo semitransparente durante unos
    pocos ticks (p. ej. 8) y el enemigo muerto simplemente desaparece. Sin flash de impacto, partículas ni contador.
