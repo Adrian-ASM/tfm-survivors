@@ -39,9 +39,11 @@ por tests, listo para que 0004 lo use. Todo sigue siendo determinista con la mis
   correctos, también después de bajas (cómo se asocian los sprites es decisión del architect).
 - **Orden del tick fijado** (jugador → persecución → contacto/daño → director, o el que fije el diseño) y
   rendimiento revalidado con el benchmark.
+- Parpadeo del jugador durante la invulnerabilidad (ampliación aprobada tras verify).
 
 ### Fuera
-- Pantalla de derrota, reinicio y HUD de vida o invulnerabilidad (0006). Temporizador y victoria (0006).
+- Pantalla de derrota, reinicio y HUD de vida o invulnerabilidad (barras, iconos o textos) (0006); el parpadeo
+  del jugador sí entra en 0003. Temporizador y victoria (0006).
 - Armas y cualquier mecanismo de juego que mate enemigos (0004). XP y gemas al morir (0005).
 - Rejilla espacial / *spatial hash* (llegará con los proyectiles de 0004).
 - Separación, empuje o *knockback* entre enemigos o con el jugador.

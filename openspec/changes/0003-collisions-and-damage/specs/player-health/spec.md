@@ -110,6 +110,47 @@ haría daño.
 - **THEN** la vida vale 980 (golpes en los ticks 1 y 32)
 - **AND** en ningún tick la vida baja más de 10
 
+### Requirement: Indicación visual de invulnerabilidad
+La vista SHALL hacer parpadear al jugador mientras el snapshot lo marca invulnerable, alternando su visibilidad
+con un periodo fijo de P ticks del snapshot (P lo fija el design, en contenido o como constante de vista): al
+pintar el snapshot del tick k con el jugador invulnerable, el jugador es visible si y solo si ⌊k / P⌋ es par.
+Cuando el snapshot no lo marca invulnerable, el jugador MUST verse siempre. Con la partida terminada, el jugador
+MUST verse fijo (visible, sin parpadeo), aunque el snapshot lo marque invulnerable. La indicación solo depende del
+snapshot: no cambia la simulación.
+
+#### Scenario: Sin invulnerabilidad el jugador se ve siempre
+- **GIVEN** una vista con periodo de parpadeo 4 y una partida en curso en la que el jugador no recibe golpes
+- **WHEN** se pintan los snapshots de los ticks 1 a 600
+- **THEN** el jugador es visible en los 600
+
+#### Scenario: Parpadeo durante la invulnerabilidad
+- **GIVEN** una vista con periodo de parpadeo 4, invulnerabilidad de 30 ticks y un golpe en el tick 1
+- **WHEN** se pintan los snapshots de los ticks 1 a 30
+- **THEN** el jugador es visible en los ticks 1–3, 8–11, 16–19 y 24–27
+- **AND** está oculto en los ticks 4–7, 12–15, 20–23 y 28–30
+
+#### Scenario: Primer tick de invulnerabilidad
+- **GIVEN** una vista con periodo de parpadeo 4 y un golpe en el tick 12 (⌊12 / 4⌋ = 3, impar)
+- **WHEN** se pinta el snapshot del tick 12
+- **THEN** el jugador está oculto: el parpadeo empieza en el mismo tick del golpe
+
+#### Scenario: Último tick de invulnerabilidad y fin del parpadeo
+- **GIVEN** la partida de "Parpadeo durante la invulnerabilidad", sin más contactos
+- **WHEN** se pintan los snapshots de los ticks 30 y 31
+- **THEN** en el tick 30 (último invulnerable, ⌊30 / 4⌋ = 7) el jugador está oculto
+- **AND** en el tick 31 (ya no invulnerable, ⌊31 / 4⌋ = 7) el jugador es visible
+
+#### Scenario: Partida terminada estando invulnerable
+- **GIVEN** una vista con periodo de parpadeo 4 y una partida que termina en el tick 13 con un snapshot que marca
+  al jugador invulnerable (⌊13 / 4⌋ = 3, impar)
+- **WHEN** se pintan el snapshot del tick 13 y 60 frames más con la partida terminada
+- **THEN** el jugador es visible en todos ellos
+
+#### Scenario: El parpadeo no altera la simulación
+- **GIVEN** dos partidas idénticas con la misma semilla e inputs, una pintada por la vista y otra sin pintar
+- **WHEN** ambas ejecutan 600 ticks con ≥ 1 golpe
+- **THEN** sus snapshots son iguales campo a campo en cada tick
+
 ### Requirement: Vida mínima 0
 El sistema SHALL impedir que la vida del jugador baje de 0: si el daño de un golpe es mayor o igual que la vida
 restante, la vida queda exactamente en 0. Llegar a 0 termina la partida según `run-state`.

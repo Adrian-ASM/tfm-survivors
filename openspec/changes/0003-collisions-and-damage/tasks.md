@@ -186,3 +186,20 @@
         tick absoluto, el mayor daño y la tangencia estricta;
       - el ajuste de bench y long-run por la muerte del jugador;
       - cualquier bloqueo de hook o ESLint.
+
+## 12. Ampliación: parpadeo del jugador invulnerable
+- [ ] 12.1 `src/infrastructure/phaser/playerBlink.ts` con `BLINK_PERIOD_TICKS = 4` y
+      `playerVisible(snapshot, period)` (design, "Render: parpadeo"). Test:
+      `tests/infrastructure/player-blink.test.ts`, con snapshots sintéticos para las fronteras y snapshots reales
+      de `Run` (con `RunSetup`, un enemigo en el centro y su golpe en el tick 1). Cubre PH "Sin invulnerabilidad el
+      jugador se ve siempre", "Parpadeo durante la invulnerabilidad" (visible en 1–3, 8–11, 16–19 y 24–27; oculto
+      en 4–7, 12–15, 20–23 y 28–30), "Primer tick de invulnerabilidad" (golpe en el tick 12 → oculto), "Último tick
+      de invulnerabilidad y fin del parpadeo" (30 oculto, 31 visible) y "Partida terminada estando invulnerable"
+      (el tick 13 y 60 llamadas más, siempre visible).
+- [ ] 12.2 `GameScene.render` aplica `this.player?.setVisible(playerVisible(snapshot))` sin crear objetos por
+      frame. Test en `tests/domain/determinism.test.ts`: dos partidas con la misma semilla e inputs, a una de las
+      cuales se le pasa cada snapshot por `playerVisible`, tienen snapshots iguales en 600 ticks con ≥ 1 golpe.
+      Cubre PH "El parpadeo no altera la simulación". Comprobación a mano en `npm run dev` de que el jugador
+      parpadea al recibir un golpe y deja de hacerlo al acabar la invulnerabilidad. No hay E2E nuevo: un periodo de
+      4 ticks no es observable de forma fiable en tiempo real, el probe ya expone `invulnerable` y el E2E existente
+      de daño debe seguir en verde.

@@ -265,6 +265,33 @@ interface EnemySnapshot { id; type; x; y; radius; readonly health: number }   //
 - `GameScene` no cambia: no hay HUD ni pantalla de derrota (0006). La partida "se congela" porque el núcleo deja
   de avanzar. El probe E2E expone ya `status` y `health` a través del snapshot.
 
+## Render: parpadeo del jugador invulnerable (ampliación aprobada)
+- **Dónde vive la regla**: en una función pura de vista,
+  `src/infrastructure/phaser/playerBlink.ts`:
+  ```ts
+  export const BLINK_PERIOD_TICKS = 4;
+  /** Spec player-health "Indicación visual de invulnerabilidad". */
+  export function playerVisible(s: Pick<RunSnapshot, 'tick' | 'status' | 'player'>,
+                                period = BLINK_PERIOD_TICKS): boolean {
+    if (s.status === 'over' || !s.player.invulnerable) return true;
+    return Math.floor(s.tick / period) % 2 === 0;
+  }
+  ```
+  Es infraestructura y no dominio porque es presentación: no cambia el estado ni el determinismo, y solo depende
+  del snapshot. No importa Phaser, así que se prueba en Node, como `enemyPalette`.
+- **Aplicación**: en `GameScene.render`, `this.player?.setVisible(playerVisible(snapshot))` sobre el `Arc` que ya
+  existe. No crea objetos por frame y `setVisible` con el mismo valor es barato.
+- **P = 4 ticks, como constante de vista y no como contenido**: con 4 ticks visible y 4 oculto, el parpadeo va a
+  7,5 Hz, un ritmo habitual y legible que encaja 3,75 ciclos en los 30 ticks de invulnerabilidad. Va como
+  constante con nombre, igual que `PLAYER_COLOR`, porque es apariencia y no una regla de juego:
+  - `RunConfig` y zod validan contenido que llega al dominio, y la vista no forma parte de él (AGENTS.md §3.5
+    habla de armas, enemigos, mejoras y oleadas).
+  - Llevarla a contenido obligaría a pasar un parámetro de vista por `RunConfig` o a crear otro fichero y su
+    loader para un solo número.
+  - Si en 0006 el HUD crece con más parámetros visuales, se valorará un `content/view.json` propio.
+- **Base de tiempo**: `snapshot.tick`, no el frame. Así el parpadeo es determinista y se puede probar, y con la
+  partida congelada no avanza (además, con `over` siempre es visible).
+
 ## Rendimiento y GC (ADR-0003)
 | Medida | Presupuesto | Estimación | Dónde |
 |---|---|---|---|
