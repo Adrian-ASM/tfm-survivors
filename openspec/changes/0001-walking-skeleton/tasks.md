@@ -53,7 +53,7 @@
       la invariante en el dominio como defensa — escenario: "Radio que no cabe en la arena"
 - [x] 5.2 (W2) Cerrar evasiones de pureza/capas en ESLint (`ImportExpression`, accesos vía `globalThis`/`self`) y en
       el hook (`import(…)`, `import '…'` de efecto, desestructuración de `Math`) — tests en `tests/guardrails/`
-- [ ] 5.3 (W1) `guard-staged.mjs` en proceso: los hooks exportan `check({ file_path, content })` (manteniendo el
+- [x] 5.3 (W1) `guard-staged.mjs` en proceso: los hooks exportan `check({ file_path, content })` (manteniendo el
       wrapper stdin para Claude Code) y el índice se lee con una sola llamada (`git cat-file --batch`) — escenario:
       "Commit limpio" con margen amplio
 - [ ] 5.4 (W7) Test que ejecuta `git commit` de verdad en el repo temporal con `.husky/pre-commit` y comprueba que

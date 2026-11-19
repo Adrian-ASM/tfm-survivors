@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Guardarraíl de seguridad: evita que la IA cree ficheros de secretos o pegue credenciales en el repo.
-import { readHookInput, relativePath, newContent, block } from './lib.mjs';
+import { relativePath, newContent, runAsHook } from './lib.mjs';
 
 const SECRET_PATTERNS = [
   { re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/, msg: 'Clave privada PEM' },
@@ -11,20 +11,27 @@ const SECRET_PATTERNS = [
   { re: /\bsk-[A-Za-z0-9_-]{20,}/, msg: 'API key de un proveedor de IA' },
 ];
 
-const input = await readHookInput();
-const path = relativePath(input.tool_input?.file_path);
-const fileName = path.split('/').pop() ?? '';
+/** Ficheros de secretos y credenciales pegadas. Devuelve las líneas del bloqueo o [] si cumple. */
+export function check(toolInput = {}, projectDir = undefined) {
+  const path = relativePath(toolInput.file_path, projectDir);
+  const fileName = path.split('/').pop() ?? '';
 
-if (/^\.env(\..+)?$/.test(fileName) && fileName !== '.env.example') {
-  block([`Guardarraíl de seguridad: no se permite escribir ${path}.`, 'Usa .env.example con valores de ejemplo.']);
+  if (/^\.env(\..+)?$/.test(fileName) && fileName !== '.env.example') {
+    return [
+      `Guardarraíl de seguridad: no se permite escribir ${path}.`,
+      'Usa .env.example con valores de ejemplo.',
+    ];
+  }
+
+  // Los propios hooks contienen los patrones como texto; no se auto-bloquean.
+  if (path.startsWith('.claude/hooks/')) return [];
+
+  const text = newContent(toolInput);
+  const found = SECRET_PATTERNS.filter(
+    ({ re, onlyIn }) => (!onlyIn || path.startsWith(onlyIn)) && re.test(text),
+  ).map(({ msg }) => `- ${msg}`);
+  if (found.length === 0) return [];
+  return [`Guardarraíl de seguridad: posible secreto en ${path}`, ...found, 'Ver AGENTS.md §6.'];
 }
 
-// Los propios hooks contienen los patrones como texto; no se auto-bloquean.
-if (path.startsWith('.claude/hooks/')) process.exit(0);
-
-const text = newContent(input.tool_input);
-const found = SECRET_PATTERNS.filter(({ re, onlyIn }) => (!onlyIn || path.startsWith(onlyIn)) && re.test(text))
-  .map(({ msg }) => `- ${msg}`);
-if (found.length > 0) {
-  block([`Guardarraíl de seguridad: posible secreto en ${path}`, ...found, 'Ver AGENTS.md §6.']);
-}
+await runAsHook(import.meta.url, check);

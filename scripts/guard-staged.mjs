@@ -1,71 +1,71 @@
 #!/usr/bin/env node
 // Guardarraíl 1/3 fuera de Claude Code: aplica las MISMAS reglas de .claude/hooks/ a cualquier autor
-// (persona, Claude desde la app, otros agentes). No duplica reglas: lanza cada hook con el mismo JSON que
-// envía Claude Code ({ tool_input: { file_path, content } }) y recoge el código 2 (bloqueo).
+// (persona, Claude desde la app, otros agentes). No duplica reglas: importa el `check()` que exporta cada hook
+// (el mismo que usa Claude Code vía stdin) y lo ejecuta en proceso sobre cada fichero.
 //
 //   node scripts/guard-staged.mjs         → contenido PREPARADO de los ficheros del commit (pre-commit)
 //   node scripts/guard-staged.mjs --all   → todos los ficheros versionados (CI)
-import { execFileSync, spawn } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { cpus } from 'node:os';
 import { join } from 'node:path';
+import { check as checkArchitecture } from '../.claude/hooks/guard-architecture.mjs';
+import { check as checkSecrets } from '../.claude/hooks/guard-secrets.mjs';
+
+const CHECKS = [checkSecrets, checkArchitecture];
+const BINARY = /\.(png|jpe?g|gif|webp|ico|bmp|mp3|ogg|wav|woff2?|ttf|otf|zip|gz|pdf)$/i;
+const MAX_BUFFER = 256 * 1024 * 1024;
 
 const all = process.argv.includes('--all');
 const root = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
-const HOOKS = ['guard-secrets.mjs', 'guard-architecture.mjs'].map((h) =>
-  join(root, '.claude', 'hooks', h),
-);
-const BINARY = /\.(png|jpe?g|gif|webp|ico|bmp|mp3|ogg|wav|woff2?|ttf|otf|zip|gz|pdf)$/i;
-const CODE = /\.(ts|tsx|mts|js|mjs)$/;
 
-const git = (args) =>
-  execFileSync('git', args, { cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+const git = (args, input) => execFileSync('git', args, { cwd: root, input, maxBuffer: MAX_BUFFER });
 
 const listed = all
   ? git(['ls-files', '-z'])
   : git(['diff', '--cached', '--name-only', '--diff-filter=ACMR', '-z']);
-const files = listed.split('\0').filter((f) => f && !BINARY.test(f));
+const files = listed
+  .toString('utf8')
+  .split('\0')
+  .filter((f) => f && !BINARY.test(f));
 
-/** Contenido que entraría en el commit (índice) o, en --all, el versionado en disco. */
-const contentOf = (path) =>
-  all ? readFileSync(join(root, path), 'utf8') : git(['show', `:${path}`]);
-
-function runHook(hook, payload) {
-  return new Promise((resolve) => {
-    const child = spawn(process.execPath, [hook], {
-      cwd: root,
-      env: { ...process.env, CLAUDE_PROJECT_DIR: root },
-      stdio: ['pipe', 'ignore', 'pipe'],
-    });
-    let stderr = '';
-    child.stderr.on('data', (d) => (stderr += d));
-    child.on('close', (code) => resolve({ code, stderr }));
-    child.stdin.end(JSON.stringify(payload));
-  });
+/**
+ * Contenido preparado (índice) de todos los ficheros con UNA sola llamada a git.
+ * Formato de `git cat-file --batch`: "<sha> <tipo> <bytes>\n<contenido>\n" o "<objeto> missing\n".
+ */
+function readIndex(paths) {
+  const out = git(['cat-file', '--batch'], paths.map((p) => `:${p}\n`).join(''));
+  const contents = new Map();
+  let pos = 0;
+  for (const path of paths) {
+    const eol = out.indexOf(0x0a, pos);
+    const header = out.toString('utf8', pos, eol);
+    pos = eol + 1;
+    if (header.endsWith(' missing')) continue;
+    const size = Number(header.split(' ')[2]);
+    contents.set(path, out.toString('utf8', pos, pos + size));
+    pos += size + 1;
+  }
+  return contents;
 }
 
-// El hook de arquitectura solo actúa sobre código; el de secretos, sobre todo.
-const jobs = files.flatMap((path) => {
-  const hooks = CODE.test(path) ? HOOKS : [HOOKS[0]];
-  return hooks.map((hook) => ({ path, hook }));
-});
+/** En --all (CI), el contenido versionado en disco. */
+function readDisk(paths) {
+  return new Map(paths.map((p) => [p, readFileSync(join(root, p), 'utf8')]));
+}
 
-const contents = new Map();
+const contents = all ? readDisk(files) : readIndex(files);
 const failures = [];
-const queue = [...jobs];
-const workers = Array.from({ length: Math.max(2, cpus().length) }, async () => {
-  for (let job = queue.shift(); job; job = queue.shift()) {
-    if (!contents.has(job.path)) contents.set(job.path, contentOf(job.path));
-    const payload = {
-      tool_input: { file_path: join(root, job.path), content: contents.get(job.path) },
-    };
-    const { code, stderr } = await runHook(job.hook, payload);
-    if (code === 2) failures.push(stderr.trim());
-    else if (code !== 0)
-      failures.push(`Error inesperado (${code}) en ${job.hook} con ${job.path}\n${stderr}`);
+for (const path of files) {
+  const content = contents.get(path);
+  if (content === undefined) {
+    failures.push(`No se pudo leer ${path} del índice de git.`);
+    continue;
   }
-});
-await Promise.all(workers);
+  for (const check of CHECKS) {
+    const lines = check({ file_path: path, content }, root);
+    if (lines.length > 0) failures.push(lines.join('\n'));
+  }
+}
 
 if (failures.length > 0) {
   console.error(failures.join('\n\n'));

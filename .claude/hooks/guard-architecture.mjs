@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Guardarraíl 1/3 (tiempo de agente): impide que la IA rompa la regla de dependencias
 // o el determinismo del núcleo ANTES de escribir el fichero. ESLint (IDE/pre-commit) y CI son las capas 2 y 3.
-import { readHookInput, relativePath, newContent, block } from './lib.mjs';
+import { relativePath, newContent, runAsHook } from './lib.mjs';
 
 const ENGINE = String.raw`(phaser|kaplay)(\/[^'"]*)?`;
 // Origen de un import: estático (from '…'), de efecto (import '…') o dinámico (import('…')).
@@ -55,30 +55,32 @@ const IMPURE = [
   { re: /\bimport\s*\(/, msg: 'import() dinámico prohibido en el núcleo: usa imports estáticos.' },
 ];
 
-const input = await readHookInput();
-const path = relativePath(input.tool_input?.file_path);
-if (!/\.(ts|tsx|mts|js|mjs)$/.test(path)) process.exit(0);
+/** Reglas de capas y pureza sobre lo que se va a escribir. Devuelve las líneas del bloqueo o [] si cumple. */
+export function check(toolInput = {}, projectDir = undefined) {
+  const path = relativePath(toolInput.file_path, projectDir);
+  if (!/\.(ts|tsx|mts|js|mjs)$/.test(path)) return [];
 
-// startsWith para rutas relativas al proyecto; includes como red de seguridad (rutas absolutas, worktrees).
-const layer = Object.keys(RULES).find(
-  (prefix) => path.startsWith(prefix) || path.includes(`/${prefix}`),
-);
-if (!layer) process.exit(0);
+  // startsWith para rutas relativas al proyecto; includes como red de seguridad (rutas absolutas, worktrees).
+  const layer = Object.keys(RULES).find(
+    (prefix) => path.startsWith(prefix) || path.includes(`/${prefix}`),
+  );
+  if (!layer) return [];
 
-// Ignora comentarios para no bloquear documentación del propio código.
-const code = newContent(input.tool_input)
-  .replace(/\/\*[\s\S]*?\*\//g, '')
-  .replace(/(^|[^:])\/\/.*$/gm, '$1');
+  // Ignora comentarios para no bloquear documentación del propio código.
+  const code = newContent(toolInput)
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1');
 
-const violations = [...RULES[layer], ...IMPURE]
-  .filter(({ re }) => re.test(code))
-  .map(({ msg }) => `- ${msg}`);
-
-if (violations.length > 0) {
-  block([
+  const violations = [...RULES[layer], ...IMPURE]
+    .filter(({ re }) => re.test(code))
+    .map(({ msg }) => `- ${msg}`);
+  if (violations.length === 0) return [];
+  return [
     `Guardarraíl de arquitectura: escritura bloqueada en ${path}`,
     ...violations,
     'Reglas completas: AGENTS.md §3. Corrige el diseño (puerto + adaptador) en lugar de saltarte la regla.',
     'Anota este incidente en docs/ai-log/ (evidencia para el TFM).',
-  ]);
+  ];
 }
+
+await runAsHook(import.meta.url, check);

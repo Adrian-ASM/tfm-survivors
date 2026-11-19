@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 // Hooks de .claude/hooks/ en modo Claude Code: JSON por stdin, código 2 = escritura bloqueada.
@@ -55,5 +56,39 @@ describe('guard-architecture · evasiones (verify-report W2)', () => {
   it('no bloquea import() ni globalThis en infraestructura', () => {
     const code = "export const f = () => import('phaser');\nexport const g = globalThis.window;\n";
     expect(architecture('src/infrastructure/x.ts', code).code).toBe(0);
+  });
+});
+
+// Uso en proceso desde scripts/guard-staged.mjs (verify-report W1): misma regla, sin lanzar un `node` por fichero.
+type Check = (toolInput: { file_path: string; content: string }) => string[];
+
+async function checkOf(name: string): Promise<Check> {
+  const url = pathToFileURL(join(root, '.claude', 'hooks', name)).href;
+  const mod = (await import(url)) as { check: Check };
+  return mod.check;
+}
+
+describe('hooks · check() reutilizable en proceso', () => {
+  it('guard-architecture devuelve las líneas del bloqueo y [] si el fichero cumple', async () => {
+    const check = await checkOf('guard-architecture.mjs');
+    const blocked = check({
+      file_path: 'src/domain/x.ts',
+      content: 'export const r = Math.random();',
+    });
+    expect(blocked.join('\n')).toContain('src/domain/x.ts');
+    expect(blocked.join('\n')).toContain('RandomGenerator');
+    expect(check({ file_path: 'src/domain/x.ts', content: 'export const r = 4;' })).toEqual([]);
+  });
+
+  it('guard-secrets devuelve las líneas del bloqueo y [] si el fichero cumple', async () => {
+    const check = await checkOf('guard-secrets.mjs');
+    expect(check({ file_path: '.env.local', content: 'A=1' }).join('\n')).toContain('.env.example');
+    expect(check({ file_path: 'README.md', content: 'hola' })).toEqual([]);
+  });
+
+  it('importar el hook no lee stdin ni termina el proceso', async () => {
+    await checkOf('guard-architecture.mjs');
+    await checkOf('guard-secrets.mjs');
+    expect(process.exitCode ?? 0).toBe(0);
   });
 });

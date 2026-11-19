@@ -76,6 +76,18 @@ describe('guard-staged · pre-commit', () => {
     expect(out).toContain('50 fichero(s)');
     expect(elapsed).toBeLessThan(2000);
   });
+
+  it('lee el índice en lote sin desalinear contenidos (multibyte, espacios, sin salto final)', () => {
+    stage('src/domain/ñandú con espacio.ts', 'export const s = "€ — ñ";');
+    stage('docs/notas.md', `# Diseño\n\n${'ñ€'.repeat(40)}\n`); // 200 bytes, 81 caracteres
+    stage('src/domain/z.ts', 'export const r = Math.random();\n');
+    const { code, out } = guard();
+    expect(code).not.toBe(0);
+    expect(out).toContain('src/domain/z.ts');
+    expect(out).not.toContain('ñandú');
+    expect(out).toContain('RandomGenerator');
+    expect(out).not.toContain('No se pudo leer');
+  });
 });
 
 describe('guard-staged --all · CI', () => {
