@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { EnemySnapshot } from '../../src/domain/run/RunSnapshot';
-import { EnemyLayer, type CircleSprite } from '../../src/infrastructure/phaser/EnemyLayer';
+import {
+  EnemyLayer,
+  FLASH_COLOR,
+  type CircleSprite,
+} from '../../src/infrastructure/phaser/EnemyLayer';
 import { DEFAULT_ENEMY_COLOR, enemyPalette } from '../../src/infrastructure/phaser/enemyPalette';
 
 /** Doble de un círculo del motor: registra su estado y cuántas veces se recolorea o redimensiona. */
@@ -11,6 +15,7 @@ class FakeCircle implements CircleSprite {
   color = 0;
   visible = true;
   restyles = 0;
+  fills = 0;
 
   setPosition(x: number, y: number): this {
     this.x = x;
@@ -24,6 +29,7 @@ class FakeCircle implements CircleSprite {
   }
   setFillStyle(color: number): this {
     this.color = color;
+    this.fills += 1;
     return this;
   }
   setVisible(visible: boolean): this {
@@ -171,6 +177,34 @@ describe('EnemyLayer · bajas (hueco asociado al id)', () => {
     const leak = created.find((c) => c.radius === 22);
     l.sync([enemy(1, 'memory-leak', 5, 5, 22)]);
     expect(leak && [leak.x, leak.restyles]).toEqual([5, 1]);
+  });
+});
+
+describe('EnemyLayer · destello de daño', () => {
+  const hurt = (e: EnemySnapshot): EnemySnapshot => ({ ...e, damaged: true });
+
+  it('Scenario: Indicación visual de daño (destello mientras el enemigo lo indica)', () => {
+    const { l, created } = layer(2);
+    l.sync([hurt(enemy(0, 'bug', 1, 1)), enemy(1, 'bug', 2, 2)]);
+    expect(created.slice(0, 2).map((c) => c.color)).toEqual([FLASH_COLOR, enemyPalette('bug')]);
+    l.sync([enemy(0, 'bug', 1, 1), enemy(1, 'bug', 2, 2)]);
+    expect(created[0]?.color).toBe(enemyPalette('bug'));
+  });
+
+  it('repinta solo cuando cambia el tipo o la indicación de daño', () => {
+    const { l, created } = layer(1);
+    l.sync([hurt(enemy(0, 'bug', 1, 1))]);
+    l.sync([hurt(enemy(0, 'bug', 2, 2))]);
+    l.sync([hurt(enemy(0, 'bug', 3, 3))]);
+    expect(created[0]?.fills).toBe(1);
+    l.sync([enemy(0, 'bug', 4, 4)]);
+    l.sync([enemy(0, 'bug', 5, 5)]);
+    expect(created[0]?.fills).toBe(2);
+  });
+
+  it('el destello es un color distinto de los de la paleta', () => {
+    const colors = ['bug', 'memory-leak', 'merge-conflict', 'x'].map(enemyPalette);
+    expect(colors).not.toContain(FLASH_COLOR);
   });
 });
 
