@@ -21,21 +21,21 @@
       `seededRandom` de `builders.ts` y migrar `tests/application/loop.test.ts` — SL "Determinismo" (base)
 
 ## 1. Dominio: value objects y reglas de contenido
-- [ ] 1.1 `Vector2.distanceTo` y `Arena.clampX/clampY`, con `clampCircle` reescrito sobre ellos (test de
+- [x] 1.1 `Vector2.distanceTo` y `Arena.clampX/clampY`, con `clampCircle` reescrito sobre ellos (test de
       equivalencia con los casos existentes de 0001) — `tests/domain/shared.test.ts`, `tests/domain/arena.test.ts` —
       EB "Enemigos dentro de la arena" (regla)
-- [ ] 1.2 `src/domain/arena/View.ts` (`width`, `height` > 0 y finitos; `halfDiagonal`) — `tests/domain/view.test.ts`
+- [x] 1.2 `src/domain/arena/View.ts` (`width`, `height` > 0 y finitos; `halfDiagonal`) — `tests/domain/view.test.ts`
       — ES "Contenido... validado" (vista > 0); √(960² + 540²)/2 ≈ 550,727
-- [ ] 1.3 `src/domain/enemy/EnemyType.ts` + `EnemyCatalog.create(types, arena)`: `speed`, `radius`, `cost` > 0,
+- [x] 1.3 `src/domain/enemy/EnemyType.ts` + `EnemyCatalog.create(types, arena)`: `speed`, `radius`, `cost` > 0,
       `Arena.fits`, `id` únicos; mensajes como constantes exportadas; campo = ruta (`enemies.types.N.<campo>`) —
       `tests/domain/enemy-catalog.test.ts` — ES "Velocidad cero", "Radio que no cabe en la arena",
       "Radio en el límite exacto", "Identificador duplicado" (nivel dominio)
-- [ ] 1.4 `src/domain/wave/WaveTable.ts`: ≥ 1 tramo, primer `fromSecond` = 0, estrictamente crecientes,
+- [x] 1.4 `src/domain/wave/WaveTable.ts`: ≥ 1 tramo, primer `fromSecond` = 0, estrictamente crecientes,
       `budgetPerSecond` ≥ 0, ≥ 1 tipo y todos en el catálogo (mensaje con el id); `indexAt(tick)` = último tramo con
       `fromSecond ≤ tick / 60` — `tests/domain/wave-table.test.ts` — ES "Oleada con un tipo inexistente",
       "Primer tramo que no empieza en 0", "Tramos desordenados o repetidos" (nivel dominio), "Oleadas por tramos"
       (selección del tramo activo)
-- [ ] 1.5 `src/domain/wave/SpawnRules.ts` (`maxAlive` y `maxAttempts` enteros ≥ 1, `margin` y `minDistance` ≥ 0,
+- [x] 1.5 `src/domain/wave/SpawnRules.ts` (`maxAlive` y `maxAttempts` enteros ≥ 1, `margin` y `minDistance` ≥ 0,
       `ringRadius` calculado) y `src/domain/run/RunConfig.ts` (interfaz movida desde `Run.ts`, re-exportada) con
       `buildRunRules(config)` que compone 1.2–1.5 — `tests/domain/run-config.test.ts` — ES "Tope de vivos no entero"
       (nivel dominio), radio del anillo ≈ 582,727 (ES "Posición de aparición fuera de la vista")

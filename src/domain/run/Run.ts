@@ -2,20 +2,16 @@ import { Arena } from '../arena/Arena';
 import { Player } from '../player/Player';
 import type { PlayerInput } from '../player/PlayerInput';
 import { err, invalidConfig, ok, type DomainError, type Result } from '../shared/Result';
+import { TICK_SECONDS } from '../shared/Tick';
+import { RADIUS_MUST_FIT, SPEED_MUST_BE_POSITIVE, type RunConfig as FullConfig } from './RunConfig';
 import type { RunSnapshot } from './RunSnapshot';
 
-/** Duración de un tick de simulación (spec simulation-loop: paso fijo de 1/60 s). */
-export const TICK_SECONDS = 1 / 60;
+export { TICK_SECONDS, RADIUS_MUST_FIT, SPEED_MUST_BE_POSITIVE };
 
-/** Mensajes de las invariantes de la configuración; la validación de contenido (zod) usa los mismos. */
-export const SPEED_MUST_BE_POSITIVE = 'La velocidad del jugador debe ser positiva.';
-export const RADIUS_MUST_FIT = 'El radio del jugador no cabe en la arena.';
-
-/** Configuración de partida ya validada en forma (zod, infraestructura); aquí se validan invariantes. */
-export interface RunConfig {
+/** Transitorio (tarea 3.1 lo sustituye por la configuración completa): Run.start solo usa esto. */
+export type RunConfig = Pick<FullConfig, 'player'> & {
   readonly arena: { readonly width: number; readonly height: number };
-  readonly player: { readonly speed: number; readonly radius: number };
-}
+};
 
 /** Partida en curso (aggregate root). Único punto de entrada para cambiar el estado de la simulación. */
 export class Run {

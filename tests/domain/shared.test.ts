@@ -14,6 +14,14 @@ describe('Vector2', () => {
     expect(Vector2.of(3, 4).length()).toBe(5);
   });
 
+  it('calcula la distancia a otro punto, simétrica y 0 consigo mismo', () => {
+    const a = Vector2.of(1, 2);
+    const b = Vector2.of(4, 6);
+    expect(a.distanceTo(b)).toBe(5);
+    expect(b.distanceTo(a)).toBe(5);
+    expect(a.distanceTo(a)).toBe(0);
+  });
+
   it('es inmutable', () => {
     const v = Vector2.of(1, 2);
     expect(() => {

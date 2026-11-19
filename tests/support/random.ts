@@ -1,8 +1,9 @@
 import type { RandomGenerator } from '../../src/domain/shared/RandomGenerator';
 
 const checked = (v: number): number => {
-  if (!(v >= 0 && v < 1))
+  if (!(v >= 0 && v < 1)) {
     throw new RangeError(`StubRandom requiere un valor en [0, 1) (${String(v)})`);
+  }
   return v;
 };
 
