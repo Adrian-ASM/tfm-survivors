@@ -45,8 +45,9 @@ Máquina: Ryzen 7 9800X3D, Node 26.13.1.
 | `Run.tick`, 200 `bug` encima del jugador | 0,0079 ms | 0,0105 ms |
 | `Run.snapshot()`, 200 vivos | 0,0037 ms | 0,0040 ms |
 
-- El contacto por fuerza bruta cuesta unos 0,001 ms por tick con 200 enemigos. El margen sigue siendo de unas
-  250 veces respecto a los 2 ms, así que no hace falta rejilla espacial ni *struct of arrays* en este change.
+- El bench mide el tick completo, no el contacto aislado. Con el contacto por fuerza bruta activo, la media del
+  tick con 200 vivos pasa de 0,0069 ms (0002) a 0,0081 ms, y el margen sigue siendo de unas 250 veces respecto a
+  los 2 ms. No hace falta rejilla espacial ni *struct of arrays* en este change.
 
 ## Consecuencias
 - Margen de unas 290 veces respecto al umbral de 2 ms por tick: el diseño actual basta para el tope de vivos.

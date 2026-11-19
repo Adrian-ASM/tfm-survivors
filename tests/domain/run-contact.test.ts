@@ -20,6 +20,24 @@ describe('Contacto jugador-enemigo', () => {
     expect(health(snaps)).toEqual([100, 90]);
   });
 
+  describe('Sin contacto no hay daño · el jugador puede esquivar', () => {
+    // Enemigo lento (60 u/s) a 50 unidades por la derecha; el jugador (200 u/s) huye a la izquierda.
+    const chased = () =>
+      startRun(aContactConfig(), { enemies: [{ type: 'probe', x: 530, y: 270 }] });
+
+    it('huyendo más rápido que el enemigo durante 120 ticks: vida intacta y sin invulnerabilidad', () => {
+      const snaps = ticks(chased(), 120, PlayerInput.of(-1, 0));
+      expect(snaps.every((s) => s.player.health === 100 && !s.player.invulnerable)).toBe(true);
+      const last = snaps.at(-1);
+      expect((last?.enemies[0]?.x ?? 0) - (last?.player.x ?? 0)).toBeGreaterThan(50);
+    });
+
+    it('control: quieto, el mismo enemigo le alcanza y le golpea', () => {
+      const last = ticks(chased(), 120).at(-1);
+      expect(last?.player.health).toBeLessThan(100);
+    });
+  });
+
   it('Sin contacto no hay daño (600 ticks sin enemigos)', () => {
     const run = startRun(aContactConfig());
     const snaps = ticks(run, 600);
