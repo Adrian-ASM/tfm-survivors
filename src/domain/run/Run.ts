@@ -80,8 +80,9 @@ function initialEnemies(
 
 /**
  * Partida en curso (aggregate root). Único punto de entrada para cambiar el estado de la
- * simulación. Contrato de determinismo: el orden del tick (jugador → persecución → contacto →
- * director) y el consumo de azar son fijos; cambiarlos cambia las partidas de una semilla.
+ * simulación. Contrato de determinismo: el orden del tick (jugador → persecución → armas, con un
+ * único removeDead() si hay bajas → contacto con los vivos → director) y el consumo de azar son
+ * fijos (las armas no consumen azar); cambiarlos cambia las partidas de una semilla.
  */
 export class Run {
   private tickCount = 0;

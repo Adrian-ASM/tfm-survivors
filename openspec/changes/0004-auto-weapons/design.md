@@ -297,6 +297,17 @@ specs quedan resueltas las discrepancias de la primera versión:
 
 Sin discrepancias abiertas.
 
+## Desviaciones del apply
+- **Equilibrio (4.7)**: medido en el núcleo, primer golpe con semilla 42 en el tick 4100 y primer pulso con
+  semilla 7 en el 950. La spec se ajustó en el gate (≤ 4.800 ticks / 80 s; pulso ≤ 1.800 ticks; contactos
+  reproducibles en 4.800 ticks); el contenido no cambia. Datos en `docs/ai-log/2026-11-19-0004-apply.md`.
+- **Bench**: los tipos del contenido usan `BENCH_HEALTH` en todos los casos (no solo como alternativa), porque
+  con armas no se llega a 200 vivos. Peor caso: 0,124 ms de media (estimado 0,02–0,05 ms), margen de 16 veces.
+- `Weapon.readyIn` no existe (equivale a `isChargedAt`); `Projectile.launch` es posicional para no asignar.
+- `WEAPONS_REQUIRED` y `WEAPON_ID_REQUIRED` son mensajes de `schemas.ts`, no del dominio.
+- `SceneCapacity` lleva además `visualTicks` por arma de pulso, para que `PulseLayer` calcule `pulseAlpha`.
+- Las tareas 6.5 y 7.1 van en un solo commit: el cambio de firma de `GameScene` no compila sin `main.ts`.
+
 ## ADRs
 - **ADR-0007 (nueva)**: `docs/adr/0007-modelo-generico-de-armas.md`, el modelo de arma con uniones discriminadas
   en contenido.

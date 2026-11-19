@@ -118,6 +118,6 @@
   lentos con vida 1e9 en el perímetro, `BENCH_HEALTH`, proyectil de bench con `cooldownTicks` 1 y alcance mayor que
   la diagonal, pulso de bench que cubre la arena; comprobar 32 proyectiles vivos y partida en curso) — SL "Tope de
   vivos alcanzado", "200 enemigos encima del jugador", "Peor caso con proyectiles".
-- [ ] 8.4 Documentación: JSDoc de `Run` (orden del tick) y de `contact.ts` (rejilla aplazada); anotar en
+- [x] 8.4 Documentación: JSDoc de `Run` (orden del tick) y de `contact.ts` (rejilla aplazada); anotar en
   `verify-report`/diario los datos del bench y de 4.7; cualquier desviación del apply en `design.md`
   (lección S1/S2 de 0003). La sección "Aplicación (0004)" de ADR-0003/0006 se añade al archivar.
