@@ -9,14 +9,14 @@ en el `pre-commit` y en CI, además de ESLint con reglas de capas.
 ## Piezas por capa
 | Capa | Pieza | Nueva/Mod. | Notas |
 |---|---|---|---|
-| domain | `shared/Vector2` (VO) | Nueva | Inmutable: `add`, `scale`, `length`, `normalizedIfLong`. Base de `Position` y `PlayerInput` |
+| domain | `shared/Vector2` (VO) | Nueva | Inmutable: `add`, `scale`, `length` (la normalización vive en `PlayerInput.of`). Base de `Position` y `PlayerInput` |
 | domain | `arena/Arena` (VO) | Nueva | Ancho y alto; `clampCircle(center, radius)`. Invariante: ancho, alto > 0 |
 | domain | `player/Player` (entidad) | Nueva | Posición, radio y velocidad; `move(input, dt, arena)` devuelve un `Player` nuevo |
 | domain | `player/PlayerInput` (VO) | Nueva | Componentes limitadas a [-1, 1] y normalizadas si el módulo > 1 |
 | domain | `run/Run` (aggregate root) | Nueva | Tick actual + jugador + arena; `tick(input)` avanza un paso; `snapshot()` devuelve copia congelada |
 | domain | `run/RunSnapshot` (DTO) | Nueva | `{ tick, player: { x, y, radius } }`, `readonly` y `Object.freeze` |
 | domain | `shared/Result` | Nueva | `Ok | Err` para fallos esperables (AGENTS.md §4) |
-| application | `FixedStepLoop` | Nueva | Acumulador puro: `advance(elapsedMs, input) → ticks ejecutados`. Tope 250 ms (15 ticks) |
+| application | `FixedStepLoop` | Nueva | Acumulador puro: `advance(elapsedMs, step) → ticks ejecutados` (`step` es un callback por tick). Tope 250 ms (15 ticks) |
 | application | `StartRun` (caso de uso) | Nueva | Crea un `Run` a partir de `RunConfig` ya validado |
 | application | `TickRun` (caso de uso) | Nueva | Orquesta `FixedStepLoop` + `Run`; devuelve el `RunSnapshot` del frame |
 | infrastructure | `content/loadRunConfig` | Nueva | Lee `content/player.json` y `content/arena.json` y los valida con zod → `Result<RunConfig>` |
@@ -51,10 +51,12 @@ sequenceDiagram
 ```
 
 ## Guardarraíles reutilizados (architecture-guardrails)
-`guard-staged.mjs` no duplica reglas: por cada fichero lanza `node .claude/hooks/guard-*.mjs` con el mismo JSON que
-envía Claude Code (`{ "tool_input": { "file_path", "content" } }`) y recoge el código 2. Así hay **una sola fuente
-de reglas** para las tres capas (Claude Code, pre-commit, CI). Ejecución en paralelo con `Promise.all` para cumplir
-< 2 s con 50 ficheros. `--no-verify` queda prohibido en AGENTS.md y lo cubre el CI.
+`guard-staged.mjs` no duplica reglas: los hooks de `.claude/hooks/` exportan `check(toolInput) → string[]` y
+`guard-staged.mjs` los importa y ejecuta **en un solo proceso**; el modo stdin (`runAsHook`) se mantiene para
+Claude Code. El índice se lee con una única llamada `git cat-file --batch`. Así hay **una sola fuente de reglas**
+para las tres capas (Claude Code, pre-commit, CI) y "Commit limpio" tarda ~150 ms con 50 ficheros (ronda 2;
+la primera versión, un `node` por fichero y hook, rozaba los 2 s). `--no-verify` queda prohibido en AGENTS.md y
+lo cubre el CI.
 
 ## Dependencias nuevas
 | Paquete | Versión exacta | Motivo | Alternativa descartada |
@@ -91,9 +93,9 @@ Todas con versión exacta (sin `^`), y `package-lock.json` versionado.
 - **Sin `eslint-plugin-boundaries`**: con imports TypeScript sin extensión necesitaba además
   `eslint-import-resolver-typescript` (una dependencia más). `no-restricted-imports` con patrones `**/<capa>/**`
   cubre las rutas relativas; lo prueban los tests de `tests/guardrails/eslint.test.ts`.
-- **Validación repartida**: zod comprueba la forma del contenido (tipos, positivos, campos desconocidos) y
-  `Run.start` las invariantes (radio que cabe en la arena). El escenario "Radio que no cabe en la arena" falla en
-  `StartRun`, no en la carga; para el usuario el efecto es el mismo (la partida no arranca y se nombra `player.radius`).
+- **Validación del radio**: `loadRunConfig` valida el conjunto jugador+arena con `superRefine` (reutiliza
+  `Arena.fits` del dominio), así que la **carga** falla con `player.radius`, como dice la spec (ronda 2, W4).
+  `Run.start` mantiene la invariante como defensa y exige `speed > 0`, con los mismos mensajes que zod.
 - **Bundle medido**: 1.439,84 kB (378,90 kB gzip), casi todo Phaser. `chunkSizeWarningLimit` a 1.600 kB.
 
 ## ADRs
