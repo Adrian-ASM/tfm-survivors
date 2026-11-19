@@ -6,7 +6,6 @@ import type { PlayerInput } from '../player/PlayerInput';
 import type { RandomGenerator } from '../shared/RandomGenerator';
 import type { Experience } from '../progression/Experience';
 import type { GemField } from '../progression/GemField';
-import type { XpGem } from '../progression/XpGem';
 import type { PlayerRules } from '../player/PlayerRules';
 import { err, ok, type DomainError, type Result } from '../shared/Result';
 import type { UpgradeChoiceError } from '../upgrade/UpgradeChoiceError';
@@ -23,18 +22,17 @@ import {
   type RunRules,
 } from './RunConfig';
 import { Arsenal } from '../weapon/Arsenal';
-import type { Projectile } from '../weapon/Projectile';
-import type { PulseEcho } from '../weapon/PulseEcho';
 import type { UpgradeBoard } from '../upgrade/UpgradeBoard';
-import type {
-  EnemySnapshot,
-  GemSnapshot,
-  OfferSnapshot,
-  ProjectileSnapshot,
-  PulseSnapshot,
-  RunSnapshot,
-  UpgradeLevelSnapshot,
-} from './RunSnapshot';
+import type { RunSnapshot } from './RunSnapshot';
+import {
+  toEnemySnapshot,
+  toGemSnapshot,
+  toOfferSnapshot,
+  toProgressionSnapshot,
+  toProjectileSnapshot,
+  toPulseSnapshot,
+  toUpgradeLevels,
+} from './snapshotParts';
 import type { RunStatus } from './RunStatus';
 import {
   SETUP_HEALTH_OUT_OF_RANGE,
@@ -285,33 +283,10 @@ export class Run {
         this.arsenal.weapons.map((w) => Object.freeze({ id: w.type.id, ready: w.isChargedAt(k) })),
       ),
       gems: Object.freeze(this.gems.gems.map((g) => toGemSnapshot(g, this.gems.radius))),
-      progression: Object.freeze({
-        level: this.experience.level,
-        xp: this.experience.xp,
-        xpToNext: this.experience.xpToNext,
-        pendingLevelUps: this.experience.pendingLevelUps,
-      }),
-      offer: Object.freeze(this.offerSnapshot()),
-      upgrades: Object.freeze(this.upgradeLevels()),
+      progression: toProgressionSnapshot(this.experience),
+      offer: toOfferSnapshot(this.board),
+      upgrades: toUpgradeLevels(this.rules.upgrades, this.board),
     });
-  }
-
-  private offerSnapshot(): OfferSnapshot[] {
-    const { offer, offerIndices } = this.board;
-    return offer.map((u, k) => {
-      const level = this.board.levelOf(offerIndices[k] ?? -1);
-      const { id, name, description } = u;
-      return Object.freeze({ id, name, description, level, nextLevel: level + 1 });
-    });
-  }
-
-  private upgradeLevels(): UpgradeLevelSnapshot[] {
-    const out: UpgradeLevelSnapshot[] = [];
-    this.rules.upgrades.upgrades.forEach((u, i) => {
-      const level = this.board.levelOf(i);
-      if (level >= 1) out.push(Object.freeze({ id: u.id, level }));
-    });
-    return out;
   }
 }
 
@@ -329,34 +304,4 @@ function maxHealthBonus(rules: RunRules, board: UpgradeBoard): number {
     (sum, u, i) => (u.stat === 'maxHealth' ? sum + u.perLevel * board.levelOf(i) : sum),
     0,
   );
-}
-
-function toEnemySnapshot(e: Enemy, damaged: boolean): EnemySnapshot {
-  return Object.freeze({
-    id: e.id,
-    type: e.type.id,
-    x: e.x,
-    y: e.y,
-    radius: e.radius,
-    health: e.hp,
-    damaged,
-  });
-}
-
-function toGemSnapshot(g: XpGem, radius: number): GemSnapshot {
-  return Object.freeze({ id: g.id, x: g.x, y: g.y, radius });
-}
-
-function toProjectileSnapshot(p: Projectile): ProjectileSnapshot {
-  return Object.freeze({ id: p.id, x: p.x, y: p.y, radius: p.radius });
-}
-
-function toPulseSnapshot(e: PulseEcho): PulseSnapshot {
-  return Object.freeze({
-    weapon: e.weaponId,
-    firedAt: e.firedAt,
-    x: e.x,
-    y: e.y,
-    radius: e.radius,
-  });
 }
