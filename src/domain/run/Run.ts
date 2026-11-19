@@ -30,12 +30,6 @@ export const SETUP_POSITION_MUST_BE_FINITE = 'La posición inicial debe ser fini
 export const SETUP_HEALTH_OUT_OF_RANGE =
   'La vida inicial de un enemigo debe ser finita, positiva y no mayor que la de su tipo.';
 
-/**
- * Resultado de `Run.damageEnemy`: no existe (o ya se dio de baja), partida terminada, golpe que no
- * mata, o baja.
- */
-export type EnemyDamageOutcome = 'missing' | 'ignored' | 'damaged' | 'killed';
-
 interface Point {
   readonly x: number;
   readonly y: number;
@@ -151,23 +145,6 @@ export class Run {
     if (!this.player.health.isDepleted) return false;
     this.state = 'over';
     return true;
-  }
-
-  /**
-   * Daña a un enemigo por id (único punto de entrada en 0003; búsqueda O(n), solo la usan los
-   * tests). Si lo mata, se da de baja en ese momento: el snapshot siguiente ya no lo lista y deja
-   * de contar para `maxAlive`. Un daño no positivo o no finito es un error de programación.
-   */
-  damageEnemy(id: number, amount: number): EnemyDamageOutcome {
-    if (!Number.isFinite(amount) || amount <= 0) {
-      throw new RangeError(`El daño debe ser positivo y finito (recibido ${String(amount)})`);
-    }
-    if (this.state === 'over') return 'ignored';
-    const enemy = this.enemies.find((e) => e.id === id);
-    if (!enemy) return 'missing';
-    if (!enemy.takeDamage(amount, this.tickCount)) return 'damaged';
-    this.removeDead();
-    return 'killed';
   }
 
   /**
