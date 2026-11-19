@@ -4,7 +4,8 @@ import { Run, type RunSetup } from '../../src/domain/run/Run';
 import type { RunConfig } from '../../src/domain/run/RunConfig';
 import type { EnemySnapshot } from '../../src/domain/run/RunSnapshot';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
-import { aRunConfig, aSegment, aWavesConfig } from '../support/builders';
+import { aSegment, aWavesConfig } from '../support/builders';
+import { StubRandom } from '../support/random';
 
 /** Catálogo con un tipo de velocidad fija y sin presupuesto: solo están los enemigos del setup. */
 const quiet = (speed: number, radius = 10): RunConfig =>
@@ -56,20 +57,33 @@ describe('Run · persecución', () => {
   });
 
   it('Primer tick de vida', () => {
-    const run = start(aRunConfig(), {}, 7);
-    let spawnTick = 0;
-    while (run.snapshot().enemies.length === 0 && spawnTick < 600) {
-      run.tick(PlayerInput.NONE);
-      spawnTick += 1;
-    }
+    // Arena grande para que el anillo no se recorte; vista 960 × 540 y margin 32 (contenido base).
+    const base = aWavesConfig({
+      types: [{ id: 'probe', speed: 90, radius: 10, cost: 1 }],
+      segments: [aSegment(['probe'], 1)],
+    });
+    const config: RunConfig = {
+      ...base,
+      arena: { width: 4000, height: 4000, view: { width: 960, height: 540 } },
+    };
+    // StubRandom(0): tipo 0 del tramo y ángulo 0 → P = jugador + (radio del anillo, 0).
+    const r = Run.start(config, new StubRandom(0));
+    if (!r.ok) throw new Error(r.error.message);
+    const run = r.value;
+    const ring = Math.hypot(960, 540) / 2 + 32;
+    const p = { x: 2000 + ring, y: 2000 };
+
+    ticks(run, 59);
+    expect(run.snapshot().enemies).toHaveLength(0);
+    run.tick(PlayerInput.NONE);
     const born = first(run);
-    const { player } = run.snapshot();
-    const toPlayer = Math.hypot(player.x - born.x, player.y - born.y);
+    expect(run.snapshot().tick).toBe(60);
+    expect(born.x).toBeCloseTo(p.x, 9);
+    expect(born.y).toBeCloseTo(p.y, 9);
+
     run.tick(PlayerInput.NONE);
     const next = first(run);
-    expect(spawnTick).toBe(60);
     expect(next.id).toBe(born.id);
-    const moved = Math.hypot(next.x - born.x, next.y - born.y);
-    expect(moved).toBeCloseTo(Math.min(90 / 60, toPlayer), 3);
+    expect(Math.hypot(next.x - p.x, next.y - p.y)).toBeCloseTo(90 / 60, 3);
   });
 });
