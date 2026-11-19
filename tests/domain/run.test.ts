@@ -21,14 +21,20 @@ describe('Run', () => {
   });
 
   it('Snapshot no mutable desde fuera', () => {
+    const right = PlayerInput.of(1, 0);
     const run = startedRun();
-    for (let i = 0; i < 10; i++) run.tick(PlayerInput.NONE);
+    for (let i = 0; i < 10; i++) run.tick(right);
     const snap = run.snapshot();
     expect(() => {
       (snap.player as { x: number }).x = 999;
     }).toThrow(TypeError);
-    run.tick(PlayerInput.NONE);
-    expect(run.snapshot().player.x).toBe(480);
+    expect(() => {
+      (snap as { tick: number }).tick = 0;
+    }).toThrow(TypeError);
+    run.tick(right);
+    const next = run.snapshot();
+    expect(next.tick).toBe(11);
+    expect(next.player.x).toBeCloseTo(480 + (11 * 200) / 60, 9);
   });
 
   it('rechaza un radio que no cabe en la arena', () => {

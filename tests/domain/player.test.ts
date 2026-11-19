@@ -7,6 +7,14 @@ import { Vector2 } from '../../src/domain/shared/Vector2';
 
 const EPS = 3; // toBeCloseTo(…, 3) ⇒ error < 0,0005 px (la spec pide ≤ 0,001)
 
+/** Error ≤ 0,001 px respecto al valor que da la spec (tolerancia literal de la spec). */
+function expectWithinSpec(actual: number, expected: number): void {
+  expect(
+    Math.abs(actual - expected),
+    `${String(actual)} vs ${String(expected)}`,
+  ).toBeLessThanOrEqual(0.001);
+}
+
 function arena(): Arena {
   const r = Arena.create(960, 540);
   if (!r.ok) throw new Error('arena de test inválida');
@@ -23,9 +31,9 @@ describe('PlayerInput · normalización diagonal', () => {
   it('Diagonal a la misma velocidad que un eje', () => {
     const p = simulate([480, 270], PlayerInput.of(1, 1), 60);
     const travelled = Math.hypot(p.position.x - 480, p.position.y - 270);
-    expect(travelled).toBeCloseTo(200, EPS);
-    expect(p.position.x).toBeCloseTo(480 + 141.421, 2);
-    expect(p.position.y).toBeCloseTo(270 + 141.421, 2);
+    expectWithinSpec(travelled, 200);
+    expectWithinSpec(p.position.x, 480 + 141.421);
+    expectWithinSpec(p.position.y, 270 + 141.421);
   });
 
   it('Input fuera de rango', () => {
@@ -77,7 +85,7 @@ describe('Arena · límites', () => {
   it('Deslizar por la pared', () => {
     const p = simulate([944, 270], PlayerInput.of(1, 1), 30);
     expect(p.position.x).toBe(944);
-    expect(p.position.y - 270).toBeCloseTo(70.711, 2);
+    expectWithinSpec(p.position.y - 270, 70.711);
   });
 
   it('rechaza dimensiones no positivas', () => {
