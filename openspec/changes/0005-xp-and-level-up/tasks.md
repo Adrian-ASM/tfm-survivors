@@ -122,9 +122,9 @@
   "Relleno parcial", "Tras subir de nivel"
 - [x] 3.6 `cardLayout` (pura) y `UpgradeOverlay` con dobles (relleno al cambiar la oferta, visibilidad, índice
   clicado) — escenarios: "Tres cartas", "Menos cartas" (2 cartas), "Sin oferta" (no visible)
-- [ ] 3.7 `ChoiceKeys` y elección en `GameScene.update` (solo con oferta e índice < nº de cartas) — escenarios:
+- [x] 3.7 `ChoiceKeys` y elección en `GameScene.update` (solo con oferta e índice < nº de cartas) — escenarios:
   "Elegir con tecla", "Elegir con clic", "Menos cartas" (tecla 3 no hace nada), "Sin oferta" (teclas sin efecto)
-- [ ] 3.8 `main.ts`: `SceneCapacity.gems`, `pulses` desde `rules.pulseCapacity`, `chooseUpgrade` a la escena;
+- [x] 3.8 `main.ts`: `SceneCapacity.gems`, `pulses` desde `rules.pulseCapacity`, `chooseUpgrade` a la escena;
   comprobación manual con `npm run dev` (gemas, barra, overlay, teclas y clic)
 - [ ] 3.9 Bench: caso "Peor caso con gemas" (300 atraídas a ≥ 400 px, 60 ticks) y política de elección 0 en los
   casos existentes; anotar resultados — escenarios: "Peor caso con gemas", "Tope de vivos alcanzado", "200 enemigos
