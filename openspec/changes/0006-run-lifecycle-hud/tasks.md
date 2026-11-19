@@ -83,7 +83,7 @@
 - [x] 1.13 Derrota frente a la duración. Escenarios: run-outcome "Derrota temprana", "La derrota no se convierte en
   victoria" y "Derrota en el tick anterior a la victoria". Con duración corta y el golpe en el tick final − 1 se
   evitan 36.000 ticks, salvo que la spec lo exija literalmente; si es así, se reutiliza la simulación de 1.15.
-- [ ] 1.14 Congelado en ambos resultados (`run-state.test.ts`). Escenarios: run-state "600 ticks después de
+- [x] 1.14 Congelado en ambos resultados (`run-state.test.ts`). Escenarios: run-state "600 ticks después de
   terminar", "600 ticks después de ganar" (duración corta con ≥ 1 enemigo, proyectil y gema), "La terminación no
   consume azar" (pares de victoria y de derrota), "Una partida terminada no vuelve a en curso", "Armas congeladas al
   terminar" (con bajas) y "Gemas congeladas al terminar".

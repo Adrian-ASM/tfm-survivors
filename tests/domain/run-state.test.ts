@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
-import { DEFAULT_WEAPONS, aDefaultConfig, aSegment, withWeapons } from '../support/builders';
+import {
+  DEFAULT_WEAPONS,
+  aDefaultConfig,
+  aSegment,
+  withDuration,
+  withWeapons,
+} from '../support/builders';
 import { StubRandom } from '../support/random';
 import { aContactConfig, aProbeType, play, startRun, ticks } from '../support/runs';
 
@@ -61,14 +67,15 @@ describe('Fin de partida al llegar a vida 0', () => {
 /**
  * Partida con las armas por defecto que termina en el tick 1: un `probe` duro en el centro mata
  * al jugador (vida 10) en el contacto, después de que el Linter dispare y el pulso de Tests dañe a
- * los dos enemigos (el segundo, a 50 px).
+ * los dos enemigos (el segundo, a 50 px) y abata a un `weak` (1 baja).
  */
 function endedArmed() {
   const random = new StubRandom(0.5);
   const tough = aProbeType({ health: 1000, speed: 0.001 });
+  const weak = aProbeType({ id: 'weak', health: 4, speed: 0.001 });
   const config = withWeapons(
     aContactConfig({
-      types: [tough],
+      types: [tough, weak],
       player: { maxHealth: 10 },
       segments: [aSegment(['probe'], 1)],
     }),
@@ -77,6 +84,7 @@ function endedArmed() {
   const enemies = [
     { type: 'probe', ...CENTER },
     { type: 'probe', x: 530, y: 270 },
+    { type: 'weak', x: 480, y: 330 },
   ];
   const run = startRun(config, { enemies }, random);
   ticks(run, 1);
@@ -98,7 +106,7 @@ describe('Simulación detenida tras terminar', () => {
   it('600 ticks después de terminar: snapshot igual campo a campo, tick incluido', () => {
     const { run } = ended();
     const final = run.snapshot();
-    expect(final.status).toBe('over');
+    expect([final.status, final.outcome]).toEqual(['over', 'lost']);
     expect(final.enemies.length).toBeGreaterThanOrEqual(1);
     expect(() => ticks(run, 600, UP_RIGHT)).not.toThrow();
     expect(run.snapshot()).toStrictEqual(final);
@@ -117,7 +125,11 @@ describe('Simulación detenida tras terminar', () => {
   it('Una partida terminada no vuelve a en curso (36.000 ticks más)', () => {
     const { run } = ended();
     for (let i = 0; i < 36_000; i++) run.tick(UP_RIGHT);
-    expect([run.snapshot().status, run.snapshot().player.health]).toEqual(['over', 0]);
+    expect([run.snapshot().status, run.outcome, run.snapshot().player.health]).toEqual([
+      'over',
+      'lost',
+      0,
+    ]);
   });
 
   it('Una partida terminada no vuelve a en curso (contenido por defecto, quieto, política fija)', () => {
@@ -135,7 +147,7 @@ describe('Simulación detenida tras terminar', () => {
   it('Scenario: Armas congeladas al terminar (proyectil, pulso, destello y enemigo a 50 px)', () => {
     const { run, random } = endedArmed();
     const final = run.snapshot();
-    expect(final).toMatchObject({ tick: 1, status: 'over' });
+    expect(final).toMatchObject({ tick: 1, status: 'over', outcome: 'lost', kills: 1 });
     expect(final.projectiles.length).toBeGreaterThanOrEqual(1);
     expect(final.pulses).toHaveLength(1);
     expect(final.enemies.some((e) => e.damaged)).toBe(true);
@@ -165,5 +177,68 @@ describe('Simulación detenida tras terminar', () => {
     const after = ticks(run, 60).at(-1);
     expect(after?.enemies[1]).toMatchObject({ x: 300, y: 270 });
     expect(after?.player).toMatchObject(CENTER);
+  });
+});
+
+/**
+ * Partida que gana en el tick 120 (duración 2 s) con un `probe` duro a 300 px (blanco del Linter,
+ * siempre con un proyectil en vuelo), un `weak` abatido por el pulso de Tests (gema + baja) y una
+ * gema lejana sin atraer.
+ */
+function endedWon() {
+  const random = new StubRandom(0.5);
+  const tough = aProbeType({ health: 1e6, speed: 0.001 });
+  const weak = aProbeType({ id: 'weak', health: 4, speed: 0.001 });
+  const config = withDuration(
+    withWeapons(
+      aContactConfig({ types: [tough, weak], segments: [aSegment(['probe'], 0)] }),
+      DEFAULT_WEAPONS,
+    ),
+    2,
+  );
+  const setup = {
+    player: CENTER,
+    enemies: [
+      { type: 'probe', x: 780, y: 270 },
+      { type: 'weak', x: 480, y: 330 },
+    ],
+    gems: [{ x: 40, y: 40, value: 1 }],
+  };
+  const run = startRun(config, setup, random);
+  ticks(run, 120);
+  return { run, random };
+}
+
+describe('Simulación detenida tras ganar', () => {
+  it('Scenario: 600 ticks después de ganar (enemigo, proyectil y gema; snapshot igual)', () => {
+    const { run } = endedWon();
+    const final = run.snapshot();
+
+    expect(() => ticks(run, 600, UP_RIGHT)).not.toThrow();
+
+    expect(final).toMatchObject({ tick: 120, status: 'over', outcome: 'won', kills: 1 });
+    expect(final.enemies.length).toBeGreaterThanOrEqual(1);
+    expect(final.projectiles.length).toBeGreaterThanOrEqual(1);
+    expect(final.gems.length).toBeGreaterThanOrEqual(1);
+    expect(run.snapshot()).toStrictEqual(final);
+  });
+
+  it('Scenario: La terminación no consume azar (par de victorias)', () => {
+    const a = endedWon();
+    const b = endedWon();
+    const calls = a.random.calls;
+
+    ticks(a.run, 600, UP_RIGHT);
+
+    expect(a.random.calls).toBe(calls);
+    expect(a.run.snapshot()).toStrictEqual(b.run.snapshot());
+  });
+
+  it('Scenario: Una partida terminada no vuelve a en curso (victoria, 36.000 ticks más)', () => {
+    const { run } = endedWon();
+
+    for (let i = 0; i < 36_000; i++) run.tick(UP_RIGHT);
+
+    expect([run.status, run.outcome, run.chooseUpgrade(0).ok]).toEqual(['over', 'won', false]);
   });
 });
