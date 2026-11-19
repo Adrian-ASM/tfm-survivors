@@ -39,4 +39,22 @@ export class GemField {
     this.nextGemId += 1;
     this.active.push(gem);
   }
+
+  /**
+   * Paso de gemas con el jugador ya movido en (px, py), en orden de creación: atracción inclusiva
+   * (d ≤ pickupRadius, para siempre) y avance de `magnetSpeed / 60` sin sobrepasar al jugador.
+   * Devuelve la XP recogida en este paso.
+   */
+  step(px: number, py: number, _playerRadius: number, pickupRadius: number): number {
+    const reach = pickupRadius * pickupRadius;
+    for (const gem of this.active) {
+      if (!gem.attracted) {
+        const dx = px - gem.x;
+        const dy = py - gem.y;
+        gem.attracted = dx * dx + dy * dy <= reach;
+      }
+      if (gem.attracted) gem.pull(px, py, this.rules.pullPerTick);
+    }
+    return 0;
+  }
 }

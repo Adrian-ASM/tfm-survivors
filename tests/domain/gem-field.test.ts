@@ -42,3 +42,54 @@ describe('GemField.drop', () => {
     expect(values(f)).toEqual([8]);
   });
 });
+
+const PR = 16;
+const PICKUP = 64;
+const pos = (f: GemField) => f.gems.map((g) => [g.x, g.y]);
+
+describe('GemField.step · imán', () => {
+  it('Scenario: Límite exacto del radio (distancia 64: atraída y 6 px)', () => {
+    const f = field();
+    f.drop(544, 270, 1);
+    f.step(480, 270, PR, PICKUP);
+    expect(pos(f)).toEqual([[538, 270]]);
+    expect(f.gems[0]?.attracted).toBe(true);
+  });
+
+  it('Scenario: Recorrido hasta la recogida (ticks 1 a 7; en el 7, en (502, 270))', () => {
+    const f = field();
+    f.drop(544, 270, 1);
+    const xs: number[] = [];
+    for (let i = 0; i < 7; i++) {
+      f.step(480, 270, PR, PICKUP);
+      xs.push(f.gems[0]?.x ?? Number.NaN);
+    }
+    expect(xs.map((x) => Math.round(x * 1000) / 1000)).toEqual([538, 532, 526, 520, 514, 508, 502]);
+  });
+
+  it('Scenario: Una gema atraída no se suelta (el jugador se aleja a 3,333 px/tick)', () => {
+    const f = field();
+    let px = 400;
+    f.drop(px - 62, 270, 1, true);
+    const distances: number[] = [];
+    for (let i = 0; i < 5; i++) {
+      px += 200 / 60;
+      f.step(px, 270, PR, PICKUP);
+      distances.push(px - (f.gems[0]?.x ?? Number.NaN));
+    }
+    expect(distances[0]).toBeCloseTo(59.333, 3);
+    for (let i = 1; i < distances.length; i++) {
+      expect((distances[i - 1] ?? 0) - (distances[i] ?? 0)).toBeCloseTo(2.667, 3);
+    }
+  });
+
+  it('Scenario: Gema fuera del radio (distancia 65 durante 36.000 ticks)', () => {
+    const f = field();
+    f.drop(545, 270, 1);
+    let xp = 0;
+    for (let i = 0; i < 36_000; i++) xp += f.step(480, 270, PR, PICKUP);
+    expect(pos(f)).toEqual([[545, 270]]);
+    expect(f.gems[0]?.attracted).toBe(false);
+    expect(xp).toBe(0);
+  });
+});

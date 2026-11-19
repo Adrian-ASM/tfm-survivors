@@ -36,7 +36,7 @@
   (dominio), "Tope mínimo válido", "No sobrepasa al jugador" (unidad de `pull`)
 - [x] 1.6 `GemField.drop`: pool de `maxGems`, ids sin reutilizar, tope con suma a la más antigua — escenarios: "Tope
   lleno", "Varias bajas con el tope lleno", "Las gemas no consumen azar" (unidad)
-- [ ] 1.7 `GemField.step` imán: atracción inclusiva, atraída para siempre, avance `magnetSpeed / 60` — escenarios:
+- [x] 1.7 `GemField.step` imán: atracción inclusiva, atraída para siempre, avance `magnetSpeed / 60` — escenarios:
   "Límite exacto del radio", "Recorrido hasta la recogida", "Una gema atraída no se suelta", "Gema fuera del radio"
 - [ ] 1.8 `GemField.step` recogida estricta, suma de XP y compactación estable — escenarios: "Recogida de una gema",
   "Tangencia tras el imán no es recogida", "Varias gemas en el mismo tick", "Plaza liberada por una recogida",
