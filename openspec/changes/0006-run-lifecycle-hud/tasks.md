@@ -61,7 +61,7 @@
 - [x] 1.7 Snapshot ampliado: `RunSnapshot = Body & RunPhase` con `outcome`, `durationTicks` y `kills`, congelado.
   Test: valores iniciales y duración constante. Escenarios: simulation-loop "Partida recién creada" y "Duración
   objetivo constante"; run-outcome "Partida recién creada" (bajas 0).
-- [ ] 1.8 Test de inmutabilidad ampliado: mutar `outcome`, `kills` y `durationTicks` del snapshot no afecta al
+- [x] 1.8 Test de inmutabilidad ampliado: mutar `outcome`, `kills` y `durationTicks` del snapshot no afecta al
   estado interno. Escenario: simulation-loop "Snapshot no mutable desde fuera".
 - [ ] 1.9 Contador de bajas en el snapshot. Tests: "Varias bajas en un tick", "El contacto no cuenta como baja",
   "Las bajas sobreviven a la subida de nivel" y "Baja en el tick de la muerte" (run-outcome), y "Una baja en el tick

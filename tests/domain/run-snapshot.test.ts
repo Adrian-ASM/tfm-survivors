@@ -63,6 +63,28 @@ describe('Snapshot con resultado, duración y bajas (0006)', () => {
   });
 });
 
+describe('Snapshot no mutable desde fuera (resultado, bajas y duración)', () => {
+  it('Scenario: Snapshot no mutable desde fuera (partida en curso y partida terminada)', () => {
+    const lethal = { ...aDefaultConfig(), player: { ...aDefaultConfig().player, maxHealth: 1 } };
+    const live = startRun(quiet());
+    const ended = startRun(lethal, { player: CENTER, enemies: [{ type: 'bug', ...CENTER }] });
+    ticks(ended, 1);
+    for (const run of [live, ended]) {
+      const snap = run.snapshot();
+      const before = structuredClone(snap);
+      const mutations = [
+        () => ((snap as { outcome: string | null }).outcome = 'won'),
+        () => ((snap as { kills: number }).kills = 99),
+        () => ((snap as { durationTicks: number }).durationTicks = 1),
+        () => ((snap as { status: string }).status = 'over'),
+      ];
+      for (const m of mutations) expect(m).toThrow(TypeError);
+      expect(run.snapshot()).toEqual(before);
+    }
+    expect([ended.status, ended.outcome]).toEqual(['over', 'lost']);
+  });
+});
+
 describe('Snapshot ampliado', () => {
   it('Scenario: Oferta en el snapshot (guardrail en nivel 2: opción 2 → 3 y adquirida con 2)', () => {
     const guardrail = DEFAULT_UPGRADE_LIST.filter((u) => u.id === 'guardrail');
