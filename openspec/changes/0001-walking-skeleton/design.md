@@ -24,7 +24,7 @@ en el `pre-commit` y en CI, además de ESLint con reglas de capas.
 | infrastructure | `phaser/GameScene` | Nueva | `update(_, deltaMs)`: input → `TickRun` → pinta el círculo. Sin lógica de juego |
 | composition | `main.ts` | Nueva | Carga contenido, crea casos de uso y `Phaser.Game`; si el contenido es inválido muestra el error en pantalla |
 | tooling | `scripts/guard-staged.mjs` | Nueva | Ejecuta los dos hooks sobre el contenido preparado (`git show :<ruta>`) o, con `--all`, sobre `git ls-files` |
-| tooling | `eslint.config.js` | Nueva | typescript-eslint `strictTypeChecked` + `eslint-plugin-boundaries` + `no-restricted-globals/properties` |
+| tooling | `eslint.config.js` | Nueva | typescript-eslint `strictTypeChecked` + `no-restricted-imports` por capa + `no-restricted-globals/properties/syntax` (ver "Cambios en apply") |
 | tooling | `.husky/pre-commit` | Nueva | `npx lint-staged && node scripts/guard-staged.mjs` |
 | tooling | `.github/workflows/ci.yml` | Mod. | Añade `npm run guard:all` en `quality` (dentro de `npm run verify`) |
 
@@ -68,7 +68,6 @@ de reglas** para las tres capas (Claude Code, pre-commit, CI). Ejecución en par
 | eslint | 10.15.0 | Guardarraíl capa 2 | — |
 | @eslint/js | 10.0.1 | Reglas base | — |
 | typescript-eslint | 8.73.0 | Reglas con información de tipos | — |
-| eslint-plugin-boundaries | 7.4.4 | Reglas de capas declarativas | `no-restricted-imports` por carpeta (frágil con rutas relativas) |
 | prettier | 3.10.1 | Formato | — |
 | husky | 9.1.7 | Hook `pre-commit` | Hooks de git a mano (no se versionan) |
 | lint-staged | 17.6.1 | ESLint/Prettier solo sobre lo preparado | — |
@@ -87,6 +86,15 @@ Todas con versión exacta (sin `^`), y `package-lock.json` versionado.
 ## Pasos manuales del autor (fuera del código)
 1. GitHub → *Settings → Pages → Source: GitHub Actions* (necesario para `deploy-pages`).
 2. Protección de `main`: exigir PR y el check `quality` (ver docs/exploration §4 sobre `paths-ignore`).
+
+## Cambios en apply
+- **Sin `eslint-plugin-boundaries`**: con imports TypeScript sin extensión necesitaba además
+  `eslint-import-resolver-typescript` (una dependencia más). `no-restricted-imports` con patrones `**/<capa>/**`
+  cubre las rutas relativas; lo prueban los tests de `tests/guardrails/eslint.test.ts`.
+- **Validación repartida**: zod comprueba la forma del contenido (tipos, positivos, campos desconocidos) y
+  `Run.start` las invariantes (radio que cabe en la arena). El escenario "Radio que no cabe en la arena" falla en
+  `StartRun`, no en la carga; para el usuario el efecto es el mismo (la partida no arranca y se nombra `player.radius`).
+- **Bundle medido**: 1.439,84 kB (378,90 kB gzip), casi todo Phaser. `chunkSizeWarningLimit` a 1.600 kB.
 
 ## ADRs
 - ADR-0001 (Phaser 4.2.1), ADR-0002 (núcleo puro). Sin ADR nueva: la reutilización de hooks se documenta aquí y en
