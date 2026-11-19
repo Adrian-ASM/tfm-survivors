@@ -112,14 +112,14 @@
       SL "Semilla de la partida" (navegador)
 
 ## 7. Benchmark
-- [ ] 7.1 Script `"bench": "vitest bench --run"`, `test.benchmark.include: ['tests/bench/**/*.bench.ts']` en
+- [x] 7.1 Script `"bench": "vitest bench --run"`, `test.benchmark.include: ['tests/bench/**/*.bench.ts']` en
       `vite.config.ts` y `tests/bench/run.bench.ts`: contenido por defecto, semilla 7, avanzar hasta exactamente
       200 vivos y medir 600 ticks consecutivos con input (1, 0) usando la fixture `bench` de Vitest 5.1.1
       (`test(…, async ({ bench }) => …)`, comprobada en `node_modules`); medir también `snapshot()`. Comprobar que
       `npm test` no lo ejecuta y que `lint` y `typecheck` sí lo cubren — SL "Tope de vivos alcanzado".
       **Plan B** si la fixture falla: `vitest.bench.config.ts` con `include: ['tests/bench/**/*.perf.ts']` y
       medición con `performance.now` (permitido en `tests/`)
-- [ ] 7.2 Ejecutar `npm run bench` y anotar la media y el p99 por tick y por `snapshot()`, la máquina, el SO y la
+- [x] 7.2 Ejecutar `npm run bench` y anotar la media y el p99 por tick y por `snapshot()`, la máquina, el SO y la
       versión de Node para el verify-report. Si la media supera 2 ms, parar y volver a *design* (struct of arrays
       según ADR-0003)
 
