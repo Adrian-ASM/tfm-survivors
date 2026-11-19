@@ -93,3 +93,62 @@ describe('GemField.step · imán', () => {
     expect(xp).toBe(0);
   });
 });
+
+describe('GemField.step · recogida', () => {
+  it('Scenario: Recogida de una gema (valor 1 a 20 px)', () => {
+    const f = field();
+    f.drop(500, 270, 1);
+    expect(f.step(480, 270, PR, PICKUP)).toBe(1);
+    expect(f.gems).toHaveLength(0);
+  });
+
+  it('Scenario: Recorrido hasta la recogida (se recoge en el tick 8)', () => {
+    const f = field();
+    f.drop(544, 270, 1);
+    const xp: number[] = [];
+    for (let i = 0; i < 8; i++) xp.push(f.step(480, 270, PR, PICKUP));
+    expect(xp).toEqual([0, 0, 0, 0, 0, 0, 0, 1]);
+    expect(f.gems).toHaveLength(0);
+  });
+
+  it('Scenario: Tangencia tras el imán no es recogida (queda a 21 = 16 + 5)', () => {
+    const f = field();
+    f.drop(507, 270, 1, true);
+    expect(f.step(480, 270, PR, PICKUP)).toBe(0);
+    expect(pos(f)).toEqual([[501, 270]]);
+    expect(f.step(480, 270, PR, PICKUP)).toBe(1);
+  });
+
+  it('Scenario: No sobrepasa al jugador (distancia 3: se recoge en ese tick)', () => {
+    const f = field();
+    f.drop(483, 270, 1);
+    expect(f.step(480, 270, PR, PICKUP)).toBe(1);
+  });
+
+  it('Scenario: Varias gemas en el mismo tick (4 de valor 1 en el jugador)', () => {
+    const f = field();
+    for (let i = 0; i < 4; i++) f.drop(480, 270, 1);
+    expect(f.step(480, 270, PR, PICKUP)).toBe(4);
+    expect(f.gems).toHaveLength(0);
+  });
+
+  it('Scenario: Plaza liberada por una recogida (maxGems 1: nueva y distinta de g1)', () => {
+    const f = field(1);
+    f.drop(480, 270, 1);
+    const g1 = f.gems[0];
+    f.step(480, 270, PR, PICKUP);
+    f.drop(10, 10, 1);
+    expect(ids(f)).toEqual([1]);
+    expect(f.gems[0]).toBe(g1);
+  });
+
+  it('Scenario: Gemas en el snapshot (g2 se recoge y se crea g4: g1, g3, g4)', () => {
+    const f = field();
+    f.drop(10, 10, 1);
+    f.drop(480, 270, 1);
+    f.drop(900, 500, 1);
+    f.step(480, 270, PR, PICKUP);
+    f.drop(10, 500, 1);
+    expect(ids(f)).toEqual([0, 2, 3]);
+  });
+});

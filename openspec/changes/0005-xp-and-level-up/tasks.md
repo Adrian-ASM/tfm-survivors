@@ -38,7 +38,7 @@
   lleno", "Varias bajas con el tope lleno", "Las gemas no consumen azar" (unidad)
 - [x] 1.7 `GemField.step` imán: atracción inclusiva, atraída para siempre, avance `magnetSpeed / 60` — escenarios:
   "Límite exacto del radio", "Recorrido hasta la recogida", "Una gema atraída no se suelta", "Gema fuera del radio"
-- [ ] 1.8 `GemField.step` recogida estricta, suma de XP y compactación estable — escenarios: "Recogida de una gema",
+- [x] 1.8 `GemField.step` recogida estricta, suma de XP y compactación estable — escenarios: "Recogida de una gema",
   "Tangencia tras el imán no es recogida", "Varias gemas en el mismo tick", "Plaza liberada por una recogida",
   "Gemas en el snapshot" (orden g1, g3, g4)
 - [ ] 1.9 `upgrade/UpgradeType` y `UpgradeCatalog`: ids únicos, arma existente, compatibilidad `stat` ↔ objetivo

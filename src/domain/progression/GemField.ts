@@ -1,3 +1,4 @@
+import { circlesOverlap } from '../collision/contact';
 import type { GemRules } from './GemRules';
 import { XpGem } from './XpGem';
 
@@ -42,19 +43,45 @@ export class GemField {
 
   /**
    * Paso de gemas con el jugador ya movido en (px, py), en orden de creación: atracción inclusiva
-   * (d ≤ pickupRadius, para siempre) y avance de `magnetSpeed / 60` sin sobrepasar al jugador.
-   * Devuelve la XP recogida en este paso.
+   * (d ≤ pickupRadius, para siempre), avance de `magnetSpeed / 60` sin sobrepasar al jugador y
+   * recogida estricta (círculos solapados, atraída o no). Después, compactación estable: las
+   * recogidas vuelven al pool. Devuelve la XP recogida en este paso.
    */
-  step(px: number, py: number, _playerRadius: number, pickupRadius: number): number {
+  step(px: number, py: number, playerRadius: number, pickupRadius: number): number {
     const reach = pickupRadius * pickupRadius;
+    const { gemRadius, pullPerTick } = this.rules;
+    let xp = 0;
+    let collected = false;
     for (const gem of this.active) {
       if (!gem.attracted) {
         const dx = px - gem.x;
         const dy = py - gem.y;
         gem.attracted = dx * dx + dy * dy <= reach;
       }
-      if (gem.attracted) gem.pull(px, py, this.rules.pullPerTick);
+      if (gem.attracted) gem.pull(px, py, pullPerTick);
+      if (circlesOverlap(px, py, playerRadius, gem.x, gem.y, gemRadius)) {
+        gem.collected = true;
+        collected = true;
+        xp += gem.value;
+      }
     }
-    return 0;
+    if (collected) this.compact();
+    return xp;
+  }
+
+  /** Compactación estable en el sitio (ADR-0006): O(n), sin asignar. */
+  private compact(): void {
+    let w = 0;
+    for (let r = 0; r < this.active.length; r++) {
+      const g = this.active[r];
+      if (!g) continue;
+      if (g.collected) {
+        this.free.push(g);
+      } else {
+        this.active[w] = g;
+        w++;
+      }
+    }
+    this.active.length = w;
   }
 }
