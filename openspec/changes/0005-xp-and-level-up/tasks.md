@@ -61,7 +61,7 @@
 - [x] 1.15 `Weapon.retune` y `Arsenal.retune` sin tocar `readyAt`; el proyectil y el eco conservan daño y radio —
   escenarios: "Mejora de cadencia a mitad de recarga" (unidad de `Weapon`), "Proyectil en vuelo durante una mejora
   de daño" (unidad), "Pulso visible durante una mejora de radio" (unidad)
-- [ ] 1.16 `RunConfig` / `buildRunRules`: `progression`, `upgrades`, `RunRules.curve/gems/upgrades/pulseCapacity`;
+- [x] 1.16 `RunConfig` / `buildRunRules`: `progression`, `upgrades`, `RunRules.curve/gems/upgrades/pulseCapacity`;
   `DEFAULT_PROGRESSION`, `NO_UPGRADES`, `DEFAULT_UPGRADES` y `withUpgrades` en builders — escenarios:
   `run-config.test.ts` por regla; todos los tests existentes siguen en verde con `NO_UPGRADES`
 - [ ] 1.17 `RunStatus` `'choosing'`; `RunSetup.gems` y `RunSetup.experience` con su validación; `Run` posee

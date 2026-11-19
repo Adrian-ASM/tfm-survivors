@@ -17,13 +17,7 @@ import {
   MAX_BUDGET_MUST_BE_POSITIVE,
 } from '../../src/domain/wave/SpawnRules';
 import { loadRunConfig, parseRunConfig } from '../../src/infrastructure/content/loadRunConfig';
-import {
-  DEFAULT_WEAPONS,
-  aRunConfig,
-  rawContent,
-  withWeapons,
-  type RawContent,
-} from '../support/builders';
+import { aDefaultConfig, aRunConfig, rawContent, type RawContent } from '../support/builders';
 import { StubRandom } from '../support/random';
 
 function failure(raw: RawContent): { field: string; message: string } {
@@ -157,7 +151,7 @@ describe('Contenido de enemigos y oleadas validado · vida, daño y máximo de p
 describe('Contenido del jugador validado', () => {
   it('Contenido válido', () => {
     const r = parseRunConfig(rawContent());
-    expect(r.ok && r.value).toEqual(withWeapons(aRunConfig(), DEFAULT_WEAPONS));
+    expect(r.ok && r.value).toEqual(aDefaultConfig());
   });
 
   it('Velocidad negativa', () => {
@@ -322,6 +316,6 @@ describe('Contenido por defecto del repositorio', () => {
   });
 
   it('coincide con el contenido de la spec que usan los tests (aRunConfig)', () => {
-    expect(config).toEqual(withWeapons(aRunConfig(), DEFAULT_WEAPONS));
+    expect(config).toEqual(aDefaultConfig());
   });
 });

@@ -1,0 +1,7 @@
+{
+  "baseXp": 5,
+  "xpGrowth": 5,
+  "gemRadius": 5,
+  "magnetSpeed": 360,
+  "maxGems": 300
+}

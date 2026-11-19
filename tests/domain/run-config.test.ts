@@ -18,7 +18,26 @@ import {
 } from '../../src/domain/wave/SpawnRules';
 import { WEAPON_ID_MUST_BE_UNIQUE } from '../../src/domain/weapon/WeaponLoadout';
 import { PULSE_VISUAL_TICKS_MUST_BE_INTEGER } from '../../src/domain/weapon/WeaponType';
-import { DEFAULT_WEAPONS, LINTER, TESTS, aRunConfig, withWeapons } from '../support/builders';
+import {
+  GEM_RADIUS_MUST_BE_POSITIVE,
+  MAGNET_SPEED_MUST_BE_POSITIVE,
+  MAX_GEMS_MUST_BE_INTEGER,
+} from '../../src/domain/progression/GemRules';
+import {
+  BASE_XP_MUST_BE_INTEGER,
+  XP_GROWTH_MUST_BE_INTEGER,
+} from '../../src/domain/progression/XpCurve';
+import {
+  DEFAULT_PROGRESSION,
+  DEFAULT_UPGRADES,
+  DEFAULT_WEAPONS,
+  LINTER,
+  TESTS,
+  aRunConfig,
+  anUpgrade,
+  withUpgrades,
+  withWeapons,
+} from '../support/builders';
 
 type Waves = RunConfig['waves'];
 const withWaves = (waves: Partial<Waves>, spawn: Partial<Waves['spawn']> = {}): RunConfig => {
@@ -189,5 +208,51 @@ describe('buildRunRules', () => {
       field: 'player.radius',
       message: RADIUS_MUST_FIT,
     });
+  });
+});
+
+describe('buildRunRules · progresión y mejoras', () => {
+  const withProgression = (patch: Partial<RunConfig['progression']>): RunConfig => ({
+    ...aRunConfig(),
+    progression: { ...DEFAULT_PROGRESSION, ...patch },
+  });
+
+  it('construye la curva, las reglas de las gemas y un catálogo vacío por defecto', () => {
+    const r = buildRunRules(aRunConfig());
+    if (!r.ok) throw new Error(r.error.message);
+    expect(r.value.curve.toNext(1)).toBe(5);
+    expect(r.value.gems).toMatchObject({ gemRadius: 5, magnetSpeed: 360, maxGems: 300 });
+    expect(r.value.upgrades.size).toBe(0);
+  });
+
+  it.each([
+    ['baseXp', 0, BASE_XP_MUST_BE_INTEGER],
+    ['xpGrowth', -1, XP_GROWTH_MUST_BE_INTEGER],
+    ['gemRadius', 0, GEM_RADIUS_MUST_BE_POSITIVE],
+    ['magnetSpeed', -1, MAGNET_SPEED_MUST_BE_POSITIVE],
+    ['maxGems', 12.5, MAX_GEMS_MUST_BE_INTEGER],
+  ] as const)('propaga los errores de progresión (%s %s)', (key, value, message) => {
+    expect(failure(withProgression({ [key]: value }))).toEqual({
+      code: 'invalid-config',
+      field: `progression.${key}`,
+      message,
+    });
+  });
+
+  it('construye el catálogo por defecto sobre las armas y propaga sus errores con su ruta', () => {
+    const full = withUpgrades(withWeapons(aRunConfig(), DEFAULT_WEAPONS), DEFAULT_UPGRADES);
+    const r = buildRunRules(full);
+    expect(r.ok && r.value.upgrades.upgrades.map((u) => u.id)).toHaveLength(9);
+    const noWeapons = withUpgrades(aRunConfig(), DEFAULT_UPGRADES);
+    expect(failure(noWeapons).field).toBe('upgrades.upgrades.0.target.weapon');
+  });
+
+  it('pulseCapacity es la del peor caso de las mejoras (Tests a 6 ticks: 2 ecos)', () => {
+    const weapons = withWeapons(aRunConfig(), DEFAULT_WEAPONS);
+    const fast = withUpgrades(weapons, { upgrades: [anUpgrade('watch-mode', { maxLevel: 7 })] });
+    const a = buildRunRules(weapons);
+    const b = buildRunRules(fast);
+    expect(a.ok && a.value.pulseCapacity).toBe(1);
+    expect(b.ok && b.value.pulseCapacity).toBe(2);
   });
 });

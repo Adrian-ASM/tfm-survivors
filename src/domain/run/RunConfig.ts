@@ -15,6 +15,10 @@ import {
   checkPlayer,
   type PlayerRules,
 } from '../player/PlayerRules';
+import { GemRules, type GemRulesConfig } from '../progression/GemRules';
+import { XpCurve, type XpCurveConfig } from '../progression/XpCurve';
+import { UpgradeCatalog } from '../upgrade/UpgradeCatalog';
+import type { UpgradeTypeConfig } from '../upgrade/UpgradeType';
 
 export type { WeaponsConfig, PlayerRules };
 export {
@@ -53,6 +57,14 @@ export interface RunConfig {
     readonly segments: readonly WaveSegmentConfig[];
   };
   readonly weapons: WeaponsConfig;
+  /** Curva de XP y gemas (fichero de progresión, plano). */
+  readonly progression: XpCurveConfig & GemRulesConfig;
+  readonly upgrades: UpgradesConfig;
+}
+
+/** Forma del contenido de mejoras (content/upgrades.json). */
+export interface UpgradesConfig {
+  readonly upgrades: readonly UpgradeTypeConfig[];
 }
 
 /** Reglas de la partida ya construidas como value objects del dominio. */
@@ -65,6 +77,12 @@ export interface RunRules {
   readonly spawn: SpawnRules;
   /** Armas equipadas al empezar, en el orden en que actúan. */
   readonly loadout: WeaponLoadout;
+  readonly curve: XpCurve;
+  readonly gems: GemRules;
+  /** Catálogo de mejoras en el orden del contenido (ya validado con su build de peor caso). */
+  readonly upgrades: UpgradeCatalog;
+  /** Cota de pulsos visibles a la vez con la cadencia mínima alcanzable (ADR-0008). */
+  readonly pulseCapacity: number;
 }
 
 function checkBudgetCoversCatalog(spawn: SpawnRules, catalog: EnemyCatalog): DomainError | null {
@@ -96,6 +114,17 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
   if (budgetError) return err(budgetError);
   const loadout = WeaponLoadout.create(config.weapons);
   if (!loadout.ok) return loadout;
+  const curve = XpCurve.create(config.progression);
+  if (!curve.ok) return curve;
+  const gems = GemRules.create(config.progression);
+  if (!gems.ok) return gems;
+  const upgrades = UpgradeCatalog.create(
+    config.upgrades.upgrades,
+    loadout.value,
+    config.player,
+    arena.value,
+  );
+  if (!upgrades.ok) return upgrades;
   return ok({
     arena: arena.value,
     view: view.value,
@@ -104,5 +133,9 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
     table: table.value,
     spawn: spawn.value,
     loadout: loadout.value,
+    curve: curve.value,
+    gems: gems.value,
+    upgrades: upgrades.value,
+    pulseCapacity: upgrades.value.pulseCapacity,
   });
 }

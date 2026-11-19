@@ -101,7 +101,7 @@ export class Run {
     this.arena = rules.arena;
     this.nextEnemyId = enemies.length;
     this.director = new WaveDirector(rules.table, rules.spawn, random);
-    this.arsenal = new Arsenal(rules.loadout);
+    this.arsenal = new Arsenal(rules.loadout, rules.pulseCapacity);
   }
 
   static start(

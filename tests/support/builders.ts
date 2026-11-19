@@ -1,4 +1,4 @@
-import type { RunConfig } from '../../src/domain/run/RunConfig';
+import type { RunConfig, UpgradesConfig } from '../../src/domain/run/RunConfig';
 import type { WeaponsConfig } from '../../src/domain/weapon/WeaponLoadout';
 import type { WeaponTypeConfig } from '../../src/domain/weapon/WeaponType';
 import type { UpgradeTypeConfig } from '../../src/domain/upgrade/UpgradeType';
@@ -106,6 +106,24 @@ export const DEFAULT_UPGRADE_LIST: readonly UpgradeTypeConfig[] = [
   },
 ];
 
+/** Contenido de mejoras por defecto (content/upgrades.json). */
+export const DEFAULT_UPGRADES: UpgradesConfig = { upgrades: DEFAULT_UPGRADE_LIST };
+
+/**
+ * Sin mejoras: válido en el dominio (no en el fichero). Por defecto en `aRunConfig`, así que los
+ * escenarios de 0001–0004 no se pausan: las subidas se registran sin oferta.
+ */
+export const NO_UPGRADES: UpgradesConfig = { upgrades: [] };
+
+/** Curva y gemas por defecto (content/progression.json). */
+export const DEFAULT_PROGRESSION: RunConfig['progression'] = {
+  baseXp: 5,
+  xpGrowth: 5,
+  gemRadius: 5,
+  magnetSpeed: 360,
+  maxGems: 300,
+};
+
 /** Mejora de la lista por defecto por id, con cambios (para casos inválidos o de límite). */
 export const anUpgrade = (
   id: string,
@@ -176,6 +194,8 @@ export const aRunConfig = (overrides: Partial<PlayerConfig> = {}): RunConfig => 
   enemies: { types: DEFAULT_ENEMY_TYPES },
   waves: DEFAULT_WAVES,
   weapons: NO_WEAPONS,
+  progression: DEFAULT_PROGRESSION,
+  upgrades: NO_UPGRADES,
 });
 
 /** El mismo contenido con otras armas (p. ej. `withWeapons(aRunConfig(), DEFAULT_WEAPONS)`). */
@@ -183,6 +203,16 @@ export const withWeapons = (config: RunConfig, weapons: WeaponsConfig): RunConfi
   ...config,
   weapons,
 });
+
+/** El mismo contenido con otras mejoras (p. ej. `withUpgrades(config, DEFAULT_UPGRADES)`). */
+export const withUpgrades = (config: RunConfig, upgrades: UpgradesConfig): RunConfig => ({
+  ...config,
+  upgrades,
+});
+
+/** Contenido por defecto completo: armas y mejoras de content/ (lo que carga el juego). */
+export const aDefaultConfig = (): RunConfig =>
+  withUpgrades(withWeapons(aRunConfig(), DEFAULT_WEAPONS), DEFAULT_UPGRADES);
 
 type Waves = RunConfig['waves'];
 type EnemyTypes = RunConfig['enemies']['types'];
@@ -237,8 +267,17 @@ interface MutableWeapon {
   targeting: Record<string, unknown>;
   attack: Record<string, unknown>;
 }
+interface MutableUpgrade {
+  id: string;
+  name: string;
+  description: string;
+  target: Record<string, unknown>;
+  stat: string;
+  perLevel: number;
+  maxLevel: number;
+}
 /**
- * Contenido crudo con la forma de los 5 ficheros de content/, mutable para preparar casos
+ * Contenido crudo con la forma de los 7 ficheros de content/, mutable para preparar casos
  * inválidos.
  */
 export interface RawContent {
@@ -262,10 +301,18 @@ export interface RawContent {
     hitFlashTicks: number;
     weapons: [MutableWeapon, MutableWeapon];
   };
+  progression: {
+    baseXp: number;
+    xpGrowth: number;
+    gemRadius: number;
+    magnetSpeed: number;
+    maxGems: number;
+  };
+  upgrades: { upgrades: [MutableUpgrade, MutableUpgrade, ...MutableUpgrade[]] };
 }
 
 /** Copia nueva del contenido por defecto en forma de ficheros (cada llamada es independiente). */
 export const rawContent = (): RawContent =>
-  structuredClone(withWeapons(aRunConfig(), DEFAULT_WEAPONS)) as unknown as RawContent;
+  structuredClone(aDefaultConfig()) as unknown as RawContent;
 
 export const TICK_MS = 1000 / 60;
