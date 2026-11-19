@@ -1,10 +1,11 @@
 // Composition root (AGENTS.md §3.4): el único sitio que conoce las implementaciones concretas.
 import Phaser from 'phaser';
 import { StartRun } from '../application/StartRun';
+import { buildRunRules, type RunConfig } from '../domain/run/RunConfig';
 import type { RunSnapshot } from '../domain/run/RunSnapshot';
 import type { DomainError } from '../domain/shared/Result';
 import { loadRunConfig } from '../infrastructure/content/loadRunConfig';
-import { GameScene } from '../infrastructure/phaser/GameScene';
+import { GameScene, type SceneCapacity } from '../infrastructure/phaser/GameScene';
 import { Mulberry32RandomGenerator } from '../infrastructure/random/Mulberry32RandomGenerator';
 import { resolveSeed } from '../infrastructure/url/resolveSeed';
 
@@ -26,6 +27,23 @@ function showContentError(root: HTMLElement, error: DomainError): void {
 
 /** Semilla aleatoria de 32 bits sin signo; fuera del núcleo, así que puede usar la API del navegador. */
 const randomSeed = (): number => crypto.getRandomValues(new Uint32Array(1))[0] ?? 0;
+
+/** Tamaño de los pools de la escena desde el contenido ya validado (`pulseCapacity` del dominio). */
+function sceneCapacity(config: RunConfig): SceneCapacity {
+  const rules = buildRunRules(config);
+  if (!rules.ok) throw new Error(rules.error.message);
+  const { loadout } = rules.value;
+  const visualTicks = new Map<string, number>();
+  for (const w of loadout.weapons) {
+    if (w.attack.type === 'pulse') visualTicks.set(w.id, w.attack.visualTicks);
+  }
+  return {
+    enemies: config.waves.maxAlive,
+    projectiles: loadout.maxProjectiles,
+    pulses: loadout.pulseCapacity,
+    visualTicks,
+  };
+}
 
 function bootstrap(): void {
   const root = document.getElementById('game');
@@ -58,7 +76,7 @@ function bootstrap(): void {
     height: view.height,
     backgroundColor: BACKGROUND,
     scene: [
-      new GameScene(started.value, config.value.waves.maxAlive, (snapshot) => {
+      new GameScene(started.value, sceneCapacity(config.value), (snapshot) => {
         probe.snapshot = snapshot;
       }),
     ],

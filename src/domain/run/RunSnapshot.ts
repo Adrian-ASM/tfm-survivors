@@ -10,6 +10,31 @@ export interface EnemySnapshot {
   readonly radius: number;
   /** Vida actual (> 0: solo se listan enemigos vivos). */
   readonly health: number;
+  /** Ha recibido daño en los últimos `hitFlashTicks` ticks (spec auto-weapons). */
+  readonly damaged: boolean;
+}
+
+/** Arma equipada, en el orden de content/weapons.json, y si está cargada en este tick. */
+export interface WeaponSnapshot {
+  readonly id: string;
+  readonly ready: boolean;
+}
+
+/** Proyectil vivo (spec auto-weapons): id único en la partida, nunca reutilizado. */
+export interface ProjectileSnapshot {
+  readonly id: number;
+  readonly x: number;
+  readonly y: number;
+  readonly radius: number;
+}
+
+/** Pulso visible: arma que lo disparó, tick de disparo, centro fijo y radio del criterio. */
+export interface PulseSnapshot {
+  readonly weapon: string;
+  readonly firedAt: number;
+  readonly x: number;
+  readonly y: number;
+  readonly radius: number;
 }
 
 /** Lo único que el adaptador de render necesita para pintar un frame (spec simulation-loop). */
@@ -27,4 +52,10 @@ export interface RunSnapshot {
   };
   /** Enemigos vivos en orden de aparición. */
   readonly enemies: readonly EnemySnapshot[];
+  /** Proyectiles vivos en orden de creación. */
+  readonly projectiles: readonly ProjectileSnapshot[];
+  /** Pulsos visibles en orden de disparo. */
+  readonly pulses: readonly PulseSnapshot[];
+  /** Armas equipadas en el orden del contenido. */
+  readonly weapons: readonly WeaponSnapshot[];
 }

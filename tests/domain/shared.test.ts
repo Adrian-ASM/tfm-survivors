@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { err, ok } from '../../src/domain/shared/Result';
 import { Vector2 } from '../../src/domain/shared/Vector2';
+import { assertNever } from '../../src/domain/shared/assertNever';
 
 describe('Vector2', () => {
   it('suma y escala sin mutar el original', () => {
@@ -41,5 +42,11 @@ describe('Result', () => {
     const bad = err('x');
     expect(good.ok && good.value).toBe(1);
     expect(!bad.ok && bad.error).toBe('x');
+  });
+});
+
+describe('assertNever', () => {
+  it('lanza si se alcanza una variante no contemplada', () => {
+    expect(() => assertNever('laser' as never)).toThrow('laser');
   });
 });

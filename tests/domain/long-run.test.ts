@@ -10,6 +10,8 @@ import {
   aSegment,
   aWavesConfig,
   withPlayer,
+  withWeapons,
+  DEFAULT_WEAPONS,
 } from '../support/builders';
 import { randomInputs } from '../support/inputs';
 
@@ -86,7 +88,9 @@ describe('Partidas largas (10 min)', () => {
     expect(finalSnapshot(SPAWN_AUDIT, SEED, inputs)).toStrictEqual(audited.final);
   });
 
-  it('Jugador quieto con el contenido por defecto: termina con vida 0 (semilla 7)', () => {
+  // Requisito REMOVED en 0004 ("Una partida sin defensa termina"): se conserva como prueba del
+  // contacto sin armas (NO_WEAPONS en aRunConfig), no como regla del contenido por defecto.
+  it('Jugador quieto sin armas: termina con vida 0 (semilla 7)', () => {
     const run = start(aRunConfig(), SEED);
     let endedAt = 0;
     for (let n = 1; n <= TEN_MINUTES && endedAt === 0; n++) {
@@ -98,6 +102,12 @@ describe('Partidas largas (10 min)', () => {
     expect(snap.player.health).toBe(0);
     expect(snap.tick).toBe(endedAt);
     expect(endedAt).toBeLessThanOrEqual(TEN_MINUTES);
+  });
+
+  it('Scenario: Partida larga reproducible (contenido por defecto con armas, semilla 7)', () => {
+    const armed = withWeapons(aRunConfig(), DEFAULT_WEAPONS);
+    const a = finalSnapshot(armed, SEED, inputs);
+    expect(finalSnapshot(armed, SEED, inputs)).toStrictEqual(a);
   });
 
   it('Partida larga reproducible con la vida por defecto', () => {

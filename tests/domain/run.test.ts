@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
-import { Run, SPEED_MUST_BE_POSITIVE, type RunSetup } from '../../src/domain/run/Run';
+import {
+  Run,
+  SETUP_HEALTH_OUT_OF_RANGE,
+  SPEED_MUST_BE_POSITIVE,
+  type RunSetup,
+} from '../../src/domain/run/Run';
 import type { RunConfig } from '../../src/domain/run/RunConfig';
 import { UNKNOWN_ENEMY_TYPE } from '../../src/domain/wave/WaveTable';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
@@ -19,6 +24,9 @@ describe('Run', () => {
       status: 'running',
       player: { x: 480, y: 270, radius: 16, health: 100, maxHealth: 100, invulnerable: false },
       enemies: [],
+      projectiles: [],
+      pulses: [],
+      weapons: [],
     });
   });
 
@@ -166,8 +174,8 @@ describe('Run · estado inicial opcional (RunSetup)', () => {
       ],
     });
     expect(run.snapshot().enemies).toEqual([
-      { id: 0, type: 'bug', x: 100, y: 270, radius: 10, health: 10 },
-      { id: 1, type: 'memory-leak', x: 938, y: 22, radius: 22, health: 45 },
+      { id: 0, type: 'bug', x: 100, y: 270, radius: 10, health: 10, damaged: false },
+      { id: 1, type: 'memory-leak', x: 938, y: 22, radius: 22, health: 45, damaged: false },
     ]);
   });
 
@@ -188,4 +196,32 @@ describe('Run · estado inicial opcional (RunSetup)', () => {
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error.field).toBe('setup.player');
   });
+
+  it('Scenario: Armas equipadas al inicio (vida inicial de un enemigo fijada al preparar)', () => {
+    const run = startedRun(aRunConfig(), {
+      enemies: [
+        { type: 'bug', x: 100, y: 100, health: 4 },
+        { type: 'bug', x: 200, y: 100 },
+      ],
+    });
+    expect(run.snapshot().enemies.map((e) => e.health)).toEqual([4, 10]);
+  });
+
+  it.each([0, -1, 11, Number.NaN, Number.POSITIVE_INFINITY])(
+    'rechaza una vida inicial fuera de (0, health del tipo] (%s)',
+    (health) => {
+      const setup = {
+        enemies: [
+          { type: 'bug', x: 100, y: 100 },
+          { type: 'bug', x: 1, y: 1, health },
+        ],
+      };
+      const r = Run.start(aRunConfig(), new Mulberry32RandomGenerator(1), setup);
+      expect(r.ok).toBe(false);
+      if (!r.ok) {
+        expect(r.error.field).toBe('setup.enemies.1.health');
+        expect(r.error.message).toBe(SETUP_HEALTH_OUT_OF_RANGE);
+      }
+    },
+  );
 });

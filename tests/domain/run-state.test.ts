@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
-import { aSegment } from '../support/builders';
+import { DEFAULT_WEAPONS, aSegment, withWeapons } from '../support/builders';
 import { StubRandom } from '../support/random';
 import { aContactConfig, aProbeType, startRun, ticks } from '../support/runs';
 
@@ -57,6 +57,31 @@ describe('Fin de partida al llegar a vida 0', () => {
   });
 });
 
+/**
+ * Partida con las armas por defecto que termina en el tick 1: un `probe` duro en el centro mata
+ * al jugador (vida 10) en el contacto, después de que el Linter dispare y el pulso de Tests dañe a
+ * los dos enemigos (el segundo, a 50 px).
+ */
+function endedArmed() {
+  const random = new StubRandom(0.5);
+  const tough = aProbeType({ health: 1000, speed: 0.001 });
+  const config = withWeapons(
+    aContactConfig({
+      types: [tough],
+      player: { maxHealth: 10 },
+      segments: [aSegment(['probe'], 1)],
+    }),
+    DEFAULT_WEAPONS,
+  );
+  const enemies = [
+    { type: 'probe', ...CENTER },
+    { type: 'probe', x: 530, y: 270 },
+  ];
+  const run = startRun(config, { enemies }, random);
+  ticks(run, 1);
+  return { run, random };
+}
+
 describe('Simulación detenida tras terminar', () => {
   const ended = () => {
     const random = new StubRandom(0.5);
@@ -92,6 +117,27 @@ describe('Simulación detenida tras terminar', () => {
     const { run } = ended();
     for (let i = 0; i < 36_000; i++) run.tick(UP_RIGHT);
     expect([run.snapshot().status, run.snapshot().player.health]).toEqual(['over', 0]);
+  });
+
+  it('Scenario: Armas congeladas al terminar (proyectil, pulso, destello y enemigo a 50 px)', () => {
+    const { run, random } = endedArmed();
+    const final = run.snapshot();
+    expect(final).toMatchObject({ tick: 1, status: 'over' });
+    expect(final.projectiles.length).toBeGreaterThanOrEqual(1);
+    expect(final.pulses).toHaveLength(1);
+    expect(final.enemies.some((e) => e.damaged)).toBe(true);
+    expect(final.enemies[1]?.x).toBeCloseTo(530, 3);
+    const calls = random.calls;
+    expect(() => ticks(run, 600, UP_RIGHT)).not.toThrow();
+    expect(run.snapshot()).toStrictEqual(final);
+    expect(random.calls).toBe(calls);
+  });
+
+  it('Scenario: La terminación no consume azar (con armas)', () => {
+    const a = endedArmed();
+    const b = endedArmed();
+    ticks(a.run, 600, UP_RIGHT);
+    expect(a.run.snapshot()).toStrictEqual(b.run.snapshot());
   });
 
   it('Sin persecución con la partida terminada: el enemigo sigue en (300, 270)', () => {

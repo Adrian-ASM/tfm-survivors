@@ -50,7 +50,9 @@ describe('Daño discreto por contacto', () => {
     const run = startRun(aContactConfig(), { enemies: [{ type: 'probe', ...CENTER }] });
     const [snap] = ticks(run, 1);
     expect(snap?.player.health).toBe(90);
-    expect(snap?.enemies).toEqual([{ id: 0, type: 'probe', ...CENTER, radius: 10, health: 5 }]);
+    expect(snap?.enemies).toEqual([
+      { id: 0, type: 'probe', ...CENTER, radius: 10, health: 5, damaged: false },
+    ]);
   });
 
   it('Varios contactos en el mismo tick: un solo golpe (90, no 70)', () => {

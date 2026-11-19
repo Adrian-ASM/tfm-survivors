@@ -28,23 +28,67 @@ describe('Enemy · vida y baja', () => {
     expect([e.hp, e.alive, e.damage]).toEqual([5, true, 7]);
   });
 
-  it('un daño que no mata resta la vida y devuelve false', () => {
+  it('Scenario: Daño que no mata (vida 5, damage 3 → vida 2, vivo)', () => {
     const e = withHealth(5);
-    expect(e.takeDamage(3)).toBe(false);
+    expect(e.takeDamage(3, 1)).toBe(false);
     expect([e.hp, e.alive]).toEqual([2, true]);
   });
 
-  it.each([5, 7])('Daño mayor o igual que la vida (%d): baja con vida 0', (amount) => {
+  it.each([
+    ['Daño exactamente igual a la vida', 5],
+    ['Daño mayor que la vida', 7],
+  ])('Scenario: %s (%d): baja con vida 0', (_name, amount) => {
     const e = withHealth(5);
-    expect(e.takeDamage(amount)).toBe(true);
+    expect(e.takeDamage(amount, 1)).toBe(true);
     expect([e.hp, e.alive]).toEqual([0, false]);
   });
 
-  it('Daño a un enemigo ya dado de baja: no hace nada', () => {
+  it('Scenario: Daño a un enemigo ya dado de baja: no hace nada', () => {
     const e = withHealth(5);
-    e.takeDamage(5);
-    expect(e.takeDamage(5)).toBe(false);
+    e.takeDamage(5, 1);
+    expect(e.takeDamage(5, 2)).toBe(false);
     expect([e.hp, e.alive]).toEqual([0, false]);
+  });
+
+  it('vida inicial opcional al aparecer (RunSetup); por defecto la del tipo', () => {
+    const type = EnemyType.create(
+      { id: 'bug', speed: 90, radius: 10, cost: 1, damage: 5, health: 10 },
+      ARENA,
+      'enemies.types.0',
+    );
+    if (!type.ok) throw new Error(type.error.message);
+    expect(Enemy.spawn(0, type.value, 0, 0, ARENA, 4).hp).toBe(4);
+    expect(Enemy.spawn(1, type.value, 0, 0, ARENA).hp).toBe(10);
+  });
+});
+
+describe('Enemy · indicación de daño reciente', () => {
+  const FLASH = 4;
+  const flags = (e: Enemy, from: number, to: number): boolean[] =>
+    Array.from({ length: to - from + 1 }, (_, i) => e.damagedAt(from + i, FLASH));
+
+  it('un enemigo que nunca ha recibido daño no lo indica', () => {
+    expect(flags(enemy(90, 100, 100), 0, 5)).toEqual([false, false, false, false, false, false]);
+  });
+
+  it('Scenario: Duración del destello (dañado en T = 10: de T a T + 3, no en T + 4)', () => {
+    const e = enemy(90, 100, 100);
+    e.takeDamage(1, 10);
+    expect(flags(e, 10, 14)).toEqual([true, true, true, true, false]);
+  });
+
+  it('Scenario: Destello renovado (dañado en T y T + 2: de T a T + 5, no en T + 6)', () => {
+    const e = enemy(90, 100, 100);
+    e.takeDamage(1, 10);
+    e.takeDamage(1, 12);
+    expect(flags(e, 10, 16)).toEqual([true, true, true, true, true, true, false]);
+  });
+
+  it('un golpe sobre un enemigo ya dado de baja no renueva el destello', () => {
+    const e = enemy(90, 100, 100, 10, 'bug', 5);
+    e.takeDamage(5, 10);
+    e.takeDamage(5, 20);
+    expect(e.damagedAt(20, FLASH)).toBe(false);
   });
 });
 

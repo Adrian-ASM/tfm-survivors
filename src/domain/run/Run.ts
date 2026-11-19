@@ -18,18 +18,17 @@ import {
   type RunConfig,
   type RunRules,
 } from './RunConfig';
-import type { EnemySnapshot, RunSnapshot } from './RunSnapshot';
+import { Arsenal } from '../weapon/Arsenal';
+import type { Projectile } from '../weapon/Projectile';
+import type { PulseEcho } from '../weapon/PulseEcho';
+import type { EnemySnapshot, ProjectileSnapshot, PulseSnapshot, RunSnapshot } from './RunSnapshot';
 import type { RunStatus } from './RunStatus';
 
 export { TICK_SECONDS, RADIUS_MUST_FIT, SPEED_MUST_BE_POSITIVE, type RunConfig, type RunStatus };
 
 export const SETUP_POSITION_MUST_BE_FINITE = 'La posición inicial debe ser finita.';
-
-/**
- * Resultado de `Run.damageEnemy`: no existe (o ya se dio de baja), partida terminada, golpe que no
- * mata, o baja.
- */
-export type EnemyDamageOutcome = 'missing' | 'ignored' | 'damaged' | 'killed';
+export const SETUP_HEALTH_OUT_OF_RANGE =
+  'La vida inicial de un enemigo debe ser finita, positiva y no mayor que la de su tipo.';
 
 interface Point {
   readonly x: number;
@@ -43,7 +42,8 @@ interface Point {
  */
 export interface RunSetup {
   readonly player?: Point;
-  readonly enemies?: readonly (Point & { readonly type: string })[];
+  /** `health`: vida inicial opcional, 0 < health ≤ la del tipo (por defecto, la del tipo). */
+  readonly enemies?: readonly (Point & { readonly type: string; readonly health?: number })[];
 }
 
 const isFinitePoint = (p: Point): boolean => Number.isFinite(p.x) && Number.isFinite(p.y);
@@ -69,15 +69,20 @@ function initialEnemies(
     const type = catalog.get(entry.type);
     if (!type) return err(invalidConfig(`${path}.type`, `${UNKNOWN_ENEMY_TYPE}: ${entry.type}`));
     if (!isFinitePoint(entry)) return err(invalidConfig(path, SETUP_POSITION_MUST_BE_FINITE));
-    enemies.push(Enemy.spawn(i, type, entry.x, entry.y, arena));
+    const health = entry.health ?? type.health;
+    if (!Number.isFinite(health) || health <= 0 || health > type.health) {
+      return err(invalidConfig(`${path}.health`, SETUP_HEALTH_OUT_OF_RANGE));
+    }
+    enemies.push(Enemy.spawn(i, type, entry.x, entry.y, arena, health));
   }
   return ok(enemies);
 }
 
 /**
  * Partida en curso (aggregate root). Único punto de entrada para cambiar el estado de la
- * simulación. Contrato de determinismo: el orden del tick (jugador → persecución → contacto →
- * director) y el consumo de azar son fijos; cambiarlos cambia las partidas de una semilla.
+ * simulación. Contrato de determinismo: el orden del tick (jugador → persecución → armas, con un
+ * único removeDead() si hay bajas → contacto con los vivos → director) y el consumo de azar son
+ * fijos (las armas no consumen azar); cambiarlos cambia las partidas de una semilla.
  */
 export class Run {
   private tickCount = 0;
@@ -85,6 +90,7 @@ export class Run {
   private nextEnemyId: number;
   private readonly arena: Arena;
   private readonly director: WaveDirector;
+  private readonly arsenal: Arsenal;
 
   private constructor(
     private readonly rules: RunRules,
@@ -95,6 +101,7 @@ export class Run {
     this.arena = rules.arena;
     this.nextEnemyId = enemies.length;
     this.director = new WaveDirector(rules.table, rules.spawn, random);
+    this.arsenal = new Arsenal(rules.loadout);
   }
 
   static start(
@@ -121,8 +128,8 @@ export class Run {
     this.player = this.player.move(input, TICK_SECONDS, this.arena);
     const { x, y } = this.player.position;
     for (const enemy of this.enemies) enemy.chase(x, y, TICK_SECONDS, this.arena);
+    if (this.arsenal.step(n, x, y, this.enemies) > 0) this.removeDead();
     const died = this.applyContact(n);
-    // (0004) Aquí irán el daño de armas y un único removeDead() por tick.
     if (!died) this.director.step(n, this.enemies.length, this.place);
     this.tickCount = n;
   }
@@ -139,23 +146,6 @@ export class Run {
     if (!this.player.health.isDepleted) return false;
     this.state = 'over';
     return true;
-  }
-
-  /**
-   * Daña a un enemigo por id (único punto de entrada en 0003; búsqueda O(n), solo la usan los
-   * tests). Si lo mata, se da de baja en ese momento: el snapshot siguiente ya no lo lista y deja
-   * de contar para `maxAlive`. Un daño no positivo o no finito es un error de programación.
-   */
-  damageEnemy(id: number, amount: number): EnemyDamageOutcome {
-    if (!Number.isFinite(amount) || amount <= 0) {
-      throw new RangeError(`El daño debe ser positivo y finito (recibido ${String(amount)})`);
-    }
-    if (this.state === 'over') return 'ignored';
-    const enemy = this.enemies.find((e) => e.id === id);
-    if (!enemy) return 'missing';
-    if (!enemy.takeDamage(amount)) return 'damaged';
-    this.removeDead();
-    return 'killed';
   }
 
   /**
@@ -195,6 +185,9 @@ export class Run {
    */
   snapshot(): RunSnapshot {
     const { position, radius, health } = this.player;
+    const k = this.tickCount;
+    const flash = this.rules.loadout.hitFlashTicks;
+    const enemies = this.enemies.map((e) => toEnemySnapshot(e, e.damagedAt(k, flash)));
     return Object.freeze({
       tick: this.tickCount,
       status: this.state,
@@ -204,14 +197,19 @@ export class Run {
         radius,
         health: health.current,
         maxHealth: health.max,
-        invulnerable: this.player.isInvulnerableAfter(this.tickCount),
+        invulnerable: this.player.isInvulnerableAfter(k),
       }),
-      enemies: Object.freeze(this.enemies.map(toSnapshot)),
+      enemies: Object.freeze(enemies),
+      projectiles: Object.freeze(this.arsenal.projectiles.map(toProjectileSnapshot)),
+      pulses: Object.freeze(this.arsenal.pulses.map(toPulseSnapshot)),
+      weapons: Object.freeze(
+        this.arsenal.weapons.map((w) => Object.freeze({ id: w.type.id, ready: w.isChargedAt(k) })),
+      ),
     });
   }
 }
 
-function toSnapshot(e: Enemy): EnemySnapshot {
+function toEnemySnapshot(e: Enemy, damaged: boolean): EnemySnapshot {
   return Object.freeze({
     id: e.id,
     type: e.type.id,
@@ -219,5 +217,20 @@ function toSnapshot(e: Enemy): EnemySnapshot {
     y: e.y,
     radius: e.radius,
     health: e.hp,
+    damaged,
+  });
+}
+
+function toProjectileSnapshot(p: Projectile): ProjectileSnapshot {
+  return Object.freeze({ id: p.id, x: p.x, y: p.y, radius: p.radius });
+}
+
+function toPulseSnapshot(e: PulseEcho): PulseSnapshot {
+  return Object.freeze({
+    weapon: e.weaponId,
+    firedAt: e.firedAt,
+    x: e.x,
+    y: e.y,
+    radius: e.radius,
   });
 }

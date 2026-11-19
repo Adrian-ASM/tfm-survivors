@@ -46,15 +46,23 @@ director no actúa en el tick en que la partida termina.
 
 ### Requirement: Simulación detenida tras terminar
 El sistema SHALL ignorar los ticks pedidos sobre una partida terminada: MUST NOT cambiar la posición ni la vida
-del jugador, la posición, la vida ni el número de enemigos, el presupuesto ni el tipo pendiente del director, el
-estado del `RandomGenerator` ni el contador de ticks, sea cual sea el input. Pedir ticks sobre una partida
-terminada no produce errores.
+del jugador, la posición, la vida, la indicación de daño reciente ni el número de enemigos, el presupuesto ni el
+tipo pendiente del director, la carga ni la cadencia de las armas, la posición ni el número de proyectiles, los
+pulsos visibles, el estado del `RandomGenerator` ni el contador de ticks, sea cual sea el input. Pedir ticks sobre
+una partida terminada no produce errores.
 
 #### Scenario: 600 ticks después de terminar
 - **GIVEN** una partida que termina en el tick n con ≥ 1 enemigo vivo
 - **WHEN** se ejecutan 600 ticks más con input (1, 1)
 - **THEN** el snapshot es igual campo a campo al del tick n, incluido `tick` = n
 - **AND** no se ha producido ningún error
+
+#### Scenario: Armas congeladas al terminar
+- **GIVEN** una partida que termina en el tick n con ≥ 1 proyectil vivo, 1 pulso visible, ≥ 1 enemigo con daño
+  reciente y un enemigo vivo a 50 px del jugador
+- **WHEN** se ejecutan 600 ticks más
+- **THEN** el snapshot es igual campo a campo al del tick n: mismos proyectiles en las mismas posiciones, el mismo
+  pulso, la misma indicación de daño y ninguna vida de enemigo cambiada
 
 #### Scenario: La terminación no consume azar
 - **GIVEN** dos partidas idénticas con la misma semilla que terminan en el mismo tick n
@@ -66,13 +74,5 @@ terminada no produce errores.
 - **WHEN** se ejecutan 36.000 ticks más
 - **THEN** el estado sigue siendo terminada y la vida sigue en 0
 
-### Requirement: Una partida sin defensa termina
-El sistema SHALL hacer que, con el contenido por defecto, un jugador que no se mueve llegue a vida 0: en este
-change no hay ningún mecanismo que impida a los enemigos alcanzarlo.
-
-#### Scenario: Jugador quieto con el contenido por defecto
-- **GIVEN** el contenido por defecto, semilla 7 e input (0, 0) en todos los ticks
-- **WHEN** se ejecutan 36.000 ticks (10 min)
-- **THEN** la partida está terminada en algún tick ≤ 36.000 y su vida es 0
-
 <!-- historial: 0003-collisions-and-damage (2026-11-19) -->
+<!-- historial: 0004-auto-weapons (2026-11-19) -->

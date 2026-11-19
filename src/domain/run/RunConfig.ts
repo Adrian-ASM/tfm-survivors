@@ -5,6 +5,9 @@ import type { EnemyTypeConfig } from '../enemy/EnemyType';
 import { err, invalidConfig, ok, type DomainError, type Result } from '../shared/Result';
 import { SpawnRules } from '../wave/SpawnRules';
 import { WaveTable, type WaveSegmentConfig } from '../wave/WaveTable';
+import { WeaponLoadout, type WeaponsConfig } from '../weapon/WeaponLoadout';
+
+export type { WeaponsConfig };
 
 /** Mensajes de las invariantes del jugador; la validación de contenido (zod) usa los mismos. */
 export const SPEED_MUST_BE_POSITIVE = 'La velocidad del jugador debe ser positiva.';
@@ -47,6 +50,7 @@ export interface RunConfig {
     };
     readonly segments: readonly WaveSegmentConfig[];
   };
+  readonly weapons: WeaponsConfig;
 }
 
 /** Reglas de la partida ya construidas como value objects del dominio. */
@@ -57,6 +61,8 @@ export interface RunRules {
   readonly catalog: EnemyCatalog;
   readonly table: WaveTable;
   readonly spawn: SpawnRules;
+  /** Armas equipadas al empezar, en el orden en que actúan. */
+  readonly loadout: WeaponLoadout;
 }
 
 function checkPlayer(config: RunConfig, arena: Arena): DomainError | null {
@@ -101,6 +107,8 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
   if (!spawn.ok) return spawn;
   const budgetError = checkBudgetCoversCatalog(spawn.value, catalog.value);
   if (budgetError) return err(budgetError);
+  const loadout = WeaponLoadout.create(config.weapons);
+  if (!loadout.ok) return loadout;
   return ok({
     arena: arena.value,
     view: view.value,
@@ -108,5 +116,6 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
     catalog: catalog.value,
     table: table.value,
     spawn: spawn.value,
+    loadout: loadout.value,
   });
 }

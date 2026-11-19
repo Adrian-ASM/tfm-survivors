@@ -15,7 +15,9 @@ import {
   MAX_BUDGET_MUST_BE_POSITIVE,
   SPAWN_DISTANCE_MUST_BE_NON_NEGATIVE,
 } from '../../src/domain/wave/SpawnRules';
-import { aRunConfig } from '../support/builders';
+import { WEAPON_ID_MUST_BE_UNIQUE } from '../../src/domain/weapon/WeaponLoadout';
+import { PULSE_VISUAL_TICKS_MUST_BE_INTEGER } from '../../src/domain/weapon/WeaponType';
+import { DEFAULT_WEAPONS, LINTER, TESTS, aRunConfig, withWeapons } from '../support/builders';
 
 type Waves = RunConfig['waves'];
 const withWaves = (waves: Partial<Waves>, spawn: Partial<Waves['spawn']> = {}): RunConfig => {
@@ -138,6 +140,25 @@ describe('buildRunRules', () => {
       field: 'player.invulnerabilityTicks',
       message: INVULNERABILITY_TICKS_MUST_BE_INTEGER,
     });
+  });
+
+  it('construye el arsenal en el orden del contenido; sin armas por defecto en los builders', () => {
+    const r = buildRunRules(withWeapons(aRunConfig(), DEFAULT_WEAPONS));
+    expect(r.ok && r.value.loadout.weapons.map((w) => w.id)).toEqual(['linter', 'tests']);
+    const none = buildRunRules(aRunConfig());
+    expect(none.ok && none.value.loadout.weapons).toEqual([]);
+  });
+
+  it('propaga los errores de las armas con la ruta weapons.weapons.i.…', () => {
+    const bad = { ...TESTS, attack: { type: 'pulse', visualTicks: 0 } } as const;
+    const e = failure(withWeapons(aRunConfig(), { ...DEFAULT_WEAPONS, weapons: [LINTER, bad] }));
+    expect(e).toEqual({
+      code: 'invalid-config',
+      field: 'weapons.weapons.1.attack.visualTicks',
+      message: PULSE_VISUAL_TICKS_MUST_BE_INTEGER,
+    });
+    const dup = withWeapons(aRunConfig(), { ...DEFAULT_WEAPONS, weapons: [LINTER, LINTER] });
+    expect(failure(dup).message).toBe(`${WEAPON_ID_MUST_BE_UNIQUE}: linter`);
   });
 
   it('mantiene las invariantes del jugador', () => {

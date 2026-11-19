@@ -27,7 +27,8 @@ export function circlesOverlap(
 /**
  * Mayor `damage` entre los objetivos que solapan el círculo (px, py, pr); 0 si ninguno.
  * Fuerza bruta O(n), sin asignaciones y sin salida anticipada: el máximo no depende del orden.
- * Una rejilla espacial (0004) podrá ofrecer la misma firma sobre los candidatos de una celda.
+ * La rejilla espacial se aplazó en 0004 (fuerza bruta, margen > 15 veces en el bench); si llega,
+ * podrá ofrecer la misma firma sobre los candidatos de una celda.
  */
 export function contactDamage(
   px: number,
