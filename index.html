@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sprint Survivors</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #0b0b10;
+        color: #eee;
+        font: 16px system-ui, sans-serif;
+      }
+      #game {
+        display: grid;
+        place-items: center;
+        height: 100%;
+      }
+      .content-error {
+        max-width: 640px;
+        padding: 16px;
+        border: 1px solid #e5484d;
+        border-radius: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="game"></div>
+    <script type="module" src="/src/composition/main.ts"></script>
+  </body>
+</html>

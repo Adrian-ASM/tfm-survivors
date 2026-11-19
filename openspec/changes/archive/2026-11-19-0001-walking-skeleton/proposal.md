@@ -19,6 +19,9 @@ Que `main` sea desplegable desde el primer día: un círculo que se mueve con el
   - Estructura Clean **mínima**: `domain/`, `application/`, `infrastructure/`, `composition/`.
   - Núcleo: `Position`/`Velocity` (VOs), `PlayerInput` (DTO), `TickRun` con paso fijo de 1/60 s y normalización diagonal.
   - Guardarraíles capa 2: ESLint (typescript-eslint) con reglas de capas y pureza, Prettier, husky + lint-staged.
+  - **Ampliación aprobada el 2026-11-19**: reutilizar los hooks de `.claude/hooks/` en el `pre-commit` y en CI
+    (`scripts/guard-staged.mjs`), porque fuera de Claude Code (app de Claude, otros agentes, personas) no se
+    ejecutan. Capacidad nueva `architecture-guardrails`.
   - Tests: Vitest (dominio + determinismo) y un smoke E2E con Playwright (chromium).
   - `npm run verify`; activar `.github/workflows/ci.yml` y despliegue a Pages.
   - Actualizar README (instalación, ejecución, estructura) y la sección de comandos de AGENTS.md.
@@ -27,6 +30,7 @@ Que `main` sea desplegable desde el primer día: un círculo que se mueve con el
 ## Capacidades afectadas
 - `openspec/specs/player-movement` (nueva)
 - `openspec/specs/simulation-loop` (nueva)
+- `openspec/specs/architecture-guardrails` (nueva)
 
 ## Riesgos y dudas
 - La IA mezcla APIs de Phaser 3 y 4 → versión fijada + verificación en documentación oficial.

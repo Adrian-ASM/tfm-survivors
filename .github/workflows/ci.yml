@@ -3,12 +3,13 @@
 # un único navegador en E2E y timeouts cortos. Se activa solo cuando existe package.json (change 0001).
 name: ci
 
+# .claude/hooks/** y .claude/settings.json NO se ignoran: son la fuente de las reglas del guardarraíl.
 on:
   push:
     branches: [main]
-    paths-ignore: ['**.md', 'docs/**', 'openspec/**', '.claude/**']
+    paths-ignore: ['**.md', 'docs/**', 'openspec/**', '.claude/agents/**', '.claude/skills/**']
   pull_request:
-    paths-ignore: ['**.md', 'docs/**', 'openspec/**', '.claude/**']
+    paths-ignore: ['**.md', 'docs/**', 'openspec/**', '.claude/agents/**', '.claude/skills/**']
   workflow_dispatch:
 
 permissions:

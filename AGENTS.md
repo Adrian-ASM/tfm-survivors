@@ -12,18 +12,19 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
 - **Stack**: TypeScript estricto · Vite · **Phaser 4.2.1** (ADR-0001) · Vitest · Playwright · zod.
 - **Arquitectura**: Clean Architecture. El **núcleo de simulación es puro y determinista** (`src/domain`, `src/application`);
   el motor de juego es un **adaptador** (`src/infrastructure`). Ver `docs/adr/0002-nucleo-de-simulacion-puro.md`.
-- **Estado del proyecto**: fase de cimientos. Fuente de verdad del comportamiento: `openspec/specs/`.
+- **Estado del proyecto**: walking skeleton (change 0001). Fuente de verdad del comportamiento: `openspec/specs/`.
 
 ## 2. Comandos
 
-> Disponibles a partir del change `0001-walking-skeleton`.
+> En Windows con PowerShell usa `npm.cmd` si la política de ejecución bloquea `npm.ps1`.
 
 | Comando | Qué hace |
 |---|---|
-| `npm run dev` | Servidor de desarrollo |
-| `npm run verify` | lint + typecheck + tests unitarios. **Ejecútalo tras cualquier cambio de código. No cierres una tarea en rojo.** |
-| `npm run test:e2e` | Playwright (chromium) |
+| `npm run dev` | Servidor de desarrollo (`http://localhost:5173/tfm-survivors/`) |
+| `npm run verify` | lint + typecheck + guardarraíl sobre todo el repo + tests unitarios. **Ejecútalo tras cualquier cambio de código. No cierres una tarea en rojo.** |
+| `npm run test:e2e` | Build + `vite preview` + Playwright (chromium) |
 | `npm run build` | Build de producción (`dist/`) |
+| `npm run guard:all` | Reglas de `.claude/hooks/` sobre todos los ficheros versionados (lo que hace el CI) |
 
 ## 3. Reglas de arquitectura (no negociables)
 
@@ -35,8 +36,15 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
 5. El contenido del juego (armas, enemigos, mejoras, oleadas) vive en `content/*.json` validado con zod. Sin números mágicos.
 6. Toda entrada externa (fichero importado, `localStorage`, red) se valida con zod antes de llegar al dominio.
 
-Estas reglas se aplican en tres capas: hook de Claude Code (`.claude/hooks/guard-architecture.mjs`),
-ESLint (IDE + pre-commit) y CI. Si un guardarraíl te bloquea, **corrige el diseño; no desactives la regla**.
+Estas reglas se aplican en tres capas, con **una sola fuente** (`.claude/hooks/`) para todos los autores:
+1. **Agente**: hooks de Claude Code al escribir (solo dentro de Claude Code).
+2. **Commit** (cualquier autor: persona, Claude desde la app, otros agentes): `.husky/pre-commit` ejecuta
+   lint-staged (ESLint con reglas de capas y pureza) y `scripts/guard-staged.mjs`, que lanza los mismos hooks
+   sobre el contenido preparado.
+3. **CI**: `npm run verify` incluye `guard:all` y ESLint sobre todo el repo.
+
+Si un guardarraíl te bloquea, **corrige el diseño; no desactives la regla**. Prohibido `git commit --no-verify`
+y escribir en `main` sin PR (también con la API de GitHub): los cambios entran por PR con el check `quality` verde.
 
 ## 4. Convenciones
 
