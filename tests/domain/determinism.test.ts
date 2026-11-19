@@ -27,7 +27,19 @@ describe('Determinismo con semilla', () => {
     const a = play(42, inputs);
     const b = play(42, inputs);
     expect(a.at(-1)?.enemies.length).toBeGreaterThan(0);
+    expect(Object.keys(a.at(-1)?.player ?? {})).toEqual(
+      expect.arrayContaining(['health', 'maxHealth', 'invulnerable']),
+    );
+    expect(a.at(-1)).toHaveProperty('status');
     for (let i = 0; i < inputs.length; i++) expect(a[i]).toStrictEqual(b[i]);
+  });
+
+  it('Partida con contactos reproducible (semilla 42, quieto, 3.600 ticks, ≥ 1 golpe)', () => {
+    const still = Array.from({ length: 3600 }, () => PlayerInput.NONE);
+    const a = play(42, still);
+    const b = play(42, still);
+    expect(a.some((s) => s.player.health < s.player.maxHealth)).toBe(true);
+    for (let i = 0; i < still.length; i++) expect(a[i]).toStrictEqual(b[i]);
   });
 
   it('Semillas distintas', () => {

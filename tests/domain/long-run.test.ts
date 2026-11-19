@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import type { PlayerInput } from '../../src/domain/player/PlayerInput';
+import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import { Run } from '../../src/domain/run/Run';
 import type { RunConfig } from '../../src/domain/run/RunConfig';
 import type { EnemySnapshot, RunSnapshot } from '../../src/domain/run/RunSnapshot';
@@ -84,6 +84,25 @@ describe('Partidas largas (10 min)', () => {
 
   it('Partida larga reproducible', () => {
     expect(finalSnapshot(SPAWN_AUDIT, SEED, inputs)).toStrictEqual(audited.final);
+  });
+
+  it('Jugador quieto con el contenido por defecto: termina con vida 0 (semilla 7)', () => {
+    const run = start(aRunConfig(), SEED);
+    let endedAt = 0;
+    for (let n = 1; n <= TEN_MINUTES && endedAt === 0; n++) {
+      run.tick(PlayerInput.NONE);
+      if (run.snapshot().status === 'over') endedAt = n;
+    }
+    const snap = run.snapshot();
+    expect(snap.status).toBe('over');
+    expect(snap.player.health).toBe(0);
+    expect(snap.tick).toBe(endedAt);
+    expect(endedAt).toBeLessThanOrEqual(TEN_MINUTES);
+  });
+
+  it('Partida larga reproducible con la vida por defecto', () => {
+    const a = finalSnapshot(aRunConfig(), SEED, inputs);
+    expect(finalSnapshot(aRunConfig(), SEED, inputs)).toStrictEqual(a);
   });
 
   it('Mezcla de tipos', () => {

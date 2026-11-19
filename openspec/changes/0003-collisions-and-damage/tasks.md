@@ -102,12 +102,12 @@
 - [x] 5.1 `tests/domain/long-run.test.ts`: la auditoría de spawns, arena y reproducibilidad usa
       `aRunConfig({ maxHealth: LONG_RUN_HEALTH })`, porque prueba el spawn y no el daño. Así siguen valiendo
       `births === 200` y `maxAlive === 200`. Cubre ES "Partida larga sin spawns ilegales" y EB "Partida larga".
-- [ ] 5.2 Escenarios largos con la vida por defecto (mismo fichero, una sola simulación reutilizada si es posible):
+- [x] 5.2 Escenarios largos con la vida por defecto (mismo fichero, una sola simulación reutilizada si es posible):
       - RS "Jugador quieto con el contenido por defecto": semilla 7, input (0, 0), termina en un tick ≤ 36.000 con
         vida 0. El design estima que hacia el tick 1.000.
       - SL "Partida larga reproducible", con el contenido por defecto.
       - Comprobar que la suite no supera unos 5 s en total.
-- [ ] 5.3 `tests/domain/determinism.test.ts`: "Dos partidas idénticas" compara también la vida, `invulnerable` y
+- [x] 5.3 `tests/domain/determinism.test.ts`: "Dos partidas idénticas" compara también la vida, `invulnerable` y
       `status`. Escenario nuevo "Partida con contactos reproducible" (semilla 42, input (0, 0), 3.600 ticks, ≥ 1
       golpe). Cubre SL "Determinismo" (MODIFIED).
 
