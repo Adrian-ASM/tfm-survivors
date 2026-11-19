@@ -91,7 +91,7 @@
   enteros", "Combinación incompatible" (errores que nombran el campo).
 
 ## 6. Infraestructura: render
-- [ ] 6.1 Extraer `phaser/SlotPool.ts` (tres pasadas, `Map` id ↔ hueco, pila libre) y hacer que `EnemyLayer` lo use;
+- [x] 6.1 Extraer `phaser/SlotPool.ts` (tres pasadas, `Map` id ↔ hueco, pila libre) y hacer que `EnemyLayer` lo use;
   `enemy-layer.test.ts` intacto y en verde — SL "Pintado de los enemigos vivos" (bajas, todos dados de baja,
   reposición).
 - [ ] 6.2 Destello en `EnemyLayer` (`FLASH_COLOR`, repintar solo si cambia tipo o `damaged`); test con dobles —
