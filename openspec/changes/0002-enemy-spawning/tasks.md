@@ -9,14 +9,14 @@
      SL = simulation-loop (delta). -->
 
 ## 0. Aleatoriedad determinista
-- [ ] 0.1 **Regresión antes de mover nada**: `tests/infrastructure/random.test.ts` fija los 5 primeros valores de
+- [x] 0.1 **Regresión antes de mover nada**: `tests/infrastructure/random.test.ts` fija los 5 primeros valores de
       `seededRandom(2026)`, `seededRandom(0)` y `seededRandom(42)` con la implementación actual de
       `tests/support/builders.ts` (verde desde el principio; es la red para el movimiento) — base de SL "Determinismo"
-- [ ] 0.2 Puerto `src/domain/shared/RandomGenerator.ts` (`next(): number` en [0, 1)), contrato compartido
+- [x] 0.2 Puerto `src/domain/shared/RandomGenerator.ts` (`next(): number` en [0, 1)), contrato compartido
       `tests/support/randomContract.ts` (`describeRandomGeneratorContract`: rango, finitud, reproducible con la misma
       configuración) y doble `tests/support/random.ts` (`StubRandom` con `value` fijable). Test:
       `tests/domain/random-contract.test.ts` contra `StubRandom` — base de ES "El presupuesto no se pierde al aplazar"
-- [ ] 0.3 `src/infrastructure/random/Mulberry32RandomGenerator.ts` (expone `seed`). Rojo: el test de 0.1 pasa a
+- [x] 0.3 `src/infrastructure/random/Mulberry32RandomGenerator.ts` (expone `seed`). Rojo: el test de 0.1 pasa a
       apuntar al adaptador y el contrato se ejecuta también contra él. Verde: mover el algoritmo. Refactor: borrar
       `seededRandom` de `builders.ts` y migrar `tests/application/loop.test.ts` — SL "Determinismo" (base)
 

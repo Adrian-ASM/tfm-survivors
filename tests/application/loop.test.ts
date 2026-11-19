@@ -3,7 +3,8 @@ import { FixedStepLoop } from '../../src/application/FixedStepLoop';
 import { StartRun } from '../../src/application/StartRun';
 import type { TickRun } from '../../src/application/TickRun';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
-import { aRunConfig, seededRandom } from '../support/builders';
+import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
+import { aRunConfig } from '../support/builders';
 
 const ticksFor = (...framesMs: number[]): number[] => {
   const loop = new FixedStepLoop();
@@ -56,9 +57,9 @@ describe('TickRun', () => {
   });
 
   it('Dos partidas idénticas', () => {
-    const rnd = seededRandom(2026);
+    const rnd = new Mulberry32RandomGenerator(2026);
     const inputs = Array.from({ length: 600 }, () =>
-      PlayerInput.of(Math.round(rnd() * 2 - 1), Math.round(rnd() * 2 - 1)),
+      PlayerInput.of(Math.round(rnd.next() * 2 - 1), Math.round(rnd.next() * 2 - 1)),
     );
     const a = start();
     const b = start();
