@@ -190,4 +190,22 @@ la duración de invulnerabilidad.
 - **WHEN** se carga el contenido
 - **THEN** la carga tiene éxito y la duración de invulnerabilidad equivale a N ≥ 1 ticks
 
+### Requirement: Contacto observable con las armas activas
+El sistema SHALL hacer que, con el contenido por defecto (armas incluidas), un jugador que no se mueve reciba al
+menos un golpe de contacto en un plazo acotado, de modo que el daño al jugador siga siendo observable en el juego
+real, y que la partida siga en curso tras ese primer golpe.
+
+#### Scenario: Primer golpe en el núcleo con armas activas
+- **GIVEN** el contenido por defecto, semilla 42 e input (0, 0) en todos los ticks
+- **WHEN** se ejecutan 4.800 ticks (80 s)
+- **THEN** en algún tick ≤ 4.800 la vida del jugador es menor que 100
+- **AND** en el tick del primer golpe la partida sigue en curso, con vida 100 menos el `damage` del enemigo que
+  golpeó
+
+#### Scenario: Primer golpe en el navegador
+- **GIVEN** la build de producción servida con `?seed=42` y sin input del jugador
+- **WHEN** pasan como mucho 80 s de juego
+- **THEN** una prueba E2E observa una vida del jugador menor que la máxima, mayor que 0 y la partida en curso
+
 <!-- historial: 0003-collisions-and-damage (2026-11-19) -->
+<!-- historial: 0004-auto-weapons (2026-11-19) -->
