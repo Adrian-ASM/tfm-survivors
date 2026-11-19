@@ -32,6 +32,19 @@ export class Player {
     return this.rules.speed;
   }
 
+  get pickupRadius(): number {
+    return this.rules.pickupRadius;
+  }
+
+  /**
+   * Jugador con reglas efectivas nuevas (mejora, camino frío): conserva posición e
+   * invulnerabilidad y sube la vida máxima y la actual en `maxHealthGain` (ver `Health.raise`).
+   */
+  withRules(rules: PlayerRules, maxHealthGain: number): Player {
+    const health = maxHealthGain === 0 ? this.health : this.health.raise(maxHealthGain);
+    return new Player(this.position, rules, health, this.invulnerableUntil);
+  }
+
   /** Avanza dt segundos sin inercia y sin salir de la arena; conserva vida e invulnerabilidad. */
   move(input: PlayerInput, dtSeconds: number, arena: Arena): Player {
     const next = this.position.add(input.direction.scale(this.rules.speed * dtSeconds));

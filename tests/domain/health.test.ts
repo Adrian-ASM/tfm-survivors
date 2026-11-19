@@ -33,3 +33,26 @@ describe('Health · vida mínima 0', () => {
     }).toThrow(TypeError);
   });
 });
+
+describe('Health.raise · vida máxima mejorable', () => {
+  it('Scenario: Con la vida llena (+20: 120 de 120)', () => {
+    const h = Health.full(100).raise(20);
+    expect([h.current, h.max]).toEqual([120, 120]);
+  });
+
+  it('Scenario: Con la vida a medias (55 de 100 + 20: 75 de 120)', () => {
+    const h = Health.full(100).damage(45).raise(20);
+    expect([h.current, h.max]).toEqual([75, 120]);
+  });
+
+  it('Scenario: Nivel máximo (5 × 20 sin golpes: 200 de 200)', () => {
+    let h = Health.full(100);
+    for (let i = 0; i < 5; i++) h = h.raise(20);
+    expect([h.current, h.max]).toEqual([200, 200]);
+  });
+
+  it('con un incremento negativo recorta la vida actual a [1, max]: elegir no mata', () => {
+    expect(Health.full(100).damage(95).raise(-20)).toMatchObject({ current: 1, max: 80 });
+    expect(Health.full(100).raise(-20)).toMatchObject({ current: 80, max: 80 });
+  });
+});

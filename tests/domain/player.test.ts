@@ -143,3 +143,20 @@ describe('Player · vida e invulnerabilidad', () => {
     expect([p.health.current, p.invulnerableUntil]).toEqual([100, 0]);
   });
 });
+
+describe('Player.withRules', () => {
+  it('conserva posición, vida restante e invulnerabilidad, y aplica las reglas nuevas', () => {
+    const hit = Player.spawn(Vector2.of(100, 200), RULES).hit(10, 10);
+    const p = hit.withRules({ ...RULES, speed: 220, maxHealth: 120 }, 20);
+    expect([p.position.x, p.position.y]).toEqual([100, 200]);
+    expect([p.health.current, p.health.max]).toEqual([110, 120]);
+    expect(p.invulnerableUntil).toBe(40);
+    expect(p.speed).toBe(220);
+    expect([hit.speed, hit.health.max]).toEqual([200, 100]);
+  });
+
+  it('expone el radio de recogida efectivo', () => {
+    const p = Player.spawn(Vector2.of(0, 0), RULES).withRules({ ...RULES, pickupRadius: 96 }, 0);
+    expect(p.pickupRadius).toBe(96);
+  });
+});
