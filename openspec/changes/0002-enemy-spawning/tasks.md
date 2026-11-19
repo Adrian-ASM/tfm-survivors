@@ -124,10 +124,10 @@
       según ADR-0003)
 
 ## 8. E2E
-- [ ] 8.1 `tests/e2e/enemies.spec.ts`, `?e2e&seed=42`: `probe.seed === 42`; ≥ 1 enemigo en < 3 s; todos los centros
+- [x] 8.1 `tests/e2e/enemies.spec.ts`, `?e2e&seed=42`: `probe.seed === 42`; ≥ 1 enemigo en < 3 s; todos los centros
       en [radio, 960 − radio] × [radio, 540 − radio]; sin errores ni avisos de consola — SL "Semilla válida por URL";
       criterio de éxito "enemigos en el borde"
-- [ ] 8.2 `?e2e&seed=abc`: exactamente 1 `warning` que menciona `seed`, `probe.seed` entero en [0, 4294967295] y la
+- [x] 8.2 `?e2e&seed=abc`: exactamente 1 `warning` que menciona `seed`, `probe.seed` entero en [0, 4294967295] y la
       partida avanza; el smoke de 0001 sigue en verde — SL "Semilla inválida" (navegador)
 
 ## 9. Cierre
