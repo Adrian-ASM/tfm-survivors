@@ -138,7 +138,7 @@
 - [x] 3.6 `phaser/ResultsOverlay.ts` con dobles: visible si y solo si `over`, getter `view` y pintado solo cuando
   cambia la clave. Escenarios de run-results: "Sin overlay durante la partida" y "Aparece en el mismo frame en que
   termina la partida".
-- [ ] 3.7 `phaser/RestartKey.ts`: evento `down` de R → `read()` lo consume; una pulsación mantenida da un solo
+- [x] 3.7 `phaser/RestartKey.ts`: evento `down` de R → `read()` lo consume; una pulsación mantenida da un solo
   `true`. Test con un doble de teclado como en `choice-keys.test.ts`. Escenario: run-results "Una pulsación, una
   partida nueva" (adaptador).
 - [ ] 3.8 `clear()` en `SlotPool`, `EnemyLayer`, `GemLayer`, `ProjectileLayer` y `PulseLayer` (sin asignar). Test:
