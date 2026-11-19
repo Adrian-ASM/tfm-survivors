@@ -87,7 +87,7 @@
   terminar", "600 ticks después de ganar" (duración corta con ≥ 1 enemigo, proyectil y gema), "La terminación no
   consume azar" (pares de victoria y de derrota), "Una partida terminada no vuelve a en curso", "Armas congeladas al
   terminar" (con bajas) y "Gemas congeladas al terminar".
-- [ ] 1.15 Escenarios largos (36.000 ticks) en un `describe` con la simulación compartida en `beforeAll`:
+- [x] 1.15 Escenarios largos (36.000 ticks) en un `describe` con la simulación compartida en `beforeAll`:
   - run-outcome "Victoria exacta en el tick 36.000" (vida `LONG_RUN_HEALTH`, semilla 7).
   - simulation-loop "Victoria reproducible".
   - run-outcome "Invariante durante una partida completa" (semilla 42, quieto).
