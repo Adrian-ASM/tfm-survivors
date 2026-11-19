@@ -34,7 +34,7 @@
   "Nivel 50"
 - [x] 1.5 `progression/GemRules` (VO) y `XpGem` (`set`, `pull` sin sobrepasar) — escenarios: "Valores no positivos"
   (dominio), "Tope mínimo válido", "No sobrepasa al jugador" (unidad de `pull`)
-- [ ] 1.6 `GemField.drop`: pool de `maxGems`, ids sin reutilizar, tope con suma a la más antigua — escenarios: "Tope
+- [x] 1.6 `GemField.drop`: pool de `maxGems`, ids sin reutilizar, tope con suma a la más antigua — escenarios: "Tope
   lleno", "Varias bajas con el tope lleno", "Las gemas no consumen azar" (unidad)
 - [ ] 1.7 `GemField.step` imán: atracción inclusiva, atraída para siempre, avance `magnetSpeed / 60` — escenarios:
   "Límite exacto del radio", "Recorrido hasta la recogida", "Una gema atraída no se suelta", "Gema fuera del radio"
