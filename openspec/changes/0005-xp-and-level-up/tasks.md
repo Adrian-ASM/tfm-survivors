@@ -120,7 +120,7 @@
 - [x] 3.4 `GemLayer` sobre `SlotPool` — escenarios: "Recogidas y nuevas", "Tope de gemas pintado", "Todas recogidas"
 - [x] 3.5 `xpBarFill` (pura) y `XpBar` (repinta solo si cambian valores) — escenarios: "Barra vacía al empezar",
   "Relleno parcial", "Tras subir de nivel"
-- [ ] 3.6 `cardLayout` (pura) y `UpgradeOverlay` con dobles (relleno al cambiar la oferta, visibilidad, índice
+- [x] 3.6 `cardLayout` (pura) y `UpgradeOverlay` con dobles (relleno al cambiar la oferta, visibilidad, índice
   clicado) — escenarios: "Tres cartas", "Menos cartas" (2 cartas), "Sin oferta" (no visible)
 - [ ] 3.7 `ChoiceKeys` y elección en `GameScene.update` (solo con oferta e índice < nº de cartas) — escenarios:
   "Elegir con tecla", "Elegir con clic", "Menos cartas" (tecla 3 no hace nada), "Sin oferta" (teclas sin efecto)
