@@ -1,11 +1,12 @@
 import { spawnSync } from 'node:child_process';
-import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-// Escenarios "Guardarraíl en pre-commit" (spec architecture-guardrails), en un repo git temporal con una copia
-// de los hooks reales de .claude/hooks/.
+// Escenarios "Guardarraíl en pre-commit" (spec architecture-guardrails): scripts/guard-staged.mjs (que importa
+// los check() de .claude/hooks/) sobre un repo git temporal. El cableado con `git commit` real está en
+// pre-commit.test.ts.
 const root = join(import.meta.dirname, '..', '..');
 const script = join(root, 'scripts', 'guard-staged.mjs');
 let repo: string;
@@ -30,7 +31,6 @@ function guard(...args: string[]) {
 beforeEach(() => {
   repo = mkdtempSync(join(tmpdir(), 'guard-'));
   git('init', '-q');
-  cpSync(join(root, '.claude', 'hooks'), join(repo, '.claude', 'hooks'), { recursive: true });
 });
 
 afterEach(() => {

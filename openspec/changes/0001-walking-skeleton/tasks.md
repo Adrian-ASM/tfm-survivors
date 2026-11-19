@@ -56,7 +56,7 @@
 - [x] 5.3 (W1) `guard-staged.mjs` en proceso: los hooks exportan `check({ file_path, content })` (manteniendo el
       wrapper stdin para Claude Code) y el índice se lee con una sola llamada (`git cat-file --batch`) — escenario:
       "Commit limpio" con margen amplio
-- [ ] 5.4 (W7) Test que ejecuta `git commit` de verdad en el repo temporal con `.husky/pre-commit` y comprueba que
+- [x] 5.4 (W7) Test que ejecuta `git commit` de verdad en el repo temporal con `.husky/pre-commit` y comprueba que
       se aborta — escenarios de pre-commit
 - [ ] 5.5 (W3, S10) Endurecer tests: tolerancia ≤ 0,001 px en diagonal y deslizamiento; snapshot con input (1, 0)
 - [ ] 5.6 (S11, S12, S13, S14) `lintText` sin escribir en `src/`; invariante `speed > 0` alineada con zod; exención
