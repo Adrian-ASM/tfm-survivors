@@ -80,7 +80,7 @@
 - [x] 1.12 Tiempo por ticks y ofertas. Escenarios: run-outcome "La elección de mejora no consume tiempo de
   partida" y "Sin resultado mientras se elige mejora"; run-state "Oferta abierta justo antes del tick de la
   victoria" y "Eligiendo mejora y vuelta a en curso".
-- [ ] 1.13 Derrota frente a la duración. Escenarios: run-outcome "Derrota temprana", "La derrota no se convierte en
+- [x] 1.13 Derrota frente a la duración. Escenarios: run-outcome "Derrota temprana", "La derrota no se convierte en
   victoria" y "Derrota en el tick anterior a la victoria". Con duración corta y el golpe en el tick final − 1 se
   evitan 36.000 ticks, salvo que la spec lo exija literalmente; si es así, se reutiliza la simulación de 1.15.
 - [ ] 1.14 Congelado en ambos resultados (`run-state.test.ts`). Escenarios: run-state "600 ticks después de

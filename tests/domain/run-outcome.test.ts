@@ -420,3 +420,63 @@ describe('Estado de la partida con ofertas y duración (spec run-state)', () => 
     expect([run.snapshot().status, run.snapshot().outcome]).toEqual(['running', null]);
   });
 });
+
+/**
+ * Golpe letal en el tick n sin simular nada más: un único enemigo `slow` (damage 10) en la esquina
+ * opuesta a CORNER, con la velocidad justa para que la distancia baje de 26 (16 + 10) en el tick n
+ * y no antes. Jugador con vida 10 y duración por defecto (36.000 ticks).
+ */
+function lethalAt(n: number): Run {
+  const from = { x: 860, y: 500 };
+  const distance = Math.hypot(from.x - CORNER.x, from.y - CORNER.y);
+  const perTick = (distance - 26) / (n - 0.5);
+  const slow = aProbeType({ id: 'slow', speed: perTick * 60, health: 1e6 });
+  const config = aContactConfig({ types: [slow], player: { maxHealth: 10 } });
+  return startRun(config, { player: CORNER, enemies: [{ type: 'slow', ...from }] });
+}
+
+describe('Derrota antes de la duración objetivo (spec run-outcome)', () => {
+  it('Scenario: Derrota temprana (golpe letal en el tick 1.200)', () => {
+    const run = lethalAt(1200);
+
+    const snaps = ticks(run, 1200);
+
+    expect(snaps[1198]?.status).toBe('running');
+    expect(snaps[1199]).toMatchObject({
+      tick: 1200,
+      status: 'over',
+      outcome: 'lost',
+      player: { health: 0 },
+    });
+  });
+
+  it('Scenario: La derrota no se convierte en victoria (36.000 ticks más)', () => {
+    const run = lethalAt(1200);
+    ticks(run, 1200);
+
+    for (let i = 0; i < 36_000; i++) run.tick(PlayerInput.of(1, 1));
+
+    expect(run.snapshot()).toMatchObject({ tick: 1200, outcome: 'lost' });
+  });
+
+  it('Scenario: Derrota en el tick anterior a la victoria (golpe letal en el 35.999)', () => {
+    const run = lethalAt(35_999);
+
+    for (let i = 0; i < 36_000; i++) run.tick(PlayerInput.NONE);
+
+    expect(run.snapshot()).toMatchObject({ tick: 35_999, status: 'over', outcome: 'lost' });
+  });
+
+  it('Scenario: Muerte y victoria en el mismo tick (36.000 ticks; golpe letal en el 36.000)', () => {
+    const run = lethalAt(36_000);
+
+    for (let i = 0; i < 36_000; i++) run.tick(PlayerInput.NONE);
+
+    expect(run.snapshot()).toMatchObject({
+      tick: 36_000,
+      status: 'over',
+      outcome: 'lost',
+      player: { health: 0 },
+    });
+  });
+});
