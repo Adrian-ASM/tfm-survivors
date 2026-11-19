@@ -56,8 +56,9 @@ export {
 /**
  * Partida en curso (aggregate root). Único punto de entrada para cambiar el estado de la
  * simulación. Contrato de determinismo: el orden del tick (jugador → persecución → armas, con un
- * único removeDead() si hay bajas → contacto con los vivos → director) y el consumo de azar son
- * fijos (las armas no consumen azar); cambiarlos cambia las partidas de una semilla.
+ * único removeDead() si hay bajas que suelta sus gemas → contacto con los vivos → gemas y XP →
+ * director → apertura de oferta) y el consumo de azar son fijos (armas, gemas y XP no consumen
+ * azar; la oferta sí); cambiarlos cambia las partidas de una semilla.
  */
 export class Run {
   private tickCount = 0;
@@ -113,8 +114,13 @@ export class Run {
     const { x, y } = this.player.position;
     for (const enemy of this.enemies) enemy.chase(x, y, TICK_SECONDS, this.arena);
     if (this.arsenal.step(n, x, y, this.enemies) > 0) this.removeDead();
-    const died = this.applyContact(n);
-    if (!died) this.director.step(n, this.enemies.length, this.place);
+    if (this.applyContact(n)) {
+      this.tickCount = n;
+      return;
+    }
+    const xp = this.gems.step(x, y, this.player.radius, this.player.pickupRadius);
+    if (xp > 0) this.experience.gain(xp);
+    this.director.step(n, this.enemies.length, this.place);
     this.tickCount = n;
   }
 

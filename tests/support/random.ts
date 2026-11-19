@@ -47,3 +47,15 @@ export class ScriptedRandom implements RandomGenerator {
     return v;
   }
 }
+
+/** Envoltorio que cuenta los valores consumidos de otro generador (para "no consume azar"). */
+export class CountingRandom implements RandomGenerator {
+  calls = 0;
+
+  constructor(private readonly inner: RandomGenerator) {}
+
+  next(): number {
+    this.calls += 1;
+    return this.inner.next();
+  }
+}

@@ -70,7 +70,7 @@
 - [x] 1.18 `Run.removeDead` suelta una gema por muerto en orden de la lista — escenarios: "Un bug abatido suelta una
   gema", "Valor según el tipo", "Varias bajas en el mismo tick", "Sin baja no hay gema", "Una baja en el tick de la
   muerte deja su gema", "Valores de cada tipo llegan al dominio" (gema de 3 XP)
-- [ ] 1.19 Paso de gemas tras el contacto y XP del tick — escenarios: "Gema de una baja junto al jugador", "El imán usa
+- [x] 1.19 Paso de gemas tras el contacto y XP del tick — escenarios: "Gema de una baja junto al jugador", "El imán usa
   la posición del jugador ya movido", "Enemigos encima de una gema", "Muerte y subida de nivel en el mismo tick",
   "Gemas congeladas al terminar"
 - [ ] 1.20 Apertura de oferta como último paso del tick y `pendingLevelUps` en `Experience` — escenarios: "Primera
