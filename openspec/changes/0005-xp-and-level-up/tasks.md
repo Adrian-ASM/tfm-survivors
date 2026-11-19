@@ -51,7 +51,7 @@
 - [x] 1.11 `upgrade/upgradeStats` (`upgradedWeapon`, `upgradedPlayer`, siempre desde la base) — escenarios: "Más daño
   del Linter" (damage 9), "Más alcance" (range 460), "Más radio del pulso" (radius 105), "Más velocidad" (220),
   "Más radio de recogida" (96), "El contenido base no cambia" (unidad)
-- [ ] 1.12 `UpgradeBoard`: niveles, disponibilidad y `open` (Fisher–Yates parcial, `k = min(3, m)` valores de azar,
+- [x] 1.12 `UpgradeBoard`: niveles, disponibilidad y `open` (Fisher–Yates parcial, `k = min(3, m)` valores de azar,
   arrays preasignados) con un `RandomGenerator` guionizado — escenarios: "Ninguna adquirida al empezar", "Dos
   disponibles", "Una disponible", "Mejora en su nivel máximo"
 - [ ] 1.13 `UpgradeBoard.pick` y `UpgradeChoiceError` — escenarios: "Elección válida" (unidad), "Índice fuera de
