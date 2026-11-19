@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
 import { Hud } from '../../src/infrastructure/phaser/Hud';
 import { XpBar } from '../../src/infrastructure/phaser/XpBar';
-import { aDefaultConfig } from '../support/builders';
+import { PlayerInput } from '../../src/domain/player/PlayerInput';
+import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
+import { aDefaultConfig, withPlayer } from '../support/builders';
 import { startRun } from '../support/runs';
 import { FakeBar, FakeLabel } from '../support/sprites';
 
@@ -162,5 +164,28 @@ describe('HUD (spec hud)', () => {
     for (let t = 0; t <= 120; t++) h.view.sync(snap({ tick: t }));
 
     expect([h.clock.text, h.clock.writes]).toEqual(['09:58', 3]);
+  });
+});
+
+describe('El HUD solo lee el snapshot', () => {
+  it('Scenario: El HUD no altera la simulación (pintada y sin pintar: snapshots iguales)', () => {
+    const config = withPlayer(aDefaultConfig(), { maxHealth: 1e9 });
+    const painted = startRun(config, {}, new Mulberry32RandomGenerator(42));
+    const plain = startRun(config, {}, new Mulberry32RandomGenerator(42));
+    const h = hud();
+    const pairs = Array.from({ length: 4800 }, () => {
+      for (const r of [painted, plain]) {
+        while (r.status === 'choosing') r.chooseUpgrade(0);
+        r.tick(PlayerInput.NONE);
+      }
+      const s = painted.snapshot();
+      h.view.sync(s);
+      return [s, plain.snapshot()] as const;
+    });
+    const last = pairs.at(-1)?.[0];
+
+    expect(last?.kills).toBeGreaterThan(0);
+    expect(pairs.some(([s]) => s.player.health < s.player.maxHealth)).toBe(true);
+    expect(pairs.every(([a, b]) => JSON.stringify(a) === JSON.stringify(b))).toBe(true);
   });
 });

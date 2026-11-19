@@ -95,7 +95,7 @@ describe('Run · paso de armas en el tick', () => {
     expect(snaps[3]?.player.health).toBe(100);
   });
 
-  it('Scenario: Reposición en el mismo tick (maxAlive 1: el hueco se repone en el tick de la baja)', () => {
+  it('Scenario: Reposición en el mismo tick y Una baja libera el hueco antes del director (maxAlive 1)', () => {
     const config = withWeapons(
       aContactConfig({ segments: [aSegment(['bug'], 60)], maxAlive: 1, types: [bugType] }),
       weaponsOf([LINTER]),

@@ -165,7 +165,7 @@
   plazo medido en 0.2, ≤ 120 s de juego), con `outcome 'lost'` y `results` = `Derrota` / ⌊tick/60⌋ / nivel / bajas.
   Después se pulsa `r` y, con tick ≤ 60: `running`, sin resultado, `kills 0`, nivel 1, `xp 0`, `results null` y sin
   errores de consola. Escenario: run-results "Derrota y reinicio en el navegador".
-- [ ] 4.3 Rellenar la sección *Medición* de `design.md` (si no se hizo en 0.2) y pasar ADR-0009 a "aceptada".
+- [x] 4.3 Rellenar la sección *Medición* de `design.md` (si no se hizo en 0.2) y pasar ADR-0009 a "aceptada".
   Actualizar el estado del proyecto en `AGENTS.md` §1 si procede y añadir la entrada del diario de IA en
   `docs/ai-log/`.
 - [ ] 4.4 `npm run verify` y `npm run test:e2e` en verde. Comprobar que `Run.ts` tiene menos de 300 líneas y

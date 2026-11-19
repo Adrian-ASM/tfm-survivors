@@ -1,6 +1,6 @@
 # ADR-0009 · Ciclo de vida de la partida: fase con resultado y reinicio por sustitución
 
-- **Estado**: propuesta (change 0006-run-lifecycle-hud)
+- **Estado**: aceptada (change 0006-run-lifecycle-hud, implementada en apply)
 - **Fecha**: 2026-11-19
 
 ## Contexto
