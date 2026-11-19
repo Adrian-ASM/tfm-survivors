@@ -134,15 +134,19 @@ export class Run {
 
   /**
    * Compactación estable en el sitio (ADR-0006): O(n), sin asignar y conservando el orden de
-   * aparición de los vivos.
+   * aparición de los vivos. Cada muerto suelta su gema en su posición, en orden de la lista
+   * (spec xp-gems); el muerto conserva posición y tipo hasta este pase.
    */
   private removeDead(): void {
     let w = 0;
     for (let r = 0; r < this.enemies.length; r++) {
       const e = this.enemies[r];
-      if (e?.alive) {
+      if (!e) continue;
+      if (e.alive) {
         if (w !== r) this.enemies[w] = e;
         w++;
+      } else {
+        this.gems.drop(e.x, e.y, e.type.xp);
       }
     }
     this.enemies.length = w;
