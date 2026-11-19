@@ -66,17 +66,17 @@ El sistema SHALL mantener el círculo del jugador entero dentro de la arena: su 
 - **THEN** x sigue en 944 y y ha aumentado 70,711 px (error ≤ 0,001 px)
 
 ### Requirement: Contenido del jugador validado
-El sistema SHALL leer velocidad y radio del jugador y el tamaño de la arena desde `content/*.json`, validados con
-zod antes de llegar al dominio. Un contenido inválido MUST impedir que la partida arranque con un error que nombre
-el campo inválido.
+El sistema SHALL leer velocidad, radio y vida máxima del jugador y el tamaño de la arena desde `content/*.json`,
+validados con zod antes de llegar al dominio. La vida máxima MUST ser > 0. Un contenido inválido MUST impedir que
+la partida arranque con un error que nombre el campo inválido.
 
 #### Scenario: Contenido válido
-- **GIVEN** `content/player.json` con `{ "speed": 200, "radius": 16 }`
+- **GIVEN** `content/player.json` con `{ "speed": 200, "radius": 16, "maxHealth": 100 }`
 - **WHEN** se carga el contenido
-- **THEN** el dominio recibe velocidad 200 y radio 16
+- **THEN** el dominio recibe velocidad 200, radio 16 y vida máxima 100
 
 #### Scenario: Velocidad negativa
-- **GIVEN** `content/player.json` con `{ "speed": -5, "radius": 16 }`
+- **GIVEN** `content/player.json` con `{ "speed": -5, "radius": 16, "maxHealth": 100 }`
 - **WHEN** se carga el contenido
 - **THEN** la carga falla con un error que menciona `speed`
 - **AND** no se crea ninguna partida
@@ -86,4 +86,21 @@ el campo inválido.
 - **WHEN** se carga el contenido
 - **THEN** la carga falla con un error que menciona `radius`
 
+#### Scenario: Vida máxima cero o negativa
+- **GIVEN** `content/player.json` con `"maxHealth": 0` o con `"maxHealth": -10`
+- **WHEN** se carga el contenido
+- **THEN** la carga falla con un error que menciona `maxHealth`
+- **AND** no se crea ninguna partida
+
+#### Scenario: Vida máxima ausente
+- **GIVEN** `content/player.json` con `{ "speed": 200, "radius": 16 }`
+- **WHEN** se carga el contenido
+- **THEN** la carga falla con un error que menciona `maxHealth`
+
+#### Scenario: Vida máxima mínima válida
+- **GIVEN** `content/player.json` con `{ "speed": 200, "radius": 16, "maxHealth": 1 }`
+- **WHEN** se carga el contenido
+- **THEN** la carga tiene éxito y la partida empieza con vida 1
+
 <!-- historial: 0001-walking-skeleton (2026-11-19) -->
+<!-- historial: 0003-collisions-and-damage (2026-11-19) -->
