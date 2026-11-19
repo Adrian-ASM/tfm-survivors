@@ -97,7 +97,7 @@
   `run-state`): siguen verdes. Se añade `outcome: 'won'` donde la vida es `LONG_RUN_HEALTH` y se amplía la
   comparación de "Partida larga reproducible" con resultado, tick final y bajas. Escenario: simulation-loop "Partida
   larga reproducible".
-- [ ] 1.17 Determinismo ampliado (`determinism*.test.ts`): resultado y bajas en "Dos partidas idénticas", "Partida
+- [x] 1.17 Determinismo ampliado (`determinism*.test.ts`): resultado y bajas en "Dos partidas idénticas", "Partida
   con contactos reproducible" (≤ 4.800, revalidar el plazo) y "Partida con armas reproducible". Escenarios:
   simulation-loop, los tres citados.
 - [ ] 1.18 Regresión de ganabilidad en `balance.test.ts`, con la semilla y la estrategia de la tarea 0.2: victoria

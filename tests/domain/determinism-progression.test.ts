@@ -34,6 +34,8 @@ describe('Determinismo con progresión y elecciones', () => {
     const inputs = randomInputs(600, 2026);
     const a = snapshots(run(42), inputs);
     const b = snapshots(run(42), inputs);
+    expect(Object.keys(a.at(-1) ?? {})).toEqual(expect.arrayContaining(['outcome', 'kills']));
+    expect(a.at(-1)?.kills).toBeGreaterThan(0);
     for (let i = 0; i < inputs.length; i++) expect(a[i]).toStrictEqual(b[i]);
   });
 
@@ -50,6 +52,9 @@ describe('Determinismo con progresión y elecciones', () => {
     const a = snapshots(run(42), still(4800));
     const b = snapshots(run(42), still(4800));
     expect(a.some((s) => s.player.health < s.player.maxHealth)).toBe(true);
+    // Revalidado en 0006: con el contenido rebalanceado la partida termina dentro del plazo
+    // (derrota en el tick 4.682); ambas terminan igual.
+    expect([b.at(-1)?.outcome, b.at(-1)?.tick]).toEqual([a.at(-1)?.outcome, a.at(-1)?.tick]);
     for (let i = 0; i < a.length; i++) expect(a[i]).toStrictEqual(b[i]);
   });
 
@@ -58,6 +63,7 @@ describe('Determinismo con progresión y elecciones', () => {
     const b = snapshots(run(7), still(3600));
     expect(a.some((s) => s.gems.length > 0 || s.progression.xp > 0)).toBe(true);
     expect(a.some((s) => s.pulses.length > 0 && s.enemies.some((e) => e.damaged))).toBe(true);
+    expect(a.at(-1)?.kills).toBeGreaterThanOrEqual(1);
     for (let i = 0; i < a.length; i++) expect(a[i]).toStrictEqual(b[i]);
   });
 

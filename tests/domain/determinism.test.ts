@@ -37,6 +37,7 @@ describe('Determinismo con semilla', () => {
       expect.arrayContaining(['health', 'maxHealth', 'invulnerable']),
     );
     expect(a.at(-1)).toHaveProperty('status');
+    expect(a.at(-1)).toMatchObject({ outcome: null, kills: 0 });
     for (let i = 0; i < inputs.length; i++) expect(a[i]).toStrictEqual(b[i]);
   });
 
