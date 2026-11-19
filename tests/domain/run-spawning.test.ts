@@ -5,7 +5,7 @@ import type { RunConfig } from '../../src/domain/run/RunConfig';
 import type { EnemySnapshot, RunSnapshot } from '../../src/domain/run/RunSnapshot';
 import type { RandomGenerator } from '../../src/domain/shared/RandomGenerator';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
-import { aSegment, aWavesConfig } from '../support/builders';
+import { LONG_RUN_HEALTH, aSegment, aWavesConfig, withPlayer } from '../support/builders';
 import { StubRandom } from '../support/random';
 
 interface Birth {
@@ -62,7 +62,8 @@ describe('Run · oleadas por tramos', () => {
     const config = aWavesConfig({
       segments: [aSegment(['bug'], 1), aSegment(['memory-leak'], 1, 30)],
     });
-    const { births } = simulate(config, 3600);
+    // Prueba el spawn, no el daño: con la vida por defecto el jugador quieto muere antes del tramo 2.
+    const { births } = simulate(withPlayer(config, { maxHealth: LONG_RUN_HEALTH }), 3600);
     const before = births.filter((b) => b.tick < 1790).map((b) => b.enemy.type);
     const after = births.filter((b) => b.tick > 1810).map((b) => b.enemy.type);
     expect(new Set(before)).toEqual(new Set(['bug']));
@@ -131,7 +132,7 @@ describe('Run · posición de aparición', () => {
 describe('Run · catálogo', () => {
   it('Valores de cada tipo llegan al dominio', () => {
     const config = aWavesConfig({
-      types: [{ id: 'bug', speed: 90, radius: 10, cost: 1 }],
+      types: [{ id: 'bug', speed: 90, radius: 10, cost: 1, damage: 5, health: 10 }],
       segments: [aSegment(['bug'], 1)],
     });
     const { run, births } = simulate(config, 60);

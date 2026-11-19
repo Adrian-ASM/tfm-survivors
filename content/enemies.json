@@ -1,7 +1,7 @@
 {
   "types": [
-    { "id": "bug", "speed": 90, "radius": 10, "cost": 1 },
-    { "id": "memory-leak", "speed": 45, "radius": 22, "cost": 3 },
-    { "id": "merge-conflict", "speed": 70, "radius": 16, "cost": 2 }
+    { "id": "bug", "speed": 90, "radius": 10, "cost": 1, "damage": 5, "health": 10 },
+    { "id": "memory-leak", "speed": 45, "radius": 22, "cost": 3, "damage": 15, "health": 45 },
+    { "id": "merge-conflict", "speed": 70, "radius": 16, "cost": 2, "damage": 8, "health": 20 }
   ]
 }

@@ -3,6 +3,7 @@ import type { TickRun } from '../../application/TickRun';
 import type { RunSnapshot } from '../../domain/run/RunSnapshot';
 import { EnemyLayer, type CircleSprite } from './EnemyLayer';
 import { KeyboardInput } from './KeyboardInput';
+import { playerVisible } from './playerBlink';
 
 const PLAYER_COLOR = 0x3dd68c;
 
@@ -49,6 +50,7 @@ export class GameScene extends Phaser.Scene {
 
   private render(snapshot: RunSnapshot): void {
     this.player?.setPosition(snapshot.player.x, snapshot.player.y);
+    this.player?.setVisible(playerVisible(snapshot));
     this.enemies?.sync(snapshot.enemies);
     this.onSnapshot(snapshot);
   }

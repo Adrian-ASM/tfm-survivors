@@ -6,8 +6,19 @@ const PATH = 'enemies.types';
 
 /** Catálogo de tipos de enemigo (value object). Invariante: identificadores únicos. */
 export class EnemyCatalog {
+  /** El tipo de mayor coste (el primero en caso de empate); `undefined` si el catálogo está vacío. */
+  readonly mostExpensive: EnemyType | undefined;
+
   private constructor(private readonly byId: ReadonlyMap<string, EnemyType>) {
+    let top: EnemyType | undefined;
+    for (const type of byId.values()) if (!top || type.cost > top.cost) top = type;
+    this.mostExpensive = top;
     Object.freeze(this);
+  }
+
+  /** Coste del tipo más caro (0 si el catálogo está vacío). */
+  get maxCost(): number {
+    return this.mostExpensive?.cost ?? 0;
   }
 
   static create(

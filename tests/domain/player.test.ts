@@ -7,6 +7,8 @@ import { Vector2 } from '../../src/domain/shared/Vector2';
 
 const EPS = 3; // toBeCloseTo(…, 3) ⇒ error < 0,0005 px (la spec pide ≤ 0,001)
 
+const RULES = { speed: 200, radius: 16, maxHealth: 100, invulnerabilityTicks: 30 };
+
 /** Error ≤ 0,001 px respecto al valor que da la spec (tolerancia literal de la spec). */
 function expectWithinSpec(actual: number, expected: number): void {
   expect(
@@ -22,7 +24,7 @@ function arena(): Arena {
 }
 
 function simulate(start: [number, number], input: PlayerInput, ticks: number): Player {
-  let p = Player.spawn(Vector2.of(...start), 16, 200);
+  let p = Player.spawn(Vector2.of(...start), RULES);
   for (let i = 0; i < ticks; i++) p = p.move(input, TICK_SECONDS, arena());
   return p;
 }
@@ -96,5 +98,42 @@ describe('Arena · límites', () => {
   it('sabe si un radio cabe', () => {
     expect(arena().fits(16)).toBe(true);
     expect(arena().fits(300)).toBe(false);
+  });
+});
+
+describe('Player · vida e invulnerabilidad', () => {
+  const fresh = (): Player => Player.spawn(Vector2.of(480, 270), RULES);
+
+  it('empieza con la vida llena y sin invulnerabilidad (invulnerableUntil 0)', () => {
+    const p = fresh();
+    expect([p.health.current, p.health.max, p.invulnerableUntil]).toEqual([100, 100, 0]);
+    expect(p.isInvulnerableAfter(0)).toBe(false);
+    expect(p.canBeHitAt(1)).toBe(true);
+  });
+
+  it('Fin de la invulnerabilidad justo en el tick N (fronteras t, t + N − 1, t + N, t + N + 1)', () => {
+    const t = 1;
+    const p = fresh().hit(10, t);
+    expect(p.health.current).toBe(90);
+    expect(p.invulnerableUntil).toBe(31);
+    expect([p.canBeHitAt(t + 1), p.canBeHitAt(t + 29), p.canBeHitAt(t + 30)]).toEqual([
+      false,
+      false,
+      false,
+    ]);
+    expect(p.canBeHitAt(t + 31)).toBe(true);
+    expect([p.isInvulnerableAfter(t), p.isInvulnerableAfter(t + 29)]).toEqual([true, true]);
+    expect([p.isInvulnerableAfter(t + 30), p.isInvulnerableAfter(t + 31)]).toEqual([false, false]);
+  });
+
+  it('move conserva la vida y la invulnerabilidad', () => {
+    const p = fresh().hit(10, 5).move(PlayerInput.of(1, 0), TICK_SECONDS, arena());
+    expect([p.health.current, p.invulnerableUntil]).toEqual([90, 35]);
+  });
+
+  it('hit devuelve un jugador nuevo y no cambia el original', () => {
+    const p = fresh();
+    p.hit(10, 1);
+    expect([p.health.current, p.invulnerableUntil]).toEqual([100, 0]);
   });
 });

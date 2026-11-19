@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  INVULNERABILITY_TICKS_MUST_BE_INTEGER,
+  MAX_BUDGET_BELOW_MAX_COST,
+  PLAYER_HEALTH_MUST_BE_POSITIVE,
   RADIUS_MUST_FIT,
   SPEED_MUST_BE_POSITIVE,
   buildRunRules,
@@ -9,6 +12,7 @@ import { UNKNOWN_ENEMY_TYPE } from '../../src/domain/wave/WaveTable';
 import {
   MAX_ALIVE_MUST_BE_INTEGER,
   MAX_ATTEMPTS_MUST_BE_INTEGER,
+  MAX_BUDGET_MUST_BE_POSITIVE,
   SPAWN_DISTANCE_MUST_BE_NON_NEGATIVE,
 } from '../../src/domain/wave/SpawnRules';
 import { aRunConfig } from '../support/builders';
@@ -76,12 +80,64 @@ describe('buildRunRules', () => {
 
   it('propaga las reglas del catálogo y de la tabla con la ruta del campo', () => {
     const base = aRunConfig();
-    const badType = { ...base, enemies: { types: [{ id: 'bug', speed: 0, radius: 10, cost: 1 }] } };
+    const badType = {
+      ...base,
+      enemies: { types: [{ id: 'bug', speed: 0, radius: 10, cost: 1, damage: 5, health: 10 }] },
+    };
     expect(failure(badType).field).toBe('enemies.types.0.speed');
     const segments = [{ fromSecond: 0, budgetPerSecond: 1, types: ['bug', 'segfault'] }];
     const e = failure(withWaves({ segments }));
     expect(e.field).toBe('waves.segments.0.types.1');
     expect(e.message).toBe(`${UNKNOWN_ENEMY_TYPE}: segfault`);
+  });
+
+  it.each([0, -1, Number.NaN])('Máximo de presupuesto no positivo (maxBudget %s)', (maxBudget) => {
+    expect(failure(withWaves({ maxBudget }))).toEqual({
+      code: 'invalid-config',
+      field: 'waves.maxBudget',
+      message: MAX_BUDGET_MUST_BE_POSITIVE,
+    });
+  });
+
+  it('Máximo de presupuesto menor que el coste más caro (2,5 con coste 3)', () => {
+    const e = failure(withWaves({ maxBudget: 2.5 }));
+    expect(e.field).toBe('waves.maxBudget');
+    expect(e.message).toContain(MAX_BUDGET_BELOW_MAX_COST);
+    expect(e.message).toContain('3');
+    expect(e.message).toContain('memory-leak');
+  });
+
+  it('Máximo de presupuesto igual al coste más caro (validación)', () => {
+    const r = buildRunRules(withWaves({ maxBudget: 3 }));
+    expect(r.ok && r.value.spawn.maxBudget).toBe(3);
+  });
+
+  it('pasa al dominio la vida máxima y la invulnerabilidad del jugador', () => {
+    const r = buildRunRules(aRunConfig({ maxHealth: 1, invulnerabilityTicks: 1 }));
+    expect(r.ok && r.value.player).toMatchObject({ maxHealth: 1, invulnerabilityTicks: 1 });
+  });
+
+  it.each([0, -10, Number.NaN, Number.POSITIVE_INFINITY])(
+    'Vida máxima cero o negativa (maxHealth %s)',
+    (maxHealth) => {
+      expect(failure(aRunConfig({ maxHealth }))).toEqual({
+        code: 'invalid-config',
+        field: 'player.maxHealth',
+        message: PLAYER_HEALTH_MUST_BE_POSITIVE,
+      });
+    },
+  );
+
+  it.each([
+    ['Duración cero', 0],
+    ['Duración negativa', -1],
+    ['duración no entera', 2.5],
+  ])('%s de invulnerabilidad', (_name, invulnerabilityTicks) => {
+    expect(failure(aRunConfig({ invulnerabilityTicks }))).toEqual({
+      code: 'invalid-config',
+      field: 'player.invulnerabilityTicks',
+      message: INVULNERABILITY_TICKS_MUST_BE_INTEGER,
+    });
   });
 
   it('mantiene las invariantes del jugador', () => {

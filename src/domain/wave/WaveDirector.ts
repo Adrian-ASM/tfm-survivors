@@ -29,18 +29,19 @@ export class WaveDirector {
 
   /**
    * Tick n (el que mostrará el snapshot), con `alive` enemigos vivos antes de aparecer los nuevos.
-   * - Con el tope alcanzado no se acumula ni se consume azar (la política al bajar del tope es de
-   *   0003).
+   * - El presupuesto del tick se suma siempre, también en el tope, y lo guardado se recorta a
+   *   `maxBudget` **antes de gastar**: nunca vale más, y acota la ráfaga al abrirse huecos.
+   * - Con el tope alcanzado no se sortea: no se consume azar.
    * - Al cambiar de tramo se conserva el presupuesto y se vuelve a elegir el tipo pendiente.
    * - Si `place` no encuentra posición, el spawn se aplaza: no se gasta, se mantiene el pendiente y
    *   el tick termina; el presupuesto sigue acumulándose en los ticks siguientes.
    */
   step(tick: number, alive: number, place: SpawnAttempt): void {
     this.advanceSegment(tick);
-    const { maxAlive } = this.rules;
-    if (alive >= maxAlive) return;
+    const { maxAlive, maxBudget } = this.rules;
     const segment = this.segment();
-    this.budget60 += segment.budgetPerSecond;
+    this.budget60 = Math.min(this.budget60 + segment.budgetPerSecond, maxBudget * TICKS_PER_SECOND);
+    if (alive >= maxAlive) return;
     for (let count = alive; count < maxAlive; count++) {
       const type = this.pending ?? this.pick(segment);
       this.pending = type;

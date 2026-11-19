@@ -1,4 +1,6 @@
 {
   "speed": 200,
-  "radius": 16
+  "radius": 16,
+  "maxHealth": 100,
+  "invulnerabilityTicks": 30
 }

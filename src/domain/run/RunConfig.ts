@@ -9,6 +9,21 @@ import { WaveTable, type WaveSegmentConfig } from '../wave/WaveTable';
 /** Mensajes de las invariantes del jugador; la validación de contenido (zod) usa los mismos. */
 export const SPEED_MUST_BE_POSITIVE = 'La velocidad del jugador debe ser positiva.';
 export const RADIUS_MUST_FIT = 'El radio del jugador no cabe en la arena.';
+export const PLAYER_HEALTH_MUST_BE_POSITIVE = 'La vida máxima del jugador debe ser positiva.';
+export const INVULNERABILITY_TICKS_MUST_BE_INTEGER =
+  'La invulnerabilidad tras un golpe debe durar un número entero de ticks ≥ 1.';
+/** Regla cruzada: con un máximo menor, el tipo más caro nunca reuniría su coste. */
+export const MAX_BUDGET_BELOW_MAX_COST =
+  'El máximo de presupuesto debe ser ≥ el coste del tipo de enemigo más caro';
+
+/** Parámetros del jugador en el contenido (content/player.json). */
+export interface PlayerRules {
+  readonly speed: number;
+  readonly radius: number;
+  readonly maxHealth: number;
+  /** N: tras un golpe en el tick t, los contactos de t + 1 a t + N no hacen daño. */
+  readonly invulnerabilityTicks: number;
+}
 
 /**
  * Configuración de partida ya validada en forma (zod, infraestructura); aquí se validan
@@ -20,10 +35,11 @@ export interface RunConfig {
     readonly height: number;
     readonly view: { readonly width: number; readonly height: number };
   };
-  readonly player: { readonly speed: number; readonly radius: number };
+  readonly player: PlayerRules;
   readonly enemies: { readonly types: readonly EnemyTypeConfig[] };
   readonly waves: {
     readonly maxAlive: number;
+    readonly maxBudget: number;
     readonly spawn: {
       readonly margin: number;
       readonly minDistance: number;
@@ -37,18 +53,32 @@ export interface RunConfig {
 export interface RunRules {
   readonly arena: Arena;
   readonly view: View;
-  readonly player: { readonly speed: number; readonly radius: number };
+  readonly player: PlayerRules;
   readonly catalog: EnemyCatalog;
   readonly table: WaveTable;
   readonly spawn: SpawnRules;
 }
 
 function checkPlayer(config: RunConfig, arena: Arena): DomainError | null {
-  const { speed, radius } = config.player;
+  const { speed, radius, maxHealth, invulnerabilityTicks } = config.player;
   if (!Number.isFinite(speed) || speed <= 0) {
     return invalidConfig('player.speed', SPEED_MUST_BE_POSITIVE);
   }
-  return arena.fits(radius) ? null : invalidConfig('player.radius', RADIUS_MUST_FIT);
+  if (!arena.fits(radius)) return invalidConfig('player.radius', RADIUS_MUST_FIT);
+  if (!Number.isFinite(maxHealth) || maxHealth <= 0) {
+    return invalidConfig('player.maxHealth', PLAYER_HEALTH_MUST_BE_POSITIVE);
+  }
+  if (!Number.isInteger(invulnerabilityTicks) || invulnerabilityTicks < 1) {
+    return invalidConfig('player.invulnerabilityTicks', INVULNERABILITY_TICKS_MUST_BE_INTEGER);
+  }
+  return null;
+}
+
+function checkBudgetCoversCatalog(spawn: SpawnRules, catalog: EnemyCatalog): DomainError | null {
+  const top = catalog.mostExpensive;
+  if (!top || spawn.maxBudget >= top.cost) return null;
+  const message = `${MAX_BUDGET_BELOW_MAX_COST}: ${String(top.cost)} (${top.id})`;
+  return invalidConfig('waves.maxBudget', message);
 }
 
 /**
@@ -66,11 +96,11 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
   if (!catalog.ok) return catalog;
   const table = WaveTable.create(config.waves.segments, catalog.value);
   if (!table.ok) return table;
-  const spawn = SpawnRules.create(
-    { maxAlive: config.waves.maxAlive, ...config.waves.spawn },
-    view.value,
-  );
+  const { maxAlive, maxBudget } = config.waves;
+  const spawn = SpawnRules.create({ maxAlive, maxBudget, ...config.waves.spawn }, view.value);
   if (!spawn.ok) return spawn;
+  const budgetError = checkBudgetCoversCatalog(spawn.value, catalog.value);
+  if (budgetError) return err(budgetError);
   return ok({
     arena: arena.value,
     view: view.value,
