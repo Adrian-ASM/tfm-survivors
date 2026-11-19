@@ -11,7 +11,7 @@
   primer golpe (semilla 42, input (0, 0)), de la primera baja y del primer pulso (semilla 7) y anotarlos en
   `design.md` § "Desviaciones del apply" — escenarios de referencia: "Primer golpe en el núcleo con armas activas",
   "Jugador quieto con el contenido por defecto"
-- [ ] 0.2 Escribir ya los tests de aceptación de plazos en `tests/domain/balance.test.ts`, marcados `.skip` con
+- [x] 0.2 Escribir ya los tests de aceptación de plazos en `tests/domain/balance.test.ts`, marcados `.skip` con
   referencia a la tarea 0.3: primera oferta ≤ 3.600 ticks (semilla 7, input (0, 0), política de elección fija),
   primer golpe ≤ 4.800 (semilla 42), ≥ 1 baja en 600 y ≥ 1 pulso en 1.800 (semilla 7), ≥ 1 gema recogida y ≥ 1
   oferta en 3.600 (semilla 7) — escenarios: "Primera subida en el núcleo", "Primer golpe en el núcleo con armas

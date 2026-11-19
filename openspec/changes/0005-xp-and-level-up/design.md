@@ -367,3 +367,32 @@ la XP de las bajas cercanas, con bug 1 / merge-conflict 2 / memory-leak 4, llega
   (alcance 400) y Tests (radio 90) matan lejos del jugador quieto. **Riesgo confirmado**: con los valores
   provisionales, "Primera subida en el núcleo" (≤ 3.600 ticks) no se cumplirá. Se mide de nuevo con el código real
   en el punto de control 0.3.
+
+### 0.3 · Punto de control tras 1.25 (código real, política de elección fija) — PARADO, pendiente de decisión
+Contenido por defecto de 0005 (armas, mejoras, curva 5/5, imán 64 px), input (0, 0), 18.000 ticks como mucho:
+
+| Semilla | Primer golpe | Primera baja | Primer pulso | Primera gema | Primera oferta | Ofertas (por min, 5 min) | Fin |
+|---|---|---|---|---|---|---|---|
+| 7 | 4098 | 179 | 950 | 4076 | **4236** | 2 (0, 2, 0, 0, 0) | 4607 |
+| 42 | 4100 | 185 | 1177 | 3368 | **4146** | 2 (0, 2, 0, 0, 0) | 4760 |
+| 1 | 3899 | 173 | 712 | 3918 | 4158 | 2 | 4640 |
+| 2 | 4126 | 124 | 2022 | 4128 | 4307 | 2 | 4676 |
+| 3 | 4077 | 187 | 786 | 1003 | 4143 | 2 | 4577 |
+
+- **No cumplen**: "Primera subida en el núcleo" (oferta ≤ 3.600 con semilla 7: llega en 4.236) y "Partida con
+  progresión reproducible" (≥ 1 gema y ≥ 1 oferta en 3.600 con semilla 7: primera gema en 4.076). Sí cumplen: primer
+  golpe ≤ 4.800 (semilla 42: 4.100), ≥ 1 baja en 600 (179) y pulso ≤ 1.800 (950). Los tests de 0.2 siguen en
+  `.skip`; con el `.skip` quitado fallan exactamente los dos primeros.
+- Causa: con el jugador quieto casi todas las bajas ocurren a 100–300 px (Linter alcance 400, Tests radio 90), fuera
+  del imán de 64 px; la primera recogida coincide con la llegada de los enemigos al jugador (~68 s). La partida
+  quieta muere hacia el segundo 77 con 2 ofertas.
+- Sensibilidad informativa (sin cambiar contenido ni specs), primera oferta con semillas 7, 42, 1, 2, 3:
+  `pickupRadius` 96 → 4143–4307 (no basta); 128 → 3332, 1773, 1368, 2785, 1003; 160 → 1506, 1499, 1009, 2008, 865;
+  200 → 725–1036. `baseXp` 3, 2 o 1 con imán 64 → 3553–4307 (no basta). `pickupRadius` 128 + `baseXp` 3 → 838–2516.
+  El primer golpe sigue ≤ 4.800 en todas las variantes (3899–4424).
+- Borrador del bench "Peor caso con gemas" (200 `bench`, 32 proyectiles, 300 gemas atraídas a ≥ 400 px, 60 ticks,
+  `performance.now` en un test temporal): mediana 0,063 ms y máximo 0,080 ms por tick (≤ 2 ms). Dos hallazgos para
+  3.9: (1) con las armas de bench (cadencia 1) el catálogo por defecto no pasa la build de peor caso (`fast-ci`
+  deja `cooldownTicks` en −19): el bench debe quitar las mejoras de cadencia; (2) con el jugador en el centro de la
+  arena no caben 40 ticks de calentamiento + 60 medidos a 6 px/tick (máx. 551 px): el borrador pone al jugador en
+  (480, 16) y las gemas en las esquinas inferiores (≥ 650 px).
