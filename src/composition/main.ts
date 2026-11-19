@@ -6,11 +6,13 @@ import type { DomainError } from '../domain/shared/Result';
 import { loadRunConfig } from '../infrastructure/content/loadRunConfig';
 import { GameScene } from '../infrastructure/phaser/GameScene';
 import { Mulberry32RandomGenerator } from '../infrastructure/random/Mulberry32RandomGenerator';
+import { resolveSeed } from '../infrastructure/url/resolveSeed';
 
 const BACKGROUND = '#14141e';
 
-/** Lectura del último snapshot para el smoke E2E. Solo existe con ?e2e en la URL. */
+/** Lectura del último snapshot y de la semilla para los E2E. Solo existe con ?e2e en la URL. */
 interface E2EProbe {
+  readonly seed: number;
   snapshot: RunSnapshot | null;
 }
 
@@ -22,6 +24,9 @@ function showContentError(root: HTMLElement, error: DomainError): void {
   root.replaceChildren(box);
 }
 
+/** Semilla aleatoria de 32 bits sin signo; fuera del núcleo, así que puede usar la API del navegador. */
+const randomSeed = (): number => crypto.getRandomValues(new Uint32Array(1))[0] ?? 0;
+
 function bootstrap(): void {
   const root = document.getElementById('game');
   if (!root) throw new Error('Falta el contenedor #game en index.html');
@@ -31,23 +36,26 @@ function bootstrap(): void {
     showContentError(root, config.error);
     return;
   }
-  const seed = crypto.getRandomValues(new Uint32Array(1))[0] ?? 0;
+  const { seed, warning } = resolveSeed(window.location.search, randomSeed);
+  if (warning) console.warn(warning);
   const started = new StartRun().execute(config.value, new Mulberry32RandomGenerator(seed));
   if (!started.ok) {
     showContentError(root, started.error);
     return;
   }
 
-  const probe: E2EProbe = { snapshot: null };
+  const probe: E2EProbe = { seed, snapshot: null };
   if (new URLSearchParams(window.location.search).has('e2e')) {
     Object.defineProperty(window, '__sprint', { value: probe });
   }
 
+  // El canvas tiene el tamaño de la vista (unidades de mundo): una sola fuente para lo que se ve.
+  const { view } = config.value.arena;
   new Phaser.Game({
     type: Phaser.AUTO,
     parent: root,
-    width: config.value.arena.width,
-    height: config.value.arena.height,
+    width: view.width,
+    height: view.height,
     backgroundColor: BACKGROUND,
     scene: [
       new GameScene(started.value, config.value.waves.maxAlive, (snapshot) => {

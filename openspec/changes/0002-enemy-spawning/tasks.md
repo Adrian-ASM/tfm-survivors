@@ -106,7 +106,7 @@
       `setFillStyle` y `setVisible` — sin lógica, cubierto por E2E (bloque 8)
 
 ## 6. Composición
-- [ ] 6.1 `main.ts`: `resolveSeed(location.search, () => crypto.getRandomValues(new Uint32Array(1))[0])`,
+- [x] 6.1 `main.ts`: `resolveSeed(location.search, () => crypto.getRandomValues(new Uint32Array(1))[0])`,
       `console.warn` si hay aviso, `new Mulberry32RandomGenerator(seed)`, `StartRun.execute(config, random)`, canvas
       de `arena.view`, `maxEnemies = waves.maxAlive`, `probe.seed` con `?e2e` — cubierto por E2E (8.1, 8.2) —
       SL "Semilla de la partida" (navegador)
