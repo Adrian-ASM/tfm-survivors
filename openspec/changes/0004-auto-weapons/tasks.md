@@ -114,7 +114,7 @@
 - [x] 8.2 Sustituir el E2E de 0003 "vida baja en ≤ 20 s" por `?e2e&seed=42` con plazo 60 s, vida < máxima y > 0,
   partida en curso, armas `linter` y `tests` en el snapshot. Si no se cumple, hallazgo de equilibrio (como 4.7) —
   PH "Primer golpe en el navegador".
-- [ ] 8.3 Bench: casos de 0003 con el contenido por defecto (armas incluidas) y caso nuevo de peor caso (200 enemigos
+- [x] 8.3 Bench: casos de 0003 con el contenido por defecto (armas incluidas) y caso nuevo de peor caso (200 enemigos
   lentos con vida 1e9 en el perímetro, `BENCH_HEALTH`, proyectil de bench con `cooldownTicks` 1 y alcance mayor que
   la diagonal, pulso de bench que cubre la arena; comprobar 32 proyectiles vivos y partida en curso) — SL "Tope de
   vivos alcanzado", "200 enemigos encima del jugador", "Peor caso con proyectiles".
