@@ -8,6 +8,15 @@
      `npm run verify` en verde al cerrar cada tarea. Specs: ES = enemy-spawning, EB = enemy-behavior,
      SL = simulation-loop (delta). -->
 
+## Desviaciones
+- **Un commit por bloque, no por tarea** (verify-report W2): el apply se cerró en 12 commits, agrupados por bloque,
+  en lugar de uno por cada una de las ~35 tareas. Motivo: muchas tareas del mismo bloque tocan los mismos ficheros
+  y no dejan `npm run verify` en verde por separado (p. ej. 5.1 y 5.2 comparten esquemas y contenido con el
+  dominio), así que un commit por tarea habría metido estados intermedios en rojo o forzado reescribir el
+  historial. Los 12 commits llevan `refs: 0002-enemy-spawning` y `Assisted-by`. Se pierde la trazabilidad
+  tarea → commit; la trazabilidad tarea → escenario se mantiene en esta lista y en los tests.
+- **9.2**: la parte de AGENTS.md (`npm run bench` en §2) la hace el orquestador, no este fichero de tareas.
+
 ## 0. Aleatoriedad determinista
 - [x] 0.1 **Regresión antes de mover nada**: `tests/infrastructure/random.test.ts` fija los 5 primeros valores de
       `seededRandom(2026)`, `seededRandom(0)` y `seededRandom(42)` con la implementación actual de
@@ -133,7 +142,7 @@
 ## 9. Cierre
 - [ ] 9.1 `npm run verify` y `npm run test:e2e` en verde; revisar a mano en `npm run dev` los 3 colores y tamaños
       (pasada la fase de 180 s o con una tabla de prueba local sin commitear) y que `?seed=42` sin input se repite
-- [ ] 9.2 Actualizar `docs/adr/0003-inmutabilidad-y-rendimiento.md` a *aceptada*, con las cifras de 7.2 y la
+- [x] 9.2 Actualizar `docs/adr/0003-inmutabilidad-y-rendimiento.md` a *aceptada*, con las cifras de 7.2 y la
       decisión concreta (estado escalar mutable interno en `Enemy`; struct of arrays solo si el bench lo exige);
       añadir `npm run bench` a la tabla de AGENTS.md §2 (no bloquea `verify` ni el CI)
 - [x] 9.3 Entrada en `docs/ai-log/` del change: decisiones del design contrastadas con la spec (`fromSecond`, `id`
