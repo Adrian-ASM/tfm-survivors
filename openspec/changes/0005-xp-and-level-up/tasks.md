@@ -64,7 +64,7 @@
 - [x] 1.16 `RunConfig` / `buildRunRules`: `progression`, `upgrades`, `RunRules.curve/gems/upgrades/pulseCapacity`;
   `DEFAULT_PROGRESSION`, `NO_UPGRADES`, `DEFAULT_UPGRADES` y `withUpgrades` en builders — escenarios:
   `run-config.test.ts` por regla; todos los tests existentes siguen en verde con `NO_UPGRADES`
-- [ ] 1.17 `RunStatus` `'choosing'`; `RunSetup.gems` y `RunSetup.experience` con su validación; `Run` posee
+- [x] 1.17 `RunStatus` `'choosing'`; `RunSetup.gems` y `RunSetup.experience` con su validación; `Run` posee
   `GemField`, `Experience` y `UpgradeBoard` — escenarios: "Partida recién creada" (leveling y simulation-loop, nivel 1,
   XP 0, xpToNext 5, listas vacías, sin oferta)
 - [ ] 1.18 `Run.removeDead` suelta una gema por muerto en orden de la lista — escenarios: "Un bug abatido suelta una

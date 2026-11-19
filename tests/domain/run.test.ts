@@ -27,6 +27,10 @@ describe('Run', () => {
       projectiles: [],
       pulses: [],
       weapons: [],
+      gems: [],
+      progression: { level: 1, xp: 0, xpToNext: 5, pendingLevelUps: 0 },
+      offer: [],
+      upgrades: [],
     });
   });
 

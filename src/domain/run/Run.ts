@@ -1,15 +1,15 @@
 import type { Arena } from '../arena/Arena';
 import { contactDamage } from '../collision/contact';
 import { Enemy } from '../enemy/Enemy';
-import type { EnemyCatalog } from '../enemy/EnemyCatalog';
-import { Player } from '../player/Player';
+import type { Player } from '../player/Player';
 import type { PlayerInput } from '../player/PlayerInput';
 import type { RandomGenerator } from '../shared/RandomGenerator';
-import { err, invalidConfig, ok, type DomainError, type Result } from '../shared/Result';
+import type { Experience } from '../progression/Experience';
+import type { GemField } from '../progression/GemField';
+import type { XpGem } from '../progression/XpGem';
+import { ok, type DomainError, type Result } from '../shared/Result';
 import { TICK_SECONDS } from '../shared/Tick';
-import { Vector2 } from '../shared/Vector2';
 import { WaveDirector, type SpawnAttempt } from '../wave/WaveDirector';
-import { UNKNOWN_ENEMY_TYPE } from '../wave/WaveTable';
 import { placeSpawn } from '../wave/placeSpawn';
 import {
   RADIUS_MUST_FIT,
@@ -21,62 +21,37 @@ import {
 import { Arsenal } from '../weapon/Arsenal';
 import type { Projectile } from '../weapon/Projectile';
 import type { PulseEcho } from '../weapon/PulseEcho';
-import type { EnemySnapshot, ProjectileSnapshot, PulseSnapshot, RunSnapshot } from './RunSnapshot';
+import { UpgradeBoard } from '../upgrade/UpgradeBoard';
+import type {
+  EnemySnapshot,
+  GemSnapshot,
+  OfferSnapshot,
+  ProjectileSnapshot,
+  PulseSnapshot,
+  RunSnapshot,
+  UpgradeLevelSnapshot,
+} from './RunSnapshot';
 import type { RunStatus } from './RunStatus';
+import {
+  SETUP_HEALTH_OUT_OF_RANGE,
+  SETUP_POSITION_MUST_BE_FINITE,
+  initialEnemies,
+  initialExperience,
+  initialGems,
+  initialPlayer,
+  type RunSetup,
+} from './RunSetup';
 
-export { TICK_SECONDS, RADIUS_MUST_FIT, SPEED_MUST_BE_POSITIVE, type RunConfig, type RunStatus };
-
-export const SETUP_POSITION_MUST_BE_FINITE = 'La posición inicial debe ser finita.';
-export const SETUP_HEALTH_OUT_OF_RANGE =
-  'La vida inicial de un enemigo debe ser finita, positiva y no mayor que la de su tipo.';
-
-interface Point {
-  readonly x: number;
-  readonly y: number;
-}
-
-/**
- * Estado inicial opcional (tests y futuros editores; la composición no lo usa): posición del
- * jugador y enemigos ya presentes. Los tipos se validan contra el catálogo y las posiciones se
- * recortan a la arena.
- */
-export interface RunSetup {
-  readonly player?: Point;
-  /** `health`: vida inicial opcional, 0 < health ≤ la del tipo (por defecto, la del tipo). */
-  readonly enemies?: readonly (Point & { readonly type: string; readonly health?: number })[];
-}
-
-const isFinitePoint = (p: Point): boolean => Number.isFinite(p.x) && Number.isFinite(p.y);
-
-function initialPlayer(rules: RunRules, setup: RunSetup): Result<Player, DomainError> {
-  const { arena, player } = rules;
-  const at = setup.player;
-  if (at && !isFinitePoint(at)) {
-    return err(invalidConfig('setup.player', SETUP_POSITION_MUST_BE_FINITE));
-  }
-  const position = at ? arena.clampCircle(Vector2.of(at.x, at.y), player.radius) : arena.center;
-  return ok(Player.spawn(position, player));
-}
-
-function initialEnemies(
-  setup: RunSetup,
-  catalog: EnemyCatalog,
-  arena: Arena,
-): Result<Enemy[], DomainError> {
-  const enemies: Enemy[] = [];
-  for (const [i, entry] of (setup.enemies ?? []).entries()) {
-    const path = `setup.enemies.${String(i)}`;
-    const type = catalog.get(entry.type);
-    if (!type) return err(invalidConfig(`${path}.type`, `${UNKNOWN_ENEMY_TYPE}: ${entry.type}`));
-    if (!isFinitePoint(entry)) return err(invalidConfig(path, SETUP_POSITION_MUST_BE_FINITE));
-    const health = entry.health ?? type.health;
-    if (!Number.isFinite(health) || health <= 0 || health > type.health) {
-      return err(invalidConfig(`${path}.health`, SETUP_HEALTH_OUT_OF_RANGE));
-    }
-    enemies.push(Enemy.spawn(i, type, entry.x, entry.y, arena, health));
-  }
-  return ok(enemies);
-}
+export {
+  TICK_SECONDS,
+  RADIUS_MUST_FIT,
+  SPEED_MUST_BE_POSITIVE,
+  SETUP_HEALTH_OUT_OF_RANGE,
+  SETUP_POSITION_MUST_BE_FINITE,
+  type RunConfig,
+  type RunSetup,
+  type RunStatus,
+};
 
 /**
  * Partida en curso (aggregate root). Único punto de entrada para cambiar el estado de la
@@ -91,17 +66,21 @@ export class Run {
   private readonly arena: Arena;
   private readonly director: WaveDirector;
   private readonly arsenal: Arsenal;
+  private readonly board: UpgradeBoard;
 
   private constructor(
     private readonly rules: RunRules,
     private readonly random: RandomGenerator,
     private player: Player,
     private readonly enemies: Enemy[],
+    private readonly gems: GemField,
+    private readonly experience: Experience,
   ) {
     this.arena = rules.arena;
     this.nextEnemyId = enemies.length;
     this.director = new WaveDirector(rules.table, rules.spawn, random);
     this.arsenal = new Arsenal(rules.loadout, rules.pulseCapacity);
+    this.board = new UpgradeBoard(rules.upgrades);
   }
 
   static start(
@@ -115,7 +94,12 @@ export class Run {
     if (!player.ok) return player;
     const enemies = initialEnemies(setup, rules.value.catalog, rules.value.arena);
     if (!enemies.ok) return enemies;
-    return ok(new Run(rules.value, random, player.value, enemies.value));
+    const gems = initialGems(rules.value, setup);
+    if (!gems.ok) return gems;
+    const experience = initialExperience(rules.value, setup);
+    if (!experience.ok) return experience;
+    const { value } = rules;
+    return ok(new Run(value, random, player.value, enemies.value, gems.value, experience.value));
   }
 
   /**
@@ -205,7 +189,34 @@ export class Run {
       weapons: Object.freeze(
         this.arsenal.weapons.map((w) => Object.freeze({ id: w.type.id, ready: w.isChargedAt(k) })),
       ),
+      gems: Object.freeze(this.gems.gems.map((g) => toGemSnapshot(g, this.gems.radius))),
+      progression: Object.freeze({
+        level: this.experience.level,
+        xp: this.experience.xp,
+        xpToNext: this.experience.xpToNext,
+        pendingLevelUps: this.experience.pendingLevelUps,
+      }),
+      offer: Object.freeze(this.offerSnapshot()),
+      upgrades: Object.freeze(this.upgradeLevels()),
     });
+  }
+
+  private offerSnapshot(): OfferSnapshot[] {
+    const { offer, offerIndices } = this.board;
+    return offer.map((u, k) => {
+      const level = this.board.levelOf(offerIndices[k] ?? -1);
+      const { id, name, description } = u;
+      return Object.freeze({ id, name, description, level, nextLevel: level + 1 });
+    });
+  }
+
+  private upgradeLevels(): UpgradeLevelSnapshot[] {
+    const out: UpgradeLevelSnapshot[] = [];
+    this.rules.upgrades.upgrades.forEach((u, i) => {
+      const level = this.board.levelOf(i);
+      if (level >= 1) out.push(Object.freeze({ id: u.id, level }));
+    });
+    return out;
   }
 }
 
@@ -219,6 +230,10 @@ function toEnemySnapshot(e: Enemy, damaged: boolean): EnemySnapshot {
     health: e.hp,
     damaged,
   });
+}
+
+function toGemSnapshot(g: XpGem, radius: number): GemSnapshot {
+  return Object.freeze({ id: g.id, x: g.x, y: g.y, radius });
 }
 
 function toProjectileSnapshot(p: Projectile): ProjectileSnapshot {

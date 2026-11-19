@@ -37,6 +37,38 @@ export interface PulseSnapshot {
   readonly radius: number;
 }
 
+/** Gema en el suelo (spec xp-gems): id único en la partida, nunca reutilizado. */
+export interface GemSnapshot {
+  readonly id: number;
+  readonly x: number;
+  readonly y: number;
+  readonly radius: number;
+}
+
+/** Nivel y XP del jugador (spec leveling); `xp` es la XP dentro del nivel actual. */
+export interface ProgressionSnapshot {
+  readonly level: number;
+  readonly xp: number;
+  readonly xpToNext: number;
+  /** Subidas aún sin resolver, incluida la de la oferta abierta. */
+  readonly pendingLevelUps: number;
+}
+
+/** Opción de la oferta abierta (spec upgrades), en el orden sorteado. */
+export interface OfferSnapshot {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  readonly level: number;
+  readonly nextLevel: number;
+}
+
+/** Mejora adquirida (nivel ≥ 1), en el orden del catálogo. */
+export interface UpgradeLevelSnapshot {
+  readonly id: string;
+  readonly level: number;
+}
+
 /** Lo único que el adaptador de render necesita para pintar un frame (spec simulation-loop). */
 export interface RunSnapshot {
   readonly tick: number;
@@ -46,6 +78,7 @@ export interface RunSnapshot {
     readonly y: number;
     readonly radius: number;
     readonly health: number;
+    /** Vida máxima efectiva (base + mejoras). */
     readonly maxHealth: number;
     /** Un contacto en el tick siguiente no haría daño (spec player-health). */
     readonly invulnerable: boolean;
@@ -58,4 +91,10 @@ export interface RunSnapshot {
   readonly pulses: readonly PulseSnapshot[];
   /** Armas equipadas en el orden del contenido. */
   readonly weapons: readonly WeaponSnapshot[];
+  /** Gemas en el suelo en orden de creación. */
+  readonly gems: readonly GemSnapshot[];
+  readonly progression: ProgressionSnapshot;
+  /** Oferta abierta ([] si no hay). */
+  readonly offer: readonly OfferSnapshot[];
+  readonly upgrades: readonly UpgradeLevelSnapshot[];
 }
