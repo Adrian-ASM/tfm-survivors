@@ -61,4 +61,4 @@
 - [x] 5.5 (W3, S10) Endurecer tests: tolerancia ≤ 0,001 px en diagonal y deslizamiento; snapshot con input (1, 0)
 - [x] 5.6 (S11, S12, S13, S14) `lintText` sin escribir en `src/`; invariante `speed > 0` alineada con zod; exención
       de secretos solo para los ficheros de hooks; `ENOENT` controlado en `--all`
-- [ ] 5.7 (W6) CI: no ignorar `.claude/hooks/**` en `paths-ignore`
+- [x] 5.7 (W6) CI: no ignorar `.claude/hooks/**` en `paths-ignore`
