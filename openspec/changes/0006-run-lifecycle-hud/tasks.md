@@ -35,7 +35,7 @@
   navegador".
 
 ## 1. Dominio
-- [ ] 1.1 `run/RunDuration.ts` (VO): `create(seconds)` → `Result`, `ticks` y `endsAt(n)`, con el error
+- [x] 1.1 `run/RunDuration.ts` (VO): `create(seconds)` → `Result`, `ticks` y `endsAt(n)`, con el error
   `RUN_DURATION_MUST_BE_INTEGER`. Test: 600 ⇒ 36.000; 1 ⇒ 60; 0, −60 y 600,5 ⇒ error que menciona `durationSeconds`.
   Escenarios: run-outcome "Duración mínima válida", "Duración cero o negativa" y "Duración no entera o ausente"
   (parte de dominio).
