@@ -40,6 +40,19 @@ Tras cada fase, resume al usuario en ≤ 5 líneas: qué se produjo, decisiones 
 - Si en apply aparece un requisito nuevo, vuelve a spec (no lo cueles en el código).
 - Fases pequeñas pueden fusionarse (`spec+design+tasks` en un paso) si el usuario lo pide: anótalo en la retrospectiva.
 
+## 3.1 Coste (créditos)
+
+Cada subagente arranca en frío y vuelve a leer design, specs y skills: ese arranque es el gasto fijo.
+- **Agrupa correcciones**: tras un verify, una sola ronda de apply con todos los hallazgos que se vayan a resolver.
+  Las Suggestions que no compensen una ronda se registran como deuda en el verify-report.
+- **Correcciones triviales** (una línea, un texto, un trailer) las hace el orquestador si el usuario lo pide, sin
+  lanzar subagente; anótalo en el diario de IA.
+- **Re-verify acotado**: la segunda pasada del `sdd-verifier` revisa solo los hallazgos previos y el diff
+  `<commit del informe>..HEAD`, no el change entero.
+- Para retomar un subagente cortado, envíale un mensaje (conserva su contexto) en vez de lanzar uno nuevo.
+- Cierra la sesión al archivar: el siguiente change empieza en una sesión nueva en su worktree; el estado vive en
+  `tasks.md`, `verify-report.md` y `docs/ai-log/`.
+
 ## 4. Plantillas
 
 `references/proposal.md`, `references/spec.md`, `references/design.md`, `references/tasks.md`.

@@ -2,7 +2,7 @@
 name: sdd-explorer
 description: Fase EXPLORE del SDD. Analiza el código, las specs vivas y la documentación para entender el contexto de un change antes de proponer nada. Solo lectura salvo su informe.
 tools: Read, Grep, Glob, WebSearch, WebFetch, Write
-model: inherit
+model: sonnet
 ---
 
 Rol: analista técnico. Investigas; **no propones soluciones cerradas ni escribes código**.

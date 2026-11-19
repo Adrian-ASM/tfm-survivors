@@ -82,16 +82,24 @@ Gates humanos: **nunca** avances de *propose* a *spec/design* ni de *verify* a *
 
 ## 8. Subagentes (`.claude/agents/`)
 
-| Agente | Fase | Puede escribir |
-|---|---|---|
-| `game-designer` | GDD, backlog MoSCoW, historias | `docs/gdd.md` |
-| `sdd-explorer` | explore | solo `openspec/changes/<id>/exploration.md` |
-| `sdd-spec-writer` | propose + spec | `proposal.md`, `specs/**` del change |
-| `sdd-architect` | design + tasks | `design.md`, `tasks.md`, ADRs |
-| `sdd-implementer` | apply (TDD) | `src/**`, `tests/**`, `content/**` |
-| `sdd-verifier` | verify | solo `verify-report.md` |
+| Agente | Fase | Puede escribir | Modelo |
+|---|---|---|---|
+| `game-designer` | GDD, backlog MoSCoW, historias | `docs/gdd.md` | sonnet |
+| `sdd-explorer` | explore | solo `openspec/changes/<id>/exploration.md` | sonnet |
+| `sdd-spec-writer` | propose + spec | `proposal.md`, `specs/**` del change | opus |
+| `sdd-architect` | design + tasks | `design.md`, `tasks.md`, ADRs | opus |
+| `sdd-implementer` | apply (TDD) | `src/**`, `tests/**`, `content/**` | opus |
+| `sdd-verifier` | verify | solo `verify-report.md` | sonnet |
 
-Quien explora no diseña; quien implementa no verifica.
+Quien explora no diseña; quien implementa no verifica. El modelo se fija en el frontmatter de cada agente:
+Opus donde se decide o se escribe código; Sonnet en lectura, contraste y diseño de juego (ahorro de créditos;
+además, verificar con un modelo distinto del que implementa refuerza la independencia).
+
+## 8.1 Uso eficiente del contexto (créditos)
+
+- Salidas cortas: `npm run verify 2>&1 | tail -20`; abre el log completo solo si algo falla.
+- En Windows (Git Bash), escribe código y JSON con Edit/Write, **nunca con heredocs**: alteran `\` y rompen ficheros.
+- Devuelve al orquestador resúmenes, no volcados de ficheros ni de comandos.
 
 ## 9. Documentación clave
 
