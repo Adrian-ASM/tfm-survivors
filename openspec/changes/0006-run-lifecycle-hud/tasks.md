@@ -122,7 +122,7 @@
   `loadRunConfig`/`parseRunConfig`. Tests en `content.test.ts`: por defecto ⇒ 36.000 ticks; 1 ⇒ 60; 0, −60, 600,5,
   `"600"`, ausente y campo extra ⇒ error con `durationSeconds`. Escenarios: run-outcome "Contenido por defecto",
   "Duración mínima válida", "Duración cero o negativa" y "Duración no entera o ausente".
-- [ ] 3.2 `tests/bench/run.bench.ts`: `benchConfig` con `BENCH_DURATION` inalcanzable. Se ejecuta `npm run bench`
+- [x] 3.2 `tests/bench/run.bench.ts`: `benchConfig` con `BENCH_DURATION` inalcanzable. Se ejecuta `npm run bench`
   una vez para confirmar que sigue `running` y que la media es ≤ 2 ms (informativo, no bloquea).
 - [ ] 3.3 `phaser/hudFormat.ts` (puro): `formatClock`, `remainingSeconds`, `healthFill`, `healthLabel` y
   `killsLabel`. Escenarios de hud: "Valores en torno al inicio", "Valores en torno al final", "Valor intermedio",

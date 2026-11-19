@@ -26,6 +26,11 @@ const GEM_WARMUP_TICKS = 0;
 const BENCH_HEALTH = 1e9;
 /** Tope de ticks para llegar a 200 vivos: evita un bucle infinito si algo cambia el contenido. */
 const MAX_TICKS_TO_CAP = 36_000;
+/**
+ * Duración del bench (0006): inalcanzable, para que `runAtCap` + los ticks medidos nunca terminen
+ * en victoria y la partida siga `running`.
+ */
+const BENCH_DURATION = 1e6;
 
 /**
  * Contenido por defecto (armas incluidas) con la vida del jugador y la de cada tipo de enemigo
@@ -47,6 +52,7 @@ function benchConfig(weapons?: WeaponsConfig): RunConfig {
     enemies: { types: [...types, BENCH_TYPE] },
     weapons: weapons ?? config.value.weapons,
     upgrades: { upgrades: list },
+    run: { durationSeconds: BENCH_DURATION },
   };
 }
 
