@@ -10,6 +10,9 @@ export interface EnemyView {
 export interface SnapshotView {
   tick: number;
   status: 'running' | 'choosing' | 'over';
+  outcome: 'won' | 'lost' | null;
+  kills: number;
+  durationTicks: number;
   player: { health: number; maxHealth: number; invulnerable: boolean };
   enemies: EnemyView[];
   projectiles: { id: number; x: number; y: number }[];
@@ -21,15 +24,23 @@ export interface SnapshotView {
   upgrades: { id: string; level: number }[];
 }
 
+export interface ResultsViewData {
+  title: string;
+  time: string;
+  level: number;
+  kills: number;
+  hint: string;
+}
+
 interface Probe {
-  __sprint?: { seed: number; snapshot: SnapshotView | null };
+  __sprint?: { seed: number; snapshot: SnapshotView | null; results: ResultsViewData | null };
 }
 
 /** Lee el probe `window.__sprint` (solo existe con ?e2e). */
 export const probe = (page: Page) =>
   page.evaluate(() => {
     const p = (window as unknown as Probe).__sprint;
-    return p ? { seed: p.seed, snapshot: p.snapshot } : null;
+    return p ? { seed: p.seed, snapshot: p.snapshot, results: p.results } : null;
   });
 
 /**
