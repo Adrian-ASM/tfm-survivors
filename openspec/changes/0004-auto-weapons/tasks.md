@@ -84,7 +84,7 @@
   "Partida con armas reproducible", "Partida larga reproducible", "Enemigos en el snapshot" (sin armas).
 
 ## 5. Infraestructura: contenido
-- [ ] 5.1 `content/weapons.json` con los valores de la spec y `WeaponsSchema` (`discriminatedUnion` por `mode` y
+- [x] 5.1 `content/weapons.json` con los valores de la spec y `WeaponsSchema` (`discriminatedUnion` por `mode` y
   por `type`, `strictObject`, `weapons.min(1)` con `WEAPONS_REQUIRED`, id no vacío); `loadRunConfig` lo importa —
   `content.test.ts`: AW "Contenido por defecto", "Daños base distintos y menores que la vida del bug",
   "Identificadores duplicados o lista vacía", "Campos o variantes desconocidos", "Valores no positivos", "Valores no
