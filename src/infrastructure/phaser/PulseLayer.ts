@@ -16,6 +16,9 @@ export function pulseAlpha(tick: number, firedAt: number, visualTicks: number): 
   return 1 - (tick - firedAt) / visualTicks;
 }
 
+/** Lista vacía compartida para `clear()` (no asigna). */
+const NO_PULSES: readonly PulseSnapshot[] = Object.freeze([]);
+
 interface Ring {
   readonly sprite: RingSprite;
   visible: boolean;
@@ -40,6 +43,11 @@ export class PulseLayer {
       sprite.setVisible(false);
       return { sprite, visible: false, radius: -1 };
     });
+  }
+
+  /** Oculta todos los anillos (reinicio de partida). */
+  clear(): void {
+    this.sync(NO_PULSES, 0);
   }
 
   sync(pulses: readonly PulseSnapshot[], tick: number): void {

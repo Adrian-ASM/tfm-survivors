@@ -141,7 +141,7 @@
 - [x] 3.7 `phaser/RestartKey.ts`: evento `down` de R → `read()` lo consume; una pulsación mantenida da un solo
   `true`. Test con un doble de teclado como en `choice-keys.test.ts`. Escenario: run-results "Una pulsación, una
   partida nueva" (adaptador).
-- [ ] 3.8 `clear()` en `SlotPool`, `EnemyLayer`, `GemLayer`, `ProjectileLayer` y `PulseLayer` (sin asignar). Test:
+- [x] 3.8 `clear()` en `SlotPool`, `EnemyLayer`, `GemLayer`, `ProjectileLayer` y `PulseLayer` (sin asignar). Test:
   tras `clear()` no queda ningún sprite visible, y un id reaparecido entra con `appearing = true`. Test de 5 ciclos
   de "llenar y limpiar" en el que los sprites visibles coinciden con el snapshot. Escenarios de run-results: "Primer
   frame tras reiniciar" y "Cinco reinicios seguidos" (capas).

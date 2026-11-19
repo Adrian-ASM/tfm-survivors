@@ -5,6 +5,9 @@ export interface SlotHandler<T, S> {
   hide(slot: S): void;
 }
 
+/** Lista vacía compartida para `clear()` (no asigna). */
+const NONE: readonly never[] = Object.freeze([]);
+
 interface Entry<S> {
   readonly slot: S;
   /** Elemento que lo ocupa (si `visible`). */
@@ -60,6 +63,14 @@ export class SlotPool<T extends { readonly id: number }, S> {
       this.byId.set(item.id, entry);
       this.show(entry, item);
     }
+  }
+
+  /**
+   * Oculta y libera todos los huecos (reinicio de partida): un id que reaparece entra como nuevo
+   * (`appearing`), sin heredar el hueco de un elemento de la partida anterior. Sin asignar.
+   */
+  clear(): void {
+    this.sync(NONE);
   }
 
   private releaseUnseen(): void {

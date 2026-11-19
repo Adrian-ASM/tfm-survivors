@@ -35,4 +35,9 @@ export class GemLayer {
   sync(gems: readonly GemSnapshot[]): void {
     this.pool.sync(gems);
   }
+
+  /** Oculta todos los sprites (reinicio de partida). */
+  clear(): void {
+    this.pool.clear();
+  }
 }
