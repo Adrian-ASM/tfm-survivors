@@ -43,7 +43,7 @@
   `tests/domain/arsenal.test.ts` — AW "Impacto en vuelo", "Agota su vida sin impactar", "Solo daña a un enemigo",
   "Varios proyectiles sobre el mismo bug en un tick", "El objetivo muere antes del impacto"; SL "Proyectiles en el
   snapshot" (orden).
-- [ ] 3.2 Sub-paso 3d: disparo en el orden del loadout, retención sin objetivo, ataque `projectile` (no se mueve ni
+- [x] 3.2 Sub-paso 3d: disparo en el orden del loadout, retención sin objetivo, ataque `projectile` (no se mueve ni
   colisiona al crearse) y tope con plazas liberadas en el mismo tick — AW "Tope lleno", "Retención sin objetivo en
   alcance", "Sin enemigos, sin disparos".
 - [ ] 3.3 Ataque `pulse` (daño a todos los vivos solapados) y ecos visibles de T a T + `visualTicks` − 1 (sub-paso

@@ -4,6 +4,64 @@ import { FakeTarget, aLinter, anArsenal, stepTicks, weaponsOf } from '../support
 const xs = (a: { projectiles: readonly { x: number }[] }): number[] =>
   a.projectiles.map((p) => p.x);
 
+/** Ticks de 1 a `ticks` en los que el arsenal crea al menos un proyectil nuevo. */
+function launchTicks(
+  arsenal: ReturnType<typeof anArsenal>,
+  ticks: number,
+  targetsAt: (n: number) => FakeTarget[],
+): { fired: number[]; maxAlive: number } {
+  const fired: number[] = [];
+  let maxAlive = 0;
+  let seen = -1;
+  for (let n = 1; n <= ticks; n++) {
+    arsenal.step(n, 480, 270, targetsAt(n));
+    const newest = arsenal.projectiles.reduce((m, p) => Math.max(m, p.id), -1);
+    if (newest > seen) fired.push(n);
+    seen = Math.max(seen, newest);
+    maxAlive = Math.max(maxAlive, arsenal.projectiles.length);
+  }
+  return { fired, maxAlive };
+}
+
+describe('Arsenal · disparo de proyectiles', () => {
+  it('Scenario: Tope lleno (maxProjectiles 2, cooldown 1: crea en 1, 2 y 61)', () => {
+    const slow = aLinter({
+      cooldownTicks: 1,
+      attack: { type: 'projectile', speed: 1, radius: 4, lifetimeTicks: 60 },
+    });
+    const arsenal = anArsenal(weaponsOf([slow], { maxProjectiles: 2 }));
+    const target = new FakeTarget(780, 270);
+    const { fired, maxAlive } = launchTicks(arsenal, 61, () => [target]);
+    expect(fired).toEqual([1, 2, 61]);
+    expect(maxAlive).toBe(2);
+  });
+
+  it('Scenario: Retención sin objetivo en alcance (nada de 1 a 120; 1 proyectil en 121)', () => {
+    const arsenal = anArsenal(weaponsOf([aLinter()]));
+    const far = new FakeTarget(480 + 401, 270);
+    const near = new FakeTarget(480 + 390, 270);
+    const { fired } = launchTicks(arsenal, 121, (n) => (n < 121 ? [far] : [far, near]));
+    expect(fired).toEqual([121]);
+    expect(arsenal.projectiles).toHaveLength(1);
+  });
+
+  it('Scenario: Sin enemigos, sin disparos (600 ticks; el arma sigue cargada)', () => {
+    const arsenal = anArsenal(weaponsOf([aLinter()]));
+    stepTicks(arsenal, 1, 600, []);
+    expect(arsenal.projectiles).toHaveLength(0);
+    expect(arsenal.weapons.map((w) => w.isChargedAt(600))).toEqual([true]);
+  });
+
+  it('el proyectil no se mueve ni colisiona en su tick de creación', () => {
+    const arsenal = anArsenal(weaponsOf([aLinter()]));
+    const close = new FakeTarget(485, 270);
+    arsenal.step(1, 480, 270, [close]);
+    expect([close.hp, ...xs(arsenal)]).toEqual([10, 480]);
+    arsenal.step(2, 480, 270, [close]);
+    expect(close.hits).toEqual([2]);
+  });
+});
+
 describe('Arsenal · proyectiles en vuelo', () => {
   it('Scenario: Impacto en vuelo (T + 10 en 560 sin daño; T + 11 impacta: vida 4)', () => {
     const arsenal = anArsenal(weaponsOf([aLinter()]));
