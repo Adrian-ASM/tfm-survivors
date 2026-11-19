@@ -42,7 +42,7 @@
 - [x] 1.2 `RunConfig.run` + `RunRules.duration` en `buildRunRules`. En `tests/support/builders.ts`: `DEFAULT_RUN`
   en `aRunConfig`, `withDuration(config, s)` y `RawContent.run`. Test: `buildRunRules` rechaza una duración
   inválida y expone `duration.ticks`. Escenario: run-outcome "Contenido por defecto" (dominio).
-- [ ] 1.3 `run/RunPhase.ts`: `RunOutcome`, la unión `RunPhase` y las constantes congeladas `RUNNING`, `CHOOSING`,
+- [x] 1.3 `run/RunPhase.ts`: `RunOutcome`, la unión `RunPhase` y las constantes congeladas `RUNNING`, `CHOOSING`,
   `WON` y `LOST`. `RunStatus = RunPhase['status']`. Test: las 4 constantes están congeladas y cumplen la invariante,
   más un test de tipos (`expectTypeOf`): `over` ⇒ `outcome` no nulo. Escenario: run-outcome "Invariante entre estado
   y resultado" (modelo).
