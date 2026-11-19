@@ -124,7 +124,7 @@
   "Duración mínima válida", "Duración cero o negativa" y "Duración no entera o ausente".
 - [x] 3.2 `tests/bench/run.bench.ts`: `benchConfig` con `BENCH_DURATION` inalcanzable. Se ejecuta `npm run bench`
   una vez para confirmar que sigue `running` y que la media es ≤ 2 ms (informativo, no bloquea).
-- [ ] 3.3 `phaser/hudFormat.ts` (puro): `formatClock`, `remainingSeconds`, `healthFill`, `healthLabel` y
+- [x] 3.3 `phaser/hudFormat.ts` (puro): `formatClock`, `remainingSeconds`, `healthFill`, `healthLabel` y
   `killsLabel`. Escenarios de hud: "Valores en torno al inicio", "Valores en torno al final", "Valor intermedio",
   "Otras duraciones", "Vida llena", "Vida parcial con la vida máxima mejorada", "Vida 0", "Vida fraccionaria" y
   "Muchas bajas".
