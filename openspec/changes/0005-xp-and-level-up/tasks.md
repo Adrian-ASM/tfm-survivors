@@ -32,7 +32,7 @@
 - [x] 1.4 `progression/Experience` (`gain`, `resolveOne`, `clearPending`) — escenarios: "Por debajo del umbral",
   "Umbral exacto", "Arrastre del sobrante", "Una gema que da dos niveles", "Varias gemas que dan varios niveles",
   "Nivel 50"
-- [ ] 1.5 `progression/GemRules` (VO) y `XpGem` (`set`, `pull` sin sobrepasar) — escenarios: "Valores no positivos"
+- [x] 1.5 `progression/GemRules` (VO) y `XpGem` (`set`, `pull` sin sobrepasar) — escenarios: "Valores no positivos"
   (dominio), "Tope mínimo válido", "No sobrepasa al jugador" (unidad de `pull`)
 - [ ] 1.6 `GemField.drop`: pool de `maxGems`, ids sin reutilizar, tope con suma a la más antigua — escenarios: "Tope
   lleno", "Varias bajas con el tope lleno", "Las gemas no consumen azar" (unidad)
