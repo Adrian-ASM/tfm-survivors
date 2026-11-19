@@ -10,6 +10,8 @@ import {
   aSegment,
   aWavesConfig,
   withPlayer,
+  withWeapons,
+  DEFAULT_WEAPONS,
 } from '../support/builders';
 import { randomInputs } from '../support/inputs';
 
@@ -100,6 +102,12 @@ describe('Partidas largas (10 min)', () => {
     expect(snap.player.health).toBe(0);
     expect(snap.tick).toBe(endedAt);
     expect(endedAt).toBeLessThanOrEqual(TEN_MINUTES);
+  });
+
+  it('Scenario: Partida larga reproducible (contenido por defecto con armas, semilla 7)', () => {
+    const armed = withWeapons(aRunConfig(), DEFAULT_WEAPONS);
+    const a = finalSnapshot(armed, SEED, inputs);
+    expect(finalSnapshot(armed, SEED, inputs)).toStrictEqual(a);
   });
 
   it('Partida larga reproducible con la vida por defecto', () => {

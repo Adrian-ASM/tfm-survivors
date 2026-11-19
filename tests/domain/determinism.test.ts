@@ -3,18 +3,21 @@ import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import { Run } from '../../src/domain/run/Run';
 import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
-import { aRunConfig } from '../support/builders';
+import { DEFAULT_WEAPONS, aRunConfig, withWeapons } from '../support/builders';
+import type { RunConfig } from '../../src/domain/run/RunConfig';
 import { playerVisible } from '../../src/infrastructure/phaser/playerBlink';
 import { randomInputs } from '../support/inputs';
 
-function start(seed: number): Run {
-  const r = Run.start(aRunConfig(), new Mulberry32RandomGenerator(seed));
+const ARMED = withWeapons(aRunConfig(), DEFAULT_WEAPONS);
+
+function start(seed: number, config: RunConfig = aRunConfig()): Run {
+  const r = Run.start(config, new Mulberry32RandomGenerator(seed));
   if (!r.ok) throw new Error(r.error.message);
   return r.value;
 }
 
-function play(seed: number, inputs: readonly PlayerInput[]): RunSnapshot[] {
-  const run = start(seed);
+function play(seed: number, inputs: readonly PlayerInput[], config?: RunConfig): RunSnapshot[] {
+  const run = start(seed, config);
   return inputs.map((input) => {
     run.tick(input);
     return run.snapshot();
@@ -56,6 +59,24 @@ describe('Determinismo con semilla', () => {
     }
     expect(plain.some((s) => s.player.health < s.player.maxHealth)).toBe(true);
     expect(hidden).toBeGreaterThan(0);
+  });
+
+  it('Scenario: Dos partidas idénticas con armas (proyectiles y pulsos incluidos)', () => {
+    const a = play(42, inputs, ARMED);
+    const b = play(42, inputs, ARMED);
+    expect(a.some((s) => s.projectiles.length > 0)).toBe(true);
+    for (let i = 0; i < inputs.length; i++) expect(a[i]).toStrictEqual(b[i]);
+  });
+
+  it('Scenario: Partida con armas reproducible (semilla 7, quieto, 3.600 ticks, ≥ 1 baja)', () => {
+    const still = Array.from({ length: 3600 }, () => PlayerInput.NONE);
+    const a = play(7, still, ARMED);
+    const b = play(7, still, ARMED);
+    const lastId = a.reduce((m, s) => Math.max(m, ...s.enemies.map((e) => e.id)), -1);
+    const alive = a.at(-1)?.enemies.length ?? 0;
+    expect(lastId + 1).toBeGreaterThan(alive);
+    expect(a.some((s) => s.pulses.length > 0 && s.enemies.some((e) => e.damaged))).toBe(true);
+    for (let i = 0; i < still.length; i++) expect(a[i]).toStrictEqual(b[i]);
   });
 
   it('Semillas distintas', () => {
