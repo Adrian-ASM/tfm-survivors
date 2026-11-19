@@ -63,7 +63,7 @@ describe('FixedStepLoop · corte del frame', () => {
 function start(): TickRun {
   const r = new StartRun().execute(aRunConfig(), new Mulberry32RandomGenerator(2026));
   if (!r.ok) throw new Error(r.error.message);
-  return r.value;
+  return r.value.tickRun;
 }
 
 describe('TickRun', () => {
@@ -109,8 +109,8 @@ describe('TickRun', () => {
     const play = (seed: number) => {
       const r = new StartRun().execute(aRunConfig(), new Mulberry32RandomGenerator(seed));
       if (!r.ok) throw new Error(r.error.message);
-      for (let i = 0; i < 300; i++) r.value.execute(TICK_MS, PlayerInput.NONE);
-      return r.value.snapshot();
+      for (let i = 0; i < 300; i++) r.value.tickRun.execute(TICK_MS, PlayerInput.NONE);
+      return r.value.tickRun.snapshot();
     };
     expect(play(9).enemies.length).toBeGreaterThan(0);
     expect(play(9)).toStrictEqual(play(9));

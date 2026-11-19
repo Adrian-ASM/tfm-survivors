@@ -76,7 +76,7 @@ function bootstrap(): void {
     height: view.height,
     backgroundColor: BACKGROUND,
     scene: [
-      new GameScene(started.value, sceneCapacity(config.value), (snapshot) => {
+      new GameScene(started.value.tickRun, sceneCapacity(config.value), (snapshot) => {
         probe.snapshot = snapshot;
       }),
     ],
