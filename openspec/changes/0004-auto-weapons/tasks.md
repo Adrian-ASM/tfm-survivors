@@ -24,7 +24,7 @@
   0001–0003 en verde sin cambios de expectativas.
 
 ## 2. Dominio: piezas de las armas (puras y aisladas)
-- [ ] 2.1 `Enemy.takeDamage(amount, tick)` con `lastHitTick`, `damagedAt(k, flashTicks)` y vida inicial opcional en
+- [x] 2.1 `Enemy.takeDamage(amount, tick)` con `lastHitTick`, `damagedAt(k, flashTicks)` y vida inicial opcional en
   `Enemy.spawn`; test en `enemy.test.ts` — ES "Daño que no mata", "Daño exactamente igual a la vida", "Daño mayor
   que la vida", "Daño a un enemigo ya dado de baja"; AW "Duración del destello", "Destello renovado".
 - [ ] 2.2 `domain/weapon/WeaponTarget.ts` + `targeting.ts`: `nearestInRange` (d² ≤ range², empate al primero,

@@ -153,7 +153,7 @@ export class Run {
     if (this.state === 'over') return 'ignored';
     const enemy = this.enemies.find((e) => e.id === id);
     if (!enemy) return 'missing';
-    if (!enemy.takeDamage(amount)) return 'damaged';
+    if (!enemy.takeDamage(amount, this.tickCount)) return 'damaged';
     this.removeDead();
     return 'killed';
   }

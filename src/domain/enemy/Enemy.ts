@@ -11,16 +11,19 @@ export class Enemy {
   private py: number;
   /** Vida actual: escalar mutable (ADR-0003), sin un `Health` por impacto en el camino caliente. */
   private life: number;
+  /** Último tick en que recibió daño (0 = nunca; los ticks empiezan en 1). */
+  private lastHitTick = 0;
 
   private constructor(
     readonly id: number,
     readonly type: EnemyType,
     x: number,
     y: number,
+    health: number,
   ) {
     this.px = x;
     this.py = y;
-    this.life = type.health;
+    this.life = health;
   }
 
   get hp(): number {
@@ -38,17 +41,37 @@ export class Enemy {
 
   /**
    * Resta el daño con recorte a 0 y devuelve true si este golpe lo ha dado de baja. Sobre un
-   * enemigo ya dado de baja no hace nada.
+   * enemigo ya dado de baja no hace nada. `tick` es el tick del impacto (para el destello).
    */
-  takeDamage(amount: number): boolean {
+  takeDamage(amount: number, tick: number): boolean {
     if (!this.alive) return false;
     this.life = Math.max(0, this.life - amount);
+    this.lastHitTick = tick;
     return !this.alive;
   }
 
-  /** Crea un enemigo con el centro recortado a la arena. */
-  static spawn(id: number, type: EnemyType, x: number, y: number, arena: Arena): Enemy {
-    return new Enemy(id, type, arena.clampX(x, type.radius), arena.clampY(y, type.radius));
+  /**
+   * ¿Indica daño reciente en el snapshot del tick k? Dañado en T: de T a T + flashTicks − 1
+   * (spec auto-weapons, "Duración del destello").
+   */
+  damagedAt(k: number, flashTicks: number): boolean {
+    return this.lastHitTick > 0 && k - this.lastHitTick < flashTicks;
+  }
+
+  /**
+   * Crea un enemigo con el centro recortado a la arena. `health` (vida inicial) solo la fija
+   * `RunSetup`; por defecto, la del tipo.
+   */
+  static spawn(
+    id: number,
+    type: EnemyType,
+    x: number,
+    y: number,
+    arena: Arena,
+    health: number = type.health,
+  ): Enemy {
+    const cx = arena.clampX(x, type.radius);
+    return new Enemy(id, type, cx, arena.clampY(y, type.radius), health);
   }
 
   get x(): number {
