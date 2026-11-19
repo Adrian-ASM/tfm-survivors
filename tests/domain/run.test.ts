@@ -16,9 +16,20 @@ describe('Run', () => {
   it('Partida recién creada sin enemigos: jugador en el centro y lista vacía', () => {
     expect(startedRun().snapshot()).toEqual({
       tick: 0,
-      player: { x: 480, y: 270, radius: 16 },
+      status: 'running',
+      player: { x: 480, y: 270, radius: 16, health: 100, maxHealth: 100, invulnerable: false },
       enemies: [],
     });
+  });
+
+  it('Vida máxima mínima válida: la partida empieza con vida 1', () => {
+    const { player, status } = startedRun(aRunConfig({ maxHealth: 1 })).snapshot();
+    expect([player.health, player.maxHealth, player.invulnerable, status]).toEqual([
+      1,
+      1,
+      false,
+      'running',
+    ]);
   });
 
   it('Contador de ticks', () => {
@@ -69,7 +80,7 @@ describe('Run · snapshot con enemigos', () => {
     for (let i = 0; i < 615; i++) run.tick(PlayerInput.NONE);
     const { enemies } = run.snapshot();
     expect(enemies).toHaveLength(10);
-    expect(enemies.every((e) => e.type === 'bug' && e.radius === 10)).toBe(true);
+    expect(enemies.every((e) => e.type === 'bug' && e.radius === 10 && e.health === 10)).toBe(true);
     expect(new Set(enemies.map((e) => e.id)).size).toBe(10);
     expect(enemies.map((e) => e.id)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
   });
@@ -104,6 +115,18 @@ describe('Run · snapshot con enemigos', () => {
     expect(() => {
       (snap.enemies as unknown[]).length = 0;
     }).toThrow(TypeError);
+    expect(() => {
+      (snap.player as { health: number }).health = 0;
+    }).toThrow(TypeError);
+    expect(() => {
+      (snap.player as { invulnerable: boolean }).invulnerable = true;
+    }).toThrow(TypeError);
+    expect(() => {
+      (snap as { status: string }).status = 'over';
+    }).toThrow(TypeError);
+    expect(() => {
+      (enemy as { health: number }).health = 0;
+    }).toThrow(TypeError);
     run.tick(right);
     const next = run.snapshot();
     expect(next.tick).toBe(11);
@@ -121,16 +144,18 @@ describe('Run · snapshot con enemigos', () => {
 
 describe('Run · estado inicial opcional (RunSetup)', () => {
   it('coloca al jugador y lo recorta a la arena', () => {
-    expect(startedRun(aRunConfig(), { player: { x: 16, y: 16 } }).snapshot().player).toEqual({
+    expect(startedRun(aRunConfig(), { player: { x: 16, y: 16 } }).snapshot().player).toMatchObject({
       x: 16,
       y: 16,
       radius: 16,
     });
-    expect(startedRun(aRunConfig(), { player: { x: -5, y: 999 } }).snapshot().player).toEqual({
-      x: 16,
-      y: 524,
-      radius: 16,
-    });
+    expect(startedRun(aRunConfig(), { player: { x: -5, y: 999 } }).snapshot().player).toMatchObject(
+      {
+        x: 16,
+        y: 524,
+        radius: 16,
+      },
+    );
   });
 
   it('coloca enemigos iniciales con el radio de su tipo, recortados a la arena', () => {
@@ -141,8 +166,8 @@ describe('Run · estado inicial opcional (RunSetup)', () => {
       ],
     });
     expect(run.snapshot().enemies).toEqual([
-      { id: 0, type: 'bug', x: 100, y: 270, radius: 10 },
-      { id: 1, type: 'memory-leak', x: 938, y: 22, radius: 22 },
+      { id: 0, type: 'bug', x: 100, y: 270, radius: 10, health: 10 },
+      { id: 1, type: 'memory-leak', x: 938, y: 22, radius: 22, health: 45 },
     ]);
   });
 

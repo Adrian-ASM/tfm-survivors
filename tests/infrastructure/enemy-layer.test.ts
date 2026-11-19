@@ -48,6 +48,7 @@ const enemy = (id: number, type: string, x: number, y: number, radius = 10): Ene
   x,
   y,
   radius,
+  health: 10,
 });
 
 describe('EnemyLayer', () => {

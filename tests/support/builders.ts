@@ -66,6 +66,12 @@ export const aWavesConfig = (
   };
 };
 
+/** El mismo contenido con el jugador cambiado (p. ej. `{ maxHealth: LONG_RUN_HEALTH }`). */
+export const withPlayer = (config: RunConfig, player: Partial<PlayerConfig>): RunConfig => ({
+  ...config,
+  player: { ...config.player, ...player },
+});
+
 /** Tramo único desde 0 s con los tipos y el presupuesto dados. */
 export const aSegment = (
   types: readonly string[],

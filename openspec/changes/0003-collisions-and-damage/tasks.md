@@ -66,11 +66,11 @@
       Cubre ES "Tope de enemigos vivos" y "Director por presupuesto" (MODIFIED).
 
 ## 4. Dominio: `Run`, estado, bajas y snapshot
-- [ ] 4.1 `RunStatus` y `RunSnapshot` ampliado: `status`; `player.health`, `maxHealth` e `invulnerable`;
+- [x] 4.1 `RunStatus` y `RunSnapshot` ampliado: `status`; `player.health`, `maxHealth` e `invulnerable`;
       `EnemySnapshot.health`. `Run.snapshot()` sigue congelado en profundidad. Ajustar los `toEqual` de
       `tests/domain/run.test.ts` (tick 0). Cubre SL "Partida recién creada", PH "Partida recién creada", RS "Partida
       recién creada" y SL "Snapshot no mutable desde fuera" (con vida, invulnerable y estado).
-- [ ] 4.2 Orden del tick en `Run.tick`: `over` → return; jugador → persecución → `contactDamage` →
+- [x] 4.2 Orden del tick en `Run.tick`: `over` → return; jugador → persecución → `contactDamage` →
       `hit` si `canBeHitAt(n)` → vida 0 ⇒ `over`, sin director → director → `tickCount++`. Test nuevo
       `tests/domain/run-contact.test.ts`, con `RunSetup` y `aRunConfig({ maxHealth, invulnerabilityTicks })`.
       Cubre:
@@ -79,19 +79,19 @@
         justo en el tick N", "Contacto nuevo que llega justo al expirar", "Un enemigo más fuerte no rompe la
         invulnerabilidad", "200 enemigos encima del jugador" y "Sin contacto no hay daño";
       - SL: "El contacto usa las posiciones tras moverse ambos" y "Solo el movimiento del jugador no basta".
-- [ ] 4.3 Fin de partida en `tests/domain/run-state.test.ts`. Cubre:
+- [x] 4.3 Fin de partida en `tests/domain/run-state.test.ts`. Cubre:
       - RS: "Partida con vida restante", "Golpe que deja la vida en 0", "Varios contactos en el tick de la muerte",
         "Sin spawns en el tick de la muerte", "600 ticks después de terminar", "La terminación no consume azar"
         (con un `RandomGenerator` que cuenta llamadas) y "Una partida terminada no vuelve a en curso";
       - EB: "Sin persecución con la partida terminada".
-- [ ] 4.4 Bajas: `Run.damageEnemy(id, amount): 'missing' | 'ignored' | 'damaged' | 'killed'` y `removeDead()` con
+- [x] 4.4 Bajas: `Run.damageEnemy(id, amount): 'missing' | 'ignored' | 'damaged' | 'killed'` y `removeDead()` con
       compactación estable en el sitio (`length = w`, sin `splice` ni `filter`). Lanza `RangeError` si
       `amount` ≤ 0 o no es finito. Test: `tests/domain/run-removal.test.ts`. Cubre:
       - ES: "Daño que no mata", "Daño exactamente igual a la vida", "Daño mayor que la vida", "Daño a un enemigo
         ya dado de baja" e "Identificador no reutilizado";
       - SL: "Bajas sin reordenar", "Reposición al final de la lista" y "Baja del primero y del último";
       - PH: "Un enemigo dado de baja no hace contacto".
-- [ ] 4.5 Integración de bajas con el director y la persecución en `tests/domain/run-removal.test.ts`. Cubre:
+- [x] 4.5 Integración de bajas con el director y la persecución en `tests/domain/run-removal.test.ts`. Cubre:
       - ES: "Reposición de una baja sin superar el tope" (`maxBudget` 20, aparece 1 y no 20) y "Golpear al jugador
         no quita vida al enemigo";
       - EB: "Un enemigo dado de baja deja de perseguir", "Sigue hasta el centro tras golpear" y "El contacto no
@@ -99,7 +99,7 @@
       - SL "Un enemigo recién aparecido no golpea en su tick de aparición".
 
 ## 5. Dominio: partidas largas y determinismo
-- [ ] 5.1 `tests/domain/long-run.test.ts`: la auditoría de spawns, arena y reproducibilidad usa
+- [x] 5.1 `tests/domain/long-run.test.ts`: la auditoría de spawns, arena y reproducibilidad usa
       `aRunConfig({ maxHealth: LONG_RUN_HEALTH })`, porque prueba el spawn y no el daño. Así siguen valiendo
       `births === 200` y `maxAlive === 200`. Cubre ES "Partida larga sin spawns ilegales" y EB "Partida larga".
 - [ ] 5.2 Escenarios largos con la vida por defecto (mismo fichero, una sola simulación reutilizada si es posible):
