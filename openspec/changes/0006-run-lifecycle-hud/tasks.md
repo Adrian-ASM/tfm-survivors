@@ -58,7 +58,7 @@
   derrota con resultado `lost` y la invariante en partida. Escenarios: player-health "Daño exactamente igual a la
   vida restante", "Daño mayor que la vida restante" y "Vida que no llega a 0"; run-state "Terminada por derrota" y
   "Partida recién creada".
-- [ ] 1.7 Snapshot ampliado: `RunSnapshot = Body & RunPhase` con `outcome`, `durationTicks` y `kills`, congelado.
+- [x] 1.7 Snapshot ampliado: `RunSnapshot = Body & RunPhase` con `outcome`, `durationTicks` y `kills`, congelado.
   Test: valores iniciales y duración constante. Escenarios: simulation-loop "Partida recién creada" y "Duración
   objetivo constante"; run-outcome "Partida recién creada" (bajas 0).
 - [ ] 1.8 Test de inmutabilidad ampliado: mutar `outcome`, `kills` y `durationTicks` del snapshot no afecta al

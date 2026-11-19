@@ -241,7 +241,9 @@ export class Run {
     const enemies = this.horde.alive.map((e) => toEnemySnapshot(e, e.damagedAt(k, flash)));
     return Object.freeze({
       tick: this.tickCount,
-      status: this.phase.status,
+      ...this.phase,
+      durationTicks: this.rules.duration.ticks,
+      kills: this.horde.kills,
       player: Object.freeze({
         x: position.x,
         y: position.y,

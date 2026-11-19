@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import type { RunSetup } from '../../src/domain/run/Run';
 import type { RunConfig } from '../../src/domain/run/RunConfig';
-import { DEFAULT_UPGRADE_LIST, aDefaultConfig, aSegment, aWavesConfig } from '../support/builders';
+import {
+  DEFAULT_UPGRADE_LIST,
+  aDefaultConfig,
+  aSegment,
+  aWavesConfig,
+  withDuration,
+} from '../support/builders';
 import { startRun, ticks } from '../support/runs';
 
 const quiet = (patch: Partial<RunConfig> = {}): RunConfig => ({
@@ -11,6 +17,51 @@ const quiet = (patch: Partial<RunConfig> = {}): RunConfig => ({
   ...patch,
 });
 const CENTER = { x: 480, y: 270 };
+
+describe('Snapshot con resultado, duración y bajas (0006)', () => {
+  it('Scenario: Partida recién creada (sin resultado, 0 bajas y 36.000 ticks de duración)', () => {
+    const snap = startRun(aDefaultConfig()).snapshot();
+
+    expect(snap).toMatchObject({
+      tick: 0,
+      status: 'running',
+      outcome: null,
+      kills: 0,
+      durationTicks: 36_000,
+      enemies: [],
+      projectiles: [],
+      pulses: [],
+      gems: [],
+      upgrades: [],
+      offer: [],
+      player: { health: 100, maxHealth: 100, invulnerable: false },
+      progression: { level: 1, xp: 0, xpToNext: 5 },
+      weapons: [
+        { id: 'linter', ready: true },
+        { id: 'tests', ready: true },
+      ],
+    });
+    expect(Object.isFrozen(snap)).toBe(true);
+  });
+
+  it('Scenario: Duración objetivo constante (90 s ⇒ 5.400 ticks en 0, 1, 2.000 y con oferta)', () => {
+    const setup: RunSetup = {
+      player: CENTER,
+      gems: [{ x: 500, y: 270, value: 1 }],
+      experience: { level: 1, xp: 4 },
+    };
+    const run = startRun(withDuration(quiet(), 90), setup);
+    const at0 = run.snapshot().durationTicks;
+    const [first] = ticks(run, 1);
+    while (run.status === 'choosing') run.chooseUpgrade(0);
+    const later = ticks(run, 1999).at(-1);
+
+    expect(first?.status).toBe('choosing');
+    expect([at0, first?.durationTicks, later?.tick, later?.durationTicks]).toEqual([
+      5400, 5400, 2000, 5400,
+    ]);
+  });
+});
 
 describe('Snapshot ampliado', () => {
   it('Scenario: Oferta en el snapshot (guardrail en nivel 2: opción 2 → 3 y adquirida con 2)', () => {
