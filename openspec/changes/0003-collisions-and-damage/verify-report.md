@@ -186,4 +186,29 @@ Sin Critical ni Warning abiertos. Los escenarios de las seis specs tienen test q
 
 **Re-verificación 2026-11-19**: `npm run verify` verde tras las correcciones (31 ficheros, 385 tests: +2 de esquiva); cambios en specs, design, tasks y ADR-0003 revisados (sin commitear salvo `4d8d322`).
 
-**C: 0 · W: 0 · S: 3**
+**C: 0 · W: 0 · S: 3** (antes del bloque 12; ver el recuento final más abajo)
+
+## Re-verificación del bloque 12 · parpadeo del jugador invulnerable (2026-11-19)
+
+Commits `0f3c536` (spec, design, proposal, tasks) y `a556289` (código y tests). `npm run verify`: verde (32 ficheros, 393 tests). `npm run test:e2e`: 4 verdes.
+
+| Escenario (player-health) | Test | Estado |
+|---|---|---|
+| Sin invulnerabilidad el jugador se ve siempre | `infrastructure/player-blink.test.ts:19` (600 snapshots reales de `Run` sin golpes) | OK |
+| Parpadeo durante la invulnerabilidad | `infrastructure/player-blink.test.ts:24` (golpe real en el tick 1, N = 30; compara las dos listas completas, visibles 1-3, 8-11, 16-19, 24-27 y ocultos 4-7, 12-15, 20-23, 28-30) | OK |
+| Primer tick de invulnerabilidad | `infrastructure/player-blink.test.ts:37` (snapshot sintético, tick 12) | OK |
+| Último tick de invulnerabilidad y fin del parpadeo | `infrastructure/player-blink.test.ts:41` (30 oculto, 31 visible) | OK |
+| Partida terminada estando invulnerable | `infrastructure/player-blink.test.ts:46` (tick 13 y 60 frames más) | OK |
+| El parpadeo no altera la simulación | `domain/determinism.test.ts:46` (una partida pintada con `playerVisible` y otra no, 600 ticks, ≥ 1 golpe, y comprueba que hubo frames ocultos, así que no pasa en vacío) | OK |
+
+- **Capas**: la regla de vista vive en `src/infrastructure/phaser/playerBlink.ts` y solo importa un tipo del dominio; `domain` y `application` no la conocen ni cambian (`guard:all` y ESLint verdes). `BLINK_PERIOD_TICKS` es una constante de vista (apariencia, como `PLAYER_COLOR`), no contenido de juego: aceptable según el design. La función es pura y usa `snapshot.tick`, no el reloj ni el frame.
+- **Sin objetos por frame**: `GameScene.render` añade solo `this.player?.setVisible(playerVisible(snapshot))`; `playerVisible` devuelve un booleano y no asigna.
+- **Tasks**: 12.1 y 12.2 marcadas `[x]` y con commit (`a556289`; el diario del apply recoge el bloque). La comprobación visual de 12.2 en `npm run dev` queda a cargo del usuario.
+
+### Hallazgos del bloque 12
+
+- **Critical**: ninguno. **Warning**: ninguno.
+- **S7 · Suggestion.** El cableado de `GameScene.render` (la llamada a `setVisible`) no tiene test automático: se prueba la función pura, pero no que la escena la use. Es una línea y la comprobación manual la cubre; el design justifica no añadir E2E.
+- **S8 · Suggestion.** El import de `playerBlink` en `determinism.test.ts` (`tests/domain/`) hace que un test de dominio dependa de infraestructura; es solo de test y la spec lo pide así, pero conviene mantenerlo como único caso.
+
+**Recuento final: C: 0 · W: 0 · S: 5** (S4, S5, S6, S7, S8 abiertas; S1-S3 resueltas).
