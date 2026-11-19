@@ -88,7 +88,10 @@ describe('Determinismo con progresión y elecciones', () => {
     };
     const a = finalSnapshot();
     expect(a.tick).toBeGreaterThan(0);
-    expect(finalSnapshot()).toStrictEqual(a);
+    const b = finalSnapshot();
+    const summary = (s: typeof a) => [s.status, s.outcome, s.tick, s.kills];
+    expect(summary(b)).toEqual(summary(a));
+    expect(b).toStrictEqual(a);
   });
 
   it('Scenario: Oferta reproducible (semilla 42: las 10 primeras ofertas, opción a opción)', () => {

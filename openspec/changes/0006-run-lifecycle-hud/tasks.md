@@ -93,7 +93,7 @@
   - run-outcome "Invariante durante una partida completa" (semilla 42, quieto).
   - simulation-loop "Resultado reproducible".
   - run-outcome "Jugador quieto pierde".
-- [ ] 1.16 Revisar los tests de 36.000 ticks existentes (`long-run`, `determinism-progression`, `run-spawning`,
+- [x] 1.16 Revisar los tests de 36.000 ticks existentes (`long-run`, `determinism-progression`, `run-spawning`,
   `run-state`): siguen verdes. Se añade `outcome: 'won'` donde la vida es `LONG_RUN_HEALTH` y se amplía la
   comparación de "Partida larga reproducible" con resultado, tick final y bajas. Escenario: simulation-loop "Partida
   larga reproducible".
