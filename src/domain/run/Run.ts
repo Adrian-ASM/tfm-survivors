@@ -24,6 +24,8 @@ import type { RunStatus } from './RunStatus';
 export { TICK_SECONDS, RADIUS_MUST_FIT, SPEED_MUST_BE_POSITIVE, type RunConfig, type RunStatus };
 
 export const SETUP_POSITION_MUST_BE_FINITE = 'La posición inicial debe ser finita.';
+export const SETUP_HEALTH_OUT_OF_RANGE =
+  'La vida inicial de un enemigo debe ser finita, positiva y no mayor que la de su tipo.';
 
 /**
  * Resultado de `Run.damageEnemy`: no existe (o ya se dio de baja), partida terminada, golpe que no
@@ -43,7 +45,8 @@ interface Point {
  */
 export interface RunSetup {
   readonly player?: Point;
-  readonly enemies?: readonly (Point & { readonly type: string })[];
+  /** `health`: vida inicial opcional, 0 < health ≤ la del tipo (por defecto, la del tipo). */
+  readonly enemies?: readonly (Point & { readonly type: string; readonly health?: number })[];
 }
 
 const isFinitePoint = (p: Point): boolean => Number.isFinite(p.x) && Number.isFinite(p.y);
@@ -69,7 +72,11 @@ function initialEnemies(
     const type = catalog.get(entry.type);
     if (!type) return err(invalidConfig(`${path}.type`, `${UNKNOWN_ENEMY_TYPE}: ${entry.type}`));
     if (!isFinitePoint(entry)) return err(invalidConfig(path, SETUP_POSITION_MUST_BE_FINITE));
-    enemies.push(Enemy.spawn(i, type, entry.x, entry.y, arena));
+    const health = entry.health ?? type.health;
+    if (!Number.isFinite(health) || health <= 0 || health > type.health) {
+      return err(invalidConfig(`${path}.health`, SETUP_HEALTH_OUT_OF_RANGE));
+    }
+    enemies.push(Enemy.spawn(i, type, entry.x, entry.y, arena, health));
   }
   return ok(enemies);
 }

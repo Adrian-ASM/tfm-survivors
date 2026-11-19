@@ -53,7 +53,7 @@
   ticks de disparos) — design "Proyectiles: pool y bajas" (ADR-0003).
 
 ## 4. Dominio: integración en `Run`
-- [ ] 4.1 `RunSetup.enemies[i].health` (finito, 0 < h ≤ `type.health`, `SETUP_HEALTH_OUT_OF_RANGE`) — AW
+- [x] 4.1 `RunSetup.enemies[i].health` (finito, 0 < h ≤ `type.health`, `SETUP_HEALTH_OUT_OF_RANGE`) — AW
   "Armas equipadas al inicio" (vida inicial fijada al preparar), ES "Vida inicial del tipo".
 - [ ] 4.2 `Run.tick` con el nuevo orden (armas tras la persecución, `removeDead()` una vez si hay bajas, contacto
   solo con vivos, director después); `run.test.ts` / `run-weapons.test.ts` — SL "Las armas apuntan tras la
