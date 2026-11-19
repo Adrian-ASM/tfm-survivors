@@ -136,6 +136,6 @@
 - [ ] 9.2 Actualizar `docs/adr/0003-inmutabilidad-y-rendimiento.md` a *aceptada*, con las cifras de 7.2 y la
       decisión concreta (estado escalar mutable interno en `Enemy`; struct of arrays solo si el bench lo exige);
       añadir `npm run bench` a la tabla de AGENTS.md §2 (no bloquea `verify` ni el CI)
-- [ ] 9.3 Entrada en `docs/ai-log/` del change: decisiones del design contrastadas con la spec (`fromSecond`, `id`
+- [x] 9.3 Entrada en `docs/ai-log/` del change: decisiones del design contrastadas con la spec (`fromSecond`, `id`
       en el snapshot, sin regla `minDistance < ringRadius`, la acumulación sigue durante el aplazamiento), API bench
       de Vitest 5 y cualquier bloqueo de hook o ESLint
