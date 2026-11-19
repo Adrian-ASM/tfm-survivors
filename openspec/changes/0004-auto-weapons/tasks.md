@@ -73,7 +73,7 @@
 - [x] 4.6 Partida terminada con armas: `run-state.test.ts` — RS "600 ticks después de terminar", "Armas congeladas al
   terminar", "La terminación no consume azar"; retirar el test de "Una partida sin defensa termina" (requisito
   REMOVED) o reconvertirlo con `NO_WEAPONS`.
-- [ ] 4.7 **Medición temprana (gate de equilibrio)**: test del núcleo con el contenido por defecto, semilla 42 e
+- [x] 4.7 **Medición temprana (gate de equilibrio)**: test del núcleo con el contenido por defecto, semilla 42 e
   input (0, 0) que registra el tick del primer golpe (y, con semilla 7, que hay ≥ 1 proyectil, ≥ 1 pulso y ≥ 1 baja
   en 600 ticks). Anotar los ticks medidos en el diario del change. Si el primer golpe no llega en ≤ 3.600 ticks,
   **parar y avisar al orquestador** (hallazgo de equilibrio → spec), sin relajar el test — PH "Primer golpe en el
