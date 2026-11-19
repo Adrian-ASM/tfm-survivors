@@ -38,7 +38,7 @@
   `PulseEcho.ts`; test unitario de posiciones — AW "Agota su vida sin impactar" (posición 952 en T + 59).
 
 ## 3. Dominio: `Arsenal` (paso de armas del tick)
-- [ ] 3.1 `Arsenal` con pools preasignados (`maxProjectiles` proyectiles, `pulseCapacity` ecos), ids de proyectil y
+- [x] 3.1 `Arsenal` con pools preasignados (`maxProjectiles` proyectiles, `pulseCapacity` ecos), ids de proyectil y
   sub-paso 3b-3c (avance, impacto en el primer vivo de la lista, caducidad, compactación estable); test
   `tests/domain/arsenal.test.ts` — AW "Impacto en vuelo", "Agota su vida sin impactar", "Solo daña a un enemigo",
   "Varios proyectiles sobre el mismo bug en un tick", "El objetivo muere antes del impacto"; SL "Proyectiles en el
