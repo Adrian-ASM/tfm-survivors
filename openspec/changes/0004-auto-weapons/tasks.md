@@ -34,7 +34,7 @@
 - [x] 2.3 `domain/weapon/Weapon.ts`: `readyAt` inicial 0, `isChargedAt(n)`, `fireAt(n)`, `readyIn(k)`; test unitario
   de la cronología — AW "La retención reinicia la cadencia" (a nivel de entidad), SL "Carga de las armas en el
   snapshot" (convención `k ≥ readyAt`).
-- [ ] 2.4 `domain/weapon/Projectile.ts` (`launch`, `advance`, `spent`, velocidad por tick, d = 0 → (1, 0)) y
+- [x] 2.4 `domain/weapon/Projectile.ts` (`launch`, `advance`, `spent`, velocidad por tick, d = 0 → (1, 0)) y
   `PulseEcho.ts`; test unitario de posiciones — AW "Agota su vida sin impactar" (posición 952 en T + 59).
 
 ## 3. Dominio: `Arsenal` (paso de armas del tick)
