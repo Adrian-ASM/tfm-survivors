@@ -31,14 +31,14 @@
       negativa" (dominio).
 
 ## 2. Dominio: jugador, enemigo y contacto
-- [ ] 2.1 `Player`: `spawn(position, rules.player)`, `health`, `invulnerableUntil` (vale 0 al empezar),
+- [x] 2.1 `Player`: `spawn(position, rules.player)`, `health`, `invulnerableUntil` (vale 0 al empezar),
       `canBeHitAt(n)`, `hit(damage, n)`, `isInvulnerableAfter(k)` (`k < invulnerableUntil`). `move` conserva vida e
       *i-frames*. Test: `tests/domain/player.test.ts`, con las fronteras t, t + N − 1, t + N y t + N + 1. Cubre PH
       "Fin de la invulnerabilidad justo en el tick N" (regla).
-- [ ] 2.2 `Enemy`: `hp` escalar, `alive`, `damage` y `takeDamage(amount): boolean`, que recorta a 0 y no hace nada
+- [x] 2.2 `Enemy`: `hp` escalar, `alive`, `damage` y `takeDamage(amount): boolean`, que recorta a 0 y no hace nada
       sobre un enemigo muerto. Test: `tests/domain/enemy.test.ts`. Cubre ES "Vida inicial del tipo", "Daño mayor
       que la vida" y "Daño a un enemigo ya dado de baja" (regla).
-- [ ] 2.3 `src/domain/collision/contact.ts`: `circlesOverlap` (`d² < (r₁ + r₂)²`) y `contactDamage` (el mayor
+- [x] 2.3 `src/domain/collision/contact.ts`: `circlesOverlap` (`d² < (r₁ + r₂)²`) y `contactDamage` (el mayor
       daño, 0 si no hay contacto, bucle indexado y sin asignaciones). Test: `tests/domain/contact.test.ts`, con:
       - tangencia 26 = 16 + 10 → false;
       - distancia 25 → true;

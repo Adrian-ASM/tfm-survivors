@@ -9,6 +9,8 @@ import type { EnemyType } from './EnemyType';
 export class Enemy {
   private px: number;
   private py: number;
+  /** Vida actual: escalar mutable (ADR-0003), sin un `Health` por impacto en el camino caliente. */
+  private life: number;
 
   private constructor(
     readonly id: number,
@@ -18,6 +20,30 @@ export class Enemy {
   ) {
     this.px = x;
     this.py = y;
+    this.life = type.health;
+  }
+
+  get hp(): number {
+    return this.life;
+  }
+
+  get alive(): boolean {
+    return this.life > 0;
+  }
+
+  /** Daño por contacto del tipo. */
+  get damage(): number {
+    return this.type.damage;
+  }
+
+  /**
+   * Resta el daño con recorte a 0 y devuelve true si este golpe lo ha dado de baja. Sobre un
+   * enemigo ya dado de baja no hace nada.
+   */
+  takeDamage(amount: number): boolean {
+    if (!this.alive) return false;
+    this.life = Math.max(0, this.life - amount);
+    return !this.alive;
   }
 
   /** Crea un enemigo con el centro recortado a la arena. */

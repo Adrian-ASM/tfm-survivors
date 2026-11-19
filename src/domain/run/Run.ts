@@ -47,7 +47,7 @@ function initialPlayer(rules: RunRules, setup: RunSetup): Result<Player, DomainE
     return err(invalidConfig('setup.player', SETUP_POSITION_MUST_BE_FINITE));
   }
   const position = at ? arena.clampCircle(Vector2.of(at.x, at.y), player.radius) : arena.center;
-  return ok(Player.spawn(position, player.radius, player.speed));
+  return ok(Player.spawn(position, player));
 }
 
 function initialEnemies(

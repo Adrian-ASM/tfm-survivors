@@ -10,15 +10,43 @@ const ARENA = ((): Arena => {
   return r.value;
 })();
 
-function enemy(speed: number, x: number, y: number, radius = 10, id = 'bug'): Enemy {
+function enemy(speed: number, x: number, y: number, radius = 10, id = 'bug', health = 10): Enemy {
   const type = EnemyType.create(
-    { id, speed, radius, cost: 1, damage: 5, health: 10 },
+    { id, speed, radius, cost: 1, damage: 7, health },
     ARENA,
     'enemies.types.0',
   );
   if (!type.ok) throw new Error(type.error.message);
   return Enemy.spawn(0, type.value, x, y, ARENA);
 }
+
+describe('Enemy · vida y baja', () => {
+  const withHealth = (health: number): Enemy => enemy(90, 100, 100, 10, 'bug', health);
+
+  it('Vida inicial del tipo', () => {
+    const e = withHealth(5);
+    expect([e.hp, e.alive, e.damage]).toEqual([5, true, 7]);
+  });
+
+  it('un daño que no mata resta la vida y devuelve false', () => {
+    const e = withHealth(5);
+    expect(e.takeDamage(3)).toBe(false);
+    expect([e.hp, e.alive]).toEqual([2, true]);
+  });
+
+  it.each([5, 7])('Daño mayor o igual que la vida (%d): baja con vida 0', (amount) => {
+    const e = withHealth(5);
+    expect(e.takeDamage(amount)).toBe(true);
+    expect([e.hp, e.alive]).toEqual([0, false]);
+  });
+
+  it('Daño a un enemigo ya dado de baja: no hace nada', () => {
+    const e = withHealth(5);
+    e.takeDamage(5);
+    expect(e.takeDamage(5)).toBe(false);
+    expect([e.hp, e.alive]).toEqual([0, false]);
+  });
+});
 
 function chaseFor(e: Enemy, ticks: number, tx: number, ty: number): void {
   for (let i = 0; i < ticks; i++) e.chase(tx, ty, TICK_SECONDS, ARENA);
