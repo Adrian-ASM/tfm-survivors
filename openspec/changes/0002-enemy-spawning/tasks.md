@@ -80,7 +80,7 @@
       comprobar solo los snapshots de los ticks con spawn
 
 ## 4. Aplicación
-- [ ] 4.1 `StartRun.execute(config, random)`; `tests/application/loop.test.ts` usa
+- [x] 4.1 `StartRun.execute(config, random)`; `tests/application/loop.test.ts` usa
       `new Mulberry32RandomGenerator(2026)` — SL "Tiempo independiente del refresco" (sin regresión),
       "StartRun propaga el error de contenido"
 
