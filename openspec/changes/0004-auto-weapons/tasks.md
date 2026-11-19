@@ -11,7 +11,7 @@
   `visualTicks`) y finitos > 0 (`range`, `radius`, `speed`, radio del proyectil); test en
   `tests/domain/weapon-type.test.ts` — escenarios AW "Valores no positivos", "Valores no enteros",
   "Daño mayor que la vida de un enemigo".
-- [ ] 1.2 `ATTACK_TARGETING` (tipo mapeado) y regla `WEAPON_TARGETING_INCOMPATIBLE` en `WeaponType.create`, más
+- [x] 1.2 `ATTACK_TARGETING` (tipo mapeado) y regla `WEAPON_TARGETING_INCOMPATIBLE` en `WeaponType.create`, más
   `assertNever` en `domain/shared` — AW "Combinación incompatible".
 - [ ] 1.3 `domain/weapon/WeaponLoadout.ts`: armas en orden, ids únicos (`WEAPON_ID_MUST_BE_UNIQUE`),
   `maxProjectiles` y `hitFlashTicks` enteros ≥ 1, lista vacía aceptada, `pulseCapacity` (Σ ⌈visual / cooldown⌉) —

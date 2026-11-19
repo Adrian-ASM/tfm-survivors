@@ -8,6 +8,8 @@ import {
   TARGETING_RANGE_MUST_BE_POSITIVE,
   WEAPON_COOLDOWN_MUST_BE_INTEGER,
   WEAPON_DAMAGE_MUST_BE_INTEGER,
+  WEAPON_TARGETING_INCOMPATIBLE,
+  ATTACK_TARGETING,
   WeaponType,
   type WeaponTypeConfig,
 } from '../../src/domain/weapon/WeaponType';
@@ -107,5 +109,23 @@ describe('WeaponType', () => {
 
   it('Scenario: Daño mayor que la vida de un enemigo (damage 50 es válido)', () => {
     expect(WeaponType.create(linterWith({ damage: 50 }), PATH).ok).toBe(true);
+  });
+
+  it('ATTACK_TARGETING: projectile con nearest-in-range y pulse con any-in-radius', () => {
+    expect(ATTACK_TARGETING).toEqual({
+      projectile: ['nearest-in-range'],
+      pulse: ['any-in-radius'],
+    });
+  });
+
+  it.each([
+    ['pulse', 'nearest-in-range', { ...TESTS, targeting: LINTER.targeting }],
+    ['projectile', 'any-in-radius', { ...LINTER, targeting: TESTS.targeting }],
+  ])('Scenario: Combinación incompatible (%s con %s)', (attack, mode, config) => {
+    const e = failure(config);
+    expect(e.field).toBe(`${PATH}.targeting.mode`);
+    expect(e.message).toContain(WEAPON_TARGETING_INCOMPATIBLE);
+    expect(e.message).toContain(attack);
+    expect(e.message).toContain(mode);
   });
 });
