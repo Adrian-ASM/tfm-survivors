@@ -81,7 +81,7 @@ export class Run {
   ) {
     this.arena = rules.arena;
     this.player = initial.player;
-    this.horde = new Horde(initial.enemies, rules.arena);
+    this.horde = new Horde(initial.enemies, rules.arena, initial.kills);
     this.gems = initial.gems;
     this.experience = initial.experience;
     this.board = initial.board;

@@ -10,15 +10,17 @@ import type { EnemyType } from './EnemyType';
 export class Horde {
   private readonly enemies: Enemy[];
   private nextId: number;
-  private killCount = 0;
+  private killCount: number;
 
-  /** `initial`: enemigos ya presentes (ids 0 … n − 1, de `RunSetup`). */
+  /** `initial`: enemigos ya presentes (ids 0 … n − 1) y `kills`: bajas previas, de `RunSetup`. */
   constructor(
     initial: Enemy[],
     private readonly arena: Arena,
+    kills = 0,
   ) {
     this.enemies = initial;
     this.nextId = initial.length;
+    this.killCount = kills;
   }
 
   /** Vivos en orden de aparición (vista de solo lectura del array interno, sin copiar). */
