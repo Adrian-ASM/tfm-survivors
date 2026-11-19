@@ -1,0 +1,16 @@
+{
+  "name": "spike-engine",
+  "private": true,
+  "type": "module",
+  "description": "Spike desechable para ADR-0001: mismo escenario en Phaser 4, Kaplay y Canvas 2D.",
+  "scripts": {
+    "dev": "vite --open"
+  },
+  "dependencies": {
+    "kaplay": "3001.0.19",
+    "phaser": "4.2.1"
+  },
+  "devDependencies": {
+    "vite": "8.1.0"
+  }
+}
