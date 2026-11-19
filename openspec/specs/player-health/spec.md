@@ -152,23 +152,29 @@ snapshot: no cambia la simulación.
 
 ### Requirement: Vida mínima 0
 El sistema SHALL impedir que la vida del jugador baje de 0: si el daño de un golpe es mayor o igual que la vida
-restante, la vida queda exactamente en 0. Llegar a 0 termina la partida según `run-state`.
+restante, la vida queda exactamente en 0. Llegar a 0 termina la partida con resultado derrota según `run-state`,
+también si ocurre en el tick de la duración objetivo (la derrota gana a la victoria, ver `run-outcome`).
 
 #### Scenario: Daño exactamente igual a la vida restante
 - **GIVEN** un jugador con vida 10, no invulnerable, y un enemigo con damage 10 en contacto
 - **WHEN** se ejecuta 1 tick
-- **THEN** la vida vale exactamente 0
+- **THEN** la vida vale exactamente 0 y la partida está terminada con resultado derrota
 
 #### Scenario: Daño mayor que la vida restante
 - **GIVEN** un jugador con vida 10, no invulnerable, y un enemigo con damage 25 en contacto
 - **WHEN** se ejecuta 1 tick
-- **THEN** la vida vale exactamente 0, no −15
+- **THEN** la vida vale exactamente 0, no −15, y el resultado es derrota
 
 #### Scenario: Vida que no llega a 0
 - **GIVEN** un jugador con vida 11, no invulnerable, y un enemigo con damage 10 en contacto
 - **WHEN** se ejecuta 1 tick
-- **THEN** la vida vale 1
+- **THEN** la vida vale 1, la partida sigue en curso y no hay resultado
 
+#### Scenario: Vida 1 en el tick de la victoria
+- **GIVEN** una partida con duración objetivo de 120 ticks y un jugador con vida 11, no invulnerable, con un enemigo
+  de damage 10 en contacto en el tick 120
+- **WHEN** se ejecuta el tick 120
+- **THEN** la vida vale 1 y la partida está terminada con resultado victoria
 ### Requirement: Duración de invulnerabilidad validada
 El sistema SHALL leer la duración de la invulnerabilidad desde `content/*.json`, validada con zod antes de llegar
 al dominio. Una duración ≤ 0 o ausente MUST impedir que la partida arranque, con un error que nombre el campo de
@@ -243,3 +249,4 @@ efectiva.
 <!-- historial: 0003-collisions-and-damage (2026-11-19) -->
 <!-- historial: 0004-auto-weapons (2026-11-19) -->
 <!-- historial: 0005-xp-and-level-up (2026-11-19) -->
+<!-- historial: 0006-run-lifecycle-hud (2026-11-20) -->
