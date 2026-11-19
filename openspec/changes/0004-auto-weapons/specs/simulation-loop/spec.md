@@ -1,0 +1,211 @@
+# Spec delta · simulation-loop
+
+<!-- Change 0004-auto-weapons. El tick incorpora el paso de armas (proyectiles, disparos, pulsos y bajas) antes del
+     contacto con el jugador y del director; el snapshot crece con proyectiles, pulsos visibles y la indicación de
+     daño reciente de cada enemigo; el determinismo y el rendimiento se revalidan con armas activas.
+     Cómo se representan proyectiles y pulsos, cómo se asocian sus sprites y cómo se evita asignar en el tick lo
+     decide el design. -->
+
+## MODIFIED Requirements
+
+### Requirement: Orden de los pasos del tick
+El sistema SHALL ejecutar cada tick de una partida en curso en este orden:
+1. movimiento del jugador según el input;
+2. persecución de los enemigos vivos hacia la nueva posición del jugador;
+3. armas (ver `auto-weapons`), en este orden:
+   1. movimiento, impacto y caducidad de los proyectiles existentes, en orden de creación;
+   2. cada arma, en el orden de `content/weapons.json`, elige objetivo con las posiciones de ese momento y, si está
+      cargada y lo tiene, dispara (crea su proyectil o aplica su pulso);
+   3. los enemigos cuya vida ha llegado a 0 en este tick quedan dados de baja;
+4. contacto y daño al jugador (ver `player-health`), solo con enemigos vivos; si la vida llega a 0, la partida
+   termina y el tick acaba aquí;
+5. director de oleadas (spawns).
+
+En una partida terminada no se ejecuta ningún paso (ver `run-state`).
+
+#### Scenario: El contacto usa las posiciones tras moverse ambos
+- **GIVEN** un jugador en (480, 270) con radio 16, velocidad 200, vida 100 e input (1, 0), y un enemigo con
+  radio 10, velocidad 60, vida suficiente para no morir en este tick y damage 10 en (510, 270) (distancia inicial
+  30 > 26)
+- **WHEN** se ejecuta 1 tick (jugador en 483,333; enemigo en 509; distancia 25,667 < 26)
+- **THEN** la vida del jugador vale 90
+
+#### Scenario: Solo el movimiento del jugador no basta
+- **GIVEN** un jugador en (480, 270) con radio 16, velocidad 200, vida 100 e input (1, 0), y un enemigo con
+  radio 10, velocidad 60, vida suficiente para no morir en este tick y damage 10 en (512, 270)
+- **WHEN** se ejecuta 1 tick (jugador en 483,333; enemigo en 511; distancia 27,667 > 26)
+- **THEN** la vida del jugador sigue valiendo 100
+
+#### Scenario: Un enemigo recién aparecido no golpea en su tick de aparición
+- **GIVEN** el contenido de spawn por defecto (`minDistance` 200) y un jugador quieto
+- **WHEN** aparece un enemigo en el tick n
+- **THEN** la vida del jugador tras el tick n es la misma que tras el tick n − 1, si ningún otro enemigo le toca
+
+#### Scenario: Un enemigo recién aparecido no es objetivo en su tick de aparición
+- **GIVEN** una partida sin enemigos vivos y armas cargadas, en la que el director hace aparecer un enemigo en el
+  tick n
+- **WHEN** se ejecuta el tick n
+- **THEN** el snapshot del tick n no tiene proyectiles ni pulsos nuevos y el enemigo tiene su vida inicial
+
+#### Scenario: Las armas apuntan tras la persecución
+- **GIVEN** un jugador quieto en (480, 270), Tests cargado y un bug de radio 10 y velocidad 90 que, al empezar el
+  tick, está a distancia 101 (tras la persecución, a 99,5)
+- **WHEN** se ejecuta 1 tick
+- **THEN** Tests dispara un pulso en ese tick y el bug queda con vida 6
+
+#### Scenario: Una baja libera el hueco antes del director
+- **GIVEN** `maxAlive` 1, un único bug vivo con vida 4 y un director con presupuesto para 1 bug y `bug` como tipo
+  pendiente
+- **WHEN** en el tick n el bug muere por un impacto del Linter
+- **THEN** el snapshot del tick n tiene exactamente 1 enemigo vivo, distinto del muerto
+
+### Requirement: Snapshot para el motor
+El sistema SHALL exponer tras cada frame un `RunSnapshot` con lo único que el adaptador de render necesita para
+pintar:
+- el número de tick;
+- la posición y el radio del jugador;
+- la vida actual y la vida máxima del jugador;
+- si el jugador está invulnerable (ver `player-health`);
+- el estado de la partida: en curso o terminada (ver `run-state`);
+- la lista de enemigos vivos;
+- la lista de proyectiles vivos (ver `auto-weapons`);
+- la lista de pulsos visibles (ver `auto-weapons`);
+- la lista de armas equipadas, en el orden de `content/weapons.json`, con su identificador y si está cargada.
+
+Cada enemigo del snapshot MUST incluir:
+- un identificador único dentro de la partida, que no cambia mientras vive y no se reutiliza tras su baja;
+- su tipo;
+- su posición;
+- su radio;
+- su vida actual (> 0, ya que solo se listan enemigos vivos);
+- si ha recibido daño recientemente (ver `auto-weapons`).
+
+Cada proyectil del snapshot MUST incluir un identificador único dentro de la partida que no se reutiliza, su
+posición y su radio. Cada pulso visible MUST incluir el identificador del arma que lo disparó, el tick en que se
+disparó, su centro y su radio.
+
+La lista de enemigos contiene solo enemigos vivos y va ordenada por orden de aparición. Una baja MUST quitar al
+enemigo de la lista sin cambiar el orden relativo de los demás. La lista de proyectiles va ordenada por orden de
+creación y una desaparición no cambia el orden relativo de los demás.
+
+#### Scenario: Contador de ticks
+- **GIVEN** una partida recién creada
+- **WHEN** se ejecutan 90 ticks
+- **THEN** `snapshot.tick` vale 90
+
+#### Scenario: Partida recién creada
+- **GIVEN** una partida recién creada con vida máxima 100
+- **WHEN** se lee el snapshot antes del primer tick
+- **THEN** las listas de enemigos, proyectiles y pulsos están vacías
+- **AND** la vida actual y la máxima valen 100, el jugador no está invulnerable y el estado es en curso
+- **AND** con el contenido por defecto, la lista de armas es `linter` y `tests`, en ese orden, ambas cargadas
+
+#### Scenario: Carga de las armas en el snapshot
+- **GIVEN** una partida con el contenido por defecto en la que hay un enemigo vivo a 50 px del jugador en el tick 1
+  y ningún enemigo vivo en los ticks 2 a 100
+- **WHEN** se ejecutan 100 ticks
+- **THEN** en los snapshots de los ticks 1 a 30 `linter` figura como no cargada, y de 31 a 100 como cargada
+- **AND** en los snapshots de los ticks 1 a 90 `tests` figura como no cargada, y de 91 a 100 como cargada
+
+#### Scenario: Pulso identificado en el snapshot
+- **GIVEN** un pulso de `tests` disparado en el tick 40 con el jugador en (480, 270)
+- **WHEN** se lee el snapshot del tick 43
+- **THEN** el pulso figura con arma `tests`, tick de disparo 40, centro (480, 270) y radio 90
+
+#### Scenario: Enemigos en el snapshot
+- **GIVEN** un único tramo con `budgetPerSecond` 1 y `types: ["bug"]`, `bug` con coste 1 y radio 10, en una partida
+  sin armas equipadas
+- **WHEN** se ejecutan 615 ticks
+- **THEN** el snapshot lista 10 enemigos de tipo `bug` con radio 10 e identificadores distintos
+- **AND** cada uno tiene una vida actual igual al `health` de `bug` y no indica daño reciente
+- **AND** el orden de la lista coincide con el orden de aparición
+
+#### Scenario: Identificador estable
+- **GIVEN** un enemigo vivo con identificador X en el snapshot del tick n
+- **WHEN** se ejecuta 1 tick más sin que X se dé de baja
+- **THEN** el snapshot del tick n + 1 contiene un enemigo con identificador X, del mismo tipo y radio
+
+#### Scenario: Bajas sin reordenar
+- **GIVEN** un snapshot con 10 enemigos vivos cuyos identificadores, en orden de aparición, son a1 … a10
+- **WHEN** a3 y a7 quedan dados de baja y se ejecuta 1 tick sin nuevos spawns
+- **THEN** la lista del snapshot es exactamente a1, a2, a4, a5, a6, a8, a9, a10, en ese orden
+
+#### Scenario: Reposición al final de la lista
+- **GIVEN** la partida del escenario anterior
+- **WHEN** aparecen 2 enemigos nuevos b1 y b2, en ese orden
+- **THEN** la lista del snapshot es a1, a2, a4, a5, a6, a8, a9, a10, b1, b2
+
+#### Scenario: Baja del primero y del último
+- **GIVEN** un snapshot con 200 enemigos vivos a1 … a200
+- **WHEN** a1 y a200 quedan dados de baja y se ejecuta 1 tick sin nuevos spawns
+- **THEN** la lista del snapshot es a2 … a199, en ese orden
+
+#### Scenario: Proyectiles en el snapshot
+- **GIVEN** tres proyectiles p1, p2 y p3 creados en ese orden y vivos
+- **WHEN** p2 desaparece por impacto y se crea p4
+- **THEN** la lista de proyectiles del snapshot es p1, p3, p4, cada uno con su posición y radio 4
+
+### Requirement: Determinismo
+El sistema SHALL producir exactamente el mismo `RunSnapshot`, enemigos, vida, invulnerabilidad, estado de la
+partida, proyectiles, pulsos e indicación de daño incluidos, a partir del mismo estado inicial, la misma semilla y la
+misma secuencia de inputs por tick. El núcleo MUST NOT depender de reloj del sistema, aleatoriedad global ni APIs
+del navegador: toda la aleatoriedad MUST venir del puerto `RandomGenerator` inicializado con la semilla de la
+partida. Las armas (selección de objetivo, disparo, proyectiles y pulsos) MUST NOT consumir azar.
+
+#### Scenario: Dos partidas idénticas
+- **GIVEN** dos partidas creadas con el mismo contenido y la semilla 42
+- **WHEN** ambas reciben la misma secuencia de 600 inputs (10 s) generada por una seed fija
+- **THEN** sus snapshots son iguales campo a campo en cada tick, enemigos, vida, invulnerabilidad, estado,
+  proyectiles y pulsos incluidos (comparación estricta, sin tolerancia)
+
+#### Scenario: Semillas distintas
+- **GIVEN** dos partidas creadas con el mismo contenido y las semillas 1 y 2
+- **WHEN** ambas reciben la misma secuencia de 600 inputs
+- **THEN** la posición de aparición de al menos 1 enemigo difiere entre las dos partidas
+
+#### Scenario: Partida con contactos reproducible
+- **GIVEN** dos partidas con el contenido por defecto y la semilla 42, con input (0, 0) en todos los ticks
+- **WHEN** ambas ejecutan 3.600 ticks y en ese tiempo el jugador recibe ≥ 1 golpe
+- **THEN** sus snapshots son iguales campo a campo en cada tick, incluidos la vida, la invulnerabilidad, el
+  estado y, si la hay, el tick en que la partida termina
+
+#### Scenario: Partida con armas reproducible
+- **GIVEN** dos partidas con el contenido por defecto y la semilla 7, con input (0, 0) en todos los ticks
+- **WHEN** ambas ejecutan 3.600 ticks y en ese tiempo ≥ 1 enemigo queda dado de baja por armas
+- **THEN** sus snapshots son iguales campo a campo en cada tick, incluidos proyectiles, pulsos, vida de los enemigos
+  e indicación de daño reciente
+
+#### Scenario: Partida larga reproducible
+- **GIVEN** dos partidas con el contenido por defecto y la semilla 7
+- **WHEN** ambas reciben la misma secuencia de 36.000 inputs (10 min)
+- **THEN** sus snapshots finales son iguales campo a campo
+
+#### Scenario: Snapshot no mutable desde fuera
+- **GIVEN** una partida en el tick 10 con ≥ 1 enemigo vivo y ≥ 1 proyectil vivo
+- **WHEN** el adaptador modifica el objeto `RunSnapshot` que ha recibido, incluidas la posición de un enemigo,
+  la lista de enemigos, la vida del jugador, su invulnerabilidad, el estado de la partida, la posición de un
+  proyectil y la lista de proyectiles
+- **THEN** el siguiente tick parte del estado interno, no del objeto modificado
+
+### Requirement: Rendimiento con el tope de enemigos
+El sistema SHALL ejecutar un tick de simulación con 200 enemigos vivos, la detección de contacto activa y las armas
+activas en ≤ 2 ms de media, medido con un benchmark de Vitest sobre el núcleo, sin motor ni render. La partida
+medida MUST seguir en curso durante todos los ticks medidos, de modo que se midan los pasos completos del tick.
+
+#### Scenario: Tope de vivos alcanzado
+- **GIVEN** una partida con el contenido por defecto, semilla fija, exactamente 200 enemigos vivos y una
+  vida del jugador suficiente para no llegar a 0 en 600 ticks
+- **WHEN** el benchmark mide 600 ticks consecutivos con input (1, 0)
+- **THEN** la media es ≤ 2 ms por tick
+
+#### Scenario: 200 enemigos encima del jugador
+- **GIVEN** una partida con semilla fija, 200 enemigos vivos en contacto con el jugador y una vida del jugador
+  suficiente para no llegar a 0 en 600 ticks
+- **WHEN** el benchmark mide 600 ticks consecutivos
+- **THEN** la media es ≤ 2 ms por tick y la partida sigue en curso al terminar la medición
+
+#### Scenario: Peor caso con proyectiles
+- **GIVEN** una partida con semilla fija, 200 enemigos vivos, `maxProjectiles` (32) proyectiles vivos en todos los
+  ticks medidos y una vida del jugador suficiente para no llegar a 0 en 600 ticks
+- **WHEN** el benchmark mide 600 ticks consecutivos
+- **THEN** la media es ≤ 2 ms por tick
