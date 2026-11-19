@@ -144,14 +144,14 @@
       vida 0".
 
 ## 9. Rendimiento
-- [ ] 9.1 `tests/bench/run.bench.ts`:
+- [x] 9.1 `tests/bench/run.bench.ts`:
       - `runAtCap()` con el contenido por defecto y `player.maxHealth = BENCH_HEALTH` (1e9). Lanza un error si
         `status` pasa a `'over'` antes de llegar a 200 vivos, en lugar de quedarse en un bucle infinito.
       - Caso nuevo: 200 `bug` en el centro del jugador vía `RunSetup`, con `BENCH_HEALTH`.
       - Los dos casos comprueban `status === 'running'` al terminar.
 
       Cubre SL "Tope de vivos alcanzado" y "200 enemigos encima del jugador".
-- [ ] 9.2 Ejecutar `npm run bench` y anotar para el verify-report la media y el p99 por tick (los dos casos) y de
+- [x] 9.2 Ejecutar `npm run bench` y anotar para el verify-report la media y el p99 por tick (los dos casos) y de
       `snapshot()`, junto con la máquina, el SO y la versión de Node. Si la media supera 2 ms, parar y volver a
       *design*.
 
