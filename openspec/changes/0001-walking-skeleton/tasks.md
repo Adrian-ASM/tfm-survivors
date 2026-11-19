@@ -62,3 +62,7 @@
 - [x] 5.6 (S11, S12, S13, S14) `lintText` sin escribir en `src/`; invariante `speed > 0` alineada con zod; exención
       de secretos solo para los ficheros de hooks; `ENOENT` controlado en `--all`
 - [x] 5.7 (W6) CI: no ignorar `.claude/hooks/**` en `paths-ignore`
+- [x] 5.8 (N2) Quitar la exención por fichero de `guard-secrets.mjs` (`RULE_FILES`): un token pegado en
+      `guard-secrets.mjs`/`guard-architecture.mjs` se bloquea y el contenido real de ambos hooks no se bloquea
+- [ ] 5.9 (N5) `pre-commit.test.ts`: el commit limpio comprueba que el stub de `npx` recibió `lint-staged`; y se
+      añaden con `git commit` real "El dominio importa el motor" y "Se evalúa lo preparado, no el disco"

@@ -11,11 +11,6 @@ const SECRET_PATTERNS = [
   { re: /\bsk-[A-Za-z0-9_-]{20,}/, msg: 'API key de un proveedor de IA' },
 ];
 
-const RULE_FILES = new Set([
-  '.claude/hooks/guard-secrets.mjs',
-  '.claude/hooks/guard-architecture.mjs',
-]);
-
 /** Ficheros de secretos y credenciales pegadas. Devuelve las líneas del bloqueo o [] si cumple. */
 export function check(toolInput = {}, projectDir = undefined) {
   const path = relativePath(toolInput.file_path, projectDir);
@@ -28,9 +23,7 @@ export function check(toolInput = {}, projectDir = undefined) {
     ];
   }
 
-  // Solo los ficheros que DEFINEN las reglas pueden contener los patrones como texto (verify-report S13).
-  if (RULE_FILES.has(path)) return [];
-
+  // Sin exenciones por fichero (verify-report N2): los patrones no se autocoinciden, y un test lo vigila.
   const text = newContent(toolInput);
   const found = SECRET_PATTERNS.filter(
     ({ re, onlyIn }) => (!onlyIn || path.startsWith(onlyIn)) && re.test(text),

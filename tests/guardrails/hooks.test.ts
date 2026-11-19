@@ -94,15 +94,19 @@ describe('hooks · check() reutilizable en proceso', () => {
   });
 });
 
-describe('guard-secrets · exención solo para los ficheros de reglas (verify-report S13)', () => {
+describe('guard-secrets · sin exenciones por fichero (verify-report S13, N2)', () => {
   // Se construye en tiempo de ejecución para que este test no contenga un token literal.
   const token = ['ghp', 'A'.repeat(36)].join('_');
 
-  it('bloquea un secreto en cualquier otro fichero de .claude/hooks/', async () => {
-    const check = await checkOf('guard-secrets.mjs');
-    const lines = check({ file_path: '.claude/hooks/notas.mjs', content: `const t = '${token}';` });
-    expect(lines.join('\n')).toContain('Token de GitHub');
-  });
+  it.each(['notas.mjs', 'guard-secrets.mjs', 'guard-architecture.mjs'])(
+    'bloquea un secreto pegado en .claude/hooks/%s',
+    async (name) => {
+      const check = await checkOf('guard-secrets.mjs');
+      const content = `const t = '${token}';`;
+      const lines = check({ file_path: `.claude/hooks/${name}`, content });
+      expect(lines.join('\n')).toContain('Token de GitHub');
+    },
+  );
 
   it.each(['guard-secrets.mjs', 'guard-architecture.mjs'])(
     'no se auto-bloquea con el contenido real de %s',
