@@ -106,10 +106,10 @@
 ## 2. Aplicación
 - [x] 2.1 `TickRun.status` (getter) y tests de bucle con `over`. Escenarios: simulation-loop "Frames con la partida
   terminada" y "Fin de partida a mitad de frame" (con victoria a mitad de frame).
-- [ ] 2.2 `RestartRun`: `execute(current)` devuelve `err('not-over')` desde `running` y desde `choosing`, sin tocar
+- [x] 2.2 `RestartRun`: `execute(current)` devuelve `err('not-over')` desde `running` y desde `choosing`, sin tocar
   la partida ni llamar a `nextRandom`. Escenarios: run-results "R durante la partida" y "R mientras se elige mejora"
   (regla).
-- [ ] 2.3 `RestartRun` desde `over` (derrota y victoria): `StartedRun` nuevo en el tick 0, con `nextRandom` llamado
+- [x] 2.3 `RestartRun` desde `over` (derrota y victoria): `StartedRun` nuevo en el tick 0, con `nextRandom` llamado
   una vez. Escenarios: run-results "Estado inicial tras reiniciar una partida avanzada" (con `RunSetup` para no
   simular 20.000 ticks: nivel, gemas, enemigos y `guardrail` 2) y "La partida nueva juega con normalidad".
 - [ ] 2.4 Equivalencia: una partida reiniciada con semilla S frente a `StartRun` con S, durante 600 ticks con la
