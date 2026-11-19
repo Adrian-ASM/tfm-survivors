@@ -346,3 +346,24 @@ Sin discrepancias abiertas.
 - `docs/adr/0007-modelo-generico-de-armas.md` (matizada): estado y consecuencia remiten a ADR-0008.
 - ADR-0003 y ADR-0006: sin cambio de decisión; en apply se añade su sección "Aplicación (0005)" (pool de gemas,
   suelta dentro de `removeDead`, datos del bench).
+
+## Desviaciones del apply
+
+### 0.1 · Línea base sin progresión (código de 0004)
+Contenido por defecto con armas, input (0, 0), en el núcleo (test temporal, ya retirado). "Baja cercana" = enemigo
+que desaparece a ≤ 64 px del jugador (posición del snapshot anterior). Como gemas y XP no consumen azar, hasta la
+primera oferta la partida de 0005 es idéntica a la de 0004, así que la "primera oferta estimada" (primer tick en que
+la XP de las bajas cercanas, con bug 1 / merge-conflict 2 / memory-leak 4, llega a 5) predice la real.
+
+| Semilla | Primer golpe | Primera baja | Primer pulso | Fin | Bajas (6.000 ticks) | Cercanas | Primera oferta estimada |
+|---|---|---|---|---|---|---|---|
+| 42 | 4100 | 185 | 1177 | 4815 | 80 | 16 | 4145 |
+| 7 | 4098 | 179 | 950 | 4629 | 74 | 12 | 4234 |
+| 1 | 3899 | 173 | 712 | 4589 | 73 | 10 | 4158 |
+| 2 | 4126 | 124 | 2022 | 4583 | 72 | 8 | 4307 |
+| 3 | 4077 | 187 | 786 | 4577 | 74 | 14 | 4143 |
+
+- Con semilla 7, ninguna baja de los primeros 3.600 ticks ocurre a ≤ 64 px (la más cercana, a 73 px): el Linter
+  (alcance 400) y Tests (radio 90) matan lejos del jugador quieto. **Riesgo confirmado**: con los valores
+  provisionales, "Primera subida en el núcleo" (≤ 3.600 ticks) no se cumplirá. Se mide de nuevo con el código real
+  en el punto de control 0.3.

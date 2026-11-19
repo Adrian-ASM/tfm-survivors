@@ -7,7 +7,7 @@
      specs del change (y en las vivas que lo citen) y en este fichero. -->
 
 ## 0. Medición de equilibrio y plazos (primero, lección de 0004)
-- [ ] 0.1 Línea base con el código actual (0004, sin progresión): medir en el núcleo con un test temporal el tick del
+- [x] 0.1 Línea base con el código actual (0004, sin progresión): medir en el núcleo con un test temporal el tick del
   primer golpe (semilla 42, input (0, 0)), de la primera baja y del primer pulso (semilla 7) y anotarlos en
   `design.md` § "Desviaciones del apply" — escenarios de referencia: "Primer golpe en el núcleo con armas activas",
   "Jugador quieto con el contenido por defecto"
