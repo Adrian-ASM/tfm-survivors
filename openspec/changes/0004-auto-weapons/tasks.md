@@ -78,7 +78,7 @@
   en 600 ticks). Anotar los ticks medidos en el diario del change. Si el primer golpe no llega en ≤ 3.600 ticks,
   **parar y avisar al orquestador** (hallazgo de equilibrio → spec), sin relajar el test — PH "Primer golpe en el
   núcleo con armas activas"; AW "Jugador quieto con el contenido por defecto".
-- [ ] 4.8 Migración y revisión de 0001–0003: `determinism.test.ts` gana el caso con armas; `long-run.test.ts` y
+- [x] 4.8 Migración y revisión de 0001–0003: `determinism.test.ts` gana el caso con armas; `long-run.test.ts` y
   `run-spawning.test.ts` siguen con `NO_WEAPONS` donde prueban el spawn; repasar cada escenario largo contra el
   contenido por defecto (lección 0003) — SL "Dos partidas idénticas", "Partida con contactos reproducible",
   "Partida con armas reproducible", "Partida larga reproducible", "Enemigos en el snapshot" (sin armas).
