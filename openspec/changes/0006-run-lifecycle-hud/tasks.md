@@ -5,7 +5,7 @@
      TDD: primero el test en rojo, después el código mínimo y `npm run verify` en verde. -->
 
 ## 0. Medición de ganabilidad (antes de tocar `src/`)
-- [ ] 0.1 `tests/support/policies.ts`: crear `fleeInput(snapshot)`, una política de movimiento pura y reproducible.
+- [x] 0.1 `tests/support/policies.ts`: crear `fleeInput(snapshot)`, una política de movimiento pura y reproducible.
   Suma una repulsión `1/d²` de los enemigos a menos de 150 px y otra de las paredes a menos de 64 px, y la cuantiza a
   8 direcciones con `PlayerInput.of`. Con vector nulo devuelve `PlayerInput.NONE`. Test unitario con 3 casos (enemigo
   a la derecha ⇒ huye a la izquierda, pared y sin enemigos). Escenario: run-outcome "Partida ganada con estrategia
