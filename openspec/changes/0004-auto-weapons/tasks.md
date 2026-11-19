@@ -100,11 +100,11 @@
   tras crear — AW "Sprites de proyectiles".
 - [x] 6.4 `PulseLayer` (anillos por índice, capacidad `pulseCapacity`) y función pura `pulseAlpha`; test en Node —
   AW "Duración del pulso" (pintado), "Indicación visual…" (un anillo por pulso).
-- [ ] 6.5 `GameScene` con `SceneCapacity { enemies, projectiles, pulses }`, orden de capas (anillos, enemigos,
+- [x] 6.5 `GameScene` con `SceneCapacity { enemies, projectiles, pulses }`, orden de capas (anillos, enemigos,
   proyectiles, jugador) y `sync` de las tres capas — cubierto por E2E 8.1.
 
 ## 7. Composición
-- [ ] 7.1 `main.ts` calcula `SceneCapacity` desde el `RunConfig` validado (`maxAlive`, `maxProjectiles`,
+- [x] 7.1 `main.ts` calcula `SceneCapacity` desde el `RunConfig` validado (`maxAlive`, `maxProjectiles`,
   `pulseCapacity`); `npm run build` en verde — AW "Comprobación en el navegador" (cableado).
 
 ## 8. E2E, bench y documentación
