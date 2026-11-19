@@ -112,7 +112,7 @@
 - [x] 2.3 `RestartRun` desde `over` (derrota y victoria): `StartedRun` nuevo en el tick 0, con `nextRandom` llamado
   una vez. Escenarios: run-results "Estado inicial tras reiniciar una partida avanzada" (con `RunSetup` para no
   simular 20.000 ticks: nivel, gemas, enemigos y `guardrail` 2) y "La partida nueva juega con normalidad".
-- [ ] 2.4 Equivalencia: una partida reiniciada con semilla S frente a `StartRun` con S, durante 600 ticks con la
+- [x] 2.4 Equivalencia: una partida reiniciada con semilla S frente a `StartRun` con S, durante 600 ticks con la
   política fija, dan snapshots iguales en cada tick. Además, el primer `execute` de la partida nueva con 16,667 ms da
   1 tick y con 8,334 ms da 0. Escenarios: run-results "Equivalente a una partida recién creada"; simulation-loop
   "Primer frame de la partida nueva".

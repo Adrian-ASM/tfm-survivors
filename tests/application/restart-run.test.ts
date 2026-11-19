@@ -8,6 +8,7 @@ import type { RunConfig } from '../../src/domain/run/RunConfig';
 import type { RandomGenerator } from '../../src/domain/shared/RandomGenerator';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import { TICK_MS, aDefaultConfig } from '../support/builders';
+import { randomInputs } from '../support/inputs';
 
 const CENTER = { x: 480, y: 270 };
 
@@ -161,5 +162,40 @@ describe('RestartRun · partida nueva desde una terminada (spec run-results)', (
     expect(snaps.at(-1)?.tick).toBe(600);
     expect(snaps.some((s) => s.enemies.length > 0)).toBe(true);
     expect(snaps.some((s) => s.projectiles.length > 0 || s.pulses.length > 0)).toBe(true);
+  });
+});
+
+describe('RestartRun · equivalencia y primer frame', () => {
+  it('Scenario: Equivalente a una partida recién creada (semilla S, 600 ticks, política fija)', () => {
+    const S = 2026;
+    const inputs = randomInputs(600, 7);
+    const r = new RestartRun(aDefaultConfig(), nextRandomSpy(S).next).execute(advancedAndLost());
+    if (!r.ok) throw new Error(r.error.code);
+    const fresh = started(aDefaultConfig(), undefined, S);
+    const playInputs = (s: StartedRun) =>
+      inputs.map((input) => {
+        while (s.tickRun.status === 'choosing') s.chooseUpgrade.execute(0);
+        return s.tickRun.execute(TICK_MS, input);
+      });
+
+    const a = playInputs(r.value);
+    const b = playInputs(fresh);
+
+    expect(a.at(-1)?.tick).toBe(600);
+    for (let i = 0; i < inputs.length; i++) expect(a[i]).toStrictEqual(b[i]);
+  });
+
+  it('Scenario: Primer frame de la partida nueva (16,667 ms ⇒ 1 tick; 8,334 ms ⇒ 0)', () => {
+    const current = advancedAndLost();
+    for (let i = 0; i < 600; i++) current.execute(16.667, PlayerInput.NONE);
+    const restart = new RestartRun(aDefaultConfig(), nextRandomSpy().next);
+    const a = restart.execute(current);
+    const b = restart.execute(current);
+    if (!a.ok || !b.ok) throw new Error('reinicio rechazado');
+
+    const full = a.value.tickRun.execute(16.667, PlayerInput.NONE);
+    const half = b.value.tickRun.execute(8.334, PlayerInput.NONE);
+
+    expect([full.tick, half.tick]).toEqual([1, 0]);
   });
 });
