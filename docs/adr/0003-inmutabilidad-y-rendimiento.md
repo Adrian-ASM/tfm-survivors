@@ -49,6 +49,23 @@ Máquina: Ryzen 7 9800X3D, Node 26.13.1.
   tick con 200 vivos pasa de 0,0069 ms (0002) a 0,0081 ms, y el margen sigue siendo de unas 250 veces respecto a
   los 2 ms. No hace falta rejilla espacial ni *struct of arrays* en este change.
 
+## Aplicación (change 0005-xp-and-level-up)
+- Sin cambio de decisión. Las gemas son registros mutables (`XpGem`) de un pool de `maxGems` preasignado por
+  `GemField` al empezar; la experiencia y los niveles de mejora son escalares. Cero asignaciones por tick en régimen:
+  asignan solo la elección de mejora (un `WeaponType` o un `Player` nuevos, camino frío) y `snapshot()` por frame.
+- El paso de gemas es O(gemas) con `d²` para la atracción y un solape estricto para la recogida; sin rejilla.
+
+| Medida (Ryzen 7 9800X3D, Windows 11, Node 26.13.1) | Ticks | Media | p99 |
+|---|---|---|---|
+| `Run.tick`, 200 vivos, input (1, 0) | 600 | 0,0107 ms | 0,0258 ms |
+| `Run.tick`, 200 `bug` encima del jugador | 600 | 0,0058 ms | 0,0118 ms |
+| `Run.tick`, 200 vivos + 32 proyectiles (peor caso de 0004) | 600 | 0,1375 ms | 0,1812 ms |
+| `Run.tick`, 200 vivos + 32 proyectiles + 300 gemas atraídas | 60 | 0,1228 ms | 0,1541 ms |
+| `Run.snapshot()`, 200 vivos | 600 | 0,0089 ms | 0,0156 ms |
+
+- El peor caso con gemas queda unas 16 veces por debajo de los 2 ms. Las gemas apenas suman: el tick lo dominan los
+  impactos de 32 proyectiles y un pulso por tick sobre 200 enemigos.
+
 ## Consecuencias
 - Margen de unas 290 veces respecto al umbral de 2 ms por tick: el diseño actual basta para el tope de vivos.
 - Hay que volver a medir cuando se añadan colisiones y armas (más trabajo por tick).

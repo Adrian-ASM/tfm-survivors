@@ -420,3 +420,25 @@ código real, misma política:
   `DEFAULT_PICKUP_RADIUS` = 128. **Pendiente de spec (no lo cambia el apply)**: esos escenarios no fijan el radio en
   su GIVEN, así que con el contenido por defecto (128) dejan de ser literales: p. ej. "Más radio de recogida" da 160
   con `context-window` en nivel 1, no 96; y la cabecera de la spec `player-movement` sigue diciendo 64.
+
+### Bench final (3.9, `npm run bench`)
+200 vivos 0,0107 ms; 200 encima 0,0058 ms; 200 + 32 proyectiles 0,1375 ms (p99 0,1812); 200 + 32 + 300 gemas
+atraídas, 60 ticks, 0,1228 ms (p99 0,1541); `snapshot()` 0,0089 ms. Detalle en ADR-0003.
+
+### Otras desviaciones respecto a este design
+- 1.1, 1.2 y 1.16 adelantan de 3.1–3.3 los esquemas zod, el loader y los JSON (sin ellos el loader no compila);
+  3.1–3.3 añaden sus tests de contenido.
+- `PlayerRules`/`checkPlayer` en `player/PlayerRules.ts` (RunConfig los reexporta) y build de peor caso dentro de
+  `UpgradeCatalog.create` (ver ADR-0008 § "Aplicación").
+- `RunSetup` y su validación en `run/RunSetup.ts`; además de `gems` y `experience`, gana `upgrades` (niveles
+  iniciales por id con sus efectos aplicados) para los escenarios "elegido antes del tick 1" y "todas al máximo".
+  `StartRun.execute` acepta el mismo `setup` opcional (solo tests).
+- Snapshot ampliado ya en 1.17; sus piezas en `run/snapshotParts.ts` (`Run` pasaba de 300 líneas; no
+  `runSnapshot.ts` porque en Windows colisiona con `RunSnapshot.ts`). `Run.status` como lectura barata.
+- `ChoiceKeys` escucha el evento `down` de las teclas en vez de `JustDown`: en Phaser 4.2.1 `Key.onUp` borra
+  `_justDown`, así que una pulsación dentro de un mismo frame (`keyboard.press` de Playwright, toque rápido) se
+  perdía. El evento `down` sigue sin repetirse al mantener la tecla.
+- E2E: el overlay "visible" y el "nivel mostrado" se comprueban con el snapshot del probe (oferta no vacía y
+  `progression.level`); `XpBar` y `UpgradeOverlay` se prueban en Node con dobles. Los E2E dan foco al canvas con un
+  clic en una esquina. Sin comprobación manual con `npm run dev`: se sustituyó por una captura de Playwright del
+  overlay con `?seed=3` (tres cartas con nombre, descripción y `Nv 0 → 1`, barra y `Nv 2` visibles).

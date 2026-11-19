@@ -1,6 +1,6 @@
 # ADR-0008 · Mejoras como modificadores aditivos sobre datos base inmutables
 
-- **Estado**: propuesta (change 0005-xp-and-level-up)
+- **Estado**: aceptada (change 0005-xp-and-level-up, confirmada en apply)
 - **Fecha**: 2026-11-19
 - **Matiza**: ADR-0007 ("las mejoras de 0005 serán transformaciones de datos sobre `WeaponType`")
 
@@ -45,6 +45,19 @@ Opción 3.
 - **Efectos que no son estadística pura** viven en la aplicación del efecto, no en los datos: la vida máxima sube
   también la vida actual en la misma cantidad; la cadencia nueva rige desde el siguiente disparo (`readyAt` no se
   toca); un proyectil en vuelo conserva el daño con el que se lanzó.
+
+## Aplicación (change 0005-xp-and-level-up)
+- Niveles en `UpgradeBoard.levels` (orden del catálogo); derivación en `upgrade/upgradeStats.ts` con una función de
+  aporte por mejora: `byLevels(levels)` en partida y `worstCase` (`min(0, perLevel · maxLevel)`) al validar, así
+  que el peor caso usa exactamente el mismo código que la partida.
+- La build de peor caso vive en `UpgradeCatalog.create` (recibe loadout, jugador y arena) y la llama
+  `buildRunRules`; para validar al jugador sin ciclo de imports, `PlayerRules` y `checkPlayer` pasaron a
+  `player/PlayerRules.ts`. El error nombra estadística, valor y mejoras, p. ej.
+  `linter.cooldownTicks = 0 (fast-ci)`.
+- `Run` construye el tipo efectivo con `WeaponType.create` en cada elección y lanza un error de invariante si
+  fallara (no puede: peor caso validado). `RunRules.pulseCapacity` sale del peor caso y dimensiona los ecos.
+- Hallazgo: unas armas con cadencia 1 (bench) hacen inválido el catálogo por defecto (`fast-ci` dejaría −19): el
+  peor caso es una regla del contenido completo, no de cada fichero por separado.
 
 ## Consecuencias
 - Positivas:
