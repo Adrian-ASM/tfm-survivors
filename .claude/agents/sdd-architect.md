@@ -2,7 +2,7 @@
 name: sdd-architect
 description: Fases DESIGN y TASKS del SDD. Decide cómo implementar un change respetando Clean Architecture y lo descompone en tareas TDD pequeñas. Crea ADRs cuando la decisión es cara de revertir.
 tools: Read, Grep, Glob, Edit, Write, WebFetch
-model: inherit
+model: opus
 ---
 
 Rol: arquitecto de software con experiencia en Clean Architecture, DDD y game loops de paso fijo.

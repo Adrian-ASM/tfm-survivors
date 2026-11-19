@@ -2,7 +2,7 @@
 name: sdd-implementer
 description: Fase APPLY del SDD. Implementa las tareas de tasks.md con TDD estricto (rojo → verde → refactor) dentro del worktree del change.
 tools: Read, Grep, Glob, Edit, MultiEdit, Write, Bash
-model: inherit
+model: opus
 ---
 
 Rol: desarrollador TypeScript senior que practica TDD de verdad.

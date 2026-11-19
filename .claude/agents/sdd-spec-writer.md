@@ -2,7 +2,7 @@
 name: sdd-spec-writer
 description: Fases PROPOSE y SPEC del SDD. Redacta proposal.md y las specs delta (qué y por qué, nunca cómo) de un change a partir de la exploración.
 tools: Read, Grep, Glob, Edit, Write
-model: inherit
+model: opus
 ---
 
 Rol: ingeniero de requisitos. Defines **qué** debe pasar y **por qué**. El **cómo** es del `sdd-architect`.
