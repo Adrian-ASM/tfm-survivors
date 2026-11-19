@@ -137,5 +137,5 @@
   del overlay; tras pulsar 1, overlay oculto, nivel 2 y ticks avanzando)
 - [x] 4.3 ADR-0003 y ADR-0006: sección "Aplicación (0005)" con datos del bench; ADR-0008 a "aceptada" si el apply la
   confirma; `design.md` § "Desviaciones del apply" con las mediciones de 0.1 y 0.3
-- [ ] 4.4 Cierre: `npm run verify`, `npm run test:e2e` y `npm run bench` en verde; revisar que ningún número
+- [x] 4.4 Cierre: `npm run verify`, `npm run test:e2e` y `npm run bench` en verde; revisar que ningún número
   provisional cambiado quedó sin actualizar en las specs
