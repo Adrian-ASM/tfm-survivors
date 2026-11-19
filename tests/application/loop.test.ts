@@ -4,7 +4,14 @@ import { StartRun } from '../../src/application/StartRun';
 import { TickRun } from '../../src/application/TickRun';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
-import { TICK_MS, aDefaultConfig, aRunConfig, aSegment, aWavesConfig } from '../support/builders';
+import {
+  TICK_MS,
+  aDefaultConfig,
+  aRunConfig,
+  aSegment,
+  aWavesConfig,
+  withDuration,
+} from '../support/builders';
 import { randomInputs } from '../support/inputs';
 import { aContactConfig, startRun } from '../support/runs';
 
@@ -196,5 +203,42 @@ describe('TickRun · acumulador', () => {
     tickRun.execute(10, PlayerInput.NONE);
     tickRun.execute(16.667, PlayerInput.NONE);
     expect([steps, loop.accumulatedMs]).toEqual([1, 0]);
+  });
+});
+
+describe('TickRun · sin tiempo acumulado con la partida terminada (0006)', () => {
+  /** Partida de 1 s (60 ticks) sin enemigos, ya en el tick 59: gana en el primer tick que ejecute. */
+  const aboutToWin = () => {
+    const run = startRun(withDuration(aContactConfig(), 1));
+    for (let i = 0; i < 59; i++) run.tick(PlayerInput.NONE);
+    const loop = new FixedStepLoop();
+    return { loop, tickRun: new TickRun(run, loop) };
+  };
+
+  it('expone el estado de la partida sin pedir un snapshot', () => {
+    const { tickRun } = aboutToWin();
+    const before = tickRun.status;
+
+    tickRun.execute(TICK_MS, PlayerInput.NONE);
+
+    expect([before, tickRun.status]).toEqual(['running', 'over']);
+  });
+
+  it('Scenario: Frames con la partida terminada (600 frames de 16,667 ms: 0 ticks)', () => {
+    const { tickRun } = aboutToWin();
+    const ended = tickRun.execute(TICK_MS, PlayerInput.NONE);
+
+    const frames = Array.from({ length: 600 }, () => tickRun.execute(16.667, PlayerInput.NONE));
+
+    expect(ended).toMatchObject({ tick: 60, outcome: 'won' });
+    expect(frames.every((s) => s.tick === 60)).toBe(true);
+  });
+
+  it('Scenario: Fin de partida a mitad de frame (50 ms con victoria en el primer tick: 1 tick)', () => {
+    const { loop, tickRun } = aboutToWin();
+
+    const snap = tickRun.execute(50, PlayerInput.NONE);
+
+    expect([snap.tick, snap.outcome, loop.accumulatedMs]).toEqual([60, 'won', 0]);
   });
 });

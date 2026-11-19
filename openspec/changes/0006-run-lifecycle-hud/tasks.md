@@ -104,7 +104,7 @@
   en el tick 36.000. Escenario: run-outcome "Partida ganada con estrategia documentada".
 
 ## 2. Aplicación
-- [ ] 2.1 `TickRun.status` (getter) y tests de bucle con `over`. Escenarios: simulation-loop "Frames con la partida
+- [x] 2.1 `TickRun.status` (getter) y tests de bucle con `over`. Escenarios: simulation-loop "Frames con la partida
   terminada" y "Fin de partida a mitad de frame" (con victoria a mitad de frame).
 - [ ] 2.2 `RestartRun`: `execute(current)` devuelve `err('not-over')` desde `running` y desde `choosing`, sin tocar
   la partida ni llamar a `nextRandom`. Escenarios: run-results "R durante la partida" y "R mientras se elige mejora"

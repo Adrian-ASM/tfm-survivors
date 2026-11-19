@@ -1,6 +1,7 @@
 import type { PlayerInput } from '../domain/player/PlayerInput';
 import type { Run } from '../domain/run/Run';
 import type { RunSnapshot } from '../domain/run/RunSnapshot';
+import type { RunStatus } from '../domain/run/RunStatus';
 import { FixedStepLoop } from './FixedStepLoop';
 
 /** Caso de uso: avanzar la partida el tiempo real de un frame y devolver lo que hay que pintar. */
@@ -25,6 +26,11 @@ export class TickRun {
       return this.run.status === 'running';
     });
     return this.run.snapshot();
+  }
+
+  /** Estado de la partida (lectura barata, sin snapshot; lo usa `RestartRun`). */
+  get status(): RunStatus {
+    return this.run.status;
   }
 
   snapshot(): RunSnapshot {
