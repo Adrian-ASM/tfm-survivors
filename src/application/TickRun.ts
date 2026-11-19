@@ -13,6 +13,7 @@ export class TickRun {
   execute(elapsedMs: number, input: PlayerInput): RunSnapshot {
     this.loop.advance(elapsedMs, () => {
       this.run.tick(input);
+      return true;
     });
     return this.run.snapshot();
   }

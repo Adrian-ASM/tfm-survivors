@@ -101,7 +101,7 @@
   defecto", "Ningún arma mata a un bug de un impacto sin mejoras", "Una partida terminada no vuelve a en curso"
 
 ## 2. Aplicación
-- [ ] 2.1 `FixedStepLoop.advance` con `step: () => boolean` y `reset()` — escenario: "Oferta a mitad de frame"
+- [x] 2.1 `FixedStepLoop.advance` con `step: () => boolean` y `reset()` — escenario: "Oferta a mitad de frame"
 - [ ] 2.2 `TickRun` no avanza ni acumula con la partida eligiendo o terminada — escenarios: "Frames durante la
   elección", "Primer frame tras elegir"
 - [ ] 2.3 `ChooseUpgrade` y `StartRun` devolviendo `{ tickRun, chooseUpgrade }` — escenarios: "Elección válida" e

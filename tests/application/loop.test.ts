@@ -10,7 +10,7 @@ import { aContactConfig, startRun } from '../support/runs';
 
 const ticksFor = (...framesMs: number[]): number[] => {
   const loop = new FixedStepLoop();
-  return framesMs.map((ms) => loop.advance(ms, () => undefined));
+  return framesMs.map((ms) => loop.advance(ms, () => true));
 };
 
 describe('FixedStepLoop · paso fijo', () => {
@@ -32,9 +32,31 @@ describe('FixedStepLoop · paso fijo', () => {
 
   it('Tiempo negativo o no numérico', () => {
     const loop = new FixedStepLoop();
-    expect(loop.advance(-10, () => undefined)).toBe(0);
-    expect(loop.advance(Number.NaN, () => undefined)).toBe(0);
+    expect(loop.advance(-10, () => true)).toBe(0);
+    expect(loop.advance(Number.NaN, () => true)).toBe(0);
     expect(loop.accumulatedMs).toBe(0);
+  });
+});
+
+describe('FixedStepLoop · corte del frame', () => {
+  it('Scenario: Oferta a mitad de frame (50 ms: 1 tick y acumulador a 0; luego 8,334 ms: 0)', () => {
+    const loop = new FixedStepLoop();
+    let calls = 0;
+    const ran = loop.advance(50, () => {
+      calls += 1;
+      return false;
+    });
+    expect([ran, calls, loop.accumulatedMs]).toEqual([1, 1, 0]);
+    expect(loop.advance(8.334, () => true)).toBe(0);
+  });
+
+  it('reset() descarta el tiempo acumulado', () => {
+    const loop = new FixedStepLoop();
+    loop.advance(10, () => true);
+    expect(loop.accumulatedMs).toBeCloseTo(10, 9);
+    loop.reset();
+    expect(loop.accumulatedMs).toBe(0);
+    expect(loop.advance(10, () => true)).toBe(0);
   });
 });
 
