@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FakeTarget, aLinter, anArsenal, stepTicks, weaponsOf } from '../support/weapons';
+import { FakeTarget, aLinter, aPulse, anArsenal, stepTicks, weaponsOf } from '../support/weapons';
 
 const xs = (a: { projectiles: readonly { x: number }[] }): number[] =>
   a.projectiles.map((p) => p.x);
@@ -22,6 +22,56 @@ function launchTicks(
   }
   return { fired, maxAlive };
 }
+
+describe('Arsenal · pulso de área', () => {
+  it('Scenario: Tres dentro y uno fuera (distancias 50, 80, 99 y 101)', () => {
+    const arsenal = anArsenal(weaponsOf([aPulse()]));
+    const bugs = [50, 80, 99, 101].map((d) => new FakeTarget(480 + d, 270));
+    arsenal.step(1, 480, 270, bugs);
+    expect(bugs.map((b) => b.hp)).toEqual([6, 6, 6, 10]);
+  });
+
+  it('Scenario: Sin enemigos en el radio, sin pulso (300 ticks a distancia 100)', () => {
+    const arsenal = anArsenal(weaponsOf([aPulse()]));
+    const bug = new FakeTarget(580, 270);
+    stepTicks(arsenal, 1, 300, [bug]);
+    expect([bug.hp, arsenal.pulses.length]).toEqual([10, 0]);
+    expect(arsenal.weapons[0]?.isChargedAt(300)).toBe(true);
+  });
+
+  it('Scenario: Duración del pulso (de T a T + 7 con centro fijo y radio 90; no en T + 8)', () => {
+    const arsenal = anArsenal(weaponsOf([aPulse()]));
+    const bug = new FakeTarget(530, 270, 100);
+    const T = 5;
+    stepTicks(arsenal, 1, T - 1, []);
+    arsenal.step(T, 480, 270, [bug]);
+    const seen: (readonly [string, number, number, number, number])[] = [];
+    for (let n = T; n <= T + 8; n++) {
+      if (n > T) arsenal.step(n, 480 + 10 * (n - T), 270, [bug]);
+      seen.push(...arsenal.pulses.map((p) => [p.weaponId, p.firedAt, p.x, p.y, p.radius] as const));
+    }
+    expect(seen).toEqual(Array.from({ length: 8 }, () => ['tests', T, 480, 270, 90]));
+    expect(arsenal.pulses).toHaveLength(0);
+  });
+
+  it('devuelve las bajas del pulso', () => {
+    const arsenal = anArsenal(weaponsOf([aPulse()]));
+    const bugs = [
+      new FakeTarget(500, 270, 4),
+      new FakeTarget(510, 270, 3),
+      new FakeTarget(520, 270),
+    ];
+    expect(arsenal.step(1, 480, 270, bugs)).toBe(2);
+  });
+
+  it('el orden de la lista decide: el pulso mata antes y el Linter retiene la carga', () => {
+    const arsenal = anArsenal(weaponsOf([aPulse(), aLinter()]));
+    const bug = new FakeTarget(530, 270, 4);
+    expect(arsenal.step(1, 480, 270, [bug])).toBe(1);
+    expect(arsenal.projectiles).toHaveLength(0);
+    expect(arsenal.weapons.map((w) => w.isChargedAt(2))).toEqual([false, true]);
+  });
+});
 
 describe('Arsenal · disparo de proyectiles', () => {
   it('Scenario: Tope lleno (maxProjectiles 2, cooldown 1: crea en 1, 2 y 61)', () => {
