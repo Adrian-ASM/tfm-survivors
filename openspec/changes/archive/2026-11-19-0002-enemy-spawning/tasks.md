@@ -140,7 +140,7 @@
       partida avanza; el smoke de 0001 sigue en verde — SL "Semilla inválida" (navegador)
 
 ## 9. Cierre
-- [ ] 9.1 `npm run verify` y `npm run test:e2e` en verde; revisar a mano en `npm run dev` los 3 colores y tamaños
+- [x] 9.1 `npm run verify` y `npm run test:e2e` en verde; revisar a mano en `npm run dev` los 3 colores y tamaños
       (pasada la fase de 180 s o con una tabla de prueba local sin commitear) y que `?seed=42` sin input se repite
 - [x] 9.2 Actualizar `docs/adr/0003-inmutabilidad-y-rendimiento.md` a *aceptada*, con las cifras de 7.2 y la
       decisión concreta (estado escalar mutable interno en `Enemy`; struct of arrays solo si el bench lo exige);
