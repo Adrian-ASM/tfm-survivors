@@ -1,0 +1,8 @@
+# LF en el repo aunque se trabaje en Windows (evita diffs ruidosos y fallos en hooks y CI).
+* text=auto eol=lf
+*.ps1 text eol=crlf
+*.png binary
+*.jpg binary
+*.ogg binary
+*.mp3 binary
+*.wav binary

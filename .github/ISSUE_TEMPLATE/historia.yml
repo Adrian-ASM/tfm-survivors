@@ -1,0 +1,28 @@
+name: Historia de usuario
+description: Funcionalidad del backlog (se convertirá en un change SDD)
+labels: [historia]
+body:
+  - type: dropdown
+    id: prioridad
+    attributes:
+      label: Prioridad (MoSCoW)
+      options: [Must, Should, Could]
+    validations: { required: true }
+  - type: textarea
+    id: historia
+    attributes:
+      label: Historia
+      placeholder: Como jugador quiero … para …
+    validations: { required: true }
+  - type: textarea
+    id: criterios
+    attributes:
+      label: Criterios de aceptación
+      placeholder: |
+        - GIVEN … WHEN … THEN …
+    validations: { required: true }
+  - type: dropdown
+    id: enfoque
+    attributes:
+      label: Enfoque (matriz tamaño × claridad)
+      options: [SDD completo, Prompt directo, Spike]

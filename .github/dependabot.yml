@@ -1,0 +1,15 @@
+# Actualizaciones agrupadas y mensuales para no generar ruido ni consumir minutos de CI.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule: { interval: monthly }
+    open-pull-requests-limit: 3
+    groups:
+      dev-dependencies: { dependency-type: development }
+      production: { dependency-type: production }
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: monthly }
+    groups:
+      actions: { patterns: ['*'] }
