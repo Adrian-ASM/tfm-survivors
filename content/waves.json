@@ -1,5 +1,6 @@
 {
   "maxAlive": 200,
+  "maxBudget": 10,
   "spawn": { "margin": 32, "minDistance": 200, "maxAttempts": 8 },
   "segments": [
     { "fromSecond": 0, "budgetPerSecond": 1, "types": ["bug"] },

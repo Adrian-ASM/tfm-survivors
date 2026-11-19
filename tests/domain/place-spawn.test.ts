@@ -12,7 +12,13 @@ const unwrap = <T>(r: { ok: true; value: T } | { ok: false; error: { message: st
   return r.value;
 };
 
-const DEFAULT_SPAWN: SpawnConfig = { maxAlive: 200, margin: 32, minDistance: 200, maxAttempts: 8 };
+const DEFAULT_SPAWN: SpawnConfig = {
+  maxAlive: 200,
+  maxBudget: 10,
+  margin: 32,
+  minDistance: 200,
+  maxAttempts: 8,
+};
 const rules = (overrides: Partial<SpawnConfig> = {}): SpawnRules =>
   unwrap(SpawnRules.create({ ...DEFAULT_SPAWN, ...overrides }, unwrap(View.create(960, 540))));
 const arena = (w = 960, h = 540): Arena => unwrap(Arena.create(w, h));

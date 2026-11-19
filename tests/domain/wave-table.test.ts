@@ -17,8 +17,8 @@ function catalog(): EnemyCatalog {
   if (!arena.ok) throw new Error(arena.error.message);
   const r = EnemyCatalog.create(
     [
-      { id: 'bug', speed: 90, radius: 10, cost: 1 },
-      { id: 'memory-leak', speed: 45, radius: 22, cost: 3 },
+      { id: 'bug', speed: 90, radius: 10, cost: 1, damage: 5, health: 10 },
+      { id: 'memory-leak', speed: 45, radius: 22, cost: 3, damage: 5, health: 10 },
     ],
     arena.value,
   );

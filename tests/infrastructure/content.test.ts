@@ -1,15 +1,151 @@
 import { describe, expect, it } from 'vitest';
-import { ENEMY_SPEED_MUST_BE_POSITIVE } from '../../src/domain/enemy/EnemyType';
-import { SPEED_MUST_BE_POSITIVE, buildRunRules } from '../../src/domain/run/RunConfig';
-import { MAX_ALIVE_MUST_BE_INTEGER } from '../../src/domain/wave/SpawnRules';
+import {
+  ENEMY_DAMAGE_MUST_BE_POSITIVE,
+  ENEMY_HEALTH_MUST_BE_POSITIVE,
+  ENEMY_SPEED_MUST_BE_POSITIVE,
+} from '../../src/domain/enemy/EnemyType';
+import { Run } from '../../src/domain/run/Run';
+import {
+  INVULNERABILITY_TICKS_MUST_BE_INTEGER,
+  MAX_BUDGET_BELOW_MAX_COST,
+  PLAYER_HEALTH_MUST_BE_POSITIVE,
+  SPEED_MUST_BE_POSITIVE,
+  buildRunRules,
+} from '../../src/domain/run/RunConfig';
+import {
+  MAX_ALIVE_MUST_BE_INTEGER,
+  MAX_BUDGET_MUST_BE_POSITIVE,
+} from '../../src/domain/wave/SpawnRules';
 import { loadRunConfig, parseRunConfig } from '../../src/infrastructure/content/loadRunConfig';
 import { aRunConfig, rawContent, type RawContent } from '../support/builders';
+import { StubRandom } from '../support/random';
 
 function failure(raw: RawContent): { field: string; message: string } {
   const r = parseRunConfig(raw);
   if (r.ok) throw new Error('se esperaba un error de contenido');
   return r.error;
 }
+
+/** Quita un campo del contenido crudo (para los casos "ausente"). */
+function without(raw: RawContent, pick: (r: RawContent) => object, key: string): RawContent {
+  Reflect.deleteProperty(pick(raw), key);
+  return raw;
+}
+
+describe('Contenido de vida e invulnerabilidad validado', () => {
+  it('Contenido válido: el dominio recibe velocidad 200, radio 16 y vida máxima 100', () => {
+    const r = parseRunConfig(rawContent());
+    expect(r.ok && r.value.player).toEqual({
+      speed: 200,
+      radius: 16,
+      maxHealth: 100,
+      invulnerabilityTicks: 30,
+    });
+  });
+
+  it.each([0, -10])('Vida máxima cero o negativa (%s)', (maxHealth) => {
+    const raw = rawContent();
+    raw.player.maxHealth = maxHealth;
+    expect(failure(raw)).toEqual({
+      code: 'invalid-config',
+      field: 'player.maxHealth',
+      message: PLAYER_HEALTH_MUST_BE_POSITIVE,
+    });
+  });
+
+  it('Vida máxima ausente', () => {
+    const raw = without(rawContent(), (r) => r.player, 'maxHealth');
+    expect(failure(raw).field).toBe('player.maxHealth');
+  });
+
+  it('Vida máxima mínima válida: la partida empieza con vida 1', () => {
+    const raw = rawContent();
+    raw.player.maxHealth = 1;
+    const config = parseRunConfig(raw);
+    if (!config.ok) throw new Error(config.error.message);
+    expect(config.value.player.maxHealth).toBe(1);
+    expect(Run.start(config.value, new StubRandom(0.5)).ok).toBe(true);
+  });
+
+  it.each([
+    ['Duración cero', 0],
+    ['Duración negativa', -1],
+    ['duración no entera', 1.5],
+  ])('%s de invulnerabilidad', (_name, invulnerabilityTicks) => {
+    const raw = rawContent();
+    raw.player.invulnerabilityTicks = invulnerabilityTicks;
+    expect(failure(raw)).toEqual({
+      code: 'invalid-config',
+      field: 'player.invulnerabilityTicks',
+      message: INVULNERABILITY_TICKS_MUST_BE_INTEGER,
+    });
+  });
+
+  it('duración de invulnerabilidad ausente', () => {
+    const raw = without(rawContent(), (r) => r.player, 'invulnerabilityTicks');
+    expect(failure(raw).field).toBe('player.invulnerabilityTicks');
+  });
+});
+
+describe('Contenido de enemigos y oleadas validado · vida, daño y máximo de presupuesto', () => {
+  it.each([0, -5])('Vida cero o negativa (health %s)', (health) => {
+    const raw = rawContent();
+    raw.enemies.types[0].health = health;
+    expect(failure(raw)).toEqual({
+      code: 'invalid-config',
+      field: 'enemies.types.0.health',
+      message: ENEMY_HEALTH_MUST_BE_POSITIVE,
+    });
+  });
+
+  it('Daño cero', () => {
+    const raw = rawContent();
+    raw.enemies.types[0].damage = 0;
+    expect(failure(raw)).toEqual({
+      code: 'invalid-config',
+      field: 'enemies.types.0.damage',
+      message: ENEMY_DAMAGE_MUST_BE_POSITIVE,
+    });
+  });
+
+  it.each(['damage', 'health'])('%s ausente', (key) => {
+    const raw = without(rawContent(), (r) => r.enemies.types[0], key);
+    expect(failure(raw).field).toBe(`enemies.types.0.${key}`);
+  });
+
+  it.each([0, -1])('Máximo de presupuesto no positivo (%s)', (maxBudget) => {
+    const raw = rawContent();
+    raw.waves.maxBudget = maxBudget;
+    expect(failure(raw)).toEqual({
+      code: 'invalid-config',
+      field: 'waves.maxBudget',
+      message: MAX_BUDGET_MUST_BE_POSITIVE,
+    });
+  });
+
+  it('maxBudget ausente', () => {
+    const raw = without(rawContent(), (r) => r.waves, 'maxBudget');
+    expect(failure(raw).field).toBe('waves.maxBudget');
+  });
+
+  it('Máximo de presupuesto menor que el coste más caro (2,5 con coste 3)', () => {
+    const raw = rawContent();
+    raw.waves.maxBudget = 2.5;
+    const e = failure(raw);
+    expect(e.field).toBe('waves.maxBudget');
+    expect(e.message).toContain(MAX_BUDGET_BELOW_MAX_COST);
+  });
+
+  it('Valores de cada tipo llegan al dominio', () => {
+    const raw = rawContent();
+    Object.assign(raw.enemies.types[0], { speed: 90, radius: 10, cost: 1, health: 5, damage: 10 });
+    const config = parseRunConfig(raw);
+    if (!config.ok) throw new Error(config.error.message);
+    const rules = buildRunRules(config.value);
+    const bug = rules.ok ? rules.value.catalog.get('bug') : undefined;
+    expect(bug).toMatchObject({ speed: 90, radius: 10, cost: 1, health: 5, damage: 10 });
+  });
+});
 
 describe('Contenido del jugador validado', () => {
   it('Contenido válido', () => {
@@ -26,7 +162,7 @@ describe('Contenido del jugador validado', () => {
   it('velocidad 0: zod y el dominio la rechazan con el mismo campo y mensaje', () => {
     const raw = rawContent();
     raw.player.speed = 0;
-    const domain = buildRunRules({ ...aRunConfig(), player: { speed: 0, radius: 16 } });
+    const domain = buildRunRules(aRunConfig({ speed: 0 }));
     expect(domain.ok).toBe(false);
     if (!domain.ok) expect(failure(raw)).toEqual(domain.error);
     expect(failure(raw).message).toBe(SPEED_MUST_BE_POSITIVE);
@@ -168,7 +304,7 @@ describe('Contenido por defecto del repositorio', () => {
     const types = config?.enemies.types ?? [];
     expect(types.map((t) => t.id)).toEqual(['bug', 'memory-leak', 'merge-conflict']);
     for (const t of types) {
-      expect(Math.min(t.speed, t.radius, t.cost)).toBeGreaterThan(0);
+      expect(Math.min(t.speed, t.radius, t.cost, t.health, t.damage)).toBeGreaterThan(0);
     }
   });
 

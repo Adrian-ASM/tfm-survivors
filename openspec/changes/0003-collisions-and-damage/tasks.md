@@ -9,22 +9,22 @@
      SL = simulation-loop (delta), PM = player-movement (delta). Design = design.md de este change. -->
 
 ## 1. Dominio: value objects y reglas de contenido
-- [ ] 1.1 `src/domain/shared/Health.ts`: `full(max)`, `damage(amount)` con recorte a 0, `isDepleted`, congelado.
+- [x] 1.1 `src/domain/shared/Health.ts`: `full(max)`, `damage(amount)` con recorte a 0, `isDepleted`, congelado.
       Test: `tests/domain/health.test.ts`. Cubre PH "Daño exactamente igual a la vida restante", "Daño mayor que la
       vida restante" y "Vida que no llega a 0" (regla).
-- [ ] 1.2 `EnemyType` con `damage` y `health` > 0 y finitos, más las constantes `ENEMY_DAMAGE_MUST_BE_POSITIVE` y
+- [x] 1.2 `EnemyType` con `damage` y `health` > 0 y finitos, más las constantes `ENEMY_DAMAGE_MUST_BE_POSITIVE` y
       `ENEMY_HEALTH_MUST_BE_POSITIVE`. `EnemyCatalog.maxCost`. Actualizar `DEFAULT_ENEMY_TYPES` en
       `tests/support/builders.ts` con los valores del design (5/10, 15/45, 8/20). Test:
       `tests/domain/enemy-catalog.test.ts`. Cubre ES "Vida cero o negativa", "Daño cero o ausente" (dominio) y
       "Contenido por defecto" (vida y daño > 0).
-- [ ] 1.3 `SpawnRules.maxBudget` > 0 (`MAX_BUDGET_MUST_BE_POSITIVE`). En `RunConfig`/`buildRunRules`:
+- [x] 1.3 `SpawnRules.maxBudget` > 0 (`MAX_BUDGET_MUST_BE_POSITIVE`). En `RunConfig`/`buildRunRules`:
       - el tipo de `waves.maxBudget`;
       - la regla cruzada `maxBudget ≥ catalog.maxCost` (`MAX_BUDGET_BELOW_MAX_COST`, campo `waves.maxBudget`).
 
       Builders: `DEFAULT_WAVES.maxBudget = 10` y `maxBudget` en `aWavesConfig`. Test:
       `tests/domain/run-config.test.ts`. Cubre ES "Máximo de presupuesto no positivo", "menor que el coste más caro"
       y "igual al coste más caro" (validación).
-- [ ] 1.4 `RunConfig.player` con `maxHealth` (> 0, `PLAYER_HEALTH_MUST_BE_POSITIVE`) e `invulnerabilityTicks`
+- [x] 1.4 `RunConfig.player` con `maxHealth` (> 0, `PLAYER_HEALTH_MUST_BE_POSITIVE`) e `invulnerabilityTicks`
       (entero ≥ 1, `INVULNERABILITY_TICKS_MUST_BE_INTEGER`) en `checkPlayer`. `aRunConfig` acepta `maxHealth` e
       `invulnerabilityTicks` (100 y 30 por defecto) y exporta `LONG_RUN_HEALTH = 1e9`. Test:
       `tests/domain/run-config.test.ts`. Cubre PM "Vida máxima cero o negativa" y PH "Duración cero" y "Duración
@@ -117,7 +117,7 @@
       15 ticks. Cubre RS "600 ticks después de terminar" (vía caso de uso).
 
 ## 7. Infraestructura
-- [ ] 7.1 `schemas.ts`:
+- [x] 7.1 `schemas.ts`:
       - `PlayerSchema` con `maxHealth` e `invulnerabilityTicks` (`Count`);
       - `EnemiesSchema` con `damage` y `health`;
       - `WavesSchema` con `maxBudget`, con los mensajes del dominio.

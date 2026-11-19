@@ -11,7 +11,11 @@ const ARENA = ((): Arena => {
 })();
 
 function enemy(speed: number, x: number, y: number, radius = 10, id = 'bug'): Enemy {
-  const type = EnemyType.create({ id, speed, radius, cost: 1 }, ARENA, 'enemies.types.0');
+  const type = EnemyType.create(
+    { id, speed, radius, cost: 1, damage: 5, health: 10 },
+    ARENA,
+    'enemies.types.0',
+  );
   if (!type.ok) throw new Error(type.error.message);
   return Enemy.spawn(0, type.value, x, y, ARENA);
 }

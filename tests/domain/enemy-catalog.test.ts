@@ -3,11 +3,14 @@ import { Arena } from '../../src/domain/arena/Arena';
 import { EnemyCatalog } from '../../src/domain/enemy/EnemyCatalog';
 import {
   ENEMY_COST_MUST_BE_POSITIVE,
+  ENEMY_DAMAGE_MUST_BE_POSITIVE,
+  ENEMY_HEALTH_MUST_BE_POSITIVE,
   ENEMY_ID_MUST_BE_UNIQUE,
   ENEMY_RADIUS_MUST_FIT,
   ENEMY_SPEED_MUST_BE_POSITIVE,
   type EnemyTypeConfig,
 } from '../../src/domain/enemy/EnemyType';
+import { DEFAULT_ENEMY_TYPES } from '../support/builders';
 
 function arena(): Arena {
   const r = Arena.create(960, 540);
@@ -15,8 +18,15 @@ function arena(): Arena {
   return r.value;
 }
 
-const bug: EnemyTypeConfig = { id: 'bug', speed: 90, radius: 10, cost: 1 };
-const leak: EnemyTypeConfig = { id: 'memory-leak', speed: 45, radius: 22, cost: 3 };
+const bug: EnemyTypeConfig = { id: 'bug', speed: 90, radius: 10, cost: 1, damage: 5, health: 10 };
+const leak: EnemyTypeConfig = {
+  id: 'memory-leak',
+  speed: 45,
+  radius: 22,
+  cost: 3,
+  damage: 15,
+  health: 45,
+};
 
 describe('EnemyCatalog', () => {
   it('crea los tipos con sus valores y los busca por id', () => {
@@ -74,5 +84,51 @@ describe('EnemyCatalog', () => {
       expect(r.error.message).toContain(ENEMY_ID_MUST_BE_UNIQUE);
       expect(r.error.message).toContain('bug');
     }
+  });
+
+  it.each([0, -5, Number.NaN, Number.POSITIVE_INFINITY])('Vida cero o negativa (%s)', (health) => {
+    const r = EnemyCatalog.create([leak, { ...bug, health }], arena());
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.error.field).toBe('enemies.types.1.health');
+      expect(r.error.message).toBe(ENEMY_HEALTH_MUST_BE_POSITIVE);
+    }
+  });
+
+  it.each([0, -1, Number.NaN, Number.POSITIVE_INFINITY])('Daño cero (%s)', (damage) => {
+    const r = EnemyCatalog.create([{ ...bug, damage }], arena());
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.error.field).toBe('enemies.types.0.damage');
+      expect(r.error.message).toBe(ENEMY_DAMAGE_MUST_BE_POSITIVE);
+    }
+  });
+
+  it('Contenido por defecto: vida y daño > 0 en los 3 tipos', () => {
+    const r = EnemyCatalog.create(DEFAULT_ENEMY_TYPES, arena());
+    if (!r.ok) throw new Error(r.error.message);
+    const catalog = r.value;
+    const values = catalog.ids.map((id) => [id, catalog.get(id)?.damage, catalog.get(id)?.health]);
+    expect(values).toEqual([
+      ['bug', 5, 10],
+      ['memory-leak', 15, 45],
+      ['merge-conflict', 8, 20],
+    ]);
+  });
+});
+
+describe('EnemyCatalog · maxCost', () => {
+  it('es el coste del tipo más caro, sin depender del orden', () => {
+    const merge = { ...bug, id: 'merge-conflict', cost: 2 };
+    const a = EnemyCatalog.create([bug, leak, merge], arena());
+    const b = EnemyCatalog.create([merge, bug, leak], arena());
+    if (!a.ok || !b.ok) throw new Error('catálogo inválido');
+    expect([a.value.maxCost, b.value.maxCost]).toEqual([3, 3]);
+    expect(a.value.mostExpensive?.id).toBe('memory-leak');
+  });
+
+  it('vale 0 en un catálogo vacío', () => {
+    const r = EnemyCatalog.create([], arena());
+    expect(r.ok && r.value.maxCost).toBe(0);
   });
 });
