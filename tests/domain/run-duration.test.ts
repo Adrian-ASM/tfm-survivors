@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  RUN_DURATION_MUST_BE_INTEGER,
-  RunDuration,
-} from '../../src/domain/run/RunDuration';
+import { RUN_DURATION_MUST_BE_INTEGER, RunDuration } from '../../src/domain/run/RunDuration';
 
 function durationOf(seconds: number): RunDuration {
   const r = RunDuration.create(seconds);

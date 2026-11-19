@@ -145,14 +145,14 @@
   tras `clear()` no queda ningún sprite visible, y un id reaparecido entra con `appearing = true`. Test de 5 ciclos
   de "llenar y limpiar" en el que los sprites visibles coinciden con el snapshot. Escenarios de run-results: "Primer
   frame tras reiniciar" y "Cinco reinicios seguidos" (capas).
-- [ ] 3.9 `phaser/sceneWidgets.ts`: mover las fábricas de objetos del motor (barra de XP, overlay de mejoras) y
+- [x] 3.9 `phaser/sceneWidgets.ts`: mover las fábricas de objetos del motor (barra de XP, overlay de mejoras) y
   añadir las del HUD y el overlay de resultados, con las constantes de estilo y profundidad. Sin lógica: lo cubre
   `npm run verify` y el E2E de humo (`smoke.spec.ts`) sigue verde.
-- [ ] 3.10 `GameScene`: recibe `StartedRun` + `RestartRun` y usa `Hud` y `ResultsOverlay`. En `update` lee R
+- [x] 3.10 `GameScene`: recibe `StartedRun` + `RestartRun` y usa `Hud` y `ResultsOverlay`. En `update` lee R
   (siempre la consume); si el reinicio va bien, cambia `started`, llama a `clear()` en las capas y sigue el frame
   con la partida nueva. El callback pasa a `onRender(snapshot, results)`. Objetivo: ≤ 200 líneas. Lo cubren
   `verify` y los E2E (3.11 y 4.x).
-- [ ] 3.11 `composition/seedSource.ts`: `restartRandoms(randomSeed, onSeed)`. Test con una fuente falsa que da 123:
+- [x] 3.11 `composition/seedSource.ts`: `restartRandoms(randomSeed, onSeed)`. Test con una fuente falsa que da 123:
   el generador tiene la semilla 123 (misma secuencia que `Mulberry32RandomGenerator(123)`), se llama a `onSeed(123)`
   y no hay avisos de consola. En `main.ts`: `RestartRun` con `restartRandoms`, `probe.seed` mutable y
   `probe.results`. Escenarios de simulation-loop: "Semilla nueva al reiniciar" y "Reinicio tras una semilla

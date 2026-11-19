@@ -17,8 +17,7 @@ const DEFAULT_ARENA: Bounds = { width: 960, height: 540 };
 const EIGHTH = Math.PI / 4;
 
 /** Repulsión 1/d² de una pared a distancia d (0 fuera de rango). */
-const wallPush = (d: number): number =>
-  d < FLEE_WALL_RANGE ? 1 / Math.max(d, 1) ** 2 : 0;
+const wallPush = (d: number): number => (d < FLEE_WALL_RANGE ? 1 / Math.max(d, 1) ** 2 : 0);
 
 /**
  * Política de movimiento pura y reproducible (medición de ganabilidad, 0006): suma una repulsión
