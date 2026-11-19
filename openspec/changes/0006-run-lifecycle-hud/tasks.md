@@ -100,7 +100,7 @@
 - [x] 1.17 Determinismo ampliado (`determinism*.test.ts`): resultado y bajas en "Dos partidas idénticas", "Partida
   con contactos reproducible" (≤ 4.800, revalidar el plazo) y "Partida con armas reproducible". Escenarios:
   simulation-loop, los tres citados.
-- [ ] 1.18 Regresión de ganabilidad en `balance.test.ts`, con la semilla y la estrategia de la tarea 0.2: victoria
+- [x] 1.18 Regresión de ganabilidad en `balance.test.ts`, con la semilla y la estrategia de la tarea 0.2: victoria
   en el tick 36.000. Escenario: run-outcome "Partida ganada con estrategia documentada".
 
 ## 2. Aplicación

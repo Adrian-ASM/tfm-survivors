@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { Run } from '../../src/domain/run/Run';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import { DEFAULT_ENEMY_TYPES, aDefaultConfig } from '../support/builders';
-import { play } from '../support/runs';
+import { fleeInput } from '../support/policies';
+import { chooseFirstWhileOpen, play } from '../support/runs';
 
 // Medición de equilibrio de 0004 (tasks 4.7): primer golpe con semilla 42 en el tick 4100; con
 // semilla 7, primer pulso en el tick 950. Plazos de la spec tras el gate: 4.800 y 1.800. Desde 0005
@@ -79,5 +80,23 @@ describe('Plazos con progresión (0005, medidos en el punto de control 0.3)', ()
       return gem && offer;
     });
     expect([gem, offer]).toEqual([true, true]);
+  });
+});
+
+// Tarea 0.2 de 0006 (design, sección Medición): con el tramo de 180 s a 2,5/s, la semilla 2 con
+// `fleeInput` y la política de elección fija llega viva al tick 36.000.
+const WIN_SEED = 2;
+const TEN_MINUTES = 36_000;
+
+describe('Partida ganable con el contenido por defecto (0006)', () => {
+  it('Scenario: Partida ganada con estrategia documentada (semilla 2, fleeInput + opción 0)', () => {
+    const run = startDefault(WIN_SEED);
+
+    for (let t = 0; t < TEN_MINUTES; t++) {
+      chooseFirstWhileOpen(run);
+      run.tick(fleeInput(run.snapshot()));
+    }
+
+    expect(run.snapshot()).toMatchObject({ tick: TEN_MINUTES, status: 'over', outcome: 'won' });
   });
 });
