@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { collect, playChoosingFirst, probe } from './probe';
+import { collect, focusGame, playChoosingFirst, probe } from './probe';
 
 // Primer golpe con las armas y las mejoras activas (núcleo, semilla 42 con la política de elección
 // fija: tick 4122). Plazo de la spec player-health: 80 s de juego, pulsando 1 en cada oferta.
@@ -15,6 +15,7 @@ test('Primer golpe en el navegador: con ?seed=42 y sin input, la vida baja en �
   const start = (await probe(page))?.snapshot;
   expect(start?.player.health).toBe(start?.player.maxHealth);
   expect(start?.weapons.map((w) => w.id)).toEqual(['linter', 'tests']);
+  await focusGame(page);
 
   const snap = await playChoosingFirst(
     page,

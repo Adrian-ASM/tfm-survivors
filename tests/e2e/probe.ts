@@ -32,6 +32,14 @@ export const probe = (page: Page) =>
     return p ? { seed: p.seed, snapshot: p.snapshot } : null;
   });
 
+/**
+ * Da el foco al canvas para que el teclado llegue al juego, con un clic en una esquina (lejos de
+ * las cartas del overlay).
+ */
+export async function focusGame(page: Page): Promise<void> {
+  await page.locator('#game canvas').click({ position: { x: 5, y: 5 } });
+}
+
 /** Último snapshot del probe (null si aún no hay). */
 export const snapshotOf = async (page: Page): Promise<SnapshotView | null> =>
   (await probe(page))?.snapshot ?? null;

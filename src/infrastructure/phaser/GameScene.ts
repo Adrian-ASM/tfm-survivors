@@ -73,7 +73,7 @@ export class GameScene extends Phaser.Scene {
     const keyboard = this.input.keyboard;
     if (!keyboard) throw new Error('Este navegador no expone teclado a Phaser.');
     this.input$ = new KeyboardInput(keyboard);
-    this.choice = new ChoiceKeys(keyboard, Phaser.Input.Keyboard.JustDown);
+    this.choice = new ChoiceKeys(keyboard);
 
     // Orden de creación = orden de pintado: anillos, gemas, enemigos, proyectiles, jugador, barra
     // de XP y overlay encima de todo.

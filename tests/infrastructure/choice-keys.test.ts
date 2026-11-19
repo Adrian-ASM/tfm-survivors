@@ -1,40 +1,36 @@
 import { describe, expect, it } from 'vitest';
 import { ChoiceKeys, choiceIndex } from '../../src/infrastructure/phaser/ChoiceKeys';
 
-interface FakeKey {
-  pressed: boolean;
+/** Tecla doble: guarda el manejador de `down` y lo dispara al pulsar. */
+class FakeKey {
+  private handler: (() => void) | null = null;
+  on(_event: 'down', handler: () => void): void {
+    this.handler = handler;
+  }
+  down(): void {
+    this.handler?.();
+  }
 }
 
-/** Teclado doble: `addKeys` devuelve una tecla por nombre; `JustDown` lee y consume `pressed`. */
-function keyboard() {
-  const keys = new Map<string, FakeKey>();
+function keys() {
+  const byCode = new Map<string, FakeKey>();
   const kb = {
     addKeys(spec: Record<string, string>) {
       const out: Record<string, FakeKey> = {};
       for (const [name, code] of Object.entries(spec)) {
-        const key = { pressed: false };
-        keys.set(code, key);
+        const key = new FakeKey();
+        byCode.set(code, key);
         out[name] = key;
       }
       return out;
     },
   };
-  const justDown = (k: FakeKey) => {
-    const was = k.pressed;
-    k.pressed = false;
-    return was;
-  };
   const press = (code: string) => {
-    const k = keys.get(code);
+    const k = byCode.get(code);
     if (!k) throw new Error(code);
-    k.pressed = true;
+    k.down();
   };
-  return { kb, justDown, press };
-}
-
-function keys() {
-  const { kb, justDown, press } = keyboard();
-  return { choice: new ChoiceKeys(kb as never, justDown as never), press };
+  return { choice: new ChoiceKeys(kb as never), press };
 }
 
 describe('ChoiceKeys', () => {
@@ -48,6 +44,14 @@ describe('ChoiceKeys', () => {
     expect(choice.read()).toBe(2);
     press('ONE');
     expect(choice.read()).toBe(0);
+  });
+
+  it('una pulsación que empieza y acaba en el mismo frame no se pierde; gana la primera', () => {
+    const { choice, press } = keys();
+    press('THREE');
+    press('ONE');
+    expect(choice.read()).toBe(2);
+    expect(choice.read()).toBe(-1);
   });
 });
 
