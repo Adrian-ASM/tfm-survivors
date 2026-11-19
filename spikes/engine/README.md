@@ -23,15 +23,27 @@ Antes de medir:
 - Anota la **frecuencia del monitor** (60/120/144 Hz): es el techo de FPS. Con 144 Hz, "144" significa "sin pérdida".
 - Cierra otras pestañas pesadas y deja el portátil enchufado.
 
-## Resultados (rellenar)
+## Resultados
 
-Equipo: ___ · Navegador: ___ · Monitor: ___ Hz
+Ejecutado el 2026-11-19 por Claude desde la app de Claude (Desktop Commander para la terminal y el navegador
+integrado de la app para medir). Equipo: DESKTOP-QI7JIPP (Windows 10/11 x64) · Navegador: Chromium 156 del
+navegador integrado de Claude · Monitor: 165 Hz (techo observado). Servidor `vite` en modo desarrollo.
 
-| Motor | 200 (media / 1% low) | 500 | 1.000 | 2.000 | ¿Funcionó a la primera? |
-|---|---|---|---|---|---|
-| Phaser 4.2.1 | | | | | |
-| Kaplay 3001.0.19 | | | | | |
-| Canvas 2D | | | | | |
+FPS medios / 1% low durante 10 s (techo = 165):
+
+| Motor | 200 | 500 | 1.000 | 2.000 | 5.000 | 20.000 | ¿Funcionó a la primera? |
+|---|---|---|---|---|---|---|---|
+| Phaser 4.2.1 (WebGL) | 165 / 161 | 165 / 161 | 165 / 161 | 163,5 / 161 | 165 / 161 | 164,9 / 161 | Sí |
+| Kaplay 3001.0.19 | 165 / 161 | 165 / 161 | 163,5 / 161 | **79,8 / 54,9** | **27,9 / 23,5** | — | Sí |
+| Canvas 2D | — | 165 / 161 | — | 165 / 161 | **89,2 / 27,5** | — | Sí |
+
+"—": no medido (los valores vecinos ya estaban en el techo o el motor ya había caído).
+Durante algunas mediciones el usuario tuvo el foco en la página (pulsaciones registradas); no afecta al coste
+de render, que es lo que se mide.
+
+Lectura: hasta 1.000 entidades los tres van al techo. Kaplay se hunde a partir de 2.000 (pierde la mitad de
+los frames) y Canvas 2D empieza a tener tirones fuertes a 5.000 (1% low de 27). Phaser 4 aguanta **20.000**
+entidades en el techo gracias al batching de WebGL: margen de sobra para proyectiles, gemas de XP y partículas.
 
 ## Fricción con la IA (evidencia para la memoria)
 
@@ -44,7 +56,14 @@ mal nombradas… y cuántas iteraciones hicieron falta para que funcionara. Punt
 
 | Motor | Error encontrado | Causa (API inventada / de otra versión / otra) | Iteraciones |
 |---|---|---|---|
-| | | | |
+| Phaser 4.2.1 | Ninguno | — | 0 (funcionó a la primera) |
+| Kaplay 3001.0.19 | Ninguno en consola; el canvas no se centra igual que en los otros dos | Kaplay gestiona su tamaño de canvas | 0 |
+| Canvas 2D | Ninguno | — | 0 |
+| Entorno | `npm` bloqueado en PowerShell por la política de ejecución (`npm.ps1`) | Configuración de Windows, no de la IA | 1 (usar `npm.cmd`) |
+
+Sorpresa positiva: con versiones fijadas y las APIs de riesgo marcadas, no hubo mezcla de APIs de Phaser 3/4
+ni de Kaboom/KAPLAY en este escenario mínimo. El riesgo sigue vivo para APIs menos comunes (escalado, audio,
+filtros de Phaser 4), así que se mantiene la regla de verificar contra la documentación oficial.
 
 ## Criterios de decisión (ADR-0001)
 
