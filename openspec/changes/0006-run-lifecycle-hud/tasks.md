@@ -135,7 +135,7 @@
   de nivel" (siguen verdes).
 - [x] 3.5 `phaser/resultsText.ts` (puro): `resultsView(snapshot)`. Escenarios de run-results: "Valores de borde",
   "Más de una hora", "Overlay tras una derrota" y "Overlay tras una victoria" (contenido).
-- [ ] 3.6 `phaser/ResultsOverlay.ts` con dobles: visible si y solo si `over`, getter `view` y pintado solo cuando
+- [x] 3.6 `phaser/ResultsOverlay.ts` con dobles: visible si y solo si `over`, getter `view` y pintado solo cuando
   cambia la clave. Escenarios de run-results: "Sin overlay durante la partida" y "Aparece en el mismo frame en que
   termina la partida".
 - [ ] 3.7 `phaser/RestartKey.ts`: evento `down` de R → `read()` lo consume; una pulsación mantenida da un solo
