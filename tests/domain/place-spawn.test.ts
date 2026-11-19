@@ -80,7 +80,7 @@ describe('placeSpawn', () => {
     expect(p?.distanceTo(Vector2.of(16, 16))).toBeCloseTo(582.727, 3);
   });
 
-  it('con un ángulo hacia la esquina, el recorte deja el punto demasiado cerca y se rechaza', () => {
+  it('ángulo hacia la esquina: el recorte deja el punto demasiado cerca y se rechaza', () => {
     const stub = new StubRandom(0.625);
     expect(placeSpawn(Vector2.of(16, 16), 10, rules(), arena(), stub)).toBeNull();
     expect(stub.calls).toBe(8);

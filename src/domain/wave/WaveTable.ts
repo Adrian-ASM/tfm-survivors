@@ -3,7 +3,10 @@ import type { EnemyType } from '../enemy/EnemyType';
 import { err, invalidConfig, ok, type DomainError, type Result } from '../shared/Result';
 import { TICKS_PER_SECOND } from '../shared/Tick';
 
-/** Mensajes de las invariantes de la tabla de oleadas; la validación de contenido (zod) usa los mismos. */
+/**
+ * Mensajes de las invariantes de la tabla de oleadas; la validación de contenido (zod) usa los
+ * mismos.
+ */
 export const WAVES_NEED_SEGMENTS = 'La tabla de oleadas necesita al menos un tramo.';
 export const FIRST_SEGMENT_MUST_START_AT_ZERO = 'El primer tramo debe empezar en fromSecond 0.';
 export const SEGMENTS_MUST_INCREASE =

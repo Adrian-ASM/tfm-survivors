@@ -31,12 +31,18 @@ export class Arena {
     return radius > 0 && 2 * radius <= this.width && 2 * radius <= this.height;
   }
 
-  /** Recorta la x del centro de un círculo de este radio a [radio, ancho − radio]. Sin asignar objetos. */
+  /**
+   * Recorta la x del centro de un círculo de este radio a [radio, ancho − radio]. Sin asignar
+   * objetos.
+   */
   clampX(x: number, radius: number): number {
     return clamp(x, radius, this.width - radius);
   }
 
-  /** Recorta la y del centro de un círculo de este radio a [radio, alto − radio]. Sin asignar objetos. */
+  /**
+   * Recorta la y del centro de un círculo de este radio a [radio, alto − radio]. Sin asignar
+   * objetos.
+   */
   clampY(y: number, radius: number): number {
     return clamp(y, radius, this.height - radius);
   }

@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import { describeRandomGeneratorContract } from '../support/randomContract';
 
-// Vector de regresión del mulberry32 de 0001: red para moverlo a infraestructura sin cambiar partidas.
+// Vector de regresión del mulberry32 de 0001: red para moverlo a infraestructura sin cambiar
+// partidas.
 const REGRESSION: Record<number, readonly number[]> = {
   2026: [
     0.45540769933722913, 0.30849614599719644, 0.6611574492417276, 0.6184752183035016,

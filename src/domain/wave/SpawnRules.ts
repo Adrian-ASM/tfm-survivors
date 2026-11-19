@@ -20,8 +20,8 @@ const isCount = (v: number): boolean => Number.isInteger(v) && v >= 1;
 const isDistance = (v: number): boolean => Number.isFinite(v) && v >= 0;
 
 /**
- * Reglas de aparición (value object). `ringRadius` se calcula: mitad de la diagonal de la vista + margin,
- * de modo que el punto de partida queda siempre fuera de la vista centrada en el jugador.
+ * Reglas de aparición (value object). `ringRadius` se calcula: mitad de la diagonal de la vista +
+ * margin, de modo que el punto de partida queda siempre fuera de la vista centrada en el jugador.
  * `minDistance` ≥ `ringRadius` es válido (spec: "Ninguna posición válida").
  */
 export class SpawnRules {

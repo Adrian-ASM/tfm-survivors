@@ -2,8 +2,8 @@ import type { Arena } from '../arena/Arena';
 import type { EnemyType } from './EnemyType';
 
 /**
- * Enemigo (entidad). A diferencia de `Player`, su posición es estado escalar **mutable e interno** al
- * agregado `Run` (ADR-0003): con cientos de enemigos por tick, la persecución no asigna objetos.
+ * Enemigo (entidad). A diferencia de `Player`, su posición es estado escalar **mutable e interno**
+ * al agregado `Run` (ADR-0003): con cientos de enemigos por tick, la persecución no asigna objetos.
  * Solo `Run` crea y mueve enemigos; nunca salen del agregado (el snapshot copia los escalares).
  */
 export class Enemy {

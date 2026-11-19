@@ -59,22 +59,22 @@
       "El presupuesto no se pierde al aplazar", "Cambio de tramo" (nivel director)
 
 ## 3. Dominio: `Run` y snapshot
-- [ ] 3.1 `Run.start(config, random, setup?)` con `buildRunRules` y `RunSetup` (jugador y enemigos iniciales;
+- [x] 3.1 `Run.start(config, random, setup?)` con `buildRunRules` y `RunSetup` (jugador y enemigos iniciales;
       tipos validados, posiciones recortadas); builders `aRunConfig`, `aWavesConfig(overrides)` y `rawContent()` en
       `tests/support/builders.ts`; `tests/domain/run.test.ts` actualizado (`enemies: []`) — SL "Partida recién
       creada sin enemigos", "Contador de ticks"
-- [ ] 3.2 `Run.tick` con orden fijo jugador → persecución → director — `tests/domain/run-enemies.test.ts` —
+- [x] 3.2 `Run.tick` con orden fijo jugador → persecución → director — `tests/domain/run-enemies.test.ts` —
       EB "Persigue la posición del jugador en el mismo tick", "Primer tick de vida", "Dos enemigos idénticos se
       superponen"
-- [ ] 3.3 `RunSnapshot.enemies` (`id`, `type`, `x`, `y`, `radius`; array y elementos congelados; orden de
+- [x] 3.3 `RunSnapshot.enemies` (`id`, `type`, `x`, `y`, `radius`; array y elementos congelados; orden de
       aparición) — `tests/domain/run.test.ts` — SL "Enemigos en el snapshot", "Identificador estable",
       "Snapshot no mutable desde fuera" (con enemigos y lista)
-- [ ] 3.4 Spawning de punta a punta a través de `Run` — `tests/domain/run-spawning.test.ts` — ES "Cambio de tramo",
+- [x] 3.4 Spawning de punta a punta a través de `Run` — `tests/domain/run-spawning.test.ts` — ES "Cambio de tramo",
       "Un solo tramo", "Jugador en una esquina", "Ninguna posición válida", "El presupuesto no se pierde al aplazar"
       (con `StubRandom` y el jugador en (16, 16) vía `RunSetup`), "Valores de cada tipo llegan al dominio"
-- [ ] 3.5 Determinismo con semilla — `tests/domain/determinism.test.ts` — SL "Dos partidas idénticas" (semilla 42,
+- [x] 3.5 Determinismo con semilla — `tests/domain/determinism.test.ts` — SL "Dos partidas idénticas" (semilla 42,
       `toStrictEqual` en cada tick), "Semillas distintas"
-- [ ] 3.6 Partidas largas en un solo fichero que reutiliza la simulación (36.000 ticks, semilla 7, input de
+- [x] 3.6 Partidas largas en un solo fichero que reutiliza la simulación (36.000 ticks, semilla 7, input de
       mulberry32 con semilla fija) — `tests/domain/long-run.test.ts` — ES "Partida larga sin spawns ilegales",
       "Mezcla de tipos"; EB "Partida larga"; SL "Partida larga reproducible". Anotar la duración: si pasa de ~5 s,
       comprobar solo los snapshots de los ticks con spawn

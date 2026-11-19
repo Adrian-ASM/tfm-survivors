@@ -5,7 +5,8 @@ export const VIEW_SIZE_MUST_BE_POSITIVE = 'El tamaño de la vista debe ser posit
 const isPositive = (v: number): boolean => Number.isFinite(v) && v > 0;
 
 /**
- * Lo que el jugador ve del mundo, en unidades de mundo (value object). Los enemigos nacen fuera de ella.
+ * Lo que el jugador ve del mundo, en unidades de mundo (value object). Los enemigos nacen fuera de
+ * ella.
  * Invariante: ancho y alto positivos y finitos.
  */
 export class View {

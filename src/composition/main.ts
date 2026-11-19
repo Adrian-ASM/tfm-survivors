@@ -5,6 +5,7 @@ import type { RunSnapshot } from '../domain/run/RunSnapshot';
 import type { DomainError } from '../domain/shared/Result';
 import { loadRunConfig } from '../infrastructure/content/loadRunConfig';
 import { GameScene } from '../infrastructure/phaser/GameScene';
+import { Mulberry32RandomGenerator } from '../infrastructure/random/Mulberry32RandomGenerator';
 
 const BACKGROUND = '#14141e';
 
@@ -30,7 +31,8 @@ function bootstrap(): void {
     showContentError(root, config.error);
     return;
   }
-  const started = new StartRun().execute(config.value);
+  const seed = crypto.getRandomValues(new Uint32Array(1))[0] ?? 0;
+  const started = new StartRun().execute(config.value, new Mulberry32RandomGenerator(seed));
   if (!started.ok) {
     showContentError(root, started.error);
     return;

@@ -1,7 +1,10 @@
 import type { Arena } from '../arena/Arena';
 import { err, invalidConfig, ok, type DomainError, type Result } from '../shared/Result';
 
-/** Mensajes de las invariantes de un tipo de enemigo; la validación de contenido (zod) usa los mismos. */
+/**
+ * Mensajes de las invariantes de un tipo de enemigo; la validación de contenido (zod) usa los
+ * mismos.
+ */
 export const ENEMY_SPEED_MUST_BE_POSITIVE = 'La velocidad del enemigo debe ser positiva.';
 export const ENEMY_RADIUS_MUST_FIT = 'El radio del enemigo debe ser positivo y caber en la arena.';
 export const ENEMY_COST_MUST_BE_POSITIVE = 'El coste del enemigo debe ser positivo.';
@@ -31,7 +34,9 @@ export class EnemyType {
     Object.freeze(this);
   }
 
-  /** `path` es la ruta del tipo en el contenido (p. ej. `enemies.types.1`) para nombrar el campo. */
+  /**
+   * `path` es la ruta del tipo en el contenido (p. ej. `enemies.types.1`) para nombrar el campo.
+   */
   static create(
     config: EnemyTypeConfig,
     arena: Arena,

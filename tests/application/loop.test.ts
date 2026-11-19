@@ -5,6 +5,7 @@ import type { TickRun } from '../../src/application/TickRun';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import { aRunConfig } from '../support/builders';
+import { randomInputs } from '../support/inputs';
 
 const ticksFor = (...framesMs: number[]): number[] => {
   const loop = new FixedStepLoop();
@@ -37,7 +38,7 @@ describe('FixedStepLoop · paso fijo', () => {
 });
 
 function start(): TickRun {
-  const r = new StartRun().execute(aRunConfig());
+  const r = new StartRun().execute(aRunConfig(), new Mulberry32RandomGenerator(2026));
   if (!r.ok) throw new Error(r.error.message);
   return r.value;
 }
@@ -57,10 +58,7 @@ describe('TickRun', () => {
   });
 
   it('Dos partidas idénticas', () => {
-    const rnd = new Mulberry32RandomGenerator(2026);
-    const inputs = Array.from({ length: 600 }, () =>
-      PlayerInput.of(Math.round(rnd.next() * 2 - 1), Math.round(rnd.next() * 2 - 1)),
-    );
+    const inputs = randomInputs(600, 2026);
     const a = start();
     const b = start();
     for (const input of inputs) {
@@ -72,7 +70,8 @@ describe('TickRun', () => {
   });
 
   it('StartRun propaga el error de contenido', () => {
-    const r = new StartRun().execute(aRunConfig({ radius: 300 }));
+    const r = new StartRun().execute(aRunConfig({ radius: 300 }), new Mulberry32RandomGenerator(1));
     expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.field).toBe('player.radius');
   });
 });

@@ -6,9 +6,10 @@ import type { SpawnRules } from './SpawnRules';
 const FULL_TURN = 2 * Math.PI;
 
 /**
- * Posición de aparición fuera de la vista (spec enemy-spawning). Por intento, y consumiendo exactamente
- * 1 valor del generador: ángulo aleatorio → punto del anillo alrededor del jugador → recorte a la arena →
- * se acepta si queda a ≥ minDistance. Devuelve null si se agotan los maxAttempts intentos.
+ * Posición de aparición fuera de la vista (spec enemy-spawning). Por intento, y consumiendo
+ * exactamente 1 valor del generador: ángulo aleatorio → punto del anillo alrededor del jugador →
+ * recorte a la arena → se acepta si queda a ≥ minDistance. Devuelve null si se agotan los
+ * maxAttempts intentos.
  */
 export function placeSpawn(
   player: Vector2,

@@ -10,7 +10,10 @@ import { WaveTable, type WaveSegmentConfig } from '../wave/WaveTable';
 export const SPEED_MUST_BE_POSITIVE = 'La velocidad del jugador debe ser positiva.';
 export const RADIUS_MUST_FIT = 'El radio del jugador no cabe en la arena.';
 
-/** Configuración de partida ya validada en forma (zod, infraestructura); aquí se validan invariantes. */
+/**
+ * Configuración de partida ya validada en forma (zod, infraestructura); aquí se validan
+ * invariantes.
+ */
 export interface RunConfig {
   readonly arena: {
     readonly width: number;

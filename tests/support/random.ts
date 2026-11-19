@@ -7,7 +7,9 @@ const checked = (v: number): number => {
   return v;
 };
 
-/** Doble de RandomGenerator: devuelve siempre `value` (fijable desde el test) y cuenta las llamadas. */
+/**
+ * Doble de RandomGenerator: devuelve siempre `value` (fijable desde el test) y cuenta las llamadas.
+ */
 export class StubRandom implements RandomGenerator {
   private current: number;
   calls = 0;

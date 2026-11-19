@@ -32,6 +32,32 @@ export const aRunConfig = (
   waves: DEFAULT_WAVES,
 });
 
+type Waves = RunConfig['waves'];
+type EnemyTypes = RunConfig['enemies']['types'];
+
+/** Contenido por defecto con la tabla de oleadas, el spawn o el catálogo sustituidos. */
+export const aWavesConfig = (
+  overrides: Partial<Omit<Waves, 'spawn'>> & {
+    spawn?: Partial<Waves['spawn']>;
+    types?: EnemyTypes;
+  } = {},
+): RunConfig => {
+  const { spawn, types, ...waves } = overrides;
+  const base = aRunConfig();
+  return {
+    ...base,
+    enemies: { types: types ?? base.enemies.types },
+    waves: { ...base.waves, ...waves, spawn: { ...base.waves.spawn, ...spawn } },
+  };
+};
+
+/** Tramo único desde 0 s con los tipos y el presupuesto dados. */
+export const aSegment = (
+  types: readonly string[],
+  budgetPerSecond: number,
+  fromSecond = 0,
+): Waves['segments'][number] => ({ fromSecond, budgetPerSecond, types });
+
 interface MutableType {
   id: string;
   speed: number;
@@ -43,7 +69,10 @@ interface MutableSegment {
   budgetPerSecond: number;
   types: string[];
 }
-/** Contenido crudo con la forma de los 4 ficheros de content/, mutable para preparar casos inválidos. */
+/**
+ * Contenido crudo con la forma de los 4 ficheros de content/, mutable para preparar casos
+ * inválidos.
+ */
 export interface RawContent {
   player: { speed: number; radius: number };
   arena: { width: number; height: number; view: { width: number; height: number } };

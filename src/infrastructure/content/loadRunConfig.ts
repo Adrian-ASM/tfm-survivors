@@ -7,8 +7,8 @@ import { buildRunRules, type RunConfig } from '../../domain/run/RunConfig';
 import { err, invalidConfig, ok, type DomainError, type Result } from '../../domain/shared/Result';
 import { ArenaSchema, EnemiesSchema, PlayerSchema, WavesSchema } from './schemas';
 
-// Validación del contenido antes de llegar al dominio (AGENTS.md §3.5-6): forma y rangos de cada fichero
-// (schemas.ts) y, sobre el conjunto, las reglas cruzadas. Estas tienen una sola implementación,
+// Validación del contenido antes de llegar al dominio (AGENTS.md §3.5-6): forma y rangos de cada
+// fichero (schemas.ts) y, sobre el conjunto, las reglas cruzadas. Estas tienen una sola implementación,
 // `buildRunRules` del dominio, que además las mantiene en `Run.start` como defensa.
 const RunConfigSchema = z
   .object({ player: PlayerSchema, arena: ArenaSchema, enemies: EnemiesSchema, waves: WavesSchema })

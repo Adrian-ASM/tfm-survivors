@@ -17,9 +17,10 @@ import {
   WAVES_NEED_SEGMENTS,
 } from '../../domain/wave/WaveTable';
 
-// Forma y rangos por campo de cada fichero de content/ (AGENTS.md §3.5-6). Todos estrictos: un campo
-// desconocido es un error. Los mensajes son los del dominio; las reglas cruzadas (encaje del radio,
-// id únicos, orden de tramos, tipos existentes) las aplica `buildRunRules` desde el superRefine del loader.
+// Forma y rangos por campo de cada fichero de content/ (AGENTS.md §3.5-6). Todos estrictos: un
+// campo desconocido es un error. Los mensajes son los del dominio; las reglas cruzadas (encaje del
+// radio, id únicos, orden de tramos, tipos existentes) las aplica `buildRunRules` desde el
+// superRefine del loader.
 
 export const ENEMY_ID_FORMAT =
   'El id de un enemigo usa minúsculas, dígitos y guiones (p. ej. memory-leak).';
