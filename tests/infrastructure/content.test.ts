@@ -21,10 +21,13 @@ describe('Contenido del jugador validado', () => {
   });
 
   it('Radio que no cabe en la arena', () => {
-    const config = parseRunConfig({ player: { speed: 200, radius: 300 }, arena });
-    expect(config.ok).toBe(true); // forma válida…
-    if (!config.ok) return;
-    const started = new StartRun().execute(config.value); // …pero invariante de dominio rota
+    const r = parseRunConfig({ player: { speed: 200, radius: 300 }, arena });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.field).toBe('player.radius');
+  });
+
+  it('el dominio mantiene la invariante del radio como defensa', () => {
+    const started = new StartRun().execute({ player: { speed: 200, radius: 300 }, arena });
     expect(started.ok).toBe(false);
     if (!started.ok) expect(started.error.field).toBe('player.radius');
   });

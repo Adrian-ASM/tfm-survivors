@@ -46,3 +46,19 @@
 - [x] 4.3 README (instalación, ejecución, estructura), AGENTS.md §2 (comandos) y §3 (guardarraíl en pre-commit/CI,
       prohibido `--no-verify`, cambios en `main` solo por PR)
 - [x] 4.4 Medir tamaño del bundle y anotarlo para el verify-report
+
+## 5. Ronda 2 · correcciones del verify-report (añadida por el orquestador)
+- [x] 5.1 (W4) Validar en `loadRunConfig` que el radio del jugador cabe en la arena (`superRefine` sobre el conjunto
+      jugador+arena) para que la **carga** falle con un error que nombre `player.radius`, como dice la spec. Mantener
+      la invariante en el dominio como defensa — escenario: "Radio que no cabe en la arena"
+- [ ] 5.2 (W2) Cerrar evasiones de pureza/capas en ESLint (`ImportExpression`, accesos vía `globalThis`/`self`) y en
+      el hook (`import(…)`, `import '…'` de efecto, desestructuración de `Math`) — tests en `tests/guardrails/`
+- [ ] 5.3 (W1) `guard-staged.mjs` en proceso: los hooks exportan `check({ file_path, content })` (manteniendo el
+      wrapper stdin para Claude Code) y el índice se lee con una sola llamada (`git cat-file --batch`) — escenario:
+      "Commit limpio" con margen amplio
+- [ ] 5.4 (W7) Test que ejecuta `git commit` de verdad en el repo temporal con `.husky/pre-commit` y comprueba que
+      se aborta — escenarios de pre-commit
+- [ ] 5.5 (W3, S10) Endurecer tests: tolerancia ≤ 0,001 px en diagonal y deslizamiento; snapshot con input (1, 0)
+- [ ] 5.6 (S11, S12, S13, S14) `lintText` sin escribir en `src/`; invariante `speed > 0` alineada con zod; exención
+      de secretos solo para los ficheros de hooks; `ENOENT` controlado en `--all`
+- [ ] 5.7 (W6) CI: no ignorar `.claude/hooks/**` en `paths-ignore`
