@@ -54,7 +54,7 @@
 - [x] 1.12 `UpgradeBoard`: niveles, disponibilidad y `open` (Fisher–Yates parcial, `k = min(3, m)` valores de azar,
   arrays preasignados) con un `RandomGenerator` guionizado — escenarios: "Ninguna adquirida al empezar", "Dos
   disponibles", "Una disponible", "Mejora en su nivel máximo"
-- [ ] 1.13 `UpgradeBoard.pick` y `UpgradeChoiceError` — escenarios: "Elección válida" (unidad), "Índice fuera de
+- [x] 1.13 `UpgradeBoard.pick` y `UpgradeChoiceError` — escenarios: "Elección válida" (unidad), "Índice fuera de
   rango" (3, −1, 1,5; 2 con 2 opciones)
 - [ ] 1.14 `Health.raise` y `Player.withRules` (conserva posición e invulnerabilidad; recorte a `[1, max]` con
   incremento negativo) — escenarios: "Con la vida llena", "Con la vida a medias", "Nivel máximo" (player-health)

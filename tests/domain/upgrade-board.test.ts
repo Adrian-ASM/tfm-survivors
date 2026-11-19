@@ -56,3 +56,48 @@ describe('UpgradeBoard · niveles y oferta', () => {
     }
   });
 });
+
+describe('UpgradeBoard.pick', () => {
+  function opened(levels?: number[]): UpgradeBoard {
+    const b = new UpgradeBoard(aCatalog(), levels);
+    b.open(new ScriptedRandom([0.5, 0, 0.99]));
+    return b;
+  }
+
+  it('Scenario: Elección válida (índice 1: sube solo esa mejora y cierra la oferta)', () => {
+    const b = opened();
+    const r = b.pick(1);
+    expect(r.ok && r.value.id).toBe('fast-ci');
+    expect(b.levels).toEqual([0, 1, 0, 0, 0, 0, 0, 0, 0]);
+    expect(b.isOpen).toBe(false);
+    expect(b.offer).toEqual([]);
+  });
+
+  it.each([3, -1, 1.5, Number.NaN])('Scenario: Índice fuera de rango (%s con 3 opciones)', (i) => {
+    const b = opened();
+    expect(b.pick(i)).toEqual({
+      ok: false,
+      error: { code: 'choice-out-of-range', index: i, size: 3 },
+    });
+    expect(b.levels).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    expect(offerIds(b)).toEqual(['watch-mode', 'fast-ci', 'context-window']);
+    expect(b.pick(0).ok).toBe(true);
+  });
+
+  it('Scenario: Índice fuera de rango (2 con 2 opciones)', () => {
+    const b = new UpgradeBoard(aCatalog(), allMaxedExcept({ guardrail: 0, shortcuts: 0 }));
+    b.open(new StubRandom(0));
+    expect(b.pick(2)).toEqual({
+      ok: false,
+      error: { code: 'choice-out-of-range', index: 2, size: 2 },
+    });
+    expect(b.isOpen).toBe(true);
+  });
+
+  it('sin oferta abierta devuelve no-offer', () => {
+    expect(new UpgradeBoard(aCatalog()).pick(0)).toEqual({
+      ok: false,
+      error: { code: 'no-offer' },
+    });
+  });
+});
