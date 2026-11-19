@@ -111,10 +111,10 @@
 - [x] 3.1 `EnemiesSchema.xp` y `PlayerSchema.pickupRadius`; `xp` en `content/enemies.json` y `pickupRadius` en
   `content/player.json` — escenarios: "XP por defecto de cada tipo", "XP inválida o ausente", "Radio de recogida
   inválido o ausente", "Radio de recogida por defecto"
-- [ ] 3.2 `ProgressionSchema` y `content/progression.json` en el loader — escenarios: "Contenido por defecto"
+- [x] 3.2 `ProgressionSchema` y `content/progression.json` en el loader — escenarios: "Contenido por defecto"
   (xp-gems), "Curva por defecto", "Valores no positivos", "Tope de gemas no entero", "Campo desconocido o ausente",
   "Valores inválidos" (leveling)
-- [ ] 3.3 `UpgradesSchema` y `content/upgrades.json` (9 mejoras) en el loader, reglas cruzadas vía `superRefine` —
+- [x] 3.3 `UpgradesSchema` y `content/upgrades.json` (9 mejoras) en el loader, reglas cruzadas vía `superRefine` —
   escenarios: "Catálogo por defecto", "Identificador repetido o lista vacía", "Valores inválidos" (upgrades), y los
   de 1.9–1.10 a través del loader
 - [ ] 3.4 `GemLayer` sobre `SlotPool` — escenarios: "Recogidas y nuevas", "Tope de gemas pintado", "Todas recogidas"
