@@ -221,7 +221,7 @@ por estadística:
 - **THEN** el jugador está en (700, 270) con un error ≤ 0,001
 
 #### Scenario: Más radio de recogida
-- **GIVEN** `context-window` en nivel 1 (`pickupRadius` 96), un jugador quieto en (480, 270) y una gema en
+- **GIVEN** `pickupRadius` base 64, `context-window` en nivel 1 (efectivo 96), un jugador quieto en (480, 270) y una gema en
   (570, 270) (distancia 90)
 - **WHEN** se ejecuta 1 tick
 - **THEN** la gema está atraída y en (564, 270)

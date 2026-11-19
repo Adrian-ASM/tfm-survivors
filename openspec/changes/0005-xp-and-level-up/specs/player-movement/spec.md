@@ -2,7 +2,7 @@
 
 <!-- Change 0005-xp-and-level-up. La velocidad del jugador pasa a ser efectiva (base + mejora `shortcuts`, +20 px/s
      por nivel, PROVISIONAL, A MEDIR EN APPLY) y `content/player.json` gana el radio de recogida base `pickupRadius`
-     (64, PROVISIONAL, A MEDIR EN APPLY; su uso está en `xp-gems`). Mientras se elige mejora el input de movimiento
+     (128, medido en apply; su uso está en `xp-gems`). Mientras se elige mejora el input de movimiento
      se ignora (ver `run-state`). Los escenarios de contenido citan los campos relevantes; los demás campos
      obligatorios de `content/player.json` se suponen válidos. -->
 
