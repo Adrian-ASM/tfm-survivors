@@ -44,7 +44,7 @@
 - [x] 1.9 `upgrade/UpgradeType` y `UpgradeCatalog`: ids únicos, arma existente, compatibilidad `stat` ↔ objetivo
   (`TARGETING_STAT`), mensajes con el id — escenarios: "Identificador repetido o lista vacía" (repetido),
   "Arma inexistente", "Estadística incompatible"
-- [ ] 1.10 `UpgradeCatalog`: `perLevel` entero en `damage`/`cooldownTicks` y build de peor caso con `WeaponType.create`
+- [x] 1.10 `UpgradeCatalog`: `perLevel` entero en `damage`/`cooldownTicks` y build de peor caso con `WeaponType.create`
   y `checkPlayer`; `pulseCapacity` de peor caso — escenarios: "Nivel máximo que saca la cadencia de rango", "Límite
   exacto de la cadencia", "Suma de varias mejoras sobre la misma estadística", "Valores inválidos" (`perLevel` 1,5
   en `damage`)

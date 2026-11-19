@@ -1,5 +1,5 @@
 import type { Arena } from '../arena/Arena';
-import type { PlayerRules } from '../run/RunConfig';
+import type { PlayerRules } from './PlayerRules';
 import { Health } from '../shared/Health';
 import type { Vector2 } from '../shared/Vector2';
 import type { PlayerInput } from './PlayerInput';
