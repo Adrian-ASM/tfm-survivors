@@ -133,7 +133,7 @@
 ## 4. E2E y documentación
 - [x] 4.1 `tests/e2e/probe.ts`: `SnapshotView` ampliado y ayudante que pulsa `1` cada vez que hay oferta; adaptar
   los E2E existentes de semilla 42 y 7 — escenarios: "Primer golpe en el navegador", "Comprobación en el navegador"
-- [ ] 4.2 E2E `level-up.spec.ts` con `?e2e&seed=7` sin input — escenario: "Recorrido en el navegador" (nivel 1 antes
+- [x] 4.2 E2E `level-up.spec.ts` con `?e2e&seed=7` sin input — escenario: "Recorrido en el navegador" (nivel 1 antes
   del overlay; tras pulsar 1, overlay oculto, nivel 2 y ticks avanzando)
 - [ ] 4.3 ADR-0003 y ADR-0006: sección "Aplicación (0005)" con datos del bench; ADR-0008 a "aceptada" si el apply la
   confirma; `design.md` § "Desviaciones del apply" con las mediciones de 0.1 y 0.3
