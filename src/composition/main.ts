@@ -50,7 +50,7 @@ function bootstrap(): void {
     height: config.value.arena.height,
     backgroundColor: BACKGROUND,
     scene: [
-      new GameScene(started.value, (snapshot) => {
+      new GameScene(started.value, config.value.waves.maxAlive, (snapshot) => {
         probe.snapshot = snapshot;
       }),
     ],

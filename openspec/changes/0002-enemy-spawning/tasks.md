@@ -93,15 +93,15 @@
       inexistente" (menciona `segfault`, no arranca), "Radio que no cabe en la arena", "Radio en el límite exacto",
       "Identificador duplicado", "Primer tramo que no empieza en 0", "Tramos desordenados o repetidos",
       "Contenido por defecto", "Oleadas que crecen con el contenido por defecto"
-- [ ] 5.3 `src/infrastructure/url/resolveSeed.ts` (`resolveSeed(search, fallback) → {seed, warning?}`, zod, valor
+- [x] 5.3 `src/infrastructure/url/resolveSeed.ts` (`resolveSeed(search, fallback) → {seed, warning?}`, zod, valor
       truncado a 32 caracteres) — `tests/infrastructure/seed.test.ts` — SL "Semilla válida por URL",
       "Límites del rango", "Semilla inválida" (`-1`, `4294967296`, `1.5`, `abc`, vacío: 1 `warning` con `seed`),
       "Sin semilla en la URL"
-- [ ] 5.4 `src/infrastructure/phaser/enemyPalette.ts` y `EnemyLayer.ts` (pool preasignado de `CircleSprite`, solo
+- [x] 5.4 `src/infrastructure/phaser/enemyPalette.ts` y `EnemyLayer.ts` (pool preasignado de `CircleSprite`, solo
       `import type` de Phaser) — `tests/infrastructure/enemy-layer.test.ts` con dobles: no crea tras preasignar,
       posiciona n, oculta sobrantes, cambia radio y color solo si cambia el tipo, color por defecto si el id no
       está en la paleta
-- [ ] 5.5 `GameScene` recibe `maxEnemies`; crea el `EnemyLayer` antes que el círculo del jugador y lo sincroniza
+- [x] 5.5 `GameScene` recibe `maxEnemies`; crea el `EnemyLayer` antes que el círculo del jugador y lo sincroniza
       en `update()`. Antes, comprobar en `node_modules/phaser/types` que el `Arc` de 4.2.1 tiene `setRadius`,
       `setFillStyle` y `setVisible` — sin lógica, cubierto por E2E (bloque 8)
 
