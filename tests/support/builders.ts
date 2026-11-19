@@ -1,4 +1,23 @@
 import type { RunConfig } from '../../src/domain/run/RunConfig';
+import type { WeaponTypeConfig } from '../../src/domain/weapon/WeaponType';
+
+/** Linter del contenido por defecto (spec auto-weapons): proyectil al más cercano en alcance. */
+export const LINTER: WeaponTypeConfig = {
+  id: 'linter',
+  cooldownTicks: 30,
+  damage: 6,
+  targeting: { mode: 'nearest-in-range', range: 400 },
+  attack: { type: 'projectile', speed: 480, radius: 4, lifetimeTicks: 60 },
+};
+
+/** Tests del contenido por defecto: pulso de área alrededor del jugador. */
+export const TESTS: WeaponTypeConfig = {
+  id: 'tests',
+  cooldownTicks: 90,
+  damage: 4,
+  targeting: { mode: 'any-in-radius', radius: 90 },
+  attack: { type: 'pulse', visualTicks: 8 },
+};
 
 /** Tipos de enemigo de la spec (bug, memory-leak, merge-conflict) con los valores del design. */
 export const DEFAULT_ENEMY_TYPES = [

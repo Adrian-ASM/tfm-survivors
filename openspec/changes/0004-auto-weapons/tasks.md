@@ -6,7 +6,7 @@
      PH = player-health. Design: openspec/changes/0004-auto-weapons/design.md. ADR-0007. -->
 
 ## 1. Dominio: contenido de armas (camino frío)
-- [ ] 1.1 `domain/weapon/WeaponType.ts`: tipos `TargetingConfig`, `AttackConfig`, `WeaponTypeConfig`, constantes de
+- [x] 1.1 `domain/weapon/WeaponType.ts`: tipos `TargetingConfig`, `AttackConfig`, `WeaponTypeConfig`, constantes de
   mensaje y `WeaponType.create(config, path)` con enteros ≥ 1 (`cooldownTicks`, `damage`, `lifetimeTicks`,
   `visualTicks`) y finitos > 0 (`range`, `radius`, `speed`, radio del proyectil); test en
   `tests/domain/weapon-type.test.ts` — escenarios AW "Valores no positivos", "Valores no enteros",
