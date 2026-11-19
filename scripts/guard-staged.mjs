@@ -20,13 +20,20 @@ const root = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: '
 
 const git = (args, input) => execFileSync('git', args, { cwd: root, input, maxBuffer: MAX_BUFFER });
 
-const listed = all
-  ? git(['ls-files', '-z'])
-  : git(['diff', '--cached', '--name-only', '--diff-filter=ACMR', '-z']);
-const files = listed
-  .toString('utf8')
-  .split('\0')
-  .filter((f) => f && !BINARY.test(f));
+const paths = (args) =>
+  git(args)
+    .toString('utf8')
+    .split('\0')
+    .filter((f) => f && !BINARY.test(f));
+
+// En --all, un fichero versionado pero borrado del disco (sin preparar) no se puede leer: se omite con aviso.
+const deleted = new Set(all ? paths(['ls-files', '--deleted', '-z']) : []);
+const files = (
+  all
+    ? paths(['ls-files', '-z'])
+    : paths(['diff', '--cached', '--name-only', '--diff-filter=ACMR', '-z'])
+).filter((f) => !deleted.has(f));
+for (const path of deleted) console.warn(`⚠ guard: ${path} está borrado del disco; se omite.`);
 
 /**
  * Contenido preparado (índice) de todos los ficheros con UNA sola llamada a git.

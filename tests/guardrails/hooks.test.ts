@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -91,4 +92,24 @@ describe('hooks · check() reutilizable en proceso', () => {
     await checkOf('guard-secrets.mjs');
     expect(process.exitCode ?? 0).toBe(0);
   });
+});
+
+describe('guard-secrets · exención solo para los ficheros de reglas (verify-report S13)', () => {
+  // Se construye en tiempo de ejecución para que este test no contenga un token literal.
+  const token = ['ghp', 'A'.repeat(36)].join('_');
+
+  it('bloquea un secreto en cualquier otro fichero de .claude/hooks/', async () => {
+    const check = await checkOf('guard-secrets.mjs');
+    const lines = check({ file_path: '.claude/hooks/notas.mjs', content: `const t = '${token}';` });
+    expect(lines.join('\n')).toContain('Token de GitHub');
+  });
+
+  it.each(['guard-secrets.mjs', 'guard-architecture.mjs'])(
+    'no se auto-bloquea con el contenido real de %s',
+    async (name) => {
+      const check = await checkOf('guard-secrets.mjs');
+      const content = readFileSync(join(root, '.claude', 'hooks', name), 'utf8');
+      expect(check({ file_path: `.claude/hooks/${name}`, content })).toEqual([]);
+    },
+  );
 });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
-import { Run } from '../../src/domain/run/Run';
+import { Run, SPEED_MUST_BE_POSITIVE } from '../../src/domain/run/Run';
 import { aRunConfig } from '../support/builders';
 
 function startedRun(): Run {
@@ -43,9 +43,15 @@ describe('Run', () => {
     if (!r.ok) expect(r.error.field).toContain('radius');
   });
 
-  it('rechaza una velocidad negativa', () => {
-    const r = Run.start(aRunConfig({ speed: -5 }));
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.error.field).toContain('speed');
-  });
+  it.each([-5, 0, Number.NaN, Number.POSITIVE_INFINITY])(
+    'rechaza una velocidad no positiva o no finita (%s), igual que zod',
+    (speed) => {
+      const r = Run.start(aRunConfig({ speed }));
+      expect(r.ok).toBe(false);
+      if (!r.ok) {
+        expect(r.error.field).toBe('player.speed');
+        expect(r.error.message).toBe(SPEED_MUST_BE_POSITIVE);
+      }
+    },
+  );
 });

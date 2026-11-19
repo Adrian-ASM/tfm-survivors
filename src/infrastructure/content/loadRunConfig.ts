@@ -2,14 +2,14 @@ import { z } from 'zod';
 import arenaJson from '../../../content/arena.json';
 import playerJson from '../../../content/player.json';
 import { Arena } from '../../domain/arena/Arena';
-import type { RunConfig } from '../../domain/run/Run';
+import { RADIUS_MUST_FIT, SPEED_MUST_BE_POSITIVE, type RunConfig } from '../../domain/run/Run';
 import { err, invalidConfig, ok, type DomainError, type Result } from '../../domain/shared/Result';
 
 // Validación del contenido antes de llegar al dominio (AGENTS.md §3.5-6): forma de cada fichero y, sobre el
 // conjunto, que el radio del jugador quepa en la arena. La regla de encaje es la del dominio (`Arena.fits`),
 // que además la mantiene en `Run.start` como defensa.
 const PlayerSchema = z.strictObject({
-  speed: z.number().positive(),
+  speed: z.number().positive({ error: SPEED_MUST_BE_POSITIVE }),
   radius: z.number().positive(),
 });
 
@@ -26,7 +26,7 @@ const RunConfigSchema = z
       ctx.addIssue({
         code: 'custom',
         path: ['player', 'radius'],
-        message: 'El radio del jugador no cabe en la arena.',
+        message: RADIUS_MUST_FIT,
       });
     }
   });

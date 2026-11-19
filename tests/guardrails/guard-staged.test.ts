@@ -99,4 +99,16 @@ describe('guard-staged --all · CI', () => {
     expect(out).toContain('src/application/z.ts');
     expect(out).toContain('Clock');
   });
+
+  it('un fichero versionado borrado del disco se omite con un aviso, sin traza (S14)', () => {
+    stage('src/domain/gone.ts', 'export const g = 1;\n');
+    stage('src/domain/kept.ts', 'export const k = 2;\n');
+    git('-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '--no-verify', '-m', 'x');
+    rmSync(join(repo, 'src/domain/gone.ts'));
+    const { code, out } = guard('--all');
+    expect(code, out).toBe(0);
+    expect(out).toContain('src/domain/gone.ts');
+    expect(out).toContain('1 fichero(s) revisados');
+    expect(out).not.toContain('ENOENT');
+  });
 });

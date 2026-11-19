@@ -11,6 +11,11 @@ const SECRET_PATTERNS = [
   { re: /\bsk-[A-Za-z0-9_-]{20,}/, msg: 'API key de un proveedor de IA' },
 ];
 
+const RULE_FILES = new Set([
+  '.claude/hooks/guard-secrets.mjs',
+  '.claude/hooks/guard-architecture.mjs',
+]);
+
 /** Ficheros de secretos y credenciales pegadas. Devuelve las líneas del bloqueo o [] si cumple. */
 export function check(toolInput = {}, projectDir = undefined) {
   const path = relativePath(toolInput.file_path, projectDir);
@@ -23,8 +28,8 @@ export function check(toolInput = {}, projectDir = undefined) {
     ];
   }
 
-  // Los propios hooks contienen los patrones como texto; no se auto-bloquean.
-  if (path.startsWith('.claude/hooks/')) return [];
+  // Solo los ficheros que DEFINEN las reglas pueden contener los patrones como texto (verify-report S13).
+  if (RULE_FILES.has(path)) return [];
 
   const text = newContent(toolInput);
   const found = SECRET_PATTERNS.filter(

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { StartRun } from '../../src/application/StartRun';
+import { SPEED_MUST_BE_POSITIVE } from '../../src/domain/run/Run';
 import { loadRunConfig, parseRunConfig } from '../../src/infrastructure/content/loadRunConfig';
 
 const arena = { width: 960, height: 540 };
@@ -18,6 +19,17 @@ describe('Contenido del jugador validado', () => {
     const r = parseRunConfig({ player: { speed: -5, radius: 16 }, arena });
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error.field).toBe('player.speed');
+  });
+
+  it('velocidad 0: zod y el dominio la rechazan con el mismo campo y mensaje', () => {
+    const player = { speed: 0, radius: 16 };
+    const parsed = parseRunConfig({ player, arena });
+    const started = new StartRun().execute({ player, arena });
+    expect(parsed.ok || started.ok).toBe(false);
+    if (!parsed.ok && !started.ok) {
+      expect(parsed.error).toEqual(started.error);
+      expect(parsed.error.message).toBe(SPEED_MUST_BE_POSITIVE);
+    }
   });
 
   it('Radio que no cabe en la arena', () => {

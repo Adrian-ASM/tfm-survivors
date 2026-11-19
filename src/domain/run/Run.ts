@@ -7,6 +7,10 @@ import type { RunSnapshot } from './RunSnapshot';
 /** Duración de un tick de simulación (spec simulation-loop: paso fijo de 1/60 s). */
 export const TICK_SECONDS = 1 / 60;
 
+/** Mensajes de las invariantes de la configuración; la validación de contenido (zod) usa los mismos. */
+export const SPEED_MUST_BE_POSITIVE = 'La velocidad del jugador debe ser positiva.';
+export const RADIUS_MUST_FIT = 'El radio del jugador no cabe en la arena.';
+
 /** Configuración de partida ya validada en forma (zod, infraestructura); aquí se validan invariantes. */
 export interface RunConfig {
   readonly arena: { readonly width: number; readonly height: number };
@@ -26,11 +30,11 @@ export class Run {
     const arena = Arena.create(config.arena.width, config.arena.height);
     if (!arena.ok) return arena;
     const { speed, radius } = config.player;
-    if (!Number.isFinite(speed) || speed < 0) {
-      return err(invalidConfig('player.speed', 'La velocidad del jugador no puede ser negativa.'));
+    if (!Number.isFinite(speed) || speed <= 0) {
+      return err(invalidConfig('player.speed', SPEED_MUST_BE_POSITIVE));
     }
     if (!arena.value.fits(radius)) {
-      return err(invalidConfig('player.radius', 'El radio del jugador no cabe en la arena.'));
+      return err(invalidConfig('player.radius', RADIUS_MUST_FIT));
     }
     return ok(new Run(arena.value, Player.spawn(arena.value.center, radius, speed)));
   }
