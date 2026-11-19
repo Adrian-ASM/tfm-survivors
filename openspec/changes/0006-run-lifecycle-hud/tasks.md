@@ -168,6 +168,6 @@
 - [x] 4.3 Rellenar la sección *Medición* de `design.md` (si no se hizo en 0.2) y pasar ADR-0009 a "aceptada".
   Actualizar el estado del proyecto en `AGENTS.md` §1 si procede y añadir la entrada del diario de IA en
   `docs/ai-log/`.
-- [ ] 4.4 `npm run verify` y `npm run test:e2e` en verde. Comprobar que `Run.ts` tiene menos de 300 líneas y
+- [x] 4.4 `npm run verify` y `npm run test:e2e` en verde. Comprobar que `Run.ts` tiene menos de 300 líneas y
   `GameScene.ts` unas 200 o menos. Dejar una lista de escenarios de las specs delta sin test (debe quedar vacía)
   para el verifier.
