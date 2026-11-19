@@ -161,7 +161,7 @@
 ## 4. E2E y documentación
 - [x] 4.1 `tests/e2e/probe.ts`: `SnapshotView` con `outcome`, `kills` y `durationTicks`; `Probe` con `results`. Los
   E2E actuales (`health`, `level-up`, `weapons`, `enemies` y `smoke`) siguen verdes con `npm run test:e2e`.
-- [ ] 4.2 `tests/e2e/results.spec.ts`: `?e2e&seed=42`, sin input y con la política fija hasta `over` (dentro del
+- [x] 4.2 `tests/e2e/results.spec.ts`: `?e2e&seed=42`, sin input y con la política fija hasta `over` (dentro del
   plazo medido en 0.2, ≤ 120 s de juego), con `outcome 'lost'` y `results` = `Derrota` / ⌊tick/60⌋ / nivel / bajas.
   Después se pulsa `r` y, con tick ≤ 60: `running`, sin resultado, `kills 0`, nivel 1, `xp 0`, `results null` y sin
   errores de consola. Escenario: run-results "Derrota y reinicio en el navegador".
