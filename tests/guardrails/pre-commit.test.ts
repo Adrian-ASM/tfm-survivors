@@ -2,9 +2,9 @@ import { spawnSync } from 'node:child_process';
 import {
   chmodSync,
   cpSync,
-  existsSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
@@ -93,7 +93,25 @@ describe('pre-commit · git commit real con .husky/pre-commit', () => {
     const { code, out } = git('commit', '-m', 'ok');
     expect(code, out).toBe(0);
     expect(out).toContain('guard: 1 fichero(s) revisados');
-    expect(existsSync(join(sandbox, 'npx.log'))).toBe(true);
+    expect(readFileSync(join(sandbox, 'npx.log'), 'utf8')).toContain('lint-staged');
     expect(hasCommit()).toBe(true);
+  });
+
+  it('El dominio importa el motor: el commit se aborta y no se crea', () => {
+    stage('src/domain/y.ts', "import Phaser from 'phaser';\nexport const P = Phaser;\n");
+    const { code, out } = git('commit', '-m', 'x');
+    expect(code).not.toBe(0);
+    expect(out).toContain('src/domain/y.ts');
+    expect(out).toContain('El dominio no puede importar el motor');
+    expect(hasCommit()).toBe(false);
+  });
+
+  it('Se evalúa lo preparado, no el disco: el commit se aborta y no se crea', () => {
+    stage('src/domain/x.ts', 'export const r = Math.random();\n');
+    writeFileSync(join(repo, 'src/domain/x.ts'), 'export const r = 4;\n'); // corregido sin preparar
+    const { code, out } = git('commit', '-m', 'x');
+    expect(code).not.toBe(0);
+    expect(out).toContain('RandomGenerator');
+    expect(hasCommit()).toBe(false);
   });
 });
