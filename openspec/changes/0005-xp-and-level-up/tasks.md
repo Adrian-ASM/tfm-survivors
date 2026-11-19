@@ -87,7 +87,7 @@
   impacto", "Más alcance", "Alcance mejorado", "Más radio del pulso", "Pulso mejorado", "Un pulso mejorado mata a un
   bug de un golpe", "Más daño de Tests", "Daño efectivo con mejoras", "Proyectil en vuelo durante una mejora de
   daño", "Pulso visible durante una mejora de radio", "El contenido base no cambia"
-- [ ] 1.24 Efectos de jugador a través de `Run` — escenarios: "Más velocidad", "Velocidad mejorada", "Velocidad en el
+- [x] 1.24 Efectos de jugador a través de `Run` — escenarios: "Más velocidad", "Velocidad mejorada", "Velocidad en el
   nivel máximo", "Más radio de recogida", "Con la vida a medias" (vía `Run`), "La mejora no altera la
   invulnerabilidad", "Golpe letal tras la mejora"
 - [ ] 1.25 Snapshot ampliado y congelado (`gems`, `progression`, `offer`, `upgrades`) — escenarios: "Gemas en el
