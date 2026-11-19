@@ -10,9 +10,9 @@ import {
   aSegment,
   aWavesConfig,
   withPlayer,
-  withWeapons,
-  DEFAULT_WEAPONS,
+  aDefaultConfig,
 } from '../support/builders';
+import { chooseFirstWhileOpen } from '../support/runs';
 import { randomInputs } from '../support/inputs';
 
 // Partidas de 10 min (36.000 ticks). Una sola simulación con el contenido por defecto se reutiliza para
@@ -104,10 +104,17 @@ describe('Partidas largas (10 min)', () => {
     expect(endedAt).toBeLessThanOrEqual(TEN_MINUTES);
   });
 
-  it('Scenario: Partida larga reproducible (contenido por defecto con armas, semilla 7)', () => {
-    const armed = withWeapons(aRunConfig(), DEFAULT_WEAPONS);
-    const a = finalSnapshot(armed, SEED, inputs);
-    expect(finalSnapshot(armed, SEED, inputs)).toStrictEqual(a);
+  it('Scenario: Partida larga reproducible (contenido por defecto, semilla 7, política fija)', () => {
+    const final = () => {
+      const run = start(aDefaultConfig(), SEED);
+      for (const input of inputs) {
+        chooseFirstWhileOpen(run);
+        run.tick(input);
+      }
+      return run.snapshot();
+    };
+    const a = final();
+    expect(final()).toStrictEqual(a);
   });
 
   it('Partida larga reproducible con la vida por defecto', () => {

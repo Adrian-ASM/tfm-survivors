@@ -8,6 +8,8 @@ import type { RunConfig } from '../../src/domain/run/RunConfig';
 import { playerVisible } from '../../src/infrastructure/phaser/playerBlink';
 import { randomInputs } from '../support/inputs';
 
+// Escenarios con el contenido por defecto de 0005 y la política de elección fija ("Partida con
+// contactos reproducible", "Partida con armas reproducible"…): determinism-progression.test.ts.
 const ARMED = withWeapons(aRunConfig(), DEFAULT_WEAPONS);
 
 function start(seed: number, config: RunConfig = aRunConfig()): Run {
@@ -38,14 +40,6 @@ describe('Determinismo con semilla', () => {
     for (let i = 0; i < inputs.length; i++) expect(a[i]).toStrictEqual(b[i]);
   });
 
-  it('Scenario: Partida con contactos reproducible (semilla 42, quieto, 4.800 ticks, armas)', () => {
-    const still = Array.from({ length: 4800 }, () => PlayerInput.NONE);
-    const a = play(42, still, ARMED);
-    const b = play(42, still, ARMED);
-    expect(a.some((s) => s.player.health < s.player.maxHealth)).toBe(true);
-    for (let i = 0; i < still.length; i++) expect(a[i]).toStrictEqual(b[i]);
-  });
-
   it('El parpadeo no altera la simulación (una partida pintada con playerVisible y otra no)', () => {
     const still = Array.from({ length: 600 }, () => PlayerInput.NONE);
     const painted = start(42);
@@ -61,22 +55,11 @@ describe('Determinismo con semilla', () => {
     expect(hidden).toBeGreaterThan(0);
   });
 
-  it('Scenario: Dos partidas idénticas con armas (proyectiles y pulsos incluidos)', () => {
+  it('Dos partidas idénticas con las armas de 0004, sin mejoras (proyectiles y pulsos)', () => {
     const a = play(42, inputs, ARMED);
     const b = play(42, inputs, ARMED);
     expect(a.some((s) => s.projectiles.length > 0)).toBe(true);
     for (let i = 0; i < inputs.length; i++) expect(a[i]).toStrictEqual(b[i]);
-  });
-
-  it('Scenario: Partida con armas reproducible (semilla 7, quieto, 3.600 ticks, ≥ 1 baja)', () => {
-    const still = Array.from({ length: 3600 }, () => PlayerInput.NONE);
-    const a = play(7, still, ARMED);
-    const b = play(7, still, ARMED);
-    const lastId = a.reduce((m, s) => Math.max(m, ...s.enemies.map((e) => e.id)), -1);
-    const alive = a.at(-1)?.enemies.length ?? 0;
-    expect(lastId + 1).toBeGreaterThan(alive);
-    expect(a.some((s) => s.pulses.length > 0 && s.enemies.some((e) => e.damaged))).toBe(true);
-    for (let i = 0; i < still.length; i++) expect(a[i]).toStrictEqual(b[i]);
   });
 
   it('Semillas distintas', () => {

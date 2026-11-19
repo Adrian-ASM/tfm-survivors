@@ -96,7 +96,7 @@
 - [x] 1.26 Determinismo con elecciones — escenarios: "Dos partidas idénticas", "Partida con progresión reproducible",
   "Elecciones distintas divergen", "Partida larga reproducible", "Oferta reproducible", "Todas las mejoras pueden
   salir", "Partida con contactos reproducible", "Partida con armas reproducible"
-- [ ] 1.27 Revisar tests heredados con contenido por defecto (`long-run`, escenarios largos de armas y spawning) para
+- [x] 1.27 Revisar tests heredados con contenido por defecto (`long-run`, escenarios largos de armas y spawning) para
   usar `advance` con la política fija y los plazos medidos en 0.3 — escenarios: "Jugador quieto con el contenido por
   defecto", "Ningún arma mata a un bug de un impacto sin mejoras", "Una partida terminada no vuelve a en curso"
 
