@@ -165,7 +165,7 @@ partida. Las armas (selección de objetivo, disparo, proyectiles y pulsos) MUST 
 
 #### Scenario: Partida con contactos reproducible
 - **GIVEN** dos partidas con el contenido por defecto y la semilla 42, con input (0, 0) en todos los ticks
-- **WHEN** ambas ejecutan 3.600 ticks y en ese tiempo el jugador recibe ≥ 1 golpe
+- **WHEN** ambas ejecutan 4.800 ticks y en ese tiempo el jugador recibe ≥ 1 golpe
 - **THEN** sus snapshots son iguales campo a campo en cada tick, incluidos la vida, la invulnerabilidad, el
   estado y, si la hay, el tick en que la partida termina
 
