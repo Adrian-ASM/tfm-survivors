@@ -98,7 +98,7 @@
   AW "Indicación visual de daño, proyectiles y pulsos" (destello).
 - [x] 6.3 `ProjectileLayer` sobre `SlotPool` con capacidad `maxProjectiles`; test con dobles, sin sprites nuevos
   tras crear — AW "Sprites de proyectiles".
-- [ ] 6.4 `PulseLayer` (anillos por índice, capacidad `pulseCapacity`) y función pura `pulseAlpha`; test en Node —
+- [x] 6.4 `PulseLayer` (anillos por índice, capacidad `pulseCapacity`) y función pura `pulseAlpha`; test en Node —
   AW "Duración del pulso" (pintado), "Indicación visual…" (un anillo por pulso).
 - [ ] 6.5 `GameScene` con `SceneCapacity { enemies, projectiles, pulses }`, orden de capas (anillos, enemigos,
   proyectiles, jugador) y `sync` de las tres capas — cubierto por E2E 8.1.
