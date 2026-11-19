@@ -27,7 +27,7 @@
 - [x] 2.1 `Enemy.takeDamage(amount, tick)` con `lastHitTick`, `damagedAt(k, flashTicks)` y vida inicial opcional en
   `Enemy.spawn`; test en `enemy.test.ts` — ES "Daño que no mata", "Daño exactamente igual a la vida", "Daño mayor
   que la vida", "Daño a un enemigo ya dado de baja"; AW "Duración del destello", "Destello renovado".
-- [ ] 2.2 `domain/weapon/WeaponTarget.ts` + `targeting.ts`: `nearestInRange` (d² ≤ range², empate al primero,
+- [x] 2.2 `domain/weapon/WeaponTarget.ts` + `targeting.ts`: `nearestInRange` (d² ≤ range², empate al primero,
   ignora muertos) y `firstInRadius` (`circlesOverlap` estricto) con `selectTarget`; test
   `tests/domain/targeting.test.ts` con dobles — AW "Elige el más cercano", "Ignora los que están fuera de alcance",
   "Límite exacto del alcance", "Empate por orden de aparición", "Límite exacto del pulso".
