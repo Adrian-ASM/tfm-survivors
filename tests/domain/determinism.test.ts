@@ -4,6 +4,7 @@ import { Run } from '../../src/domain/run/Run';
 import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import { aRunConfig } from '../support/builders';
+import { playerVisible } from '../../src/infrastructure/phaser/playerBlink';
 import { randomInputs } from '../support/inputs';
 
 function start(seed: number): Run {
@@ -40,6 +41,21 @@ describe('Determinismo con semilla', () => {
     const b = play(42, still);
     expect(a.some((s) => s.player.health < s.player.maxHealth)).toBe(true);
     for (let i = 0; i < still.length; i++) expect(a[i]).toStrictEqual(b[i]);
+  });
+
+  it('El parpadeo no altera la simulación (una partida pintada con playerVisible y otra no)', () => {
+    const still = Array.from({ length: 600 }, () => PlayerInput.NONE);
+    const painted = start(42);
+    const plain = play(42, still);
+    let hidden = 0;
+    for (let i = 0; i < still.length; i++) {
+      painted.tick(PlayerInput.NONE);
+      const s = painted.snapshot();
+      if (!playerVisible(s)) hidden += 1;
+      expect(s).toStrictEqual(plain[i]);
+    }
+    expect(plain.some((s) => s.player.health < s.player.maxHealth)).toBe(true);
+    expect(hidden).toBeGreaterThan(0);
   });
 
   it('Semillas distintas', () => {
