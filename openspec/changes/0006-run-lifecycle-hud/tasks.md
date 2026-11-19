@@ -51,7 +51,7 @@
   reutilizados y 1 baja por muerto. Toda la batería actual sigue verde: la refactorización no cambia el
   comportamiento. Escenarios: simulation-loop "Bajas sin reordenar" y "Baja del primero y del último", run-outcome
   "Una baja cuenta una sola vez".
-- [ ] 1.5 Bajar `Run.ts` de 300 líneas: `maxHealthBonus` → `upgrade/upgradeStats.ts` e `InitialState` →
+- [x] 1.5 Bajar `Run.ts` de 300 líneas: `maxHealthBonus` → `upgrade/upgradeStats.ts` e `InitialState` →
   `RunSetup.ts`; `Run` usa `Horde`. Sin tests nuevos: la batería actual en verde es el test. Verificar con `wc -l`
   ≤ 270.
 - [ ] 1.6 `Run` guarda `phase` (constantes de `RunPhase`); getter `outcome`; `applyContact` pasa a `LOST`. Test:

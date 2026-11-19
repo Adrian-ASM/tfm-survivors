@@ -10,7 +10,7 @@ import type { GemField } from '../progression/GemField';
 import type { PlayerRules } from '../player/PlayerRules';
 import { err, ok, type DomainError, type Result } from '../shared/Result';
 import type { UpgradeChoiceError } from '../upgrade/UpgradeChoiceError';
-import { upgradedPlayer, upgradedWeapon } from '../upgrade/upgradeStats';
+import { maxHealthBonus, upgradedPlayer, upgradedWeapon } from '../upgrade/upgradeStats';
 import { WeaponType } from '../weapon/WeaponType';
 import { TICK_SECONDS } from '../shared/Tick';
 import { WaveDirector, type SpawnAttempt } from '../wave/WaveDirector';
@@ -38,11 +38,8 @@ import type { RunStatus } from './RunStatus';
 import {
   SETUP_HEALTH_OUT_OF_RANGE,
   SETUP_POSITION_MUST_BE_FINITE,
-  initialEnemies,
-  initialExperience,
-  initialBoard,
-  initialGems,
-  initialPlayer,
+  initialState,
+  type InitialState,
   type RunSetup,
 } from './RunSetup';
 
@@ -90,7 +87,8 @@ export class Run {
     this.director = new WaveDirector(rules.table, rules.spawn, random);
     this.arsenal = new Arsenal(rules.loadout, rules.pulseCapacity);
     for (const w of rules.loadout.weapons) this.retune(w.id);
-    this.player = this.player.withRules(this.effectivePlayer(), maxHealthBonus(rules, this.board));
+    const bonus = maxHealthBonus(rules.upgrades, this.board.levels);
+    this.player = this.player.withRules(this.effectivePlayer(), bonus);
   }
 
   static start(
@@ -100,25 +98,9 @@ export class Run {
   ): Result<Run, DomainError> {
     const rules = buildRunRules(config);
     if (!rules.ok) return rules;
-    const player = initialPlayer(rules.value, setup);
-    if (!player.ok) return player;
-    const enemies = initialEnemies(setup, rules.value.catalog, rules.value.arena);
-    if (!enemies.ok) return enemies;
-    const gems = initialGems(rules.value, setup);
-    if (!gems.ok) return gems;
-    const experience = initialExperience(rules.value, setup);
-    if (!experience.ok) return experience;
-    const board = initialBoard(rules.value, setup);
-    if (!board.ok) return board;
-    return ok(
-      new Run(rules.value, random, {
-        player: player.value,
-        enemies: enemies.value,
-        gems: gems.value,
-        experience: experience.value,
-        board: board.value,
-      }),
-    );
+    const initial = initialState(rules.value, setup);
+    if (!initial.ok) return initial;
+    return ok(new Run(rules.value, random, initial.value));
   }
 
   /** Estado de la partida (lectura barata, sin snapshot). */
@@ -274,20 +256,4 @@ export class Run {
       upgrades: toUpgradeLevels(this.rules.upgrades, this.board),
     });
   }
-}
-
-interface InitialState {
-  readonly player: Player;
-  readonly enemies: Enemy[];
-  readonly gems: GemField;
-  readonly experience: Experience;
-  readonly board: UpgradeBoard;
-}
-
-/** Vida máxima que suman las mejoras de `maxHealth` con los niveles actuales. */
-function maxHealthBonus(rules: RunRules, board: UpgradeBoard): number {
-  return rules.upgrades.upgrades.reduce(
-    (sum, u, i) => (u.stat === 'maxHealth' ? sum + u.perLevel * board.levelOf(i) : sum),
-    0,
-  );
 }

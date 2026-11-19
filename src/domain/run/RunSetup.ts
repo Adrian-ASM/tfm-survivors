@@ -130,3 +130,33 @@ export function initialExperience(
   if (!valid) return err(invalidConfig('setup.experience', SETUP_EXPERIENCE_OUT_OF_RANGE));
   return ok(new Experience(rules.curve, level, xp));
 }
+
+/** Estado inicial ya validado con el que arranca `Run`. */
+export interface InitialState {
+  readonly player: Player;
+  readonly enemies: Enemy[];
+  readonly gems: GemField;
+  readonly experience: Experience;
+  readonly board: UpgradeBoard;
+}
+
+/** Valida el `RunSetup` contra las reglas y construye el estado inicial de la partida. */
+export function initialState(rules: RunRules, setup: RunSetup): Result<InitialState, DomainError> {
+  const player = initialPlayer(rules, setup);
+  if (!player.ok) return player;
+  const enemies = initialEnemies(setup, rules.catalog, rules.arena);
+  if (!enemies.ok) return enemies;
+  const gems = initialGems(rules, setup);
+  if (!gems.ok) return gems;
+  const experience = initialExperience(rules, setup);
+  if (!experience.ok) return experience;
+  const board = initialBoard(rules, setup);
+  if (!board.ok) return board;
+  return ok({
+    player: player.value,
+    enemies: enemies.value,
+    gems: gems.value,
+    experience: experience.value,
+    board: board.value,
+  });
+}
