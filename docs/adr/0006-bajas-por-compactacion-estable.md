@@ -1,6 +1,6 @@
 # ADR-0006 · Bajas de entidades por compactación estable y sprites asociados por id
 
-- **Estado**: propuesta (change 0003-collisions-and-damage)
+- **Estado**: aceptada (implementada en el apply del change 0003-collisions-and-damage)
 - **Fecha**: 2026-11-19
 
 ## Contexto
@@ -25,6 +25,15 @@ Opción 4. Cada colección del agregado con bajas expone un `removeDead()` priva
 después de aplicar los daños, o de inmediato si la baja llega por una orden fuera del tick (`Run.damageEnemy` en
 0003). Los adaptadores de render asocian cada sprite a un `id`, que es estable y nunca se reutiliza, y no al índice.
 Una baja solo oculta y libera su hueco, sin repintar a nadie más.
+
+## Aplicación (change 0003-collisions-and-damage)
+- `Run.removeDead()` compacta en el sitio (`length = w`) y lo llama `Run.damageEnemy` en el momento de la baja.
+  Los tests "Bajas sin reordenar", "Reposición al final de la lista" y "Baja del primero y del último" fijan el
+  orden.
+- `EnemyLayer.sync` asocia hueco ↔ `id` con un `Map`, una pila de huecos libres y una marca `seen` por frame.
+  Precisión sobre el orden: primero actualiza a los que ya tienen hueco, después libera los no vistos y por último
+  da hueco a los nuevos. Con `capacity = maxAlive`, asignar antes de liberar dejaría sin hueco a las reposiciones
+  del mismo frame (spec "Reposición tras bajas": 150 supervivientes y 50 nuevos con 200 huecos).
 
 ## Consecuencias
 - Positivas:

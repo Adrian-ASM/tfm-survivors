@@ -165,12 +165,12 @@
       test. Cubre PH "Daño discreto por contacto" (navegador).
 
 ## 11. Cierre y docs
-- [ ] 11.1 `npm run verify` y `npm run test:e2e` en verde. Revisar a mano en `npm run dev` que, sin moverse, la
+- [x] 11.1 `npm run verify` y `npm run test:e2e` en verde. Revisar a mano en `npm run dev` que, sin moverse, la
       partida se congela y que, moviéndose, se esquiva el daño.
-- [ ] 11.2 ADR-0006 pasa a *aceptada* si el apply no la contradice. ADR-0003 gana una sección "Aplicación
+- [x] 11.2 ADR-0006 pasa a *aceptada* si el apply no la contradice. ADR-0003 gana una sección "Aplicación
       (change 0003)" con las cifras de 9.2. Actualizar en AGENTS.md §1 el "Estado del proyecto" si el orquestador
       lo pide.
-- [ ] 11.3 Entrada en `docs/ai-log/` del change con:
+- [x] 11.3 Entrada en `docs/ai-log/` del change con:
       - las decisiones contrastadas con la spec: recorte antes de gastar, `EnemySnapshot.health`, *i-frames* con un
         tick absoluto, el mayor daño y la tangencia estricta;
       - el ajuste de bench y long-run por la muerte del jugador;
