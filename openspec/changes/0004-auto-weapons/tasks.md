@@ -49,7 +49,7 @@
 - [x] 3.3 Ataque `pulse` (daño a todos los vivos solapados) y ecos visibles de T a T + `visualTicks` − 1 (sub-paso
   3a); `step` devuelve el número de bajas — AW "Tres dentro y uno fuera", "Sin enemigos en el radio, sin pulso",
   "Duración del pulso".
-- [ ] 3.4 Test de ausencia de asignaciones en régimen (los objetos del pool son los mismos por identidad tras 600
+- [x] 3.4 Test de ausencia de asignaciones en régimen (los objetos del pool son los mismos por identidad tras 600
   ticks de disparos) — design "Proyectiles: pool y bajas" (ADR-0003).
 
 ## 4. Dominio: integración en `Run`

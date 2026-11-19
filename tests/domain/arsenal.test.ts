@@ -23,6 +23,34 @@ function launchTicks(
   return { fired, maxAlive };
 }
 
+describe('Arsenal · pools sin asignaciones en régimen (ADR-0003)', () => {
+  it('tras 600 ticks de disparos solo se han usado los objetos preasignados', () => {
+    const linter = aLinter({
+      cooldownTicks: 1,
+      targeting: { mode: 'nearest-in-range', range: 2000 },
+    });
+    const pulse = aPulse({ cooldownTicks: 3 });
+    const arsenal = anArsenal(weaponsOf([linter, pulse]));
+    // Objetivos indestructibles: el pulso y los proyectiles disparan sin parar.
+    const anchor = new FakeTarget(480, 270, 1e12);
+    const far = new FakeTarget(-5000, 270, 1e12);
+    const projectiles = new Set<object>();
+    const echoes = new Set<object>();
+    const ids = new Set<number>();
+    for (let n = 1; n <= 600; n++) {
+      arsenal.step(n, 480, 270 + 100, [far, anchor]);
+      for (const p of arsenal.projectiles) {
+        projectiles.add(p);
+        ids.add(p.id);
+      }
+      for (const e of arsenal.pulses) echoes.add(e);
+    }
+    expect(projectiles.size).toBeLessThanOrEqual(32);
+    expect(echoes.size).toBeLessThanOrEqual(3);
+    expect(ids.size).toBeGreaterThan(projectiles.size * 10);
+  });
+});
+
 describe('Arsenal · pulso de área', () => {
   it('Scenario: Tres dentro y uno fuera (distancias 50, 80, 99 y 101)', () => {
     const arsenal = anArsenal(weaponsOf([aPulse()]));
