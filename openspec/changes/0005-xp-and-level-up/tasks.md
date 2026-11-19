@@ -48,7 +48,7 @@
   y `checkPlayer`; `pulseCapacity` de peor caso — escenarios: "Nivel máximo que saca la cadencia de rango", "Límite
   exacto de la cadencia", "Suma de varias mejoras sobre la misma estadística", "Valores inválidos" (`perLevel` 1,5
   en `damage`)
-- [ ] 1.11 `upgrade/upgradeStats` (`upgradedWeapon`, `upgradedPlayer`, siempre desde la base) — escenarios: "Más daño
+- [x] 1.11 `upgrade/upgradeStats` (`upgradedWeapon`, `upgradedPlayer`, siempre desde la base) — escenarios: "Más daño
   del Linter" (damage 9), "Más alcance" (range 460), "Más radio del pulso" (radius 105), "Más velocidad" (220),
   "Más radio de recogida" (96), "El contenido base no cambia" (unidad)
 - [ ] 1.12 `UpgradeBoard`: niveles, disponibilidad y `open` (Fisher–Yates parcial, `k = min(3, m)` valores de azar,
