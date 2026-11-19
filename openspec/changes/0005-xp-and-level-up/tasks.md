@@ -83,7 +83,7 @@
   "Elección válida", "Sin oferta abierta", "La segunda oferta tras la primera elección", "La disponibilidad se
   recalcula entre ofertas encoladas", "Continuación tras elegir", "Mejora de cadencia a mitad de recarga", "Cadencia
   mejorada sin reiniciar la carga", "Cadencia de Tests mejorada"
-- [ ] 1.23 Efectos de arma a través de `Run` — escenarios: "Más daño del Linter", "Mejoras acumuladas que matan de un
+- [x] 1.23 Efectos de arma a través de `Run` — escenarios: "Más daño del Linter", "Mejoras acumuladas que matan de un
   impacto", "Más alcance", "Alcance mejorado", "Más radio del pulso", "Pulso mejorado", "Un pulso mejorado mata a un
   bug de un golpe", "Más daño de Tests", "Daño efectivo con mejoras", "Proyectil en vuelo durante una mejora de
   daño", "Pulso visible durante una mejora de radio", "El contenido base no cambia"
