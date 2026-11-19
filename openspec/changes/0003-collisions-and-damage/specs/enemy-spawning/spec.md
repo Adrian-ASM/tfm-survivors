@@ -159,6 +159,30 @@ nombre el campo inválido. Las reglas son las siguientes:
 - **WHEN** se carga el contenido y se ejecutan 185 ticks
 - **THEN** la carga tiene éxito y hay exactamente 1 enemigo `memory-leak` vivo
 
+### Requirement: Oleadas por tramos de tiempo
+El sistema SHALL elegir en cada tick el tramo activo de la tabla de oleadas: el último cuyo `fromSecond` sea
+≤ al tiempo de partida. El último tramo sigue activo hasta el final de la partida. Solo MUST aparecer enemigos de
+los tipos permitidos en el tramo activo.
+
+#### Scenario: Cambio de tramo
+- **GIVEN** un tramo 0 con `types: ["bug"]` y un tramo 1 con `fromSecond` 30 y `types: ["memory-leak"]`, ambos
+  con `budgetPerSecond` 1, un tope de 200 y un jugador con una vida máxima suficiente para no llegar a 0 en
+  3.600 ticks
+- **WHEN** se ejecutan 3.600 ticks (60 s)
+- **THEN** todos los enemigos aparecidos antes del tick 1.790 son `bug`
+- **AND** todos los aparecidos después del tick 1.810 son `memory-leak`
+
+#### Scenario: Un solo tramo
+- **GIVEN** una tabla con un único tramo, `fromSecond` 0 y `types: ["bug"]`, y un jugador con una vida máxima
+  suficiente para no llegar a 0 en 36.000 ticks
+- **WHEN** se ejecutan 36.000 ticks (10 min)
+- **THEN** todos los enemigos aparecidos son `bug`
+
+#### Scenario: Tramo sin presupuesto
+- **GIVEN** un único tramo con `budgetPerSecond` 0
+- **WHEN** se ejecutan 600 ticks
+- **THEN** no hay ningún enemigo vivo
+
 ### Requirement: Director por presupuesto
 El sistema SHALL acumular en cada tick un presupuesto de `budgetPerSecond × 1/60` del tramo activo, también
 mientras haya `maxAlive` enemigos vivos. Tras sumarlo, el presupuesto acumulado MUST recortarse a `maxBudget`
@@ -199,7 +223,7 @@ antes de gastarse: nunca vale más que `maxBudget`. Funciona así:
 
 #### Scenario: Mezcla de tipos
 - **GIVEN** un único tramo con `types: ["bug", "memory-leak", "merge-conflict"]`, `budgetPerSecond` 2,
-  semilla 1 y un tope de 200
+  semilla 1, un tope de 200 y un jugador con una vida máxima suficiente para no llegar a 0 en 36.000 ticks
 - **WHEN** se ejecutan 36.000 ticks
 - **THEN** aparece ≥ 1 enemigo de cada uno de los 3 tipos
 
@@ -248,3 +272,54 @@ alcance para más enemigos.
   enemigos vivos
 - **WHEN** 2 enemigos quedan dados de baja y se ejecutan 600 ticks
 - **THEN** hay exactamente 3 enemigos vivos
+
+### Requirement: Posición de aparición fuera de la vista
+El sistema SHALL colocar cada enemigo nuevo así:
+1. Toma un punto a una distancia del jugador igual al radio del anillo, en un ángulo elegido con el
+   `RandomGenerator`. El radio del anillo es la mitad de la diagonal de la vista más `margin`:
+   √(960² + 540²) / 2 + 32 ≈ 582,727 con los valores por defecto.
+2. Recorta ese punto a la arena con la misma regla que al jugador, de modo que el centro quede en
+   [radio, ancho − radio] × [radio, alto − radio] usando el radio del enemigo.
+3. Acepta la posición solo si, tras el recorte, su distancia al jugador es ≥ `minDistance`.
+
+Si la posición no se acepta, se repite el proceso hasta un total de `maxAttempts` intentos por enemigo. Si ningún
+intento es válido, ese enemigo no aparece en este tick, el presupuesto no se gasta y el tipo pendiente se
+mantiene. El sistema MUST NOT colocar nunca un enemigo a menos de `minDistance` del jugador.
+
+#### Scenario: Arena mayor que la vista
+- **GIVEN** una arena de 4.000 × 4.000, el jugador en (2.000, 2.000), una vista de 960 × 540 y `margin` 32
+- **WHEN** aparecen 100 enemigos
+- **THEN** cada uno está a 582,727 ± 0,001 unidades del jugador
+- **AND** ninguno está dentro del rectángulo de la vista centrado en el jugador
+
+#### Scenario: Arena igual a la vista
+- **GIVEN** la arena de 960 × 540, el jugador en (480, 270) y el contenido de spawn por defecto
+- **WHEN** aparecen 200 enemigos
+- **THEN** el centro de cada uno queda en [radio, 960 − radio] × [radio, 540 − radio]
+- **AND** cada uno está a ≥ 200 unidades del jugador
+- **AND** cada uno toca un borde de la arena: x = radio, x = 960 − radio, y = radio o y = 540 − radio
+
+#### Scenario: Jugador en una esquina
+- **GIVEN** la arena de 960 × 540, el jugador quieto en (16, 16) con una vida máxima suficiente para no llegar a
+  0 en 3.600 ticks, y el contenido de spawn por defecto
+- **WHEN** se ejecutan 3.600 ticks con un tramo de `budgetPerSecond` 5
+- **THEN** cada enemigo aparecido está dentro de la arena y a ≥ 200 unidades del jugador en el tick de su
+  aparición
+
+#### Scenario: Ninguna posición válida
+- **GIVEN** la arena de 960 × 540, `minDistance` 2.000 (mayor que la diagonal de la arena) y `maxAttempts` 8
+- **WHEN** se ejecutan 600 ticks con un tramo de `budgetPerSecond` 5
+- **THEN** no hay ningún enemigo vivo y la partida sigue avanzando sin error
+- **AND** en cada tick se hacen como mucho 8 intentos de posición
+
+#### Scenario: El presupuesto no se pierde al aplazar
+- **GIVEN** un tramo con `budgetPerSecond` 1 y coste 1, `maxBudget` ≥ 2, y un generador aleatorio de prueba con
+  el que todos los intentos son inválidos en los ticks 1 a 120 y todos son válidos a partir del tick 121
+- **WHEN** se ejecuta el tick 121
+- **THEN** aparecen 2 enemigos en ese tick
+
+#### Scenario: Partida larga sin spawns ilegales
+- **GIVEN** el contenido por defecto salvo una vida máxima del jugador suficiente para no llegar a 0 en
+  36.000 ticks, semilla 7 y un input aleatorio generado por una semilla fija
+- **WHEN** se ejecutan 36.000 ticks (10 min)
+- **THEN** ningún enemigo aparece fuera de la arena ni a menos de 200 unidades del jugador

@@ -8,6 +8,17 @@
      Specs: PH = player-health, RS = run-state, ES = enemy-spawning (delta), EB = enemy-behavior (delta),
      SL = simulation-loop (delta), PM = player-movement (delta). Design = design.md de este change. -->
 
+## Desviaciones (verify-report)
+- **7.1 se adelantó al bloque 1** (commit `fa275c0`). Al ampliar `RunConfig` en 1.2-1.4, el `superRefine` de
+  `loadRunConfig` dejaba de compilar y `loadRunConfig()` fallaba, así que los esquemas zod y `content/*.json`
+  tenían que cambiar en el mismo commit para que `verify` siguiera en verde.
+- **5.1 entró en el commit del bloque 4**: al cambiar el orden del tick en 4.2, la auditoría larga dejaba de
+  llegar a 200 vivos (el jugador moría), así que pasó a `LONG_RUN_HEALTH` en el mismo commit. "Cambio de tramo" y
+  "Mezcla de tipos" usan también `LONG_RUN_HEALTH` (design, "Desviaciones aceptadas").
+- **11.1, parte manual pendiente** (verify-report W2): no se ha comprobado a mano, ni con un test, que moverse
+  permite esquivar el daño. La casilla sigue marcada por la parte automática (`verify` y E2E en verde), pero hay
+  que aportar esa evidencia antes de archivar.
+
 ## 1. Dominio: value objects y reglas de contenido
 - [x] 1.1 `src/domain/shared/Health.ts`: `full(max)`, `damage(amount)` con recorte a 0, `isDepleted`, congelado.
       Test: `tests/domain/health.test.ts`. Cubre PH "Daño exactamente igual a la vida restante", "Daño mayor que la

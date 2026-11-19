@@ -243,11 +243,17 @@ interface EnemySnapshot { id; type; x; y; radius; readonly health: number }   //
     - `free: Slot[]`, una pila con todos los huecos;
     - `byId: Map<number, Slot>`;
     - un contador `frame`.
-  - `sync(enemies)`:
-    1. `frame++`.
-    2. Para cada enemigo: `slot = byId.get(id)`. Si no hay, `slot = free.pop()` y `byId.set(id, slot)`. Después
-       `setPosition`, el repintado solo si cambia el tipo, la visibilidad y `slot.seen = frame`.
-    3. Recorre `slots`: los visibles con `seen ≠ frame` se ocultan, salen de `byId` y vuelven a `free`.
+  - `sync(enemies)` hace tres pasadas (orden implementado, ver ADR-0006):
+    1. **Actualizar conocidos**: `frame++`. Para cada enemigo con `byId.get(id)`: `setPosition`, el repintado solo
+       si cambia el tipo, la visibilidad y `slot.seen = frame`.
+    2. **Liberar no vistos**: recorre `slots`. Los visibles con `seen ≠ frame` se ocultan, salen de `byId` y vuelven
+       a `free`.
+    3. **Asignar nuevos**: a cada enemigo sin hueco le da `free.pop()` y hace `byId.set(id, slot)`, y después lo
+       pinta como en la pasada 1.
+  - **Por qué liberar antes de asignar**: con `capacity = maxAlive`, en un mismo frame pueden convivir bajas y
+    reposiciones (spec "Reposición tras bajas": 150 conocidos y 50 nuevos con 200 huecos). Si se asignara antes de
+    liberar, la pila `free` estaría vacía y los 50 nuevos se quedarían sin sprite. La primera versión de este
+    design, en dos pasadas, tenía ese defecto, y el test del apply lo detectó.
 - Un enemigo conserva su sprite toda su vida, y una baja solo oculta un hueco. Las operaciones `pop`/`push` dentro
   de la capacidad ya reservada y las de `Map` con claves enteras no asignan en régimen.
 - Si llegaran más enemigos que huecos (no debería pasar, porque `capacity = maxAlive`), los sobrantes no se
@@ -370,6 +376,18 @@ porque comparar círculos son 3 líneas puras, y porque usar la física del moto
 - **E2E dependiente del ritmo real**: solo comprueba que la vida baja, con margen de tiempo amplio.
 - **Golden values**: ningún test fija posiciones por semilla, así que el recorte de `maxBudget` no rompe
   expectativas fijas. Si en apply apareciera alguna, se actualiza documentándolo.
+
+## Desviaciones aceptadas en el apply (verify-report)
+- **`EnemyLayer.sync` en tres pasadas**: ver la sección Render y ADR-0006.
+- **`EnemyCatalog.mostExpensive`**: el VO calcula una vez, en el constructor, el tipo más caro (congelado), y
+  `maxCost` queda como getter derivado. Así el mensaje `MAX_BUDGET_BELOW_MAX_COST` puede nombrar el coste y el id
+  (`…: 3 (memory-leak)`). Es una API pública mínima y está cubierta por test.
+- **Vida del enemigo**: el campo privado se llama `life` y la API pública es el getter `hp`, porque TypeScript no
+  admite un campo privado y un getter con el mismo nombre. La semántica es la del design.
+- **`LONG_RUN_HEALTH` también en "Cambio de tramo"**: con la vida por defecto, el jugador quieto muere hacia el
+  segundo 16 y el tramo 2 (segundo 30) no llegaría nunca. El test usa vida 1e9 para probar el spawn y no el daño.
+  "Mezcla de tipos" (`long-run.test.ts`) también la usa. La spec delta de enemy-spawning debe recoger ese GIVEN
+  (verify-report W1; corresponde al spec-writer).
 
 ## ADRs
 - **ADR-0006 (nueva)**: bajas de entidades en el camino caliente con compactación estable en el sitio, y

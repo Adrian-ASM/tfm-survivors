@@ -54,6 +54,22 @@ Golpear al jugador MUST NOT cambiar la persecución del enemigo que golpea.
 - **WHEN** se ejecutan 60 ticks
 - **THEN** el enemigo sigue exactamente en (300, 270)
 
+### Requirement: Enemigos dentro de la arena
+El sistema SHALL mantener el círculo de cada enemigo entero dentro de la arena en todo momento: su centro MUST
+quedar en [radio, ancho − radio] × [radio, alto − radio], usando el radio del enemigo. Aplica la misma regla que
+al jugador.
+
+#### Scenario: Enemigo más grande que el jugador junto a un borde
+- **GIVEN** un jugador quieto en (944, 270) con radio 16 y un enemigo con radio 22 y velocidad 120 en (900, 270)
+- **WHEN** se ejecutan 60 ticks
+- **THEN** el enemigo está en (938, 270)
+
+#### Scenario: Partida larga
+- **GIVEN** el contenido por defecto salvo una vida máxima del jugador suficiente para no llegar a 0 en
+  36.000 ticks, semilla 7 y un input aleatorio generado por una semilla fija
+- **WHEN** se ejecutan 36.000 ticks
+- **THEN** en ningún tick hay un enemigo cuyo centro quede fuera de [radio, 960 − radio] × [radio, 540 − radio]
+
 ### Requirement: Sin separación entre enemigos
 El sistema SHALL permitir que los enemigos se solapen entre sí y con el jugador. No hay separación, empuje,
 *knockback* ni colisión física entre enemigos, ni entre enemigos y jugador: el contacto con el jugador solo
