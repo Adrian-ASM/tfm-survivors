@@ -9,27 +9,34 @@ Los enemigos aparecen en oleadas que crecen con el tiempo: un director gasta un 
 
 ### Requirement: Catálogo de tipos de enemigo
 El sistema SHALL definir los tipos de enemigo exclusivamente desde contenido. Cada tipo tiene un identificador
-único, una velocidad, un radio, un coste, una vida (`health`) y un daño por contacto (`damage`). El contenido por
-defecto MUST incluir exactamente los 3 tipos del GDD: `bug`, `memory-leak` y `merge-conflict`. Los tipos solo se
-diferencian en esos valores.
+único, una velocidad, un radio, un coste, una vida (`health`), un daño por contacto (`damage`) y la XP que suelta
+al morir (`xp`). El contenido por defecto MUST incluir exactamente los 3 tipos del GDD: `bug`, `memory-leak` y
+`merge-conflict`. Los tipos solo se diferencian en esos valores.
 
 #### Scenario: Contenido por defecto
 - **GIVEN** el contenido por defecto del repositorio
 - **WHEN** se carga el contenido
 - **THEN** el catálogo tiene 3 tipos con identificadores `bug`, `memory-leak` y `merge-conflict`
-- **AND** cada uno tiene una velocidad > 0, un radio > 0, un coste > 0, una vida > 0 y un daño > 0
+- **AND** cada uno tiene una velocidad > 0, un radio > 0, un coste > 0, una vida > 0, un daño > 0 y una XP ≥ 1
+
+#### Scenario: XP por defecto de cada tipo
+- **GIVEN** el contenido por defecto del repositorio
+- **WHEN** se carga el contenido
+- **THEN** `bug` tiene `xp` 1, `merge-conflict` 2 y `memory-leak` 4 (provisional, a medir en apply)
 
 #### Scenario: Valores de cada tipo llegan al dominio
-- **GIVEN** un tipo `bug` con `{ "speed": 90, "radius": 10, "cost": 1, "health": 5, "damage": 10 }`
+- **GIVEN** un tipo `bug` con `{ "speed": 90, "radius": 10, "cost": 1, "health": 5, "damage": 10, "xp": 3 }`
 - **WHEN** se carga el contenido y aparece un enemigo `bug`
 - **THEN** ese enemigo tiene radio 10, vida 5 y se mueve a 90 unidades/s
 - **AND** un golpe suyo resta 10 de vida al jugador
+- **AND** al morir por armas suelta una gema que da 3 de XP
 
 ### Requirement: Contenido de enemigos y oleadas validado
 El sistema SHALL validar con zod los tipos de enemigo, la tabla de oleadas, la vista y los parámetros de spawn
 antes de que lleguen al dominio. Un contenido inválido MUST impedir que la partida arranque, con un error que
 nombre el campo inválido. Las reglas son las siguientes:
 - `speed`, `radius`, `cost`, `health` y `damage` son > 0.
+- `xp` es un entero ≥ 1.
 - El diámetro de cada tipo cabe en la arena: 2 × `radius` ≤ min(ancho, alto).
 - Los `id` de los tipos no se repiten.
 - La tabla de oleadas tiene ≥ 1 tramo, el primero tiene `fromSecond` = 0 y los `fromSecond` son estrictamente
@@ -61,6 +68,17 @@ nombre el campo inválido. Las reglas son las siguientes:
 - **GIVEN** un tipo `bug` con `"damage": 0` o sin el campo `damage`
 - **WHEN** se carga el contenido
 - **THEN** la carga falla con un error que menciona `damage`
+
+#### Scenario: XP inválida o ausente
+- **GIVEN** un tipo `bug` con `"xp": 0`, con `"xp": -1`, con `"xp": 1.5` o sin el campo `xp`
+- **WHEN** se carga el contenido
+- **THEN** la carga falla con un error que menciona `xp`
+- **AND** no se crea ninguna partida
+
+#### Scenario: XP mínima válida
+- **GIVEN** el contenido por defecto con `"xp": 1` en los 3 tipos
+- **WHEN** se carga el contenido
+- **THEN** la carga tiene éxito
 
 #### Scenario: Radio que no cabe en la arena
 - **GIVEN** un tipo con `"radius": 300` y una arena de 960 × 540
@@ -276,16 +294,17 @@ mantiene. El sistema MUST NOT colocar nunca un enemigo a menos de `minDistance` 
 ### Requirement: Vida y baja de enemigos
 El sistema SHALL dar a cada enemigo, al aparecer, una vida igual al `health` de su tipo. Aplicar a un enemigo
 vivo un daño d > 0 MUST reducir su vida en d, sin bajar de 0. Cuando su vida llega a 0, el enemigo queda dado de
-baja: deja de estar vivo de forma irreversible y desde ese momento:
+baja: deja de estar vivo de forma irreversible, suelta exactamente una gema con el `xp` de su tipo en su posición
+(ver `xp-gems`) y desde ese momento:
 - no aparece en ningún snapshot;
 - no se mueve ni hace contacto con el jugador;
 - no es objetivo ni recibe daño de ningún arma;
 - no cuenta para `maxAlive`;
 - su identificador no se reutiliza para ningún otro enemigo de la partida.
 
-Aplicar daño a un enemigo ya dado de baja no tiene efecto. En juego, el único mecanismo que daña a los enemigos son
-las armas (ver `auto-weapons`): cada impacto resta el `damage` base del arma que golpea. El contacto con el jugador
-no les quita vida.
+Aplicar daño a un enemigo ya dado de baja no tiene efecto ni suelta otra gema. En juego, el único mecanismo que daña
+a los enemigos son las armas (ver `auto-weapons`): cada impacto resta el `damage` efectivo del arma que golpea (base
+de contenido más mejoras, ver `upgrades`). El contacto con el jugador no les quita vida.
 
 #### Scenario: Vida inicial del tipo
 - **GIVEN** un tipo `bug` con `health` 5
@@ -301,21 +320,24 @@ no les quita vida.
 - **GIVEN** un enemigo vivo con vida inicial 5 y un arma con `damage` 3
 - **WHEN** el arma le golpea una vez en el tick n
 - **THEN** sigue vivo, con vida 2, y sigue en el snapshot del tick n
+- **AND** no se suelta ninguna gema
 
 #### Scenario: Daño exactamente igual a la vida
 - **GIVEN** un enemigo vivo con identificador X y vida 5 en el snapshot del tick n − 1, y un arma con `damage` 5
 - **WHEN** el arma le golpea una vez en el tick n
 - **THEN** el snapshot del tick n no contiene ningún enemigo con identificador X
+- **AND** contiene una gema nueva en la posición que tenía X
 
 #### Scenario: Daño mayor que la vida
 - **GIVEN** un enemigo vivo con vida 5 y un arma con `damage` 7
 - **WHEN** el arma le golpea una vez
-- **THEN** queda dado de baja igual que con un daño de 5
+- **THEN** queda dado de baja igual que con un daño de 5 y suelta una sola gema
 
 #### Scenario: Daño a un enemigo ya dado de baja
 - **GIVEN** un enemigo dado de baja y un proyectil en vuelo cuya trayectoria pasa por la última posición que tuvo
 - **WHEN** el proyectil llega a esa posición
-- **THEN** no se produce ningún error, el número de enemigos vivos no cambia y el proyectil sigue en vuelo
+- **THEN** no se produce ningún error, el número de enemigos vivos no cambia, no se suelta otra gema y el proyectil
+  sigue en vuelo
 
 #### Scenario: Identificador no reutilizado
 - **GIVEN** `maxAlive` 1, un único tramo con `budgetPerSecond` 60, `bug` con coste 1 y un enemigo vivo con
@@ -326,8 +348,14 @@ no les quita vida.
 #### Scenario: Golpear al jugador no quita vida al enemigo
 - **GIVEN** una partida sin armas equipadas y un enemigo con vida inicial 5 en contacto continuo con el jugador
 - **WHEN** se ejecutan 600 ticks con la partida en curso
-- **THEN** el enemigo sigue vivo con vida 5
+- **THEN** el enemigo sigue vivo con vida 5 y no hay ninguna gema
+
+#### Scenario: Daño efectivo con mejoras
+- **GIVEN** un bug con vida 10 y la mejora `strict-rules` en nivel 1 (Linter con `damage` 9)
+- **WHEN** recibe 1 impacto de un proyectil del Linter creado tras la elección
+- **THEN** sigue vivo con vida 1
 
 <!-- historial: 0002-enemy-spawning (2026-11-19) -->
 <!-- historial: 0003-collisions-and-damage (2026-11-19) -->
 <!-- historial: 0004-auto-weapons (2026-11-19) -->
+<!-- historial: 0005-xp-and-level-up (2026-11-19) -->
