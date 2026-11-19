@@ -35,6 +35,7 @@ import {
   toUpgradeLevels,
 } from './snapshotParts';
 import type { RunStatus } from './RunStatus';
+import { CHOOSING, LOST, RUNNING, type RunOutcome, type RunPhase } from './RunPhase';
 import {
   SETUP_HEALTH_OUT_OF_RANGE,
   SETUP_POSITION_MUST_BE_FINITE,
@@ -63,7 +64,7 @@ export {
  */
 export class Run {
   private tickCount = 0;
-  private state: RunStatus = 'running';
+  private phase: RunPhase = RUNNING;
   private readonly arena: Arena;
   private readonly director: WaveDirector;
   private readonly arsenal: Arsenal;
@@ -105,7 +106,12 @@ export class Run {
 
   /** Estado de la partida (lectura barata, sin snapshot). */
   get status(): RunStatus {
-    return this.state;
+    return this.phase.status;
+  }
+
+  /** Resultado: definido si y solo si la partida está terminada (spec run-outcome). */
+  get outcome(): RunOutcome | null {
+    return this.phase.outcome;
   }
 
   /**
@@ -115,7 +121,7 @@ export class Run {
    * un entero en [0, k − 1] devuelve un error y no cambia nada (ni consume azar).
    */
   chooseUpgrade(index: number): Result<void, UpgradeChoiceError> {
-    if (this.state !== 'choosing') return err({ code: 'no-offer' });
+    if (this.phase.status !== 'choosing') return err({ code: 'no-offer' });
     const picked = this.board.pick(index);
     if (!picked.ok) return picked;
     const { target, stat, perLevel } = picked.value;
@@ -128,7 +134,7 @@ export class Run {
       );
     }
     this.experience.resolveOne();
-    this.state = 'running';
+    this.phase = RUNNING;
     this.openNextOffer();
     return ok(undefined);
   }
@@ -157,7 +163,7 @@ export class Run {
    * El tick de la muerte cuenta, pero el director no actúa en él (spec run-state).
    */
   tick(input: PlayerInput): void {
-    if (this.state !== 'running') return;
+    if (this.phase.status !== 'running') return;
     const n = this.tickCount + 1;
     this.player = this.player.move(input, TICK_SECONDS, this.arena);
     const { x, y } = this.player.position;
@@ -182,7 +188,7 @@ export class Run {
   private openNextOffer(): void {
     if (this.experience.pendingLevelUps === 0 || this.board.isOpen) return;
     if (this.board.open(this.random)) {
-      this.state = 'choosing';
+      this.phase = CHOOSING;
     } else {
       this.experience.clearPending();
     }
@@ -198,7 +204,7 @@ export class Run {
     if (damage === 0 || !this.player.canBeHitAt(n)) return false;
     this.player = this.player.hit(damage, n);
     if (!this.player.health.isDepleted) return false;
-    this.state = 'over';
+    this.phase = LOST;
     return true;
   }
 
@@ -235,7 +241,7 @@ export class Run {
     const enemies = this.horde.alive.map((e) => toEnemySnapshot(e, e.damagedAt(k, flash)));
     return Object.freeze({
       tick: this.tickCount,
-      status: this.state,
+      status: this.phase.status,
       player: Object.freeze({
         x: position.x,
         y: position.y,

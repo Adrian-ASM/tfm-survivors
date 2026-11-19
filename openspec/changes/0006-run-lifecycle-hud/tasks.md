@@ -54,7 +54,7 @@
 - [x] 1.5 Bajar `Run.ts` de 300 líneas: `maxHealthBonus` → `upgrade/upgradeStats.ts` e `InitialState` →
   `RunSetup.ts`; `Run` usa `Horde`. Sin tests nuevos: la batería actual en verde es el test. Verificar con `wc -l`
   ≤ 270.
-- [ ] 1.6 `Run` guarda `phase` (constantes de `RunPhase`); getter `outcome`; `applyContact` pasa a `LOST`. Test:
+- [x] 1.6 `Run` guarda `phase` (constantes de `RunPhase`); getter `outcome`; `applyContact` pasa a `LOST`. Test:
   derrota con resultado `lost` y la invariante en partida. Escenarios: player-health "Daño exactamente igual a la
   vida restante", "Daño mayor que la vida restante" y "Vida que no llega a 0"; run-state "Terminada por derrota" y
   "Partida recién creada".
