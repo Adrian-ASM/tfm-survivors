@@ -7,7 +7,13 @@ import { Vector2 } from '../../src/domain/shared/Vector2';
 
 const EPS = 3; // toBeCloseTo(…, 3) ⇒ error < 0,0005 px (la spec pide ≤ 0,001)
 
-const RULES = { speed: 200, radius: 16, maxHealth: 100, invulnerabilityTicks: 30 };
+const RULES = {
+  speed: 200,
+  radius: 16,
+  maxHealth: 100,
+  invulnerabilityTicks: 30,
+  pickupRadius: 64,
+};
 
 /** Error ≤ 0,001 px respecto al valor que da la spec (tolerancia literal de la spec). */
 function expectWithinSpec(actual: number, expected: number): void {

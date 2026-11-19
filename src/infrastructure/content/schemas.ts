@@ -10,6 +10,7 @@ import {
 } from '../../domain/enemy/EnemyType';
 import {
   INVULNERABILITY_TICKS_MUST_BE_INTEGER,
+  PICKUP_RADIUS_MUST_BE_POSITIVE,
   PLAYER_HEALTH_MUST_BE_POSITIVE,
   SPEED_MUST_BE_POSITIVE,
 } from '../../domain/run/RunConfig';
@@ -56,6 +57,7 @@ export const PlayerSchema = z.strictObject({
   radius: z.number().positive(),
   maxHealth: z.number().positive({ error: PLAYER_HEALTH_MUST_BE_POSITIVE }),
   invulnerabilityTicks: Count(INVULNERABILITY_TICKS_MUST_BE_INTEGER),
+  pickupRadius: z.number().positive({ error: PICKUP_RADIUS_MUST_BE_POSITIVE }),
 });
 
 export const ArenaSchema = z.strictObject({

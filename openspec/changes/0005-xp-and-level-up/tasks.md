@@ -25,7 +25,7 @@
 ## 1. Dominio
 - [x] 1.1 `EnemyType.xp` (entero ≥ 1) y su mensaje; `xp: 1` en los tipos de `tests/support/builders.ts` — escenarios:
   "XP inválida o ausente" (dominio), "XP mínima válida", "Contenido por defecto" (enemy-spawning)
-- [ ] 1.2 `PlayerRules.pickupRadius` y su invariante en `checkPlayer`; builders con `pickupRadius` 64 — escenarios:
+- [x] 1.2 `PlayerRules.pickupRadius` y su invariante en `checkPlayer`; builders con `pickupRadius` 64 — escenarios:
   "Radio de recogida inválido o ausente" (dominio), "Radio de recogida por defecto"
 - [ ] 1.3 `progression/XpCurve` (VO, `toNext`) — escenarios: "Curva por defecto" (xpToNext 5, 10, 15, 250),
   "Valores inválidos" (leveling, dominio), "Curva plana"

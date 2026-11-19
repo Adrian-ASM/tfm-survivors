@@ -65,8 +65,8 @@ export const LONG_RUN_HEALTH = 1e9;
 type PlayerConfig = RunConfig['player'];
 
 /**
- * Contenido de partida de la spec (arena 960 × 540, radio 16, velocidad 200 px/s, vida 100 e
- * invulnerabilidad de 30 ticks).
+ * Contenido de partida de la spec (arena 960 × 540, radio 16, velocidad 200 px/s, vida 100,
+ * invulnerabilidad de 30 ticks y radio de recogida 64).
  */
 export const aRunConfig = (overrides: Partial<PlayerConfig> = {}): RunConfig => ({
   arena: { width: 960, height: 540, view: { width: 960, height: 540 } },
@@ -75,6 +75,7 @@ export const aRunConfig = (overrides: Partial<PlayerConfig> = {}): RunConfig => 
     radius: overrides.radius ?? 16,
     maxHealth: overrides.maxHealth ?? 100,
     invulnerabilityTicks: overrides.invulnerabilityTicks ?? 30,
+    pickupRadius: overrides.pickupRadius ?? 64,
   },
   enemies: { types: DEFAULT_ENEMY_TYPES },
   waves: DEFAULT_WAVES,
@@ -145,7 +146,13 @@ interface MutableWeapon {
  * inválidos.
  */
 export interface RawContent {
-  player: { speed: number; radius: number; maxHealth: number; invulnerabilityTicks: number };
+  player: {
+    speed: number;
+    radius: number;
+    maxHealth: number;
+    invulnerabilityTicks: number;
+    pickupRadius: number;
+  };
   arena: { width: number; height: number; view: { width: number; height: number } };
   enemies: { types: [MutableType, MutableType, MutableType] };
   waves: {

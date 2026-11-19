@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   INVULNERABILITY_TICKS_MUST_BE_INTEGER,
   MAX_BUDGET_BELOW_MAX_COST,
+  PICKUP_RADIUS_MUST_BE_POSITIVE,
   PLAYER_HEALTH_MUST_BE_POSITIVE,
   RADIUS_MUST_FIT,
   SPEED_MUST_BE_POSITIVE,
@@ -131,6 +132,22 @@ describe('buildRunRules', () => {
       });
     },
   );
+
+  it.each([0, -1, Number.NaN, Number.POSITIVE_INFINITY])(
+    'Radio de recogida inválido o ausente (pickupRadius %s)',
+    (pickupRadius) => {
+      expect(failure(aRunConfig({ pickupRadius }))).toEqual({
+        code: 'invalid-config',
+        field: 'player.pickupRadius',
+        message: PICKUP_RADIUS_MUST_BE_POSITIVE,
+      });
+    },
+  );
+
+  it('Radio de recogida por defecto (64) en los builders', () => {
+    const r = buildRunRules(aRunConfig());
+    expect(r.ok && r.value.player.pickupRadius).toBe(64);
+  });
 
   it.each([
     ['Duración cero', 0],
