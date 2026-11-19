@@ -3,11 +3,13 @@ import {
   ENEMY_DAMAGE_MUST_BE_POSITIVE,
   ENEMY_HEALTH_MUST_BE_POSITIVE,
   ENEMY_SPEED_MUST_BE_POSITIVE,
+  ENEMY_XP_MUST_BE_INTEGER,
 } from '../../src/domain/enemy/EnemyType';
 import { Run } from '../../src/domain/run/Run';
 import {
   INVULNERABILITY_TICKS_MUST_BE_INTEGER,
   MAX_BUDGET_BELOW_MAX_COST,
+  PICKUP_RADIUS_MUST_BE_POSITIVE,
   PLAYER_HEALTH_MUST_BE_POSITIVE,
   SPEED_MUST_BE_POSITIVE,
   buildRunRules,
@@ -146,12 +148,52 @@ describe('Contenido de enemigos y oleadas validado · vida, daño y máximo de p
 
   it('Valores de cada tipo llegan al dominio', () => {
     const raw = rawContent();
-    Object.assign(raw.enemies.types[0], { speed: 90, radius: 10, cost: 1, health: 5, damage: 10 });
+    const values = { speed: 90, radius: 10, cost: 1, health: 5, damage: 10, xp: 3 };
+    Object.assign(raw.enemies.types[0], values);
     const config = parseRunConfig(raw);
     if (!config.ok) throw new Error(config.error.message);
     const rules = buildRunRules(config.value);
     const bug = rules.ok ? rules.value.catalog.get('bug') : undefined;
-    expect(bug).toMatchObject({ speed: 90, radius: 10, cost: 1, health: 5, damage: 10 });
+    expect(bug).toMatchObject(values);
+  });
+});
+
+describe('XP de los enemigos y radio de recogida validados (0005)', () => {
+  it('Scenario: XP por defecto de cada tipo (bug 1, merge-conflict 2, memory-leak 4)', () => {
+    const r = loadRunConfig();
+    if (!r.ok) throw new Error(r.error.message);
+    const xp = Object.fromEntries(r.value.enemies.types.map((t) => [t.id, t.xp]));
+    expect(xp).toEqual({ bug: 1, 'merge-conflict': 2, 'memory-leak': 4 });
+  });
+
+  it.each([0, -1, 1.5])('Scenario: XP inválida o ausente (xp %s)', (xp) => {
+    const raw = rawContent();
+    raw.enemies.types[0].xp = xp;
+    expect(failure(raw)).toEqual({
+      code: 'invalid-config',
+      field: 'enemies.types.0.xp',
+      message: ENEMY_XP_MUST_BE_INTEGER,
+    });
+  });
+
+  it('Scenario: XP inválida o ausente (sin el campo xp)', () => {
+    const raw = without(rawContent(), (r) => r.enemies.types[1], 'xp');
+    expect(failure(raw).field).toBe('enemies.types.1.xp');
+  });
+
+  it.each([0, -1])('Scenario: Radio de recogida inválido o ausente (pickupRadius %s)', (v) => {
+    const raw = rawContent();
+    raw.player.pickupRadius = v;
+    expect(failure(raw)).toEqual({
+      code: 'invalid-config',
+      field: 'player.pickupRadius',
+      message: PICKUP_RADIUS_MUST_BE_POSITIVE,
+    });
+  });
+
+  it('Scenario: Radio de recogida inválido o ausente (sin pickupRadius)', () => {
+    const raw = without(rawContent(), (r) => r.player, 'pickupRadius');
+    expect(failure(raw).field).toBe('player.pickupRadius');
   });
 });
 

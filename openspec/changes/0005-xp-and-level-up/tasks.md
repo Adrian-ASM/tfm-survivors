@@ -108,7 +108,7 @@
   "Índice fuera de rango" a través del caso de uso (snapshot y azar sin cambios en el error)
 
 ## 3. Infraestructura y composición
-- [ ] 3.1 `EnemiesSchema.xp` y `PlayerSchema.pickupRadius`; `xp` en `content/enemies.json` y `pickupRadius` en
+- [x] 3.1 `EnemiesSchema.xp` y `PlayerSchema.pickupRadius`; `xp` en `content/enemies.json` y `pickupRadius` en
   `content/player.json` — escenarios: "XP por defecto de cada tipo", "XP inválida o ausente", "Radio de recogida
   inválido o ausente", "Radio de recogida por defecto"
 - [ ] 3.2 `ProgressionSchema` y `content/progression.json` en el loader — escenarios: "Contenido por defecto"
