@@ -4,7 +4,7 @@ import { Projectile, type ProjectileAttack } from './Projectile';
 import { PulseEcho } from './PulseEcho';
 import { Weapon } from './Weapon';
 import type { WeaponLoadout } from './WeaponLoadout';
-import type { TargetingConfig } from './WeaponType';
+import type { TargetingConfig, WeaponType } from './WeaponType';
 import type { WeaponTarget } from './WeaponTarget';
 import { selectTarget } from './targeting';
 
@@ -38,6 +38,14 @@ export class Arsenal {
   /** Pulsos visibles en orden de disparo (vista interna de solo lectura para el snapshot). */
   get pulses(): readonly PulseEcho[] {
     return this.echoes;
+  }
+
+  /**
+   * Aplica el tipo efectivo de un arma tras una mejora (camino frío). Los proyectiles en vuelo
+   * conservan el daño que copiaron al lanzarse y los ecos su radio.
+   */
+  retune(weaponId: string, type: WeaponType): void {
+    for (const w of this.weapons) if (w.type.id === weaponId) w.retune(type);
   }
 
   /**

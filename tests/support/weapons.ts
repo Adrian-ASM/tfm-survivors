@@ -1,7 +1,7 @@
 import { Arsenal } from '../../src/domain/weapon/Arsenal';
 import { WeaponLoadout, type WeaponsConfig } from '../../src/domain/weapon/WeaponLoadout';
 import type { WeaponTarget } from '../../src/domain/weapon/WeaponTarget';
-import type { WeaponTypeConfig } from '../../src/domain/weapon/WeaponType';
+import { WeaponType, type WeaponTypeConfig } from '../../src/domain/weapon/WeaponType';
 import { LINTER, TESTS } from './builders';
 
 /** Contenido de armas con las armas dadas (tope 32 y destello 4 salvo que se cambien). */
@@ -14,6 +14,13 @@ export function anArsenal(config: WeaponsConfig): Arsenal {
   const l = WeaponLoadout.create(config);
   if (!l.ok) throw new Error(l.error.message);
   return new Arsenal(l.value);
+}
+
+/** Tipo de arma validado (falla si el contenido es inválido). */
+export function typeOf(config: WeaponTypeConfig): WeaponType {
+  const t = WeaponType.create(config, 'weapons.weapons.0');
+  if (!t.ok) throw new Error(t.error.message);
+  return t.value;
 }
 
 /** Linter de prueba con cambios (p. ej. otra cadencia o id). */

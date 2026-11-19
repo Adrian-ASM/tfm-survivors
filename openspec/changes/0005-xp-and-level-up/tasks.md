@@ -58,7 +58,7 @@
   rango" (3, −1, 1,5; 2 con 2 opciones)
 - [x] 1.14 `Health.raise` y `Player.withRules` (conserva posición e invulnerabilidad; recorte a `[1, max]` con
   incremento negativo) — escenarios: "Con la vida llena", "Con la vida a medias", "Nivel máximo" (player-health)
-- [ ] 1.15 `Weapon.retune` y `Arsenal.retune` sin tocar `readyAt`; el proyectil y el eco conservan daño y radio —
+- [x] 1.15 `Weapon.retune` y `Arsenal.retune` sin tocar `readyAt`; el proyectil y el eco conservan daño y radio —
   escenarios: "Mejora de cadencia a mitad de recarga" (unidad de `Weapon`), "Proyectil en vuelo durante una mejora
   de daño" (unidad), "Pulso visible durante una mejora de radio" (unidad)
 - [ ] 1.16 `RunConfig` / `buildRunRules`: `progression`, `upgrades`, `RunRules.curve/gems/upgrades/pulseCapacity`;
