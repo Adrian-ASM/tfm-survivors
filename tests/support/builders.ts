@@ -1,4 +1,5 @@
 import type { RunConfig } from '../../src/domain/run/RunConfig';
+import type { WeaponsConfig } from '../../src/domain/weapon/WeaponLoadout';
 import type { WeaponTypeConfig } from '../../src/domain/weapon/WeaponType';
 
 /** Linter del contenido por defecto (spec auto-weapons): proyectil al más cercano en alcance. */
@@ -18,6 +19,19 @@ export const TESTS: WeaponTypeConfig = {
   targeting: { mode: 'any-in-radius', radius: 90 },
   attack: { type: 'pulse', visualTicks: 8 },
 };
+
+/** Contenido de armas por defecto (content/weapons.json). */
+export const DEFAULT_WEAPONS: WeaponsConfig = {
+  maxProjectiles: 32,
+  hitFlashTicks: 4,
+  weapons: [LINTER, TESTS],
+};
+
+/**
+ * Sin armas: válido en el dominio (no en el fichero). Por defecto en `aRunConfig` para que los
+ * escenarios de 0001–0003 sigan aislados de las armas.
+ */
+export const NO_WEAPONS: WeaponsConfig = { maxProjectiles: 32, hitFlashTicks: 4, weapons: [] };
 
 /** Tipos de enemigo de la spec (bug, memory-leak, merge-conflict) con los valores del design. */
 export const DEFAULT_ENEMY_TYPES = [
