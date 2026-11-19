@@ -8,8 +8,10 @@ El jugador se mueve por la arena según el input, a velocidad constante, sin sal
 ## Requirements
 
 ### Requirement: Movimiento del jugador por input
-El sistema SHALL desplazar al jugador en cada tick una distancia igual a `velocidad × dt` en la dirección del
-`PlayerInput`, sin inercia: con input nulo el jugador no se mueve.
+El sistema SHALL desplazar al jugador en cada tick ejecutado una distancia igual a `velocidad efectiva × dt` en la
+dirección del `PlayerInput`, sin inercia: con input nulo el jugador no se mueve. La velocidad efectiva es la
+`speed` de contenido más las mejoras de velocidad adquiridas (ver `upgrades`). Mientras la partida está eligiendo
+mejora el jugador no se mueve, sea cual sea el input.
 
 #### Scenario: Movimiento horizontal durante un segundo
 - **GIVEN** un jugador en (480, 270) con velocidad 200 px/s
@@ -25,6 +27,21 @@ El sistema SHALL desplazar al jugador en cada tick una distancia igual a `veloci
 - **GIVEN** un jugador en (480, 270) con velocidad 200 px/s
 - **WHEN** se ejecutan 30 ticks con input (0, -1)
 - **THEN** el jugador está en (480, 170) con un error ≤ 0,001 px
+
+#### Scenario: Velocidad mejorada
+- **GIVEN** un jugador en (480, 270) con velocidad base 200 px/s y `shortcuts` en nivel 1
+- **WHEN** se ejecutan 60 ticks con input (1, 0)
+- **THEN** el jugador está en (700, 270) con un error ≤ 0,001 px
+
+#### Scenario: Velocidad en el nivel máximo
+- **GIVEN** un jugador en (100, 270) con velocidad base 200 px/s y `shortcuts` en nivel 5
+- **WHEN** se ejecutan 60 ticks con input (1, 0)
+- **THEN** el jugador está en (400, 270) con un error ≤ 0,001 px
+
+#### Scenario: Input ignorado mientras se elige
+- **GIVEN** un jugador en (480, 270) en una partida con una oferta abierta
+- **WHEN** se piden 60 ticks con input (1, 0)
+- **THEN** el jugador sigue exactamente en (480, 270)
 
 ### Requirement: Normalización diagonal
 El sistema SHALL normalizar el `PlayerInput` cuando su módulo sea mayor que 1, de modo que moverse en diagonal no
@@ -66,17 +83,17 @@ El sistema SHALL mantener el círculo del jugador entero dentro de la arena: su 
 - **THEN** x sigue en 944 y y ha aumentado 70,711 px (error ≤ 0,001 px)
 
 ### Requirement: Contenido del jugador validado
-El sistema SHALL leer velocidad, radio y vida máxima del jugador y el tamaño de la arena desde `content/*.json`,
-validados con zod antes de llegar al dominio. La vida máxima MUST ser > 0. Un contenido inválido MUST impedir que
-la partida arranque con un error que nombre el campo inválido.
+El sistema SHALL leer velocidad, radio, vida máxima y radio de recogida (`pickupRadius`) del jugador y el tamaño de
+la arena desde `content/*.json`, validados con zod antes de llegar al dominio. La vida máxima y el radio de recogida
+MUST ser > 0. Un contenido inválido MUST impedir que la partida arranque con un error que nombre el campo inválido.
 
 #### Scenario: Contenido válido
-- **GIVEN** `content/player.json` con `{ "speed": 200, "radius": 16, "maxHealth": 100 }`
+- **GIVEN** `content/player.json` con `{ "speed": 200, "radius": 16, "maxHealth": 100, "pickupRadius": 64 }`
 - **WHEN** se carga el contenido
-- **THEN** el dominio recibe velocidad 200, radio 16 y vida máxima 100
+- **THEN** el dominio recibe velocidad 200, radio 16, vida máxima 100 y radio de recogida 64
 
 #### Scenario: Velocidad negativa
-- **GIVEN** `content/player.json` con `{ "speed": -5, "radius": 16, "maxHealth": 100 }`
+- **GIVEN** `content/player.json` con `{ "speed": -5, "radius": 16, "maxHealth": 100, "pickupRadius": 64 }`
 - **WHEN** se carga el contenido
 - **THEN** la carga falla con un error que menciona `speed`
 - **AND** no se crea ninguna partida
@@ -93,14 +110,26 @@ la partida arranque con un error que nombre el campo inválido.
 - **AND** no se crea ninguna partida
 
 #### Scenario: Vida máxima ausente
-- **GIVEN** `content/player.json` con `{ "speed": 200, "radius": 16 }`
+- **GIVEN** `content/player.json` con `{ "speed": 200, "radius": 16, "pickupRadius": 64 }`
 - **WHEN** se carga el contenido
 - **THEN** la carga falla con un error que menciona `maxHealth`
 
 #### Scenario: Vida máxima mínima válida
-- **GIVEN** `content/player.json` con `{ "speed": 200, "radius": 16, "maxHealth": 1 }`
+- **GIVEN** `content/player.json` con `{ "speed": 200, "radius": 16, "maxHealth": 1, "pickupRadius": 64 }`
 - **WHEN** se carga el contenido
 - **THEN** la carga tiene éxito y la partida empieza con vida 1
 
+#### Scenario: Radio de recogida inválido o ausente
+- **GIVEN** `content/player.json` con `"pickupRadius": 0`, con `"pickupRadius": -1` o sin `pickupRadius`
+- **WHEN** se carga el contenido
+- **THEN** la carga falla con un error que menciona `pickupRadius`
+- **AND** no se crea ninguna partida
+
+#### Scenario: Radio de recogida por defecto
+- **GIVEN** el contenido por defecto del repositorio
+- **WHEN** se carga el contenido
+- **THEN** el radio de recogida base vale 128 (medido en apply: primera oferta ≤ 3.600 ticks)
+
 <!-- historial: 0001-walking-skeleton (2026-11-19) -->
 <!-- historial: 0003-collisions-and-damage (2026-11-19) -->
+<!-- historial: 0005-xp-and-level-up (2026-11-19) -->
