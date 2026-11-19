@@ -4,7 +4,14 @@ import { Run, type RunSetup } from '../../src/domain/run/Run';
 import type { RunConfig } from '../../src/domain/run/RunConfig';
 import { SETUP_KILLS_MUST_BE_INTEGER } from '../../src/domain/run/RunSetup';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
-import { DEFAULT_UPGRADES, LINTER, TESTS, withUpgrades, withWeapons } from '../support/builders';
+import {
+  DEFAULT_UPGRADES,
+  LINTER,
+  TESTS,
+  withDuration,
+  withUpgrades,
+  withWeapons,
+} from '../support/builders';
 import { aContactConfig, aProbeType, startRun, ticks } from '../support/runs';
 import { aLinter, weaponsOf } from '../support/weapons';
 
@@ -182,5 +189,50 @@ describe('Estado de la partida con resultado (spec run-state)', () => {
       'over',
       'lost',
     ]);
+  });
+});
+
+/** Partida corta: 2 s = 120 ticks, sin director ni armas ni mejoras. */
+const short = (maxHealth = 100): RunConfig =>
+  withDuration(aContactConfig({ player: { maxHealth } }), 2);
+
+describe('Victoria al alcanzar la duración objetivo (spec run-outcome)', () => {
+  it('Scenario: Victoria con duración corta (119 ticks en curso; el 120 gana)', () => {
+    const run = startRun(short());
+
+    const snaps = ticks(run, 120);
+
+    expect(snaps[118]).toMatchObject({ tick: 119, status: 'running', outcome: null });
+    expect(snaps[119]).toMatchObject({ tick: 120, status: 'over', outcome: 'won' });
+  });
+
+  it('Scenario: Ticks pedidos tras la victoria (600 ticks con input (1, 1))', () => {
+    const run = startRun(short());
+    ticks(run, 120);
+
+    const last = ticks(run, 600, PlayerInput.of(1, 1)).at(-1);
+
+    expect(last).toMatchObject({ tick: 120, status: 'over', outcome: 'won' });
+  });
+});
+
+describe('Estado de la partida: victoria (spec run-state)', () => {
+  it('Scenario: Terminada por victoria (duración 120, vivo en el 119)', () => {
+    const run = startRun(short());
+    const before = ticks(run, 119).at(-1);
+
+    run.tick(PlayerInput.NONE);
+
+    expect([before?.status, run.status, run.outcome]).toEqual(['running', 'over', 'won']);
+  });
+});
+
+describe('Vida mínima 0 (spec player-health): victoria con vida 1', () => {
+  it('Scenario: Vida 1 en el tick de la victoria (vida 11, golpe de 10 en el tick 120)', () => {
+    const run = startRun(short(11), { enemies: [contactAt(120)] });
+
+    const last = ticks(run, 120).at(-1);
+
+    expect(last).toMatchObject({ tick: 120, status: 'over', outcome: 'won', player: { health: 1 } });
   });
 });

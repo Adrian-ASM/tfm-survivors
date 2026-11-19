@@ -66,7 +66,7 @@
 - [x] 1.9 Contador de bajas en el snapshot. Tests: "Varias bajas en un tick", "El contacto no cuenta como baja",
   "Las bajas sobreviven a la subida de nivel" y "Baja en el tick de la muerte" (run-outcome), y "Una baja en el tick
   de la muerte deja su gema" (run-state).
-- [ ] 1.10 Victoria: salida temprana común tras el contacto
+- [x] 1.10 Victoria: salida temprana común tras el contacto
   (`if (this.applyContact(n) || this.reachedEnd(n))`). Tests con `withDuration(…, 2)`. Escenarios:
   - run-outcome: "Victoria con duración corta" y "Ticks pedidos tras la victoria".
   - run-state: "Terminada por victoria".

@@ -35,7 +35,7 @@ import {
   toUpgradeLevels,
 } from './snapshotParts';
 import type { RunStatus } from './RunStatus';
-import { CHOOSING, LOST, RUNNING, type RunOutcome, type RunPhase } from './RunPhase';
+import { CHOOSING, LOST, RUNNING, WON, type RunOutcome, type RunPhase } from './RunPhase';
 import {
   SETUP_HEALTH_OUT_OF_RANGE,
   SETUP_POSITION_MUST_BE_FINITE,
@@ -58,7 +58,8 @@ export {
 /**
  * Partida en curso (aggregate root). Único punto de entrada para cambiar el estado de la
  * simulación. Contrato de determinismo: el orden del tick (jugador → persecución → armas, con un
- * único removeDead() si hay bajas que suelta sus gemas → contacto con los vivos → gemas y XP →
+ * único removeDead() si hay bajas que suelta sus gemas → contacto con los vivos → victoria en el
+ * tick de la duración objetivo → gemas y XP →
  * director → apertura de oferta) y el consumo de azar son fijos (armas, gemas y XP no consumen
  * azar; la oferta sí); cambiarlos cambia las partidas de una semilla.
  */
@@ -160,7 +161,7 @@ export class Run {
   /**
    * Tick n = tickCount + 1 (el que mostrará el snapshot). Con la partida terminada o eligiendo
    * mejora no hace nada: ni pasos, ni azar, ni contador (spec run-state).
-   * El tick de la muerte cuenta, pero el director no actúa en él (spec run-state).
+   * El tick de la muerte o de la victoria cuenta, pero sin gemas ni director (spec run-outcome).
    */
   tick(input: PlayerInput): void {
     if (this.phase.status !== 'running') return;
@@ -169,7 +170,7 @@ export class Run {
     const { x, y } = this.player.position;
     this.horde.chase(x, y, TICK_SECONDS);
     if (this.arsenal.step(n, x, y, this.horde.alive) > 0) this.horde.removeDead(this.dropGem);
-    if (this.applyContact(n)) {
+    if (this.applyContact(n) || this.reachedEnd(n)) {
       this.tickCount = n;
       return;
     }
@@ -205,6 +206,16 @@ export class Run {
     this.player = this.player.hit(damage, n);
     if (!this.player.health.isDepleted) return false;
     this.phase = LOST;
+    return true;
+  }
+
+  /**
+   * Victoria (spec run-outcome): si el jugador sigue vivo tras el contacto del tick de la duración
+   * objetivo, la partida termina con victoria y el tick acaba aquí, como el de la muerte.
+   */
+  private reachedEnd(n: number): boolean {
+    if (!this.rules.duration.endsAt(n)) return false;
+    this.phase = WON;
     return true;
   }
 
