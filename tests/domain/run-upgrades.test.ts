@@ -70,8 +70,9 @@ describe('Efectos de las mejoras de arma', () => {
     const enemies = [bugAt(580), { type: 'merge-conflict', x: 380, y: 270 }];
     const run = weaponRun([LINTER], { enemies, upgrades: { 'strict-rules': 5 } });
     const snaps = ticks(run, 60);
+    // Un proyectil por baja: el Linter (cadencia 30) solo ha disparado una vez antes del tick 31.
+    expect(snaps[29]?.enemies).toHaveLength(1);
     expect(snaps.at(-1)?.enemies).toEqual([]);
-    expect(snaps.at(-1)?.gems).toHaveLength(2);
   });
 
   it('Scenario: Más alcance (wide-analysis 1: objetivo a 450 px y 1 proyectil)', () => {

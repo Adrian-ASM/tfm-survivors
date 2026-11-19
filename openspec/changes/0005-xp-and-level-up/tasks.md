@@ -16,7 +16,7 @@
   primer golpe ≤ 4.800 (semilla 42), ≥ 1 baja en 600 y ≥ 1 pulso en 1.800 (semilla 7), ≥ 1 gema recogida y ≥ 1
   oferta en 3.600 (semilla 7) — escenarios: "Primera subida en el núcleo", "Primer golpe en el núcleo con armas
   activas", "Jugador quieto con el contenido por defecto", "Partida con progresión reproducible"
-- [ ] 0.3 **Punto de control, se ejecuta en cuanto 1.25 esté en verde y antes del grupo 3**: quitar los `.skip` de
+- [x] 0.3 **Punto de control, se ejecuta en cuanto 1.25 esté en verde y antes del grupo 3**: quitar los `.skip` de
   0.2, medir ticks reales (y frecuencia de ofertas en los primeros 5 min con semilla 7) y ajustar los valores
   provisionales de contenido si hace falta, actualizando todas las specs que los citan. Medir también un primer
   bench del peor caso con gemas (tarea 3.9 adelantada en borrador). Si un plazo no se cumple con valores

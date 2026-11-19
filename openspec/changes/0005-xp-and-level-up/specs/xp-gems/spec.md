@@ -2,7 +2,7 @@
 
 <!-- Change 0005-xp-and-level-up. Capacidad nueva: cada baja por arma suelta una gema de XP; las gemas esperan en el
      suelo, el imán las atrae al entrar en el radio de recogida y al tocar al jugador suman su XP (ver `leveling`).
-     Valores por defecto, todos PROVISIONALES, A MEDIR EN APPLY: radio de recogida 64 px (`content/player.json`),
+     Valores por defecto, todos PROVISIONALES, A MEDIR EN APPLY: radio de recogida 128 px (medido en apply) (`content/player.json`),
      velocidad del imán 360 px/s (6 px/tick), radio de gema 5, `maxGems` 300, XP por tipo bug 1, merge-conflict 2,
      memory-leak 4. Jugador de radio 16: una gema se recoge a distancia < 21. "Distancia" es entre centros.
      Si se cambia un valor en apply, búsquese en todas las specs del change y en las vivas que lo citen. -->
@@ -19,7 +19,7 @@ desconocido MUST impedir que la partida arranque con un error que nombre el camp
 #### Scenario: Contenido por defecto
 - **GIVEN** el contenido por defecto del repositorio
 - **WHEN** se carga el contenido
-- **THEN** `pickupRadius` vale 64, `gemRadius` 5, `magnetSpeed` 360 y `maxGems` 300 (provisional, a medir en apply)
+- **THEN** `pickupRadius` vale 128, `gemRadius` 5, `magnetSpeed` 360 y `maxGems` 300 (provisional, a medir en apply)
 
 #### Scenario: Valores no positivos
 - **GIVEN** un contenido con, en un caso cada vez, `pickupRadius` 0, `gemRadius` 0, `magnetSpeed` 0,

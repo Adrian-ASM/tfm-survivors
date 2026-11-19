@@ -72,8 +72,8 @@ describe('Armas observables en el juego', () => {
 });
 
 // Tarea 0.2: aceptación de plazos con el contenido por defecto de 0005 (armas y mejoras), input
-// (0, 0) y la política de elección fija. En .skip hasta el punto de control 0.3 (tasks.md), que
-// mide los plazos reales y decide; no se relajan aquí.
+// (0, 0) y la política de elección fija. Medido en el punto de control 0.3 con pickupRadius 128 (decisión
+// del usuario): primera oferta con semilla 7 en el tick 3332, primer golpe con semilla 42 en el 4122.
 const OFFER_LIMIT = 3600;
 
 function startDefault(seed: number): Run {
@@ -82,8 +82,8 @@ function startDefault(seed: number): Run {
   return r.value;
 }
 
-describe('Plazos con progresión (0005, tarea 0.2; pendientes del punto de control 0.3)', () => {
-  it.skip('Scenario: Primera subida en el núcleo (semilla 7: oferta en algún tick ≤ 3.600)', () => {
+describe('Plazos con progresión (0005, medidos en el punto de control 0.3)', () => {
+  it('Scenario: Primera subida en el núcleo (semilla 7: oferta en algún tick ≤ 3.600)', () => {
     const run = startDefault(7);
     let firstOffer = 0;
     play(run, OFFER_LIMIT, (t, r) => {
@@ -93,7 +93,7 @@ describe('Plazos con progresión (0005, tarea 0.2; pendientes del punto de contr
     expect(firstOffer).toBeGreaterThan(0);
   });
 
-  it.skip('Scenario: Primer golpe en el núcleo con armas activas (semilla 42, ≤ 4.800)', () => {
+  it('Scenario: Primer golpe en el núcleo con armas activas (semilla 42, ≤ 4.800)', () => {
     const run = startDefault(42);
     let before = run.snapshot().player;
     const hits: { health: number; prev: number; status: string }[] = [];
@@ -111,7 +111,7 @@ describe('Plazos con progresión (0005, tarea 0.2; pendientes del punto de contr
     expect(DEFAULT_ENEMY_TYPES.map((t) => prev - t.damage)).toContain(health);
   });
 
-  it.skip('Scenario: Jugador quieto con el contenido por defecto (semilla 7: baja ≤ 600, pulso ≤ 1.800)', () => {
+  it('Scenario: Jugador quieto con el contenido por defecto (semilla 7: baja ≤ 600, pulso ≤ 1.800)', () => {
     const run = startDefault(7);
     let previous = new Set<number>();
     let kills = 0;
@@ -128,7 +128,7 @@ describe('Plazos con progresión (0005, tarea 0.2; pendientes del punto de contr
     expect(firstPulse).toBeGreaterThan(0);
   });
 
-  it.skip('Scenario: Partida con progresión reproducible (semilla 7: ≥ 1 gema y ≥ 1 oferta en 3.600)', () => {
+  it('Scenario: Partida con progresión reproducible (semilla 7: ≥ 1 gema y ≥ 1 oferta en 3.600)', () => {
     const run = startDefault(7);
     let gem = false;
     let offer = false;

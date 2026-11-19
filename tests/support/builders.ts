@@ -179,8 +179,16 @@ export const LONG_RUN_HEALTH = 1e9;
 type PlayerConfig = RunConfig['player'];
 
 /**
+ * Radio de recogida de content/player.json: 128 (64 en el design original; lo subió el usuario tras
+ * la medición del punto de control 0.3 para cumplir la primera oferta ≤ 3.600 ticks).
+ */
+export const DEFAULT_PICKUP_RADIUS = 128;
+
+/**
  * Contenido de partida de la spec (arena 960 × 540, radio 16, velocidad 200 px/s, vida 100,
- * invulnerabilidad de 30 ticks y radio de recogida 64).
+ * invulnerabilidad de 30 ticks y radio de recogida 64). El 64 es la geometría fija con la que están
+ * escritos los escenarios del imán (p. ej. "Límite exacto del radio", "Más radio de recogida" = 96),
+ * no el valor del contenido: el contenido por defecto usa `DEFAULT_PICKUP_RADIUS` (ver `aDefaultConfig`).
  */
 export const aRunConfig = (overrides: Partial<PlayerConfig> = {}): RunConfig => ({
   arena: { width: 960, height: 540, view: { width: 960, height: 540 } },
@@ -212,7 +220,10 @@ export const withUpgrades = (config: RunConfig, upgrades: UpgradesConfig): RunCo
 
 /** Contenido por defecto completo: armas y mejoras de content/ (lo que carga el juego). */
 export const aDefaultConfig = (): RunConfig =>
-  withUpgrades(withWeapons(aRunConfig(), DEFAULT_WEAPONS), DEFAULT_UPGRADES);
+  withUpgrades(
+    withWeapons(aRunConfig({ pickupRadius: DEFAULT_PICKUP_RADIUS }), DEFAULT_WEAPONS),
+    DEFAULT_UPGRADES,
+  );
 
 type Waves = RunConfig['waves'];
 type EnemyTypes = RunConfig['enemies']['types'];

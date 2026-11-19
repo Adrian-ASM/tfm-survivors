@@ -90,4 +90,4 @@ MUST ser > 0. Un contenido inválido MUST impedir que la partida arranque con un
 #### Scenario: Radio de recogida por defecto
 - **GIVEN** el contenido por defecto del repositorio
 - **WHEN** se carga el contenido
-- **THEN** el radio de recogida base vale 64 (provisional, a medir en apply)
+- **THEN** el radio de recogida base vale 128 (medido en apply: primera oferta ≤ 3.600 ticks)

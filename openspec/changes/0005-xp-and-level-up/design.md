@@ -78,7 +78,7 @@ añade una capa de gemas, una barra de XP y un overlay de cartas, todo preasigna
 ## Contenido y validación
 Todos los números son **provisionales, a medir en apply** (proposal y specs).
 
-`content/player.json` gana `"pickupRadius": 64`. `content/enemies.json` gana `"xp"`: bug 1, merge-conflict 2,
+`content/player.json` gana `"pickupRadius": 128` (64 en el design original; ver "Desviaciones del apply"). `content/enemies.json` gana `"xp"`: bug 1, merge-conflict 2,
 memory-leak 4.
 
 `content/progression.json` (plano, con los nombres de las specs `leveling` y `xp-gems`):
@@ -396,3 +396,27 @@ Contenido por defecto de 0005 (armas, mejoras, curva 5/5, imán 64 px), input (0
   deja `cooldownTicks` en −19): el bench debe quitar las mejoras de cadencia; (2) con el jugador en el centro de la
   arena no caben 40 ticks de calentamiento + 60 medidos a 6 px/tick (máx. 551 px): el borrador pone al jugador en
   (480, 16) y las gemas en las esquinas inferiores (≥ 650 px).
+
+### 0.3 · Decisión y nueva medición con `pickupRadius` 128
+**Decisión del usuario** tras el punto de control: se mantiene el plazo de 3.600 ticks y `pickupRadius` por defecto
+pasa de 64 a 128 (`content/player.json`, specs `player-movement` y `xp-gems`, proposal). Medido de nuevo con el
+código real, misma política:
+
+| Semilla | Primer golpe | Primera baja | Primer pulso | Primera gema | Primera oferta | Ofertas (por min, 5 min) | Fin |
+|---|---|---|---|---|---|---|---|
+| 7 | 4083 | 179 | 950 | 957 | **3332** | 3 (1, 2, 0, 0, 0) | 4769 |
+| 42 | **4122** | 185 | 1177 | 1190 | 1773 | 2 (1, 1, 0, 0, 0) | 4682 |
+| 1 | 4172 | 173 | 712 | 375 | 1368 | 3 | 4963 |
+| 2 | 4097 | 124 | 2022 | 2008 | 2785 | 4 | 4895 |
+| 3 | 4110 | 187 | 786 | 750 | 1003 | 4 | 5178 |
+
+- Cumplen todos los plazos del grupo 0: primera oferta ≤ 3.600 (semilla 7: 3.332), primer golpe ≤ 4.800 (semilla
+  42: 4.122), ≥ 1 baja en 600 (179), pulso ≤ 1.800 (950) y ≥ 1 gema y ≥ 1 oferta en 3.600 (semilla 7: 957 y 3.332).
+  Los 4 tests de 0.2 quedan activos y en verde. Margen justo con la semilla 7 (268 ticks).
+- Borrador del bench con gemas: mediana 0,059 ms, máximo 0,080 ms por tick.
+- Los tests usan dos valores a propósito: `aRunConfig` sigue con 64, la geometría con la que están escritos los
+  escenarios del imán ("Límite exacto del radio" a 64, "Gema fuera del radio" a 65, "Más radio de recogida" = 96,
+  "El imán usa la posición del jugador ya movido" con 66 > 64…); `aDefaultConfig` (contenido real) usa
+  `DEFAULT_PICKUP_RADIUS` = 128. **Pendiente de spec (no lo cambia el apply)**: esos escenarios no fijan el radio en
+  su GIVEN, así que con el contenido por defecto (128) dejan de ser literales: p. ej. "Más radio de recogida" da 160
+  con `context-window` en nivel 1, no 96; y la cabecera de la spec `player-movement` sigue diciendo 64.

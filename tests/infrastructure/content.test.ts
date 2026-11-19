@@ -33,8 +33,15 @@ function without(raw: RawContent, pick: (r: RawContent) => object, key: string):
 }
 
 describe('Contenido de vida e invulnerabilidad validado', () => {
+  it('Scenario: Radio de recogida por defecto (128, medido en apply)', () => {
+    const r = loadRunConfig();
+    expect(r.ok && r.value.player.pickupRadius).toBe(128);
+  });
+
   it('Contenido válido: velocidad 200, radio 16, vida máxima 100 y radio de recogida 64', () => {
-    const r = parseRunConfig(rawContent());
+    const raw = rawContent();
+    raw.player.pickupRadius = 64;
+    const r = parseRunConfig(raw);
     expect(r.ok && r.value.player).toEqual({
       speed: 200,
       radius: 16,

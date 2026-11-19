@@ -3,5 +3,5 @@
   "radius": 16,
   "maxHealth": 100,
   "invulnerabilityTicks": 30,
-  "pickupRadius": 64
+  "pickupRadius": 128
 }

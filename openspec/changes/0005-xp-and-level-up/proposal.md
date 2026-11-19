@@ -35,7 +35,7 @@ elecciones dan la misma partida.
   - **Tope de gemas en el suelo** (`maxGems` en contenido). Con el tope lleno, la nueva baja no crea gema: su XP se
     **suma a la gema más antigua** que siga en el suelo (no se pierde XP ni se asigna memoria).
   - Contenido nuevo en `content/player.json` (radio de recogida base) y en un fichero de progresión (velocidad del
-    imán, radio de gema, `maxGems`). Valores **provisionales, a medir en apply**: radio de recogida 64 px, velocidad
+    imán, radio de gema, `maxGems`). Valores **provisionales, a medir en apply**: radio de recogida 128 px (subido de 64 tras medir en apply), velocidad
     del imán 360 px/s, radio de gema 5, `maxGems` 300.
 - **Nivel y curva de XP**:
   - El jugador empieza en nivel 1 con 0 XP. Para pasar del nivel *n* al *n+1* hace falta
@@ -139,7 +139,7 @@ elecciones dan la misma partida.
 2. **Curva** lineal creciente `5 + 5·(n−1)`, con arrastre de XP sobrante. *Provisional, a medir en apply.*
 3. **Varias subidas en un tick**: se encolan y se ofrecen una a una.
 4. **Sin nivel máximo** de partida en 0005.
-5. **Radio de recogida** 64 px, **imán** 360 px/s, gema atraída no se "suelta", radio de gema 5.
+5. **Radio de recogida** 128 px (64 en la aprobación; subido tras medir en apply), **imán** 360 px/s, gema atraída no se "suelta", radio de gema 5.
    *Provisional, a medir en apply.*
 6. **Tope `maxGems` 300**; al llenarse, la XP de la nueva baja se suma a la gema más antigua. *Tope provisional.*
 7. **Catálogo** de 9 mejoras (6 de arma, 3 de jugador) con los incrementos de la tabla y **nivel máximo 5** en todas.
