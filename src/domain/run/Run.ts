@@ -59,9 +59,9 @@ export {
  * Partida en curso (aggregate root). Único punto de entrada para cambiar el estado de la
  * simulación. Contrato de determinismo: el orden del tick (jugador → persecución → armas, con un
  * único removeDead() si hay bajas que suelta sus gemas → contacto con los vivos → victoria en el
- * tick de la duración objetivo → gemas y XP →
- * director → apertura de oferta) y el consumo de azar son fijos (armas, gemas y XP no consumen
- * azar; la oferta sí); cambiarlos cambia las partidas de una semilla.
+ * tick de la duración objetivo → gemas y XP → director → apertura de oferta) y el consumo de azar
+ * son fijos (armas, gemas, XP y fin de partida no consumen azar; la oferta sí); cambiarlos cambia
+ * las partidas de una semilla.
  */
 export class Run {
   private tickCount = 0;

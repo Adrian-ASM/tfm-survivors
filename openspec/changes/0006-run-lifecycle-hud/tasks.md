@@ -71,7 +71,7 @@
   - run-outcome: "Victoria con duración corta" y "Ticks pedidos tras la victoria".
   - run-state: "Terminada por victoria".
   - player-health: "Vida 1 en el tick de la victoria".
-- [ ] 1.11 Prioridades en el tick de la victoria. Escenarios:
+- [x] 1.11 Prioridades en el tick de la victoria. Escenarios:
   - run-outcome: "Muerte y victoria en el mismo tick" (con duración corta, colocando el contacto en el tick final),
     "Victoria y subida de nivel en el mismo tick", "Sin spawns en el tick de la victoria" y "Una baja en el tick de
     la victoria cuenta y deja su gema".

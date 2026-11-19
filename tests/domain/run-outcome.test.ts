@@ -2,18 +2,22 @@ import { describe, expect, it } from 'vitest';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import { Run, type RunSetup } from '../../src/domain/run/Run';
 import type { RunConfig } from '../../src/domain/run/RunConfig';
+import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
 import { SETUP_KILLS_MUST_BE_INTEGER } from '../../src/domain/run/RunSetup';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import {
   DEFAULT_UPGRADES,
+  DEFAULT_WEAPONS,
   LINTER,
   TESTS,
+  aSegment,
   withDuration,
   withUpgrades,
   withWeapons,
 } from '../support/builders';
 import { aContactConfig, aProbeType, startRun, ticks } from '../support/runs';
 import { aLinter, weaponsOf } from '../support/weapons';
+import { StubRandom } from '../support/random';
 
 const CENTER = { x: 480, y: 270 };
 
@@ -33,7 +37,8 @@ const killsConfig = (weapons: readonly (typeof LINTER)[], maxHealth = 1000): Run
   );
 
 /** Partida con el jugador en el centro y el setup dado. */
-const at = (config: RunConfig, setup: RunSetup): Run => startRun(config, { player: CENTER, ...setup });
+const at = (config: RunConfig, setup: RunSetup): Run =>
+  startRun(config, { player: CENTER, ...setup });
 
 /** RUNNER a la izquierda que entra en contacto (distancia < 26) justo en el tick n. */
 const runnerAt = (n: number) => ({ type: 'probe', x: 480 - (20 + 10 * n), y: 270 });
@@ -233,6 +238,128 @@ describe('Vida mínima 0 (spec player-health): victoria con vida 1', () => {
 
     const last = ticks(run, 120).at(-1);
 
-    expect(last).toMatchObject({ tick: 120, status: 'over', outcome: 'won', player: { health: 1 } });
+    expect(last).toMatchObject({
+      tick: 120,
+      status: 'over',
+      outcome: 'won',
+      player: { health: 1 },
+    });
+  });
+});
+
+/** Jugador en una esquina para tener sitio a su derecha. */
+const CORNER = { x: 100, y: 100 };
+/** Gema atraída que llega a solaparse con el jugador de CORNER en el tick 120 (6 px/tick). */
+const GEM_AT_120 = { x: 100 + 21 + 6 * 119 + 3, y: 100, value: 1, attracted: true };
+/** Enemigo de damage 10 a 1 px/tick que toca al jugador de CORNER en el tick 120. */
+const HIT_AT_120 = { type: 'probe', x: 100 + 25 + 120, y: 100 };
+
+/** Contenido de prioridades: probe indestructible (1 px/tick, damage 10), armas y mejoras por defecto. */
+function priorityConfig(seconds: number, opts: { maxHealth?: number; budget?: number } = {}) {
+  const base = aContactConfig({
+    types: [aProbeType({ health: 1e6 })],
+    player: { maxHealth: opts.maxHealth ?? 100 },
+    segments: [aSegment(['probe'], opts.budget ?? 0)],
+  });
+  return withDuration(withUpgrades(withWeapons(base, DEFAULT_WEAPONS), DEFAULT_UPGRADES), seconds);
+}
+
+const idsOf = (s: RunSnapshot | undefined): number[] => (s?.enemies ?? []).map((e) => e.id);
+
+describe('Prioridades en el tick de la victoria (spec run-outcome)', () => {
+  it('Scenario: Muerte y victoria en el mismo tick (golpe letal en el tick final ⇒ derrota)', () => {
+    const run = startRun(short(10), { enemies: [contactAt(120)] });
+
+    const last = ticks(run, 120).at(-1);
+
+    expect(last).toMatchObject({ tick: 120, outcome: 'lost', player: { health: 0 } });
+  });
+
+  it('Scenario: Victoria y subida de nivel en el mismo tick (sin oferta; nivel 1, XP 4, gema)', () => {
+    const setup: RunSetup = { player: CORNER, gems: [GEM_AT_120], experience: { level: 1, xp: 4 } };
+    const control = ticks(startRun(priorityConfig(600), setup), 120).at(-1);
+    const run = startRun(priorityConfig(2), setup);
+
+    const last = ticks(run, 120).at(-1);
+
+    expect(control?.status).toBe('choosing');
+    expect(last).toMatchObject({ tick: 120, status: 'over', outcome: 'won', offer: [] });
+    expect(last?.progression).toMatchObject({ level: 1, xp: 4 });
+    expect(last?.gems).toHaveLength(1);
+  });
+
+  it('Scenario: Sin spawns en el tick de la victoria (el director sacaría uno en el 120)', () => {
+    const control = ticks(
+      startRun(priorityConfig(600, { budget: 1 }), {}, new StubRandom(0.5)),
+      120,
+    );
+    const snaps = ticks(startRun(priorityConfig(2, { budget: 1 }), {}, new StubRandom(0.5)), 120);
+
+    expect(idsOf(control[119]).length).toBeGreaterThan(idsOf(control[118]).length);
+    expect(snaps[119]?.outcome).toBe('won');
+    expect(idsOf(snaps[119]).every((id) => idsOf(snaps[118]).includes(id))).toBe(true);
+  });
+
+  it('Scenario: Una baja en el tick de la victoria cuenta y deja su gema (5 ⇒ 6 bajas)', () => {
+    const types = [aProbeType({ id: 'bug', speed: 30, health: 10, xp: 1, damage: 5 })];
+    const config = (seconds: number) =>
+      withDuration(withWeapons(aContactConfig({ types }), weaponsOf([LINTER])), seconds);
+    const bugAt = (x: number): RunSetup => ({
+      player: CENTER,
+      kills: 5,
+      enemies: [{ type: 'bug', x, y: 270, health: 4 }],
+    });
+    const probe = ticks(startRun(config(600), bugAt(885)), 120);
+    const k0 = probe.findIndex((s) => s.kills === 6) + 1;
+    const x = 885 + 0.5 * (120 - k0);
+
+    const last = ticks(startRun(config(2), bugAt(x)), 120).at(-1);
+
+    expect(last).toMatchObject({ tick: 120, outcome: 'won', kills: 6, enemies: [] });
+    expect(last?.gems).toHaveLength(1);
+  });
+});
+
+describe('Muerte en el tick de la duración objetivo (spec run-state)', () => {
+  it('Scenario: Muerte en el tick de la duración objetivo (terminada, derrota, vida 0)', () => {
+    const run = startRun(short(10), { enemies: [contactAt(120)] });
+
+    ticks(run, 120);
+
+    expect([run.status, run.outcome, run.snapshot().player.health]).toEqual(['over', 'lost', 0]);
+  });
+});
+
+describe('Orden de los pasos en el tick de la victoria (spec simulation-loop)', () => {
+  it('Scenario: El tick de la victoria acaba tras el contacto (golpe, gema y director)', () => {
+    const setup: RunSetup = { player: CORNER, gems: [GEM_AT_120], enemies: [HIT_AT_120] };
+    const random = () => new StubRandom(0); // ángulo 0: aparece a la derecha de la esquina
+    const control = ticks(startRun(priorityConfig(600, { budget: 1 }), setup, random()), 120);
+    const snaps = ticks(startRun(priorityConfig(2, { budget: 1 }), setup, random()), 120);
+    const [before, last] = [snaps[118], snaps[119]];
+
+    expect(idsOf(control[119]).length).toBeGreaterThan(idsOf(control[118]).length);
+    expect(control[119]?.gems).toHaveLength(0);
+    expect(last).toMatchObject({ status: 'over', outcome: 'won', player: { health: 90 } });
+    expect(before?.player.health).toBe(100);
+    expect(last?.gems).toHaveLength(1);
+    expect(last?.progression.xp).toBe(before?.progression.xp);
+    expect(idsOf(last)).toEqual(idsOf(before));
+  });
+
+  it('Scenario: Las armas actúan en el tick de la victoria (Tests abate un bug de vida 4)', () => {
+    const types = [aProbeType({ id: 'bug', speed: 60, health: 10, xp: 1, damage: 5 })];
+    const config = withDuration(withWeapons(aContactConfig({ types }), weaponsOf([TESTS])), 2);
+    const run = startRun(config, {
+      player: CENTER,
+      enemies: [{ type: 'bug', x: 480 + 219.5, y: 270, health: 4 }],
+    });
+
+    const snaps = ticks(run, 120);
+    const [before, last] = [snaps[118], snaps[119]];
+
+    expect([before?.enemies.length, before?.kills, before?.pulses.length]).toEqual([1, 0, 0]);
+    expect(last).toMatchObject({ outcome: 'won', kills: 1, enemies: [] });
+    expect(last?.gems).toHaveLength(1);
   });
 });
