@@ -3,15 +3,22 @@ import arenaJson from '../../../content/arena.json';
 import enemiesJson from '../../../content/enemies.json';
 import playerJson from '../../../content/player.json';
 import wavesJson from '../../../content/waves.json';
+import weaponsJson from '../../../content/weapons.json';
 import { buildRunRules, type RunConfig } from '../../domain/run/RunConfig';
 import { err, invalidConfig, ok, type DomainError, type Result } from '../../domain/shared/Result';
-import { ArenaSchema, EnemiesSchema, PlayerSchema, WavesSchema } from './schemas';
+import { ArenaSchema, EnemiesSchema, PlayerSchema, WavesSchema, WeaponsSchema } from './schemas';
 
 // Validación del contenido antes de llegar al dominio (AGENTS.md §3.5-6): forma y rangos de cada
 // fichero (schemas.ts) y, sobre el conjunto, las reglas cruzadas. Estas tienen una sola implementación,
 // `buildRunRules` del dominio, que además las mantiene en `Run.start` como defensa.
 const RunConfigSchema = z
-  .object({ player: PlayerSchema, arena: ArenaSchema, enemies: EnemiesSchema, waves: WavesSchema })
+  .object({
+    player: PlayerSchema,
+    arena: ArenaSchema,
+    enemies: EnemiesSchema,
+    waves: WavesSchema,
+    weapons: WeaponsSchema,
+  })
   .superRefine((config, ctx) => {
     const rules = buildRunRules(config);
     if (!rules.ok) {
@@ -28,6 +35,7 @@ export function parseRunConfig(raw: {
   arena: unknown;
   enemies: unknown;
   waves: unknown;
+  weapons: unknown;
 }): Result<RunConfig, DomainError> {
   const parsed = RunConfigSchema.safeParse(raw);
   if (parsed.success) return ok(parsed.data);
@@ -43,5 +51,6 @@ export function loadRunConfig(): Result<RunConfig, DomainError> {
     arena: arenaJson,
     enemies: enemiesJson,
     waves: wavesJson,
+    weapons: weaponsJson,
   });
 }

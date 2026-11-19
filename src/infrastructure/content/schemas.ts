@@ -23,6 +23,20 @@ import {
   SEGMENT_NEEDS_TYPES,
   WAVES_NEED_SEGMENTS,
 } from '../../domain/wave/WaveTable';
+import {
+  HIT_FLASH_TICKS_MUST_BE_INTEGER,
+  MAX_PROJECTILES_MUST_BE_INTEGER,
+} from '../../domain/weapon/WeaponLoadout';
+import {
+  PROJECTILE_LIFETIME_MUST_BE_INTEGER,
+  PROJECTILE_RADIUS_MUST_BE_POSITIVE,
+  PROJECTILE_SPEED_MUST_BE_POSITIVE,
+  PULSE_VISUAL_TICKS_MUST_BE_INTEGER,
+  TARGETING_RADIUS_MUST_BE_POSITIVE,
+  TARGETING_RANGE_MUST_BE_POSITIVE,
+  WEAPON_COOLDOWN_MUST_BE_INTEGER,
+  WEAPON_DAMAGE_MUST_BE_INTEGER,
+} from '../../domain/weapon/WeaponType';
 
 // Forma y rangos por campo de cada fichero de content/ (AGENTS.md §3.5-6). Todos estrictos: un
 // campo desconocido es un error. Los mensajes son los del dominio; las reglas cruzadas (encaje del
@@ -63,6 +77,53 @@ export const EnemiesSchema = z.strictObject({
       health: z.number().positive({ error: ENEMY_HEALTH_MUST_BE_POSITIVE }),
     }),
   ),
+});
+
+export const WEAPONS_REQUIRED = 'El contenido debe definir al menos un arma.';
+export const WEAPON_ID_REQUIRED = 'El id de un arma no puede estar vacío.';
+
+const Positive = (error: string) => z.number().positive({ error });
+
+const TargetingSchema = z.discriminatedUnion('mode', [
+  z.strictObject({
+    mode: z.literal('nearest-in-range'),
+    range: Positive(TARGETING_RANGE_MUST_BE_POSITIVE),
+  }),
+  z.strictObject({
+    mode: z.literal('any-in-radius'),
+    radius: Positive(TARGETING_RADIUS_MUST_BE_POSITIVE),
+  }),
+]);
+
+const AttackSchema = z.discriminatedUnion('type', [
+  z.strictObject({
+    type: z.literal('projectile'),
+    speed: Positive(PROJECTILE_SPEED_MUST_BE_POSITIVE),
+    radius: Positive(PROJECTILE_RADIUS_MUST_BE_POSITIVE),
+    lifetimeTicks: Count(PROJECTILE_LIFETIME_MUST_BE_INTEGER),
+  }),
+  z.strictObject({
+    type: z.literal('pulse'),
+    visualTicks: Count(PULSE_VISUAL_TICKS_MUST_BE_INTEGER),
+  }),
+]);
+
+// La compatibilidad criterio ↔ ataque, los ids únicos y el resto de reglas cruzadas las aplica
+// `buildRunRules` desde el superRefine del loader (una sola implementación, ADR-0007).
+export const WeaponsSchema = z.strictObject({
+  maxProjectiles: Count(MAX_PROJECTILES_MUST_BE_INTEGER),
+  hitFlashTicks: Count(HIT_FLASH_TICKS_MUST_BE_INTEGER),
+  weapons: z
+    .array(
+      z.strictObject({
+        id: z.string().min(1, { error: WEAPON_ID_REQUIRED }),
+        cooldownTicks: Count(WEAPON_COOLDOWN_MUST_BE_INTEGER),
+        damage: Count(WEAPON_DAMAGE_MUST_BE_INTEGER),
+        targeting: TargetingSchema,
+        attack: AttackSchema,
+      }),
+    )
+    .min(1, { error: WEAPONS_REQUIRED }),
 });
 
 export const WavesSchema = z.strictObject({

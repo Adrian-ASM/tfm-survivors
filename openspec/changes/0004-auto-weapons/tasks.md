@@ -17,7 +17,7 @@
   `maxProjectiles` y `hitFlashTicks` enteros ≥ 1, lista vacía aceptada, `pulseCapacity` (Σ ⌈visual / cooldown⌉) —
   AW "Identificadores duplicados o lista vacía" (parte de duplicados), AW "Armas equipadas al inicio" (sin armas
   válida en el dominio).
-- [ ] 1.4 `RunConfig.weapons` + `RunRules.loadout` en `buildRunRules`; builders de test: `NO_WEAPONS` por defecto en
+- [x] 1.4 `RunConfig.weapons` + `RunRules.loadout` en `buildRunRules`; builders de test: `NO_WEAPONS` por defecto en
   `aRunConfig`/`aContactConfig`, `DEFAULT_WEAPONS`, `withWeapons`; `RawContent`/`rawContent()` con
   `DEFAULT_WEAPONS`. Para que compile, añadir ya `weapons` a `parseRunConfig` y `content/weapons.json` (ver 5.1,
   adelantada como en 0003) — `run-config.test.ts`: errores con ruta `weapons.weapons.i.…`. Todos los tests de

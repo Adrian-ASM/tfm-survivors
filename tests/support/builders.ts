@@ -78,6 +78,13 @@ export const aRunConfig = (overrides: Partial<PlayerConfig> = {}): RunConfig => 
   },
   enemies: { types: DEFAULT_ENEMY_TYPES },
   waves: DEFAULT_WAVES,
+  weapons: NO_WEAPONS,
+});
+
+/** El mismo contenido con otras armas (p. ej. `withWeapons(aRunConfig(), DEFAULT_WEAPONS)`). */
+export const withWeapons = (config: RunConfig, weapons: WeaponsConfig): RunConfig => ({
+  ...config,
+  weapons,
 });
 
 type Waves = RunConfig['waves'];
@@ -125,8 +132,15 @@ interface MutableSegment {
   budgetPerSecond: number;
   types: string[];
 }
+interface MutableWeapon {
+  id: string;
+  cooldownTicks: number;
+  damage: number;
+  targeting: Record<string, unknown>;
+  attack: Record<string, unknown>;
+}
 /**
- * Contenido crudo con la forma de los 4 ficheros de content/, mutable para preparar casos
+ * Contenido crudo con la forma de los 5 ficheros de content/, mutable para preparar casos
  * inválidos.
  */
 export interface RawContent {
@@ -139,9 +153,15 @@ export interface RawContent {
     spawn: { margin: number; minDistance: number; maxAttempts: number };
     segments: [MutableSegment, MutableSegment, ...MutableSegment[]];
   };
+  weapons: {
+    maxProjectiles: number;
+    hitFlashTicks: number;
+    weapons: [MutableWeapon, MutableWeapon];
+  };
 }
 
 /** Copia nueva del contenido por defecto en forma de ficheros (cada llamada es independiente). */
-export const rawContent = (): RawContent => structuredClone(aRunConfig()) as RawContent;
+export const rawContent = (): RawContent =>
+  structuredClone(withWeapons(aRunConfig(), DEFAULT_WEAPONS)) as unknown as RawContent;
 
 export const TICK_MS = 1000 / 60;

@@ -1,0 +1,20 @@
+{
+  "maxProjectiles": 32,
+  "hitFlashTicks": 4,
+  "weapons": [
+    {
+      "id": "linter",
+      "cooldownTicks": 30,
+      "damage": 6,
+      "targeting": { "mode": "nearest-in-range", "range": 400 },
+      "attack": { "type": "projectile", "speed": 480, "radius": 4, "lifetimeTicks": 60 }
+    },
+    {
+      "id": "tests",
+      "cooldownTicks": 90,
+      "damage": 4,
+      "targeting": { "mode": "any-in-radius", "radius": 90 },
+      "attack": { "type": "pulse", "visualTicks": 8 }
+    }
+  ]
+}
