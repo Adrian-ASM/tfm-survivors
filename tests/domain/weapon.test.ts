@@ -42,3 +42,21 @@ describe('Weapon · cadencia', () => {
     expect(fired).toEqual([1, 41, 71, 101]);
   });
 });
+
+describe('Weapon.retune', () => {
+  it('Scenario: Mejora de cadencia a mitad de recarga (dispara en 1, 31, 57 y 83)', () => {
+    const w = linter();
+    const faster = WeaponType.create({ ...LINTER, cooldownTicks: 26 }, 'weapons.weapons.0');
+    if (!faster.ok) throw new Error(faster.error.message);
+    const fired: number[] = [];
+    for (let n = 1; n <= 90; n++) {
+      if (n === 10) w.retune(faster.value);
+      if (w.isChargedAt(n)) {
+        w.fireAt(n);
+        fired.push(n);
+      }
+    }
+    expect(fired).toEqual([1, 31, 57, 83]);
+    expect(w.type).toBe(faster.value);
+  });
+});

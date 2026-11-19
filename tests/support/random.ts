@@ -31,3 +31,31 @@ export class StubRandom implements RandomGenerator {
     return this.current;
   }
 }
+
+/** Doble de RandomGenerator que devuelve los valores dados en orden (y falla si se agotan). */
+export class ScriptedRandom implements RandomGenerator {
+  calls = 0;
+
+  constructor(private readonly values: readonly number[]) {
+    values.forEach(checked);
+  }
+
+  next(): number {
+    const v = this.values[this.calls];
+    if (v === undefined) throw new RangeError('ScriptedRandom sin valores');
+    this.calls += 1;
+    return v;
+  }
+}
+
+/** Envoltorio que cuenta los valores consumidos de otro generador (para "no consume azar"). */
+export class CountingRandom implements RandomGenerator {
+  calls = 0;
+
+  constructor(private readonly inner: RandomGenerator) {}
+
+  next(): number {
+    this.calls += 1;
+    return this.inner.next();
+  }
+}

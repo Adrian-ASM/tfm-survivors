@@ -35,6 +35,14 @@ Una baja solo oculta y libera su hueco, sin repintar a nadie más.
   da hueco a los nuevos. Con `capacity = maxAlive`, asignar antes de liberar dejaría sin hueco a las reposiciones
   del mismo frame (spec "Reposición tras bajas": 150 supervivientes y 50 nuevos con 200 huecos).
 
+## Aplicación (change 0005-xp-and-level-up)
+- `Run.removeDead()` sigue siendo un solo pase O(n) por tick con bajas: a la vez que compacta, suelta la gema de
+  cada muerto en orden de la lista (el muerto conserva posición y tipo hasta ese pase), sin registro de bajas ni
+  cambios en `Arsenal`.
+- `GemField` aplica la misma compactación estable a las gemas recogidas (vuelven a su pool), así que el snapshot
+  las lista en orden de creación y una recogida no reordena las demás. `GemLayer` las asocia por id con `SlotPool`.
+- Datos del bench en ADR-0003 § "Aplicación (change 0005-xp-and-level-up)".
+
 ## Consecuencias
 - Positivas:
   - Se mantiene el orden de aparición, así que las specs y los snapshots son estables.

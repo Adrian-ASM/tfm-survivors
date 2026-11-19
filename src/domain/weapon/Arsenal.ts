@@ -4,7 +4,7 @@ import { Projectile, type ProjectileAttack } from './Projectile';
 import { PulseEcho } from './PulseEcho';
 import { Weapon } from './Weapon';
 import type { WeaponLoadout } from './WeaponLoadout';
-import type { TargetingConfig } from './WeaponType';
+import type { TargetingConfig, WeaponType } from './WeaponType';
 import type { WeaponTarget } from './WeaponTarget';
 import { selectTarget } from './targeting';
 
@@ -24,10 +24,17 @@ export class Arsenal {
   private readonly freeEchoes: PulseEcho[] = [];
   private nextProjectileId = 0;
 
-  constructor(private readonly loadout: WeaponLoadout) {
+  /**
+   * `pulseCapacity`: ecos preasignados; por defecto los del loadout base. `Run` pasa la cota del
+   * peor caso de las mejoras (ADR-0008), porque una mejora de cadencia puede solapar más ecos.
+   */
+  constructor(
+    private readonly loadout: WeaponLoadout,
+    pulseCapacity: number = loadout.pulseCapacity,
+  ) {
     this.weapons = Object.freeze(loadout.weapons.map((type) => new Weapon(type)));
     for (let i = 0; i < loadout.maxProjectiles; i++) this.free.push(new Projectile());
-    for (let i = 0; i < loadout.pulseCapacity; i++) this.freeEchoes.push(new PulseEcho());
+    for (let i = 0; i < pulseCapacity; i++) this.freeEchoes.push(new PulseEcho());
   }
 
   /** Proyectiles vivos en orden de creación (vista interna de solo lectura para el snapshot). */
@@ -38,6 +45,14 @@ export class Arsenal {
   /** Pulsos visibles en orden de disparo (vista interna de solo lectura para el snapshot). */
   get pulses(): readonly PulseEcho[] {
     return this.echoes;
+  }
+
+  /**
+   * Aplica el tipo efectivo de un arma tras una mejora (camino frío). Los proyectiles en vuelo
+   * conservan el daño que copiaron al lanzarse y los ecos su radio.
+   */
+  retune(weaponId: string, type: WeaponType): void {
+    for (const w of this.weapons) if (w.type.id === weaponId) w.retune(type);
   }
 
   /**

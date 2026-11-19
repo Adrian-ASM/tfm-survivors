@@ -1,6 +1,7 @@
-import type { RunConfig } from '../../src/domain/run/RunConfig';
+import type { RunConfig, UpgradesConfig } from '../../src/domain/run/RunConfig';
 import type { WeaponsConfig } from '../../src/domain/weapon/WeaponLoadout';
 import type { WeaponTypeConfig } from '../../src/domain/weapon/WeaponType';
+import type { UpgradeTypeConfig } from '../../src/domain/upgrade/UpgradeType';
 
 /** Linter del contenido por defecto (spec auto-weapons): proyectil al más cercano en alcance. */
 export const LINTER: WeaponTypeConfig = {
@@ -20,6 +21,119 @@ export const TESTS: WeaponTypeConfig = {
   attack: { type: 'pulse', visualTicks: 8 },
 };
 
+/** Catálogo de mejoras por defecto (content/upgrades.json), en el orden de la spec. */
+export const DEFAULT_UPGRADE_LIST: readonly UpgradeTypeConfig[] = [
+  {
+    id: 'strict-rules',
+    name: 'Skill: reglas estrictas',
+    description: 'El Linter hace más daño.',
+    target: { kind: 'weapon', weapon: 'linter' },
+    stat: 'damage',
+    perLevel: 3,
+    maxLevel: 5,
+  },
+  {
+    id: 'fast-ci',
+    name: 'Skill: CI rápido',
+    description: 'El Linter dispara más a menudo.',
+    target: { kind: 'weapon', weapon: 'linter' },
+    stat: 'cooldownTicks',
+    perLevel: -4,
+    maxLevel: 5,
+  },
+  {
+    id: 'wide-analysis',
+    name: 'Skill: análisis amplio',
+    description: 'El Linter alcanza objetivos más lejanos.',
+    target: { kind: 'weapon', weapon: 'linter' },
+    stat: 'range',
+    perLevel: 60,
+    maxLevel: 5,
+  },
+  {
+    id: 'hard-asserts',
+    name: 'Skill: asserts estrictos',
+    description: 'Los Tests hacen más daño.',
+    target: { kind: 'weapon', weapon: 'tests' },
+    stat: 'damage',
+    perLevel: 2,
+    maxLevel: 5,
+  },
+  {
+    id: 'watch-mode',
+    name: 'Skill: modo watch',
+    description: 'Los Tests se lanzan más a menudo.',
+    target: { kind: 'weapon', weapon: 'tests' },
+    stat: 'cooldownTicks',
+    perLevel: -12,
+    maxLevel: 5,
+  },
+  {
+    id: 'coverage',
+    name: 'Skill: más cobertura',
+    description: 'El pulso de los Tests llega más lejos.',
+    target: { kind: 'weapon', weapon: 'tests' },
+    stat: 'radius',
+    perLevel: 15,
+    maxLevel: 5,
+  },
+  {
+    id: 'guardrail',
+    name: 'Guardrail',
+    description: 'Más vida máxima (y la misma cantidad de vida actual).',
+    target: { kind: 'player' },
+    stat: 'maxHealth',
+    perLevel: 20,
+    maxLevel: 5,
+  },
+  {
+    id: 'shortcuts',
+    name: 'Atajos de teclado',
+    description: 'Te mueves más rápido.',
+    target: { kind: 'player' },
+    stat: 'speed',
+    perLevel: 20,
+    maxLevel: 5,
+  },
+  {
+    id: 'context-window',
+    name: 'Ventana de contexto',
+    description: 'Atraes las gemas desde más lejos.',
+    target: { kind: 'player' },
+    stat: 'pickupRadius',
+    perLevel: 32,
+    maxLevel: 5,
+  },
+];
+
+/** Contenido de mejoras por defecto (content/upgrades.json). */
+export const DEFAULT_UPGRADES: UpgradesConfig = { upgrades: DEFAULT_UPGRADE_LIST };
+
+/**
+ * Sin mejoras: válido en el dominio (no en el fichero). Por defecto en `aRunConfig`, así que los
+ * escenarios de 0001–0004 no se pausan: las subidas se registran sin oferta.
+ */
+export const NO_UPGRADES: UpgradesConfig = { upgrades: [] };
+
+/** Curva y gemas por defecto (content/progression.json). */
+export const DEFAULT_PROGRESSION: RunConfig['progression'] = {
+  baseXp: 5,
+  xpGrowth: 5,
+  gemRadius: 5,
+  magnetSpeed: 360,
+  maxGems: 300,
+};
+
+/** Mejora de la lista por defecto por id, con cambios (para casos inválidos o de límite). */
+export const anUpgrade = (
+  id: string,
+  patch: Partial<UpgradeTypeConfig> = {},
+): UpgradeTypeConfig => {
+  const base = DEFAULT_UPGRADE_LIST.find((u) => u.id === id);
+  if (!base) throw new Error(`mejora desconocida: ${id}`);
+  return { ...base, ...patch };
+};
+
 /** Contenido de armas por defecto (content/weapons.json). */
 export const DEFAULT_WEAPONS: WeaponsConfig = {
   maxProjectiles: 32,
@@ -35,9 +149,9 @@ export const NO_WEAPONS: WeaponsConfig = { maxProjectiles: 32, hitFlashTicks: 4,
 
 /** Tipos de enemigo de la spec (bug, memory-leak, merge-conflict) con los valores del design. */
 export const DEFAULT_ENEMY_TYPES = [
-  { id: 'bug', speed: 90, radius: 10, cost: 1, damage: 5, health: 10 },
-  { id: 'memory-leak', speed: 45, radius: 22, cost: 3, damage: 15, health: 45 },
-  { id: 'merge-conflict', speed: 70, radius: 16, cost: 2, damage: 8, health: 20 },
+  { id: 'bug', speed: 90, radius: 10, cost: 1, damage: 5, health: 10, xp: 1 },
+  { id: 'memory-leak', speed: 45, radius: 22, cost: 3, damage: 15, health: 45, xp: 4 },
+  { id: 'merge-conflict', speed: 70, radius: 16, cost: 2, damage: 8, health: 20, xp: 2 },
 ] as const;
 
 const ALL = ['bug', 'merge-conflict', 'memory-leak'];
@@ -65,8 +179,16 @@ export const LONG_RUN_HEALTH = 1e9;
 type PlayerConfig = RunConfig['player'];
 
 /**
- * Contenido de partida de la spec (arena 960 × 540, radio 16, velocidad 200 px/s, vida 100 e
- * invulnerabilidad de 30 ticks).
+ * Radio de recogida de content/player.json: 128 (64 en el design original; lo subió el usuario tras
+ * la medición del punto de control 0.3 para cumplir la primera oferta ≤ 3.600 ticks).
+ */
+export const DEFAULT_PICKUP_RADIUS = 128;
+
+/**
+ * Contenido de partida de la spec (arena 960 × 540, radio 16, velocidad 200 px/s, vida 100,
+ * invulnerabilidad de 30 ticks y radio de recogida 64). El 64 es la geometría fija con la que están
+ * escritos los escenarios del imán (p. ej. "Límite exacto del radio", "Más radio de recogida" = 96),
+ * no el valor del contenido: el contenido por defecto usa `DEFAULT_PICKUP_RADIUS` (ver `aDefaultConfig`).
  */
 export const aRunConfig = (overrides: Partial<PlayerConfig> = {}): RunConfig => ({
   arena: { width: 960, height: 540, view: { width: 960, height: 540 } },
@@ -75,10 +197,13 @@ export const aRunConfig = (overrides: Partial<PlayerConfig> = {}): RunConfig => 
     radius: overrides.radius ?? 16,
     maxHealth: overrides.maxHealth ?? 100,
     invulnerabilityTicks: overrides.invulnerabilityTicks ?? 30,
+    pickupRadius: overrides.pickupRadius ?? 64,
   },
   enemies: { types: DEFAULT_ENEMY_TYPES },
   waves: DEFAULT_WAVES,
   weapons: NO_WEAPONS,
+  progression: DEFAULT_PROGRESSION,
+  upgrades: NO_UPGRADES,
 });
 
 /** El mismo contenido con otras armas (p. ej. `withWeapons(aRunConfig(), DEFAULT_WEAPONS)`). */
@@ -86,6 +211,19 @@ export const withWeapons = (config: RunConfig, weapons: WeaponsConfig): RunConfi
   ...config,
   weapons,
 });
+
+/** El mismo contenido con otras mejoras (p. ej. `withUpgrades(config, DEFAULT_UPGRADES)`). */
+export const withUpgrades = (config: RunConfig, upgrades: UpgradesConfig): RunConfig => ({
+  ...config,
+  upgrades,
+});
+
+/** Contenido por defecto completo: armas y mejoras de content/ (lo que carga el juego). */
+export const aDefaultConfig = (): RunConfig =>
+  withUpgrades(
+    withWeapons(aRunConfig({ pickupRadius: DEFAULT_PICKUP_RADIUS }), DEFAULT_WEAPONS),
+    DEFAULT_UPGRADES,
+  );
 
 type Waves = RunConfig['waves'];
 type EnemyTypes = RunConfig['enemies']['types'];
@@ -126,6 +264,7 @@ interface MutableType {
   cost: number;
   damage: number;
   health: number;
+  xp: number;
 }
 interface MutableSegment {
   fromSecond: number;
@@ -139,12 +278,27 @@ interface MutableWeapon {
   targeting: Record<string, unknown>;
   attack: Record<string, unknown>;
 }
+interface MutableUpgrade {
+  id: string;
+  name: string;
+  description: string;
+  target: Record<string, unknown>;
+  stat: string;
+  perLevel: number;
+  maxLevel: number;
+}
 /**
- * Contenido crudo con la forma de los 5 ficheros de content/, mutable para preparar casos
+ * Contenido crudo con la forma de los 7 ficheros de content/, mutable para preparar casos
  * inválidos.
  */
 export interface RawContent {
-  player: { speed: number; radius: number; maxHealth: number; invulnerabilityTicks: number };
+  player: {
+    speed: number;
+    radius: number;
+    maxHealth: number;
+    invulnerabilityTicks: number;
+    pickupRadius: number;
+  };
   arena: { width: number; height: number; view: { width: number; height: number } };
   enemies: { types: [MutableType, MutableType, MutableType] };
   waves: {
@@ -158,10 +312,18 @@ export interface RawContent {
     hitFlashTicks: number;
     weapons: [MutableWeapon, MutableWeapon];
   };
+  progression: {
+    baseXp: number;
+    xpGrowth: number;
+    gemRadius: number;
+    magnetSpeed: number;
+    maxGems: number;
+  };
+  upgrades: { upgrades: [MutableUpgrade, MutableUpgrade, ...MutableUpgrade[]] };
 }
 
 /** Copia nueva del contenido por defecto en forma de ficheros (cada llamada es independiente). */
 export const rawContent = (): RawContent =>
-  structuredClone(withWeapons(aRunConfig(), DEFAULT_WEAPONS)) as unknown as RawContent;
+  structuredClone(aDefaultConfig()) as unknown as RawContent;
 
 export const TICK_MS = 1000 / 60;

@@ -8,6 +8,7 @@ import {
   ENEMY_ID_MUST_BE_UNIQUE,
   ENEMY_RADIUS_MUST_FIT,
   ENEMY_SPEED_MUST_BE_POSITIVE,
+  ENEMY_XP_MUST_BE_INTEGER,
   type EnemyTypeConfig,
 } from '../../src/domain/enemy/EnemyType';
 import { DEFAULT_ENEMY_TYPES } from '../support/builders';
@@ -18,7 +19,15 @@ function arena(): Arena {
   return r.value;
 }
 
-const bug: EnemyTypeConfig = { id: 'bug', speed: 90, radius: 10, cost: 1, damage: 5, health: 10 };
+const bug: EnemyTypeConfig = {
+  id: 'bug',
+  speed: 90,
+  radius: 10,
+  cost: 1,
+  damage: 5,
+  health: 10,
+  xp: 1,
+};
 const leak: EnemyTypeConfig = {
   id: 'memory-leak',
   speed: 45,
@@ -26,6 +35,7 @@ const leak: EnemyTypeConfig = {
   cost: 3,
   damage: 15,
   health: 45,
+  xp: 4,
 };
 
 describe('EnemyCatalog', () => {
@@ -104,15 +114,34 @@ describe('EnemyCatalog', () => {
     }
   });
 
-  it('Contenido por defecto: vida y daño > 0 en los 3 tipos', () => {
+  it.each([0, -1, 1.5, Number.NaN])('XP inválida o ausente (xp %s)', (xp) => {
+    const r = EnemyCatalog.create([leak, { ...bug, xp }], arena());
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.error.field).toBe('enemies.types.1.xp');
+      expect(r.error.message).toBe(ENEMY_XP_MUST_BE_INTEGER);
+    }
+  });
+
+  it('XP mínima válida (xp 1 en los 3 tipos)', () => {
+    const types = DEFAULT_ENEMY_TYPES.map((t) => ({ ...t, xp: 1 }));
+    const r = EnemyCatalog.create(types, arena());
+    if (!r.ok) throw new Error(r.error.message);
+    expect(r.value.get('memory-leak')?.xp).toBe(1);
+  });
+
+  it('Contenido por defecto: vida, daño > 0 y XP ≥ 1 en los 3 tipos', () => {
     const r = EnemyCatalog.create(DEFAULT_ENEMY_TYPES, arena());
     if (!r.ok) throw new Error(r.error.message);
     const catalog = r.value;
-    const values = catalog.ids.map((id) => [id, catalog.get(id)?.damage, catalog.get(id)?.health]);
+    const values = catalog.ids.map((id) => {
+      const t = catalog.get(id);
+      return [id, t?.damage, t?.health, t?.xp];
+    });
     expect(values).toEqual([
-      ['bug', 5, 10],
-      ['memory-leak', 15, 45],
-      ['merge-conflict', 8, 20],
+      ['bug', 5, 10, 1],
+      ['memory-leak', 15, 45, 4],
+      ['merge-conflict', 8, 20, 2],
     ]);
   });
 });

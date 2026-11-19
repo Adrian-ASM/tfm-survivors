@@ -19,16 +19,29 @@ export class FixedStepLoop {
     return this.accumulator;
   }
 
-  /** Devuelve cuántos ticks se han ejecutado en este frame. */
-  advance(elapsedMs: number, step: () => void): number {
+  /**
+   * Devuelve cuántos ticks se han ejecutado en este frame. Si `step` devuelve false (la partida
+   * deja de estar en curso: oferta abierta o fin), el frame se corta y el acumulador queda a 0:
+   * los ticks restantes se descartan (spec simulation-loop, "Oferta a mitad de frame").
+   */
+  advance(elapsedMs: number, step: () => boolean): number {
     if (!Number.isFinite(elapsedMs) || elapsedMs <= 0) return 0;
     this.accumulator += Math.min(elapsedMs, MAX_FRAME_MS);
     let ticks = 0;
     while (this.accumulator + EPSILON_MS >= this.stepMs) {
-      step();
+      const keepGoing = step();
       this.accumulator = Math.max(0, this.accumulator - this.stepMs);
       ticks += 1;
+      if (!keepGoing) {
+        this.accumulator = 0;
+        break;
+      }
     }
     return ticks;
+  }
+
+  /** Descarta el tiempo acumulado (frames con la partida eligiendo mejora o terminada). */
+  reset(): void {
+    this.accumulator = 0;
   }
 }

@@ -132,7 +132,7 @@ describe('Run · posición de aparición', () => {
 describe('Run · catálogo', () => {
   it('Valores de cada tipo llegan al dominio', () => {
     const config = aWavesConfig({
-      types: [{ id: 'bug', speed: 90, radius: 10, cost: 1, damage: 5, health: 10 }],
+      types: [{ id: 'bug', speed: 90, radius: 10, cost: 1, damage: 5, health: 10, xp: 1 }],
       segments: [aSegment(['bug'], 1)],
     });
     const { run, births } = simulate(config, 60);

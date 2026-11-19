@@ -1,6 +1,6 @@
 # ADR-0007 · Modelo genérico de armas: criterio de objetivo y ataque como uniones discriminadas en contenido
 
-- **Estado**: propuesta (change 0004-auto-weapons)
+- **Estado**: propuesta (change 0004-auto-weapons); matizada por ADR-0008 (cómo se aplican las mejoras)
 - **Fecha**: 2026-11-19
 
 ## Contexto
@@ -37,7 +37,8 @@ Opción 3.
 
 ## Consecuencias
 - Positivas:
-  - `weapons.json` legible y serializable; las mejoras de 0005 serán transformaciones de datos sobre `WeaponType`.
+  - `weapons.json` legible y serializable; las mejoras de 0005 serán transformaciones de datos sobre `WeaponType`
+    (concretado en ADR-0008: el tipo base no cambia; se deriva un `WeaponType` efectivo desde base + niveles).
   - Cero asignaciones por tick: despacho por `switch` sobre campos de un VO congelado.
   - El compilador obliga a cubrir cada variante en dominio y en zod.
 - Negativas / costes:

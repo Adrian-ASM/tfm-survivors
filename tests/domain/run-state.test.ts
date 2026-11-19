@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
-import { DEFAULT_WEAPONS, aSegment, withWeapons } from '../support/builders';
+import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
+import { DEFAULT_WEAPONS, aDefaultConfig, aSegment, withWeapons } from '../support/builders';
 import { StubRandom } from '../support/random';
-import { aContactConfig, aProbeType, startRun, ticks } from '../support/runs';
+import { aContactConfig, aProbeType, play, startRun, ticks } from '../support/runs';
 
 const CENTER = { x: 480, y: 270 };
 const UP_RIGHT = PlayerInput.of(1, 1);
@@ -117,6 +118,18 @@ describe('Simulación detenida tras terminar', () => {
     const { run } = ended();
     for (let i = 0; i < 36_000; i++) run.tick(UP_RIGHT);
     expect([run.snapshot().status, run.snapshot().player.health]).toEqual(['over', 0]);
+  });
+
+  it('Una partida terminada no vuelve a en curso (contenido por defecto, quieto, política fija)', () => {
+    const run = startRun(aDefaultConfig(), {}, new Mulberry32RandomGenerator(7));
+    play(run, 36_000);
+    expect(run.status).toBe('over');
+    for (let i = 0; i < 36_000; i++) run.tick(UP_RIGHT);
+    expect([run.status, run.chooseUpgrade(0).ok, run.snapshot().player.health]).toEqual([
+      'over',
+      false,
+      0,
+    ]);
   });
 
   it('Scenario: Armas congeladas al terminar (proyectil, pulso, destello y enemigo a 50 px)', () => {

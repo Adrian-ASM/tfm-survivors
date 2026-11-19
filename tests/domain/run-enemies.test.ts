@@ -10,7 +10,7 @@ import { StubRandom } from '../support/random';
 /** Catálogo con un tipo de velocidad fija y sin presupuesto: solo están los enemigos del setup. */
 const quiet = (speed: number, radius = 10): RunConfig =>
   aWavesConfig({
-    types: [{ id: 'probe', speed, radius, cost: 1, damage: 5, health: 10 }],
+    types: [{ id: 'probe', speed, radius, cost: 1, damage: 5, health: 10, xp: 1 }],
     segments: [aSegment(['probe'], 0)],
   });
 
@@ -59,7 +59,7 @@ describe('Run · persecución', () => {
   it('Primer tick de vida', () => {
     // Arena grande para que el anillo no se recorte; vista 960 × 540 y margin 32 (contenido base).
     const base = aWavesConfig({
-      types: [{ id: 'probe', speed: 90, radius: 10, cost: 1, damage: 5, health: 10 }],
+      types: [{ id: 'probe', speed: 90, radius: 10, cost: 1, damage: 5, health: 10, xp: 1 }],
       segments: [aSegment(['probe'], 1)],
     });
     const config: RunConfig = {

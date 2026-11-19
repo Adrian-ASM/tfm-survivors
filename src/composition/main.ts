@@ -28,11 +28,14 @@ function showContentError(root: HTMLElement, error: DomainError): void {
 /** Semilla aleatoria de 32 bits sin signo; fuera del núcleo, así que puede usar la API del navegador. */
 const randomSeed = (): number => crypto.getRandomValues(new Uint32Array(1))[0] ?? 0;
 
-/** Tamaño de los pools de la escena desde el contenido ya validado (`pulseCapacity` del dominio). */
+/**
+ * Tamaño de los pools de la escena desde el contenido ya validado: `pulseCapacity` del peor caso
+ * de las mejoras (ADR-0008) y `maxGems`.
+ */
 function sceneCapacity(config: RunConfig): SceneCapacity {
   const rules = buildRunRules(config);
   if (!rules.ok) throw new Error(rules.error.message);
-  const { loadout } = rules.value;
+  const { loadout, pulseCapacity, gems } = rules.value;
   const visualTicks = new Map<string, number>();
   for (const w of loadout.weapons) {
     if (w.attack.type === 'pulse') visualTicks.set(w.id, w.attack.visualTicks);
@@ -40,7 +43,8 @@ function sceneCapacity(config: RunConfig): SceneCapacity {
   return {
     enemies: config.waves.maxAlive,
     projectiles: loadout.maxProjectiles,
-    pulses: loadout.pulseCapacity,
+    pulses: pulseCapacity,
+    gems: gems.maxGems,
     visualTicks,
   };
 }
@@ -76,9 +80,14 @@ function bootstrap(): void {
     height: view.height,
     backgroundColor: BACKGROUND,
     scene: [
-      new GameScene(started.value, sceneCapacity(config.value), (snapshot) => {
-        probe.snapshot = snapshot;
-      }),
+      new GameScene(
+        started.value.tickRun,
+        started.value.chooseUpgrade,
+        sceneCapacity(config.value),
+        (snapshot) => {
+          probe.snapshot = snapshot;
+        },
+      ),
     ],
   });
 }

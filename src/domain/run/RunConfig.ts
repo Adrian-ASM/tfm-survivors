@@ -6,27 +6,33 @@ import { err, invalidConfig, ok, type DomainError, type Result } from '../shared
 import { SpawnRules } from '../wave/SpawnRules';
 import { WaveTable, type WaveSegmentConfig } from '../wave/WaveTable';
 import { WeaponLoadout, type WeaponsConfig } from '../weapon/WeaponLoadout';
+import {
+  INVULNERABILITY_TICKS_MUST_BE_INTEGER,
+  PICKUP_RADIUS_MUST_BE_POSITIVE,
+  PLAYER_HEALTH_MUST_BE_POSITIVE,
+  RADIUS_MUST_FIT,
+  SPEED_MUST_BE_POSITIVE,
+  checkPlayer,
+  type PlayerRules,
+} from '../player/PlayerRules';
+import { GemRules, type GemRulesConfig } from '../progression/GemRules';
+import { XpCurve, type XpCurveConfig } from '../progression/XpCurve';
+import { UpgradeCatalog } from '../upgrade/UpgradeCatalog';
+import type { UpgradeTypeConfig } from '../upgrade/UpgradeType';
 
-export type { WeaponsConfig };
+export type { WeaponsConfig, PlayerRules };
+export {
+  INVULNERABILITY_TICKS_MUST_BE_INTEGER,
+  PICKUP_RADIUS_MUST_BE_POSITIVE,
+  PLAYER_HEALTH_MUST_BE_POSITIVE,
+  RADIUS_MUST_FIT,
+  SPEED_MUST_BE_POSITIVE,
+  checkPlayer,
+};
 
-/** Mensajes de las invariantes del jugador; la validación de contenido (zod) usa los mismos. */
-export const SPEED_MUST_BE_POSITIVE = 'La velocidad del jugador debe ser positiva.';
-export const RADIUS_MUST_FIT = 'El radio del jugador no cabe en la arena.';
-export const PLAYER_HEALTH_MUST_BE_POSITIVE = 'La vida máxima del jugador debe ser positiva.';
-export const INVULNERABILITY_TICKS_MUST_BE_INTEGER =
-  'La invulnerabilidad tras un golpe debe durar un número entero de ticks ≥ 1.';
 /** Regla cruzada: con un máximo menor, el tipo más caro nunca reuniría su coste. */
 export const MAX_BUDGET_BELOW_MAX_COST =
   'El máximo de presupuesto debe ser ≥ el coste del tipo de enemigo más caro';
-
-/** Parámetros del jugador en el contenido (content/player.json). */
-export interface PlayerRules {
-  readonly speed: number;
-  readonly radius: number;
-  readonly maxHealth: number;
-  /** N: tras un golpe en el tick t, los contactos de t + 1 a t + N no hacen daño. */
-  readonly invulnerabilityTicks: number;
-}
 
 /**
  * Configuración de partida ya validada en forma (zod, infraestructura); aquí se validan
@@ -51,6 +57,14 @@ export interface RunConfig {
     readonly segments: readonly WaveSegmentConfig[];
   };
   readonly weapons: WeaponsConfig;
+  /** Curva de XP y gemas (fichero de progresión, plano). */
+  readonly progression: XpCurveConfig & GemRulesConfig;
+  readonly upgrades: UpgradesConfig;
+}
+
+/** Forma del contenido de mejoras (content/upgrades.json). */
+export interface UpgradesConfig {
+  readonly upgrades: readonly UpgradeTypeConfig[];
 }
 
 /** Reglas de la partida ya construidas como value objects del dominio. */
@@ -63,21 +77,12 @@ export interface RunRules {
   readonly spawn: SpawnRules;
   /** Armas equipadas al empezar, en el orden en que actúan. */
   readonly loadout: WeaponLoadout;
-}
-
-function checkPlayer(config: RunConfig, arena: Arena): DomainError | null {
-  const { speed, radius, maxHealth, invulnerabilityTicks } = config.player;
-  if (!Number.isFinite(speed) || speed <= 0) {
-    return invalidConfig('player.speed', SPEED_MUST_BE_POSITIVE);
-  }
-  if (!arena.fits(radius)) return invalidConfig('player.radius', RADIUS_MUST_FIT);
-  if (!Number.isFinite(maxHealth) || maxHealth <= 0) {
-    return invalidConfig('player.maxHealth', PLAYER_HEALTH_MUST_BE_POSITIVE);
-  }
-  if (!Number.isInteger(invulnerabilityTicks) || invulnerabilityTicks < 1) {
-    return invalidConfig('player.invulnerabilityTicks', INVULNERABILITY_TICKS_MUST_BE_INTEGER);
-  }
-  return null;
+  readonly curve: XpCurve;
+  readonly gems: GemRules;
+  /** Catálogo de mejoras en el orden del contenido (ya validado con su build de peor caso). */
+  readonly upgrades: UpgradeCatalog;
+  /** Cota de pulsos visibles a la vez con la cadencia mínima alcanzable (ADR-0008). */
+  readonly pulseCapacity: number;
 }
 
 function checkBudgetCoversCatalog(spawn: SpawnRules, catalog: EnemyCatalog): DomainError | null {
@@ -96,7 +101,7 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
   if (!arena.ok) return arena;
   const view = View.create(config.arena.view.width, config.arena.view.height);
   if (!view.ok) return view;
-  const playerError = checkPlayer(config, arena.value);
+  const playerError = checkPlayer(config.player, arena.value);
   if (playerError) return err(playerError);
   const catalog = EnemyCatalog.create(config.enemies.types, arena.value);
   if (!catalog.ok) return catalog;
@@ -109,6 +114,17 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
   if (budgetError) return err(budgetError);
   const loadout = WeaponLoadout.create(config.weapons);
   if (!loadout.ok) return loadout;
+  const curve = XpCurve.create(config.progression);
+  if (!curve.ok) return curve;
+  const gems = GemRules.create(config.progression);
+  if (!gems.ok) return gems;
+  const upgrades = UpgradeCatalog.create(
+    config.upgrades.upgrades,
+    loadout.value,
+    config.player,
+    arena.value,
+  );
+  if (!upgrades.ok) return upgrades;
   return ok({
     arena: arena.value,
     view: view.value,
@@ -117,5 +133,9 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
     table: table.value,
     spawn: spawn.value,
     loadout: loadout.value,
+    curve: curve.value,
+    gems: gems.value,
+    upgrades: upgrades.value,
+    pulseCapacity: upgrades.value.pulseCapacity,
   });
 }

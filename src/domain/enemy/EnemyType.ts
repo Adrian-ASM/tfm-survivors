@@ -10,6 +10,7 @@ export const ENEMY_RADIUS_MUST_FIT = 'El radio del enemigo debe ser positivo y c
 export const ENEMY_COST_MUST_BE_POSITIVE = 'El coste del enemigo debe ser positivo.';
 export const ENEMY_DAMAGE_MUST_BE_POSITIVE = 'El daño del enemigo debe ser positivo.';
 export const ENEMY_HEALTH_MUST_BE_POSITIVE = 'La vida del enemigo debe ser positiva.';
+export const ENEMY_XP_MUST_BE_INTEGER = 'La XP que suelta un enemigo debe ser un entero ≥ 1.';
 export const ENEMY_ID_MUST_BE_UNIQUE = 'Identificador de enemigo repetido';
 
 /** Forma de un tipo de enemigo en el contenido (content/enemies.json). */
@@ -20,13 +21,16 @@ export interface EnemyTypeConfig {
   readonly cost: number;
   readonly damage: number;
   readonly health: number;
+  /** XP de la gema que suelta al morir por armas (spec xp-gems). */
+  readonly xp: number;
 }
 
 const isPositive = (v: number): boolean => Number.isFinite(v) && v > 0;
 
 /**
  * Tipo de enemigo (value object): inmutable y compartido por todos los enemigos de ese tipo.
- * Invariantes: velocidad, coste, daño y vida positivos y finitos; el círculo cabe en la arena.
+ * Invariantes: velocidad, coste, daño y vida positivos y finitos; XP entera ≥ 1; el círculo cabe
+ * en la arena.
  */
 export class EnemyType {
   private constructor(
@@ -36,6 +40,7 @@ export class EnemyType {
     readonly cost: number,
     readonly damage: number,
     readonly health: number,
+    readonly xp: number,
   ) {
     Object.freeze(this);
   }
@@ -48,7 +53,7 @@ export class EnemyType {
     arena: Arena,
     path: string,
   ): Result<EnemyType, DomainError> {
-    const { id, speed, radius, cost, damage, health } = config;
+    const { id, speed, radius, cost, damage, health, xp } = config;
     if (!isPositive(speed)) {
       return err(invalidConfig(`${path}.speed`, ENEMY_SPEED_MUST_BE_POSITIVE));
     }
@@ -60,6 +65,9 @@ export class EnemyType {
     if (!isPositive(health)) {
       return err(invalidConfig(`${path}.health`, ENEMY_HEALTH_MUST_BE_POSITIVE));
     }
-    return ok(new EnemyType(id, speed, radius, cost, damage, health));
+    if (!Number.isInteger(xp) || xp < 1) {
+      return err(invalidConfig(`${path}.xp`, ENEMY_XP_MUST_BE_INTEGER));
+    }
+    return ok(new EnemyType(id, speed, radius, cost, damage, health, xp));
   }
 }

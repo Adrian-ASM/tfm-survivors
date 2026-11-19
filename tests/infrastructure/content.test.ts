@@ -3,11 +3,13 @@ import {
   ENEMY_DAMAGE_MUST_BE_POSITIVE,
   ENEMY_HEALTH_MUST_BE_POSITIVE,
   ENEMY_SPEED_MUST_BE_POSITIVE,
+  ENEMY_XP_MUST_BE_INTEGER,
 } from '../../src/domain/enemy/EnemyType';
 import { Run } from '../../src/domain/run/Run';
 import {
   INVULNERABILITY_TICKS_MUST_BE_INTEGER,
   MAX_BUDGET_BELOW_MAX_COST,
+  PICKUP_RADIUS_MUST_BE_POSITIVE,
   PLAYER_HEALTH_MUST_BE_POSITIVE,
   SPEED_MUST_BE_POSITIVE,
   buildRunRules,
@@ -17,13 +19,7 @@ import {
   MAX_BUDGET_MUST_BE_POSITIVE,
 } from '../../src/domain/wave/SpawnRules';
 import { loadRunConfig, parseRunConfig } from '../../src/infrastructure/content/loadRunConfig';
-import {
-  DEFAULT_WEAPONS,
-  aRunConfig,
-  rawContent,
-  withWeapons,
-  type RawContent,
-} from '../support/builders';
+import { aDefaultConfig, aRunConfig, rawContent, type RawContent } from '../support/builders';
 import { StubRandom } from '../support/random';
 
 function failure(raw: RawContent): { field: string; message: string } {
@@ -39,13 +35,21 @@ function without(raw: RawContent, pick: (r: RawContent) => object, key: string):
 }
 
 describe('Contenido de vida e invulnerabilidad validado', () => {
-  it('Contenido válido: el dominio recibe velocidad 200, radio 16 y vida máxima 100', () => {
-    const r = parseRunConfig(rawContent());
+  it('Scenario: Radio de recogida por defecto (128, medido en apply)', () => {
+    const r = loadRunConfig();
+    expect(r.ok && r.value.player.pickupRadius).toBe(128);
+  });
+
+  it('Contenido válido: velocidad 200, radio 16, vida máxima 100 y radio de recogida 64', () => {
+    const raw = rawContent();
+    raw.player.pickupRadius = 64;
+    const r = parseRunConfig(raw);
     expect(r.ok && r.value.player).toEqual({
       speed: 200,
       radius: 16,
       maxHealth: 100,
       invulnerabilityTicks: 30,
+      pickupRadius: 64,
     });
   });
 
@@ -144,19 +148,59 @@ describe('Contenido de enemigos y oleadas validado · vida, daño y máximo de p
 
   it('Valores de cada tipo llegan al dominio', () => {
     const raw = rawContent();
-    Object.assign(raw.enemies.types[0], { speed: 90, radius: 10, cost: 1, health: 5, damage: 10 });
+    const values = { speed: 90, radius: 10, cost: 1, health: 5, damage: 10, xp: 3 };
+    Object.assign(raw.enemies.types[0], values);
     const config = parseRunConfig(raw);
     if (!config.ok) throw new Error(config.error.message);
     const rules = buildRunRules(config.value);
     const bug = rules.ok ? rules.value.catalog.get('bug') : undefined;
-    expect(bug).toMatchObject({ speed: 90, radius: 10, cost: 1, health: 5, damage: 10 });
+    expect(bug).toMatchObject(values);
+  });
+});
+
+describe('XP de los enemigos y radio de recogida validados (0005)', () => {
+  it('Scenario: XP por defecto de cada tipo (bug 1, merge-conflict 2, memory-leak 4)', () => {
+    const r = loadRunConfig();
+    if (!r.ok) throw new Error(r.error.message);
+    const xp = Object.fromEntries(r.value.enemies.types.map((t) => [t.id, t.xp]));
+    expect(xp).toEqual({ bug: 1, 'merge-conflict': 2, 'memory-leak': 4 });
+  });
+
+  it.each([0, -1, 1.5])('Scenario: XP inválida o ausente (xp %s)', (xp) => {
+    const raw = rawContent();
+    raw.enemies.types[0].xp = xp;
+    expect(failure(raw)).toEqual({
+      code: 'invalid-config',
+      field: 'enemies.types.0.xp',
+      message: ENEMY_XP_MUST_BE_INTEGER,
+    });
+  });
+
+  it('Scenario: XP inválida o ausente (sin el campo xp)', () => {
+    const raw = without(rawContent(), (r) => r.enemies.types[1], 'xp');
+    expect(failure(raw).field).toBe('enemies.types.1.xp');
+  });
+
+  it.each([0, -1])('Scenario: Radio de recogida inválido o ausente (pickupRadius %s)', (v) => {
+    const raw = rawContent();
+    raw.player.pickupRadius = v;
+    expect(failure(raw)).toEqual({
+      code: 'invalid-config',
+      field: 'player.pickupRadius',
+      message: PICKUP_RADIUS_MUST_BE_POSITIVE,
+    });
+  });
+
+  it('Scenario: Radio de recogida inválido o ausente (sin pickupRadius)', () => {
+    const raw = without(rawContent(), (r) => r.player, 'pickupRadius');
+    expect(failure(raw).field).toBe('player.pickupRadius');
   });
 });
 
 describe('Contenido del jugador validado', () => {
   it('Contenido válido', () => {
     const r = parseRunConfig(rawContent());
-    expect(r.ok && r.value).toEqual(withWeapons(aRunConfig(), DEFAULT_WEAPONS));
+    expect(r.ok && r.value).toEqual(aDefaultConfig());
   });
 
   it('Velocidad negativa', () => {
@@ -321,6 +365,6 @@ describe('Contenido por defecto del repositorio', () => {
   });
 
   it('coincide con el contenido de la spec que usan los tests (aRunConfig)', () => {
-    expect(config).toEqual(withWeapons(aRunConfig(), DEFAULT_WEAPONS));
+    expect(config).toEqual(aDefaultConfig());
   });
 });

@@ -7,7 +7,13 @@ import { Vector2 } from '../../src/domain/shared/Vector2';
 
 const EPS = 3; // toBeCloseTo(…, 3) ⇒ error < 0,0005 px (la spec pide ≤ 0,001)
 
-const RULES = { speed: 200, radius: 16, maxHealth: 100, invulnerabilityTicks: 30 };
+const RULES = {
+  speed: 200,
+  radius: 16,
+  maxHealth: 100,
+  invulnerabilityTicks: 30,
+  pickupRadius: 64,
+};
 
 /** Error ≤ 0,001 px respecto al valor que da la spec (tolerancia literal de la spec). */
 function expectWithinSpec(actual: number, expected: number): void {
@@ -135,5 +141,22 @@ describe('Player · vida e invulnerabilidad', () => {
     const p = fresh();
     p.hit(10, 1);
     expect([p.health.current, p.invulnerableUntil]).toEqual([100, 0]);
+  });
+});
+
+describe('Player.withRules', () => {
+  it('conserva posición, vida restante e invulnerabilidad, y aplica las reglas nuevas', () => {
+    const hit = Player.spawn(Vector2.of(100, 200), RULES).hit(10, 10);
+    const p = hit.withRules({ ...RULES, speed: 220, maxHealth: 120 }, 20);
+    expect([p.position.x, p.position.y]).toEqual([100, 200]);
+    expect([p.health.current, p.health.max]).toEqual([110, 120]);
+    expect(p.invulnerableUntil).toBe(40);
+    expect(p.speed).toBe(220);
+    expect([hit.speed, hit.health.max]).toEqual([200, 100]);
+  });
+
+  it('expone el radio de recogida efectivo', () => {
+    const p = Player.spawn(Vector2.of(0, 0), RULES).withRules({ ...RULES, pickupRadius: 96 }, 0);
+    expect(p.pickupRadius).toBe(96);
   });
 });

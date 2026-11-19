@@ -6,12 +6,28 @@ import {
   ENEMY_HEALTH_MUST_BE_POSITIVE,
   ENEMY_RADIUS_MUST_FIT,
   ENEMY_SPEED_MUST_BE_POSITIVE,
+  ENEMY_XP_MUST_BE_INTEGER,
 } from '../../domain/enemy/EnemyType';
 import {
   INVULNERABILITY_TICKS_MUST_BE_INTEGER,
+  PICKUP_RADIUS_MUST_BE_POSITIVE,
   PLAYER_HEALTH_MUST_BE_POSITIVE,
   SPEED_MUST_BE_POSITIVE,
 } from '../../domain/run/RunConfig';
+import {
+  GEM_RADIUS_MUST_BE_POSITIVE,
+  MAGNET_SPEED_MUST_BE_POSITIVE,
+  MAX_GEMS_MUST_BE_INTEGER,
+} from '../../domain/progression/GemRules';
+import {
+  BASE_XP_MUST_BE_INTEGER,
+  XP_GROWTH_MUST_BE_INTEGER,
+} from '../../domain/progression/XpCurve';
+import {
+  UPGRADE_MAX_LEVEL_MUST_BE_INTEGER,
+  UPGRADE_STATS,
+  UPGRADE_STEP_MUST_NOT_BE_ZERO,
+} from '../../domain/upgrade/UpgradeType';
 import {
   MAX_ALIVE_MUST_BE_INTEGER,
   MAX_BUDGET_MUST_BE_POSITIVE,
@@ -55,6 +71,7 @@ export const PlayerSchema = z.strictObject({
   radius: z.number().positive(),
   maxHealth: z.number().positive({ error: PLAYER_HEALTH_MUST_BE_POSITIVE }),
   invulnerabilityTicks: Count(INVULNERABILITY_TICKS_MUST_BE_INTEGER),
+  pickupRadius: z.number().positive({ error: PICKUP_RADIUS_MUST_BE_POSITIVE }),
 });
 
 export const ArenaSchema = z.strictObject({
@@ -75,6 +92,7 @@ export const EnemiesSchema = z.strictObject({
       cost: z.number().positive({ error: ENEMY_COST_MUST_BE_POSITIVE }),
       damage: z.number().positive({ error: ENEMY_DAMAGE_MUST_BE_POSITIVE }),
       health: z.number().positive({ error: ENEMY_HEALTH_MUST_BE_POSITIVE }),
+      xp: Count(ENEMY_XP_MUST_BE_INTEGER),
     }),
   ),
 });
@@ -124,6 +142,62 @@ export const WeaponsSchema = z.strictObject({
       }),
     )
     .min(1, { error: WEAPONS_REQUIRED }),
+});
+
+export const ProgressionSchema = z.strictObject({
+  baseXp: Count(BASE_XP_MUST_BE_INTEGER),
+  xpGrowth: z
+    .number()
+    .int({ error: XP_GROWTH_MUST_BE_INTEGER })
+    .min(0, { error: XP_GROWTH_MUST_BE_INTEGER }),
+  gemRadius: Positive(GEM_RADIUS_MUST_BE_POSITIVE),
+  magnetSpeed: Positive(MAGNET_SPEED_MUST_BE_POSITIVE),
+  maxGems: Count(MAX_GEMS_MUST_BE_INTEGER),
+});
+
+export const UPGRADES_REQUIRED = 'El contenido debe definir al menos una mejora.';
+export const UPGRADE_ID_FORMAT =
+  'El id de una mejora usa minúsculas, dígitos y guiones (p. ej. fast-ci).';
+export const UPGRADE_TEXT_REQUIRED =
+  'El nombre y la descripción de una mejora no pueden estar vacíos.';
+/** Longitudes máximas para que el texto quepa en la carta del overlay. */
+export const UPGRADE_NAME_MAX = 40;
+export const UPGRADE_DESCRIPTION_MAX = 120;
+export const UPGRADE_TEXT_TOO_LONG = 'El texto de una mejora es demasiado largo para su carta.';
+
+const UpgradeTargetSchema = z.discriminatedUnion('kind', [
+  z.strictObject({
+    kind: z.literal('weapon'),
+    weapon: z.string().min(1, { error: WEAPON_ID_REQUIRED }),
+  }),
+  z.strictObject({ kind: z.literal('player') }),
+]);
+
+const UpgradeText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .min(1, { error: UPGRADE_TEXT_REQUIRED })
+    .max(max, { error: UPGRADE_TEXT_TOO_LONG });
+
+// Las reglas cruzadas (ids únicos, arma existente, compatibilidad, incremento entero en daño y
+// cadencia, build de peor caso) las aplica `buildRunRules` desde el superRefine del loader.
+export const UpgradesSchema = z.strictObject({
+  upgrades: z
+    .array(
+      z.strictObject({
+        id: z.string().regex(/^[a-z][a-z0-9-]*$/, { error: UPGRADE_ID_FORMAT }),
+        name: UpgradeText(UPGRADE_NAME_MAX),
+        description: UpgradeText(UPGRADE_DESCRIPTION_MAX),
+        target: UpgradeTargetSchema,
+        stat: z.enum(UPGRADE_STATS),
+        perLevel: z
+          .number({ error: UPGRADE_STEP_MUST_NOT_BE_ZERO })
+          .refine((v) => v !== 0, { error: UPGRADE_STEP_MUST_NOT_BE_ZERO }),
+        maxLevel: Count(UPGRADE_MAX_LEVEL_MUST_BE_INTEGER),
+      }),
+    )
+    .min(1, { error: UPGRADES_REQUIRED }),
 });
 
 export const WavesSchema = z.strictObject({

@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { FakeTarget, aLinter, aPulse, anArsenal, stepTicks, weaponsOf } from '../support/weapons';
+import {
+  FakeTarget,
+  aLinter,
+  aPulse,
+  anArsenal,
+  stepTicks,
+  typeOf,
+  weaponsOf,
+} from '../support/weapons';
 
 const xs = (a: { projectiles: readonly { x: number }[] }): number[] =>
   a.projectiles.map((p) => p.x);
@@ -216,5 +224,34 @@ describe('Arsenal · proyectiles en vuelo', () => {
     expect(ids).toHaveLength(3);
     expect(before).not.toContain(ids[2]);
     expect(arsenal.projectiles.map((p) => p.radius)).toEqual([4, 4, 4]);
+  });
+});
+
+describe('Arsenal.retune', () => {
+  it('Scenario: Proyectil en vuelo durante una mejora de daño (conserva el 6 con que se creó)', () => {
+    const arsenal = anArsenal(weaponsOf([aLinter({ cooldownTicks: 1000 })]));
+    const bug = new FakeTarget(780, 270, 10);
+    arsenal.step(1, 480, 270, [bug]);
+    arsenal.retune('linter', typeOf(aLinter({ damage: 9 })));
+    stepTicks(arsenal, 2, 40, [bug]);
+    expect(bug.hp).toBe(4);
+    expect(arsenal.weapons[0]?.type.damage).toBe(9);
+  });
+
+  it('Scenario: Pulso visible durante una mejora de radio (el eco conserva su radio 90)', () => {
+    const arsenal = anArsenal(weaponsOf([aPulse()]));
+    const bug = new FakeTarget(530, 270, 100);
+    arsenal.step(1, 480, 270, [bug]);
+    arsenal.retune('tests', typeOf(aPulse({ targeting: { mode: 'any-in-radius', radius: 105 } })));
+    stepTicks(arsenal, 2, 5, [bug]);
+    expect(arsenal.pulses.map((p) => p.radius)).toEqual([90]);
+  });
+
+  it('no toca la carga del arma ni otras armas', () => {
+    const arsenal = anArsenal(weaponsOf([aLinter(), aPulse()]));
+    arsenal.step(1, 480, 270, [new FakeTarget(530, 270, 100)]);
+    arsenal.retune('linter', typeOf(aLinter({ cooldownTicks: 10 })));
+    expect(arsenal.weapons.map((w) => w.isChargedAt(30))).toEqual([false, false]);
+    expect(arsenal.weapons[1]?.type.cooldownTicks).toBe(90);
   });
 });
