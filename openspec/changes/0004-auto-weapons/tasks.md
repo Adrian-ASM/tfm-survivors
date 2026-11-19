@@ -63,7 +63,7 @@
 - [x] 4.3 Snapshot ampliado: `projectiles`, `pulses` (`weapon`, `firedAt`, centro, radio), `weapons` (`id`, `ready`),
   `EnemySnapshot.damaged`; todo congelado — SL "Partida recién creada", "Carga de las armas en el snapshot",
   "Pulso identificado en el snapshot", "Snapshot no mutable desde fuera"; AW "Armas equipadas en una partida nueva".
-- [ ] 4.4 Daño acumulado con las armas por defecto sobre `RunSetup` — AW "Ningún arma mata a un bug de un impacto",
+- [x] 4.4 Daño acumulado con las armas por defecto sobre `RunSetup` — AW "Ningún arma mata a un bug de un impacto",
   "Linter mata a un bug en 2 impactos", "Tests mata a un bug en 3 pulsos", "Combinación de armas", "Enemigos más
   resistentes"; EB "Misma trayectoria con y sin daño", "El impacto no empuja".
 - [ ] 4.5 Eliminar `Run.damageEnemy` y `EnemyDamageOutcome`; reescribir `run-removal.test.ts` con
