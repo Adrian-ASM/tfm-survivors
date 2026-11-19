@@ -29,7 +29,7 @@
   "Radio de recogida inválido o ausente" (dominio), "Radio de recogida por defecto"
 - [x] 1.3 `progression/XpCurve` (VO, `toNext`) — escenarios: "Curva por defecto" (xpToNext 5, 10, 15, 250),
   "Valores inválidos" (leveling, dominio), "Curva plana"
-- [ ] 1.4 `progression/Experience` (`gain`, `resolveOne`, `clearPending`) — escenarios: "Por debajo del umbral",
+- [x] 1.4 `progression/Experience` (`gain`, `resolveOne`, `clearPending`) — escenarios: "Por debajo del umbral",
   "Umbral exacto", "Arrastre del sobrante", "Una gema que da dos niveles", "Varias gemas que dan varios niveles",
   "Nivel 50"
 - [ ] 1.5 `progression/GemRules` (VO) y `XpGem` (`set`, `pull` sin sobrepasar) — escenarios: "Valores no positivos"
