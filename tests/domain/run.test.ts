@@ -22,6 +22,9 @@ describe('Run', () => {
     expect(startedRun().snapshot()).toEqual({
       tick: 0,
       status: 'running',
+      outcome: null,
+      durationTicks: 36_000,
+      kills: 0,
       player: { x: 480, y: 270, radius: 16, health: 100, maxHealth: 100, invulnerable: false },
       enemies: [],
       projectiles: [],

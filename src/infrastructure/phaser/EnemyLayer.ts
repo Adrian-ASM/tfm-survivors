@@ -56,4 +56,9 @@ export class EnemyLayer {
   sync(enemies: readonly EnemySnapshot[]): void {
     this.pool.sync(enemies);
   }
+
+  /** Oculta todos los sprites (reinicio de partida). */
+  clear(): void {
+    this.pool.clear();
+  }
 }

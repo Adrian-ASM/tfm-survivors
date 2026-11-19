@@ -84,3 +84,10 @@ export const upgradedPlayer = (
   catalog: Upgrades,
   levels: readonly number[],
 ): PlayerRules => playerWith(base, catalog, byLevels(levels));
+
+/** Vida máxima que suman las mejoras de `maxHealth` con los niveles dados. */
+export const maxHealthBonus = (catalog: Upgrades, levels: readonly number[]): number =>
+  catalog.upgrades.reduce(
+    (sum, u, i) => (u.stat === 'maxHealth' ? sum + u.perLevel * (levels[i] ?? 0) : sum),
+    0,
+  );

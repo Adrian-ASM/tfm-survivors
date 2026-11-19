@@ -19,6 +19,7 @@ export const SETUP_TOO_MANY_GEMS = 'Hay más gemas iniciales que el tope de gema
 export const SETUP_EXPERIENCE_OUT_OF_RANGE =
   'La experiencia inicial necesita un nivel entero ≥ 1 y una XP entera en [0, xpToNext).';
 export const SETUP_UNKNOWN_UPGRADE = 'Mejora inicial desconocida en el catálogo.';
+export const SETUP_KILLS_MUST_BE_INTEGER = 'Las bajas iniciales deben ser un entero ≥ 0.';
 export const SETUP_UPGRADE_LEVEL_OUT_OF_RANGE =
   'El nivel inicial de una mejora debe ser un entero en [0, maxLevel].';
 
@@ -45,6 +46,8 @@ export interface RunSetup {
    * como si se hubieran elegido antes del tick 1 (la vida máxima sube y la vida empieza llena).
    */
   readonly upgrades?: Readonly<Record<string, number>>;
+  /** Bajas ya acumuladas al empezar (entero ≥ 0; por defecto, 0). */
+  readonly kills?: number;
 }
 
 const isFinitePoint = (p: Point): boolean => Number.isFinite(p.x) && Number.isFinite(p.y);
@@ -129,4 +132,41 @@ export function initialExperience(
     xp < rules.curve.toNext(level);
   if (!valid) return err(invalidConfig('setup.experience', SETUP_EXPERIENCE_OUT_OF_RANGE));
   return ok(new Experience(rules.curve, level, xp));
+}
+
+/** Estado inicial ya validado con el que arranca `Run`. */
+export interface InitialState {
+  readonly player: Player;
+  readonly enemies: Enemy[];
+  readonly gems: GemField;
+  readonly experience: Experience;
+  readonly board: UpgradeBoard;
+  /** Bajas ya acumuladas (por defecto, 0). */
+  readonly kills: number;
+}
+
+/** Valida el `RunSetup` contra las reglas y construye el estado inicial de la partida. */
+export function initialState(rules: RunRules, setup: RunSetup): Result<InitialState, DomainError> {
+  const player = initialPlayer(rules, setup);
+  if (!player.ok) return player;
+  const enemies = initialEnemies(setup, rules.catalog, rules.arena);
+  if (!enemies.ok) return enemies;
+  const gems = initialGems(rules, setup);
+  if (!gems.ok) return gems;
+  const experience = initialExperience(rules, setup);
+  if (!experience.ok) return experience;
+  const board = initialBoard(rules, setup);
+  if (!board.ok) return board;
+  const kills = setup.kills ?? 0;
+  if (!Number.isInteger(kills) || kills < 0) {
+    return err(invalidConfig('setup.kills', SETUP_KILLS_MUST_BE_INTEGER));
+  }
+  return ok({
+    player: player.value,
+    enemies: enemies.value,
+    gems: gems.value,
+    experience: experience.value,
+    board: board.value,
+    kills,
+  });
 }

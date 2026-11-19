@@ -7,7 +7,7 @@
     { "fromSecond": 60, "budgetPerSecond": 2, "types": ["bug", "merge-conflict"] },
     {
       "fromSecond": 180,
-      "budgetPerSecond": 3.5,
+      "budgetPerSecond": 2.5,
       "types": ["bug", "merge-conflict", "memory-leak"]
     },
     { "fromSecond": 300, "budgetPerSecond": 5, "types": ["bug", "merge-conflict", "memory-leak"] },

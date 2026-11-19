@@ -1,5 +1,6 @@
 // Composition root (AGENTS.md §3.4): el único sitio que conoce las implementaciones concretas.
 import Phaser from 'phaser';
+import { RestartRun } from '../application/RestartRun';
 import { StartRun } from '../application/StartRun';
 import { buildRunRules, type RunConfig } from '../domain/run/RunConfig';
 import type { RunSnapshot } from '../domain/run/RunSnapshot';
@@ -7,14 +8,20 @@ import type { DomainError } from '../domain/shared/Result';
 import { loadRunConfig } from '../infrastructure/content/loadRunConfig';
 import { GameScene, type SceneCapacity } from '../infrastructure/phaser/GameScene';
 import { Mulberry32RandomGenerator } from '../infrastructure/random/Mulberry32RandomGenerator';
+import type { ResultsView } from '../infrastructure/phaser/resultsText';
 import { resolveSeed } from '../infrastructure/url/resolveSeed';
+import { restartRandoms } from './seedSource';
 
 const BACKGROUND = '#14141e';
 
-/** Lectura del último snapshot y de la semilla para los E2E. Solo existe con ?e2e en la URL. */
+/**
+ * Lectura del último snapshot, de la semilla de la partida actual y de los resultados mostrados
+ * para los E2E. Solo existe con ?e2e en la URL.
+ */
 interface E2EProbe {
-  readonly seed: number;
+  seed: number;
   snapshot: RunSnapshot | null;
+  results: ResultsView | null;
 }
 
 function showContentError(root: HTMLElement, error: DomainError): void {
@@ -66,7 +73,11 @@ function bootstrap(): void {
     return;
   }
 
-  const probe: E2EProbe = { seed, snapshot: null };
+  const probe: E2EProbe = { seed, snapshot: null, results: null };
+  // Cada reinicio usa una semilla nueva (también con ?seed=), sin releer la URL ni avisar.
+  const nextRandom = restartRandoms(randomSeed, (s) => {
+    probe.seed = s;
+  });
   if (new URLSearchParams(window.location.search).has('e2e')) {
     Object.defineProperty(window, '__sprint', { value: probe });
   }
@@ -81,11 +92,12 @@ function bootstrap(): void {
     backgroundColor: BACKGROUND,
     scene: [
       new GameScene(
-        started.value.tickRun,
-        started.value.chooseUpgrade,
+        started.value,
+        new RestartRun(config.value, nextRandom),
         sceneCapacity(config.value),
-        (snapshot) => {
+        (snapshot, results) => {
           probe.snapshot = snapshot;
+          probe.results = results;
         },
       ),
     ],

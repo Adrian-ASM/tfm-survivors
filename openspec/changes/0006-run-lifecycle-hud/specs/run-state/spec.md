@@ -1,0 +1,146 @@
+# Spec delta · run-state
+
+<!-- Change 0006-run-lifecycle-hud. El estado terminada gana un resultado ortogonal: victoria o derrota (ver
+     `run-outcome`). La partida pasa de en curso a terminada al llegar a vida 0 (derrota) o al completar el tick de la
+     duración objetivo (victoria); en el empate gana la derrota. La congelación de terminada es idéntica en ambos
+     resultados e incluye ahora el contador de bajas y el resultado. -->
+
+## MODIFIED Requirements
+
+### Requirement: Estado de la partida
+El sistema SHALL mantener un estado de partida con tres valores, en curso, eligiendo mejora y terminada, y exponerlo
+en el snapshot junto con el resultado de la partida: vacío, victoria o derrota (ver `run-outcome`). El resultado
+MUST estar definido si y solo si el estado es terminada. Toda partida recién creada MUST estar en curso y sin
+resultado. Las transiciones posibles son: de en curso a eligiendo mejora (al abrirse una oferta, ver `upgrades`), de
+eligiendo mejora a en curso (al elegir sin más subidas pendientes con mejoras disponibles) y de en curso a terminada,
+con derrota (la vida del jugador llega a 0) o con victoria (se completa el tick de la duración objetivo, ver
+`run-outcome`). Si ambas condiciones se dan en el mismo tick, el resultado es derrota. Una partida que está eligiendo
+mejora no puede pasar directamente a terminada. El paso a terminada y su resultado son irreversibles; una partida
+nueva solo se obtiene reiniciando (ver `run-results`).
+
+#### Scenario: Partida recién creada
+- **GIVEN** una partida recién creada con el contenido por defecto
+- **WHEN** se lee el snapshot antes del primer tick
+- **THEN** el estado es en curso y no hay resultado
+
+#### Scenario: Partida con vida restante
+- **GIVEN** un jugador con vida 100 golpeado 9 veces por un enemigo con damage 10
+- **WHEN** se lee el snapshot tras el noveno golpe
+- **THEN** la vida vale 10, el estado sigue en curso y no hay resultado
+
+#### Scenario: Eligiendo mejora y vuelta a en curso
+- **GIVEN** una partida en curso en nivel 1 con XP 4 que recoge una gema de valor 1 en el tick n
+- **WHEN** se lee el snapshot del tick n y, tras elegir una opción, se vuelve a leer
+- **THEN** el estado es eligiendo mejora en el primero y en curso en el segundo, sin resultado en ambos
+
+#### Scenario: Sin pasar por eligiendo si no hay mejoras disponibles
+- **GIVEN** una partida con todas las mejoras en su nivel máximo que sube de nivel en el tick n
+- **WHEN** se lee el snapshot del tick n
+- **THEN** el estado es en curso
+
+#### Scenario: Terminada por victoria
+- **GIVEN** una partida con duración objetivo de 120 ticks y el jugador vivo en el tick 119
+- **WHEN** se ejecuta el tick 120
+- **THEN** el estado es terminada y el resultado es victoria
+
+#### Scenario: Terminada por derrota
+- **GIVEN** una partida con duración objetivo de 36.000 ticks y un golpe letal en el tick 100
+- **WHEN** se ejecuta el tick 100
+- **THEN** el estado es terminada y el resultado es derrota
+
+#### Scenario: Oferta abierta justo antes del tick de la victoria
+- **GIVEN** una partida con duración objetivo de 120 ticks que abre una oferta en el tick 119
+- **WHEN** se piden 600 ticks con la oferta abierta, se elige la opción 0 y se ejecuta 1 tick
+- **THEN** durante la oferta el estado es eligiendo mejora con `snapshot.tick` 119 y sin resultado
+- **AND** tras el tick ejecutado el estado es terminada, con victoria y `snapshot.tick` 120
+
+### Requirement: Fin de partida al llegar a vida 0
+El sistema SHALL pasar la partida a terminada con resultado derrota en el mismo tick en que la vida del jugador
+llega a 0, también si ese tick es el de la duración objetivo (la derrota gana a la victoria, ver `run-outcome`).
+Ese tick cuenta: el contador de ticks del snapshot lo incluye. En ese tick MUST NOT aparecer ningún enemigo nuevo,
+recogerse ninguna gema ni abrirse ninguna oferta de mejoras: ni el paso de gemas ni el director ni la apertura de
+ofertas actúan en el tick en que la partida termina. Las gemas soltadas por las bajas de ese tick sí quedan en el
+suelo y esas bajas cuentan en el contador de bajas.
+
+#### Scenario: Golpe que deja la vida en 0
+- **GIVEN** una partida en el tick 99 con el jugador a vida 10, no invulnerable, y un enemigo con damage 10 que
+  estará en contacto en el tick 100
+- **WHEN** se ejecuta 1 tick
+- **THEN** el snapshot tiene tick 100, vida 0, estado terminada y resultado derrota
+
+#### Scenario: Varios contactos en el tick de la muerte
+- **GIVEN** un jugador con vida 10, no invulnerable, y dos enemigos con damage 10 y 25 en contacto en el mismo
+  tick
+- **WHEN** se ejecuta 1 tick
+- **THEN** la vida vale 0 (no negativa), el estado es terminada y el resultado es derrota
+
+#### Scenario: Sin spawns en el tick de la muerte
+- **GIVEN** una partida con el jugador a vida 10 y un enemigo con damage 10 que estará en contacto en el tick n,
+  y un director cuyo presupuesto alcanza el coste del tipo pendiente en el tick n
+- **WHEN** se ejecuta el tick n
+- **THEN** el número de enemigos vivos del snapshot del tick n es igual al del tick n − 1
+
+#### Scenario: Muerte y subida de nivel en el mismo tick
+- **GIVEN** un jugador en nivel 1 con XP 4 y vida 10, no invulnerable, una gema de valor 1 que se recogería en el
+  tick n y un enemigo con damage 10 en contacto en el tick n
+- **WHEN** se ejecuta el tick n
+- **THEN** el estado es terminada con resultado derrota, la vida vale 0 y no hay oferta abierta
+- **AND** el nivel sigue en 1 con XP 4 y la gema sigue en el snapshot
+
+#### Scenario: Una baja en el tick de la muerte deja su gema
+- **GIVEN** un jugador con vida 10, no invulnerable, un enemigo con damage 10 en contacto en el tick n y un bug con
+  vida 4 a 300 px que muere por el Linter en el tick n
+- **WHEN** se ejecuta el tick n
+- **THEN** el estado es terminada y el snapshot del tick n contiene la gema de ese bug y cuenta su baja
+
+#### Scenario: Muerte en el tick de la duración objetivo
+- **GIVEN** una partida con duración objetivo de 36.000 ticks, el jugador a vida 10, no invulnerable, y un enemigo
+  con damage 10 en contacto en el tick 36.000
+- **WHEN** se ejecuta el tick 36.000
+- **THEN** el estado es terminada, el resultado es derrota y la vida vale 0
+
+### Requirement: Simulación detenida tras terminar
+El sistema SHALL ignorar los ticks pedidos sobre una partida terminada, sea cual sea su resultado (victoria o
+derrota): MUST NOT cambiar la posición ni la vida del jugador, la posición, la vida, la indicación de daño reciente
+ni el número de enemigos, el presupuesto ni el tipo pendiente del director, la carga ni la cadencia de las armas, la
+posición ni el número de proyectiles, los pulsos visibles, las gemas, la XP, el nivel, los niveles de las mejoras,
+las bajas, el resultado, el estado del `RandomGenerator` ni el contador de ticks, sea cual sea el input. Sobre una
+partida terminada no hay oferta abierta y elegir mejora devuelve un error (ver `upgrades`). Pedir ticks sobre una
+partida terminada no produce errores.
+
+#### Scenario: 600 ticks después de terminar
+- **GIVEN** una partida que termina con derrota en el tick n con ≥ 1 enemigo vivo
+- **WHEN** se ejecutan 600 ticks más con input (1, 1)
+- **THEN** el snapshot es igual campo a campo al del tick n, incluidos `tick` = n, las bajas y el resultado
+- **AND** no se ha producido ningún error
+
+#### Scenario: 600 ticks después de ganar
+- **GIVEN** una partida que termina con victoria en el tick 36.000 con ≥ 1 enemigo vivo, ≥ 1 proyectil vivo y ≥ 1
+  gema en el suelo
+- **WHEN** se ejecutan 600 ticks más con input (1, 1)
+- **THEN** el snapshot es igual campo a campo al del tick 36.000, incluidos `tick` = 36.000, las bajas y el
+  resultado victoria
+- **AND** no se ha producido ningún error
+
+#### Scenario: Armas congeladas al terminar
+- **GIVEN** una partida que termina en el tick n con ≥ 1 proyectil vivo, 1 pulso visible, ≥ 1 enemigo con daño
+  reciente y un enemigo vivo a 50 px del jugador
+- **WHEN** se ejecutan 600 ticks más
+- **THEN** el snapshot es igual campo a campo al del tick n: mismos proyectiles en las mismas posiciones, el mismo
+  pulso, la misma indicación de daño, ninguna vida de enemigo cambiada y las mismas bajas
+
+#### Scenario: Gemas congeladas al terminar
+- **GIVEN** una partida que termina en el tick n con ≥ 1 gema atraída a 30 px del jugador
+- **WHEN** se ejecutan 600 ticks más
+- **THEN** la gema sigue en la misma posición, la XP y el nivel no cambian y no hay oferta
+
+#### Scenario: La terminación no consume azar
+- **GIVEN** dos partidas idénticas con la misma semilla que terminan en el mismo tick n, una vez con derrota y otra
+  vez (en otro par de partidas) con victoria
+- **WHEN** a una partida de cada par se le piden 600 ticks más y a la otra ninguno
+- **THEN** en cada par sus snapshots son iguales campo a campo
+
+#### Scenario: Una partida terminada no vuelve a en curso
+- **GIVEN** una partida terminada con derrota y otra terminada con victoria
+- **WHEN** se ejecutan 36.000 ticks más en cada una
+- **THEN** ambas siguen terminadas, con su mismo resultado; la de derrota sigue con vida 0

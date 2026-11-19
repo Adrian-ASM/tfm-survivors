@@ -1,4 +1,4 @@
-import type { RunStatus } from './RunStatus';
+import type { RunPhase } from './RunPhase';
 
 /** Enemigo vivo tal y como lo ve el adaptador de render (copia de escalares). */
 export interface EnemySnapshot {
@@ -69,10 +69,13 @@ export interface UpgradeLevelSnapshot {
   readonly level: number;
 }
 
-/** Lo único que el adaptador de render necesita para pintar un frame (spec simulation-loop). */
-export interface RunSnapshot {
+/** Todo el snapshot salvo la fase (estado + resultado). */
+export interface RunSnapshotBody {
   readonly tick: number;
-  readonly status: RunStatus;
+  /** Duración objetivo en ticks (constante en la partida; la vista calcula el tiempo restante). */
+  readonly durationTicks: number;
+  /** Bajas de la partida (spec run-outcome). */
+  readonly kills: number;
   readonly player: {
     readonly x: number;
     readonly y: number;
@@ -98,3 +101,9 @@ export interface RunSnapshot {
   readonly offer: readonly OfferSnapshot[];
   readonly upgrades: readonly UpgradeLevelSnapshot[];
 }
+
+/**
+ * Lo único que el adaptador de render necesita para pintar un frame (spec simulation-loop). La
+ * fase garantiza por tipo que `outcome` está definido si y solo si `status` es `over`.
+ */
+export type RunSnapshot = RunSnapshotBody & RunPhase;

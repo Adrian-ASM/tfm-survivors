@@ -1,6 +1,7 @@
 import type { Arena } from '../arena/Arena';
 import { contactDamage } from '../collision/contact';
-import { Enemy } from '../enemy/Enemy';
+import type { Enemy } from '../enemy/Enemy';
+import { Horde } from '../enemy/Horde';
 import type { Player } from '../player/Player';
 import type { PlayerInput } from '../player/PlayerInput';
 import type { RandomGenerator } from '../shared/RandomGenerator';
@@ -9,7 +10,7 @@ import type { GemField } from '../progression/GemField';
 import type { PlayerRules } from '../player/PlayerRules';
 import { err, ok, type DomainError, type Result } from '../shared/Result';
 import type { UpgradeChoiceError } from '../upgrade/UpgradeChoiceError';
-import { upgradedPlayer, upgradedWeapon } from '../upgrade/upgradeStats';
+import { maxHealthBonus, upgradedPlayer, upgradedWeapon } from '../upgrade/upgradeStats';
 import { WeaponType } from '../weapon/WeaponType';
 import { TICK_SECONDS } from '../shared/Tick';
 import { WaveDirector, type SpawnAttempt } from '../wave/WaveDirector';
@@ -34,14 +35,12 @@ import {
   toUpgradeLevels,
 } from './snapshotParts';
 import type { RunStatus } from './RunStatus';
+import { CHOOSING, LOST, RUNNING, WON, type RunOutcome, type RunPhase } from './RunPhase';
 import {
   SETUP_HEALTH_OUT_OF_RANGE,
   SETUP_POSITION_MUST_BE_FINITE,
-  initialEnemies,
-  initialExperience,
-  initialBoard,
-  initialGems,
-  initialPlayer,
+  initialState,
+  type InitialState,
   type RunSetup,
 } from './RunSetup';
 
@@ -59,19 +58,19 @@ export {
 /**
  * Partida en curso (aggregate root). Único punto de entrada para cambiar el estado de la
  * simulación. Contrato de determinismo: el orden del tick (jugador → persecución → armas, con un
- * único removeDead() si hay bajas que suelta sus gemas → contacto con los vivos → gemas y XP →
- * director → apertura de oferta) y el consumo de azar son fijos (armas, gemas y XP no consumen
- * azar; la oferta sí); cambiarlos cambia las partidas de una semilla.
+ * único removeDead() si hay bajas que suelta sus gemas → contacto con los vivos → victoria en el
+ * tick de la duración objetivo → gemas y XP → director → apertura de oferta) y el consumo de azar
+ * son fijos (armas, gemas, XP y fin de partida no consumen azar; la oferta sí); cambiarlos cambia
+ * las partidas de una semilla.
  */
 export class Run {
   private tickCount = 0;
-  private state: RunStatus = 'running';
-  private nextEnemyId: number;
+  private phase: RunPhase = RUNNING;
   private readonly arena: Arena;
   private readonly director: WaveDirector;
   private readonly arsenal: Arsenal;
   private player: Player;
-  private readonly enemies: Enemy[];
+  private readonly horde: Horde;
   private readonly gems: GemField;
   private readonly experience: Experience;
   private readonly board: UpgradeBoard;
@@ -83,15 +82,15 @@ export class Run {
   ) {
     this.arena = rules.arena;
     this.player = initial.player;
-    this.enemies = initial.enemies;
+    this.horde = new Horde(initial.enemies, rules.arena, initial.kills);
     this.gems = initial.gems;
     this.experience = initial.experience;
     this.board = initial.board;
-    this.nextEnemyId = this.enemies.length;
     this.director = new WaveDirector(rules.table, rules.spawn, random);
     this.arsenal = new Arsenal(rules.loadout, rules.pulseCapacity);
     for (const w of rules.loadout.weapons) this.retune(w.id);
-    this.player = this.player.withRules(this.effectivePlayer(), maxHealthBonus(rules, this.board));
+    const bonus = maxHealthBonus(rules.upgrades, this.board.levels);
+    this.player = this.player.withRules(this.effectivePlayer(), bonus);
   }
 
   static start(
@@ -101,30 +100,19 @@ export class Run {
   ): Result<Run, DomainError> {
     const rules = buildRunRules(config);
     if (!rules.ok) return rules;
-    const player = initialPlayer(rules.value, setup);
-    if (!player.ok) return player;
-    const enemies = initialEnemies(setup, rules.value.catalog, rules.value.arena);
-    if (!enemies.ok) return enemies;
-    const gems = initialGems(rules.value, setup);
-    if (!gems.ok) return gems;
-    const experience = initialExperience(rules.value, setup);
-    if (!experience.ok) return experience;
-    const board = initialBoard(rules.value, setup);
-    if (!board.ok) return board;
-    return ok(
-      new Run(rules.value, random, {
-        player: player.value,
-        enemies: enemies.value,
-        gems: gems.value,
-        experience: experience.value,
-        board: board.value,
-      }),
-    );
+    const initial = initialState(rules.value, setup);
+    if (!initial.ok) return initial;
+    return ok(new Run(rules.value, random, initial.value));
   }
 
   /** Estado de la partida (lectura barata, sin snapshot). */
   get status(): RunStatus {
-    return this.state;
+    return this.phase.status;
+  }
+
+  /** Resultado: definido si y solo si la partida está terminada (spec run-outcome). */
+  get outcome(): RunOutcome | null {
+    return this.phase.outcome;
   }
 
   /**
@@ -134,7 +122,7 @@ export class Run {
    * un entero en [0, k − 1] devuelve un error y no cambia nada (ni consume azar).
    */
   chooseUpgrade(index: number): Result<void, UpgradeChoiceError> {
-    if (this.state !== 'choosing') return err({ code: 'no-offer' });
+    if (this.phase.status !== 'choosing') return err({ code: 'no-offer' });
     const picked = this.board.pick(index);
     if (!picked.ok) return picked;
     const { target, stat, perLevel } = picked.value;
@@ -147,7 +135,7 @@ export class Run {
       );
     }
     this.experience.resolveOne();
-    this.state = 'running';
+    this.phase = RUNNING;
     this.openNextOffer();
     return ok(undefined);
   }
@@ -173,22 +161,22 @@ export class Run {
   /**
    * Tick n = tickCount + 1 (el que mostrará el snapshot). Con la partida terminada o eligiendo
    * mejora no hace nada: ni pasos, ni azar, ni contador (spec run-state).
-   * El tick de la muerte cuenta, pero el director no actúa en él (spec run-state).
+   * El tick de la muerte o de la victoria cuenta, pero sin gemas ni director (spec run-outcome).
    */
   tick(input: PlayerInput): void {
-    if (this.state !== 'running') return;
+    if (this.phase.status !== 'running') return;
     const n = this.tickCount + 1;
     this.player = this.player.move(input, TICK_SECONDS, this.arena);
     const { x, y } = this.player.position;
-    for (const enemy of this.enemies) enemy.chase(x, y, TICK_SECONDS, this.arena);
-    if (this.arsenal.step(n, x, y, this.enemies) > 0) this.removeDead();
-    if (this.applyContact(n)) {
+    this.horde.chase(x, y, TICK_SECONDS);
+    if (this.arsenal.step(n, x, y, this.horde.alive) > 0) this.horde.removeDead(this.dropGem);
+    if (this.applyContact(n) || this.reachedEnd(n)) {
       this.tickCount = n;
       return;
     }
     const xp = this.gems.step(x, y, this.player.radius, this.player.pickupRadius);
     if (xp > 0) this.experience.gain(xp);
-    this.director.step(n, this.enemies.length, this.place);
+    this.director.step(n, this.horde.alive.length, this.place);
     this.tickCount = n;
     this.openNextOffer();
   }
@@ -201,7 +189,7 @@ export class Run {
   private openNextOffer(): void {
     if (this.experience.pendingLevelUps === 0 || this.board.isOpen) return;
     if (this.board.open(this.random)) {
-      this.state = 'choosing';
+      this.phase = CHOOSING;
     } else {
       this.experience.clearPending();
     }
@@ -213,33 +201,31 @@ export class Run {
    */
   private applyContact(n: number): boolean {
     const { x, y } = this.player.position;
-    const damage = contactDamage(x, y, this.player.radius, this.enemies);
+    const damage = contactDamage(x, y, this.player.radius, this.horde.alive);
     if (damage === 0 || !this.player.canBeHitAt(n)) return false;
     this.player = this.player.hit(damage, n);
     if (!this.player.health.isDepleted) return false;
-    this.state = 'over';
+    this.phase = LOST;
     return true;
   }
 
   /**
-   * Compactación estable en el sitio (ADR-0006): O(n), sin asignar y conservando el orden de
-   * aparición de los vivos. Cada muerto suelta su gema en su posición, en orden de la lista
-   * (spec xp-gems); el muerto conserva posición y tipo hasta este pase.
+   * Victoria (spec run-outcome): si el jugador sigue vivo tras el contacto del tick de la duración
+   * objetivo, la partida termina con victoria y el tick acaba aquí, como el de la muerte.
    */
-  private removeDead(): void {
-    let w = 0;
-    for (let r = 0; r < this.enemies.length; r++) {
-      const e = this.enemies[r];
-      if (!e) continue;
-      if (e.alive) {
-        if (w !== r) this.enemies[w] = e;
-        w++;
-      } else {
-        this.gems.drop(e.x, e.y, e.type.xp);
-      }
-    }
-    this.enemies.length = w;
+  private reachedEnd(n: number): boolean {
+    if (!this.rules.duration.endsAt(n)) return false;
+    this.phase = WON;
+    return true;
   }
+
+  /**
+   * Cada muerto suelta su gema en su posición, en orden de la lista (spec xp-gems). Se crea una
+   * sola vez: no asigna por tick.
+   */
+  private readonly dropGem = (dead: Enemy): void => {
+    this.gems.drop(dead.x, dead.y, dead.type.xp);
+  };
 
   /** Los enemigos nuevos van al final de la lista y no se mueven en el tick en que aparecen. */
   private readonly place: SpawnAttempt = (type) => {
@@ -251,8 +237,7 @@ export class Run {
       this.random,
     );
     if (!at) return false;
-    this.enemies.push(Enemy.spawn(this.nextEnemyId, type, at.x, at.y, this.arena));
-    this.nextEnemyId += 1;
+    this.horde.spawn(type, at.x, at.y);
     return true;
   };
 
@@ -264,10 +249,12 @@ export class Run {
     const { position, radius, health } = this.player;
     const k = this.tickCount;
     const flash = this.rules.loadout.hitFlashTicks;
-    const enemies = this.enemies.map((e) => toEnemySnapshot(e, e.damagedAt(k, flash)));
+    const enemies = this.horde.alive.map((e) => toEnemySnapshot(e, e.damagedAt(k, flash)));
     return Object.freeze({
       tick: this.tickCount,
-      status: this.state,
+      ...this.phase,
+      durationTicks: this.rules.duration.ticks,
+      kills: this.horde.kills,
       player: Object.freeze({
         x: position.x,
         y: position.y,
@@ -288,20 +275,4 @@ export class Run {
       upgrades: toUpgradeLevels(this.rules.upgrades, this.board),
     });
   }
-}
-
-interface InitialState {
-  readonly player: Player;
-  readonly enemies: Enemy[];
-  readonly gems: GemField;
-  readonly experience: Experience;
-  readonly board: UpgradeBoard;
-}
-
-/** Vida máxima que suman las mejoras de `maxHealth` con los niveles actuales. */
-function maxHealthBonus(rules: RunRules, board: UpgradeBoard): number {
-  return rules.upgrades.upgrades.reduce(
-    (sum, u, i) => (u.stat === 'maxHealth' ? sum + u.perLevel * board.levelOf(i) : sum),
-    0,
-  );
 }

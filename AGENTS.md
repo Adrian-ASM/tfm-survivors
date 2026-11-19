@@ -12,7 +12,8 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
 - **Stack**: TypeScript estricto · Vite · **Phaser 4.2.1** (ADR-0001) · Vitest · Playwright · zod.
 - **Arquitectura**: Clean Architecture. El **núcleo de simulación es puro y determinista** (`src/domain`, `src/application`);
   el motor de juego es un **adaptador** (`src/infrastructure`). Ver `docs/adr/0002-nucleo-de-simulacion-puro.md`.
-- **Estado del proyecto**: walking skeleton (change 0001). Fuente de verdad del comportamiento: `openspec/specs/`.
+- **Estado del proyecto**: bucle de partida completo (changes 0001–0006: movimiento, oleadas, daño, armas,
+  XP y mejoras, victoria/derrota, HUD y reinicio). Fuente de verdad del comportamiento: `openspec/specs/`.
 
 ## 2. Comandos
 

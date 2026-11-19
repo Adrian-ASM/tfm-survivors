@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { VIEW_SIZE_MUST_BE_POSITIVE } from '../../domain/arena/View';
+import { RUN_DURATION_MUST_BE_INTEGER } from '../../domain/run/RunDuration';
 import {
   ENEMY_COST_MUST_BE_POSITIVE,
   ENEMY_DAMAGE_MUST_BE_POSITIVE,
@@ -217,4 +218,10 @@ export const WavesSchema = z.strictObject({
       }),
     )
     .min(1, { error: WAVES_NEED_SEGMENTS }),
+});
+
+// Duración objetivo de la partida (content/run.json, spec run-outcome). `RunDuration` repite la
+// regla en el dominio como defensa en `Run.start`.
+export const RunSchema = z.strictObject({
+  durationSeconds: Count(RUN_DURATION_MUST_BE_INTEGER),
 });

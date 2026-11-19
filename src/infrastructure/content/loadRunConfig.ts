@@ -3,6 +3,7 @@ import arenaJson from '../../../content/arena.json';
 import enemiesJson from '../../../content/enemies.json';
 import playerJson from '../../../content/player.json';
 import progressionJson from '../../../content/progression.json';
+import runJson from '../../../content/run.json';
 import upgradesJson from '../../../content/upgrades.json';
 import wavesJson from '../../../content/waves.json';
 import weaponsJson from '../../../content/weapons.json';
@@ -13,6 +14,7 @@ import {
   EnemiesSchema,
   PlayerSchema,
   ProgressionSchema,
+  RunSchema,
   UpgradesSchema,
   WavesSchema,
   WeaponsSchema,
@@ -30,6 +32,7 @@ const RunConfigSchema = z
     weapons: WeaponsSchema,
     progression: ProgressionSchema,
     upgrades: UpgradesSchema,
+    run: RunSchema,
   })
   .superRefine((config, ctx) => {
     const rules = buildRunRules(config);
@@ -50,6 +53,7 @@ export function parseRunConfig(raw: {
   weapons: unknown;
   progression: unknown;
   upgrades: unknown;
+  run: unknown;
 }): Result<RunConfig, DomainError> {
   const parsed = RunConfigSchema.safeParse(raw);
   if (parsed.success) return ok(parsed.data);
@@ -68,5 +72,6 @@ export function loadRunConfig(): Result<RunConfig, DomainError> {
     weapons: weaponsJson,
     progression: progressionJson,
     upgrades: upgradesJson,
+    run: runJson,
   });
 }

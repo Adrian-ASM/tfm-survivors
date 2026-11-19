@@ -85,6 +85,7 @@ describe('Partidas largas (10 min)', () => {
   });
 
   it('Partida larga reproducible', () => {
+    expect(audited.final).toMatchObject({ tick: TEN_MINUTES, status: 'over', outcome: 'won' });
     expect(finalSnapshot(SPAWN_AUDIT, SEED, inputs)).toStrictEqual(audited.final);
   });
 
@@ -114,7 +115,11 @@ describe('Partidas largas (10 min)', () => {
       return run.snapshot();
     };
     const a = final();
-    expect(final()).toStrictEqual(a);
+    const b = final();
+    const summary = (s: RunSnapshot) => [s.status, s.outcome, s.tick, s.kills];
+    expect(a.outcome).not.toBeNull();
+    expect(summary(b)).toEqual(summary(a));
+    expect(b).toStrictEqual(a);
   });
 
   it('Partida larga reproducible con la vida por defecto', () => {

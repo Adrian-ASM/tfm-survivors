@@ -1,0 +1,154 @@
+# Spec delta · run-results
+
+<!-- Change 0006-run-lifecycle-hud. Capacidad nueva: al terminar la partida (victoria o derrota) aparece, en la misma
+     escena, un overlay de resultados, y la tecla R empieza una partida nueva sin recargar la página.
+     Decisiones del gate: tecla R; la semilla de la partida nueva la elige la composición (ver `simulation-loop`). -->
+
+## ADDED Requirements
+
+### Requirement: Overlay de resultados
+La vista SHALL mostrar un overlay de resultados si y solo si el último snapshot pintado tiene la partida terminada.
+El overlay MUST mostrar:
+- un título según el resultado: `Victoria` si el resultado es victoria y `Derrota` si es derrota;
+- el tiempo sobrevivido en formato `mm:ss` (ver "Tiempo sobrevivido");
+- el nivel alcanzado (el nivel del snapshot);
+- las bajas de la partida (ver `run-outcome`);
+- una indicación de que la tecla R empieza una partida nueva.
+
+Con la partida en curso o eligiendo mejora el overlay de resultados no se ve. El overlay solo depende del snapshot:
+no cambia la simulación.
+
+#### Scenario: Overlay tras una derrota
+- **GIVEN** un snapshot terminado con resultado derrota en el tick 1.259, nivel 3 y 41 bajas
+- **WHEN** se pinta
+- **THEN** el overlay de resultados es visible con el título `Derrota`, tiempo `00:20`, nivel 3, 41 bajas y la
+  indicación de la tecla R
+
+#### Scenario: Overlay tras una victoria
+- **GIVEN** un snapshot terminado con resultado victoria en el tick 36.000, nivel 18 y 2.150 bajas
+- **WHEN** se pinta
+- **THEN** el overlay de resultados es visible con el título `Victoria`, tiempo `10:00`, nivel 18 y 2150 bajas
+
+#### Scenario: Sin overlay durante la partida
+- **GIVEN** un snapshot en curso y otro eligiendo mejora
+- **WHEN** se pinta cada uno
+- **THEN** el overlay de resultados no es visible en ninguno de los dos
+
+#### Scenario: Aparece en el mismo frame en que termina la partida
+- **GIVEN** un snapshot pintado en curso en el tick n − 1 y el siguiente terminado en el tick n
+- **WHEN** se pinta el segundo
+- **THEN** el overlay de resultados es visible en ese frame
+
+### Requirement: Tiempo sobrevivido
+La vista SHALL calcular el tiempo sobrevivido como los segundos enteros completos del tiempo de partida:
+⌊`snapshot.tick` / 60⌋, en formato `mm:ss` con `ss` de 2 dígitos (00–59) y `mm` de al menos 2 dígitos, sin acotar
+a 59.
+
+#### Scenario: Valores de borde
+- **GIVEN** snapshots terminados en los ticks 59, 60, 1.259, 35.999 y 36.000
+- **WHEN** se calcula el tiempo sobrevivido de cada uno
+- **THEN** vale `00:00`, `00:01`, `00:20`, `09:59` y `10:00` respectivamente
+
+#### Scenario: Más de una hora
+- **GIVEN** un snapshot terminado en el tick 360.000 (partida con `durationSeconds` 6.000)
+- **WHEN** se calcula el tiempo sobrevivido
+- **THEN** vale `100:00`
+
+### Requirement: Reinicio con la tecla R
+El sistema SHALL, al pulsar la tecla R con la partida terminada (victoria o derrota), descartar la partida terminada
+y empezar exactamente una partida nueva con el mismo contenido y una semilla nueva (ver `simulation-loop`), sin
+recargar la página. Con la partida en curso o eligiendo mejora, la tecla R MUST NOT hacer nada. Con la partida
+terminada, las teclas 1, 2 y 3 y el input de movimiento no hacen nada (ver `run-state` y `upgrades`).
+
+#### Scenario: Reinicio tras una derrota
+- **GIVEN** una partida terminada con derrota y el overlay de resultados visible
+- **WHEN** se pulsa la tecla R
+- **THEN** el siguiente snapshot pintado es el de una partida nueva en curso, sin resultado
+- **AND** el overlay de resultados deja de verse
+
+#### Scenario: Reinicio tras una victoria
+- **GIVEN** una partida terminada con victoria en el tick 36.000
+- **WHEN** se pulsa la tecla R
+- **THEN** el siguiente snapshot pintado es el de una partida nueva en curso, sin resultado y con tick ≤ 15
+
+#### Scenario: R durante la partida
+- **GIVEN** una partida en curso en el tick 500 con 4 bajas
+- **WHEN** se pulsa la tecla R y el motor informa de 1 frame de 16,667 ms
+- **THEN** el snapshot tiene tick 501, las bajas valen ≥ 4 y la partida no se ha reiniciado
+
+#### Scenario: R mientras se elige mejora
+- **GIVEN** una partida eligiendo mejora en el tick n con el overlay de elección visible
+- **WHEN** se pulsa la tecla R
+- **THEN** el snapshot sigue en el tick n con la misma oferta y el overlay de elección sigue visible
+- **AND** al pulsar después la tecla 1 se elige la opción de índice 0 de esa oferta
+
+#### Scenario: Una pulsación, una partida nueva
+- **GIVEN** una partida terminada
+- **WHEN** se pulsa la tecla R, se mantiene pulsada 60 frames y se suelta
+- **THEN** se ha creado exactamente 1 partida nueva y su snapshot avanza con normalidad (tick ≥ 45 tras esos 60
+  frames de 16,667 ms)
+
+#### Scenario: Teclas sin efecto con la partida terminada
+- **GIVEN** una partida terminada en el tick n
+- **WHEN** se pulsan las teclas 1, 2 y 3 y se mantiene input (1, 1) durante 60 frames, sin pulsar R
+- **THEN** el snapshot sigue igual campo a campo al del tick n y el overlay de resultados sigue visible
+
+### Requirement: Partida nueva tras reiniciar
+El sistema SHALL empezar la partida nueva desde cero, sin arrastrar nada de la terminada: tick 0, estado en curso,
+sin resultado, vida y vida máxima iguales a la vida máxima base del contenido (sin mejoras), jugador no
+invulnerable y en la posición inicial, nivel 1, XP 0, XP para el siguiente nivel la del nivel 1, 0 bajas, ninguna
+mejora adquirida, sin oferta, sin enemigos, proyectiles, pulsos ni gemas, todas las armas cargadas y el director en
+su estado inicial (presupuesto 0 y tramo inicial).
+
+#### Scenario: Estado inicial tras reiniciar una partida avanzada
+- **GIVEN** una partida terminada con derrota en el tick 20.000, nivel 15, `guardrail` en nivel 2 (vida máxima
+  140), 900 bajas, ≥ 1 enemigo, ≥ 1 proyectil y ≥ 1 gema en el snapshot
+- **WHEN** se pulsa la tecla R y se lee el snapshot de la partida nueva antes de su primer tick
+- **THEN** tick 0, estado en curso, sin resultado, vida 100 de 100, no invulnerable, nivel 1, XP 0, XP para el
+  siguiente nivel 5, 0 bajas, sin mejoras adquiridas, sin oferta y listas de enemigos, proyectiles, pulsos y gemas
+  vacías
+- **AND** la lista de armas es `linter` y `tests`, en ese orden, ambas cargadas
+
+#### Scenario: La partida nueva juega con normalidad
+- **GIVEN** la partida nueva del escenario anterior
+- **WHEN** se ejecutan 600 ticks
+- **THEN** `snapshot.tick` vale 600 y la partida avanza según las reglas de una partida recién creada (aparecen
+  enemigos y las armas disparan)
+
+#### Scenario: Equivalente a una partida recién creada
+- **GIVEN** una partida nueva obtenida al reiniciar con la semilla S y otra partida recién creada en otra carga con
+  la misma semilla S y el mismo contenido
+- **WHEN** ambas reciben la misma secuencia de 600 inputs con la política de elección fija
+- **THEN** sus snapshots son iguales campo a campo en cada tick
+
+### Requirement: Vista limpia tras reiniciar
+La vista SHALL pintar, desde el primer frame de la partida nueva, exactamente los elementos de su snapshot: MUST
+NOT quedar visible ningún sprite de enemigo, proyectil, pulso o gema de la partida terminada, ni el overlay de
+resultados ni el de elección. El HUD muestra los valores de la partida nueva. Reiniciar varias veces seguidas MUST
+NOT dejar sprites visibles que no correspondan al snapshot.
+
+#### Scenario: Primer frame tras reiniciar
+- **GIVEN** una partida terminada ya pintada con 200 enemigos, 32 proyectiles, 1 pulso y 300 gemas
+- **WHEN** se pulsa la tecla R y se pinta el snapshot de la partida nueva en el tick 0
+- **THEN** hay 0 sprites visibles de enemigo, proyectil, pulso y gema, y el overlay de resultados no es visible
+- **AND** el HUD muestra vida `100/100`, tiempo `10:00`, nivel 1 y 0 bajas
+
+#### Scenario: Cinco reinicios seguidos
+- **GIVEN** una sesión en la que se juegan y terminan 5 partidas seguidas, reiniciando con R tras cada una, cada
+  una con ≥ 1 enemigo y ≥ 1 gema al terminar
+- **WHEN** se pinta cada snapshot de la sexta partida durante 600 ticks
+- **THEN** en cada frame el número de sprites visibles de enemigo, proyectil, pulso y gema es igual al número de
+  enemigos, proyectiles, pulsos y gemas del snapshot pintado
+
+### Requirement: Bucle completo observable en el navegador
+El sistema SHALL permitir, en el juego real, recorrer el bucle jugar → perder → ver resultados → reiniciar → volver
+a jugar sin recargar la página. La victoria no se comprueba en el navegador (solo en el núcleo, ver `run-outcome`).
+
+#### Scenario: Derrota y reinicio en el navegador
+- **GIVEN** la build de producción servida con `?seed=42` y sin input de movimiento del jugador
+- **WHEN** una prueba E2E deja jugar, pulsando la tecla 1 cada vez que aparece el overlay de elección, hasta que la
+  partida termina (como mucho 120 s de juego; plazo provisional, a medir en apply)
+- **THEN** la partida está terminada con resultado derrota y el overlay de resultados es visible con el título
+  `Derrota`, el tiempo sobrevivido ⌊tick / 60⌋ en `mm:ss`, el nivel y las bajas del snapshot
+- **AND** tras pulsar la tecla R, en el primer segundo de la partida nueva (tick ≤ 60) el estado es en curso, sin
+  resultado, con 0 bajas, nivel 1, XP 0 y el overlay de resultados no visible

@@ -19,6 +19,7 @@ import { GemRules, type GemRulesConfig } from '../progression/GemRules';
 import { XpCurve, type XpCurveConfig } from '../progression/XpCurve';
 import { UpgradeCatalog } from '../upgrade/UpgradeCatalog';
 import type { UpgradeTypeConfig } from '../upgrade/UpgradeType';
+import { RunDuration } from './RunDuration';
 
 export type { WeaponsConfig, PlayerRules };
 export {
@@ -60,6 +61,8 @@ export interface RunConfig {
   /** Curva de XP y gemas (fichero de progresión, plano). */
   readonly progression: XpCurveConfig & GemRulesConfig;
   readonly upgrades: UpgradesConfig;
+  /** Duración objetivo de la partida (content/run.json). */
+  readonly run: { readonly durationSeconds: number };
 }
 
 /** Forma del contenido de mejoras (content/upgrades.json). */
@@ -83,6 +86,8 @@ export interface RunRules {
   readonly upgrades: UpgradeCatalog;
   /** Cota de pulsos visibles a la vez con la cadencia mínima alcanzable (ADR-0008). */
   readonly pulseCapacity: number;
+  /** Duración objetivo: la partida se gana al completar el tick `duration.ticks`. */
+  readonly duration: RunDuration;
 }
 
 function checkBudgetCoversCatalog(spawn: SpawnRules, catalog: EnemyCatalog): DomainError | null {
@@ -125,6 +130,8 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
     arena.value,
   );
   if (!upgrades.ok) return upgrades;
+  const duration = RunDuration.create(config.run.durationSeconds);
+  if (!duration.ok) return duration;
   return ok({
     arena: arena.value,
     view: view.value,
@@ -137,5 +144,6 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
     gems: gems.value,
     upgrades: upgrades.value,
     pulseCapacity: upgrades.value.pulseCapacity,
+    duration: duration.value,
   });
 }

@@ -35,4 +35,9 @@ export class ProjectileLayer {
   sync(projectiles: readonly ProjectileSnapshot[]): void {
     this.pool.sync(projectiles);
   }
+
+  /** Oculta todos los sprites (reinicio de partida). */
+  clear(): void {
+    this.pool.clear();
+  }
 }
