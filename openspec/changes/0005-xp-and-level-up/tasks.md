@@ -93,7 +93,7 @@
 - [x] 1.25 Snapshot ampliado y congelado (`gems`, `progression`, `offer`, `upgrades`) — escenarios: "Gemas en el
   snapshot", "Oferta en el snapshot", "Snapshot no mutable desde fuera" (con gemas y con oferta), "XP acumulada hasta
   el nivel 3"
-- [ ] 1.26 Determinismo con elecciones — escenarios: "Dos partidas idénticas", "Partida con progresión reproducible",
+- [x] 1.26 Determinismo con elecciones — escenarios: "Dos partidas idénticas", "Partida con progresión reproducible",
   "Elecciones distintas divergen", "Partida larga reproducible", "Oferta reproducible", "Todas las mejoras pueden
   salir", "Partida con contactos reproducible", "Partida con armas reproducible"
 - [ ] 1.27 Revisar tests heredados con contenido por defecto (`long-run`, escenarios largos de armas y spawning) para
