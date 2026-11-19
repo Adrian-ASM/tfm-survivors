@@ -104,11 +104,12 @@ export class Run {
   }
 
   /**
-   * Tick n = tickCount + 1 (el que mostrará el snapshot). Con la partida terminada no hace nada.
+   * Tick n = tickCount + 1 (el que mostrará el snapshot). Con la partida terminada o eligiendo
+   * mejora no hace nada: ni pasos, ni azar, ni contador (spec run-state).
    * El tick de la muerte cuenta, pero el director no actúa en él (spec run-state).
    */
   tick(input: PlayerInput): void {
-    if (this.state === 'over') return;
+    if (this.state !== 'running') return;
     const n = this.tickCount + 1;
     this.player = this.player.move(input, TICK_SECONDS, this.arena);
     const { x, y } = this.player.position;
