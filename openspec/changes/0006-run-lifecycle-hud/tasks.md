@@ -128,7 +128,7 @@
   `killsLabel`. Escenarios de hud: "Valores en torno al inicio", "Valores en torno al final", "Valor intermedio",
   "Otras duraciones", "Vida llena", "Vida parcial con la vida máxima mejorada", "Vida 0", "Vida fraccionaria" y
   "Muchas bajas".
-- [ ] 3.4 `phaser/Hud.ts` con dobles (`BarSprite`/`LabelSprite`): compone `XpBar` y solo llama a
+- [x] 3.4 `phaser/Hud.ts` con dobles (`BarSprite`/`LabelSprite`): compone `XpBar` y solo llama a
   `setSize`/`setText` con cambios. Escenarios de hud: "HUD al empezar", "HUD con la partida terminada", "Golpe entre
   dos snapshots", "Bajas que cambian entre snapshots", "Sin bajas", "Barra de XP dentro del HUD" y "El tiempo no
   corre mientras se elige mejora". Escenarios de leveling: "Barra vacía al empezar", "Relleno parcial" y "Tras subir
