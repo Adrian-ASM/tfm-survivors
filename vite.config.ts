@@ -12,5 +12,7 @@ export default defineConfig({
     include: ['tests/**/*.test.ts'],
     environment: 'node',
     testTimeout: 20_000,
+    // `npm run bench` (aparte de `npm test`, que solo incluye *.test.ts): design 0002-enemy-spawning.
+    benchmark: { include: ['tests/bench/**/*.bench.ts'] },
   },
 });

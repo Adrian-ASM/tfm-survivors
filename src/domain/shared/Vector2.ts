@@ -29,4 +29,8 @@ export class Vector2 {
   length(): number {
     return Math.hypot(this.x, this.y);
   }
+
+  distanceTo(other: Vector2): number {
+    return Math.hypot(other.x - this.x, other.y - this.y);
+  }
 }

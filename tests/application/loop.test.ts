@@ -3,7 +3,9 @@ import { FixedStepLoop } from '../../src/application/FixedStepLoop';
 import { StartRun } from '../../src/application/StartRun';
 import type { TickRun } from '../../src/application/TickRun';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
-import { aRunConfig, seededRandom } from '../support/builders';
+import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
+import { TICK_MS, aRunConfig, aSegment, aWavesConfig } from '../support/builders';
+import { randomInputs } from '../support/inputs';
 
 const ticksFor = (...framesMs: number[]): number[] => {
   const loop = new FixedStepLoop();
@@ -36,7 +38,7 @@ describe('FixedStepLoop · paso fijo', () => {
 });
 
 function start(): TickRun {
-  const r = new StartRun().execute(aRunConfig());
+  const r = new StartRun().execute(aRunConfig(), new Mulberry32RandomGenerator(2026));
   if (!r.ok) throw new Error(r.error.message);
   return r.value;
 }
@@ -56,10 +58,7 @@ describe('TickRun', () => {
   });
 
   it('Dos partidas idénticas', () => {
-    const rnd = seededRandom(2026);
-    const inputs = Array.from({ length: 600 }, () =>
-      PlayerInput.of(Math.round(rnd() * 2 - 1), Math.round(rnd() * 2 - 1)),
-    );
+    const inputs = randomInputs(600, 2026);
     const a = start();
     const b = start();
     for (const input of inputs) {
@@ -71,7 +70,27 @@ describe('TickRun', () => {
   });
 
   it('StartRun propaga el error de contenido', () => {
-    const r = new StartRun().execute(aRunConfig({ radius: 300 }));
+    const r = new StartRun().execute(aRunConfig({ radius: 300 }), new Mulberry32RandomGenerator(1));
     expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.field).toBe('player.radius');
+  });
+
+  it('StartRun propaga el error de contenido de enemigos y oleadas', () => {
+    const config = aWavesConfig({ segments: [aSegment(['bug', 'segfault'], 1)] });
+    const r = new StartRun().execute(config, new Mulberry32RandomGenerator(1));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.field).toBe('waves.segments.0.types.1');
+  });
+
+  it('StartRun usa el generador recibido: misma semilla, mismos enemigos', () => {
+    const play = (seed: number) => {
+      const r = new StartRun().execute(aRunConfig(), new Mulberry32RandomGenerator(seed));
+      if (!r.ok) throw new Error(r.error.message);
+      for (let i = 0; i < 300; i++) r.value.execute(TICK_MS, PlayerInput.NONE);
+      return r.value.snapshot();
+    };
+    expect(play(9).enemies.length).toBeGreaterThan(0);
+    expect(play(9)).toStrictEqual(play(9));
+    expect(play(9).enemies).not.toEqual(play(10).enemies);
   });
 });

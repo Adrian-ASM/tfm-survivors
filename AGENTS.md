@@ -23,6 +23,7 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
 | `npm run dev` | Servidor de desarrollo (`http://localhost:5173/tfm-survivors/`) |
 | `npm run verify` | lint + typecheck + guardarraíl sobre todo el repo + tests unitarios. **Ejecútalo tras cualquier cambio de código. No cierres una tarea en rojo.** |
 | `npm run test:e2e` | Build + `vite preview` + Playwright (chromium) |
+| `npm run bench` | Benchmark del núcleo (Vitest bench). Depende de la máquina: no bloquea `verify` ni CI |
 | `npm run build` | Build de producción (`dist/`) |
 | `npm run guard:all` | Reglas de `.claude/hooks/` sobre todos los ficheros versionados (lo que hace el CI) |
 

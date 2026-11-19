@@ -17,7 +17,8 @@
     "test:e2e": "playwright test",
     "guard:all": "node scripts/guard-staged.mjs --all",
     "verify": "npm run lint && npm run typecheck && npm run guard:all && npm run test",
-    "prepare": "husky"
+    "prepare": "husky",
+    "bench": "vitest bench --run --reporter=verbose"
   },
   "lint-staged": {
     "*.{ts,mjs,js}": [
