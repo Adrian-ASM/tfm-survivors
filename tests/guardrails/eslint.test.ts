@@ -52,3 +52,27 @@ describe('ESLint · capas y pureza', () => {
     expect(msgs.some((m) => m.startsWith('no-restricted-globals'))).toBe(true);
   });
 });
+
+describe('ESLint · evasiones de las reglas del núcleo (verify-report W2)', () => {
+  it.each(['domain', 'application'])('import() dinámico del motor en %s', async (layer) => {
+    const msgs = await lintIn(layer, "export const load = () => import('phaser');\n");
+    expect(msgs.some((m) => m.startsWith('no-restricted-syntax'))).toBe(true);
+  });
+
+  it.each([
+    ['globalThis.localStorage', 'export const s = globalThis.localStorage;\n'],
+    ['self.document', 'export const d = self.document;\n'],
+    ['alias de globalThis', 'const g = globalThis;\nexport const s = g.localStorage;\n'],
+  ])('acceso vía %s en el dominio', async (_name, code) => {
+    const msgs = await lintIn('domain', code);
+    expect(msgs.some((m) => m.startsWith('no-restricted-globals'))).toBe(true);
+  });
+
+  it('infraestructura puede usar import() y globalThis', async () => {
+    const msgs = await lintIn(
+      'infrastructure',
+      "export const load = () => import('phaser');\nexport const g = globalThis.localStorage;\n",
+    );
+    expect(msgs.filter((m) => m.startsWith('no-restricted'))).toEqual([]);
+  });
+});

@@ -51,7 +51,7 @@
 - [x] 5.1 (W4) Validar en `loadRunConfig` que el radio del jugador cabe en la arena (`superRefine` sobre el conjunto
       jugador+arena) para que la **carga** falle con un error que nombre `player.radius`, como dice la spec. Mantener
       la invariante en el dominio como defensa — escenario: "Radio que no cabe en la arena"
-- [ ] 5.2 (W2) Cerrar evasiones de pureza/capas en ESLint (`ImportExpression`, accesos vía `globalThis`/`self`) y en
+- [x] 5.2 (W2) Cerrar evasiones de pureza/capas en ESLint (`ImportExpression`, accesos vía `globalThis`/`self`) y en
       el hook (`import(…)`, `import '…'` de efecto, desestructuración de `Math`) — tests en `tests/guardrails/`
 - [ ] 5.3 (W1) `guard-staged.mjs` en proceso: los hooks exportan `check({ file_path, content })` (manteniendo el
       wrapper stdin para Claude Code) y el índice se lee con una sola llamada (`git cat-file --batch`) — escenario:
