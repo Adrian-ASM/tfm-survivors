@@ -49,7 +49,7 @@
       Cubre PH "Tangencia exacta no es contacto" y "Contactos simultáneos de daño distinto" (regla).
 
 ## 3. Dominio: director de oleadas
-- [ ] 3.1 `WaveDirector.step`: `budget60 = min(budget60 + bps, maxBudget × 60)` también en el tope, y en el tope
+- [x] 3.1 `WaveDirector.step`: `budget60 = min(budget60 + bps, maxBudget × 60)` también en el tope, y en el tope
       `return` sin sortear. En `tests/domain/wave-director.test.ts`:
       - el `harness` acepta `maxBudget`;
       - "Se alcanza el tope" y "Varios spawns en un tick" pasan a usar `maxBudget` 20;
@@ -57,7 +57,7 @@
 
       Cubre ES "Ritmo constante con coste 1", "El coste retrasa la aparición", "Varios spawns en un tick", "Se
       alcanza el tope", "El tope se mantiene", "Tope mínimo" y "El presupuesto no se pierde al aplazar".
-- [ ] 3.2 Tests nuevos del director con un `place` falso y `alive` controlado por el harness:
+- [x] 3.2 Tests nuevos del director con un `place` falso y `alive` controlado por el harness:
       - "El máximo acota los spawns de un tick" (630/s, máximo 5 → 5);
       - "Presupuesto en el máximo al abrirse varios huecos" (3 y después 4);
       - "Huecos sin presupuesto suficiente" (bps 0 → 3 vivos);

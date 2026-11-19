@@ -8,17 +8,26 @@ import { StubRandom } from '../support/random';
 
 type Segment = RunConfig['waves']['segments'][number];
 
-const config = (segments: Segment[], maxAlive = 200): RunConfig => {
+const config = (segments: Segment[], maxAlive = 200, maxBudget = 10): RunConfig => {
   const base = aRunConfig();
-  return { ...base, waves: { ...base.waves, maxAlive, segments } };
+  return { ...base, waves: { ...base.waves, maxAlive, maxBudget, segments } };
 };
 
-/** Director + registro de lo aparecido, con un `place` falso que acepta según `accept(tick)`. */
-function harness(
-  segments: Segment[],
-  options: { maxAlive?: number; random?: RandomGenerator; accept?: (tick: number) => boolean } = {},
-) {
-  const rules = buildRunRules(config(segments, options.maxAlive));
+interface HarnessOptions {
+  maxAlive?: number;
+  maxBudget?: number;
+  /** Enemigos vivos al empezar (sin haber aparecido por el director). */
+  alive?: number;
+  random?: RandomGenerator;
+  accept?: (tick: number) => boolean;
+}
+
+/**
+ * Director + registro de lo aparecido, con un `place` falso que acepta según `accept(tick)`.
+ * El número de vivos lo controla el harness: `kill(n)` simula n bajas.
+ */
+function harness(segments: Segment[], options: HarnessOptions = {}) {
+  const rules = buildRunRules(config(segments, options.maxAlive, options.maxBudget));
   if (!rules.ok) throw new Error(rules.error.message);
   const director = new WaveDirector(
     rules.value.table,
@@ -27,19 +36,24 @@ function harness(
   );
   const spawned: { tick: number; type: string }[] = [];
   let tick = 0;
+  let alive = options.alive ?? 0;
   const accept = options.accept ?? (() => true);
   const place: SpawnAttempt = (type) => {
     if (!accept(tick)) return false;
     spawned.push({ tick, type: type.id });
+    alive += 1;
     return true;
   };
   const run = (ticks: number): void => {
     for (let i = 0; i < ticks; i++) {
       tick += 1;
-      director.step(tick, spawned.length, place);
+      director.step(tick, alive, place);
     }
   };
-  return { run, spawned };
+  const kill = (n: number): void => {
+    alive -= n;
+  };
+  return { run, kill, spawned, alive: () => alive };
 }
 
 const only = (types: string[], budgetPerSecond: number, fromSecond = 0): Segment => ({
@@ -50,14 +64,14 @@ const only = (types: string[], budgetPerSecond: number, fromSecond = 0): Segment
 
 describe('WaveDirector · presupuesto', () => {
   it('Ritmo constante con coste 1', () => {
-    const h = harness([only(['bug'], 1)]);
+    const h = harness([only(['bug'], 1)], { maxBudget: 3 });
     h.run(615);
     expect(h.spawned).toHaveLength(10);
     expect(h.spawned[0]?.tick).toBe(60);
   });
 
   it('El coste retrasa la aparición', () => {
-    const h = harness([only(['memory-leak'], 1)]);
+    const h = harness([only(['memory-leak'], 1)], { maxBudget: 3 });
     h.run(175);
     expect(h.spawned).toHaveLength(0);
     h.run(10);
@@ -66,7 +80,7 @@ describe('WaveDirector · presupuesto', () => {
   });
 
   it('Varios spawns en un tick', () => {
-    const h = harness([only(['bug'], 630)]);
+    const h = harness([only(['bug'], 630)], { maxBudget: 20 });
     h.run(1);
     expect(h.spawned).toHaveLength(10);
   });
@@ -100,14 +114,14 @@ describe('WaveDirector · presupuesto', () => {
 
 describe('WaveDirector · tope de vivos', () => {
   it('Se alcanza el tope', () => {
-    const h = harness([only(['bug'], 1000)]);
+    const h = harness([only(['bug'], 1000)], { maxBudget: 20 });
     h.run(13);
     expect(h.spawned).toHaveLength(200);
   });
 
-  it('El tope se mantiene, sin acumular ni consumir azar', () => {
+  it('El tope se mantiene, sin consumir azar', () => {
     const stub = new StubRandom(0.5);
-    const h = harness([only(['bug'], 1000)], { random: stub });
+    const h = harness([only(['bug'], 1000)], { maxBudget: 20, random: stub });
     h.run(13);
     const calls = stub.calls;
     h.run(600);
@@ -119,6 +133,47 @@ describe('WaveDirector · tope de vivos', () => {
     const h = harness([only(['bug'], 10)], { maxAlive: 1 });
     h.run(600);
     expect(h.spawned).toHaveLength(1);
+  });
+
+  it('Presupuesto en el máximo al abrirse varios huecos (3 y después 4)', () => {
+    const h = harness([only(['bug'], 60)], { maxAlive: 5, maxBudget: 3, alive: 5 });
+    h.run(600);
+    expect(h.spawned).toHaveLength(0);
+    h.kill(5);
+    h.run(1);
+    expect(h.alive()).toBe(3);
+    h.run(1);
+    expect(h.alive()).toBe(4);
+  });
+
+  it('Huecos sin presupuesto suficiente', () => {
+    const h = harness([only(['bug'], 0)], { maxAlive: 5, maxBudget: 3, alive: 5 });
+    h.kill(2);
+    h.run(600);
+    expect(h.alive()).toBe(3);
+  });
+
+  it('bajo el tope nunca aparecen más de los huecos libres, aunque sobre presupuesto', () => {
+    const h = harness([only(['bug'], 6000)], { maxAlive: 5, maxBudget: 20, alive: 5 });
+    h.run(10);
+    h.kill(1);
+    h.run(1);
+    expect(h.alive()).toBe(5);
+    expect(h.spawned).toHaveLength(1);
+  });
+});
+
+describe('WaveDirector · máximo de presupuesto guardado', () => {
+  it('El máximo acota los spawns de un tick (630/s, máximo 5 → 5)', () => {
+    const h = harness([only(['bug'], 630)], { maxBudget: 5 });
+    h.run(1);
+    expect(h.spawned).toHaveLength(5);
+  });
+
+  it('Máximo de presupuesto igual al coste más caro: 1 memory-leak en 185 ticks', () => {
+    const h = harness([only(['memory-leak'], 1)], { maxBudget: 3 });
+    h.run(185);
+    expect(h.spawned).toEqual([{ tick: 180, type: 'memory-leak' }]);
   });
 });
 
