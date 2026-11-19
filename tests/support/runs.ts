@@ -7,7 +7,7 @@ import type { EnemyTypeConfig } from '../../src/domain/enemy/EnemyType';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import { aRunConfig, aSegment, aWavesConfig } from './builders';
 
-/** Tipo de enemigo de prueba: radio 10, velocidad 60 (1 unidad por tick), daño 10, vida 5. */
+/** Tipo de enemigo de prueba: radio 10, velocidad 60 (1 unidad por tick), daño 10, vida 5, XP 1. */
 export const aProbeType = (overrides: Partial<EnemyTypeConfig> = {}): EnemyTypeConfig => ({
   id: 'probe',
   speed: 60,
@@ -15,6 +15,7 @@ export const aProbeType = (overrides: Partial<EnemyTypeConfig> = {}): EnemyTypeC
   cost: 1,
   damage: 10,
   health: 5,
+  xp: 1,
   ...overrides,
 });
 

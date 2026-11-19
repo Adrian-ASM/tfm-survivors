@@ -49,6 +49,7 @@ const BENCH_TYPE = {
   cost: 1,
   damage: 1,
   health: BENCH_HEALTH,
+  xp: 1,
 };
 
 /** Armas de bench: proyectil cada tick con alcance mayor que la diagonal y pulso a toda la arena. */

@@ -35,9 +35,9 @@ export const NO_WEAPONS: WeaponsConfig = { maxProjectiles: 32, hitFlashTicks: 4,
 
 /** Tipos de enemigo de la spec (bug, memory-leak, merge-conflict) con los valores del design. */
 export const DEFAULT_ENEMY_TYPES = [
-  { id: 'bug', speed: 90, radius: 10, cost: 1, damage: 5, health: 10 },
-  { id: 'memory-leak', speed: 45, radius: 22, cost: 3, damage: 15, health: 45 },
-  { id: 'merge-conflict', speed: 70, radius: 16, cost: 2, damage: 8, health: 20 },
+  { id: 'bug', speed: 90, radius: 10, cost: 1, damage: 5, health: 10, xp: 1 },
+  { id: 'memory-leak', speed: 45, radius: 22, cost: 3, damage: 15, health: 45, xp: 4 },
+  { id: 'merge-conflict', speed: 70, radius: 16, cost: 2, damage: 8, health: 20, xp: 2 },
 ] as const;
 
 const ALL = ['bug', 'merge-conflict', 'memory-leak'];
@@ -126,6 +126,7 @@ interface MutableType {
   cost: number;
   damage: number;
   health: number;
+  xp: number;
 }
 interface MutableSegment {
   fromSecond: number;

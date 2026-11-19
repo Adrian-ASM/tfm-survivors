@@ -23,7 +23,7 @@
   razonables, **parar y volver a la spec** (hallazgo de equilibrio, no test relajado)
 
 ## 1. Dominio
-- [ ] 1.1 `EnemyType.xp` (entero ≥ 1) y su mensaje; `xp: 1` en los tipos de `tests/support/builders.ts` — escenarios:
+- [x] 1.1 `EnemyType.xp` (entero ≥ 1) y su mensaje; `xp: 1` en los tipos de `tests/support/builders.ts` — escenarios:
   "XP inválida o ausente" (dominio), "XP mínima válida", "Contenido por defecto" (enemy-spawning)
 - [ ] 1.2 `PlayerRules.pickupRadius` y su invariante en `checkPlayer`; builders con `pickupRadius` 64 — escenarios:
   "Radio de recogida inválido o ausente" (dominio), "Radio de recogida por defecto"

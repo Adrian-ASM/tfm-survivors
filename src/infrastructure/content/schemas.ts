@@ -6,6 +6,7 @@ import {
   ENEMY_HEALTH_MUST_BE_POSITIVE,
   ENEMY_RADIUS_MUST_FIT,
   ENEMY_SPEED_MUST_BE_POSITIVE,
+  ENEMY_XP_MUST_BE_INTEGER,
 } from '../../domain/enemy/EnemyType';
 import {
   INVULNERABILITY_TICKS_MUST_BE_INTEGER,
@@ -75,6 +76,7 @@ export const EnemiesSchema = z.strictObject({
       cost: z.number().positive({ error: ENEMY_COST_MUST_BE_POSITIVE }),
       damage: z.number().positive({ error: ENEMY_DAMAGE_MUST_BE_POSITIVE }),
       health: z.number().positive({ error: ENEMY_HEALTH_MUST_BE_POSITIVE }),
+      xp: Count(ENEMY_XP_MUST_BE_INTEGER),
     }),
   ),
 });

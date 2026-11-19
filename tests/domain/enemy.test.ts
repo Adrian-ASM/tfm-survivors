@@ -12,7 +12,7 @@ const ARENA = ((): Arena => {
 
 function enemy(speed: number, x: number, y: number, radius = 10, id = 'bug', health = 10): Enemy {
   const type = EnemyType.create(
-    { id, speed, radius, cost: 1, damage: 7, health },
+    { id, speed, radius, cost: 1, damage: 7, health, xp: 1 },
     ARENA,
     'enemies.types.0',
   );
@@ -52,7 +52,7 @@ describe('Enemy · vida y baja', () => {
 
   it('vida inicial opcional al aparecer (RunSetup); por defecto la del tipo', () => {
     const type = EnemyType.create(
-      { id: 'bug', speed: 90, radius: 10, cost: 1, damage: 5, health: 10 },
+      { id: 'bug', speed: 90, radius: 10, cost: 1, damage: 5, health: 10, xp: 1 },
       ARENA,
       'enemies.types.0',
     );

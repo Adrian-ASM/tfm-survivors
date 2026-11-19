@@ -84,7 +84,9 @@ describe('buildRunRules', () => {
     const base = aRunConfig();
     const badType = {
       ...base,
-      enemies: { types: [{ id: 'bug', speed: 0, radius: 10, cost: 1, damage: 5, health: 10 }] },
+      enemies: {
+        types: [{ id: 'bug', speed: 0, radius: 10, cost: 1, damage: 5, health: 10, xp: 1 }],
+      },
     };
     expect(failure(badType).field).toBe('enemies.types.0.speed');
     const segments = [{ fromSecond: 0, budgetPerSecond: 1, types: ['bug', 'segfault'] }];
