@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { FixedStepLoop } from '../../src/application/FixedStepLoop';
 import { StartRun } from '../../src/application/StartRun';
-import type { TickRun } from '../../src/application/TickRun';
+import { TickRun } from '../../src/application/TickRun';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import { TICK_MS, aRunConfig, aSegment, aWavesConfig } from '../support/builders';
 import { randomInputs } from '../support/inputs';
+import { aContactConfig, startRun } from '../support/runs';
 
 const ticksFor = (...framesMs: number[]): number[] => {
   const loop = new FixedStepLoop();
@@ -92,5 +93,18 @@ describe('TickRun', () => {
     expect(play(9).enemies.length).toBeGreaterThan(0);
     expect(play(9)).toStrictEqual(play(9));
     expect(play(9).enemies).not.toEqual(play(10).enemies);
+  });
+
+  it('600 ticks después de terminar (vía caso de uso): mismo snapshot y sin errores', () => {
+    const run = startRun(aContactConfig({ player: { maxHealth: 10 } }), {
+      enemies: [{ type: 'probe', x: 480, y: 270 }],
+    });
+    const tickRun = new TickRun(run);
+    const ended = tickRun.execute(TICK_MS, PlayerInput.NONE);
+    expect(ended.status).toBe('over');
+    for (let frame = 0; frame < 40; frame++) {
+      // 250 ms por frame: el bucle pide 15 ticks cada vez (600 en total).
+      expect(tickRun.execute(250, PlayerInput.of(1, 1))).toStrictEqual(ended);
+    }
   });
 });

@@ -112,7 +112,7 @@
       golpe). Cubre SL "Determinismo" (MODIFIED).
 
 ## 6. Aplicación
-- [ ] 6.1 Sin cambios de código en `TickRun`/`FixedStepLoop`. Test en `tests/application/loop.test.ts`:
+- [x] 6.1 Sin cambios de código en `TickRun`/`FixedStepLoop`. Test en `tests/application/loop.test.ts`:
       `TickRun.execute` sobre una partida terminada devuelve el mismo snapshot sin errores, aunque el bucle pida
       15 ticks. Cubre RS "600 ticks después de terminar" (vía caso de uso).
 
