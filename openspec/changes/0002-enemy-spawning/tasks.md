@@ -41,19 +41,19 @@
       (nivel dominio), radio del anillo ≈ 582,727 (ES "Posición de aparición fuera de la vista")
 
 ## 2. Dominio: enemigos, colocación y director
-- [ ] 2.1 `src/domain/enemy/Enemy.ts` (`id`, `type`, `x`/`y` mutables internos; `chase(tx, ty, dt, arena)` con
+- [x] 2.1 `src/domain/enemy/Enemy.ts` (`id`, `type`, `x`/`y` mutables internos; `chase(tx, ty, dt, arena)` con
       escalares, sin sobrepasar, sin dividir por 0, recorte con `clampX/Y`) — `tests/domain/enemy.test.ts` —
       EB "Persecución horizontal durante un segundo", "Persecución en diagonal", "Llegada sin sobrepasar",
       "Dos tipos, dos velocidades", "Enemigo más grande que el jugador junto a un borde"
-- [ ] 2.2 `src/domain/wave/placeSpawn.ts` (anillo → `clampCircle` → `minDistance`; 1 `next()` por intento; `null` si
+- [x] 2.2 `src/domain/wave/placeSpawn.ts` (anillo → `clampCircle` → `minDistance`; 1 `next()` por intento; `null` si
       se agotan los intentos) — `tests/domain/place-spawn.test.ts` (mulberry32 y `StubRandom` que cuenta llamadas) —
       ES "Arena mayor que la vista", "Arena igual a la vista", "Jugador en una esquina" (nivel función),
       "Ninguna posición válida" (≤ 8 `next()`)
-- [ ] 2.3 `src/domain/wave/WaveDirector.ts`, acumulación y gasto: `budget60 += budgetPerSecond`, gasto si
+- [x] 2.3 `src/domain/wave/WaveDirector.ts`, acumulación y gasto: `budget60 += budgetPerSecond`, gasto si
       `budget60 ≥ cost × 60`, tipo pendiente con 1 `next()` siempre, varios spawns por tick. Test con un `place`
       falso que siempre acepta — `tests/domain/wave-director.test.ts` — ES "Ritmo constante con coste 1",
       "El coste retrasa la aparición", "Varios spawns en un tick", "Tramo sin presupuesto"
-- [ ] 2.4 `WaveDirector`: tope (sin acumular ni consumir azar si `vivos ≥ maxAlive`), aplazamiento (no gasta,
+- [x] 2.4 `WaveDirector`: tope (sin acumular ni consumir azar si `vivos ≥ maxAlive`), aplazamiento (no gasta,
       mantiene el pendiente, termina el tick, sigue acumulando) y cambio de tramo (conserva presupuesto, vuelve a
       elegir el pendiente) — mismo fichero — ES "Se alcanza el tope", "El tope se mantiene", "Tope mínimo",
       "El presupuesto no se pierde al aplazar", "Cambio de tramo" (nivel director)
