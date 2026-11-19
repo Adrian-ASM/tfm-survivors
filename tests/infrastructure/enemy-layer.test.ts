@@ -96,6 +96,83 @@ describe('EnemyLayer', () => {
   });
 });
 
+describe('EnemyLayer · bajas (hueco asociado al id)', () => {
+  const TYPES = ['bug', 'memory-leak', 'merge-conflict'] as const;
+  const RADII = { bug: 10, 'memory-leak': 22, 'merge-conflict': 16 } as const;
+  const mixed = (id: number): EnemySnapshot => {
+    const type = TYPES[id % 3] ?? 'bug';
+    return enemy(id, type, id * 3, id * 2, RADII[type]);
+  };
+  const visible = (created: FakeCircle[]) => created.filter((c) => c.visible);
+  /** Cada enemigo tiene un sprite visible propio en su posición, con su tamaño y color. */
+  const expectPainted = (created: FakeCircle[], enemies: readonly EnemySnapshot[]): void => {
+    const used = new Set<FakeCircle>();
+    for (const e of enemies) {
+      const sprite = visible(created).find(
+        (c) =>
+          !used.has(c) &&
+          Math.abs(c.x - e.x) <= 0.001 &&
+          Math.abs(c.y - e.y) <= 0.001 &&
+          c.radius === e.radius &&
+          c.color === enemyPalette(e.type),
+      );
+      expect(sprite, `enemigo ${String(e.id)}`).toBeDefined();
+      if (sprite) used.add(sprite);
+    }
+  };
+
+  it('Bajas en medio de la lista: 8 visibles y nadie se repinta', () => {
+    const { l, created } = layer(10);
+    const all = Array.from({ length: 10 }, (_, i) => mixed(i + 1));
+    l.sync(all);
+    const restyles = created.map((c) => c.restyles);
+    const survivors = all.filter((e) => e.id !== 3 && e.id !== 7);
+    l.sync(survivors);
+    expect(visible(created)).toHaveLength(8);
+    expectPainted(created, survivors);
+    expect(created.map((c) => c.restyles)).toEqual(restyles);
+  });
+
+  it('Todos dados de baja: ningún sprite visible', () => {
+    const { l, created } = layer(200);
+    l.sync(Array.from({ length: 200 }, (_, i) => mixed(i)));
+    l.sync([]);
+    expect(visible(created)).toHaveLength(0);
+  });
+
+  it('Reposición tras bajas: 150 supervivientes y 50 nuevos de otro tipo en el mismo frame', () => {
+    const { l, created } = layer(200);
+    l.sync(Array.from({ length: 200 }, (_, i) => enemy(i, 'bug', i, i)));
+    const next = [
+      ...Array.from({ length: 150 }, (_, i) => enemy(i + 50, 'bug', i + 50, i + 50)),
+      ...Array.from({ length: 50 }, (_, i) => enemy(200 + i, 'memory-leak', i, 500, 22)),
+    ];
+    l.sync(next);
+    expect(visible(created)).toHaveLength(200);
+    expectPainted(created, next);
+    expect(created).toHaveLength(200);
+  });
+
+  it('el hueco liberado lo reutiliza el siguiente enemigo nuevo', () => {
+    const { l, created } = layer(2);
+    l.sync([enemy(0, 'bug', 1, 1), enemy(1, 'bug', 2, 2)]);
+    const slotOf0 = created.find((c) => c.x === 1);
+    l.sync([enemy(1, 'bug', 2, 2)]);
+    expect(slotOf0?.visible).toBe(false);
+    l.sync([enemy(1, 'bug', 2, 2), enemy(2, 'memory-leak', 9, 9, 22)]);
+    expect(slotOf0 && [slotOf0.x, slotOf0.radius, slotOf0.visible]).toEqual([9, 22, true]);
+    expect(created).toHaveLength(2);
+  });
+
+  it('un enemigo conserva su sprite aunque cambie de posición en la lista', () => {
+    const { l, created } = layer(3);
+    l.sync([enemy(0, 'bug', 1, 1), enemy(1, 'memory-leak', 2, 2, 22)]);
+    const leak = created.find((c) => c.radius === 22);
+    l.sync([enemy(1, 'memory-leak', 5, 5, 22)]);
+    expect(leak && [leak.x, leak.restyles]).toEqual([5, 1]);
+  });
+});
+
 describe('enemyPalette', () => {
   it('da un color distinto a cada tipo por defecto', () => {
     const colors = ['bug', 'memory-leak', 'merge-conflict'].map(enemyPalette);

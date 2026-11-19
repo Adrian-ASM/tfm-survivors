@@ -128,7 +128,7 @@
       máxima ausente" y "Vida máxima mínima válida"; PH "Duración cero", "Duración negativa" y "Contenido por
       defecto"; ES "Contenido de enemigos y oleadas validado" (escenarios nuevos) y "Valores de cada tipo llegan al
       dominio".
-- [ ] 7.2 `EnemyLayer` con asociación hueco ↔ `id`: `Map<number, Slot>`, pila `free`, marca `seen` por frame, y
+- [x] 7.2 `EnemyLayer` con asociación hueco ↔ `id`: `Map<number, Slot>`, pila `free`, marca `seen` por frame, y
       ocultar y liberar los huecos no vistos. Test: `tests/infrastructure/enemy-layer.test.ts`, con dobles:
       - los tests existentes;
       - una baja en medio que no repinta a los demás (`restyles` sin cambios);
