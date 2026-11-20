@@ -203,7 +203,7 @@ Sin tareas: el dominio no cambia (`run-state` sin delta). La pausa y el menú qu
   Ficheros: `tests/e2e/menu-flow.spec.ts`.
 
 ## 6. Documentación
-- [ ] 6.1 Actualizar AGENTS.md §1 (estado: menú, pausa y borrado; `?e2e` salta el menú solo al cargar) y el
+- [x] 6.1 Actualizar AGENTS.md §1 (estado: menú, pausa y borrado; `?e2e` salta el menú solo al cargar) y el
   README si describe el arranque. Pasar ADR-0011 a **aceptada** tras verify. Registrar la sesión en el diario de
   IA (`docs/ai-log/`). Test: `npm run verify` y `npm run test:e2e` en verde (no hay test en rojo propio; es la
   tarea de cierre).
