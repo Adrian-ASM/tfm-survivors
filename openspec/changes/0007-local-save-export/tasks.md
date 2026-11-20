@@ -35,7 +35,7 @@
   "Historial recortado al fusionar", "Fusión conmutativa con fechas empatadas"
 
 ## 2. Aplicación
-- [ ] 2.1 Puerto `application/ProgressRepository.ts` (+ tipos de error), `ProgressSession`, `LoadProgress`, fake
+- [x] 2.1 Puerto `application/ProgressRepository.ts` (+ tipos de error), `ProgressSession`, `LoadProgress`, fake
   `tests/support/InMemoryProgressRepository.ts` (cuenta escrituras y permite programar errores) y contrato
   `tests/support/progressRepositoryContract.ts` ejecutado contra el fake. Rojo: `tests/application/load-progress
   .test.ts` (nada ⇒ vacío sin `issue`; válido ⇒ ese progreso; `corrupt` ⇒ vacío, `issue 'corrupt'`, 0 escrituras;
