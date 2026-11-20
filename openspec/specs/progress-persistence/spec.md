@@ -293,8 +293,15 @@ Con esa política, la build de producción MUST arrancar, jugar, exportar e impo
   `'unsafe-eval'`, ni `'unsafe-inline'` en `script-src`, ni `http:`, `https:` o `*` como origen
 
 #### Scenario: Sin violaciones en el bucle completo
-- **GIVEN** la build de producción servida con `?seed=42`
-- **WHEN** una prueba E2E juega hasta la derrota, exporta, recarga e importa el fichero exportado
-- **THEN** no se registra ningún evento `securitypolicyviolation` ni mensaje de consola de violación de CSP
+- **GIVEN** la build de producción servida con `?seed=42` y un progreso válido P0 con 1 entrada de historial ya
+  guardado en `localStorage` antes de la carga
+- **WHEN** una prueba E2E juega hasta la derrota (la única partida que juega), exporta el progreso, importa el
+  fichero exportado, importa otro fichero válido F (1 entrada de historial) con al menos un récord mayor que los
+  guardados y recarga la página
+- **THEN** en ninguna de las dos cargas (antes y después de recargar) se registra ningún evento
+  `securitypolicyviolation` ni mensaje de consola de violación de CSP
+- **AND** tras la recarga, el progreso cargado coincide con el resultado de fusionar P0, la partida jugada, el
+  fichero exportado y F, con exactamente 3 entradas de historial
 
 <!-- historial: 0007-local-save-export (2026-11-20) -->
+<!-- historial: 0008-e2e-fast-sim (2026-11-20) -->
