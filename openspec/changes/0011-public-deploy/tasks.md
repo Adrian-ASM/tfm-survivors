@@ -21,7 +21,7 @@
   index.html construido" y "Directivas que la meta ignora".
 
 ## 2. Guardarraíles estáticos (Vitest, dentro de `verify`)
-- [ ] 2.1 `tests/guardrails/deploy.test.ts`: helpers `jobBlock(yaml, name)` y `triggersOf(yaml)` sobre el texto,
+- [x] 2.1 `tests/guardrails/deploy.test.ts`: helpers `jobBlock(yaml, name)` y `triggersOf(yaml)` sobre el texto,
   más aserciones sobre el `ci.yml` real: `deploy` con `needs: [quality, e2e]` e `if` de push a
   `refs/heads/main`, `upload-pages-artifact` con la misma condición y `path: dist`, y `paths-ignore` del push con
   las 5 rutas de documentación. Es caracterización: el rojo se demuestra con variantes mutadas del texto (sin
