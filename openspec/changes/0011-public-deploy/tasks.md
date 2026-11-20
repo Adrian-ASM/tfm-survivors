@@ -27,7 +27,7 @@
   las 5 rutas de documentación. Es caracterización: el rojo se demuestra con variantes mutadas del texto (sin
   `e2e` en `needs`, sin la condición de push). `ci.yml` no se toca. Escenarios: "Push a main con código y CI en
   verde", "Pull request en verde", "Push a main solo de documentación" y "Push a main con e2e en rojo".
-- [ ] 2.2 `tests/guardrails/smoke-isolation.test.ts` (parte de scripts y configs), primero en rojo. Comprueba:
+- [x] 2.2 `tests/guardrails/smoke-isolation.test.ts` (parte de scripts y configs), primero en rojo. Comprueba:
   - `test:e2e` no contiene `--config` ni `remote`;
   - la cadena de `verify`, expandida por `npm run X`, no invoca `playwright` ni `smoke:public`;
   - `smoke:public` usa `--config playwright.remote.config.ts`;
