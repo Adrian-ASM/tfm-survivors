@@ -3,7 +3,7 @@ import { Run } from '../../src/domain/run/Run';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import { DEFAULT_ENEMY_TYPES, aDefaultConfig } from '../support/builders';
 import { fleeInput } from '../support/policies';
-import { chooseFirstWhileOpen, play } from '../support/runs';
+import { chooseFirstWhileOpen, play, playReferenceBot } from '../support/runs';
 
 // Medición de equilibrio de 0004 (tasks 4.7): primer golpe con semilla 42 en el tick 4100; con
 // semilla 7, primer pulso en el tick 950. Plazos de la spec tras el gate: 4.800 y 1.800. Desde 0005
@@ -114,5 +114,17 @@ describe('Partida ganable con el contenido por defecto (0006)', () => {
     }
 
     expect(run.snapshot()).toMatchObject({ tick: TEN_MINUTES, status: 'over', outcome: 'won' });
+  });
+});
+
+// Spec run-outcome (0010), "Bot de referencia para el balance".
+describe('Bot de referencia (0010)', () => {
+  it('Scenario: Bot reproducible (semilla 7, dos veces)', () => {
+    const summary = () => {
+      const s = playReferenceBot(startDefault(7), TEN_MINUTES);
+      return { status: s.status, outcome: s.outcome, tick: s.tick, kills: s.kills, up: s.upgrades };
+    };
+
+    expect(summary()).toEqual(summary());
   });
 });

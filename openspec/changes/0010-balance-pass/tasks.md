@@ -22,7 +22,7 @@ Tras cada tarea, `npm run verify 2>&1 | tail -20` en verde.
   - Escenarios (RO, "Bot de referencia para el balance"): "Elige por prioridad, no por posición", "La prioridad
     más alta gana", "Ningún id priorizado en la oferta", "Oferta de una sola opción", "Huida sin amenazas", "Huida
     de un enemigo" y "Enemigo fuera de rango".
-- [ ] 1.2 Bucle del bot. En `tests/support/runs.ts`:
+- [x] 1.2 Bucle del bot. En `tests/support/runs.ts`:
   - añadir `chooseWhileOpen(run, pick)` y reescribir `chooseFirstWhileOpen` como `chooseWhileOpen(run, () => 0)`,
     con la misma firma y sin tocar a quien la llama;
   - añadir `playReferenceBot(run, maxTicks): RunSnapshot`. En cada tick hace `chooseWhileOpen(run,

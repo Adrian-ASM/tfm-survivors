@@ -6,6 +6,7 @@ import type { RandomGenerator } from '../../src/domain/shared/RandomGenerator';
 import type { EnemyTypeConfig } from '../../src/domain/enemy/EnemyType';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import { aRunConfig, aSegment, aWavesConfig } from './builders';
+import { fleeInput, pickByPriority } from './policies';
 
 /** Tipo de enemigo de prueba: radio 10, velocidad 60 (1 unidad por tick), daño 10, vida 5, XP 1. */
 export const aProbeType = (overrides: Partial<EnemyTypeConfig> = {}): EnemyTypeConfig => ({
@@ -62,15 +63,33 @@ export function ticks(run: Run, n: number, input = PlayerInput.NONE): RunSnapsho
   return snaps;
 }
 
-/** Elige la opción 0 mientras haya una oferta abierta (política de elección fija). */
-export function chooseFirstWhileOpen(run: Run): number {
+/** Elige `pick(oferta)` mientras haya una oferta abierta (también las encoladas). */
+export function chooseWhileOpen(
+  run: Run,
+  pick: (offer: RunSnapshot['offer']) => number,
+): number {
   let choices = 0;
   while (run.status === 'choosing') {
-    const r = run.chooseUpgrade(0);
+    const r = run.chooseUpgrade(pick(run.snapshot().offer));
     if (!r.ok) throw new Error(`elección rechazada: ${r.error.code}`);
     choices++;
   }
   return choices;
+}
+
+/** Elige la opción 0 mientras haya una oferta abierta (política de elección fija). */
+export const chooseFirstWhileOpen = (run: Run): number => chooseWhileOpen(run, () => 0);
+
+/**
+ * Bot de referencia del balance (spec run-outcome, 0010): en cada tick elige por prioridad las
+ * ofertas abiertas y luego avanza con `fleeInput` sobre el snapshot anterior. Para al terminar.
+ */
+export function playReferenceBot(run: Run, maxTicks: number): RunSnapshot {
+  for (let t = 0; t < maxTicks && run.status !== 'over'; t++) {
+    chooseWhileOpen(run, pickByPriority);
+    run.tick(fleeInput(run.snapshot()));
+  }
+  return run.snapshot();
 }
 
 /**
