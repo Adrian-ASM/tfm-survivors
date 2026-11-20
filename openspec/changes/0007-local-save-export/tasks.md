@@ -74,7 +74,7 @@
   read-progress-file.test.ts` con `File`/doble de Node: 65.537 bytes ⇒ `too-large` y `text()` no llamado; 65.536
   bytes válidos + espacios ⇒ `ok`; `hola`, versión 2 y campo extra ⇒ error; `pickedFile(null)` y lista vacía ⇒
   `null`. — escenarios: PP "Fichero demasiado grande", "Fichero en el límite", "Fichero no JSON o fuera de esquema"
-- [ ] 3.5 `dom/resultsPanelText.ts` (textos y `resultsPanelView`, `PROGRESS_CORRUPT_WARNING`). Rojo: `tests/
+- [x] 3.5 `dom/resultsPanelText.ts` (textos y `resultsPanelView`, `PROGRESS_CORRUPT_WARNING`). Rojo: `tests/
   infrastructure/results-panel-text.test.ts`: récords (20, 3, 41) ⇒ `Mejor tiempo 00:20`, `Mejor nivel 3`,
   `Máx. bajas 41`; (300, 10, 120) ⇒ `05:00`; (250, 10, 90) ⇒ `04:10`; textos contienen `importado`, `64 KiB`,
   `no válido`, `no se guarda`, `dañados`; el aviso de consola contiene `progress`. — escenarios: RR "Récords en la
