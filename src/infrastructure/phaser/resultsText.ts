@@ -19,8 +19,7 @@ export interface ResultsView {
 }
 
 /** Tiempo sobrevivido (spec run-results): segundos completos ⌊tick / 60⌋ en `mm:ss`. */
-export const survivedClock = (tick: number): string =>
-  formatClock(survivedSeconds(tick));
+export const survivedClock = (tick: number): string => formatClock(survivedSeconds(tick));
 
 /** Contenido del overlay, o `null` si la partida no ha terminado. */
 export function resultsView(s: RunSnapshot): ResultsView | null {

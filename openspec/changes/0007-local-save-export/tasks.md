@@ -70,7 +70,7 @@
   valor previo intacto; valor `{"schemaVersion":1,"records":` y versión 2 ⇒ `corrupt` y valor intacto. —
   escenarios: PP "Almacenamiento bloqueado", "Almacenamiento lleno al guardar", "Datos guardados dañados", "Versión
   futura guardada"
-- [ ] 3.4 `progress/readProgressFile.ts` (`MAX_IMPORT_BYTES`) + `dom/pickedFile.ts`. Rojo: `tests/infrastructure/
+- [x] 3.4 `progress/readProgressFile.ts` (`MAX_IMPORT_BYTES`) + `dom/pickedFile.ts`. Rojo: `tests/infrastructure/
   read-progress-file.test.ts` con `File`/doble de Node: 65.537 bytes ⇒ `too-large` y `text()` no llamado; 65.536
   bytes válidos + espacios ⇒ `ok`; `hola`, versión 2 y campo extra ⇒ error; `pickedFile(null)` y lista vacía ⇒
   `null`. — escenarios: PP "Fichero demasiado grande", "Fichero en el límite", "Fichero no JSON o fuera de esquema"
