@@ -220,3 +220,7 @@ Tarea 0 de apply (antes de tocar `src/`): semilla rápida sin input, coste real 
 - **0.2** (`npx playwright test results.spec.ts`, con build y `vite preview` nuevos): **83 s** de reloj (test
   1,3 min). Estimación de `progress.spec.ts` (1): 2 × ~80 s de derrota con carga + ~10 s de export/import ≈
   **170 s** < 240 s ⇒ se sigue con `test.setTimeout(260_000)`.
+- **Tiempos reales** (tarea 4.5, `npm run test:e2e`, 7 workers, 13 tests en 4,2 min de reloj):
+  `progress.spec.ts` (1) bucle completo **2,7 min** (≈ 163 s, < 240 s y dentro de `setTimeout(260_000)`); (2)
+  almacenamiento bloqueado con la semilla 90 **1,3 min**; (3) carga sin jugar **3–4 s** cada uno; `results.spec.ts`
+  1,3 min (sin cambios).

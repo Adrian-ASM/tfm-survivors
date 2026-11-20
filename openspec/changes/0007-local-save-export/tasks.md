@@ -122,7 +122,7 @@
 - [x] 4.4 `results.spec.ts`: nada más observar `over`, pulsar R y comprobar que el valor guardado ya tiene 1 entrada
   con el tick de la derrota; el resto del test no cambia. — escenarios: PP "Reinicio inmediato"; RR "Derrota y
   reinicio en el navegador"
-- [ ] 4.5 Cierre: comprobación manual de `npm run dev` (carga, una edición de `styles.css` por HMR, consola sin
+- [x] 4.5 Cierre: comprobación manual de `npm run dev` (carga, una edición de `styles.css` por HMR, consola sin
   violaciones de CSP) anotada en `docs/ai-log/`; tiempos reales de los E2E en design §Medición; AGENTS.md §1
   (estado: 0001–0007, guardado local + export/import); `npm run verify` y `npm run test:e2e` en verde. — escenario:
   PP "Política de seguridad de contenido" (dev, fuera de spec)
