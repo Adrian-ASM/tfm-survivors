@@ -212,3 +212,33 @@ Leyenda: OK = cubierto con aserción real; PARC = cubierto en parte; SIN = sin t
 
 Veredicto: verify y E2E en verde y arquitectura conforme; no se debe archivar hasta cerrar C1 y decidir (corregir o
 registrar como deuda) W1–W7.
+
+---
+
+## 6. Re-verify (ronda de correcciones, `8a7f52d..HEAD`, 5 commits)
+
+Ejecución: `npm run verify` verde (guard 454 ficheros, Vitest 102 ficheros / 1159 tests). `npm run test:e2e` verde
+(48/48, 1,3 min). Sin cambios en `domain`/`application`; el diff de `src` es solo `GameScene.ts` (reflujo de la
+partida del frame; sin imports nuevos ni reglas §3 rotas). Sin cobertura perdida: los escenarios previos conservan sus tests.
+
+| Hallazgo | Estado | Evidencia |
+|---|---|---|
+| C1 Primer frame tras Jugar | Resuelto | `run-launcher.test.ts`: 16,667 ms ⇒ tick 1, 8,334 ms ⇒ 0 y tras Volver al menú ⇒ [0, 1] (con `PauseGate` y `launch()` reales). Nota: los 601 frames del menú solo se declaran, no se alimentan a ningún bucle; la garantía sigue siendo estructural (S5). |
+| W1 HUD sin visibilidad | Abierto (deuda) | Sin campo de sonda; cubierto por construcción |
+| W2 Sprites tras Volver al menú / Cinco ciclos | Abierto (deuda) | Sin contador de sprites en la sonda |
+| W3 Partida abandonada | Resuelto en lo esencial | `menu-progress-flow.test.ts` con contador de escrituras (0 escrituras, G byte a byte, historial +1, aviso de dañados). La partida de Node se detiene en el tick 4.500, no en 5.000 (deuda menor) |
+| W4 Dañados y almacenamiento bloqueado | Resuelto | `menu-progress-flow.test.ts` (dañados con el menú abierto, borrar y recarga, borrar sin almacenamiento con R/Esc/Volver, bloqueo leer/escribir/borrar) y E2E ampliado |
+| W5 Velocidad y semilla en el menú | Resuelto | `run-launcher.test.ts`: `?e2e&speed=abc` (1 aviso, 4 partidas a 1 tick) y `?seed=abc` (1 aviso, 0 partidas en el menú, 1 tras Jugar). Sin E2E sin `?e2e` (aceptable) |
+| W6 Flakiness E2E | Resuelto en parte | Esperas por frames, conteo de ticks por frame y semilla fija en "Mismo fichero"; los 2 E2E con semilla aleatoria llevan timeout largo. Riesgo residual bajo |
+| W7 Precondición de archivado | Abierto (proceso) | Archivar 0008 antes que 0009 y aceptar ADR-0011 |
+| S1 design firma `createRunLauncher` | Resuelto | `design.md` actualizado |
+| S2 `GameScene.update` redundante | Resuelto | `restart` devuelve la partida en juego; línea en blanco eliminada |
+| S3 comprobar `runs` = 1 | Resuelto | `pause.spec`/`menu.spec` |
+| S4 heredocs | Sin cambios | Diario de IA actualizado |
+
+Deuda registrada (no bloquea): W1, W2, W7, abandonada en Node hasta el tick 4.500, y S5 (el test C1 no alimenta los
+frames del menú; mejora opcional).
+
+**Recuento final tras re-verify: C: 0 · W: 3 · S: 1** (W1, W2, W7 abiertos como deuda; S5 nueva).
+
+Veredicto: sin Critical; archivable tras aprobación humana, con W1, W2 y W7 aceptados como deuda (W7 es un orden de archivado: 0008 primero).
