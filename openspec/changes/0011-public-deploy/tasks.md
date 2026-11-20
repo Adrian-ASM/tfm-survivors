@@ -6,7 +6,7 @@
      Assisted-by). Ningún paso modifica .github/workflows/ci.yml ni tests/guardrails/ci.test.ts. -->
 
 ## 1. Soporte puro del smoke (`tests/remote/target.ts`, unitarios en Vitest sin red)
-- [ ] 1.1 `resolveTargetUrl(raw)` → `Result<URL, string>` e `isPublicTarget(url)`. Sin valor o con valor vacío,
+- [x] 1.1 `resolveTargetUrl(raw)` → `Result<URL, string>` e `isPublicTarget(url)`. Sin valor o con valor vacío,
   la URL pública. Añade la `/` final si falta. Si no es una URL `http:` o `https:` (`ftp://ejemplo`,
   `no-es-una-url`), devuelve `err` con un mensaje que contiene el texto indicado. Test:
   `tests/remote/target.test.ts`. Escenarios: "URL objetivo inválida", "Barra final opcional" y "Smoke en verde
