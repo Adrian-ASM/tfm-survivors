@@ -68,7 +68,7 @@
 - [x] 3.2 **T2 · ruta inexistente** (`./no-existe`: estado 404 y 0 `#game canvas`) y **T3 · HTTP→HTTPS**
   (`request.get('http://…')`: 200 con la URL final en la URL pública). Ambos llevan `test.skip` si el objetivo no
   es la URL pública. Escenarios: "Ruta inexistente bajo la base" y "HTTP redirige a HTTPS".
-- [ ] 3.3 **T4 · bucle**:
+- [x] 3.3 **T4 · bucle**:
   - `gameUrl({ seed: 42, speed: 15 })` y `expectSpeed(15)`, quieto hasta la derrota;
   - se ve el overlay de resultados y lo guardado pasa `decodeProgress`, con 1 entrada `seed` 42 y
     `outcome` `'lost'`;

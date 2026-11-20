@@ -8,8 +8,7 @@ export const PUBLIC_URL = 'https://adrian-asm.github.io/tfm-survivors/';
 const PUBLIC_ORIGIN = new URL(PUBLIC_URL).origin;
 const WEB_PROTOCOLS = ['http:', 'https:'];
 
-const invalid = (raw: string): string =>
-  `SMOKE_URL no es una URL http: o https: válida: "${raw}"`;
+const invalid = (raw: string): string => `SMOKE_URL no es una URL http: o https: válida: "${raw}"`;
 
 /**
  * URL objetivo del smoke a partir de `SMOKE_URL`: sin valor (o en blanco), la pública; con valor,

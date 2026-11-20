@@ -58,7 +58,9 @@ describe('Smoke remoto fuera de test:e2e y verify (spec public-deploy)', () => {
   });
 
   it('smoke:public usa la config remota, que busca en tests/remote y no levanta servidor', () => {
-    expect(scripts['smoke:public']).toMatch(/^playwright test --config playwright\.remote\.config\.ts/);
+    expect(scripts['smoke:public']).toMatch(
+      /^playwright test --config playwright\.remote\.config\.ts/,
+    );
     expect(REMOTE_CONFIG).toMatch(/testDir:\s*'tests\/remote'/);
     expect(REMOTE_CONFIG).toMatch(/globalSetup:/);
     // Sin esto, Playwright carga tests/remote/target.test.ts (Vitest) y falla.
@@ -111,7 +113,10 @@ describe('Workflow del smoke remoto (spec public-deploy)', () => {
       SMOKE.replace('on:\n', 'on:\n  push:\n    branches: [main]\n'),
       SMOKE.replace('contents: read', 'contents: write'),
       SMOKE.replace('timeout-minutes: 8', 'timeout-minutes: 30'),
-      SMOKE.replace('run: npm run smoke:public', 'run: SMOKE_URL=${{ inputs.url }} npm run smoke:public'),
+      SMOKE.replace(
+        'run: npm run smoke:public',
+        'run: SMOKE_URL=${{ inputs.url }} npm run smoke:public',
+      ),
     ];
 
     expect(mutants.map((m) => smokeWorkflowProblems(m)[0])).toEqual([

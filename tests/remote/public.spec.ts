@@ -1,5 +1,20 @@
-import { test as base, expect } from '@playwright/test';
-import { collect, cspState, menuPanel, watchCsp } from '../e2e/probe';
+import { readFileSync } from 'node:fs';
+import { test as base, expect, type Page } from '@playwright/test';
+import type { Progress } from '../../src/domain/progress/Progress';
+import { PROGRESS_STORAGE_KEY } from '../../src/infrastructure/progress/LocalStorageProgressRepository';
+import { decodeProgress } from '../../src/infrastructure/progress/progressCodec';
+import {
+  collect,
+  cspState,
+  expectSpeed,
+  focusGame,
+  gameUrl,
+  menuPanel,
+  playChoosingFirst,
+  probe,
+  snapshotOf,
+  watchCsp,
+} from '../e2e/probe';
 import {
   IGNORED_META_DIRECTIVES,
   isPublicTarget,
@@ -99,4 +114,92 @@ test('Scenario: HTTP redirige a HTTPS', async ({ request }) => {
   expect(response.status()).toBe(200);
   expect(response.url().startsWith(TARGET.href)).toBe(true);
   expect(http.href).toBe('http://adrian-asm.github.io/tfm-survivors/');
+});
+
+/** Velocidad del bucle en el smoke: el máximo de `resolveSpeed` (spec public-deploy). */
+const REMOTE_SPEED = 15;
+/** Margen de reloj (no es la aserción): la derrota quieta con la semilla 42 son ~312 frames. */
+const PLAY_TIMEOUT_MS = 40_000;
+const FILE_NAME = 'sprint-survivors-progress.json';
+
+const stored = (page: Page): Promise<string | null> =>
+  page.evaluate((key) => window.localStorage.getItem(key), PROGRESS_STORAGE_KEY);
+
+const decoded = (text: string | null): Progress | null => {
+  const d = decodeProgress(text ?? '');
+  return d.ok ? d.value : null;
+};
+
+/** Progreso en uso según la sonda (récords e historial). */
+const probedProgress = async (page: Page) => {
+  const p = (await probe(page))?.progress;
+  return p ? { records: p.records, history: p.history } : null;
+};
+
+// Copias de los helpers de tests/e2e/progress.spec.ts (design: no se toca tests/e2e).
+async function exportFile(page: Page): Promise<{ name: string; text: string; failure: unknown }> {
+  const download = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Exportar' }).click();
+  const file = await download;
+  const path = await file.path();
+  return {
+    name: file.suggestedFilename(),
+    text: readFileSync(path, 'utf8'),
+    failure: await file.failure(),
+  };
+}
+
+async function importFile(page: Page, content: string): Promise<void> {
+  const chooser = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: 'Importar' }).click();
+  await (
+    await chooser
+  ).setFiles({ name: 'progress.json', mimeType: 'application/json', buffer: Buffer.from(content) });
+}
+
+test('Scenario: Jugar, guardar, exportar e importar en producción y persistencia tras recargar', async ({
+  page,
+  watch,
+}) => {
+  let downloads = 0;
+  page.on('download', () => (downloads += 1));
+  await page.goto(gameUrl({ seed: 42, speed: REMOTE_SPEED }));
+  await expectSpeed(page, REMOTE_SPEED);
+  await expect.poll(async () => (await snapshotOf(page))?.tick ?? null).not.toBeNull();
+  await focusGame(page);
+
+  // Quieto (solo se elige la primera mejora) hasta la derrota.
+  const ended = await playChoosingFirst(page, (s) => s.status === 'over', PLAY_TIMEOUT_MS);
+  expect(ended?.outcome).toBe('lost');
+  await expect(page.getByRole('region', { name: 'Progreso' })).toBeVisible();
+  const saved = await stored(page);
+  const progress = decoded(saved);
+  expect(progress?.history).toHaveLength(1);
+  expect(progress?.history[0]).toMatchObject({ seed: 42, outcome: 'lost' });
+
+  // Exportar: 1 descarga, el fichero del juego e igual campo a campo a lo guardado.
+  const exported = await exportFile(page);
+  expect(exported.failure).toBeNull();
+  expect(exported.name).toBe(FILE_NAME);
+  expect(decoded(exported.text)).toStrictEqual(progress);
+  expect(downloads).toBe(1);
+
+  // Importar ese mismo fichero: éxito e idempotente (sigue habiendo 1 entrada).
+  await importFile(page, exported.text);
+  await expect(page.getByRole('status')).toContainText('importado');
+  expect(decoded(await stored(page))?.history).toHaveLength(1);
+  expect(await cspState(page)).toEqual({ violations: [], metas: 1 });
+  expect(pageErrors(watch.messages)).toEqual([]);
+
+  // Scenario: Persistencia tras recargar en producción.
+  const before = decoded(await stored(page));
+  const afterReload = collect(page, ['error', 'warning']);
+  await page.reload();
+  await expect.poll(async () => (await snapshotOf(page))?.tick ?? null).not.toBeNull();
+
+  expect(await probedProgress(page)).toStrictEqual(before);
+  expect(afterReload.filter((m) => /progress/i.test(m))).toEqual([]);
+  expect(await cspState(page)).toEqual({ violations: [], metas: 1 });
+  expect(pageErrors(watch.messages)).toEqual([]);
+  expect(new Set(watch.documents)).toEqual(new Set([TARGET.origin]));
 });

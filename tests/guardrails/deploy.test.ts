@@ -77,7 +77,9 @@ describe('workflowText (helpers sobre el texto)', () => {
     expect(triggersOf('name: x\non: workflow_dispatch\njobs: {}\n')).toEqual(['workflow_dispatch']);
     expect(triggersOf('on: [push, pull_request]\n')).toEqual(['push', 'pull_request']);
     expect(
-      triggersOf('on:\n  workflow_dispatch:\n    inputs:\n      url:\n        type: string\njobs:\n'),
+      triggersOf(
+        'on:\n  workflow_dispatch:\n    inputs:\n      url:\n        type: string\njobs:\n',
+      ),
     ).toEqual(['workflow_dispatch']);
   });
 
