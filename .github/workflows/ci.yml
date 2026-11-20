@@ -1,15 +1,18 @@
 # CI + despliegue a GitHub Pages.
-# Pensado para el plan gratuito: cancela ejecuciones obsoletas, ignora cambios solo de documentación,
-# un único navegador en E2E y timeouts cortos. Se activa solo cuando existe package.json (change 0001).
+# Pensado para el plan gratuito: cancela ejecuciones obsoletas, no hace trabajo pesado con cambios solo de
+# documentación, un único navegador en E2E y timeouts cortos. Se activa solo cuando existe package.json
+# (change 0001).
 name: ci
 
-# .claude/hooks/** y .claude/settings.json NO se ignoran: son la fuente de las reglas del guardarraíl.
+# .claude/hooks/** y .claude/settings.json NO cuentan como documentación: son la fuente de las reglas del
+# guardarraíl. En push a main se ignoran los cambios solo de documentación (no hay que desplegar). En PR el
+# workflow corre siempre para que el check `quality` informe (si no, un PR de solo docs se queda esperando un
+# check obligatorio); `setup` detecta ese caso y `quality` salta sus pasos en segundos.
 on:
   push:
     branches: [main]
     paths-ignore: ['**.md', 'docs/**', 'openspec/**', '.claude/agents/**', '.claude/skills/**']
   pull_request:
-    paths-ignore: ['**.md', 'docs/**', 'openspec/**', '.claude/agents/**', '.claude/skills/**']
   workflow_dispatch:
 
 permissions:
@@ -23,33 +26,61 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     timeout-minutes: 2
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       has_app: ${{ steps.detect.outputs.has_app }}
+      docs_only: ${{ steps.docs.outputs.docs_only }}
     steps:
       - uses: actions/checkout@v4
         with: { sparse-checkout: package.json, sparse-checkout-cone-mode: false }
       - id: detect
         run: echo "has_app=$([ -f package.json ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+      # Mismas rutas que el paths-ignore del push. Fuera de un PR, nunca es solo documentación.
+      - id: docs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          docs_only=false
+          if [ -n "$PR" ]; then
+            files=$(gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$PR/files" -q '.[].filename')
+            docs='(\.md$|^docs/|^openspec/|^\.claude/agents/|^\.claude/skills/)'
+            if [ -n "$files" ] && ! printf '%s\n' "$files" | grep -Evq "$docs"; then docs_only=true; fi
+          fi
+          echo "docs_only=$docs_only" | tee -a "$GITHUB_OUTPUT"
 
   quality:
     needs: setup
     if: needs.setup.outputs.has_app == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      FULL: ${{ needs.setup.outputs.docs_only != 'true' }}
     steps:
+      - if: env.FULL != 'true'
+        run: echo "PR solo de documentación; se saltan verify, audit y build."
       - uses: actions/checkout@v4
+        if: env.FULL == 'true'
       - uses: actions/setup-node@v4
+        if: env.FULL == 'true'
         with: { node-version: lts/*, cache: npm }
       - run: npm ci
+        if: env.FULL == 'true'
       - run: npm run verify
+        if: env.FULL == 'true'
       - run: npm audit --omit=dev --audit-level=high
+        if: env.FULL == 'true'
       - run: npm run build
+        if: env.FULL == 'true'
       - uses: actions/upload-pages-artifact@v3
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: env.FULL == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
         with: { path: dist }
 
   e2e:
-    needs: quality
+    needs: [setup, quality]
+    if: needs.setup.outputs.docs_only != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 6
     steps:
