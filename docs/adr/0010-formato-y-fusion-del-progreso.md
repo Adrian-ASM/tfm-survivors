@@ -1,6 +1,6 @@
 # ADR-0010 · Progreso persistido: formato v1, forma canónica y fusión del import
 
-- **Estado**: propuesta (change 0007-local-save-export)
+- **Estado**: aceptada (change 0007-local-save-export, implementado)
 - **Fecha**: 2026-11-20
 
 ## Contexto
