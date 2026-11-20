@@ -55,6 +55,9 @@ export function wireProgress(root: HTMLElement, seedOf: () => number): ProgressW
       sync: (snapshot, run) => {
         panel.render(results.sync(snapshot, run));
       },
+      leave: () => {
+        panel.render(null);
+      },
     },
     probe: () => {
       const view = results.view;

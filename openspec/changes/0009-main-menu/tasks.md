@@ -111,7 +111,7 @@ Sin tareas: el dominio no cambia (`run-state` sin delta). La pausa y el menú qu
   — SL "Semilla válida por URL", "Semilla nueva tras volver al menú", "Varios Jugar tras una semilla inválida",
   "Semilla inválida antes y después de Jugar"; MM "Primer Jugar" y "Jugar tras volver al menú" (snapshot inicial).
   Ficheros: `src/composition/runLauncher.ts`, `tests/composition/run-launcher.test.ts`.
-- [ ] 4.2 `GameScene` con `RunLauncher`, `PauseGate`, `PauseKey` y `SHUTDOWN`, y `main.ts` con las escenas
+- [x] 4.2 `GameScene` con `RunLauncher`, `PauseGate`, `PauseKey` y `SHUTDOWN`, y `main.ts` con las escenas
   `[game, menu]` con `?e2e`. Por ahora no hay menú. **Rojo**: E2E nuevo `tests/e2e/pause.spec.ts`
   (`?e2e&seed=42`), que comprueba:
   - Esc pausa, el tick no cambia durante 300 frames y el overlay `Pausa` es visible;

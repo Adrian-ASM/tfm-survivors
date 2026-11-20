@@ -1,3 +1,4 @@
+import { button, setPanelHidden } from './button';
 import { pickedFile } from './pickedFile';
 import type { ResultsPanelView } from './resultsPanelText';
 
@@ -37,10 +38,10 @@ export class ResultsPanel {
     file.type = 'file';
     file.accept = '.json,application/json';
     file.hidden = true;
-    const exportButton = this.button(doc, 'Exportar', () => {
+    const exportButton = button(doc, 'Exportar', () => {
       actions.onExport();
     });
-    const importButton = this.button(doc, 'Importar', () => {
+    const importButton = button(doc, 'Importar', () => {
       file.click();
     });
     file.addEventListener('change', () => {
@@ -58,7 +59,7 @@ export class ResultsPanel {
   render(view: ResultsPanelView | null): void {
     if (view === this.shown) return;
     this.shown = view;
-    this.root.hidden = view === null;
+    setPanelHidden(this.root, view === null);
     if (!view) return;
     this.records.replaceChildren(...view.records.map((line) => this.line(line)));
     this.notices.replaceChildren(...view.notices.map((line) => this.line(line)));
@@ -70,17 +71,5 @@ export class ResultsPanel {
     const p = this.root.ownerDocument.createElement('p');
     p.textContent = text;
     return p;
-  }
-
-  /** Botón que suelta el foco tras pulsarlo, para que la tecla R vuelva a ir al juego. */
-  private button(doc: Document, label: string, onClick: () => void): HTMLButtonElement {
-    const b = doc.createElement('button');
-    b.type = 'button';
-    b.textContent = label;
-    b.addEventListener('click', () => {
-      onClick();
-      b.blur();
-    });
-    return b;
   }
 }

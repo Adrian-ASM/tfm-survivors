@@ -3,17 +3,17 @@
 import '../infrastructure/validation/cspSafeZod';
 import Phaser from 'phaser';
 import { RestartRun } from '../application/RestartRun';
-import { StartRun } from '../application/StartRun';
 import { buildRunRules, type RunConfig } from '../domain/run/RunConfig';
 import type { RunSnapshot } from '../domain/run/RunSnapshot';
 import type { DomainError } from '../domain/shared/Result';
 import { loadRunConfig } from '../infrastructure/content/loadRunConfig';
+import { PausePanel } from '../infrastructure/dom/PausePanel';
 import { GameScene, type SceneCapacity } from '../infrastructure/phaser/GameScene';
-import { Mulberry32RandomGenerator } from '../infrastructure/random/Mulberry32RandomGenerator';
 import type { ResultsView } from '../infrastructure/phaser/resultsText';
 import { resolveSeed } from '../infrastructure/url/resolveSeed';
 import { resolveSpeed } from '../infrastructure/url/resolveSpeed';
 import { wireProgress, type ProgressProbe } from './progressWiring';
+import { createRunLauncher } from './runLauncher';
 import { restartRandoms } from './seedSource';
 
 const BACKGROUND = '#14141e';
@@ -77,14 +77,9 @@ function bootstrap(): void {
   // Una sola vez por carga: los reinicios no releen la URL ni avisan (spec simulation-loop).
   const speed = resolveSpeed(window.location.search);
   if (speed.warning) console.warn(speed.warning);
-  const started = new StartRun().execute(config.value, new Mulberry32RandomGenerator(seed));
-  if (!started.ok) {
-    showContentError(root, started.error);
-    return;
-  }
-
   // Antes de crear el juego: el panel queda en el DOM y el progreso cargado (nunca lanza).
   const progress = wireProgress(root, () => probe.seed);
+  const pause = new PausePanel(document, root);
   const probe: E2EProbe = {
     seed,
     speed: speed.speed,
@@ -97,6 +92,18 @@ function bootstrap(): void {
   // Cada reinicio usa una semilla nueva (también con ?seed=), sin releer la URL ni avisar.
   const nextRandom = restartRandoms(randomSeed, (s) => {
     probe.seed = s;
+  });
+  // La partida se crea al entrar en GameScene: la 1.ª de la carga con la semilla de la URL.
+  const launcher = createRunLauncher({
+    config: config.value,
+    urlSeed: seed,
+    randomSeed,
+    onStart: (s) => {
+      probe.seed = s;
+    },
+    onContentError: (error) => {
+      showContentError(root, error);
+    },
   });
   if (new URLSearchParams(window.location.search).has('e2e')) {
     Object.defineProperty(window, '__sprint', { value: probe });
@@ -111,17 +118,18 @@ function bootstrap(): void {
     height: view.height,
     backgroundColor: BACKGROUND,
     scene: [
-      new GameScene(
-        started.value,
-        new RestartRun(config.value, nextRandom),
-        sceneCapacity(config.value),
-        progress.scene,
-        (snapshot, results) => {
+      new GameScene({
+        launcher,
+        restartRun: new RestartRun(config.value, nextRandom),
+        capacity: sceneCapacity(config.value),
+        progress: progress.scene,
+        pause,
+        onRender: (snapshot, results) => {
           probe.snapshot = snapshot;
           probe.results = results;
         },
-        speed.speed,
-      ),
+        simSpeed: speed.speed,
+      }),
     ],
   });
 }
