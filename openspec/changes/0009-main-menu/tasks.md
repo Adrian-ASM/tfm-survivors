@@ -163,7 +163,7 @@ Sin tareas: el dominio no cambia (`run-state` sin delta). La pausa y el menú qu
   pasan al menú".
   Ficheros: `src/composition/progressWiring.ts`, `src/infrastructure/dom/MenuPanel.ts`,
   `tests/e2e/menu-progress.spec.ts`.
-- [ ] 4.5 `ConfirmDialog` + Borrar datos → `ClearProgress`. Mientras el diálogo está abierto, los botones del
+- [x] 4.5 `ConfirmDialog` + Borrar datos → `ClearProgress`. Mientras el diálogo está abierto, los botones del
   menú llevan `disabled`. El foco va a *Cancelar*, y el diálogo no escucha Esc. **Rojo**: E2E
   `tests/e2e/clear-progress.spec.ts`:
   - 0 diálogos nativos (con `page.on('dialog')`);

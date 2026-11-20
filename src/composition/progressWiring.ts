@@ -3,6 +3,7 @@ import { ImportProgress } from '../application/ImportProgress';
 import { LoadProgress } from '../application/LoadProgress';
 import { RecordRun } from '../application/RecordRun';
 import type { HistoryEntry, Records } from '../domain/progress/Progress';
+import { ConfirmDialog } from '../infrastructure/dom/ConfirmDialog';
 import { downloadProgress } from '../infrastructure/dom/downloadProgress';
 import { MenuPanel } from '../infrastructure/dom/MenuPanel';
 import { ResultsPanel } from '../infrastructure/dom/ResultsPanel';
@@ -73,7 +74,25 @@ export function wireProgress(root: HTMLElement, seedOf: () => number): ProgressW
         menuPanel.setMessage(view.message);
       });
     },
-    onOpenConfirm: () => undefined,
+    onOpenConfirm: () => {
+      menuPanel.setLocked(true);
+      dialog.open();
+    },
+  });
+  // Cancelar no llega a ClearProgress: 0 escrituras y 0 borrados por construcción.
+  const closeDialog = (): void => {
+    dialog.close();
+    menuPanel.setLocked(false);
+  };
+  const dialog = new ConfirmDialog(document, root, {
+    onConfirm: () => {
+      if (!controller.confirm()) return;
+      closeDialog();
+      menuPanel.setMessage(menuProgress.clear().message);
+    },
+    onCancel: () => {
+      if (controller.cancel()) closeDialog();
+    },
   });
 
   return {
