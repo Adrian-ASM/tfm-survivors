@@ -56,7 +56,7 @@
   escenarios: PP "Récords máximos", "Importar dos veces el mismo fichero", "Import sobre datos guardados dañados"
 
 ## 3. Infraestructura y composición
-- [ ] 3.1 `infrastructure/progress/progressSchema.ts` + `progressCodec.ts`. Rojo: `tests/infrastructure/progress-
+- [x] 3.1 `infrastructure/progress/progressSchema.ts` + `progressCodec.ts`. Rojo: `tests/infrastructure/progress-
   codec.test.ts`: documento válido literal de la spec; límites (`seed` 0 y 4.294.967.295, `maxKills` 2⁵³ − 1, 10
   entradas); cada variante inválida de la spec (incluidos `1e400`, `null`, `[]`, texto vacío y `"note":"<script>"`
   en los 3 niveles) y `{"__proto__":…}`; `schemaVersion` 2 ⇒ `unknown-version`; ida y vuelta P ⇒ P; documento con
