@@ -65,7 +65,7 @@
 
   Escenarios: "Sin recursos rotos en la URL objetivo", "Carga limpia", "URL objetivo alternativa" y la parte
   servida de "Rutas del index.html construido" y "Directivas que la meta ignora".
-- [ ] 3.2 **T2 · ruta inexistente** (`./no-existe`: estado 404 y 0 `#game canvas`) y **T3 · HTTP→HTTPS**
+- [x] 3.2 **T2 · ruta inexistente** (`./no-existe`: estado 404 y 0 `#game canvas`) y **T3 · HTTP→HTTPS**
   (`request.get('http://…')`: 200 con la URL final en la URL pública). Ambos llevan `test.skip` si el objetivo no
   es la URL pública. Escenarios: "Ruta inexistente bajo la base" y "HTTP redirige a HTTPS".
 - [ ] 3.3 **T4 · bucle**:

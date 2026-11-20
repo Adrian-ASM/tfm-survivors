@@ -74,3 +74,29 @@ test('Scenario: Carga limpia y sin recursos rotos en la URL objetivo', async ({ 
   // Scenario: URL objetivo alternativa: todo documento va al origen objetivo.
   expect(watch.documents).toEqual([TARGET.origin]);
 });
+
+// vite preview devuelve index.html con 200 en rutas inexistentes y no sirve HTTPS: T2 y T3 solo
+// tienen sentido contra GitHub Pages.
+const ONLY_PUBLIC = 'solo contra la URL pública (GitHub Pages)';
+
+test('Scenario: Ruta inexistente bajo la base', async ({ page, watch }) => {
+  test.skip(!PUBLIC, ONLY_PUBLIC);
+
+  const response = await page.goto('./no-existe');
+
+  expect(response?.status()).toBe(404);
+  expect(await page.locator('#game canvas').count()).toBe(0);
+  expect(watch.documents).toEqual([TARGET.origin]);
+});
+
+test('Scenario: HTTP redirige a HTTPS', async ({ request }) => {
+  test.skip(!PUBLIC, ONLY_PUBLIC);
+  const http = new URL(TARGET.href);
+  http.protocol = 'http:';
+
+  const response = await request.get(http.href);
+
+  expect(response.status()).toBe(200);
+  expect(response.url().startsWith(TARGET.href)).toBe(true);
+  expect(http.href).toBe('http://adrian-asm.github.io/tfm-survivors/');
+});
