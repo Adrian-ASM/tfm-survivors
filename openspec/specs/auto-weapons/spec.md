@@ -341,7 +341,8 @@ El sistema SHALL exponer lo necesario para que el jugador vea que las armas act�
 
 El adaptador de render MUST pintar, en cada frame, un destello en cada enemigo que lo indique, un anillo por cada
 pulso del snapshot y un sprite por cada proyectil del snapshot en su posición, sin dejar visible ningún sprite de un
-proyectil desaparecido. No hay barras de vida, números de daño ni contador de bajas.
+proyectil desaparecido. Sobre los enemigos no hay barras de vida ni números de daño; el contador de bajas se muestra
+en el HUD (ver `hud`).
 
 #### Scenario: Duración del destello
 - **GIVEN** un enemigo que recibe daño en el tick T y no vuelve a recibirlo
@@ -369,7 +370,6 @@ proyectil desaparecido. No hay barras de vida, números de daño ni contador de 
 - **WHEN** se pinta un snapshot en el que 1 de ellos ha desaparecido y se ha creado otro
 - **THEN** hay exactamente 3 sprites de proyectil visibles, cada uno en la posición de un proyectil distinto del
   snapshot (error ≤ 0,001)
-
 ### Requirement: Armas observables en el juego
 El sistema SHALL hacer que, con el contenido por defecto, las armas maten enemigos en una partida real sin que el
 jugador pulse nada más que las elecciones de mejora.
@@ -389,3 +389,4 @@ jugador pulse nada más que las elecciones de mejora.
 
 <!-- historial: 0004-auto-weapons (2026-11-19) -->
 <!-- historial: 0005-xp-and-level-up (2026-11-19) -->
+<!-- historial: 0006-run-lifecycle-hud (2026-11-20) -->

@@ -101,7 +101,7 @@ máximo de partida.
 ### Requirement: Barra de XP y nivel en la vista
 La vista SHALL mostrar en todo momento una barra de XP cuyo relleno es XP actual / XP para el siguiente nivel del
 último snapshot (de 0 a 1) y el número del nivel actual. La barra solo depende del snapshot: no cambia la simulación.
-El resto del HUD (vida, tiempo, inventario) no forma parte de este change.
+La barra y el nivel forman parte del HUD (ver `hud`).
 
 #### Scenario: Barra vacía al empezar
 - **GIVEN** el snapshot de una partida recién creada
@@ -119,3 +119,4 @@ El resto del HUD (vida, tiempo, inventario) no forma parte de este change.
 - **THEN** la barra tiene relleno 0 y el nivel mostrado es 2
 
 <!-- historial: 0005-xp-and-level-up (2026-11-19) -->
+<!-- historial: 0006-run-lifecycle-hud (2026-11-20) -->
