@@ -1,3 +1,4 @@
+import { ClearProgress } from '../application/ClearProgress';
 import { ImportProgress } from '../application/ImportProgress';
 import { LoadProgress } from '../application/LoadProgress';
 import { RecordRun } from '../application/RecordRun';
@@ -10,6 +11,7 @@ import { MenuController } from '../infrastructure/menu/MenuController';
 import type { SceneProgress } from '../infrastructure/phaser/GameScene';
 import type { MenuView } from '../infrastructure/phaser/MenuScene';
 import { LocalStorageProgressRepository } from '../infrastructure/progress/LocalStorageProgressRepository';
+import { MenuProgress } from '../infrastructure/progress/MenuProgress';
 import { ResultsProgress } from '../infrastructure/progress/ResultsProgress';
 import { SystemClock } from '../infrastructure/time/SystemClock';
 
@@ -38,10 +40,17 @@ export function wireProgress(root: HTMLElement, seedOf: () => number): ProgressW
   const { session, issue } = new LoadProgress(repository).execute();
   if (issue === 'corrupt') console.warn(PROGRESS_CORRUPT_WARNING);
 
+  // Resultados y menú comparten sesión, repositorio e import; cada uno tiene su propio mensaje.
+  const importProgress = new ImportProgress(session, repository);
   const results = new ResultsProgress(
     session,
     new RecordRun(session, repository, new SystemClock(), seedOf),
-    new ImportProgress(session, repository),
+    importProgress,
+  );
+  const menuProgress = new MenuProgress(
+    session,
+    importProgress,
+    new ClearProgress(session, repository),
   );
   const panel = new ResultsPanel(document, root, {
     onExport: () => {
@@ -56,14 +65,21 @@ export function wireProgress(root: HTMLElement, seedOf: () => number): ProgressW
 
   const controller = new MenuController();
   const menuPanel = new MenuPanel(document, root, controller, {
-    onExport: () => undefined,
-    onImport: () => undefined,
+    onExport: () => {
+      downloadProgress(menuProgress.exportText());
+    },
+    onImport: (file) => {
+      void menuProgress.importFile(file).then((view) => {
+        menuPanel.setMessage(view.message);
+      });
+    },
     onOpenConfirm: () => undefined,
   });
 
   return {
     menu: {
       show: () => {
+        menuProgress.reset();
         menuPanel.show();
       },
       hide: () => {

@@ -146,7 +146,7 @@ Sin tareas: el dominio no cambia (`run-state` sin delta). La pausa y el menú qu
   HUD en el menú", "HUD tras volver al menú y jugar".
   Ficheros: `src/infrastructure/phaser/MenuScene.ts`, `src/infrastructure/dom/MenuPanel.ts`,
   `src/composition/{main,progressWiring}.ts`, `src/styles.css`, `tests/e2e/menu.spec.ts`, `tests/e2e/probe.ts`.
-- [ ] 4.4 Exportar e Importar del menú conectados a `MenuProgress`, con el mensaje en el panel y `reset()` al
+- [x] 4.4 Exportar e Importar del menú conectados a `MenuProgress`, con el mensaje en el panel y `reset()` al
   mostrar el menú. **Rojo**: E2E `tests/e2e/menu-progress.spec.ts`:
   - exportar sin progreso da el vacío;
   - exportar con G de 2 entradas da G y no empieza ninguna partida;
