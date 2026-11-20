@@ -104,7 +104,7 @@
   restrictiva", "Sin violaciones en el bucle completo" (carga)
 
 ## 4. E2E y documentación
-- [ ] 4.1 `tests/e2e/progress.spec.ts` (3), carga sin jugar: valor truncado y, en otro test, `schemaVersion` 2
+- [x] 4.1 `tests/e2e/progress.spec.ts` (3), carga sin jugar: valor truncado y, en otro test, `schemaVersion` 2
   sembrados con `addInitScript` ⇒ exactamente 1 `console.warn` con `progress` y valor intacto tras 2 s de partida;
   recargar a mitad de partida sin progreso previo ⇒ almacenamiento sigue vacío. — escenarios: PP "Datos guardados
   dañados", "Versión futura guardada", "Partida sin terminar"
