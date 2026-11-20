@@ -74,13 +74,13 @@ Tras cada tarea, `npm run verify 2>&1 | tail -20` en verde.
     el contenido por defecto".
 
 ## 3. E2E
-- [ ] 3.1 Derrota E2E con la semilla del conjunto.
+- [x] 3.1 Derrota E2E con la semilla del conjunto.
   - En `tests/e2e/progress.spec.ts:207` y en `tests/e2e/menu-progress.spec.ts:30`, sustituir el
     `FAST_DEFEAT_SEED = 90` local por `STILL_DEFEAT_SEED`, importada de `../support/balanceSeeds`. Actualizar los
     comentarios que citan el tick 4501 y "la que antes pierde".
   - En el test de almacenamiento bloqueado, añadir `expect(ended?.tick).toBeLessThanOrEqual(STILL_LIMIT_TICKS)`.
   - No se cambian `E2E_SPEED` ni los timeouts: la 42 pierde a los 78 s de juego, unos 10 s reales.
-  - Lanzar `npm run test:e2e` y anotar el tiempo de la suite.
+  - Lanzar `npm run test:e2e` y anotar el tiempo de la suite. Apply: 48 passed en 1,3 min (build incluida, unos 80 s).
   - Escenarios: RO "Derrota E2E con una semilla del conjunto" y SL "Derrota equivalente con otra semilla del
     conjunto" (en el navegador, con la misma lógica).
 

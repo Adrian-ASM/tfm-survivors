@@ -13,6 +13,7 @@ import {
   watchCsp,
 } from './probe';
 import { F, P0, progressText, seedProgress } from './progressFixtures';
+import { STILL_DEFEAT_SEED, STILL_LIMIT_TICKS } from '../support/balanceSeeds';
 
 // Spec progress-persistence: guardado local, export/import y CSP en la build de producción. Las
 // partidas hasta la derrota van a ?speed=8 y el progreso previo se siembra (design 0008): ningún
@@ -203,8 +204,8 @@ test('Sin violaciones en el bucle completo (?seed=42: P0 sembrado, 1 derrota, ex
   expect(problems).toEqual([]);
 });
 
-// Tarea 0.1 de 0007: la semilla 90 sin input es la que antes pierde en el núcleo (tick 4501).
-const FAST_DEFEAT_SEED = 90;
+// Semilla del conjunto de balance 1..50: quieta pierde antes de 180 s, como todas (spec
+// run-outcome, "Jugador quieto pierde con todas las semillas"; la 42 cae hacia el tick 4.682).
 
 test('Almacenamiento bloqueado: se juega, el overlay avisa de que no se guarda y R reinicia', async ({
   page,
@@ -219,12 +220,13 @@ test('Almacenamiento bloqueado: se juega, el overlay avisa de que no se guarda y
       },
     });
   });
-  await page.goto(gameUrl({ seed: FAST_DEFEAT_SEED, speed: E2E_SPEED }));
+  await page.goto(gameUrl({ seed: STILL_DEFEAT_SEED, speed: E2E_SPEED }));
   await expectSpeed(page, E2E_SPEED);
 
   const ended = await playToDefeat(page);
   const progress = await progressOf(page);
 
+  expect(ended?.tick).toBeLessThanOrEqual(STILL_LIMIT_TICKS);
   expect(progress?.notices.some((n) => n.includes('no se guarda'))).toBe(true);
   expect(progress?.shown).toEqual(
     shownRecords({
