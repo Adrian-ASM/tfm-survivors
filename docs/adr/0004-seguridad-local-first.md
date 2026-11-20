@@ -25,6 +25,14 @@ ataque, secretos y coste. Aun así, un login real con Google aporta valor al TFM
 - Si el proyecto tiene login, el README incluirá un usuario de prueba (requisito del TFM). Con Google OAuth,
   documentar un acceso de invitado o una cuenta de prueba dedicada.
 
+### Nota (2026-11-20, change 0007-local-save-export)
+- La CSP de la fase 1 está implementada en `index.html` sin `'unsafe-eval'` ni `'unsafe-inline'` en scripts. zod 4
+  sondea `new Function` al construir sus esquemas y, con esa CSP, provoca un `securitypolicyviolation` aunque
+  capture el error. Se desactiva su JIT con `z.config({ jitless: true })`
+  (`src/infrastructure/validation/cspSafeZod.ts`, primer import de `main.ts`, protegido por un test de
+  guardarraíl). La validación de entradas externas no cambia. Detalle en `openspec/changes/0007-local-save-export/
+  design.md`, sección CSP.
+
 ## Consecuencias
 - Fase 1: cero coste y cero secretos; el progreso se pierde si se borran los datos del navegador (mitigado con export).
 - Fase 2: depende de la disponibilidad del plan gratuito (los proyectos inactivos pueden pausarse): comprobar sus

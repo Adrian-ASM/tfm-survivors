@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { RestartRun } from '../../application/RestartRun';
 import type { StartedRun } from '../../application/StartRun';
+import type { TickRun } from '../../application/TickRun';
 import type { RunSnapshot } from '../../domain/run/RunSnapshot';
 import { ChoiceKeys, choiceIndex } from './ChoiceKeys';
 import { EnemyLayer, type CircleSprite } from './EnemyLayer';
@@ -33,6 +34,14 @@ export interface SceneCapacity {
   readonly visualTicks: ReadonlyMap<string, number>;
 }
 
+/**
+ * Progreso del jugador en cada frame pintado (design 0007): la composición registra la partida
+ * terminada y pinta el panel de resultados. La escena no decide nada: solo llama a `sync`.
+ */
+export interface SceneProgress {
+  sync(snapshot: RunSnapshot, run: TickRun): void;
+}
+
 /** Lo que la escena ha pintado en un frame (para el probe de E2E). */
 export type OnRender = (snapshot: RunSnapshot, results: ResultsView | null) => void;
 
@@ -52,7 +61,7 @@ interface Widgets {
 
 /**
  * Adaptador de render (ADR-0002): lee el input, pasa el tiempo del frame a TickRun, la elección a
- * ChooseUpgrade y la tecla R a RestartRun, y pinta el RunSnapshot. Al reiniciar cambia de partida
+ * ChooseUpgrade y la tecla R a RestartRun, y pinta el RunSnapshot y el progreso. Al reiniciar cambia de partida
  * (ADR-0009) y vacía las capas; los objetos del motor se reutilizan. No contiene reglas de juego.
  */
 export class GameScene extends Phaser.Scene {
@@ -63,6 +72,7 @@ export class GameScene extends Phaser.Scene {
     private started: StartedRun,
     private readonly restartRun: RestartRun,
     private readonly capacity: SceneCapacity,
+    private readonly progress: SceneProgress,
     private readonly onRender: OnRender = () => undefined,
   ) {
     super('game');
@@ -133,6 +143,8 @@ export class GameScene extends Phaser.Scene {
     w.hud.sync(snapshot);
     w.offer.sync(snapshot.offer);
     w.results.sync(snapshot);
+    // En el frame en que termina la partida: se guarda antes de que R pueda leerse (spec).
+    this.progress.sync(snapshot, this.started.tickRun);
     this.onRender(snapshot, w.results.view);
   }
 }

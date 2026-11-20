@@ -1,4 +1,6 @@
 // Composition root (AGENTS.md §3.4): el único sitio que conoce las implementaciones concretas.
+// Primero: configura zod antes de que se construya ningún esquema (CSP sin 'unsafe-eval').
+import '../infrastructure/validation/cspSafeZod';
 import Phaser from 'phaser';
 import { RestartRun } from '../application/RestartRun';
 import { StartRun } from '../application/StartRun';
@@ -10,18 +12,20 @@ import { GameScene, type SceneCapacity } from '../infrastructure/phaser/GameScen
 import { Mulberry32RandomGenerator } from '../infrastructure/random/Mulberry32RandomGenerator';
 import type { ResultsView } from '../infrastructure/phaser/resultsText';
 import { resolveSeed } from '../infrastructure/url/resolveSeed';
+import { wireProgress, type ProgressProbe } from './progressWiring';
 import { restartRandoms } from './seedSource';
 
 const BACKGROUND = '#14141e';
 
 /**
- * Lectura del último snapshot, de la semilla de la partida actual y de los resultados mostrados
- * para los E2E. Solo existe con ?e2e en la URL.
+ * Lectura del último snapshot, de la semilla de la partida actual, de los resultados mostrados y
+ * del progreso para los E2E. Solo existe con ?e2e en la URL.
  */
 interface E2EProbe {
   seed: number;
   snapshot: RunSnapshot | null;
   results: ResultsView | null;
+  readonly progress: ProgressProbe | null;
 }
 
 function showContentError(root: HTMLElement, error: DomainError): void {
@@ -73,7 +77,16 @@ function bootstrap(): void {
     return;
   }
 
-  const probe: E2EProbe = { seed, snapshot: null, results: null };
+  // Antes de crear el juego: el panel queda en el DOM y el progreso cargado (nunca lanza).
+  const progress = wireProgress(root, () => probe.seed);
+  const probe: E2EProbe = {
+    seed,
+    snapshot: null,
+    results: null,
+    get progress() {
+      return progress.probe();
+    },
+  };
   // Cada reinicio usa una semilla nueva (también con ?seed=), sin releer la URL ni avisar.
   const nextRandom = restartRandoms(randomSeed, (s) => {
     probe.seed = s;
@@ -95,6 +108,7 @@ function bootstrap(): void {
         started.value,
         new RestartRun(config.value, nextRandom),
         sceneCapacity(config.value),
+        progress.scene,
         (snapshot, results) => {
           probe.snapshot = snapshot;
           probe.results = results;

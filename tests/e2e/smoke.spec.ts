@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { collect, cspState, probe, snapshotOf, watchCsp } from './probe';
 
 interface Probe {
   __sprint?: { snapshot: { tick: number; player: { x: number; y: number } } | null };
@@ -6,6 +7,28 @@ interface Probe {
 
 const playerX = (page: Page): Promise<number | null> =>
   page.evaluate(() => (window as unknown as Probe).__sprint?.snapshot?.player.x ?? null);
+
+test('Sin overlay durante la partida: progreso vacío, sin botones y CSP sin violaciones', async ({
+  page,
+}) => {
+  const problems = collect(page, ['error', 'warning']);
+  await watchCsp(page);
+  await page.goto('./?e2e');
+  await expect.poll(async () => (await snapshotOf(page))?.tick ?? 0).toBeGreaterThan(30);
+
+  const progress = (await probe(page))?.progress;
+
+  expect(progress).toMatchObject({
+    records: { bestTimeSeconds: 0, bestLevel: 0, maxKills: 0 },
+    history: [],
+    shown: null,
+  });
+  await expect(page.getByRole('button', { name: 'Exportar' })).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Importar' })).toBeHidden();
+  // Spec progress-persistence, CSP: una sola meta en la página servida y ninguna violación al cargar.
+  expect(await cspState(page)).toEqual({ violations: [], metas: 1 });
+  expect(problems).toEqual([]);
+});
 
 test('el juego carga sin errores y el jugador se mueve con la flecha derecha', async ({ page }) => {
   const errors: string[] = [];

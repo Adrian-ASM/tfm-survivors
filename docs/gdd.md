@@ -37,4 +37,14 @@ Teclado (WASD / flechas). Pausa con Esc. Táctil y gamepad: *Should/Could*.
 
 ## Orden tentativo de changes
 0001 walking-skeleton → 0002 enemy-spawning → 0003 collisions-and-damage → 0004 auto-weapons →
-0005 xp-and-level-up → 0006 run-lifecycle + HUD → 0007 local-save-export → (arte/audio) → Should.
+0005 xp-and-level-up → 0006 run-lifecycle + HUD → 0007 local-save-export → 0008 e2e-fast-sim →
+0009 main-menu → 0010 balance-pass → 0011 public-deploy → (arte/audio) → Should.
+
+Notas sobre el orden (revisado 2026-11-20, tras 0007):
+- **0008 e2e-fast-sim**: la suite E2E tarda ~4,2 min porque cada derrota espera ~78 s reales. Acelerar la
+  simulación solo en el adaptador (p. ej. `?speed=N`, varios ticks por frame, núcleo intacto) y no jugar
+  derrotas que no aportan (sembrar `localStorage`). Va primero porque abarata los E2E de todo lo que sigue.
+- **0009 main-menu**: menú de inicio y pausa (Esc), Must pendiente. Incluye "borrar datos", fuera de 0007.
+- **0010 balance-pass**: deuda de ganabilidad de 0006 (W1: 1 de 10 semillas gana con el bot) y semillas
+  frágiles en tests de 0007 (S2: la 90 caduca si cambia el balance). Antes de publicar.
+- **0011 public-deploy**: último Must.

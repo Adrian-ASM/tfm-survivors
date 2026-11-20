@@ -1,0 +1,70 @@
+import { ImportProgress } from '../application/ImportProgress';
+import { LoadProgress } from '../application/LoadProgress';
+import { RecordRun } from '../application/RecordRun';
+import type { HistoryEntry, Records } from '../domain/progress/Progress';
+import { downloadProgress } from '../infrastructure/dom/downloadProgress';
+import { ResultsPanel } from '../infrastructure/dom/ResultsPanel';
+import { PROGRESS_CORRUPT_WARNING } from '../infrastructure/dom/resultsPanelText';
+import type { SceneProgress } from '../infrastructure/phaser/GameScene';
+import { LocalStorageProgressRepository } from '../infrastructure/progress/LocalStorageProgressRepository';
+import { ResultsProgress } from '../infrastructure/progress/ResultsProgress';
+import { SystemClock } from '../infrastructure/time/SystemClock';
+
+/** Progreso en uso y lo que muestra el panel (probe de E2E; `shown` null si está oculto). */
+export interface ProgressProbe {
+  readonly records: Records;
+  readonly history: readonly HistoryEntry[];
+  readonly shown: readonly string[] | null;
+  readonly message: string | null;
+  readonly notices: readonly string[];
+}
+
+export interface ProgressWiring {
+  readonly scene: SceneProgress;
+  probe(): ProgressProbe;
+}
+
+/**
+ * Guardado local y export/import (design 0007): carga el progreso antes de crear el juego (nunca
+ * lanza), avisa una vez por consola si los datos guardados estaban dañados y crea el panel DOM
+ * sobre el canvas. `seedOf` da la semilla de la partida actual.
+ */
+export function wireProgress(root: HTMLElement, seedOf: () => number): ProgressWiring {
+  const repository = new LocalStorageProgressRepository(() => window.localStorage);
+  const { session, issue } = new LoadProgress(repository).execute();
+  if (issue === 'corrupt') console.warn(PROGRESS_CORRUPT_WARNING);
+
+  const results = new ResultsProgress(
+    session,
+    new RecordRun(session, repository, new SystemClock(), seedOf),
+    new ImportProgress(session, repository),
+  );
+  const panel = new ResultsPanel(document, root, {
+    onExport: () => {
+      downloadProgress(results.exportText());
+    },
+    onImport: (file) => {
+      void results.importFile(file).then((view) => {
+        panel.render(view);
+      });
+    },
+  });
+
+  return {
+    scene: {
+      sync: (snapshot, run) => {
+        panel.render(results.sync(snapshot, run));
+      },
+    },
+    probe: () => {
+      const view = results.view;
+      return {
+        records: session.progress.records,
+        history: session.progress.history,
+        shown: view?.records ?? null,
+        message: view?.message ?? null,
+        notices: view?.notices ?? [],
+      };
+    },
+  };
+}
