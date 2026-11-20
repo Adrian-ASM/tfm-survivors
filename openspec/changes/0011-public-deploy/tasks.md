@@ -78,11 +78,11 @@
   - tras `reload()`, el progreso es igual al de antes y no hay avisos con `progress`.
 
   Escenarios: "Jugar, guardar, exportar e importar en producción" y "Persistencia tras recargar en producción".
-- [ ] 3.4 *(Condicional: solo si 3.1 falla por un 404 de `/favicon.ico`)* Añadir `public/favicon.svg` y
+- [ ] 3.4 *(No aplica en el apply: T1 en verde contra la URL pública sin 404 de favicon. Condicional: solo si 3.1 falla por un 404 de `/favicon.ico`)* Añadir `public/favicon.svg` y
   `<link rel="icon" href="/favicon.svg">` en `index.html`. Test: T1 en verde contra `vite preview`. Tras el
   merge y el despliegue, T1 en verde contra la URL pública. `test:e2e` sigue en verde. Escenario: "Sin recursos
   rotos en la URL objetivo".
-- [ ] 3.5 Ejecuciones de aceptación del smoke, anotadas en el diario de IA con su duración:
+- [x] 3.5 Ejecuciones de aceptación del smoke, anotadas en el diario de IA con su duración:
   - `npm run smoke:public` contra la URL pública: exit 0 y ≤ 180 s;
   - `SMOKE_URL=http://localhost:4173/tfm-survivors/` tras `build` y `preview`: verde, con T2 y T3 saltados;
   - `SMOKE_URL=ftp://ejemplo`: exit ≠ 0, sin abrir páginas y con la URL en el mensaje;
@@ -100,7 +100,7 @@
   pública, el smoke en local con `SMOKE_URL` y el aviso de levantar `preview` para `localhost`, y el smoke desde
   Actions con el workflow `smoke-public` y su input `url`. Escenarios: "README con URL e instrucciones" y "Riesgo
   aceptado documentado".
-- [ ] 4.2 Diario de IA `docs/ai-log/2026-11-20-0011-apply.md`: resultado, mediciones de 3.5 e incidentes de
+- [x] 4.2 Diario de IA `docs/ai-log/2026-11-20-0011-apply.md`: resultado, mediciones de 3.5 e incidentes de
   hooks si los hay. **Desviación de `worktree-flow`**: el change se trabaja en el worktree
   `.claude/worktrees/migracion-formato-code-4b86d6`, con la rama renombrada a `change/0011-public-deploy`, y no en
   `tfm-survivors.worktrees/0011-public-deploy`. Sin test (documentación). `npm run verify` en verde al cerrar el
