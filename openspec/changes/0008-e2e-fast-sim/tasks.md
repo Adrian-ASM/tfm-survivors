@@ -52,7 +52,7 @@ Sin tareas: `src/application` no cambia (`TickRun`, `FixedStepLoop` y `MAX_FRAME
       - "Equivalencia con frames irregulares" (seed 7, input (1, 0));
       - "Snapshots iguales tick a tick" (tick 1.200).
   - Si alguna equivalencia sale en rojo, el design está mal: parar y avisar al orquestador.
-- [ ] 3.3 Conexión con la escena y la composición:
+- [x] 3.3 Conexión con la escena y la composición:
   - `GameScene`: 6.º parámetro `simSpeed = 1` y `update` con `advanceFrame`;
   - `main.ts`: `resolveSpeed` una sola vez en `bootstrap`, `console.warn` del aviso y `speed` en el probe;
   - `probe.ts`: campo `speed` en la vista del probe.

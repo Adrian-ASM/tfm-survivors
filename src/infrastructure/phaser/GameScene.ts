@@ -3,6 +3,7 @@ import type { RestartRun } from '../../application/RestartRun';
 import type { StartedRun } from '../../application/StartRun';
 import type { TickRun } from '../../application/TickRun';
 import type { RunSnapshot } from '../../domain/run/RunSnapshot';
+import { advanceFrame } from './advanceFrame';
 import { ChoiceKeys, choiceIndex } from './ChoiceKeys';
 import { EnemyLayer, type CircleSprite } from './EnemyLayer';
 import { GemLayer } from './GemLayer';
@@ -74,6 +75,8 @@ export class GameScene extends Phaser.Scene {
     private readonly capacity: SceneCapacity,
     private readonly progress: SceneProgress,
     private readonly onRender: OnRender = () => undefined,
+    /** Velocidad de simulación ya resuelta (1 en modo jugador; solo `?e2e&speed` la cambia). */
+    private readonly simSpeed = 1,
   ) {
     super('game');
   }
@@ -116,7 +119,8 @@ export class GameScene extends Phaser.Scene {
       const chosen = this.started.chooseUpgrade.execute(index);
       if (chosen.ok) this.render(chosen.value);
     }
-    this.render(this.started.tickRun.execute(deltaMs, w.move.read()));
+    // `simSpeed` avances por frame con el input leído una vez; se pinta una sola vez.
+    this.render(advanceFrame(this.started.tickRun, deltaMs, w.move.read(), this.simSpeed));
   }
 
   /** Partida nueva (solo desde una terminada): capas vacías antes de su primer render. */

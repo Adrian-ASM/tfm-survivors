@@ -12,6 +12,7 @@ import { GameScene, type SceneCapacity } from '../infrastructure/phaser/GameScen
 import { Mulberry32RandomGenerator } from '../infrastructure/random/Mulberry32RandomGenerator';
 import type { ResultsView } from '../infrastructure/phaser/resultsText';
 import { resolveSeed } from '../infrastructure/url/resolveSeed';
+import { resolveSpeed } from '../infrastructure/url/resolveSpeed';
 import { wireProgress, type ProgressProbe } from './progressWiring';
 import { restartRandoms } from './seedSource';
 
@@ -23,6 +24,8 @@ const BACKGROUND = '#14141e';
  */
 interface E2EProbe {
   seed: number;
+  /** Velocidad de simulación resuelta una vez en la carga (`?e2e&speed`, 1 por defecto). */
+  readonly speed: number;
   snapshot: RunSnapshot | null;
   results: ResultsView | null;
   readonly progress: ProgressProbe | null;
@@ -71,6 +74,9 @@ function bootstrap(): void {
   }
   const { seed, warning } = resolveSeed(window.location.search, randomSeed);
   if (warning) console.warn(warning);
+  // Una sola vez por carga: los reinicios no releen la URL ni avisan (spec simulation-loop).
+  const speed = resolveSpeed(window.location.search);
+  if (speed.warning) console.warn(speed.warning);
   const started = new StartRun().execute(config.value, new Mulberry32RandomGenerator(seed));
   if (!started.ok) {
     showContentError(root, started.error);
@@ -81,6 +87,7 @@ function bootstrap(): void {
   const progress = wireProgress(root, () => probe.seed);
   const probe: E2EProbe = {
     seed,
+    speed: speed.speed,
     snapshot: null,
     results: null,
     get progress() {
@@ -113,6 +120,7 @@ function bootstrap(): void {
           probe.snapshot = snapshot;
           probe.results = results;
         },
+        speed.speed,
       ),
     ],
   });

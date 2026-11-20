@@ -53,6 +53,8 @@ export interface ProgressView {
 interface Probe {
   __sprint?: {
     seed: number;
+    /** Velocidad de simulación resuelta en la carga (1..15; 1 si falta o es inválida). */
+    speed?: number;
     snapshot: SnapshotView | null;
     results: ResultsViewData | null;
     progress: ProgressView | null;
@@ -64,7 +66,13 @@ export const probe = (page: Page) =>
   page.evaluate(() => {
     const p = (window as unknown as Probe).__sprint;
     return p
-      ? { seed: p.seed, snapshot: p.snapshot, results: p.results, progress: p.progress }
+      ? {
+          seed: p.seed,
+          speed: p.speed ?? null,
+          snapshot: p.snapshot,
+          results: p.results,
+          progress: p.progress,
+        }
       : null;
   });
 
