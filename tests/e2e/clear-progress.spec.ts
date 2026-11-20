@@ -14,6 +14,7 @@ import {
   playerUrl,
   probe,
   snapshotOf,
+  waitFrames,
 } from './probe';
 import { F, P0, progressText, seedProgress } from './progressFixtures';
 
@@ -28,11 +29,14 @@ const G_TEXT = progressText({
 const DAMAGED = '{"schemaVersion":1,"records":';
 /**
  * Las partidas tras Volver al menú usan una semilla aleatoria nueva (spec simulation-loop): se
- * juegan a la velocidad máxima para que la derrota sin input llegue en pocos segundos.
+ * juegan a la velocidad máxima para que la derrota sin input llegue en pocos segundos. Los tests
+ * solo exigen que la partida termine (victoria o derrota), así que el peor caso está acotado por la
+ * duración: 36.000 ticks / 15 por frame = 2.400 frames (40 s a 60 Hz, 80 s a 30 Hz). El margen
+ * cubre ese peor caso aunque la semilla no pierda pronto.
  */
 const MAX_SPEED = 15;
-const PLAY_TIMEOUT_MS = 60_000;
-const TEST_TIMEOUT_MS = 90_000;
+const PLAY_TIMEOUT_MS = 120_000;
+const TEST_TIMEOUT_MS = 180_000;
 
 const stored = (page: Page): Promise<string | null> =>
   page.evaluate((key) => window.localStorage.getItem(key), KEY);
@@ -167,19 +171,32 @@ test('Confirmar dos veces seguidas y borrar el progreso vacío: sin errores', as
   expect(problems).toEqual([]);
 });
 
-test('Borrar sin almacenamiento (SecurityError): mensaje borrado y export vacío', async ({
-  page,
-}) => {
-  const problems = collect(page, ['error']);
-  await page.addInitScript(() => {
-    Object.defineProperty(window, 'localStorage', {
-      configurable: true,
-      get() {
+// Dos formas de bloqueo: lanza al acceder a `localStorage`, o lanza cada operación (leer, escribir
+// y borrar) de un `localStorage` que sí existe.
+for (const mode of ['acceso', 'operaciones'] as const) {
+  test(`Menú con almacenamiento bloqueado (SecurityError en ${mode}): borrado, export vacío y Jugar`, async ({
+    page,
+  }) => {
+    const problems = collect(page, ['error']);
+    await page.addInitScript((blockAccess) => {
+      const blocked = () => {
         throw new DOMException('almacenamiento bloqueado', 'SecurityError');
-      },
-    });
+      };
+      if (blockAccess) {
+        Object.defineProperty(window, 'localStorage', { configurable: true, get: blocked });
+        return;
+      }
+      Storage.prototype.getItem = blocked;
+      Storage.prototype.setItem = blocked;
+      Storage.prototype.removeItem = blocked;
+    }, mode === 'acceso');
+    await page.goto(playerUrl());
+    await expectBlockedMenu(page, problems);
   });
-  await page.goto(playerUrl());
+}
+
+async function expectBlockedMenu(page: Page, problems: string[]): Promise<void> {
+  await expect(menuPanel(page)).toBeVisible();
   expect(decoded(await exportMenu(page))).toStrictEqual(EMPTY_PROGRESS);
 
   await openClear(page);
@@ -189,8 +206,11 @@ test('Borrar sin almacenamiento (SecurityError): mensaje borrado y export vacío
   expect(decoded(await exportMenu(page))).toStrictEqual(EMPTY_PROGRESS);
   await menuButton(page, 'Jugar').click();
   await expect(menuPanel(page)).toBeHidden();
+  await waitFrames(page, 30);
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog', { name: 'Pausa' })).toBeVisible();
   expect(problems).toEqual([]);
-});
+}
 
 test('Fallo al borrar (QuotaExceededError): no se ha podido borrar y G intacto', async ({
   page,
@@ -243,11 +263,17 @@ test('Borrar datos dañados y jugar: sin aviso de dañados y 1 entrada con esa p
   await openClear(page);
   await confirmDialog(page).getByRole('button', { name: 'Confirmar' }).click();
   await expect(menuMessage(page)).toContainText('borrado');
+  // Un rechazo en el menú (no cambia el progreso): ni él ni el de borrado pasan al overlay.
+  const chooser = page.waitForEvent('filechooser');
+  await menuButton(page, 'Importar').click();
+  await (await chooser).setFiles({ name: 'x.json', mimeType: 'text/plain', buffer: Buffer.from('hola') });
+  await expect(menuMessage(page)).toContainText('no válido');
   await menuButton(page, 'Jugar').click();
   await expect.poll(async () => (await probe(page))?.screen).toBe('playing');
   const ended = await playToEnd(page);
 
   const progress = (await probe(page))?.progress;
+  expect(progress?.message).toBeNull();
   expect(progress?.notices.some((n) => n.includes('dañados'))).toBe(false);
   expect(progress?.records).toStrictEqual({
     bestTimeSeconds: Math.floor((ended?.tick ?? 0) / 60),

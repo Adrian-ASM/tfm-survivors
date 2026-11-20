@@ -179,6 +179,29 @@ export const cspState = (page: Page) =>
     metas: document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]').length,
   }));
 
+/**
+ * Ticks por frame del navegador, medidos sobre `frames` frames de `requestAnimationFrame` (el
+ * mismo reloj que usa Phaser). No depende del reloj de pared: en una máquina lenta hay menos
+ * frames, no menos ticks por frame. Velocidad 1 ⇒ ~1; velocidad 8 ⇒ ~8.
+ */
+export const ticksPerFrame = (page: Page, frames = 30): Promise<number> =>
+  page.evaluate(async (n) => {
+    const read = () => (window as unknown as Probe).__sprint?.snapshot?.tick ?? 0;
+    const start = read();
+    for (let i = 0; i < n; i += 1) {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+    }
+    return (read() - start) / n;
+  }, frames);
+
+/** Espera `n` frames del navegador (`requestAnimationFrame`), no un tiempo de reloj. */
+export const waitFrames = (page: Page, n: number): Promise<void> =>
+  page.evaluate(async (count) => {
+    for (let i = 0; i < count; i += 1) {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+    }
+  }, n);
+
 /** URL del juego sin `?e2e` (modo jugador: menú de inicio y sin sonda). */
 export const playerUrl = (search = ''): string => `./${search}`;
 

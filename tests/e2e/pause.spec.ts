@@ -6,7 +6,9 @@ import {
   focusGame,
   gameUrl,
   playChoosingFirst,
+  probe,
   snapshotOf,
+  ticksPerFrame,
   type SnapshotView,
 } from './probe';
 
@@ -103,11 +105,9 @@ test('Modo E2E con velocidad: tras reanudar a ?speed=8 el tick avanza de 8 en 8'
 
   await page.keyboard.press('Escape');
   await expect.poll(async () => (await snapshotOf(page))?.tick ?? 0).toBeGreaterThan(paused.tick);
-  // Ritmo acelerado tras reanudar (los ticks exactos, n + 8 y n + 16, se prueban en Node): en
-  // ~1 s a 60 Hz, velocidad 1 daría unos 60 ticks; a velocidad 8, varios centenares.
-  await page.waitForTimeout(1_000);
-  const after = (await snapshotOf(page)) as SnapshotView;
-  expect(after.tick - paused.tick).toBeGreaterThan(3 * 60);
+  // Ritmo acelerado tras reanudar, medido por frame del navegador (no por reloj de pared): los
+  // ticks exactos, n + 8 y n + 16, se prueban en Node. Velocidad 1 daría ~1 tick por frame.
+  expect(await ticksPerFrame(page)).toBeGreaterThan(2);
 });
 
 test('Esc mientras se elige mejora: no pausa y la tecla 1 elige', async ({ page }) => {
@@ -146,4 +146,6 @@ test('Esc con la partida terminada: no pausa y R crea una partida nueva', async 
   await page.keyboard.press('r');
   await expect.poll(async () => (await snapshotOf(page))?.status).toBe('running');
   await expect(pauseOverlay(page)).toBeHidden();
+  // R crea exactamente 1 partida nueva: la de la carga y la del reinicio.
+  expect((await probe(page))?.runs).toBe(2);
 });

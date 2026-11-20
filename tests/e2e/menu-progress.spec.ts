@@ -145,25 +145,20 @@ test('Jugar tras usar los botones: 1 partida nueva y el menú deja de verse con 
   await expect(page.getByRole('dialog', { name: 'Pausa' })).toBeVisible();
 });
 
-test('Mismo fichero desde los dos sitios y mensajes que no se mezclan entre menú y overlay', async ({
+// La 1.ª partida de la carga usa la semilla fija 90 (derrota determinista a ?speed=8). La dirección
+// menú → overlay de los mensajes, que exige jugar una partida tras Volver al menú (semilla
+// aleatoria), está en `clear-progress.spec` y en Node (`menu-progress.test`).
+test('Mismo fichero desde los dos sitios y mensajes del overlay que no pasan al menú', async ({
   page,
 }) => {
   test.setTimeout(60_000);
   await page.goto(gameUrl({ seed: FAST_DEFEAT_SEED, speed: E2E_SPEED }));
-  await expect.poll(async () => (await snapshotOf(page))?.tick ?? 0).toBeGreaterThan(10);
-  await focusGame(page);
-  // Mensajes del menú (importado y no válido) que no deben pasar al overlay.
-  await backToMenu(page);
-  await importFrom(page, menuButton(page, 'Importar'), progressText(F));
-  await importFrom(page, menuButton(page, 'Importar'), 'hola');
-  await expect(menuMessage(page)).toContainText('no válido');
-  await menuButton(page, 'Jugar').click();
+  await expect.poll(async () => (await snapshotOf(page))?.tick ?? null).not.toBeNull();
   await focusGame(page);
   const ended = await playChoosingFirst(page, (s) => s.status === 'over', PLAY_TIMEOUT_MS);
   expect(ended?.status).toBe('over');
   const results = page.locator('.results-panel');
   await expect(results).toBeVisible();
-  expect((await probe(page))?.progress?.message).toBeNull();
 
   // E1 desde resultados y un rechazo en el overlay que no debe pasar al menú.
   const e1 = await exportFrom(page, results.getByRole('button', { name: 'Exportar' }));

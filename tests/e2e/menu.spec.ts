@@ -11,14 +11,19 @@ import {
   playerUrl,
   probe,
   snapshotOf,
+  ticksPerFrame,
+  waitFrames,
 } from './probe';
 
 // Menú de inicio (spec main-menu): sin ?e2e se ve el menú y no hay sonda; con ?e2e la partida
 // arranca al cargar y el menú se recorre con Esc → Volver al menú → Jugar.
 
 const MENU_LABELS = ['Jugar', 'Exportar', 'Importar', 'Borrar datos'];
-/** Tick máximo de una partida "recién creada" al leerla tras el clic (margen de frames). */
-const FRESH_MAX_TICKS = 60;
+/**
+ * Tick máximo de una partida "recién creada" al leerla tras el clic: margen de unos 2 s de frames
+ * para máquinas lentas (el tick 0 exacto antes del primer tick se prueba en Node).
+ */
+const FRESH_MAX_TICKS = 120;
 
 const hasProbe = (page: Page) => page.evaluate(() => '__sprint' in window);
 
@@ -80,7 +85,8 @@ test('Esc funciona tras pulsar Jugar con el ratón (sin otro clic)', async ({ pa
   await page.goto(playerUrl());
   await menuButton(page, 'Jugar').click();
   await expect(menuPanel(page)).toBeHidden();
-  await page.waitForTimeout(500);
+  // Escenario: se pintan 30 frames tras Jugar (no un tiempo de reloj).
+  await waitFrames(page, 30);
 
   await page.keyboard.press('Escape');
 
@@ -97,8 +103,10 @@ test('Menú tras Volver al menú en modo E2E: screen menu, sin snapshot; Jugar c
 
   await expectMenuOnly(page);
   expect(await probe(page)).toMatchObject({ screen: 'menu', snapshot: null, results: null });
+  // R en el menú tras Volver al menú: no crea ninguna partida.
+  await page.keyboard.press('r');
   await page.waitForTimeout(500);
-  expect((await probe(page))?.snapshot).toBeNull();
+  expect(await probe(page)).toMatchObject({ screen: 'menu', snapshot: null, runs: 1 });
 
   await menuButton(page, 'Jugar').click();
 
@@ -126,11 +134,10 @@ test('Velocidad tras volver al menú: con ?e2e&speed=8 la partida nueva va acele
 
   await menuButton(page, 'Jugar').click();
   await expect.poll(async () => (await probe(page))?.screen).toBe('playing');
-  const start = (await snapshotOf(page))?.tick ?? 0;
-  await page.waitForTimeout(1_000);
 
   expect((await probe(page))?.speed).toBe(E2E_SPEED);
-  expect(((await snapshotOf(page))?.tick ?? 0) - start).toBeGreaterThan(3 * 60);
+  // Ritmo por frame del navegador (tick 8 exacto por frame: en Node, `pause-gate`/`advance-frame`).
+  expect(await ticksPerFrame(page)).toBeGreaterThan(2);
 });
 
 test('Doble clic en Jugar: se crea exactamente 1 partida y avanza con normalidad', async ({
@@ -142,10 +149,11 @@ test('Doble clic en Jugar: se crea exactamente 1 partida y avanza con normalidad
   await menuButton(page, 'Jugar').dblclick();
 
   await expect.poll(async () => (await probe(page))?.screen).toBe('playing');
-  await page.waitForTimeout(1_000);
-  const after = await probe(page);
-  expect(after?.runs).toBe(2);
-  expect(after?.snapshot?.tick).toBeGreaterThan(30);
+  // Avanza con normalidad: ~1 tick por frame del navegador (sin reloj de pared).
+  const pace = await ticksPerFrame(page);
+  expect(pace).toBeGreaterThan(0.5);
+  expect(pace).toBeLessThan(1.5);
+  expect((await probe(page))?.runs).toBe(2);
 });
 
 test('Cinco ciclos menú-partida: 6 partidas en la carga y la última juega con normalidad', async ({

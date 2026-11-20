@@ -15,6 +15,7 @@ import {
   playerUrl,
   probe,
   snapshotOf,
+  waitFrames,
   watchCsp,
 } from './probe';
 import { F, P0, progressText, seedProgress } from './progressFixtures';
@@ -101,7 +102,7 @@ test('Jugar y Esc tras usar los botones del menú: 1 partida y en pausa', async 
   await menuButton(page, 'Borrar datos').click();
   await confirmDialog(page).getByRole('button', { name: 'Cancelar' }).click();
   await menuButton(page, 'Jugar').click();
-  await page.waitForTimeout(500);
+  await waitFrames(page, 30);
   await page.keyboard.press('Escape');
 
   await expect(pauseOverlay(page)).toBeVisible();
