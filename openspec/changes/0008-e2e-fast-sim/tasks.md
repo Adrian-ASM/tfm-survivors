@@ -99,7 +99,7 @@ Sin tareas: `src/application` no cambia (`TickRun`, `FixedStepLoop` y `MAX_FRAME
     - "Datos guardados dañados";
     - "Versión futura guardada";
     - "Partida sin terminar".
-- [ ] 4.4 Tooling:
+- [x] 4.4 Tooling:
   - `playwright.config.ts` con `workers: 2` y `fullyParallel: true`;
   - `ci.yml` con `timeout-minutes: 6` en el job `e2e`.
   - Es una medición, no un test unitario: `npx playwright test --reporter=list` en local con `CI=1`, toda la suite

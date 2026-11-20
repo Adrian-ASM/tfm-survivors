@@ -6,6 +6,9 @@ const BASE_URL = 'http://localhost:4173/tfm-survivors/';
 export default defineConfig({
   testDir: 'tests/e2e',
   timeout: 30_000,
+  // Design 0008: tests independientes (contexto y localStorage propios); 2 workers en local y CI.
+  fullyParallel: true,
+  workers: 2,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['html', { open: 'never' }], ['list']] : 'list',
   use: { baseURL: BASE_URL, trace: 'retain-on-failure' },
