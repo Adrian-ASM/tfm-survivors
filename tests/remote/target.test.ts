@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { PUBLIC_URL, checkReachable, isPublicTarget, resolveTargetUrl } from './target';
+import {
+  IGNORED_META_DIRECTIVES,
+  PUBLIC_URL,
+  checkReachable,
+  isPublicTarget,
+  localAssetRefs,
+  metaCspDirectives,
+  misplacedRefs,
+  resolveTargetUrl,
+} from './target';
 
 // Spec public-deploy, "Smoke a demanda contra una URL": soporte puro del smoke remoto, sin red.
 const hrefOf = (raw: string | undefined): string | null => {
@@ -100,6 +109,70 @@ describe('checkReachable (preflight, fetch falso)', () => {
     expect(result.ok ? null : result.error).toMatch(/no llegó a estado 200 \(error de red/);
     expect(result.ok ? null : result.error).toContain(url.href);
     expect(calls).toHaveLength(3);
+  });
+});
+
+describe('index.html servido: rutas y meta CSP', () => {
+  const page = (head: string) =>
+    `<!doctype html><html><head><meta charset="utf-8" />${head}</head><body></body></html>`;
+  const meta = (policy: string) =>
+    `<meta\n  http-equiv="Content-Security-Policy"\n  content="${policy}"\n/>`;
+  const BUILT = page(
+    meta("default-src 'self'; script-src 'self'") +
+      '<script type="module" crossorigin src="/tfm-survivors/assets/index-9DPG2gdO.js"></script>' +
+      '<link rel="stylesheet" crossorigin href="/tfm-survivors/assets/index-Bd6QdeGd.css">',
+  );
+
+  it('Scenario: Rutas del index.html publicado (refs bajo la base)', () => {
+    const refs = localAssetRefs(BUILT);
+
+    expect(refs).toEqual([
+      '/tfm-survivors/assets/index-9DPG2gdO.js',
+      '/tfm-survivors/assets/index-Bd6QdeGd.css',
+    ]);
+    expect(misplacedRefs(refs, '/tfm-survivors/')).toEqual([]);
+  });
+
+  it('Scenario: Rutas del index.html publicado (detecta /src/, https:, http:, // y otra base)', () => {
+    const html = page(
+      '<script src="/src/composition/main.ts"></script>' +
+        "<link href='https://cdn.example/x.css'>" +
+        '<img src="http://cdn.example/a.png">' +
+        '<script src="//cdn.example/y.js"></script>' +
+        '<link href="/otra/assets/z.css">' +
+        '<link href="/tfm-survivors/assets/ok.css">',
+    );
+
+    expect(misplacedRefs(localAssetRefs(html), '/tfm-survivors/')).toEqual([
+      '/src/composition/main.ts',
+      'https://cdn.example/x.css',
+      'http://cdn.example/a.png',
+      '//cdn.example/y.js',
+      '/otra/assets/z.css',
+    ]);
+  });
+
+  it('Scenario: Directivas que la meta ignora (detecta frame-ancestors y report-to)', () => {
+    const clean = metaCspDirectives(BUILT);
+    const bad = metaCspDirectives(
+      page(meta("default-src 'self'; frame-ancestors 'none'; report-to csp")),
+    );
+
+    expect(clean).toEqual(['default-src', 'script-src']);
+    expect(bad.filter((d) => IGNORED_META_DIRECTIVES.includes(d))).toEqual([
+      'frame-ancestors',
+      'report-to',
+    ]);
+    expect(IGNORED_META_DIRECTIVES).toEqual([
+      'frame-ancestors',
+      'report-uri',
+      'report-to',
+      'sandbox',
+    ]);
+  });
+
+  it('sin meta CSP, ninguna directiva', () => {
+    expect(metaCspDirectives(page(''))).toEqual([]);
   });
 });
 

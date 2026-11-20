@@ -1,5 +1,6 @@
 // Soporte puro del smoke remoto (design 0011-public-deploy). Sin red ni navegador: lo usan la config
 // remota de Playwright, su globalSetup, el spec remoto y los unitarios de Vitest.
+import { cspOf, parseCsp } from '../../config/csp';
 import { err, ok, type Result } from '../../src/domain/shared/Result';
 
 /** URL pública del juego (GitHub Pages) y objetivo por defecto del smoke. */
@@ -64,6 +65,37 @@ export async function checkReachable(
   }
   return err(`La carga inicial de ${url.href} no llegó a estado 200 (${last})`);
 }
+
+/** Valores de todos los atributos `src` y `href` del HTML, en orden de aparición. */
+export const localAssetRefs = (html: string): string[] =>
+  [...html.matchAll(/\s(?:src|href)\s*=\s*(?:"([^"]*)"|'([^']*)')/gi)].map(
+    (m) => m[1] ?? m[2] ?? '',
+  );
+
+const FORBIDDEN_REF_PREFIXES = ['/src/', 'http:', 'https:', '//'];
+
+/**
+ * Refs que no cuelgan de la base de la URL objetivo o que apuntan a fuentes sin compilar u otros
+ * orígenes (spec "Rutas del index.html publicado").
+ */
+export const misplacedRefs = (refs: readonly string[], basePath: string): string[] =>
+  refs.filter(
+    (ref) =>
+      !ref.startsWith(basePath) || FORBIDDEN_REF_PREFIXES.some((prefix) => ref.startsWith(prefix)),
+  );
+
+/** Directivas que una CSP en `<meta>` ignora (spec "Directivas que la meta ignora", ADR-0004). */
+export const IGNORED_META_DIRECTIVES: readonly string[] = [
+  'frame-ancestors',
+  'report-uri',
+  'report-to',
+  'sandbox',
+];
+
+/** Nombres de las directivas de la meta CSP del HTML (vacío si no hay meta). */
+export const metaCspDirectives = (html: string): string[] => [
+  ...parseCsp(cspOf(html) ?? '').keys(),
+];
 
 /** Indica si la URL objetivo es la pública (los tests de 404 y HTTP→HTTPS solo corren contra ella). */
 export const isPublicTarget = (url: URL): boolean => url.origin === PUBLIC_ORIGIN;

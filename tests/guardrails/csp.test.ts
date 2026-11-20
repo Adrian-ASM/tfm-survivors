@@ -44,7 +44,9 @@ describe('CSP de index.html (spec progress-persistence)', () => {
   });
 
   it('no usa directivas que Chrome ignora en <meta> y avisa por consola', () => {
-    expect(['frame-ancestors', 'report-uri', 'sandbox'].filter((d) => policy.has(d))).toEqual([]);
+    // report-to: change 0011 (spec public-deploy, "Directivas que la meta ignora").
+    const ignored = ['frame-ancestors', 'report-uri', 'report-to', 'sandbox'];
+    expect(ignored.filter((d) => policy.has(d))).toEqual([]);
   });
 });
 

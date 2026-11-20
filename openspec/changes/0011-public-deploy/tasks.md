@@ -15,7 +15,7 @@
   inyectados. Devuelve `ok` al primer 200. Con 404 o error de red en todos los intentos, devuelve `err` con
   "no llegó a estado 200" y la URL. Hace exactamente `attempts` llamadas, cada una con `AbortSignal.timeout`.
   Test con un fetch falso, sin red. Escenario: "URL objetivo que no responde".
-- [ ] 1.3 `localAssetRefs(html)` y `metaCspDirectives(html)` sobre el HTML como texto. En `csp.test.ts`, añadir
+- [x] 1.3 `localAssetRefs(html)` y `metaCspDirectives(html)` sobre el HTML como texto. En `csp.test.ts`, añadir
   `report-to` a las directivas prohibidas. Tests con HTML de ejemplo: refs `/tfm-survivors/…` válidas; refs con
   `/src/`, `https:` o `//` detectadas; meta con `frame-ancestors` o `report-to` detectada. Escenarios: "Rutas del
   index.html construido" y "Directivas que la meta ignora".
