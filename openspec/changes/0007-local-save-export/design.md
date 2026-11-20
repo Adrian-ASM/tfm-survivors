@@ -84,8 +84,13 @@ object-src 'none'; base-uri 'none'; form-action 'none'
 - **Sin `blob:`**: Phaser solo usa `URL.createObjectURL` en su Loader (no cargamos ficheros) y en vídeo. La descarga
   del export es una navegación de `<a download>` a `blob:`, que ninguna directiva de la meta restringe.
 - **WebGL** no está sujeto a CSP (shaders compilados por la API, no `eval`). El `new Function` del runtime de webpack
-  de Phaser solo se alcanza si no existe `globalThis`: no ocurre en navegadores soportados, así que no hace falta
-  `'unsafe-eval'`.
+  de Phaser solo se alcanza si no existe `globalThis`, lo que no ocurre en navegadores soportados.
+- **zod 4 también usa `eval`** (desviación encontrada en apply; Phaser no es la única fuente). `util.allowsEval`
+  sondea `new Function("")` al construir cada esquema de objeto. Captura el error, pero la CSP registra un
+  `securitypolicyviolation` (`script-src eval`). Se evita con `z.config({ jitless: true })` en el módulo de efecto
+  `src/infrastructure/validation/cspSafeZod.ts`, que debe ser el **primer import** de `main.ts`: los esquemas se
+  construyen al importar los módulos. Lo protege `tests/guardrails/csp-zod-import.test.ts`. La validación es la
+  misma y sin JIT. Con esto no hace falta `'unsafe-eval'`.
 - Phaser asigna estilos por CSSOM (`el.style.x = …`, `cssText`), que `style-src` no bloquea; el único
   `setAttribute('style')` es para iOS (`GetInnerHeight`). El panel usa clases de `styles.css` y el atributo `hidden`.
 - Fuera de la meta: `frame-ancestors`, `report-uri` y `sandbox` se ignoran en `<meta>` y Chrome **lo avisa por
@@ -95,7 +100,9 @@ object-src 'none'; base-uri 'none'; form-action 'none'
 HMR abre un WebSocket. `devCsp()` (solo `apply: 'serve'`) reescribe la meta con `relaxCspForDev`: añade
 `'unsafe-inline'` a `style-src` y `ws: wss:` a `connect-src`; `script-src` no cambia (el cliente de Vite es un script
 externo de `'self'`). La build nunca pasa por el plugin, así que `dist/index.html` lleva exactamente la política
-estricta y una sola meta.
+estricta y una sola meta. `vite.config.ts` importa el plugin como `./config/csp.ts`, con extensión, para evitar el
+aviso del futuro `configLoader: 'native'` de Vite. Por eso `tsconfig.json` activa `allowImportingTsExtensions`,
+compatible con el `noEmit` que ya había (desviación de apply).
 
 **Cómo se prueba:**
 - Unitario (`tests/guardrails/csp.test.ts`, en `verify`): lee `index.html` y comprueba una sola meta, primera en
