@@ -45,7 +45,7 @@ Sin tareas: el dominio no cambia (`run-state` sin delta). La pausa y el menú qu
   — PP "Borrar sin almacenamiento", "Fallo al borrar" y "Borrar datos dañados" (el valor dañado desaparece).
   Ficheros: `src/infrastructure/progress/LocalStorageProgressRepository.ts`,
   `tests/infrastructure/local-storage-progress.test.ts`.
-- [ ] 3.2 `PauseGate.step` y `paused`. Tests con un `TickRun` real:
+- [x] 3.2 `PauseGate.step` y `paused`. Tests con un `TickRun` real:
   - Esc en `running` pausa y llama a `discardPending`;
   - Esc en `choosing` u `over` no hace nada;
   - en pausa, Esc o `'resume'` reanudan;
@@ -56,7 +56,7 @@ Sin tareas: el dominio no cambia (`run-state` sin delta). La pausa y el menú qu
   — MM "Pausar y reanudar con Esc", "Reanudar con el botón", "Esc mientras se elige mejora", "Esc con la partida
   terminada", "Esc y R en el mismo frame"; RR "Teclas sin efecto con la partida terminada" (Esc).
   Ficheros: `src/infrastructure/phaser/PauseGate.ts`, `tests/infrastructure/pause-gate.test.ts`.
-- [ ] 3.3 `PauseGate.frame`. Tests:
+- [x] 3.3 `PauseGate.frame`. Tests:
   - en pausa, 300 frames de 16,667 ms y 1 de 5.000 ms dan 0 ticks y el snapshot es igual campo a campo;
   - tras reanudar, 16,667 ms dan exactamente 1 tick;
   - con `speed` 8: 0 ticks en pausa y luego n+8 y n+16;
@@ -68,7 +68,7 @@ Sin tareas: el dominio no cambia (`run-state` sin delta). La pausa y el menú qu
   velocidad 8", "Pausa a velocidad 15 con frame largo"; MM "La pausa no altera la simulación"; HUD "HUD en pausa"
   (el snapshot no cambia); PP "Pausa sin guardado" (con `RecordRun` + repositorio en memoria: 0 escrituras).
   Ficheros: `src/infrastructure/phaser/PauseGate.ts`, `tests/infrastructure/pause-gate.test.ts`.
-- [ ] 3.4 `PauseKey` (ESC, evento `down`, una vez por pulsación). Test con el mismo doble de tecla que
+- [x] 3.4 `PauseKey` (ESC, evento `down`, una vez por pulsación). Test con el mismo doble de tecla que
   `restart-key.test.ts`: dos `read()` tras un `down` dan `true` y después `false`, y una tecla mantenida sin
   `down` nuevo no vuelve a activarla. — MM "Esc mantenido".
   Ficheros: `src/infrastructure/phaser/PauseKey.ts`, `tests/infrastructure/pause-key.test.ts`.
