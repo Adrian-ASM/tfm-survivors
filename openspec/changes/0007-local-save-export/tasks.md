@@ -62,7 +62,7 @@
   en los 3 niveles) y `{"__proto__":…}`; `schemaVersion` 2 ⇒ `unknown-version`; ida y vuelta P ⇒ P; documento con
   10 entradas y números máximos ⇒ `encodeProgress` < 65.536 bytes. — escenarios: PP "Documento válido", "Valores en
   los límites", "Documentos inválidos", "Ida y vuelta", "Tamaño del fichero máximo"
-- [ ] 3.2 `LocalStorageProgressRepository` (camino feliz, clave `sprint-survivors/progress`). Rojo: el contrato de
+- [x] 3.2 `LocalStorageProgressRepository` (camino feliz, clave `sprint-survivors/progress`). Rojo: el contrato de
   2.1 ejecutado contra el adaptador con un `Storage` falso en memoria (incluida "instancia nueva sobre el mismo
   almacenamiento ve lo guardado"). — escenario: PP "Recarga tras una partida"
 - [ ] 3.3 Fallos del adaptador. Rojo: `tests/infrastructure/local-storage-progress.test.ts`: proveedor que lanza
