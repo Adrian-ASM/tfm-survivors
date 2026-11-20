@@ -105,7 +105,7 @@ Sin tareas: `src/application` no cambia (`TickRun`, `FixedStepLoop` y `MAX_FRAME
   - Es una medición, no un test unitario: `npx playwright test --reporter=list` en local con `CI=1`, toda la suite
     en verde, sin reintentos y en < 60 s. Anotar tiempos por test para el verify-report.
   - Criterio de éxito de la propuesta: "Suite E2E completa en local < 60 s".
-- [ ] 4.5 Documentación, sin test:
+- [x] 4.5 Documentación, sin test:
   - `docs/gdd.md`: marcar saldada la deuda `0007 · E2E`;
   - `AGENTS.md` §1: estado del proyecto con el modo `?e2e&speed`;
   - entrada en `docs/ai-log/` con las mediciones (prototipo, suite antes y después, workers).
