@@ -9,7 +9,7 @@ Este change no toca `src/`: no hay tareas de dominio, aplicación ni composició
 Tras cada tarea, `npm run verify 2>&1 | tail -20` en verde.
 
 ## 1. Bot de referencia y helpers (`tests/support/`)
-- [ ] 1.1 Elección priorizada. En `tests/support/policies.ts`, añadir `REFERENCE_UPGRADE_PRIORITY`
+- [x] 1.1 Elección priorizada. En `tests/support/policies.ts`, añadir `REFERENCE_UPGRADE_PRIORITY`
   (`guardrail`, `strict-rules`, `fast-ci`, `hard-asserts`, `watch-mode`) y
   `pickByPriority(offer, priority = REFERENCE_UPGRADE_PRIORITY): number`. Va por la prioridad, no por la posición
   en la oferta; si no hay ningún id, devuelve 0.
