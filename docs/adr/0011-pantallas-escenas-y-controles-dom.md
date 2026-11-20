@@ -1,6 +1,6 @@
 # ADR-0011 · Pantallas: escenas del motor, controles DOM y pausa en el adaptador
 
-- **Estado**: propuesta
+- **Estado**: aceptada (2026-11-20, tras verify de 0009)
 - **Fecha**: 2026-11-20
 
 ## Contexto
