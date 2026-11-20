@@ -8,7 +8,7 @@ import {
   type ResultsPanelView,
 } from '../dom/resultsPanelText';
 import { encodeProgress } from './progressCodec';
-import { readProgressFile } from './readProgressFile';
+import { importFromFile } from './importFromFile';
 
 /**
  * Presentador del panel de progreso del overlay de resultados (design 0007, sin DOM). En cada
@@ -49,9 +49,7 @@ export class ResultsProgress {
 
   /** Import desde el panel. Un fichero rechazado solo cambia el mensaje. */
   async importFile(file: Pick<Blob, 'size' | 'text'>): Promise<ResultsPanelView | null> {
-    const read = await readProgressFile(file);
-    if (read.ok) this.importProgress.execute(read.value);
-    this.message = read.ok ? 'imported' : read.error.code === 'too-large' ? 'too-large' : 'invalid';
+    this.message = await importFromFile(file, this.importProgress);
     if (this.current !== null) this.refresh();
     return this.current;
   }

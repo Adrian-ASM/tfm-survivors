@@ -44,5 +44,24 @@ export function describeProgressRepositoryContract(
 
       expect(reload().load()).toStrictEqual({ ok: true, value: first });
     });
+
+    it('Scenario: Borrado confirmado (tras clear, load da ok(null))', () => {
+      const repo = makeStorage()();
+      repo.save(first);
+
+      expect(repo.clear()).toStrictEqual({ ok: true, value: undefined });
+      expect(repo.load()).toStrictEqual({ ok: true, value: null });
+    });
+
+    it('Scenario: Borrar el progreso vacío (clear sin nada guardado da ok, dos veces)', () => {
+      const reload = makeStorage();
+      const repo = reload();
+
+      expect([repo.clear(), repo.clear()]).toStrictEqual([
+        { ok: true, value: undefined },
+        { ok: true, value: undefined },
+      ]);
+      expect(reload().load()).toStrictEqual({ ok: true, value: null });
+    });
   });
 }

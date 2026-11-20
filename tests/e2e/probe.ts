@@ -80,6 +80,9 @@ interface Probe {
     snapshot: SnapshotView | null;
     results: ResultsViewData | null;
     progress: ProgressView | null;
+    /** Pantalla visible (change 0009) y partidas creadas en la carga. */
+    screen?: 'menu' | 'playing' | 'paused';
+    runs?: number;
   };
 }
 
@@ -94,6 +97,8 @@ export const probe = (page: Page) =>
           snapshot: p.snapshot,
           results: p.results,
           progress: p.progress,
+          screen: p.screen ?? null,
+          runs: p.runs ?? null,
         }
       : null;
   });
@@ -173,3 +178,43 @@ export const cspState = (page: Page) =>
     violations: (window as unknown as CspWindow).__cspViolations ?? null,
     metas: document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]').length,
   }));
+
+/**
+ * Ticks por frame del navegador, medidos sobre `frames` frames de `requestAnimationFrame` (el
+ * mismo reloj que usa Phaser). No depende del reloj de pared: en una máquina lenta hay menos
+ * frames, no menos ticks por frame. Velocidad 1 ⇒ ~1; velocidad 8 ⇒ ~8.
+ */
+export const ticksPerFrame = (page: Page, frames = 30): Promise<number> =>
+  page.evaluate(async (n) => {
+    const read = () => (window as unknown as Probe).__sprint?.snapshot?.tick ?? 0;
+    const start = read();
+    for (let i = 0; i < n; i += 1) {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+    }
+    return (read() - start) / n;
+  }, frames);
+
+/** Espera `n` frames del navegador (`requestAnimationFrame`), no un tiempo de reloj. */
+export const waitFrames = (page: Page, n: number): Promise<void> =>
+  page.evaluate(async (count) => {
+    for (let i = 0; i < count; i += 1) {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+    }
+  }, n);
+
+/** URL del juego sin `?e2e` (modo jugador: menú de inicio y sin sonda). */
+export const playerUrl = (search = ''): string => `./${search}`;
+
+/** Menú de inicio, overlay de pausa y diálogo de Borrar datos (por rol: sin sonda). */
+export const menuPanel = (page: Page) => page.getByRole('region', { name: 'Menú de inicio' });
+export const pauseOverlay = (page: Page) => page.getByRole('dialog', { name: 'Pausa' });
+export const confirmDialog = (page: Page) => page.getByRole('alertdialog');
+export const menuButton = (page: Page, name: string) =>
+  menuPanel(page).getByRole('button', { name, exact: true });
+
+/** Pulsa Esc, espera el overlay de pausa y pulsa Volver al menú (la partida se abandona). */
+export async function backToMenu(page: Page): Promise<void> {
+  await page.keyboard.press('Escape');
+  await pauseOverlay(page).getByRole('button', { name: 'Volver al menú' }).click();
+  await expect(menuPanel(page)).toBeVisible();
+}

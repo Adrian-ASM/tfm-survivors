@@ -3,17 +3,18 @@
 import '../infrastructure/validation/cspSafeZod';
 import Phaser from 'phaser';
 import { RestartRun } from '../application/RestartRun';
-import { StartRun } from '../application/StartRun';
 import { buildRunRules, type RunConfig } from '../domain/run/RunConfig';
 import type { RunSnapshot } from '../domain/run/RunSnapshot';
 import type { DomainError } from '../domain/shared/Result';
 import { loadRunConfig } from '../infrastructure/content/loadRunConfig';
-import { GameScene, type SceneCapacity } from '../infrastructure/phaser/GameScene';
-import { Mulberry32RandomGenerator } from '../infrastructure/random/Mulberry32RandomGenerator';
+import { PausePanel } from '../infrastructure/dom/PausePanel';
+import { GameScene, type SceneCapacity, type Screen } from '../infrastructure/phaser/GameScene';
+import { MenuScene } from '../infrastructure/phaser/MenuScene';
 import type { ResultsView } from '../infrastructure/phaser/resultsText';
 import { resolveSeed } from '../infrastructure/url/resolveSeed';
 import { resolveSpeed } from '../infrastructure/url/resolveSpeed';
 import { wireProgress, type ProgressProbe } from './progressWiring';
+import { createRunLauncher } from './runLauncher';
 import { restartRandoms } from './seedSource';
 
 const BACKGROUND = '#14141e';
@@ -29,7 +30,12 @@ interface E2EProbe {
   snapshot: RunSnapshot | null;
   results: ResultsView | null;
   readonly progress: ProgressProbe | null;
+  /** Pantalla visible y partidas creadas en la carga (Jugar y reinicios con R). */
+  screen: Screen;
+  runs: number;
 }
+
+const TITLE = 'Sprint Survivors';
 
 function showContentError(root: HTMLElement, error: DomainError): void {
   const box = document.createElement('div');
@@ -77,30 +83,69 @@ function bootstrap(): void {
   // Una sola vez por carga: los reinicios no releen la URL ni avisan (spec simulation-loop).
   const speed = resolveSpeed(window.location.search);
   if (speed.warning) console.warn(speed.warning);
-  const started = new StartRun().execute(config.value, new Mulberry32RandomGenerator(seed));
-  if (!started.ok) {
-    showContentError(root, started.error);
-    return;
-  }
-
   // Antes de crear el juego: el panel queda en el DOM y el progreso cargado (nunca lanza).
   const progress = wireProgress(root, () => probe.seed);
+  const pause = new PausePanel(document, root);
+  const e2e = new URLSearchParams(window.location.search).has('e2e');
   const probe: E2EProbe = {
     seed,
     speed: speed.speed,
     snapshot: null,
     results: null,
+    screen: e2e ? 'playing' : 'menu',
+    runs: 0,
     get progress() {
       return progress.probe();
     },
   };
-  // Cada reinicio usa una semilla nueva (también con ?seed=), sin releer la URL ni avisar.
-  const nextRandom = restartRandoms(randomSeed, (s) => {
+  const started = (s: number): void => {
     probe.seed = s;
+    probe.runs += 1;
+  };
+  // Cada reinicio usa una semilla nueva (también con ?seed=), sin releer la URL ni avisar.
+  const nextRandom = restartRandoms(randomSeed, started);
+  // La partida se crea al entrar en GameScene: la 1.ª de la carga con la semilla de la URL.
+  const launcher = createRunLauncher({
+    config: config.value,
+    urlSeed: seed,
+    randomSeed,
+    onStart: started,
+    onContentError: (error) => {
+      showContentError(root, error);
+    },
   });
-  if (new URLSearchParams(window.location.search).has('e2e')) {
-    Object.defineProperty(window, '__sprint', { value: probe });
-  }
+  const onScreen = (screen: Screen): void => {
+    probe.screen = screen;
+    if (screen !== 'menu') return;
+    probe.snapshot = null;
+    probe.results = null;
+  };
+  // Sin ?e2e no hay sonda (spec main-menu, "Sin sonda fuera de E2E").
+  if (e2e) Object.defineProperty(window, '__sprint', { value: probe });
+
+  const game = new GameScene({
+    launcher,
+    restartRun: new RestartRun(config.value, nextRandom),
+    capacity: sceneCapacity(config.value),
+    progress: progress.scene,
+    pause,
+    onRender: (snapshot, results) => {
+      probe.snapshot = snapshot;
+      probe.results = results;
+    },
+    onScreen,
+    simSpeed: speed.speed,
+  });
+  const menu = new MenuScene(
+    {
+      ...progress.menu,
+      show: () => {
+        progress.menu.show();
+        onScreen('menu');
+      },
+    },
+    TITLE,
+  );
 
   // El canvas tiene el tamaño de la vista (unidades de mundo): una sola fuente para lo que se ve.
   const { view } = config.value.arena;
@@ -110,19 +155,8 @@ function bootstrap(): void {
     width: view.width,
     height: view.height,
     backgroundColor: BACKGROUND,
-    scene: [
-      new GameScene(
-        started.value,
-        new RestartRun(config.value, nextRandom),
-        sceneCapacity(config.value),
-        progress.scene,
-        (snapshot, results) => {
-          probe.snapshot = snapshot;
-          probe.results = results;
-        },
-        speed.speed,
-      ),
-    ],
+    // Phaser arranca la primera escena de la lista: con ?e2e, la partida (arranque de antes).
+    scene: e2e ? [game, menu] : [menu, game],
   });
 }
 

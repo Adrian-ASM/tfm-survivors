@@ -1,4 +1,5 @@
 import type {
+  ProgressClearError,
   ProgressLoadError,
   ProgressRepository,
   ProgressSaveError,
@@ -10,7 +11,7 @@ import { decodeProgress, encodeProgress } from './progressCodec';
 /** Clave con espacio de nombres: GitHub Pages comparte el origen entre repos (ADR-0010). */
 export const PROGRESS_STORAGE_KEY = 'sprint-survivors/progress';
 
-export type ProgressStorage = Pick<Storage, 'getItem' | 'setItem'>;
+export type ProgressStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 
 /**
  * Adaptador de `ProgressRepository` sobre `localStorage`. Recibe una función porque acceder a
@@ -44,7 +45,29 @@ export class LocalStorageProgressRepository implements ProgressRepository {
       return err({ code: isQuotaExceeded(e) ? 'quota-exceeded' : 'unavailable' });
     }
   }
+
+  /**
+   * Nunca lanza: borra solo la clave del progreso (no escribe el progreso vacío). Fallo al acceder
+   * o `SecurityError` ⇒ `unavailable`; cualquier otra excepción al borrar ⇒ `failed`.
+   */
+  clear(): Result<void, ProgressClearError> {
+    let storage: ProgressStorage;
+    try {
+      storage = this.storage();
+    } catch {
+      return err({ code: 'unavailable' });
+    }
+    try {
+      storage.removeItem(this.key);
+      return ok(undefined);
+    } catch (e) {
+      return err({ code: isSecurityError(e) ? 'unavailable' : 'failed' });
+    }
+  }
 }
+
+const isSecurityError = (e: unknown): boolean =>
+  e instanceof DOMException && e.name === 'SecurityError';
 
 /** Nombres de la excepción de cuota (estándar y el antiguo de Firefox). */
 const QUOTA_NAMES = new Set(['QuotaExceededError', 'NS_ERROR_DOM_QUOTA_REACHED']);

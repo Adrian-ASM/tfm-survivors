@@ -85,3 +85,59 @@ describe('LocalStorageProgressRepository ante fallos (spec "Juego sin almacenami
     expect(storage.values.get(PROGRESS_STORAGE_KEY)).toBe(value);
   });
 });
+
+describe('LocalStorageProgressRepository.clear (spec "Borrado del progreso")', () => {
+  it('borra solo la clave sprint-survivors/progress, sin escribir nada', () => {
+    const storage = storageWith(encodeProgress(G));
+    storage.values.set('otro-juego/datos', 'x');
+
+    const cleared = new LocalStorageProgressRepository(() => storage).clear();
+
+    expect(cleared).toStrictEqual({ ok: true, value: undefined });
+    expect([...storage.values.entries()]).toStrictEqual([['otro-juego/datos', 'x']]);
+    expect(storage.writes).toBe(0);
+  });
+
+  it('Scenario: Borrar datos dañados (el valor dañado desaparece sin validarlo)', () => {
+    const storage = storageWith('{"schemaVersion":1,"records":');
+    const repo = new LocalStorageProgressRepository(() => storage);
+
+    repo.clear();
+
+    expect(repo.load()).toStrictEqual({ ok: true, value: null });
+  });
+
+  it('Scenario: Borrar sin almacenamiento (acceder lanza SecurityError ⇒ unavailable)', () => {
+    const repo = new LocalStorageProgressRepository(() => {
+      throw domException('SecurityError');
+    });
+
+    expect(repo.clear()).toStrictEqual({ ok: false, error: { code: 'unavailable' } });
+  });
+
+  it('Scenario: Borrar sin almacenamiento (removeItem lanza SecurityError ⇒ unavailable)', () => {
+    const storage = new FakeStorage();
+    storage.removeError = domException('SecurityError');
+
+    const cleared = new LocalStorageProgressRepository(() => storage).clear();
+
+    expect(cleared).toStrictEqual({ ok: false, error: { code: 'unavailable' } });
+  });
+
+  it('Scenario: Fallo al borrar (QuotaExceededError ⇒ failed y G intacto)', () => {
+    const storage = storageWith(encodeProgress(G));
+    storage.removeError = domException('QuotaExceededError');
+
+    const cleared = new LocalStorageProgressRepository(() => storage).clear();
+
+    expect(cleared).toStrictEqual({ ok: false, error: { code: 'failed' } });
+    expect(storage.values.get(PROGRESS_STORAGE_KEY)).toBe(encodeProgress(G));
+  });
+
+  it('nunca lanza, tampoco con una excepción que no es DOMException', () => {
+    const storage = new FakeStorage();
+    storage.removeError = new TypeError('roto');
+
+    expect(() => new LocalStorageProgressRepository(() => storage).clear()).not.toThrow();
+  });
+});

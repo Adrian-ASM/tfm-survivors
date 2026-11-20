@@ -3,6 +3,9 @@ export class FakeStorage {
   readonly values = new Map<string, string>();
   getError: Error | null = null;
   setError: Error | null = null;
+  removeError: Error | null = null;
+  writes = 0;
+  removals = 0;
 
   getItem(key: string): string | null {
     if (this.getError) throw this.getError;
@@ -12,6 +15,13 @@ export class FakeStorage {
   setItem(key: string, value: string): void {
     if (this.setError) throw this.setError;
     this.values.set(key, value);
+    this.writes += 1;
+  }
+
+  removeItem(key: string): void {
+    if (this.removeError) throw this.removeError;
+    this.values.delete(key);
+    this.removals += 1;
   }
 }
 

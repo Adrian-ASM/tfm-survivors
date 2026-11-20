@@ -1,12 +1,18 @@
+import { ClearProgress } from '../application/ClearProgress';
 import { ImportProgress } from '../application/ImportProgress';
 import { LoadProgress } from '../application/LoadProgress';
 import { RecordRun } from '../application/RecordRun';
 import type { HistoryEntry, Records } from '../domain/progress/Progress';
+import { ConfirmDialog } from '../infrastructure/dom/ConfirmDialog';
 import { downloadProgress } from '../infrastructure/dom/downloadProgress';
+import { MenuPanel } from '../infrastructure/dom/MenuPanel';
 import { ResultsPanel } from '../infrastructure/dom/ResultsPanel';
 import { PROGRESS_CORRUPT_WARNING } from '../infrastructure/dom/resultsPanelText';
+import { MenuController } from '../infrastructure/menu/MenuController';
 import type { SceneProgress } from '../infrastructure/phaser/GameScene';
+import type { MenuView } from '../infrastructure/phaser/MenuScene';
 import { LocalStorageProgressRepository } from '../infrastructure/progress/LocalStorageProgressRepository';
+import { MenuProgress } from '../infrastructure/progress/MenuProgress';
 import { ResultsProgress } from '../infrastructure/progress/ResultsProgress';
 import { SystemClock } from '../infrastructure/time/SystemClock';
 
@@ -21,6 +27,7 @@ export interface ProgressProbe {
 
 export interface ProgressWiring {
   readonly scene: SceneProgress;
+  readonly menu: MenuView;
   probe(): ProgressProbe;
 }
 
@@ -34,10 +41,17 @@ export function wireProgress(root: HTMLElement, seedOf: () => number): ProgressW
   const { session, issue } = new LoadProgress(repository).execute();
   if (issue === 'corrupt') console.warn(PROGRESS_CORRUPT_WARNING);
 
+  // Resultados y menú comparten sesión, repositorio e import; cada uno tiene su propio mensaje.
+  const importProgress = new ImportProgress(session, repository);
   const results = new ResultsProgress(
     session,
     new RecordRun(session, repository, new SystemClock(), seedOf),
-    new ImportProgress(session, repository),
+    importProgress,
+  );
+  const menuProgress = new MenuProgress(
+    session,
+    importProgress,
+    new ClearProgress(session, repository),
   );
   const panel = new ResultsPanel(document, root, {
     onExport: () => {
@@ -50,10 +64,54 @@ export function wireProgress(root: HTMLElement, seedOf: () => number): ProgressW
     },
   });
 
+  const controller = new MenuController();
+  const menuPanel = new MenuPanel(document, root, controller, {
+    onExport: () => {
+      downloadProgress(menuProgress.exportText());
+    },
+    onImport: (file) => {
+      void menuProgress.importFile(file).then((view) => {
+        menuPanel.setMessage(view.message);
+      });
+    },
+    onOpenConfirm: () => {
+      menuPanel.setLocked(true);
+      dialog.open();
+    },
+  });
+  // Cancelar no llega a ClearProgress: 0 escrituras y 0 borrados por construcción.
+  const closeDialog = (): void => {
+    dialog.close();
+    menuPanel.setLocked(false);
+  };
+  const dialog = new ConfirmDialog(document, root, {
+    onConfirm: () => {
+      if (!controller.confirm()) return;
+      closeDialog();
+      menuPanel.setMessage(menuProgress.clear().message);
+    },
+    onCancel: () => {
+      if (controller.cancel()) closeDialog();
+    },
+  });
+
   return {
+    menu: {
+      show: () => {
+        menuProgress.reset();
+        menuPanel.show();
+      },
+      hide: () => {
+        menuPanel.hide();
+      },
+      takePlay: () => controller.takePlay(),
+    },
     scene: {
       sync: (snapshot, run) => {
         panel.render(results.sync(snapshot, run));
+      },
+      leave: () => {
+        panel.render(null);
       },
     },
     probe: () => {

@@ -85,3 +85,83 @@ body {
 .results-panel button:focus-visible {
   background: #34345a;
 }
+
+/* Paneles DOM de pantalla (change 0009): menú de inicio, pausa y diálogo de borrado. */
+.menu-panel,
+.pause-panel,
+.confirm-dialog {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 28px;
+  font: 16px monospace;
+  color: #fff;
+  background: rgb(20 20 30 / 92%);
+  border: 1px solid #7ce2fe;
+  border-radius: 8px;
+}
+
+.confirm-dialog {
+  z-index: 3;
+}
+
+.menu-panel[hidden],
+.pause-panel[hidden],
+.confirm-dialog[hidden],
+.menu-panel [hidden] {
+  display: none;
+}
+
+.menu-panel h1,
+.pause-panel h2,
+.confirm-dialog p {
+  margin: 0;
+}
+
+.menu-panel__actions,
+.pause-panel__actions,
+.confirm-dialog__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 200px;
+}
+
+.pause-panel__actions,
+.confirm-dialog__actions {
+  flex-direction: row;
+}
+
+.menu-panel__message {
+  margin: 0;
+  color: #7ce2fe;
+}
+
+.menu-panel button,
+.pause-panel button,
+.confirm-dialog button {
+  padding: 6px 16px;
+  font: inherit;
+  color: #fff;
+  background: #23233a;
+  border: 1px solid #7ce2fe;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.menu-panel button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.menu-panel button:hover:enabled,
+.menu-panel button:focus-visible,
+.pause-panel button:hover,
+.pause-panel button:focus-visible,
+.confirm-dialog button:hover,
+.confirm-dialog button:focus-visible {
+  background: #34345a;
+}
