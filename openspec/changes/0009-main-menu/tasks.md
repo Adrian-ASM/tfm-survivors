@@ -72,7 +72,7 @@ Sin tareas: el dominio no cambia (`run-state` sin delta). La pausa y el menú qu
   `restart-key.test.ts`: dos `read()` tras un `down` dan `true` y después `false`, y una tecla mantenida sin
   `down` nuevo no vuelve a activarla. — MM "Esc mantenido".
   Ficheros: `src/infrastructure/phaser/PauseKey.ts`, `tests/infrastructure/pause-key.test.ts`.
-- [ ] 3.5 `MenuController`. Tests:
+- [x] 3.5 `MenuController`. Tests:
   - `requestPlay` dos veces da `true` y después `false`, y `takePlay` da `true` una sola vez;
   - con `confirming`, `requestPlay`, `requestExport`, `requestImport` y `openConfirm` dan `false`;
   - `confirm` dos veces da `true` y después `false`;
@@ -82,7 +82,7 @@ Sin tareas: el dominio no cambia (`run-state` sin delta). La pausa y el menú qu
   — MM "Doble clic en Jugar", "Opciones bloqueadas con el diálogo abierto", "Confirmar dos veces", "Cancelar no
   cambia nada" (sin llamada a borrar); RR "Jugar y Esc tras usar los botones del menú" (Jugar sigue con 1 pulsación).
   Ficheros: `src/infrastructure/menu/MenuController.ts`, `tests/infrastructure/menu-controller.test.ts`.
-- [ ] 3.6 Extraer `importFromFile` de `ResultsProgress` y crear `MenuProgress` y `menuText`. Tests en rojo de
+- [x] 3.6 Extraer `importFromFile` de `ResultsProgress` y crear `MenuProgress` y `menuText`. Tests en rojo de
   `MenuProgress`:
   - un import válido da el mensaje con `importado` y los récords fusionados (300, 10, 120);
   - `hola` da `no válido` y 65.537 bytes dan `64 KiB`, sin cambiar la sesión;
