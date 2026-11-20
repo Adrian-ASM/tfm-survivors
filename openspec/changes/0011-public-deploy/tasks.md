@@ -40,7 +40,7 @@
   `workers` 1, `navigationTimeout` 20 s, `expect` 10 s, informe en `playwright-report/smoke`),
   `tests/remote/preflight.ts` (usa `checkReachable` con el `fetch` real) y `tsconfig.json` (`include`).
   Escenarios: "test:e2e no incluye el smoke remoto" y "verify no incluye el smoke remoto".
-- [ ] 2.3 `smoke-isolation.test.ts` (parte de workflows), primero en rojo, y después
+- [x] 2.3 `smoke-isolation.test.ts` (parte de workflows), primero en rojo, y después
   `.github/workflows/smoke-public.yml`. Comprueba:
   - solo ese workflow contiene `smoke:public`;
   - sus disparadores son exactamente `[workflow_dispatch]`, con un input `url` opcional cuyo valor por defecto es

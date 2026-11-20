@@ -1,0 +1,37 @@
+# Smoke remoto a demanda contra la URL publicada (change 0011, spec public-deploy).
+# Solo se lanza a mano desde Actions: ni push ni PR gastan minutos del plan gratuito.
+# La URL llega por env y la valida la config remota; nunca se interpola en un paso run.
+name: smoke-public
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: URL objetivo del smoke (por defecto, la URL pública)
+        type: string
+        required: false
+        default: 'https://adrian-asm.github.io/tfm-survivors/'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smoke-public
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      SMOKE_URL: ${{ inputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: lts/*, cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run smoke:public
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with: { name: playwright-report-smoke, path: playwright-report/smoke, retention-days: 3 }
