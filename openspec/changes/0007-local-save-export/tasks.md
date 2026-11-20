@@ -41,7 +41,7 @@
   .test.ts` (nada ⇒ vacío sin `issue`; válido ⇒ ese progreso; `corrupt` ⇒ vacío, `issue 'corrupt'`, 0 escrituras;
   `unavailable` ⇒ vacío, `persistent false`) y el contrato (vacío ⇒ `ok(null)`, `save`+`load`, sobrescritura). —
   escenarios: PP "Progreso vacío", "Datos guardados dañados", "Versión futura guardada" (parte de aplicación)
-- [ ] 2.2 `RecordRun` con `FinishedRunSource` + `tests/support/FixedClock.ts` + doble de partida terminada por
+- [x] 2.2 `RecordRun` con `FinishedRunSource` + `tests/support/FixedClock.ts` + doble de partida terminada por
   *spread* de snapshot. Rojo: `tests/application/record-run.test.ts`: derrota tick 1.259, nivel 3, 41 bajas,
   semilla 42, reloj 1.763.596.800.000 ⇒ entrada y récords de la spec; 300 llamadas ⇒ 1 escritura; `running` y
   `choosing` ⇒ `not-over` sin escribir; 3 partidas reales encadenadas con `RestartRun` ⇒ 3 entradas en orden;
