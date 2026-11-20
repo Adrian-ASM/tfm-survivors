@@ -36,7 +36,7 @@ Teclado (WASD / flechas). Pausa con Esc. Táctil y gamepad: *Should/Could*.
 | Hecho | Gemas de XP · subida de nivel con 3 opciones | 0005 |
 | Hecho | Temporizador, victoria y derrota · HUD · reinicio | 0006 |
 | Hecho | Guardado local (récords + historial de 10 partidas) · exportar/importar con fusión · CSP estricta | 0007 |
-| Falta | Menú: inicio y pausa con Esc | 0009 |
+| Hecho | Menú de inicio (jugar, exportar, importar, borrar datos) · pausa con Esc | 0009 |
 | Falta | Despliegue público | 0011 |
 
 Los changes 0008 (infraestructura de tests) y 0010 (equilibrio) no añaden Must: habilitan y protegen a los demás.
@@ -52,6 +52,10 @@ Los changes 0008 (infraestructura de tests) y 0010 (equilibrio) no añaden Must:
 | 0008 · W2 | `.husky/pre-commit` no ejecuta `typecheck`: un commit local de 0008 entró con un error de `tsc` que solo habría cazado el CI. Añadir `tsc --noEmit` a un pre-push (o al pre-commit si el tiempo lo permite). | Próximo change de tooling o con 0009 |
 | 0008 · W3 | El objetivo de suite E2E < 60 s depende de `workers: 2` (con 1 worker ~70 s) y la derrota a `speed=8` (~10 s) tiene poco margen frente al tope de 12 s; `retries: 1` en CI puede enmascarar flakiness. Vigilar los tiempos del job `e2e`. | Revisar si CI da reintentos |
 | 0008 · S1/S2 | Sin E2E de `?e2e&speed=<inválido>` aislado ni de `?speed=8` sin `?e2e` avanzando a ritmo normal (cubierto en unitario). | Con 0009 si se tocan los E2E de arranque |
+| 0009 · W1 | La sonda E2E no expone la visibilidad del HUD: "HUD en el menú" y "HUD tras Volver al menú" solo se cubren por capas (tests de Node), no en navegador. | Si un change toca el HUD o la sonda |
+| 0009 · W2 | Sin E2E que compruebe los sprites tras Volver al menú ni el escenario "Cinco ciclos menú-partida" (la sonda no cuenta sprites); la limpieza depende de que Phaser destruya la escena al apagarla. | Con el change de arte o si aparece una fuga |
+| 0009 · W6 | Dos E2E juegan con semilla aleatoria (lo exige la spec tras Volver al menú) a `speed=15`: duración no determinista, timeout holgado. | Vigilar el job `e2e` |
+| 0009 · S5 | El test de "Primer frame tras Jugar" declara 601 frames de menú que no llega a pasar al bucle; la garantía es estructural (bucle nuevo por partida). | Con 0010 si se toca `run-launcher.test.ts` |
 
 ## Orden tentativo de changes
 0001 walking-skeleton → 0002 enemy-spawning → 0003 collisions-and-damage → 0004 auto-weapons →
