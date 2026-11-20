@@ -188,7 +188,7 @@ Sin tareas: el dominio no cambia (`run-state` sin delta). La pausa y el menú qu
   `tests/e2e/progressFixtures.ts`.
 
 ## 5. E2E de recorrido y regresión
-- [ ] 5.1 Recorrido sin `?e2e` en la build de producción, con P0 de 2 entradas:
+- [x] 5.1 Recorrido sin `?e2e` en la build de producción, con P0 de 2 entradas:
   - Jugar, 2 s, Esc, overlay `Pausa` con `Reanudar` y `Volver al menú`, Volver al menú;
   - E1 = P0 (la partida abandonada no figura);
   - Borrar + Cancelar, y E2 = E1 byte a byte;
