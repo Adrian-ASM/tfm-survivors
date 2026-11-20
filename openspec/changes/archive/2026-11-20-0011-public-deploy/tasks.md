@@ -78,7 +78,7 @@
   - tras `reload()`, el progreso es igual al de antes y no hay avisos con `progress`.
 
   Escenarios: "Jugar, guardar, exportar e importar en producción" y "Persistencia tras recargar en producción".
-- [ ] 3.4 *(No aplica en el apply: T1 en verde contra la URL pública sin 404 de favicon. Condicional: solo si 3.1 falla por un 404 de `/favicon.ico`)* Añadir `public/favicon.svg` y
+- [x] 3.4 *(No aplica en el apply: T1 en verde contra la URL pública sin 404 de favicon. Condicional: solo si 3.1 falla por un 404 de `/favicon.ico`)* Añadir `public/favicon.svg` y
   `<link rel="icon" href="/favicon.svg">` en `index.html`. Test: T1 en verde contra `vite preview`. Tras el
   merge y el despliegue, T1 en verde contra la URL pública. `test:e2e` sigue en verde. Escenario: "Sin recursos
   rotos en la URL objetivo".
@@ -107,7 +107,7 @@
   apply.
 
 ## 5. Verificación y cierre (no los hace el implementer)
-- [ ] 5.1 *(sdd-verifier)* En `verify-report.md`, registrar:
+- [x] 5.1 *(sdd-verifier)* En `verify-report.md`, registrar:
   - `git diff --quiet main -- .github/workflows/ci.yml tests/guardrails/ci.test.ts` (exit 0);
   - `npx playwright test --list` con el mismo número de tests que en `main` (48);
   - el identificador de la última ejecución de `ci` en `main` con `setup`, `quality`, `e2e` y `deploy` en verde;
@@ -116,7 +116,7 @@
 
   Escenarios: "ci.yml intacto", "test:e2e no incluye el smoke remoto" (recuento), "Evidencia del despliegue
   vigente" y "Rutas del index.html construido".
-- [ ] 5.2 *(sdd-archive, tras el gate humano)* AGENTS.md §1, estado del proyecto: despliegue público y smoke a
+- [x] 5.2 *(sdd-archive, tras el gate humano)* AGENTS.md §1, estado del proyecto: despliegue público y smoke a
   demanda (change 0011). `docs/gdd.md`: el Must "0011 public-deploy" queda cerrado. Hay que pasar la spec viva a
   `openspec/specs/public-deploy/spec.md`, con la corrección de `outcome` a `'lost'` (ver la discrepancia 1 del
   design).

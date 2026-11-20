@@ -37,7 +37,9 @@ Teclado (WASD / flechas). Pausa con Esc. Táctil y gamepad: *Should/Could*.
 | Hecho | Temporizador, victoria y derrota · HUD · reinicio | 0006 |
 | Hecho | Guardado local (récords + historial de 10 partidas) · exportar/importar con fusión · CSP estricta | 0007 |
 | Hecho | Menú de inicio (jugar, exportar, importar, borrar datos) · pausa con Esc | 0009 |
-| Falta | Despliegue público | 0011 |
+| Hecho | Despliegue público en GitHub Pages · smoke remoto a demanda (`npm run smoke:public`, workflow `smoke-public`) | 0011 |
+
+**Backlog Must completo** (2026-11-20). Siguiente bloque: arte/audio (change 0012 sprite-rendering en curso) y Should.
 
 Los changes 0008 (infraestructura de tests) y 0010 (equilibrio) no añaden Must: habilitan y protegen a los demás.
 
@@ -71,7 +73,8 @@ Notas sobre el orden (revisado 2026-11-20, tras 0007):
 - **0009 main-menu**: menú de inicio y pausa (Esc), Must pendiente. Incluye "borrar datos", fuera de 0007.
 - **0010 balance-pass**: deuda de ganabilidad de 0006 (W1: 1 de 10 semillas gana con el bot) y semillas
   frágiles en tests de 0007 (S2: la 90 caduca si cambia el balance). Antes de publicar.
-- **0011 public-deploy**: último Must.
+- **0011 public-deploy**: último Must. **Hecho** (PR #24): el despliegue ya existía en `ci.yml`; el change añadió
+  la spec `public-deploy`, el smoke remoto a demanda y la nota de CSP en Pages de ADR-0004.
 
 ## Próximos changes
 
@@ -121,7 +124,7 @@ Notas sobre el orden (revisado 2026-11-20, tras 0007):
   - Given el E2E que hoy usa la semilla 90, When se actualiza, Then no depende de que esa semilla pierda antes.
 - **Riesgos**: sobreajustar al bot; playtest humano escaso; el objetivo de ganabilidad sin definir.
 
-### 0011 public-deploy
+### 0011 public-deploy (hecho, PR #24)
 - **Objetivo**: último Must; juego jugable en una URL pública.
 - **Alcance**: despliegue en GitHub Pages con base `/tfm-survivors/`; comprobar la CSP en producción.
 - **Fuera de alcance**: dominio propio, PWA, analítica, backend.

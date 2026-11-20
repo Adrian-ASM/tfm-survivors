@@ -19,6 +19,11 @@ cd ../<repo>.worktrees/<id> && npm ci   # cada worktree tiene su node_modules
 ```
 En Windows puedes usar `scripts/worktree.ps1 new <id>`.
 
+Comprueba que los hooks de commit están activos: `git config --get core.hooksPath` debe apuntar a una carpeta que
+exista **en este worktree** (`.husky/_`). Un worktree creado por la app puede heredar una ruta absoluta del checkout
+principal que no existe, y entonces el pre-commit no se ejecuta (0011). Arréglalo con
+`git config --worktree --unset core.hooksPath`.
+
 ## Trabajar
 - Abre una sesión nueva de Claude Code dentro de la carpeta del worktree.
 - Commits pequeños. Publica con `git push -u origin change/<id>` (requiere confirmación) y abre un PR con `gh pr create --fill` o desde la web.

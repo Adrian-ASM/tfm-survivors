@@ -19,6 +19,8 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   (change 0009, ADR-0011). `?e2e` salta el menú **solo al cargar**; Volver al menú sí lo muestra.
   Balance calibrado con el bot de referencia de `tests/support/` sobre las semillas 1..50 (entre 25 y 35
   victorias) e invariante "quieto pierde antes de 180 s" con todas ellas (change 0010).
+  Publicado en `https://adrian-asm.github.io/tfm-survivors/` (job `deploy` de `ci.yml` tras `quality` y `e2e` en
+  push a `main`); smoke remoto **a demanda**, nunca en push ni PR (change 0011). Backlog Must completo.
   Fuente de verdad del comportamiento: `openspec/specs/`.
 
 ## 2. Comandos
@@ -30,6 +32,7 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
 | `npm run dev` | Servidor de desarrollo (`http://localhost:5173/tfm-survivors/`) |
 | `npm run verify` | lint + typecheck + guardarraíl sobre todo el repo + tests unitarios. **Ejecútalo tras cualquier cambio de código. No cierres una tarea en rojo.** |
 | `npm run test:e2e` | Build + `vite preview` + Playwright (chromium) |
+| `npm run smoke:public` | Smoke de Playwright contra la URL pública (o `SMOKE_URL`). A demanda: fuera de `verify` y de CI; en Actions, workflow `smoke-public` (`workflow_dispatch`) |
 | `npm run bench` | Benchmark del núcleo (Vitest bench). Depende de la máquina: no bloquea `verify` ni CI |
 | `npm run build` | Build de producción (`dist/`) |
 | `npm run guard:all` | Reglas de `.claude/hooks/` sobre todos los ficheros versionados (lo que hace el CI) |
