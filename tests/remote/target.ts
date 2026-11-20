@@ -28,5 +28,42 @@ export function resolveTargetUrl(raw: string | undefined): Result<URL, string> {
   return ok(url);
 }
 
+export type FetchFn = (input: URL, init?: RequestInit) => Promise<Response>;
+
+export interface ReachOptions {
+  /** Intentos totales (cada uno es un GET con su propio timeout). */
+  readonly attempts: number;
+  readonly timeoutMs: number;
+  /** Espera entre intentos (no tras el último). */
+  readonly gapMs: number;
+  readonly sleep: (ms: number) => Promise<void>;
+}
+
+const describeFailure = (e: unknown): string =>
+  `error de red: ${e instanceof Error ? e.message : String(e)}`;
+
+/**
+ * Comprobación previa del smoke (spec "URL objetivo que no responde"): `ok` al primer 200; si
+ * ningún intento lo da, `err` con la URL y el último estado o error, distinguible de una regresión.
+ */
+export async function checkReachable(
+  url: URL,
+  fetchFn: FetchFn,
+  { attempts, timeoutMs, gapMs, sleep }: ReachOptions,
+): Promise<Result<URL, string>> {
+  let last = 'sin intentos';
+  for (let i = 0; i < attempts; i += 1) {
+    if (i > 0) await sleep(gapMs);
+    try {
+      const response = await fetchFn(url, { signal: AbortSignal.timeout(timeoutMs) });
+      if (response.status === 200) return ok(url);
+      last = `estado ${String(response.status)}`;
+    } catch (e) {
+      last = describeFailure(e);
+    }
+  }
+  return err(`La carga inicial de ${url.href} no llegó a estado 200 (${last})`);
+}
+
 /** Indica si la URL objetivo es la pública (los tests de 404 y HTTP→HTTPS solo corren contra ella). */
 export const isPublicTarget = (url: URL): boolean => url.origin === PUBLIC_ORIGIN;

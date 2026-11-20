@@ -11,7 +11,7 @@
   `no-es-una-url`), devuelve `err` con un mensaje que contiene el texto indicado. Test:
   `tests/remote/target.test.ts`. Escenarios: "URL objetivo inválida", "Barra final opcional" y "Smoke en verde
   contra la URL pública" (valor por defecto).
-- [ ] 1.2 `checkReachable(url, fetchFn, { attempts, timeoutMs, gapMs, sleep })` con `fetch` y `sleep`
+- [x] 1.2 `checkReachable(url, fetchFn, { attempts, timeoutMs, gapMs, sleep })` con `fetch` y `sleep`
   inyectados. Devuelve `ok` al primer 200. Con 404 o error de red en todos los intentos, devuelve `err` con
   "no llegó a estado 200" y la URL. Hace exactamente `attempts` llamadas, cada una con `AbortSignal.timeout`.
   Test con un fetch falso, sin red. Escenario: "URL objetivo que no responde".
