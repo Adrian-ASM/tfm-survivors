@@ -9,6 +9,8 @@ if (!target.ok) throw new Error(target.error);
 
 export default defineConfig({
   testDir: 'tests/remote',
+  // Solo *.spec.ts: target.test.ts es un unitario de Vitest (npm test) y no debe cargarse aquí.
+  testMatch: '*.spec.ts',
   // Comprobación previa (≤ ~40 s): sin estado 200 en la raíz, aborta antes de abrir páginas.
   globalSetup: './tests/remote/preflight.ts',
   // Presupuesto del design: 130 s de tests + 40 s de preflight < 180 s de reloj.

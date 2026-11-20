@@ -61,6 +61,8 @@ describe('Smoke remoto fuera de test:e2e y verify (spec public-deploy)', () => {
     expect(scripts['smoke:public']).toMatch(/^playwright test --config playwright\.remote\.config\.ts/);
     expect(REMOTE_CONFIG).toMatch(/testDir:\s*'tests\/remote'/);
     expect(REMOTE_CONFIG).toMatch(/globalSetup:/);
+    // Sin esto, Playwright carga tests/remote/target.test.ts (Vitest) y falla.
+    expect(REMOTE_CONFIG).toMatch(/testMatch:\s*'\*\.spec\.ts'/);
     expect(codeLines(REMOTE_CONFIG).filter((line) => line.includes('webServer'))).toEqual([]);
   });
 

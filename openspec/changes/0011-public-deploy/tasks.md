@@ -55,7 +55,7 @@
 ## 3. Smoke remoto (`tests/remote/public.spec.ts`, Playwright con la config remota)
 <!-- Rojo de 3.1–3.3: antes de escribir el spec, `npm run smoke:public` termina con "No tests found" (exit ≠ 0).
      Cada test se ejecuta primero contra la URL pública y después contra vite preview en localhost. -->
-- [ ] 3.1 Fixture común (`watchCsp`, `collect`, respuestas ≥ 400, `requestfailed` y mensajes de CSP del mismo
+- [x] 3.1 Fixture común (`watchCsp`, `collect`, respuestas ≥ 400, `requestfailed` y mensajes de CSP del mismo
   origen, y origen de cada petición `document`) y **T1 · carga limpia**:
   - el documento responde 200 y el menú es visible;
   - la URL final empieza por `https://` si el objetivo es la URL pública;
