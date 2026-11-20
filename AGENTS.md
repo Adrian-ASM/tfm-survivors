@@ -17,6 +17,8 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   CSP estricta). Los E2E aceleran la simulación con `?e2e&speed=N` (1..15, solo en el adaptador; change 0008).
   Menú de inicio (Jugar, Exportar, Importar, Borrar datos con confirmación propia), pausa con Esc y Volver al menú
   (change 0009, ADR-0011). `?e2e` salta el menú **solo al cargar**; Volver al menú sí lo muestra.
+  Balance calibrado con el bot de referencia de `tests/support/` sobre las semillas 1..50 (entre 25 y 35
+  victorias) e invariante "quieto pierde antes de 180 s" con todas ellas (change 0010).
   Fuente de verdad del comportamiento: `openspec/specs/`.
 
 ## 2. Comandos

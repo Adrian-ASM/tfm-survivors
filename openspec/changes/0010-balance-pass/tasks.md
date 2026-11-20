@@ -85,7 +85,7 @@ Tras cada tarea, `npm run verify 2>&1 | tail -20` en verde.
     conjunto" (en el navegador, con la misma lógica).
 
 ## 4. Documentación
-- [ ] 4.1 Documentación.
+- [x] 4.1 Documentación.
   - `AGENTS.md` §1, estado del proyecto: una frase con el balance calibrado por el bot de referencia sobre 1..50
     (entre 25 y 35 victorias) y "quieto pierde antes de 180 s" (change 0010).
   - Entrada en `docs/ai-log/` con las mediciones y los incidentes de hooks, si los hay.
