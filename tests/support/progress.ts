@@ -12,11 +12,11 @@ export const anEntry = (overrides: Partial<HistoryEntry> = {}): HistoryEntry => 
 });
 
 /** Récords (`bestTimeSeconds`, `bestLevel`, `maxKills`). */
-export const records = (
-  bestTimeSeconds: number,
-  bestLevel: number,
-  maxKills: number,
-): Records => ({ bestTimeSeconds, bestLevel, maxKills });
+export const records = (bestTimeSeconds: number, bestLevel: number, maxKills: number): Records => ({
+  bestTimeSeconds,
+  bestLevel,
+  maxKills,
+});
 
 /** Progreso con los récords y el historial dados (sin normalizar: lo que se pasa es lo que hay). */
 export const aProgress = (

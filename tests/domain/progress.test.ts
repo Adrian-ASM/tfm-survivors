@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { EMPTY_PROGRESS, HISTORY_LIMIT } from '../../src/domain/progress/Progress';
 import { compareEntries, normalizeHistory } from '../../src/domain/progress/history';
 import { survivedSeconds } from '../../src/domain/shared/Tick';
-import { anEntry, entriesAt } from '../support/progress';
+import { recordEntry } from '../../src/domain/progress/recordEntry';
+import { aProgress, anEntry, entriesAt, playedAtOf, records } from '../support/progress';
 
 describe('Modelo de progreso (spec progress-persistence)', () => {
   it('Scenario: Progreso vacío (récords a 0 e historial vacío)', () => {
@@ -73,6 +74,53 @@ describe('Modelo de progreso (spec progress-persistence)', () => {
 
     expect(history.map((e) => e.playedAt)).toEqual([12, 11, 10, 9, 8, 7, 6, 5, 4, 3]);
     expect(Object.isFrozen(history)).toBe(true);
+  });
+});
+
+describe('Registro de una partida terminada (spec progress-persistence)', () => {
+  it('Scenario: Récords independientes ((300, 8, 120) + 250 s, nivel 10, 90 bajas ⇒ (300, 10, 120))', () => {
+    const before = aProgress(records(300, 8, 120));
+
+    const after = recordEntry(before, anEntry({ timeSeconds: 250, level: 10, kills: 90 }));
+
+    expect(after.records).toStrictEqual(records(300, 10, 120));
+  });
+
+  it('Scenario: Victoria (tick 36.000, nivel 18, 2.150 bajas ⇒ (600, 18, 2150))', () => {
+    const entry = anEntry({
+      outcome: 'won',
+      timeSeconds: survivedSeconds(36_000),
+      level: 18,
+      kills: 2150,
+    });
+
+    const after = recordEntry(EMPTY_PROGRESS, entry);
+
+    expect(after.records).toStrictEqual(records(600, 18, 2150));
+    expect(after.history).toStrictEqual([entry]);
+    expect(after.history[0]).toMatchObject({ outcome: 'won', timeSeconds: 600 });
+  });
+
+  it('Scenario: Historial lleno (playedAt 1–10 + 11 ⇒ 11…2, récords que no bajan)', () => {
+    const oldBest = anEntry({ playedAt: 1, timeSeconds: 500, level: 20, kills: 999 });
+    const full = aProgress(records(500, 20, 999), [
+      oldBest,
+      ...entriesAt(2, 3, 4, 5, 6, 7, 8, 9, 10),
+    ]);
+
+    const after = recordEntry(full, anEntry({ playedAt: 11 }));
+
+    expect(playedAtOf(after)).toEqual([11, 10, 9, 8, 7, 6, 5, 4, 3, 2]);
+    expect(after.records).toStrictEqual(records(500, 20, 999));
+  });
+
+  it('no modifica el progreso de entrada y devuelve uno congelado', () => {
+    const before = aProgress(records(1, 1, 1), entriesAt(5));
+
+    const after = recordEntry(before, anEntry({ playedAt: 6 }));
+
+    expect(before).toStrictEqual(aProgress(records(1, 1, 1), entriesAt(5)));
+    expect([Object.isFrozen(after), Object.isFrozen(after.records)]).toEqual([true, true]);
   });
 });
 

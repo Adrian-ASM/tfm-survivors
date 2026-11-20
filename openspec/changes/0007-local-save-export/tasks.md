@@ -24,7 +24,7 @@
   siguen verdes). Rojo: `tests/domain/progress.test.ts` (vacío; `playedAt` 1.000/3.000/2.000 ⇒ 3.000/2.000/1.000;
   duplicados de 6 campos dentro de un documento ⇒ uno; 6 campos distintos solo en `kills` ⇒ dos; `survivedSeconds`
   59/60/1.259 ⇒ 0/1/20). — escenarios: PP "Progreso vacío", "Orden del historial"
-- [ ] 1.2 `progress/recordEntry.ts`. Rojo: en `progress.test.ts`, récords (300, 8, 120) + (250 s, 10, 90) ⇒
+- [x] 1.2 `progress/recordEntry.ts`. Rojo: en `progress.test.ts`, récords (300, 8, 120) + (250 s, 10, 90) ⇒
   (300, 10, 120); victoria tick 36.000 ⇒ (600, 18, 2150); 10 entradas `playedAt` 1–10 + 11 ⇒ 11…2 y récords que no
   bajan. — escenarios: PP "Récords independientes", "Victoria", "Historial lleno"
 - [ ] 1.3 `progress/mergeProgress.ts`. Rojo: `tests/domain/merge-progress.test.ts`: máximos (300, 8, 120) ∪
