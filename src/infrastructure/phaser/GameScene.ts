@@ -25,7 +25,6 @@ const PLAYER_COLOR = 0x3dd68c;
 const PULSE_COLOR = 0x7ce2fe;
 const PULSE_LINE_WIDTH = 2;
 
-
 /**
  * Tamaño de los pools de sprites, calculado en la composición desde el contenido validado:
  * `maxAlive`, `maxProjectiles`, `pulseCapacity` (peor caso de las mejoras) y `maxGems`.
@@ -156,27 +155,32 @@ export class GameScene extends Phaser.Scene {
       this.scene.start(MENU_SCENE_KEY);
       return;
     }
+    // Partida de este frame: la actual o, si R reinicia, la nueva.
+    let current = started;
     if (!this.gate.paused) {
-      if (restart) this.restart(w);
-      const chosen = index >= 0 ? this.started?.chooseUpgrade.execute(index) : undefined;
+      if (restart) current = this.restart(w, started);
+      const chosen = index >= 0 ? current.chooseUpgrade.execute(index) : undefined;
       if (chosen?.ok) this.render(chosen.value);
     }
     // `simSpeed` avances por frame con el input leído una vez (0 ticks en pausa); un render.
-    const run = this.started?.tickRun ?? started.tickRun;
-    this.render(this.gate.frame(run, deltaMs, w.move.read(), this.deps.simSpeed ?? 1));
+    const speed = this.deps.simSpeed ?? 1;
+    this.render(this.gate.frame(current.tickRun, deltaMs, w.move.read(), speed));
     this.showPause(this.gate.paused);
   }
 
-  /** Partida nueva (solo desde una terminada): capas vacías antes de su primer render. */
-  private restart(w: Widgets): void {
-    if (!this.started) return;
-    const next = this.deps.restartRun.execute(this.started.tickRun);
-    if (!next.ok) return;
+  /**
+   * Partida nueva (solo desde una terminada): capas vacías antes de su primer render. Devuelve la
+   * partida que sigue en juego (la misma si el reinicio no procede).
+   */
+  private restart(w: Widgets, current: StartedRun): StartedRun {
+    const next = this.deps.restartRun.execute(current.tickRun);
+    if (!next.ok) return current;
     this.started = next.value;
     w.enemies.clear();
     w.projectiles.clear();
     w.pulses.clear();
     w.gems.clear();
+    return next.value;
   }
 
   /** Volver al menú: el motor destruye los objetos de la escena; aquí se sueltan las referencias. */
