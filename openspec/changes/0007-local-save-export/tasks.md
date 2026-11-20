@@ -50,7 +50,7 @@
   — escenarios: PP "Primera derrota", "Un guardado por partida", "Varias partidas en la misma carga", "Partida sin
   terminar", "Primer guardado tras datos dañados", "Progreso en memoria durante la carga", "Almacenamiento lleno al
   guardar"
-- [ ] 2.3 `ImportProgress`. Rojo: `tests/application/import-progress.test.ts`: (300, 8, 120) + fichero
+- [x] 2.3 `ImportProgress`. Rojo: `tests/application/import-progress.test.ts`: (300, 8, 120) + fichero
   (250, 10, 90) ⇒ sesión y guardado (300, 10, 120); dos imports de F ⇒ igual al primero; sobre sesión con
   `corruptPending` ⇒ guardado = F normalizado y aviso limpiado; `save` falla ⇒ sesión fusionada, `saved false`. —
   escenarios: PP "Récords máximos", "Importar dos veces el mismo fichero", "Import sobre datos guardados dañados"
