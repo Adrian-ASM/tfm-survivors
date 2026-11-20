@@ -29,6 +29,12 @@ Teclado (WASD / flechas). Pausa con Esc. Táctil y gamepad: *Should/Could*.
 | **Could** | Login con Google + Supabase (sincronizar progreso) · reto diario con seed compartida · i18n ES/EN · PWA |
 | **Won't** | Multijugador · mapas procedurales complejos · monetización · leaderboard con re-simulación |
 
+### Deuda registrada
+| Origen | Deuda | Cuándo |
+|---|---|---|
+| 0006 · W1 | Ganabilidad frágil: con un bot sencillo solo gana 1 de 10 semillas en 600 s (`balance.test.ts` fija la semilla 2). Revisar curva de oleadas y mejoras con playtest humano y más estrategias. | Change de equilibrio antes del despliegue público |
+| 0006 · W2 | Sin E2E de reinicio tras **victoria** (solo tras derrota); cubierto en tests de aplicación. | Con el change de equilibrio o el de menú |
+
 ## Orden tentativo de changes
 0001 walking-skeleton → 0002 enemy-spawning → 0003 collisions-and-damage → 0004 auto-weapons →
 0005 xp-and-level-up → 0006 run-lifecycle + HUD → 0007 local-save-export → (arte/audio) → Should.

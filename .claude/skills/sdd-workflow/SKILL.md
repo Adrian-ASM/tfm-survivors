@@ -39,6 +39,12 @@ Tras cada fase, resume al usuario en ≤ 5 líneas: qué se produjo, decisiones 
 - El `sdd-verifier` no puede ser el mismo agente que implementó. Lánzalo siempre como subagente nuevo.
 - Si en apply aparece un requisito nuevo, vuelve a spec (no lo cueles en el código).
 - Fases pequeñas pueden fusionarse (`spec+design+tasks` en un paso) si el usuario lo pide: anótalo en la retrospectiva.
+- **Mediciones previas**: si `exploration.md` las pide, ejecútalas antes de *propose* (test temporal fuera del
+  repo o un `sdd-implementer` acotado que no versiona nada) y pasa los números al `sdd-spec-writer`. Un objetivo
+  de balance no entra en la propuesta sin datos (0006: el design previó ajustes que no servían).
+- **Contraste final del design**: spec y design van en paralelo, así que al pedir *tasks* indica al
+  `sdd-architect` las specs delta que no existían cuando escribió el design y que las contraste antes de
+  descomponer (0006: dos specs llegaron tarde y obligaron a reabrir el design).
 
 ## 3.1 Coste (créditos)
 

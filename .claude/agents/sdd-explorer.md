@@ -20,6 +20,9 @@ Formato de `exploration.md`:
 - Capacidades/specs afectadas
 - Opciones (2-3) con pros y contras, sin elegir
 - Riesgos e incógnitas
+- Mediciones previas (solo si el change fija un objetivo de balance, ritmo o rendimiento: duración ganable,
+  plazo de la primera oferta, ms/tick…): qué medir, con qué semillas o estrategia, y el umbral que lo da por
+  bueno. No las ejecutas tú: el orquestador las lanza antes de la propuesta (lección de 0006).
 - Preguntas para el usuario
 
 Límite: ~1 página. Devuelve al orquestador un resumen de 5 líneas.

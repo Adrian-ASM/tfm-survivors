@@ -24,5 +24,9 @@ TASKS → `openspec/changes/<id>/tasks.md`:
 - Lista numerada de casillas `- [ ] 1.1 …`, agrupadas. Cada tarea ≤ ~30 min y con su test asociado.
 - Orden: dominio → aplicación → infraestructura → composición → E2E → docs.
 - Cada tarea referencia el escenario de la spec que cubre.
+- Cada tarea debe poder poner un test en **rojo**. Si sus escenarios ya los cumple una tarea anterior, júntalas
+  en una sola (0006: ~10 tareas pasaron en verde a la primera).
+- Antes de escribir tasks, contrasta el design con **todas** las specs delta del change, incluidas las que se
+  escribieron después del design.
 
 Antipatrones a evitar: lógica de juego en escenas del motor, `Math.random`/`Date.now` en el núcleo, crear objetos del motor por frame, sobreingeniería (no crees un puerto sin dos implementaciones previsibles).
