@@ -1,11 +1,29 @@
 import { expect, test } from '@playwright/test';
-import { collect, focusGame, playChoosingFirst, probe, snapshotOf } from './probe';
+import {
+  E2E_SPEED,
+  collect,
+  expectSpeed,
+  focusGame,
+  gameUrl,
+  playChoosingFirst,
+  probe,
+  snapshotOf,
+} from './probe';
 
 // Bucle jugar → perder → resultados → reiniciar (spec run-results, "Derrota y reinicio en el
 // navegador"). Núcleo, semilla 42 sin input con la política de elección fija: derrota en el tick
 // 4682 (≈ 78 s de juego; medición de la tarea 0.2 de 0006). Plazo de la spec: 120 s de juego.
+// Se juega a ?speed=8 (design 0008): mismo resultado, unas 8 veces menos de tiempo real.
 const GAME_TICKS_120_S = 120 * 60;
-const ONE_SECOND_TICKS = 60;
+/**
+ * Tras R pasan varios frames de 8 ticks antes de leer: margen de 60 frames a velocidad 8. Sigue
+ * distinguiendo la partida nueva de la terminada (tick ≥ 4.500).
+ */
+const FRESH_MAX_TICKS = 60 * E2E_SPEED;
+/** Margen de reloj (no es la aserción): la derrota acelerada tarda unos 10 s. */
+const PLAY_TIMEOUT_MS = 45_000;
+/** Plazo real de la derrota acelerada (proposal 0008: medido 9,9 s). */
+const MAX_DEFEAT_REAL_MS = 12_000;
 
 const mmss = (tick: number): string => {
   const s = Math.floor(tick / 60);
@@ -15,15 +33,21 @@ const mmss = (tick: number): string => {
 test('Derrota y reinicio en el navegador: ?seed=42 sin input pierde, muestra resultados y R reinicia', async ({
   page,
 }) => {
-  test.setTimeout(160_000);
+  test.setTimeout(60_000);
   const problems = collect(page, ['error', 'warning']);
-  await page.goto('./?e2e&seed=42');
+  await page.goto(gameUrl({ seed: 42, speed: E2E_SPEED }));
+  await expectSpeed(page, E2E_SPEED);
   await expect.poll(async () => (await snapshotOf(page))?.tick ?? null).not.toBeNull();
   await focusGame(page);
 
-  const ended = await playChoosingFirst(page, (s) => s.status === 'over', 130_000, 250);
+  const startedAt = Date.now();
+  const ended = await playChoosingFirst(page, (s) => s.status === 'over', PLAY_TIMEOUT_MS);
+  const realMs = Date.now() - startedAt;
 
   expect(ended).not.toBeNull();
+  // Criterio de éxito de 0008: con ?e2e&speed=8, la derrota llega en ≤ 12 s reales (reloj de Node).
+  test.info().annotations.push({ type: 'defeat-real-ms', description: String(realMs) });
+  expect(realMs).toBeLessThanOrEqual(MAX_DEFEAT_REAL_MS);
   expect(ended?.outcome).toBe('lost');
   expect(ended?.tick).toBeLessThanOrEqual(GAME_TICKS_120_S);
   const shown = (await probe(page))?.results;
@@ -49,7 +73,7 @@ test('Derrota y reinicio en el navegador: ?seed=42 sin input pierde, muestra res
   await expect.poll(async () => (await snapshotOf(page))?.status).toBe('running');
   const fresh = await probe(page);
 
-  expect(fresh?.snapshot?.tick).toBeLessThanOrEqual(ONE_SECOND_TICKS);
+  expect(fresh?.snapshot?.tick).toBeLessThanOrEqual(FRESH_MAX_TICKS);
   expect(fresh?.snapshot).toMatchObject({
     status: 'running',
     outcome: null,
@@ -57,5 +81,7 @@ test('Derrota y reinicio en el navegador: ?seed=42 sin input pierde, muestra res
     progression: { level: 1, xp: 0 },
   });
   expect(fresh?.results).toBeNull();
+  // Spec simulation-loop, "La velocidad se mantiene al reiniciar": R no relee la URL.
+  expect(fresh?.speed).toBe(E2E_SPEED);
   expect(problems).toEqual([]);
 });

@@ -1,16 +1,27 @@
 import { expect, test } from '@playwright/test';
-import { collect, focusGame, playChoosingFirst, probe } from './probe';
+import {
+  E2E_SPEED,
+  collect,
+  expectSpeed,
+  focusGame,
+  gameUrl,
+  playChoosingFirst,
+  probe,
+} from './probe';
 
 // Primer golpe con las armas y las mejoras activas (núcleo, semilla 42 con la política de elección
 // fija: tick 4122). Plazo de la spec player-health: 80 s de juego, pulsando 1 en cada oferta.
 const GAME_TICKS_80_S = 80 * 60;
+/** Margen de reloj (no es la aserción): a ?speed=8 el primer golpe llega en unos 9 s. */
+const PLAY_TIMEOUT_MS = 45_000;
 
 test('Primer golpe en el navegador: con ?seed=42 y sin input, la vida baja en ≤ 80 s', async ({
   page,
 }) => {
-  test.setTimeout(150_000);
+  test.setTimeout(60_000);
   const problems = collect(page, ['error', 'warning']);
-  await page.goto('./?e2e&seed=42');
+  await page.goto(gameUrl({ seed: 42, speed: E2E_SPEED }));
+  await expectSpeed(page, E2E_SPEED);
   await expect.poll(async () => (await probe(page))?.snapshot?.tick ?? null).not.toBeNull();
   const start = (await probe(page))?.snapshot;
   expect(start?.player.health).toBe(start?.player.maxHealth);
@@ -20,8 +31,7 @@ test('Primer golpe en el navegador: con ?seed=42 y sin input, la vida baja en �
   const snap = await playChoosingFirst(
     page,
     (s) => s.player.health < s.player.maxHealth,
-    130_000,
-    250,
+    PLAY_TIMEOUT_MS,
   );
 
   expect(snap).not.toBeNull();

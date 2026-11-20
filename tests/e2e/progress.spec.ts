@@ -1,59 +1,72 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import {
+  E2E_SPEED,
   collect,
   cspState,
+  expectSpeed,
   focusGame,
+  gameUrl,
   playChoosingFirst,
   probe,
   snapshotOf,
   watchCsp,
 } from './probe';
+import { F, P0, progressText, seedProgress } from './progressFixtures';
 
-// Spec progress-persistence: guardado local, export/import y CSP en la build de producción.
+// Spec progress-persistence: guardado local, export/import y CSP en la build de producción. Las
+// partidas hasta la derrota van a ?speed=8 y el progreso previo se siembra (design 0008): ningún
+// test juega más de una derrota y los de carga no juegan ninguna.
 const KEY = 'sprint-survivors/progress';
 const TWO_SECONDS_TICKS = 120;
 const EMPTY_RECORDS = { bestTimeSeconds: 0, bestLevel: 0, maxKills: 0 };
 
-const VALID_V1 =
-  '{"schemaVersion":1,"records":{"bestTimeSeconds":20,"bestLevel":3,"maxKills":41},"history":[{' +
-  '"playedAt":1763596800000,"seed":42,"outcome":"defeat","timeSeconds":20,"level":3,"kills":41}]}';
+/** Progreso v1 válido, con el formato que guarda el juego (builder con el codec de producción). */
+const VALID_V1 = progressText(P0);
+const FUTURE_VERSION = JSON.stringify({
+  ...(JSON.parse(VALID_V1) as Record<string, unknown>),
+  schemaVersion: 2,
+});
+/** JSON truncado: literal a propósito (el builder no puede producir un documento dañado). */
+const DAMAGED = '{"schemaVersion":1,"records":';
 
 const stored = (page: Page): Promise<string | null> =>
   page.evaluate((key) => window.localStorage.getItem(key), KEY);
-
-/** Siembra el valor guardado antes de que carguen los scripts de la página. */
-const seedStorage = (page: Page, value: string) =>
-  page.addInitScript(
-    ([key, v]) => {
-      window.localStorage.setItem(key, v);
-    },
-    [KEY, value] as const,
-  );
 
 const waitTicks = (page: Page, ticks: number) =>
   expect
     .poll(async () => (await snapshotOf(page))?.tick ?? 0, { timeout: 10_000 })
     .toBeGreaterThan(ticks);
 
-const PLAY_TIMEOUT_MS = 120_000;
+/** Margen de reloj (no es la aserción): una derrota a ?speed=8 tarda unos 10 s. */
+const PLAY_TIMEOUT_MS = 45_000;
+const TEST_TIMEOUT_MS = 60_000;
 const MAX_IMPORT_BYTES = 65_536;
+
+type Records = { bestTimeSeconds: number; bestLevel: number; maxKills: number };
 
 const mmss = (seconds: number): string =>
   `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
 
 /** Récords en el formato del panel (spec run-results). */
-const shownRecords = (r: { bestTimeSeconds: number; bestLevel: number; maxKills: number }) => [
+const shownRecords = (r: Records) => [
   `Mejor tiempo ${mmss(r.bestTimeSeconds)}`,
   `Mejor nivel ${String(r.bestLevel)}`,
   `Máx. bajas ${String(r.maxKills)}`,
 ];
 
+/** Máximo campo a campo (fusión de récords, spec progress-persistence). */
+const maxOf = (...all: Records[]): Records => ({
+  bestTimeSeconds: Math.max(...all.map((r) => r.bestTimeSeconds)),
+  bestLevel: Math.max(...all.map((r) => r.bestLevel)),
+  maxKills: Math.max(...all.map((r) => r.maxKills)),
+});
+
 /** Juega sin input con la política de elección fija hasta la derrota. */
 async function playToDefeat(page: Page) {
   await expect.poll(async () => (await snapshotOf(page))?.tick ?? null).not.toBeNull();
   await focusGame(page);
-  const ended = await playChoosingFirst(page, (s) => s.status === 'over', PLAY_TIMEOUT_MS, 250);
+  const ended = await playChoosingFirst(page, (s) => s.status === 'over', PLAY_TIMEOUT_MS);
   expect(ended?.outcome).toBe('lost');
   return ended;
 }
@@ -92,100 +105,111 @@ const frames = (page: Page, n: number) =>
   );
 
 const message = (page: Page) => page.getByRole('status');
+const progressOf = async (page: Page) => (await probe(page))?.progress;
 
-test('Exportar, recargar e importar en el navegador (?seed=42, bucle completo y CSP)', async ({
+test('Sin violaciones en el bucle completo (?seed=42: P0 sembrado, 1 derrota, export, import y recarga)', async ({
   page,
 }) => {
-  test.setTimeout(260_000);
+  test.setTimeout(TEST_TIMEOUT_MS);
   const problems = collect(page, ['error', 'warning']);
   await watchCsp(page);
-  await page.goto('./?e2e&seed=42');
+  await seedProgress(page, progressText(P0));
+  await page.goto(gameUrl({ seed: 42, speed: E2E_SPEED }));
+  await expectSpeed(page, E2E_SPEED);
+  expect(await progressOf(page)).toMatchObject({ records: P0.records, history: P0.history });
 
-  // 1.ª partida: derrota, récords R en el panel y Exportar.
-  const first = await playToDefeat(page);
-  const r1 = (await probe(page))?.progress?.records;
-  expect(r1).toEqual({
-    bestTimeSeconds: Math.floor((first?.tick ?? 0) / 60),
-    bestLevel: first?.progression.level,
-    maxKills: first?.kills,
+  // La única partida: derrota acelerada; panel con máx(P0, partida) y 2 entradas.
+  const ended = await playToDefeat(page);
+  const played = {
+    bestTimeSeconds: Math.floor((ended?.tick ?? 0) / 60),
+    bestLevel: ended?.progression.level ?? 0,
+    maxKills: ended?.kills ?? 0,
+  };
+  const afterRun = maxOf(P0.records, played);
+  const afterRunProgress = await progressOf(page);
+  expect(afterRunProgress?.records).toEqual(afterRun);
+  expect(afterRunProgress?.history).toHaveLength(2);
+  expect(afterRunProgress?.history[0]).toMatchObject({
+    seed: 42,
+    outcome: 'lost',
+    timeSeconds: played.bestTimeSeconds,
+    level: played.bestLevel,
+    kills: played.maxKills,
   });
   await expect(page.getByRole('region', { name: 'Progreso' })).toContainText(
-    shownRecords(r1 ?? EMPTY_RECORDS).join(''),
+    shownRecords(afterRun).join(''),
   );
 
+  // Exportar: el fichero es lo guardado (P0 + partida) y no cambia la partida.
   const exported = await exportFile(page);
   expect(exported.name).toBe('sprint-survivors-progress.json');
-  const doc = JSON.parse(exported.text) as { history: Record<string, unknown>[] };
-  expect(doc.history).toHaveLength(1);
-  expect(doc.history[0]).toMatchObject({
-    seed: 42,
-    outcome: 'defeat',
-    timeSeconds: r1?.bestTimeSeconds,
-    level: first?.progression.level,
-    kills: first?.kills,
-  });
-
-  // Exportar no cambia la partida: 60 frames después, el mismo snapshot y el overlay visible.
+  expect(exported.text).toBe(await stored(page));
+  expect((JSON.parse(exported.text) as { history: unknown[] }).history).toHaveLength(2);
   await frames(page, 60);
-  expect(await snapshotOf(page)).toEqual(first);
+  expect(await snapshotOf(page)).toEqual(ended);
   expect((await probe(page))?.results).not.toBeNull();
 
-  // Borrar almacenamiento, recargar y 2.ª derrota.
-  await page.evaluate(() => {
-    window.localStorage.clear();
-  });
-  await page.reload();
-  const second = await playToDefeat(page);
-  const r2 = (await probe(page))?.progress?.records;
-  expect((await probe(page))?.progress?.history).toHaveLength(1);
-
-  // Importar el fichero exportado: récords = máximo de R y de la 2.ª partida, 2 entradas.
+  // Importar el fichero exportado: idempotente, mensaje de éxito y nada cambia.
   await importFile(page, exported.text);
   await expect(message(page)).toContainText('importado');
-  const merged = {
-    bestTimeSeconds: Math.max(r1?.bestTimeSeconds ?? 0, r2?.bestTimeSeconds ?? 0),
-    bestLevel: Math.max(r1?.bestLevel ?? 0, r2?.bestLevel ?? 0),
-    maxKills: Math.max(r1?.maxKills ?? 0, r2?.maxKills ?? 0),
-  };
-  expect((await probe(page))?.progress?.records).toEqual(merged);
-  expect((await probe(page))?.progress?.shown).toEqual(shownRecords(merged));
+  expect((await progressOf(page))?.records).toEqual(afterRun);
+  expect((await exportFile(page)).text).toBe(exported.text);
+
+  // Importar F: fusión por máximo campo a campo (cada récord sale de una fuente distinta).
+  const merged = maxOf(afterRun, F.records);
+  expect(merged).toEqual({ bestTimeSeconds: 300, bestLevel: 20, maxKills: played.maxKills });
+  await importFile(page, progressText(F));
+  await expect.poll(async () => (await progressOf(page))?.records).toEqual(merged);
+  expect((await progressOf(page))?.shown).toEqual(shownRecords(merged));
   const afterImport = await exportFile(page);
-  expect((JSON.parse(afterImport.text) as { history: unknown[] }).history).toHaveLength(2);
+  const expectedHistory = [afterRunProgress?.history[0], ...F.history, ...P0.history];
+  expect((await progressOf(page))?.history).toEqual(expectedHistory);
 
   // Spec run-results, "Imports rechazados en el navegador" (y progress-persistence, "Fichero demasiado
-  // grande" / "Fichero no JSON o fuera de esquema"): mensaje y ni récords ni export cambian. Va dentro de
-  // este test porque necesita una partida terminada (otra derrota costaría ~80 s más).
+  // grande" / "Fichero no JSON o fuera de esquema"): mensaje y ni récords ni export cambian.
   await test.step('Scenario: Imports rechazados en el navegador', async () => {
     await importFile(page, 'hola');
     await expect(message(page)).toContainText('no válido');
     await importFile(page, ' '.repeat(MAX_IMPORT_BYTES + 1));
     await expect(message(page)).toContainText('64 KiB');
-    expect((await probe(page))?.progress?.records).toEqual(merged);
+    expect((await progressOf(page))?.records).toEqual(merged);
     expect((await exportFile(page)).text).toBe(afterImport.text);
-    expect(await snapshotOf(page)).toEqual(second);
+    expect(await snapshotOf(page)).toEqual(ended);
   });
+
+  // 1.ª carga: CSP sin violaciones tras jugar, exportar e importar.
+  expect(await cspState(page)).toEqual({ violations: [], metas: 1 });
 
   // R tras usar los botones: 1 partida nueva en curso y el panel oculto.
   const seedBefore = (await probe(page))?.seed;
   await page.keyboard.press('r');
   await expect.poll(async () => (await snapshotOf(page))?.status).toBe('running');
   const fresh = await probe(page);
-  expect(fresh?.snapshot?.tick).toBeLessThanOrEqual(60);
   expect(fresh?.results).toBeNull();
   expect(fresh?.seed).not.toBe(seedBefore);
   await expect(page.getByRole('button', { name: 'Exportar' })).toBeHidden();
 
+  // Recarga (la siembra es de un solo uso): el progreso cargado es el fusionado, 3 entradas.
+  await page.reload();
+  await expect.poll(async () => (await snapshotOf(page))?.tick ?? null).not.toBeNull();
+  const reloaded = await progressOf(page);
+  expect(reloaded?.records).toEqual(merged);
+  expect(reloaded?.history).toHaveLength(3);
+  expect(reloaded?.history).toEqual(expectedHistory);
+  expect(await stored(page)).toBe(afterImport.text);
+
+  // 2.ª carga: CSP sin violaciones.
   expect(await cspState(page)).toEqual({ violations: [], metas: 1 });
   expect(problems).toEqual([]);
 });
 
-// Tarea 0.1: la semilla 90 sin input es la que antes pierde en el núcleo (tick 4501, ≈ 75 s).
+// Tarea 0.1 de 0007: la semilla 90 sin input es la que antes pierde en el núcleo (tick 4501).
 const FAST_DEFEAT_SEED = 90;
 
 test('Almacenamiento bloqueado: se juega, el overlay avisa de que no se guarda y R reinicia', async ({
   page,
 }) => {
-  test.setTimeout(160_000);
+  test.setTimeout(TEST_TIMEOUT_MS);
   const problems = collect(page, ['error', 'warning']);
   await page.addInitScript(() => {
     Object.defineProperty(window, 'localStorage', {
@@ -195,10 +219,11 @@ test('Almacenamiento bloqueado: se juega, el overlay avisa de que no se guarda y
       },
     });
   });
-  await page.goto(`./?e2e&seed=${String(FAST_DEFEAT_SEED)}`);
+  await page.goto(gameUrl({ seed: FAST_DEFEAT_SEED, speed: E2E_SPEED }));
+  await expectSpeed(page, E2E_SPEED);
 
   const ended = await playToDefeat(page);
-  const progress = (await probe(page))?.progress;
+  const progress = await progressOf(page);
 
   expect(progress?.notices.some((n) => n.includes('no se guarda'))).toBe(true);
   expect(progress?.shown).toEqual(
@@ -220,27 +245,27 @@ test('Almacenamiento bloqueado: se juega, el overlay avisa de que no se guarda y
 
 test.describe('Carga del progreso guardado (sin jugar hasta el final)', () => {
   for (const [name, value] of [
-    ['Datos guardados dañados', '{"schemaVersion":1,"records":'],
-    ['Versión futura guardada', VALID_V1.replace('"schemaVersion":1', '"schemaVersion":2')],
+    ['Datos guardados dañados', DAMAGED],
+    ['Versión futura guardada', FUTURE_VERSION],
   ] as const) {
     test(`${name}: 1 aviso con progress, progreso vacío y valor intacto tras 2 s`, async ({
       page,
     }) => {
       const warnings = collect(page, ['warning']);
-      await seedStorage(page, value);
-      await page.goto('./?e2e');
+      await seedProgress(page, value);
+      await page.goto(gameUrl());
       await waitTicks(page, TWO_SECONDS_TICKS);
 
       expect(warnings).toHaveLength(1);
       expect(warnings[0]).toContain('progress');
-      expect((await probe(page))?.progress).toMatchObject({ records: EMPTY_RECORDS, history: [] });
+      expect(await progressOf(page)).toMatchObject({ records: EMPTY_RECORDS, history: [] });
       expect(await stored(page)).toBe(value);
     });
   }
 
   test('Partida sin terminar: recargar a mitad de partida no guarda nada', async ({ page }) => {
     const problems = collect(page, ['error', 'warning']);
-    await page.goto('./?e2e');
+    await page.goto(gameUrl());
     await waitTicks(page, TWO_SECONDS_TICKS);
 
     await page.reload();

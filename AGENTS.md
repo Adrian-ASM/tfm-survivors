@@ -14,7 +14,8 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   el motor de juego es un **adaptador** (`src/infrastructure`). Ver `docs/adr/0002-nucleo-de-simulacion-puro.md`.
 - **Estado del proyecto**: bucle de partida completo (changes 0001–0007: movimiento, oleadas, daño, armas,
   XP y mejoras, victoria/derrota, HUD y reinicio, guardado local de récords e historial con export/import JSON y
-  CSP estricta). Fuente de verdad del comportamiento: `openspec/specs/`.
+  CSP estricta). Los E2E aceleran la simulación con `?e2e&speed=N` (1..15, solo en el adaptador; change 0008).
+  Fuente de verdad del comportamiento: `openspec/specs/`.
 
 ## 2. Comandos
 

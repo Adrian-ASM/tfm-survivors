@@ -48,7 +48,7 @@ Los changes 0008 (infraestructura de tests) y 0010 (equilibrio) no añaden Must:
 | 0006 · W2 | Sin E2E de reinicio tras **victoria** (solo tras derrota); cubierto en tests de aplicación. | Con el change de equilibrio o el de menú |
 | 0007 · S2 | Semilla frágil: los tests fijan la semilla 90 (la que pierde antes sin input; regresión en `balance.test.ts` con tope de 4.560 ticks). Caduca si cambia el balance, y un E2E depende de ella. | Change 0010 |
 | 0007 · S4 | La semilla guardada en el historial sale del objeto `probe` de E2E (`wireProgress(root, () => probe.seed)`) en vez de una fuente propia. | Con 0009 o 0010 |
-| 0007 · E2E | La suite E2E tarda ~4,2 min (13 tests). El bucle export → recarga → import con dos derrotas ~2,7 min; cada derrota ~78 s reales. El job de CI tiene `timeout-minutes: 10`. | Change 0008 |
+| 0007 · E2E | **Saldada en 0008.** La suite E2E tardaba ~4,2 min (13 tests); cada derrota ~78 s reales. Ahora `?e2e&speed=8` (derrota en ~10 s), progreso sembrado (como mucho 1 derrota por test), 2 workers y `timeout-minutes: 6` en el job `e2e`. | Change 0008 (hecho) |
 
 ## Orden tentativo de changes
 0001 walking-skeleton → 0002 enemy-spawning → 0003 collisions-and-damage → 0004 auto-weapons →

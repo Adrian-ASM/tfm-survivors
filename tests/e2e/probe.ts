@@ -1,4 +1,26 @@
-import type { Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+
+/**
+ * Velocidad de simulación de los E2E que juegan hasta un evento lejano (design 0008): 8 avances
+ * del bucle de paso fijo por frame, con el mismo resultado que a velocidad 1.
+ */
+export const E2E_SPEED = 8;
+
+/** URL del juego en modo E2E con la semilla y la velocidad dadas (`speed` 1 ⇒ sin parámetro). */
+export function gameUrl({ seed, speed = 1 }: { seed?: number; speed?: number } = {}): string {
+  const params = ['e2e'];
+  if (seed !== undefined) params.push(`seed=${String(seed)}`);
+  if (speed !== 1) params.push(`speed=${String(speed)}`);
+  return `./?${params.join('&')}`;
+}
+
+/**
+ * Comprueba la velocidad resuelta por el juego: si alguien quita el parámetro, el test falla en
+ * vez de volverse lento en silencio.
+ */
+export async function expectSpeed(page: Page, speed: number): Promise<void> {
+  await expect.poll(async () => (await probe(page))?.speed ?? null).toBe(speed);
+}
 
 export interface EnemyView {
   id: number;
@@ -53,6 +75,8 @@ export interface ProgressView {
 interface Probe {
   __sprint?: {
     seed: number;
+    /** Velocidad de simulación resuelta en la carga (1..15; 1 si falta o es inválida). */
+    speed?: number;
     snapshot: SnapshotView | null;
     results: ResultsViewData | null;
     progress: ProgressView | null;
@@ -64,7 +88,13 @@ export const probe = (page: Page) =>
   page.evaluate(() => {
     const p = (window as unknown as Probe).__sprint;
     return p
-      ? { seed: p.seed, snapshot: p.snapshot, results: p.results, progress: p.progress }
+      ? {
+          seed: p.seed,
+          speed: p.speed ?? null,
+          snapshot: p.snapshot,
+          results: p.results,
+          progress: p.progress,
+        }
       : null;
   });
 
