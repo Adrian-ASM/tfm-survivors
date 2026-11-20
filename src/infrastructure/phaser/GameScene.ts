@@ -13,6 +13,7 @@ import { PauseKey } from './PauseKey';
 import { ProjectileLayer } from './ProjectileLayer';
 import { PulseLayer, type RingSprite } from './PulseLayer';
 import { RestartKey } from './RestartKey';
+import { GAME_SCENE_KEY, MENU_SCENE_KEY } from './sceneKeys';
 import type { ResultsOverlay } from './ResultsOverlay';
 import type { ResultsView } from './resultsText';
 import type { RunLauncher } from './RunLauncher';
@@ -24,9 +25,6 @@ const PLAYER_COLOR = 0x3dd68c;
 const PULSE_COLOR = 0x7ce2fe;
 const PULSE_LINE_WIDTH = 2;
 
-/** Clave de la escena de partida y de la del menú (`MenuScene`). */
-export const GAME_SCENE_KEY = 'game';
-export const MENU_SCENE_KEY = 'menu';
 
 /**
  * Tamaño de los pools de sprites, calculado en la composición desde el contenido validado:

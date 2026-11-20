@@ -126,7 +126,7 @@ Sin tareas: el dominio no cambia (`run-state` sin delta). La pausa y el menú qu
   overlay durante la partida"; HUD "HUD en pausa"; SL "Semilla válida por URL en modo E2E".
   Ficheros: `src/infrastructure/phaser/GameScene.ts`, `src/infrastructure/dom/{PausePanel,button,ResultsPanel}.ts`,
   `src/composition/main.ts`, `src/styles.css`, `tests/e2e/pause.spec.ts`.
-- [ ] 4.3 `MenuScene` y `MenuPanel` (Jugar, Exportar, Importar y Borrar datos, sin diálogo todavía). Orden de
+- [x] 4.3 `MenuScene` y `MenuPanel` (Jugar, Exportar, Importar y Borrar datos, sin diálogo todavía). Orden de
   escenas `[menu, game]` sin `?e2e`, y **Volver al menú** desde la pausa. La sonda gana `screen` y `runs`, y
   `snapshot` vale `null` en el menú. `SceneProgress.leave()`. **Rojo**: E2E `tests/e2e/menu.spec.ts`:
   - sin parámetros, el menú es visible con los 4 botones en orden y sin HUD, pausa ni resultados;

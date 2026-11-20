@@ -1,0 +1,168 @@
+import { expect, test, type Page } from '@playwright/test';
+import {
+  E2E_SPEED,
+  backToMenu,
+  collect,
+  focusGame,
+  gameUrl,
+  menuButton,
+  menuPanel,
+  pauseOverlay,
+  playerUrl,
+  probe,
+  snapshotOf,
+} from './probe';
+
+// Menú de inicio (spec main-menu): sin ?e2e se ve el menú y no hay sonda; con ?e2e la partida
+// arranca al cargar y el menú se recorre con Esc → Volver al menú → Jugar.
+
+const MENU_LABELS = ['Jugar', 'Exportar', 'Importar', 'Borrar datos'];
+/** Tick máximo de una partida "recién creada" al leerla tras el clic (margen de frames). */
+const FRESH_MAX_TICKS = 60;
+
+const hasProbe = (page: Page) => page.evaluate(() => '__sprint' in window);
+
+async function expectMenuOnly(page: Page): Promise<void> {
+  await expect(menuPanel(page)).toBeVisible();
+  expect(await menuPanel(page).getByRole('button').allTextContents()).toEqual(MENU_LABELS);
+  await expect(pauseOverlay(page)).toBeHidden();
+  await expect(page.locator('.results-panel')).toBeHidden();
+}
+
+async function playingE2E(page: Page, url = gameUrl({ seed: 42 })): Promise<void> {
+  await page.goto(url);
+  await expect.poll(async () => (await snapshotOf(page))?.tick ?? 0).toBeGreaterThan(30);
+  await focusGame(page);
+}
+
+test('Carga sin parámetros: menú con sus 4 opciones, sin pausa ni resultados ni sonda', async ({
+  page,
+}) => {
+  const problems = collect(page, ['error', 'warning']);
+  await page.goto(playerUrl());
+
+  await expectMenuOnly(page);
+  await page.waitForTimeout(1_000);
+  await expectMenuOnly(page);
+  expect(await hasProbe(page)).toBe(false);
+  expect(problems).toEqual([]);
+});
+
+test('Teclas sin efecto en el menú: Esc, R, 1, 2, 3 y movimiento', async ({ page }) => {
+  await page.goto(playerUrl());
+  await expect(menuPanel(page)).toBeVisible();
+  await page.locator('#game canvas').click({ position: { x: 5, y: 5 } });
+
+  for (const key of ['Escape', 'r', '1', '2', '3']) await page.keyboard.press(key);
+  await page.keyboard.down('ArrowRight');
+  await page.keyboard.down('ArrowDown');
+  await page.waitForTimeout(1_000);
+  await page.keyboard.up('ArrowRight');
+  await page.keyboard.up('ArrowDown');
+
+  await expectMenuOnly(page);
+});
+
+test('Carga con semilla y sin e2e: menú visible y sin sonda, también tras Jugar', async ({
+  page,
+}) => {
+  await page.goto(playerUrl('?seed=42'));
+  await expectMenuOnly(page);
+  expect(await hasProbe(page)).toBe(false);
+
+  await menuButton(page, 'Jugar').click();
+
+  await expect(menuPanel(page)).toBeHidden();
+  expect(await hasProbe(page)).toBe(false);
+});
+
+test('Esc funciona tras pulsar Jugar con el ratón (sin otro clic)', async ({ page }) => {
+  await page.goto(playerUrl());
+  await menuButton(page, 'Jugar').click();
+  await expect(menuPanel(page)).toBeHidden();
+  await page.waitForTimeout(500);
+
+  await page.keyboard.press('Escape');
+
+  await expect(pauseOverlay(page)).toBeVisible();
+});
+
+test('Menú tras Volver al menú en modo E2E: screen menu, sin snapshot; Jugar crea la 2.ª partida', async ({
+  page,
+}) => {
+  await playingE2E(page);
+  expect((await probe(page))?.runs).toBe(1);
+
+  await backToMenu(page);
+
+  await expectMenuOnly(page);
+  expect(await probe(page)).toMatchObject({ screen: 'menu', snapshot: null, results: null });
+  await page.waitForTimeout(500);
+  expect((await probe(page))?.snapshot).toBeNull();
+
+  await menuButton(page, 'Jugar').click();
+
+  await expect.poll(async () => (await probe(page))?.screen).toBe('playing');
+  const fresh = await probe(page);
+  expect(fresh?.runs).toBe(2);
+  expect(fresh?.seed).not.toBe(42);
+  expect(fresh?.snapshot?.tick).toBeLessThanOrEqual(FRESH_MAX_TICKS);
+  expect(fresh?.snapshot).toMatchObject({
+    status: 'running',
+    kills: 0,
+    player: { health: 100, maxHealth: 100 },
+    progression: { level: 1 },
+    upgrades: [],
+  });
+  await expect(menuPanel(page)).toBeHidden();
+  await expect(pauseOverlay(page)).toBeHidden();
+});
+
+test('Velocidad tras volver al menú: con ?e2e&speed=8 la partida nueva va acelerada', async ({
+  page,
+}) => {
+  await playingE2E(page, gameUrl({ seed: 42, speed: E2E_SPEED }));
+  await backToMenu(page);
+
+  await menuButton(page, 'Jugar').click();
+  await expect.poll(async () => (await probe(page))?.screen).toBe('playing');
+  const start = (await snapshotOf(page))?.tick ?? 0;
+  await page.waitForTimeout(1_000);
+
+  expect((await probe(page))?.speed).toBe(E2E_SPEED);
+  expect(((await snapshotOf(page))?.tick ?? 0) - start).toBeGreaterThan(3 * 60);
+});
+
+test('Doble clic en Jugar: se crea exactamente 1 partida y avanza con normalidad', async ({
+  page,
+}) => {
+  await playingE2E(page);
+  await backToMenu(page);
+
+  await menuButton(page, 'Jugar').dblclick();
+
+  await expect.poll(async () => (await probe(page))?.screen).toBe('playing');
+  await page.waitForTimeout(1_000);
+  const after = await probe(page);
+  expect(after?.runs).toBe(2);
+  expect(after?.snapshot?.tick).toBeGreaterThan(30);
+});
+
+test('Cinco ciclos menú-partida: 6 partidas en la carga y la última juega con normalidad', async ({
+  page,
+}) => {
+  test.setTimeout(60_000);
+  const problems = collect(page, ['error']);
+  await playingE2E(page);
+  for (let i = 0; i < 5; i++) {
+    await backToMenu(page);
+    expect((await probe(page))?.screen).toBe('menu');
+    await menuButton(page, 'Jugar').click();
+    await expect.poll(async () => (await snapshotOf(page))?.tick ?? 0).toBeGreaterThan(10);
+  }
+
+  const last = await probe(page);
+  expect([last?.runs, last?.screen]).toEqual([6, 'playing']);
+  expect(last?.snapshot?.status).toBe('running');
+  expect(problems).toEqual([]);
+});

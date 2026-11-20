@@ -3,9 +3,12 @@ import { LoadProgress } from '../application/LoadProgress';
 import { RecordRun } from '../application/RecordRun';
 import type { HistoryEntry, Records } from '../domain/progress/Progress';
 import { downloadProgress } from '../infrastructure/dom/downloadProgress';
+import { MenuPanel } from '../infrastructure/dom/MenuPanel';
 import { ResultsPanel } from '../infrastructure/dom/ResultsPanel';
 import { PROGRESS_CORRUPT_WARNING } from '../infrastructure/dom/resultsPanelText';
+import { MenuController } from '../infrastructure/menu/MenuController';
 import type { SceneProgress } from '../infrastructure/phaser/GameScene';
+import type { MenuView } from '../infrastructure/phaser/MenuScene';
 import { LocalStorageProgressRepository } from '../infrastructure/progress/LocalStorageProgressRepository';
 import { ResultsProgress } from '../infrastructure/progress/ResultsProgress';
 import { SystemClock } from '../infrastructure/time/SystemClock';
@@ -21,6 +24,7 @@ export interface ProgressProbe {
 
 export interface ProgressWiring {
   readonly scene: SceneProgress;
+  readonly menu: MenuView;
   probe(): ProgressProbe;
 }
 
@@ -50,7 +54,23 @@ export function wireProgress(root: HTMLElement, seedOf: () => number): ProgressW
     },
   });
 
+  const controller = new MenuController();
+  const menuPanel = new MenuPanel(document, root, controller, {
+    onExport: () => undefined,
+    onImport: () => undefined,
+    onOpenConfirm: () => undefined,
+  });
+
   return {
+    menu: {
+      show: () => {
+        menuPanel.show();
+      },
+      hide: () => {
+        menuPanel.hide();
+      },
+      takePlay: () => controller.takePlay(),
+    },
     scene: {
       sync: (snapshot, run) => {
         panel.render(results.sync(snapshot, run));
