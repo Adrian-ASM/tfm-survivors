@@ -115,3 +115,5 @@ además, verificar con un modelo distinto del que implementa refuerza la indepen
 
 - Plan y decisiones de arranque: `docs/exploration/2026-11-19-kickoff.md`
 - GDD: `docs/gdd.md` · ADRs: `docs/adr/` · Diario de IA: `docs/ai-log/`
+- API de Phaser: MCP `phaser-docs` (`.mcp.json`, público y sin token) o `https://phaser.io/llms.txt`.
+  Su API publicada puede ir por detrás de la 4.2.1 instalada: en caso de duda mandan los tipos de `node_modules/phaser`.
