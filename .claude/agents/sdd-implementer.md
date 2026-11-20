@@ -21,6 +21,13 @@ Reglas:
 - Al tocar `src/infrastructure` (Phaser), consulta la API con el MCP `phaser-docs` (`search_phaser_docs` y
   `read_phaser_doc`, `docs: "api"`) en vez de fiarte de memoria: los modelos mezclan Phaser 3 y 4. Si la doc no
   cubre la versión instalada (4.2.1), la fuente de verdad son los tipos de `node_modules/phaser` y un test.
+  **Plan B** si no tienes las herramientas `mcp__phaser-docs__*` (la app registra los conectores con otro nombre o
+  la sesión no cargó `.mcp.json`): llama al mismo servidor por HTTP con Bash, JSON-RPC sin sesión previa:
+  `curl -s -X POST https://phaser.io/oss/docs/mcp -H "Content-Type: application/json"
+  -H "Accept: application/json, text/event-stream" -d '{"jsonrpc":"2.0","id":1,"method":"tools/call",
+  "params":{"name":"search_phaser_docs","arguments":{"query":"<consulta>","docs":"api"}}}'`
+  (igual con `read_phaser_doc` y la dirección devuelta; `"method":"tools/list"` para ver los argumentos).
+  Anota en el diario de IA qué consultaste y por qué vía.
 - Si un hook te bloquea, no lo esquives: adapta el diseño (puerto/adaptador) y anótalo para el diario de IA.
 - No instales dependencias que no estén en `design.md`.
 - Antes de usar una API del motor, compruébala en la documentación de la versión fijada.

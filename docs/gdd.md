@@ -1,4 +1,4 @@
-# GDD-lite · v1 (aprobado 2026-11-19)
+# GDD-lite · v1.1 (v1 aprobado 2026-11-19; revisado 2026-11-20, tras 0007)
 
 > Borrador generado a partir de la hoja de ruta. Lo refina el agente `game-designer`; las decisiones son del autor.
 
@@ -29,11 +29,26 @@ Teclado (WASD / flechas). Pausa con Esc. Táctil y gamepad: *Should/Could*.
 | **Could** | Login con Google + Supabase (sincronizar progreso) · reto diario con seed compartida · i18n ES/EN · PWA |
 | **Won't** | Multijugador · mapas procedurales complejos · monetización · leaderboard con re-simulación |
 
+### Estado del backlog Must (2026-11-20)
+| Estado | Contenido | Change |
+|---|---|---|
+| Hecho | Movimiento · oleadas con 3 tipos de enemigo · colisiones y vida · 2 armas automáticas | 0001–0004 |
+| Hecho | Gemas de XP · subida de nivel con 3 opciones | 0005 |
+| Hecho | Temporizador, victoria y derrota · HUD · reinicio | 0006 |
+| Hecho | Guardado local (récords + historial de 10 partidas) · exportar/importar con fusión · CSP estricta | 0007 |
+| Falta | Menú: inicio y pausa con Esc | 0009 |
+| Falta | Despliegue público | 0011 |
+
+Los changes 0008 (infraestructura de tests) y 0010 (equilibrio) no añaden Must: habilitan y protegen a los demás.
+
 ### Deuda registrada
 | Origen | Deuda | Cuándo |
 |---|---|---|
 | 0006 · W1 | Ganabilidad frágil: con un bot sencillo solo gana 1 de 10 semillas en 600 s (`balance.test.ts` fija la semilla 2). Revisar curva de oleadas y mejoras con playtest humano y más estrategias. | Change de equilibrio antes del despliegue público |
 | 0006 · W2 | Sin E2E de reinicio tras **victoria** (solo tras derrota); cubierto en tests de aplicación. | Con el change de equilibrio o el de menú |
+| 0007 · S2 | Semilla frágil: los tests fijan la semilla 90 (la que pierde antes sin input; regresión en `balance.test.ts` con tope de 4.560 ticks). Caduca si cambia el balance, y un E2E depende de ella. | Change 0010 |
+| 0007 · S4 | La semilla guardada en el historial sale del objeto `probe` de E2E (`wireProgress(root, () => probe.seed)`) en vez de una fuente propia. | Con 0009 o 0010 |
+| 0007 · E2E | La suite E2E tarda ~4,2 min (13 tests). El bucle export → recarga → import con dos derrotas ~2,7 min; cada derrota ~78 s reales. El job de CI tiene `timeout-minutes: 10`. | Change 0008 |
 
 ## Orden tentativo de changes
 0001 walking-skeleton → 0002 enemy-spawning → 0003 collisions-and-damage → 0004 auto-weapons →
@@ -48,3 +63,59 @@ Notas sobre el orden (revisado 2026-11-20, tras 0007):
 - **0010 balance-pass**: deuda de ganabilidad de 0006 (W1: 1 de 10 semillas gana con el bot) y semillas
   frágiles en tests de 0007 (S2: la 90 caduca si cambia el balance). Antes de publicar.
 - **0011 public-deploy**: último Must.
+
+## Próximos changes
+
+### 0008 e2e-fast-sim (infraestructura de tests)
+- **Objetivo**: derrota E2E de ~78 s a ~10 s y suite completa < 1 min.
+- **Alcance**: parámetro de URL tipo `?speed=N` que ejecuta varios ticks por frame **solo en el adaptador de Phaser**
+  (núcleo intacto, mismo camino que el jugador, determinismo preservado). En los E2E que solo necesitan progreso
+  guardado, sembrar `localStorage` en vez de jugar una derrota. Valorar `workers` en Playwright.
+- **Fuera de alcance**: un atajo "terminar ya" en el núcleo. Lo descartó el arquitecto en 0007: es una entrada nueva
+  al núcleo y prueba un camino distinto del real.
+- **Criterios**:
+  - Given `?speed=8` y la misma semilla, When se juega hasta la derrota, Then el resultado (tiempo de simulación,
+    nivel, kills) es idéntico al de velocidad 1.
+  - Given un E2E que solo necesita récords, When se siembra `localStorage` válido, Then no juega ninguna derrota.
+  - Given la suite E2E completa, When corre en local, Then tarda < 1 min.
+- **Riesgos**: que `?speed` llegue al jugador en producción (decidir si se limita a dev/test o se deja como opción
+  inocua); que más ticks por frame degraden el render o la entrada.
+
+### 0009 main-menu
+- **Objetivo**: cerrar el Must de menú.
+- **Alcance**: menú de inicio (jugar, exportar, importar, borrar datos) y pausa con Esc. Borrar datos queda fuera de
+  0007 y exige confirmación. Afecta al arranque, a `?seed=` y a los E2E. Recoge 0006 · W2 (E2E de reinicio tras
+  victoria) si encaja.
+- **Fuera de alcance**: ajustes de audio y accesibilidad (*Should*), arte definitivo.
+- **Criterios**:
+  - Given la partida en curso, When se pulsa Esc, Then la simulación se detiene y otra pulsación la reanuda sin
+    perder ticks.
+  - Given el menú de inicio, When se pulsa "Borrar datos" y se cancela la confirmación, Then el progreso sigue
+    intacto.
+  - Given `?seed=N` en la URL, When se pulsa "Jugar", Then la partida usa la semilla N.
+- **Riesgos**: que el menú rompa el arranque directo con `?seed=` que usan los E2E; estado de pausa que filtre al
+  núcleo (debe vivir en el adaptador o en un caso de uso explícito).
+
+### 0010 balance-pass
+- **Objetivo**: partida ganable y tests de balance que no caduquen.
+- **Alcance**: ganabilidad (0006 · W1: 1 de 10 semillas gana con el bot) y semillas frágiles (0007 · S2). Ajustar
+  `content/*.json`. **Medir en *explore*, no en *apply*** (lección de 0006).
+- **Fuera de alcance**: contenido nuevo (jefe, armas extra), meta-progresión.
+- **Criterios**:
+  - Given el bot de referencia y 10 semillas, When se simulan 600 s, Then gana al menos el porcentaje objetivo
+    acordado en *explore*.
+  - Given los tests de balance, When cambia el contenido, Then no dependen de una semilla concreta (o la derivan
+    de una medición).
+  - Given el E2E que hoy usa la semilla 90, When se actualiza, Then no depende de que esa semilla pierda antes.
+- **Riesgos**: sobreajustar al bot; playtest humano escaso; el objetivo de ganabilidad sin definir.
+
+### 0011 public-deploy
+- **Objetivo**: último Must; juego jugable en una URL pública.
+- **Alcance**: despliegue en GitHub Pages con base `/tfm-survivors/`; comprobar la CSP en producción.
+- **Fuera de alcance**: dominio propio, PWA, analítica, backend.
+- **Criterios**:
+  - Given un merge a `main` con `quality` verde, When termina el despliegue, Then la URL pública carga el juego.
+  - Given la build publicada, When se abre la consola, Then no hay violaciones de CSP.
+  - Given la URL pública, When se juega, guarda, exporta e importa, Then funciona igual que en local.
+- **Riesgos**: rutas con base distinta de `/` que rompan assets; CSP que bloquee algo que en local no falla;
+  consumo de minutos de CI en el plan gratuito.
