@@ -99,7 +99,7 @@ Sin tareas: el dominio no cambia (`run-state` sin delta). La pausa y el menú qu
   `src/infrastructure/progress/ResultsProgress.ts`, `tests/infrastructure/menu-progress.test.ts`.
 
 ## 4. Composición, escenas y paneles
-- [ ] 4.1 `createRunLauncher`. Tests:
+- [x] 4.1 `createRunLauncher`. Tests:
   - la 1.ª `launch()` con `urlSeed` 42 usa la 42;
   - con una fuente que da 123, la 2.ª usa la 123;
   - `onStart` se llama una vez por partida (`runs`);
