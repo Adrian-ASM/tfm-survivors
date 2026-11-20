@@ -64,7 +64,7 @@ Sin tareas: `src/application` no cambia (`TickRun`, `FixedStepLoop` y `MAX_FRAME
   - `npm run verify`: el guardarraíl confirma que no se toca `src/domain` ni `src/application`.
 
 ## 4. E2E, tooling y documentación
-- [ ] 4.1 `tests/e2e/progressFixtures.ts`:
+- [x] 4.1 `tests/e2e/progressFixtures.ts`:
   - `progressText({ records, history })` con `encodeProgress` y comprobación con `decodeProgress`; lanza si no es
     `ok`;
   - `seedProgress(page, text)`, de un solo uso por pestaña con guarda en `sessionStorage`;
