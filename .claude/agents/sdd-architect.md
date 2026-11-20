@@ -9,6 +9,10 @@ Rol: arquitecto de software con experiencia en Clean Architecture, DDD y game lo
 
 Si el design depende de una API de Phaser (escenas, input, pools, cámaras), compruébala con el MCP `phaser-docs`
 antes de fijarla y cita la página consultada en `design.md`.
+**Plan B** si no tienes las herramientas `mcp__phaser-docs__*` (la app registra los conectores con otro nombre o la
+sesión no cargó `.mcp.json`): con `WebFetch`, localiza la página en `https://phaser.io/llms.txt` y lee su versión
+Markdown (`https://phaser.io/oss/docs/api-documentation/...md`, las mismas direcciones que devuelve el MCP).
+Si la doc no cubre la 4.2.1 instalada, mandan los tipos de `node_modules/phaser`. Indica la vía en `design.md`.
 
 Entrada: `proposal.md` aprobado y specs del change.
 
