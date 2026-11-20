@@ -93,7 +93,7 @@
   "URL objetivo alternativa", "URL objetivo inválida" y "URL objetivo que no responde".
 
 ## 4. Documentación
-- [ ] 4.1 `tests/guardrails/deploy-docs.test.ts`, primero en rojo por el README. Comprueba que `README.md`
+- [x] 4.1 `tests/guardrails/deploy-docs.test.ts`, primero en rojo por el README. Comprueba que `README.md`
   contiene `https://adrian-asm.github.io/tfm-survivors/`, `npm run smoke:public`, `smoke-public` y
   `workflow_dispatch`, y que ADR-0004 nombra `frame-ancestors`, `report-uri` y `sandbox` y menciona el
   clickjacking (el apartado ya está escrito en design). Para ponerlo en verde, en el README: enlace a la URL

@@ -4,7 +4,7 @@
 
 | | |
 |---|---|
-| **Jugar** | https://adrian-asm.github.io/tfm-survivors/ (se publica desde `main`) |
+| **Jugar** | [https://adrian-asm.github.io/tfm-survivors/](https://adrian-asm.github.io/tfm-survivors/) (se publica desde `main`) |
 | **Slides** | _URL pública_ |
 | **Vídeo** | _URL pública (con captura de pantalla)_ |
 | **Usuario de prueba** | No aplica en la fase 1 (sin login). |
@@ -58,6 +58,27 @@ tests/                    domain · application · infrastructure · guardrails 
 
 ## 7. Despliegue
 GitHub Pages desde `main` mediante `.github/workflows/ci.yml` (requiere *Settings → Pages → Source: GitHub Actions*).
+El job `deploy` solo corre en un push a `main` con `quality` y `e2e` en verde; los PR y los push solo de
+documentación no publican. URL pública: <https://adrian-asm.github.io/tfm-survivors/>.
+
+### Smoke contra la URL publicada (a demanda)
+Comprueba que la build publicada carga sin violaciones de CSP ni recursos rotos y que jugar, guardar, exportar,
+importar y recargar funcionan (change 0011). No forma parte de `verify` ni de `test:e2e`, y no construye la app ni
+levanta ningún servidor.
+
+```bash
+npm run smoke:public                                                  # contra la URL pública
+SMOKE_URL=https://adrian-asm.github.io/tfm-survivors npm run smoke:public   # otra URL objetivo
+```
+
+En PowerShell: `$env:SMOKE_URL='http://localhost:4173/tfm-survivors/'; npm.cmd run smoke:public`.
+Para un objetivo en `localhost`, levanta antes la build: `npm run build && npm run preview` (puerto 4173). Contra
+`localhost` se saltan los tests de 404 y de HTTP→HTTPS, que solo tienen sentido en GitHub Pages. Si la URL no
+responde con 200, el smoke falla en menos de un minuto con el mensaje "no llegó a estado 200".
+
+Desde GitHub Actions: workflow `smoke-public` (*Actions → smoke-public → Run workflow*). Solo se dispara con
+`workflow_dispatch` y tiene un input opcional `url` (por defecto, la URL pública). Si falla, sube el informe
+`playwright-report/smoke` como artefacto.
 
 ## Licencia y créditos
 _Pendiente (incluir procedencia de assets generados con IA)._
