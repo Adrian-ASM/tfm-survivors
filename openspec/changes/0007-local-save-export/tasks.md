@@ -119,7 +119,7 @@
 - [x] 4.3 `progress.spec.ts` (2), almacenamiento bloqueado: `addInitScript` con getter de `localStorage` que lanza
   `SecurityError`, semilla `F` de 0.1 ⇒ overlay con `no se guarda`, récords y botones → R ⇒ `running`, sin errores de
   consola. — escenarios: PP "Almacenamiento bloqueado"; RR "Aviso sin persistencia"
-- [ ] 4.4 `results.spec.ts`: nada más observar `over`, pulsar R y comprobar que el valor guardado ya tiene 1 entrada
+- [x] 4.4 `results.spec.ts`: nada más observar `over`, pulsar R y comprobar que el valor guardado ya tiene 1 entrada
   con el tick de la derrota; el resto del test no cambia. — escenarios: PP "Reinicio inmediato"; RR "Derrota y
   reinicio en el navegador"
 - [ ] 4.5 Cierre: comprobación manual de `npm run dev` (carga, una edición de `styles.css` por HMR, consola sin

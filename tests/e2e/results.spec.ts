@@ -35,6 +35,17 @@ test('Derrota y reinicio en el navegador: ?seed=42 sin input pierde, muestra res
   });
 
   await page.keyboard.press('r');
+  // Reinicio inmediato (spec progress-persistence): nada más pulsar R, la partida ya está guardada.
+  const saved = await page.evaluate(() => window.localStorage.getItem('sprint-survivors/progress'));
+  const doc = JSON.parse(saved ?? 'null') as { history: Record<string, unknown>[] } | null;
+  expect(doc?.history).toHaveLength(1);
+  expect(doc?.history[0]).toMatchObject({
+    seed: 42,
+    outcome: 'defeat',
+    timeSeconds: Math.floor((ended?.tick ?? 0) / 60),
+    level: ended?.progression.level,
+    kills: ended?.kills,
+  });
   await expect.poll(async () => (await snapshotOf(page))?.status).toBe('running');
   const fresh = await probe(page);
 
