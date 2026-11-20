@@ -85,7 +85,7 @@ Sin tareas: `src/application` no cambia (`TickRun`, `FixedStepLoop` y `MAX_FRAME
   - Escenarios: SL "La velocidad se mantiene al reiniciar" (en el navegador) y los de `run-results`,
     `player-health` y `upgrades` que esos E2E ya cubrían, sin cambio de comportamiento.
   - Si `kills: 0` / `xp: 0` tras R fallan, aplicar la mitigación del design (Riesgos).
-- [ ] 4.3 Reescribir `progress.spec.ts`:
+- [x] 4.3 Reescribir `progress.spec.ts`:
   - **Bucle**: P0 sembrado → `?e2e&seed=42&speed=8` → 1 derrota → exportar (2 entradas, igual al guardado) →
     60 frames sin cambios → importar el exportado (sin cambios y mensaje de éxito) → importar F (récords
     (300, 20, bajas)) → rechazos (`hola` y 64 KiB + 1) → CSP sin violaciones → R → recargar → progreso cargado igual
