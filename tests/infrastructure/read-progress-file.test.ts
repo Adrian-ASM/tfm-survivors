@@ -59,6 +59,16 @@ describe('readProgressFile (spec progress-persistence, "Rechazo de imports invá
   });
 });
 
+describe('readProgressFile ante una lectura fallida', () => {
+  it('si text() rechaza, devuelve un error de contenido no válido sin lanzar', async () => {
+    const file = { size: 10, text: () => Promise.reject(new Error('NotReadableError')) };
+
+    const read = await readProgressFile(file);
+
+    expect(read.ok ? null : read.error.code).toBe('invalid');
+  });
+});
+
 describe('pickedFile (spec "Si se cancela el selector de fichero, nada cambia")', () => {
   const list = (files: File[]) => ({
     length: files.length,

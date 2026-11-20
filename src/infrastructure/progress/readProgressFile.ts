@@ -16,5 +16,11 @@ export async function readProgressFile(
   file: Pick<Blob, 'size' | 'text'>,
 ): Promise<Result<Progress, ImportFileError>> {
   if (file.size > MAX_IMPORT_BYTES) return err({ code: 'too-large' });
-  return decodeProgress(await file.text());
+  let text: string;
+  try {
+    text = await file.text();
+  } catch {
+    return err({ code: 'invalid', message: 'no se pudo leer el fichero' });
+  }
+  return decodeProgress(text);
 }

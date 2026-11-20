@@ -88,7 +88,7 @@
   partida", "Fichero demasiado grande", "Fichero no JSON o fuera de esquema"; RR "Sin overlay durante la partida",
   "Mensajes que no se arrastran", "Aviso sin persistencia", "Aviso de datos dañados solo en la primera partida",
   "Récords tras importar"
-- [ ] 3.7 Cableado en el navegador (agrupado: nada de esto pone un test unitario en rojo): `SystemClock`,
+- [x] 3.7 Cableado en el navegador (agrupado: nada de esto pone un test unitario en rojo): `SystemClock`,
   `dom/ResultsPanel.ts` (`textContent`, `hidden`, `blur()`, `pickedFile`), `dom/downloadProgress.ts`, parámetro
   `SceneProgress` en `GameScene` (`progress.sync` en `render`), `src/styles.css` (estilos movidos de `index.html` +
   panel) enlazado con `<link>`, `main.ts` (`LoadProgress`, `console.warn` único si `corrupt`, casos de uso,

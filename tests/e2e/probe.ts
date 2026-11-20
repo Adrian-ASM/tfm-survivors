@@ -32,15 +32,40 @@ export interface ResultsViewData {
   hint: string;
 }
 
+export interface HistoryEntryView {
+  playedAt: number;
+  seed: number;
+  outcome: 'won' | 'lost';
+  timeSeconds: number;
+  level: number;
+  kills: number;
+}
+
+/** Progreso en uso y lo que muestra el panel de resultados (null en ambos si está oculto). */
+export interface ProgressView {
+  records: { bestTimeSeconds: number; bestLevel: number; maxKills: number };
+  history: HistoryEntryView[];
+  shown: string[] | null;
+  message: string | null;
+  notices: string[];
+}
+
 interface Probe {
-  __sprint?: { seed: number; snapshot: SnapshotView | null; results: ResultsViewData | null };
+  __sprint?: {
+    seed: number;
+    snapshot: SnapshotView | null;
+    results: ResultsViewData | null;
+    progress: ProgressView | null;
+  };
 }
 
 /** Lee el probe `window.__sprint` (solo existe con ?e2e). */
 export const probe = (page: Page) =>
   page.evaluate(() => {
     const p = (window as unknown as Probe).__sprint;
-    return p ? { seed: p.seed, snapshot: p.snapshot, results: p.results } : null;
+    return p
+      ? { seed: p.seed, snapshot: p.snapshot, results: p.results, progress: p.progress }
+      : null;
   });
 
 /**
