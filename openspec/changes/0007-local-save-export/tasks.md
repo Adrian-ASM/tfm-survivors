@@ -79,7 +79,7 @@
   `Máx. bajas 41`; (300, 10, 120) ⇒ `05:00`; (250, 10, 90) ⇒ `04:10`; textos contienen `importado`, `64 KiB`,
   `no válido`, `no se guarda`, `dañados`; el aviso de consola contiene `progress`. — escenarios: RR "Récords en la
   primera partida", "Récords anteriores mejores que la partida", "Récords tras importar"
-- [ ] 3.6 `progress/ResultsProgress.ts` (presentador). Rojo: `tests/infrastructure/results-progress.test.ts`:
+- [x] 3.6 `progress/ResultsProgress.ts` (presentador). Rojo: `tests/infrastructure/results-progress.test.ts`:
   `running`/`choosing` ⇒ `null`; `over` ⇒ vista con récords y 300 `sync` ⇒ 1 escritura; `sync` en `over` seguido de
   `RestartRun` ⇒ guardado hecho antes del tick 1 de la nueva; import válido ⇒ récords fusionados + `importado`;
   65.537 bytes / `hola` ⇒ mensaje y progreso y guardado sin cambios; mensaje de rechazo no aparece en la vista de la
