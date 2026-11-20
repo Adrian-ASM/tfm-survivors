@@ -1,4 +1,5 @@
 import type {
+  ProgressClearError,
   ProgressLoadError,
   ProgressRepository,
   ProgressSaveError,
@@ -10,7 +11,7 @@ import { decodeProgress, encodeProgress } from './progressCodec';
 /** Clave con espacio de nombres: GitHub Pages comparte el origen entre repos (ADR-0010). */
 export const PROGRESS_STORAGE_KEY = 'sprint-survivors/progress';
 
-export type ProgressStorage = Pick<Storage, 'getItem' | 'setItem'>;
+export type ProgressStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 
 /**
  * Adaptador de `ProgressRepository` sobre `localStorage`. Recibe una función porque acceder a
@@ -42,6 +43,16 @@ export class LocalStorageProgressRepository implements ProgressRepository {
       return ok(undefined);
     } catch (e) {
       return err({ code: isQuotaExceeded(e) ? 'quota-exceeded' : 'unavailable' });
+    }
+  }
+
+  /** Nunca lanza: borra solo la clave del progreso (no escribe el progreso vacío). */
+  clear(): Result<void, ProgressClearError> {
+    try {
+      this.storage().removeItem(this.key);
+      return ok(undefined);
+    } catch {
+      return err({ code: 'unavailable' });
     }
   }
 }

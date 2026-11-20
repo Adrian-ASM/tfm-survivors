@@ -242,3 +242,16 @@ describe('TickRun · sin tiempo acumulado con la partida terminada (0006)', () =
     expect([snap.tick, snap.outcome, loop.accumulatedMs]).toEqual([60, 'won', 0]);
   });
 });
+
+describe('TickRun · sobrante descartado al pausar (0009)', () => {
+  it('Scenario: Sobrante descartado al pausar (25 ms, descarte, 8,334 ms: 0 ticks; otro: 1)', () => {
+    const tickRun = start();
+    const first = tickRun.execute(25, PlayerInput.NONE);
+
+    tickRun.discardPending();
+    const afterDiscard = tickRun.execute(8.334, PlayerInput.NONE);
+    const next = tickRun.execute(8.334, PlayerInput.NONE);
+
+    expect([first.tick, afterDiscard.tick, next.tick]).toEqual([1, 1, 2]);
+  });
+});

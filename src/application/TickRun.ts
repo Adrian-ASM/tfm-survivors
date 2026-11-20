@@ -28,6 +28,14 @@ export class TickRun {
     return this.run.snapshot();
   }
 
+  /**
+   * Descarta el tiempo sobrante del acumulador sin ejecutar ticks. Lo usa la pausa del adaptador
+   * (spec simulation-loop, "Sobrante descartado al pausar"); no cambia ninguna regla de `Run`.
+   */
+  discardPending(): void {
+    this.loop.reset();
+  }
+
   /** Estado de la partida (lectura barata, sin snapshot; lo usa `RestartRun`). */
   get status(): RunStatus {
     return this.run.status;

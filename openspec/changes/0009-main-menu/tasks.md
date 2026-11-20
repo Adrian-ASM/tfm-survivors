@@ -14,11 +14,11 @@
 Sin tareas: el dominio no cambia (`run-state` sin delta). La pausa y el menú quedan fuera de `Run`.
 
 ## 2. Aplicación
-- [ ] 2.1 `TickRun.discardPending()`, que llama a `loop.reset()`. Test: tras un frame de 25 ms (1 tick y
+- [x] 2.1 `TickRun.discardPending()`, que llama a `loop.reset()`. Test: tras un frame de 25 ms (1 tick y
   8,333 ms sobrantes), `discardPending()` hace que un frame de 8,334 ms dé 0 ticks y un segundo de 8,334 ms dé 1.
   — SL "Sobrante descartado al pausar".
   Ficheros: `src/application/TickRun.ts`, `tests/application/loop.test.ts`.
-- [ ] 2.2 `ProgressRepository.clear()` con `ProgressClearError` (`unavailable | failed`). Primero el contrato
+- [x] 2.2 `ProgressRepository.clear()` con `ProgressClearError` (`unavailable | failed`). Primero el contrato
   compartido en rojo: tras `clear()`, `load()` da `ok(null)`; `clear()` sin nada guardado da `ok`. Después,
   `InMemoryProgressRepository` con `clear`, error programable y contadores `writes` / `clears`, y `FakeStorage` con
   `removeItem` y `removeError`. — PP "Borrar el progreso vacío" y "Borrado confirmado" (parte del repositorio).
