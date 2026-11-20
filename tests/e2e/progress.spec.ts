@@ -152,14 +152,18 @@ test('Exportar, recargar e importar en el navegador (?seed=42, bucle completo y 
   const afterImport = await exportFile(page);
   expect((JSON.parse(afterImport.text) as { history: unknown[] }).history).toHaveLength(2);
 
-  // Imports rechazados: mensaje y ni récords ni export cambian.
-  await importFile(page, 'hola');
-  await expect(message(page)).toContainText('no válido');
-  await importFile(page, ' '.repeat(MAX_IMPORT_BYTES + 1));
-  await expect(message(page)).toContainText('64 KiB');
-  expect((await probe(page))?.progress?.records).toEqual(merged);
-  expect((await exportFile(page)).text).toBe(afterImport.text);
-  expect(await snapshotOf(page)).toEqual(second);
+  // Spec run-results, "Imports rechazados en el navegador" (y progress-persistence, "Fichero demasiado
+  // grande" / "Fichero no JSON o fuera de esquema"): mensaje y ni récords ni export cambian. Va dentro de
+  // este test porque necesita una partida terminada (otra derrota costaría ~80 s más).
+  await test.step('Scenario: Imports rechazados en el navegador', async () => {
+    await importFile(page, 'hola');
+    await expect(message(page)).toContainText('no válido');
+    await importFile(page, ' '.repeat(MAX_IMPORT_BYTES + 1));
+    await expect(message(page)).toContainText('64 KiB');
+    expect((await probe(page))?.progress?.records).toEqual(merged);
+    expect((await exportFile(page)).text).toBe(afterImport.text);
+    expect(await snapshotOf(page)).toEqual(second);
+  });
 
   // R tras usar los botones: 1 partida nueva en curso y el panel oculto.
   const seedBefore = (await probe(page))?.seed;
