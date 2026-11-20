@@ -33,6 +33,21 @@ ataque, secretos y coste. Aun así, un login real con Google aporta valor al TFM
   guardarraíl). La validación de entradas externas no cambia. Detalle en `openspec/changes/0007-local-save-export/
   design.md`, sección CSP.
 
+### Riesgo aceptado: cabeceras en GitHub Pages (2026-11-20, change 0011-public-deploy)
+- GitHub Pages no permite definir cabeceras HTTP propias. La CSP solo se aplica por `<meta>`, y el navegador
+  ignora en una meta las directivas `frame-ancestors`, `report-uri`/`report-to` y `sandbox`. Por eso no se declaran
+  (lo comprueba `tests/guardrails/csp.test.ts`) y **no se aplican en producción**.
+- Consecuencias aceptadas en la fase 1:
+  - **Clickjacking**: cualquier página ajena puede incrustar el juego en un iframe. El impacto es bajo: no hay
+    cuentas ni datos sensibles, el progreso es local y exportable, y "Borrar datos" pide confirmación propia.
+  - **Sin informes de violaciones**: una violación de CSP en producción no se notifica a nadie. Se detecta con el
+    smoke a demanda contra la URL pública (`npm run smoke:public` o el workflow `smoke-public`).
+- Alternativa descartada: *frame-busting* por JS (`top !== self`). Se puede saltar con `<iframe sandbox>` y no
+  compensa sin datos que proteger.
+- **Revisar** si el juego se sirve desde un hosting que admita cabeceras (p. ej. `_headers`) o al empezar la
+  fase 2 con login. Con cuentas, el clickjacking deja de ser aceptable y habrá que aplicar `frame-ancestors 'none'`
+  por cabecera.
+
 ## Consecuencias
 - Fase 1: cero coste y cero secretos; el progreso se pierde si se borran los datos del navegador (mitigado con export).
 - Fase 2: depende de la disponibilidad del plan gratuito (los proyectos inactivos pueden pausarse): comprobar sus

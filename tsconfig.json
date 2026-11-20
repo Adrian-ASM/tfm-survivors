@@ -17,5 +17,5 @@
     "noEmit": true,
     "allowImportingTsExtensions": true
   },
-  "include": ["src", "tests", "content", "config", "vite.config.ts", "playwright.config.ts"]
+  "include": ["src", "tests", "content", "config", "vite.config.ts", "playwright.config.ts", "playwright.remote.config.ts"]
 }
