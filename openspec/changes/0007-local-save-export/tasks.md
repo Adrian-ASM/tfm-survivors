@@ -95,7 +95,7 @@
   `seedOf`, probe `progress`) y `tests/e2e/probe.ts` con `progress`. Rojo: `smoke.spec.ts` amplía: `probe.progress`
   no nulo con récords a 0 y botones `Exportar`/`Importar` no visibles durante la partida. Comprobar a mano una
   derrota con `npm run build && npm run preview`. — escenario: RR "Sin overlay durante la partida"
-- [ ] 3.8 CSP: `<meta http-equiv="Content-Security-Policy">` en `index.html` (política de design §CSP),
+- [x] 3.8 CSP: `<meta http-equiv="Content-Security-Policy">` en `index.html` (política de design §CSP),
   `config/csp.ts` (`relaxCspForDev`, `devCsp` con `apply: 'serve'`), registro en `vite.config.ts` y `config` en
   `tsconfig.json`. Rojo: `tests/guardrails/csp.test.ts` (una sola meta, primera tras `charset`, `default-src 'self'`,
   `object-src 'none'`, sin `'unsafe-eval'`, sin `'unsafe-inline'` en `script-src`/`default-src`, sin `http:`/

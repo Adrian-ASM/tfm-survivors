@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { collect, probe, snapshotOf } from './probe';
+import { collect, cspState, probe, snapshotOf, watchCsp } from './probe';
 
 interface Probe {
   __sprint?: { snapshot: { tick: number; player: { x: number; y: number } } | null };
@@ -8,10 +8,11 @@ interface Probe {
 const playerX = (page: Page): Promise<number | null> =>
   page.evaluate(() => (window as unknown as Probe).__sprint?.snapshot?.player.x ?? null);
 
-test('Sin overlay durante la partida: progreso vacío y sin botones Exportar/Importar', async ({
+test('Sin overlay durante la partida: progreso vacío, sin botones y CSP sin violaciones', async ({
   page,
 }) => {
   const problems = collect(page, ['error', 'warning']);
+  await watchCsp(page);
   await page.goto('./?e2e');
   await expect.poll(async () => (await snapshotOf(page))?.tick ?? 0).toBeGreaterThan(30);
 
@@ -24,6 +25,8 @@ test('Sin overlay durante la partida: progreso vacío y sin botones Exportar/Imp
   });
   await expect(page.getByRole('button', { name: 'Exportar' })).toBeHidden();
   await expect(page.getByRole('button', { name: 'Importar' })).toBeHidden();
+  // Spec progress-persistence, CSP: una sola meta en la página servida y ninguna violación al cargar.
+  expect(await cspState(page)).toEqual({ violations: [], metas: 1 });
   expect(problems).toEqual([]);
 });
 

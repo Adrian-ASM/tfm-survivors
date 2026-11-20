@@ -116,3 +116,30 @@ export function collect(page: Page, types: string[]): string[] {
   });
   return messages;
 }
+
+interface CspWindow {
+  __cspViolations?: string[];
+}
+
+/**
+ * Registra los eventos `securitypolicyviolation` de la página desde antes de cargarla (spec
+ * progress-persistence, "Sin violaciones en el bucle completo"). Llamar antes de `goto`.
+ */
+export async function watchCsp(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const list: string[] = [];
+    (window as unknown as CspWindow).__cspViolations = list;
+    document.addEventListener('securitypolicyviolation', (e) => {
+      list.push(
+        `${e.violatedDirective} ${e.blockedURI} @ ${e.sourceFile}:${String(e.lineNumber)}:${String(e.columnNumber)}`,
+      );
+    });
+  });
+}
+
+/** Violaciones de CSP registradas por `watchCsp` y número de metas CSP de la página servida. */
+export const cspState = (page: Page) =>
+  page.evaluate(() => ({
+    violations: (window as unknown as CspWindow).__cspViolations ?? null,
+    metas: document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]').length,
+  }));

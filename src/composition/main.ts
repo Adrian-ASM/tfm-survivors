@@ -1,4 +1,6 @@
 // Composition root (AGENTS.md §3.4): el único sitio que conoce las implementaciones concretas.
+// Primero: configura zod antes de que se construya ningún esquema (CSP sin 'unsafe-eval').
+import '../infrastructure/validation/cspSafeZod';
 import Phaser from 'phaser';
 import { RestartRun } from '../application/RestartRun';
 import { StartRun } from '../application/StartRun';
