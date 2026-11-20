@@ -27,7 +27,7 @@
 - [x] 1.2 `progress/recordEntry.ts`. Rojo: en `progress.test.ts`, récords (300, 8, 120) + (250 s, 10, 90) ⇒
   (300, 10, 120); victoria tick 36.000 ⇒ (600, 18, 2150); 10 entradas `playedAt` 1–10 + 11 ⇒ 11…2 y récords que no
   bajan. — escenarios: PP "Récords independientes", "Victoria", "Historial lleno"
-- [ ] 1.3 `progress/mergeProgress.ts`. Rojo: `tests/domain/merge-progress.test.ts`: máximos (300, 8, 120) ∪
+- [x] 1.3 `progress/mergeProgress.ts`. Rojo: `tests/domain/merge-progress.test.ts`: máximos (300, 8, 120) ∪
   (250, 10, 90) ⇒ (300, 10, 120); impares 1–19 ∪ pares 2–20 ⇒ 20…11; `merge(A, B)` = `merge(B, A)` con `playedAt`
   empatado; `merge(P, P)` = P y `merge(merge(P, F), F)` = `merge(P, F)`; propiedades sobre 200 pares generados con
   `Mulberry32` de semilla fija (conmutativa, idempotente, ≤ 10 entradas, orden descendente). — escenarios: PP
