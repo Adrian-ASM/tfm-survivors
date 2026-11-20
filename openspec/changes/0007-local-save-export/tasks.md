@@ -18,7 +18,7 @@
   en design §Medición. — escenario: RR "Exportar, recargar e importar en el navegador"
 
 ## 1. Dominio
-- [ ] 1.1 `domain/progress/Progress.ts` (`Records`, `HistoryEntry`, `Progress`, `EMPTY_PROGRESS`,
+- [x] 1.1 `domain/progress/Progress.ts` (`Records`, `HistoryEntry`, `Progress`, `EMPTY_PROGRESS`,
   `HISTORY_LIMIT`) + `progress/history.ts` (`compareEntries`, `normalizeHistory`) + `shared/Clock.ts` (solo la
   interfaz) + `survivedSeconds` en `shared/Tick.ts`, y `resultsText.survivedClock` pasa a usarla (los tests de 0006
   siguen verdes). Rojo: `tests/domain/progress.test.ts` (vacío; `playedAt` 1.000/3.000/2.000 ⇒ 3.000/2.000/1.000;
