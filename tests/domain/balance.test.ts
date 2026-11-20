@@ -83,6 +83,22 @@ describe('Plazos con progresión (0005, medidos en el punto de control 0.3)', ()
   });
 });
 
+// Tarea 0.1 de 0007 (design, sección Medición): semillas 1–200 sin input y con la política de
+// elección fija; la 42 muere en el tick 4682 y la más rápida, la 90, en el 4501 (≈ 75,02 s). Plazo
+// del E2E de almacenamiento bloqueado: 76 s de juego.
+const FAST_DEFEAT_SEED = 90;
+const FAST_DEFEAT_LIMIT = 76 * 60;
+
+describe('Semilla rápida para el E2E de almacenamiento bloqueado (0007)', () => {
+  it('Scenario: Almacenamiento bloqueado (plazo): semilla 90 sin input pierde en ≤ 4.560 ticks', () => {
+    const run = startDefault(FAST_DEFEAT_SEED);
+
+    play(run, FAST_DEFEAT_LIMIT);
+
+    expect(run.snapshot()).toMatchObject({ status: 'over', outcome: 'lost' });
+  });
+});
+
 // Tarea 0.2 de 0006 (design, sección Medición): con el tramo de 180 s a 2,5/s, la semilla 2 con
 // `fleeInput` y la política de elección fija llega viva al tick 36.000.
 const WIN_SEED = 2;
