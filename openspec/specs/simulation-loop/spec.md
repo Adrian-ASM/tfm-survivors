@@ -639,7 +639,10 @@ MUST ser idéntico al actual.
 El sistema SHALL producir el mismo desenlace de partida con cualquier velocidad N en `1..15` para la misma semilla,
 el mismo contenido, input constante y la política de elección fija: resultado (victoria o derrota), tick en que
 termina, nivel, bajas y lista de mejoras adquiridas con sus niveles MUST ser idénticos a los de velocidad 1. La
-velocidad solo cambia cuántos ticks se ejecutan por frame, no cuáles ni en qué orden.
+velocidad solo cambia cuántos ticks se ejecutan por frame, no cuáles ni en qué orden. Los escenarios de derrota usan
+semillas del conjunto 1..50, en el que un jugador quieto pierde antes de 180 s con cualquier semilla (ver
+`run-outcome`, "Partida ganable y perdible con el contenido por defecto"); no dependen de que una semilla concreta
+pierda antes que otra.
 
 #### Scenario: Derrota equivalente con la semilla 42
 - **GIVEN** cuatro partidas con el contenido por defecto, la semilla 42, input (0, 0) constante y la política de
@@ -648,12 +651,12 @@ velocidad solo cambia cuántos ticks se ejecutan por frame, no cuáles ni en qu�
 - **THEN** las cuatro terminan con el mismo resultado, en el mismo tick, con el mismo nivel, las mismas bajas y la
   misma lista de mejoras adquiridas con sus niveles
 
-#### Scenario: Derrota equivalente con la semilla 90
-- **GIVEN** dos partidas con el contenido por defecto, la semilla 90, input (0, 0) constante y la política de
-  elección fija, a velocidades 1 y 8
+#### Scenario: Derrota equivalente con otra semilla del conjunto
+- **GIVEN** dos partidas con el contenido por defecto, la semilla 7 (del conjunto 1..50), input (0, 0) constante y
+  la política de elección fija, a velocidades 1 y 8
 - **WHEN** el motor informa de frames de 16,667 ms hasta que cada partida termina o hasta 36.000 ticks
-- **THEN** ambas terminan con el mismo resultado, en el mismo tick, con el mismo nivel, las mismas bajas y la misma
-  lista de mejoras adquiridas con sus niveles
+- **THEN** ambas terminan con resultado derrota antes del tick 10.800, en el mismo tick, con el mismo nivel, las
+  mismas bajas y la misma lista de mejoras adquiridas con sus niveles
 
 #### Scenario: Equivalencia con frames irregulares
 - **GIVEN** dos partidas con el contenido por defecto, la semilla 7, input (1, 0) constante y la política de
@@ -746,3 +749,4 @@ al pulsar `Jugar` tras `Volver al menú`. Ninguna de ellas vuelve a leer la URL 
 <!-- historial: 0006-run-lifecycle-hud (2026-11-20) -->
 <!-- historial: 0008-e2e-fast-sim (2026-11-20) -->
 <!-- historial: 0009-main-menu (2026-11-20) -->
+<!-- historial: 0010-balance-pass (2026-11-20) -->

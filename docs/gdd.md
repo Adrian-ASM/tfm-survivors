@@ -44,9 +44,9 @@ Los changes 0008 (infraestructura de tests) y 0010 (equilibrio) no añaden Must:
 ### Deuda registrada
 | Origen | Deuda | Cuándo |
 |---|---|---|
-| 0006 · W1 | Ganabilidad frágil: con un bot sencillo solo gana 1 de 10 semillas en 600 s (`balance.test.ts` fija la semilla 2). Revisar curva de oleadas y mejoras con playtest humano y más estrategias. | Change de equilibrio antes del despliegue público |
+| 0006 · W1 | **Saldada en 0010.** Ganabilidad frágil (1 de 10 semillas con el bot sencillo, semilla 2 fija). Ahora el bot de referencia gana 30 de las semillas 1..50 y el test comprueba la banda 25–35. Sigue pendiente un playtest humano. | Change 0010 (hecho) |
 | 0006 · W2 | Sin E2E de reinicio tras **victoria** (solo tras derrota); cubierto en tests de aplicación. | Con el change de equilibrio o el de menú |
-| 0007 · S2 | Semilla frágil: los tests fijan la semilla 90 (la que pierde antes sin input; regresión en `balance.test.ts` con tope de 4.560 ticks). Caduca si cambia el balance, y un E2E depende de ella. | Change 0010 |
+| 0007 · S2 | **Saldada en 0010.** Semilla frágil 90. Los E2E de derrota usan la 42, que forma parte del conjunto y está cubierta por el invariante "quieto pierde antes de 180 s" sobre las semillas 1..50. | Change 0010 (hecho) |
 | 0007 · S4 | La semilla guardada en el historial sale del objeto `probe` de E2E (`wireProgress(root, () => probe.seed)`) en vez de una fuente propia. | Con 0009 o 0010 |
 | 0007 · E2E | **Saldada en 0008.** La suite E2E tardaba ~4,2 min (13 tests); cada derrota ~78 s reales. Ahora `?e2e&speed=8` (derrota en ~10 s), progreso sembrado (como mucho 1 derrota por test), 2 workers y `timeout-minutes: 6` en el job `e2e`. | Change 0008 (hecho) |
 | 0008 · W2 | `.husky/pre-commit` no ejecuta `typecheck`: un commit local de 0008 entró con un error de `tsc` que solo habría cazado el CI. Añadir `tsc --noEmit` a un pre-push (o al pre-commit si el tiempo lo permite). | Próximo change de tooling o con 0009 |
@@ -55,6 +55,8 @@ Los changes 0008 (infraestructura de tests) y 0010 (equilibrio) no añaden Must:
 | 0009 · W1 | La sonda E2E no expone la visibilidad del HUD: "HUD en el menú" y "HUD tras Volver al menú" solo se cubren por capas (tests de Node), no en navegador. | Si un change toca el HUD o la sonda |
 | 0009 · W2 | Sin E2E que compruebe los sprites tras Volver al menú ni el escenario "Cinco ciclos menú-partida" (la sonda no cuenta sprites); la limpieza depende de que Phaser destruya la escena al apagarla. | Con el change de arte o si aparece una fuga |
 | 0009 · W6 | Dos E2E juegan con semilla aleatoria (lo exige la spec tras Volver al menú) a `speed=15`: duración no determinista, timeout holgado. | Vigilar el job `e2e` |
+| 0010 · W1 | "Sin semillas sueltas de balance" se comprueba con grep, sin test automático que lo vigile. | Si reaparecen semillas fijas |
+| 0010 · W2 | Margen estrecho de la tasa: 30/50 en una banda 25–35, con ±3–4 victorias de ruido entre factores contiguos. Un ajuste pequeño de contenido puede sacarla de la banda: hay que volver a medir. | Cualquier change que toque `content/` |
 | 0009 · S5 | El test de "Primer frame tras Jugar" declara 601 frames de menú que no llega a pasar al bucle; la garantía es estructural (bucle nuevo por partida). | Con 0010 si se toca `run-launcher.test.ts` |
 
 ## Orden tentativo de changes
@@ -103,7 +105,10 @@ Notas sobre el orden (revisado 2026-11-20, tras 0007):
 - **Riesgos**: que el menú rompa el arranque directo con `?seed=` que usan los E2E; estado de pausa que filtre al
   núcleo (debe vivir en el adaptador o en un caso de uso explícito).
 
-### 0010 balance-pass
+### 0010 balance-pass · hecho (PR #20)
+- **Resultado**: con el bot de referencia (huida + elección priorizada) gana 30 de las semillas 1..50 (banda
+  25–35) y quieto pierde con todas antes de 180 s (máx. ~94 s). Palanca: `budgetPerSecond` ×0,8 en los tramos de
+  300 y 480 s. El criterio de "10 semillas" pasó a 50 con banda de tasa; ver spec viva `run-outcome`.
 - **Objetivo**: partida ganable y tests de balance que no caduquen.
 - **Alcance**: ganabilidad (0006 · W1: 1 de 10 semillas gana con el bot) y semillas frágiles (0007 · S2). Ajustar
   `content/*.json`. **Medir en *explore*, no en *apply*** (lección de 0006).
