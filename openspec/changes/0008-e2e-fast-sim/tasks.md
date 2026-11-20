@@ -11,7 +11,7 @@ Sin tareas: `src/domain` no cambia (criterio de éxito de la propuesta).
 Sin tareas: `src/application` no cambia (`TickRun`, `FixedStepLoop` y `MAX_FRAME_MS` intactos).
 
 ## 3. Infraestructura y composición
-- [ ] 3.1 `src/infrastructure/url/resolveSpeed.ts`
+- [x] 3.1 `src/infrastructure/url/resolveSpeed.ts`
   - Qué hace: zod `^\d+$` → entero en `1..MAX_SIM_SPEED` (15), sin efecto sin `e2e` y con aviso truncado a 32
     caracteres.
   - Test: `tests/infrastructure/speed.test.ts`, en rojo porque el módulo no existe.
@@ -22,7 +22,7 @@ Sin tareas: `src/application` no cambia (`TickRun`, `FixedStepLoop` y `MAX_FRAME
     - "Sin velocidad en modo E2E";
     - "Velocidad ignorada fuera de E2E", parte de resolución (`?speed=8` y `?seed=42&speed=8` → 1, sin aviso);
     - "Velocidad inválida ignorada fuera de E2E".
-- [ ] 3.2 `src/infrastructure/phaser/advanceFrame.ts`, el bucle de N `execute` con corte, y
+- [x] 3.2 `src/infrastructure/phaser/advanceFrame.ts`, el bucle de N `execute` con corte, y
   `tests/support/frameDriver.ts`.
   - El driver es un harness de Node: frames de duración dada, política de elección fija con `ChooseUpgrade` y
     velocidad del último frame `min(N, objetivo − tick)`.
