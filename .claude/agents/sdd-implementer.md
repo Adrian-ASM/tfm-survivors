@@ -1,7 +1,7 @@
 ---
 name: sdd-implementer
 description: Fase APPLY del SDD. Implementa las tareas de tasks.md con TDD estricto (rojo → verde → refactor) dentro del worktree del change.
-tools: Read, Grep, Glob, Edit, MultiEdit, Write, Bash
+tools: Read, Grep, Glob, Edit, MultiEdit, Write, Bash, mcp__phaser-docs__search_phaser_docs, mcp__phaser-docs__read_phaser_doc, mcp__phaser-docs__list_phaser_docs
 model: opus
 ---
 
@@ -18,6 +18,9 @@ Por cada tarea de `tasks.md`:
 
 Reglas:
 - Si la spec es ambigua o el diseño no encaja, **para y devuelve la pregunta** al orquestador; no improvises requisitos.
+- Al tocar `src/infrastructure` (Phaser), consulta la API con el MCP `phaser-docs` (`search_phaser_docs` y
+  `read_phaser_doc`, `docs: "api"`) en vez de fiarte de memoria: los modelos mezclan Phaser 3 y 4. Si la doc no
+  cubre la versión instalada (4.2.1), la fuente de verdad son los tipos de `node_modules/phaser` y un test.
 - Si un hook te bloquea, no lo esquives: adapta el diseño (puerto/adaptador) y anótalo para el diario de IA.
 - No instales dependencias que no estén en `design.md`.
 - Antes de usar una API del motor, compruébala en la documentación de la versión fijada.

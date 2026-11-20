@@ -12,7 +12,10 @@
       "Bash(git log:*)",
       "Bash(git branch:*)",
       "Bash(git worktree list:*)",
-      "Bash(node .claude/hooks/:*)"
+      "Bash(node .claude/hooks/:*)",
+      "mcp__phaser-docs__search_phaser_docs",
+      "mcp__phaser-docs__read_phaser_doc",
+      "mcp__phaser-docs__list_phaser_docs"
     ],
     "ask": [
       "Bash(git push:*)",
@@ -30,6 +33,7 @@
       "Bash(rm -rf:*)"
     ]
   },
+  "enabledMcpjsonServers": ["phaser-docs"],
   "hooks": {
     "PreToolUse": [
       {
