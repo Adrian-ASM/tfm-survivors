@@ -156,7 +156,10 @@ export const DEFAULT_ENEMY_TYPES = [
 
 const ALL = ['bug', 'merge-conflict', 'memory-leak'];
 
-/** Tabla de oleadas y parámetros de spawn de la spec y el design. */
+/**
+ * Tabla de oleadas y parámetros de spawn (espejo de content/waves.json). Desde 0010, los tramos de
+ * 300 y 480 s están calibrados con el bot de referencia sobre las semillas 1..50.
+ */
 export const DEFAULT_WAVES: RunConfig['waves'] = {
   maxAlive: 200,
   maxBudget: 10,
@@ -165,8 +168,8 @@ export const DEFAULT_WAVES: RunConfig['waves'] = {
     { fromSecond: 0, budgetPerSecond: 1, types: ['bug'] },
     { fromSecond: 60, budgetPerSecond: 2, types: ['bug', 'merge-conflict'] },
     { fromSecond: 180, budgetPerSecond: 2.5, types: ALL },
-    { fromSecond: 300, budgetPerSecond: 5, types: ALL },
-    { fromSecond: 480, budgetPerSecond: 7, types: ALL },
+    { fromSecond: 300, budgetPerSecond: 4, types: ALL },
+    { fromSecond: 480, budgetPerSecond: 5.6, types: ALL },
   ],
 };
 

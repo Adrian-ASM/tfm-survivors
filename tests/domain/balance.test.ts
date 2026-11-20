@@ -1,9 +1,20 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { Run } from '../../src/domain/run/Run';
+import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
-import { DEFAULT_ENEMY_TYPES, aDefaultConfig } from '../support/builders';
-import { fleeInput } from '../support/policies';
-import { chooseFirstWhileOpen, play } from '../support/runs';
+import {
+  BALANCE_SEEDS,
+  STILL_DEFEAT_SEED,
+  STILL_LIMIT_TICKS,
+  WIN_BAND,
+} from '../support/balanceSeeds';
+import {
+  DEFAULT_ENEMY_TYPES,
+  LONG_RUN_HEALTH,
+  aDefaultConfig,
+  withPlayer,
+} from '../support/builders';
+import { play, playReferenceBot, stillSurvivors } from '../support/runs';
 
 // Medición de equilibrio de 0004 (tasks 4.7): primer golpe con semilla 42 en el tick 4100; con
 // semilla 7, primer pulso en el tick 950. Plazos de la spec tras el gate: 4.800 y 1.800. Desde 0005
@@ -83,36 +94,63 @@ describe('Plazos con progresión (0005, medidos en el punto de control 0.3)', ()
   });
 });
 
-// Tarea 0.1 de 0007 (design, sección Medición): semillas 1–200 sin input y con la política de
-// elección fija; la 42 muere en el tick 4682 y la más rápida, la 90, en el 4501 (≈ 75,02 s). Plazo
-// del E2E de almacenamiento bloqueado: 76 s de juego.
-const FAST_DEFEAT_SEED = 90;
-const FAST_DEFEAT_LIMIT = 76 * 60;
+// Spec run-outcome (0010), "Partida ganable y perdible": requisito "Perdible" sobre 1..50.
+describe('Jugador quieto pierde (0010)', () => {
+  it('Scenario: Jugador quieto pierde con todas las semillas', () => {
+    expect(stillSurvivors(aDefaultConfig(), BALANCE_SEEDS, STILL_LIMIT_TICKS)).toEqual([]);
+  });
 
-describe('Semilla rápida para el E2E de almacenamiento bloqueado (0007)', () => {
-  it('Scenario: Almacenamiento bloqueado (plazo): semilla 90 sin input pierde en ≤ 4.560 ticks', () => {
-    const run = startDefault(FAST_DEFEAT_SEED);
+  it('Scenario: Muerte quieta en el límite de 180 s (viva en el tick 10.799 cuenta como fallo)', () => {
+    const immortal = withPlayer(aDefaultConfig(), { maxHealth: LONG_RUN_HEALTH });
 
-    play(run, FAST_DEFEAT_LIMIT);
+    expect(stillSurvivors(immortal, [7], STILL_LIMIT_TICKS)).toEqual([7]);
+  });
 
-    expect(run.snapshot()).toMatchObject({ status: 'over', outcome: 'lost' });
+  it('la semilla de derrota de los E2E pertenece al conjunto', () => {
+    expect(BALANCE_SEEDS).toContain(STILL_DEFEAT_SEED);
   });
 });
 
-// Tarea 0.2 de 0006 (design, sección Medición): con el tramo de 180 s a 2,5/s, la semilla 2 con
-// `fleeInput` y la política de elección fija llega viva al tick 36.000.
-const WIN_SEED = 2;
+/** Duración objetivo de la partida (content/run.json): 600 s = 36.000 ticks. */
 const TEN_MINUTES = 36_000;
 
-describe('Partida ganable con el contenido por defecto (0006)', () => {
-  it('Scenario: Partida ganada con estrategia documentada (semilla 2, fleeInput + opción 0)', () => {
-    const run = startDefault(WIN_SEED);
+// Spec run-outcome (0010), "Partida ganable y perdible": requisito "Ganable" sobre 1..50. Las 50
+// partidas se juegan una vez (timeout propio: el global es de 20 s y en CI puede doblarse).
+const BOT_BATCH_TIMEOUT_MS = 60_000;
 
-    for (let t = 0; t < TEN_MINUTES; t++) {
-      chooseFirstWhileOpen(run);
-      run.tick(fleeInput(run.snapshot()));
-    }
+describe('Balance con el contenido por defecto (0010)', () => {
+  let finals: RunSnapshot[] = [];
 
-    expect(run.snapshot()).toMatchObject({ tick: TEN_MINUTES, status: 'over', outcome: 'won' });
+  beforeAll(() => {
+    finals = BALANCE_SEEDS.map((seed) => playReferenceBot(startDefault(seed), TEN_MINUTES));
+  }, BOT_BATCH_TIMEOUT_MS);
+
+  it('Scenario: Toda partida del bot termina', () => {
+    const unfinished = finals.filter((s) => s.status !== 'over' || s.tick > TEN_MINUTES);
+
+    expect(finals).toHaveLength(BALANCE_SEEDS.length);
+    expect(unfinished).toEqual([]);
+  });
+
+  it('Scenario: Tasa de victoria del bot de referencia', () => {
+    const wins = finals.filter(
+      (s) => s.status === 'over' && s.outcome === 'won' && s.tick === TEN_MINUTES,
+    ).length;
+
+    const message = `victorias del bot de referencia: ${String(wins)}/50`;
+    expect(wins, message).toBeGreaterThanOrEqual(WIN_BAND.min);
+    expect(wins, message).toBeLessThanOrEqual(WIN_BAND.max);
+  });
+});
+
+// Spec run-outcome (0010), "Bot de referencia para el balance".
+describe('Bot de referencia (0010)', () => {
+  it('Scenario: Bot reproducible (semilla 7, dos veces)', () => {
+    const summary = () => {
+      const s = playReferenceBot(startDefault(7), TEN_MINUTES);
+      return { status: s.status, outcome: s.outcome, tick: s.tick, kills: s.kills, up: s.upgrades };
+    };
+
+    expect(summary()).toEqual(summary());
   });
 });

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
+import { STILL_LIMIT_TICKS } from '../support/balanceSeeds';
 import { driveFrames, outcomeOf, startDefault } from '../support/frameDriver';
 
 // Spec simulation-loop, "Mismo resultado con cualquier velocidad". Partidas completas con el
@@ -25,12 +26,13 @@ describe('Mismo resultado con cualquier velocidad', () => {
   );
 
   it(
-    'Scenario: Derrota equivalente con la semilla 90 (velocidades 1 y 8)',
+    'Scenario: Derrota equivalente con otra semilla del conjunto (semilla 7, velocidades 1 y 8)',
     () => {
-      const base = playAt(90, 1);
+      const base = playAt(7, 1);
 
-      expect(base.status).toBe('over');
-      expect(playAt(90, 8)).toStrictEqual(base);
+      expect(base).toMatchObject({ status: 'over', outcome: 'lost' });
+      expect(base.tick).toBeLessThan(STILL_LIMIT_TICKS);
+      expect(playAt(7, 8)).toStrictEqual(base);
     },
     LONG,
   );

@@ -1,5 +1,32 @@
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
-import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
+import type { OfferSnapshot, RunSnapshot } from '../../src/domain/run/RunSnapshot';
+
+/**
+ * Prioridad de mejoras del bot de referencia (spec run-outcome, 0010). Cambiarla exige un change
+ * que revise los requisitos de balance.
+ */
+export const REFERENCE_UPGRADE_PRIORITY: readonly string[] = [
+  'guardrail',
+  'strict-rules',
+  'fast-ci',
+  'hard-asserts',
+  'watch-mode',
+];
+
+/**
+ * Índice de la opción cuyo id aparece antes en `priority`, sea cual sea su posición en la oferta;
+ * 0 si la oferta no contiene ninguno.
+ */
+export function pickByPriority(
+  offer: readonly OfferSnapshot[],
+  priority: readonly string[] = REFERENCE_UPGRADE_PRIORITY,
+): number {
+  for (const id of priority) {
+    const index = offer.findIndex((o) => o.id === id);
+    if (index >= 0) return index;
+  }
+  return 0;
+}
 
 /** Radio en el que un enemigo repele al jugador (px). */
 export const FLEE_ENEMY_RANGE = 150;

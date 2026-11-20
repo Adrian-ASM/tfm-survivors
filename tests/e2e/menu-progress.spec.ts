@@ -15,6 +15,8 @@ import {
   snapshotOf,
 } from './probe';
 import { F, P0, progressText, seedProgress } from './progressFixtures';
+// Semilla del conjunto de balance 1..50 con derrota quieta antes de 180 s (spec run-outcome).
+import { STILL_DEFEAT_SEED } from '../support/balanceSeeds';
 
 // Exportar e Importar desde el menú (spec main-menu y progress-persistence): mismo fichero, mismas
 // validaciones y mismos mensajes que en resultados; los mensajes no pasan de un sitio a otro.
@@ -26,8 +28,6 @@ const G = {
   history: [...F.history, ...P0.history],
 };
 const G_TEXT = progressText(G);
-/** Semilla que antes pierde sin input (tarea 0.1 de 0007). */
-const FAST_DEFEAT_SEED = 90;
 const PLAY_TIMEOUT_MS = 45_000;
 
 const stored = (page: Page): Promise<string | null> =>
@@ -152,7 +152,7 @@ test('Mismo fichero desde los dos sitios y mensajes del overlay que no pasan al 
   page,
 }) => {
   test.setTimeout(60_000);
-  await page.goto(gameUrl({ seed: FAST_DEFEAT_SEED, speed: E2E_SPEED }));
+  await page.goto(gameUrl({ seed: STILL_DEFEAT_SEED, speed: E2E_SPEED }));
   await expect.poll(async () => (await snapshotOf(page))?.tick ?? null).not.toBeNull();
   await focusGame(page);
   const ended = await playChoosingFirst(page, (s) => s.status === 'over', PLAY_TIMEOUT_MS);
