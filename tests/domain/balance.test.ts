@@ -1,9 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { Run } from '../../src/domain/run/Run';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
-import { DEFAULT_ENEMY_TYPES, aDefaultConfig } from '../support/builders';
+import {
+  BALANCE_SEEDS,
+  STILL_DEFEAT_SEED,
+  STILL_LIMIT_TICKS,
+} from '../support/balanceSeeds';
+import {
+  DEFAULT_ENEMY_TYPES,
+  LONG_RUN_HEALTH,
+  aDefaultConfig,
+  withPlayer,
+} from '../support/builders';
 import { fleeInput } from '../support/policies';
-import { chooseFirstWhileOpen, play, playReferenceBot } from '../support/runs';
+import { chooseFirstWhileOpen, play, playReferenceBot, stillSurvivors } from '../support/runs';
 
 // Medición de equilibrio de 0004 (tasks 4.7): primer golpe con semilla 42 en el tick 4100; con
 // semilla 7, primer pulso en el tick 950. Plazos de la spec tras el gate: 4.800 y 1.800. Desde 0005
@@ -83,19 +93,20 @@ describe('Plazos con progresión (0005, medidos en el punto de control 0.3)', ()
   });
 });
 
-// Tarea 0.1 de 0007 (design, sección Medición): semillas 1–200 sin input y con la política de
-// elección fija; la 42 muere en el tick 4682 y la más rápida, la 90, en el 4501 (≈ 75,02 s). Plazo
-// del E2E de almacenamiento bloqueado: 76 s de juego.
-const FAST_DEFEAT_SEED = 90;
-const FAST_DEFEAT_LIMIT = 76 * 60;
+// Spec run-outcome (0010), "Partida ganable y perdible": requisito "Perdible" sobre 1..50.
+describe('Jugador quieto pierde (0010)', () => {
+  it('Scenario: Jugador quieto pierde con todas las semillas', () => {
+    expect(stillSurvivors(aDefaultConfig(), BALANCE_SEEDS, STILL_LIMIT_TICKS)).toEqual([]);
+  });
 
-describe('Semilla rápida para el E2E de almacenamiento bloqueado (0007)', () => {
-  it('Scenario: Almacenamiento bloqueado (plazo): semilla 90 sin input pierde en ≤ 4.560 ticks', () => {
-    const run = startDefault(FAST_DEFEAT_SEED);
+  it('Scenario: Muerte quieta en el límite de 180 s (viva en el tick 10.799 cuenta como fallo)', () => {
+    const immortal = withPlayer(aDefaultConfig(), { maxHealth: LONG_RUN_HEALTH });
 
-    play(run, FAST_DEFEAT_LIMIT);
+    expect(stillSurvivors(immortal, [7], STILL_LIMIT_TICKS)).toEqual([7]);
+  });
 
-    expect(run.snapshot()).toMatchObject({ status: 'over', outcome: 'lost' });
+  it('la semilla de derrota de los E2E pertenece al conjunto', () => {
+    expect(BALANCE_SEEDS).toContain(STILL_DEFEAT_SEED);
   });
 });
 

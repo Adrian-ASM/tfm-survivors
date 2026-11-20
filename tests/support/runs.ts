@@ -124,6 +124,23 @@ export function play(
   }
 }
 
+/**
+ * Semillas que, con input (0, 0) y la política de elección fija, NO han perdido en un tick menor
+ * que `limitTicks` (spec run-outcome, "Perdible"): seguir viva en el tick `limitTicks - 1` cuenta.
+ */
+export function stillSurvivors(
+  config: RunConfig,
+  seeds: readonly number[],
+  limitTicks: number,
+): number[] {
+  return seeds.filter((seed) => {
+    const run = startRun(config, undefined, new Mulberry32RandomGenerator(seed));
+    play(run, limitTicks - 1);
+    const s = run.snapshot();
+    return !(s.status === 'over' && s.outcome === 'lost');
+  });
+}
+
 /** Enemigo del snapshot por id (falla si no está). */
 export function enemyById(snap: RunSnapshot, id: number): EnemySnapshot {
   const e = snap.enemies.find((x) => x.id === id);

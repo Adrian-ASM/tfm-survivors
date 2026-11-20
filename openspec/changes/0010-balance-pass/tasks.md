@@ -30,7 +30,7 @@ Tras cada tarea, `npm run verify 2>&1 | tail -20` en verde.
   - Test en `tests/domain/balance.test.ts`: la semilla 7 jugada dos veces con `playReferenceBot(run, 36_000)` da el
     mismo `status`, `outcome`, `tick`, `kills` y `upgrades`. Está en rojo mientras no exista el helper.
   - Escenario: RO "Bot reproducible".
-- [ ] 1.3 Conjunto de semillas e invariante "quieto pierde".
+- [x] 1.3 Conjunto de semillas e invariante "quieto pierde".
   - Crear `tests/support/balanceSeeds.ts`, solo con constantes y sin imports: `BALANCE_SEEDS` (1..50),
     `WIN_BAND = { min: 25, max: 35 }`, `STILL_LIMIT_TICKS = 180 * 60` y `STILL_DEFEAT_SEED = 42`.
   - Añadir en `runs.ts` `stillSurvivors(config, seeds, limitTicks): number[]`, que usa `play(run, limitTicks - 1)`
