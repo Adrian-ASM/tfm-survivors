@@ -48,14 +48,14 @@ Tras cada tarea, `npm run verify 2>&1 | tail -20` en verde.
     "Derrota equivalente con otra semilla del conjunto".
 
 ## 2. Contenido y tasa de victoria
-- [ ] 2.1 Tasa del bot de referencia y palanca de contenido.
+- [x] 2.1 Tasa del bot de referencia y palanca de contenido.
   - En `balance.test.ts`, describe "Balance con el contenido por defecto (0010)". Un `beforeAll` (`timeout:
     60_000`) juega `BALANCE_SEEDS` con `playReferenceBot(run, 36_000)`. Dos `it`:
     - las 50 partidas están `over` con tick ≤ 36.000;
     - el número de `won` en el tick 36.000 está entre `WIN_BAND.min` y `WIN_BAND.max`, con el número en el mensaje
       del `expect`.
 
-    En **rojo** con el contenido actual (medido: 17/50).
+    En **rojo** con el contenido actual (medido: 17/50). Apply: 17/50 en rojo y 30/50 tras la palanca.
   - Después, cambiar `content/waves.json` **y** `DEFAULT_WAVES` (`tests/support/builders.ts`) a `budgetPerSecond`
     `[1, 2, 2.5, 4, 5.6]` (solo cambian los tramos de 300 y 480 s) y actualizar el comentario de `DEFAULT_WAVES`.
     Se espera 30/50. Si sale fuera de la banda, primero se revisa que `playReferenceBot` siga la secuencia de la

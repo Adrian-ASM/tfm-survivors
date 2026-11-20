@@ -413,7 +413,7 @@ describe('Contenido por defecto del repositorio', () => {
     expect(budgets).toEqual([...budgets].sort((a, b) => a - b));
   });
 
-  it('coincide con el contenido de la spec que usan los tests (aRunConfig)', () => {
+  it('Scenario: Contenido de los tests igual al del juego (loadRunConfig = aDefaultConfig)', () => {
     expect(config).toEqual(aDefaultConfig());
   });
 });

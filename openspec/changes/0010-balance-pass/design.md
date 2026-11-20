@@ -191,5 +191,12 @@ El núcleo y el bucle de paso fijo del juego no cambian.
   de partir el test.
 
 ## Medición
-(La rellena apply: los `budgetPerSecond` finales, las victorias de 50, la muerte quieta máxima y los ms por
-partida.)
+Ejecución local de apply (tarea 2.1, Windows, Vitest 5.1.1):
+- `budgetPerSecond` finales: `[1, 2, 2.5, 4, 5.6]` (palanca principal ×0,8 en 300 y 480 s; no hizo falta el
+  plan B).
+- Con el contenido anterior (`[1, 2, 2.5, 5, 7]`), el test de tasa dio 17/50 (rojo), igual que la medición.
+- Bot de referencia sobre 1..50: **30/50** victorias, las 50 partidas terminadas en un tick ≤ 36.000. Reproduce
+  la Medición 3.
+- Jugador quieto: las 50 pierden; la muerte más tardía es en el tick **5.629** (≈ 93,8 s), por debajo de 10.800.
+- Coste: unos 7,0 s las 50 partidas del bot (**unos 140 ms por partida**) y 0,16 s las 50 quietas. El fichero
+  `balance.test.ts` completo tarda unos 7,8 s, y `npm run verify` pasa de unos 5 s a unos 9,6 s de Vitest.
