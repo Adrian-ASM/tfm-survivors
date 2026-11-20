@@ -76,7 +76,7 @@ Sin tareas: `src/application` no cambia (`TickRun`, `FixedStepLoop` y `MAX_FRAME
   - Escenario PP: "Sin violaciones en el bucle completo", parte GIVEN (P0 válido con 1 entrada).
   - Ojo: si Vitest no puede importar el fichero porque importa `@playwright/test`, separar `seedProgress` en
     `probe.ts`.
-- [ ] 4.2 `probe.ts`: `E2E_SPEED = 8`, `gameUrl({ seed, speed })` y `expectSpeed(page, n)`. Migrar a
+- [x] 4.2 `probe.ts`: `E2E_SPEED = 8`, `gameUrl({ seed, speed })` y `expectSpeed(page, n)`. Migrar a
   `speed=8` `results.spec`, `health.spec` y `level-up.spec`.
   - Umbrales en ticks; tras R, `≤ 60 · E2E_SPEED`; `setTimeout` y plazos de `playChoosingFirst` ≤ 60 s.
   - En rojo con la aserción nueva de `results.spec`: la derrota tarda ≤ 12 s reales (`Date.now()` en el test, que

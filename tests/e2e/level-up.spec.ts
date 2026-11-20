@@ -1,23 +1,34 @@
 import { expect, test } from '@playwright/test';
-import { collect, focusGame, snapshotOf, type SnapshotView } from './probe';
+import {
+  E2E_SPEED,
+  collect,
+  expectSpeed,
+  focusGame,
+  gameUrl,
+  snapshotOf,
+  type SnapshotView,
+} from './probe';
 
 // Recorrido matar → recoger → subir → elegir → seguir (spec upgrades, "Recorrido en el navegador").
 // Núcleo, semilla 7 sin input: primera oferta en el tick 3332 (≈ 56 s de juego). El nivel que pinta
 // la barra es el del snapshot (XpBar, probada en Node) y el overlay se ve si y solo si hay oferta.
 const FIRST_OFFER_LIMIT = 60 * 60;
+/** Margen de reloj (no es la aserción): a ?speed=8 la oferta llega en unos 7 s. */
+const OFFER_TIMEOUT_MS = 40_000;
 
 test('Recorrido en el navegador: con ?seed=7 sin input aparece el overlay, se pulsa 1 y se sigue', async ({
   page,
 }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(60_000);
   const problems = collect(page, ['error', 'warning']);
-  await page.goto('./?e2e&seed=7');
+  await page.goto(gameUrl({ seed: 7, speed: E2E_SPEED }));
+  await expectSpeed(page, E2E_SPEED);
   await expect.poll(async () => (await snapshotOf(page))?.tick ?? null).not.toBeNull();
   await focusGame(page);
 
   let before: SnapshotView | null = null;
   let offered: SnapshotView | null = null;
-  const deadline = Date.now() + 100_000;
+  const deadline = Date.now() + OFFER_TIMEOUT_MS;
   while (!offered && Date.now() < deadline) {
     const snap = await snapshotOf(page);
     if (snap && snap.offer.length > 0) offered = snap;
