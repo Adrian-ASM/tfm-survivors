@@ -13,6 +13,7 @@ body {
 /* El canvas de Phaser y el panel de progreso ocupan la misma celda: el panel queda encima. */
 #game {
   display: grid;
+  place-content: center;
   place-items: center;
   height: 100%;
 }

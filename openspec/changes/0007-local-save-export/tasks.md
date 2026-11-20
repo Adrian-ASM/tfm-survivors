@@ -108,7 +108,7 @@
   sembrados con `addInitScript` ⇒ exactamente 1 `console.warn` con `progress` y valor intacto tras 2 s de partida;
   recargar a mitad de partida sin progreso previo ⇒ almacenamiento sigue vacío. — escenarios: PP "Datos guardados
   dañados", "Versión futura guardada", "Partida sin terminar"
-- [ ] 4.2 `progress.spec.ts` (1), bucle completo `?seed=42` con `test.setTimeout` de la tarea 0.2: perder →
+- [x] 4.2 `progress.spec.ts` (1), bucle completo `?seed=42` con `test.setTimeout` de la tarea 0.2: perder →
   Exportar (`suggestedFilename` `sprint-survivors-progress.json`, 1 entrada `seed 42`, `defeat`) → 60 frames con
   snapshot igual → borrar almacenamiento → recargar → perder → importar ⇒ `importado`, récords = máximo, nuevo
   export con 2 entradas → `hola` ⇒ `no válido` y 65.537 bytes ⇒ `64 KiB`, récords y export sin cambios → R ⇒ 1
@@ -116,7 +116,7 @@
   recargar e importar en el navegador", "Imports rechazados en el navegador", "Exportar no cambia la partida", "R
   tras usar los botones"; PP "Exportar tras una partida", "Sin violaciones en el bucle completo", "CSP presente y
   restrictiva"
-- [ ] 4.3 `progress.spec.ts` (2), almacenamiento bloqueado: `addInitScript` con getter de `localStorage` que lanza
+- [x] 4.3 `progress.spec.ts` (2), almacenamiento bloqueado: `addInitScript` con getter de `localStorage` que lanza
   `SecurityError`, semilla `F` de 0.1 ⇒ overlay con `no se guarda`, récords y botones → R ⇒ `running`, sin errores de
   consola. — escenarios: PP "Almacenamiento bloqueado"; RR "Aviso sin persistencia"
 - [ ] 4.4 `results.spec.ts`: nada más observar `over`, pulsar R y comprobar que el valor guardado ya tiene 1 entrada
