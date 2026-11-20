@@ -24,7 +24,7 @@ Sin tareas: el dominio no cambia (`run-state` sin delta). La pausa y el menú qu
   `removeItem` y `removeError`. — PP "Borrar el progreso vacío" y "Borrado confirmado" (parte del repositorio).
   Ficheros: `src/application/ProgressRepository.ts`, `tests/support/InMemoryProgressRepository.ts`,
   `tests/support/FakeStorage.ts`, `tests/application/progress-repository-contract.test.ts`.
-- [ ] 2.3 Caso de uso `ClearProgress` (tabla `ok / unavailable / failed` del design). Tests:
+- [x] 2.3 Caso de uso `ClearProgress` (tabla `ok / unavailable / failed` del design). Tests:
   - con datos (300, 8, 120) y 3 entradas, la sesión queda vacía, `persistent = true` y el resultado es `cleared`;
   - con `corruptPending = true`, queda a `false`;
   - si `clear()` da `unavailable`, la sesión queda vacía y el resultado es `cleared`;
@@ -36,7 +36,7 @@ Sin tareas: el dominio no cambia (`run-state` sin delta). La pausa y el menú qu
   Ficheros: `src/application/ClearProgress.ts`, `tests/application/clear-progress.test.ts`.
 
 ## 3. Infraestructura (puro, se prueba en Node)
-- [ ] 3.1 `LocalStorageProgressRepository.clear()` con `removeItem` en `try`. Tests con `FakeStorage`:
+- [x] 3.1 `LocalStorageProgressRepository.clear()` con `removeItem` en `try`. Tests con `FakeStorage`:
   - borra solo la clave `sprint-survivors/progress` (otra clave sigue intacta);
   - `SecurityError` o un fallo al acceder dan `unavailable`;
   - `QuotaExceededError` da `failed` y el valor sigue igual;

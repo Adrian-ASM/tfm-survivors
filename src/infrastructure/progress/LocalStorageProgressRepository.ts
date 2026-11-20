@@ -46,16 +46,28 @@ export class LocalStorageProgressRepository implements ProgressRepository {
     }
   }
 
-  /** Nunca lanza: borra solo la clave del progreso (no escribe el progreso vacío). */
+  /**
+   * Nunca lanza: borra solo la clave del progreso (no escribe el progreso vacío). Fallo al acceder
+   * o `SecurityError` ⇒ `unavailable`; cualquier otra excepción al borrar ⇒ `failed`.
+   */
   clear(): Result<void, ProgressClearError> {
+    let storage: ProgressStorage;
     try {
-      this.storage().removeItem(this.key);
-      return ok(undefined);
+      storage = this.storage();
     } catch {
       return err({ code: 'unavailable' });
     }
+    try {
+      storage.removeItem(this.key);
+      return ok(undefined);
+    } catch (e) {
+      return err({ code: isSecurityError(e) ? 'unavailable' : 'failed' });
+    }
   }
 }
+
+const isSecurityError = (e: unknown): boolean =>
+  e instanceof DOMException && e.name === 'SecurityError';
 
 /** Nombres de la excepción de cuota (estándar y el antiguo de Firefox). */
 const QUOTA_NAMES = new Set(['QuotaExceededError', 'NS_ERROR_DOM_QUOTA_REACHED']);
