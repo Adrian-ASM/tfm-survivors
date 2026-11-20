@@ -65,7 +65,7 @@
 - [x] 3.2 `LocalStorageProgressRepository` (camino feliz, clave `sprint-survivors/progress`). Rojo: el contrato de
   2.1 ejecutado contra el adaptador con un `Storage` falso en memoria (incluida "instancia nueva sobre el mismo
   almacenamiento ve lo guardado"). — escenario: PP "Recarga tras una partida"
-- [ ] 3.3 Fallos del adaptador. Rojo: `tests/infrastructure/local-storage-progress.test.ts`: proveedor que lanza
+- [x] 3.3 Fallos del adaptador. Rojo: `tests/infrastructure/local-storage-progress.test.ts`: proveedor que lanza
   `SecurityError` ⇒ `load`/`save` `unavailable` sin lanzar; `setItem` con `QuotaExceededError` ⇒ `quota-exceeded` y
   valor previo intacto; valor `{"schemaVersion":1,"records":` y versión 2 ⇒ `corrupt` y valor intacto. —
   escenarios: PP "Almacenamiento bloqueado", "Almacenamiento lleno al guardar", "Datos guardados dañados", "Versión

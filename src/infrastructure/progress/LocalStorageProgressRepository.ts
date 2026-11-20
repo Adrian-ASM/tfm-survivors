@@ -22,15 +22,32 @@ export class LocalStorageProgressRepository implements ProgressRepository {
     private readonly key: string = PROGRESS_STORAGE_KEY,
   ) {}
 
+  /** Nunca lanza: excepción al acceder o leer ⇒ `unavailable`; valor dañado ⇒ `corrupt`, intacto. */
   load(): Result<Progress | null, ProgressLoadError> {
-    const text = this.storage().getItem(this.key);
+    let text: string | null;
+    try {
+      text = this.storage().getItem(this.key);
+    } catch {
+      return err({ code: 'unavailable' });
+    }
     if (text === null) return ok(null);
     const decoded = decodeProgress(text);
     return decoded.ok ? decoded : err({ code: 'corrupt', reason: decoded.error.message });
   }
 
+  /** Nunca lanza: cuota superada ⇒ `quota-exceeded`; cualquier otra excepción ⇒ `unavailable`. */
   save(progress: Progress): Result<void, ProgressSaveError> {
-    this.storage().setItem(this.key, encodeProgress(progress));
-    return ok(undefined);
+    try {
+      this.storage().setItem(this.key, encodeProgress(progress));
+      return ok(undefined);
+    } catch (e) {
+      return err({ code: isQuotaExceeded(e) ? 'quota-exceeded' : 'unavailable' });
+    }
   }
 }
+
+/** Nombres de la excepción de cuota (estándar y el antiguo de Firefox). */
+const QUOTA_NAMES = new Set(['QuotaExceededError', 'NS_ERROR_DOM_QUOTA_REACHED']);
+
+const isQuotaExceeded = (e: unknown): boolean =>
+  e instanceof DOMException && QUOTA_NAMES.has(e.name);
