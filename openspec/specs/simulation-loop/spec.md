@@ -200,11 +200,11 @@ creación y una recogida no cambia el orden relativo de las demás.
 - **THEN** el pulso figura con arma `tests`, tick de disparo 40, centro (480, 270) y radio 90
 
 #### Scenario: Enemigos en el snapshot
-- **GIVEN** un único tramo con `budgetPerSecond` 1 y `types: ["bug"]`, `bug` con coste 1 y radio 10, en una partida
-  sin armas equipadas
+- **GIVEN** un único tramo con `budgetPerSecond` 1 y `types: ["goblin-torch"]`, `goblin-torch` con coste 1 y radio 10, en
+  una partida sin armas equipadas
 - **WHEN** se ejecutan 615 ticks
-- **THEN** el snapshot lista 10 enemigos de tipo `bug` con radio 10 e identificadores distintos
-- **AND** cada uno tiene una vida actual igual al `health` de `bug` y no indica daño reciente
+- **THEN** el snapshot lista 10 enemigos de tipo `goblin-torch` con radio 10 e identificadores distintos
+- **AND** cada uno tiene una vida actual igual al `health` de `goblin-torch` y no indica daño reciente
 - **AND** el orden de la lista coincide con el orden de aparición
 
 #### Scenario: Identificador estable
@@ -398,15 +398,15 @@ En una partida terminada o que está eligiendo mejora no se ejecuta ningún paso
 - **THEN** el snapshot del tick n no tiene proyectiles ni pulsos nuevos y el enemigo tiene su vida inicial
 
 #### Scenario: Las armas apuntan tras la persecución
-- **GIVEN** un jugador quieto en (480, 270), Tests cargado y un bug de radio 10 y velocidad 90 que, al empezar el
-  tick, está a distancia 101 (tras la persecución, a 99,5)
+- **GIVEN** un jugador quieto en (480, 270), Tests cargado y un `goblin-torch` de radio 10 y velocidad 90 que, al
+  empezar el tick, está a distancia 101 (tras la persecución, a 99,5)
 - **WHEN** se ejecuta 1 tick
-- **THEN** Tests dispara un pulso en ese tick y el bug queda con vida 6
+- **THEN** Tests dispara un pulso en ese tick y el `goblin-torch` queda con vida 6
 
 #### Scenario: Una baja libera el hueco antes del director
-- **GIVEN** `maxAlive` 1, un único bug vivo con vida 4 y un director con presupuesto para 1 bug y `bug` como tipo
-  pendiente
-- **WHEN** en el tick n el bug muere por un impacto del Linter
+- **GIVEN** `maxAlive` 1, un único `goblin-torch` vivo con vida 4 y un director con presupuesto para 1 `goblin-torch` y
+  `goblin-torch` como tipo pendiente
+- **WHEN** en el tick n el `goblin-torch` muere por un impacto del Linter
 - **THEN** el snapshot del tick n tiene exactamente 1 enemigo vivo, distinto del muerto
 
 #### Scenario: El imán usa la posición del jugador ya movido
@@ -417,45 +417,52 @@ En una partida terminada o que está eligiendo mejora no se ejecuta ningún paso
 
 #### Scenario: El director actúa antes de abrir la oferta
 - **GIVEN** una partida en nivel 1 con XP 4, una gema de valor 1 que se recoge en el tick n y un director con
-  presupuesto para 1 bug en el tick n
+  presupuesto para 1 `goblin-torch` en el tick n
 - **WHEN** se ejecuta el tick n
-- **THEN** el snapshot del tick n contiene el bug nuevo y la oferta abierta, con la partida eligiendo mejora
+- **THEN** el snapshot del tick n contiene el `goblin-torch` nuevo y la oferta abierta, con la partida eligiendo mejora
 
 #### Scenario: El tick de la victoria acaba tras el contacto
 - **GIVEN** una partida con duración objetivo de 120 ticks, el jugador vivo y no invulnerable, un enemigo con damage
-  10 en contacto en el tick 120, una gema que se recogería en el tick 120 y un director con presupuesto para 1 bug
-  en el tick 120
+  10 en contacto en el tick 120, una gema que se recogería en el tick 120 y un director con presupuesto para 1
+  `goblin-torch` en el tick 120
 - **WHEN** se ejecuta el tick 120
 - **THEN** la vida del jugador ha bajado 10 y sigue > 0, y la partida está terminada con victoria
 - **AND** la gema sigue en el snapshot, la XP no cambia y no aparece ningún enemigo nuevo en el tick 120
 
 #### Scenario: Las armas actúan en el tick de la victoria
-- **GIVEN** una partida con duración objetivo de 120 ticks y Tests cargado con un bug de vida 4 en su radio en el
-  tick 120
+- **GIVEN** una partida con duración objetivo de 120 ticks y Tests cargado con un `goblin-torch` de vida 4 en su radio
+  en el tick 120
 - **WHEN** se ejecuta el tick 120
-- **THEN** el bug queda dado de baja, su gema está en el snapshot del tick 120 y las bajas suben en 1
+- **THEN** el `goblin-torch` queda dado de baja, su gema está en el snapshot del tick 120 y las bajas suben en 1
 ### Requirement: Pintado de los enemigos vivos
-El adaptador de render SHALL mostrar en cada frame exactamente un sprite visible por cada enemigo del último
-snapshot, en su posición y con la apariencia y el tamaño de su tipo, también después de bajas. MUST NOT quedar
-visible ningún sprite de un enemigo dado de baja.
+El adaptador de render SHALL mostrar en cada frame exactamente un sprite de enemigo visible por cada enemigo del
+último snapshot, en su posición y con el aspecto de su tipo (hoja, escala y origen, ver `sprite-rendering`), también
+después de bajas. El tamaño en pantalla lo fija el aspecto de su tipo, no su radio. MUST NOT quedar visible ningún
+sprite de enemigo de un enemigo dado de baja; su cadáver, si lo hay, no cuenta como sprite de enemigo (ver
+"Animación de muerte de los enemigos" en `sprite-rendering`).
 
 #### Scenario: Bajas en medio de la lista
 - **GIVEN** un snapshot con 10 enemigos de identificadores 1 a 10 y tipos mezclados ya pintado
 - **WHEN** se pinta un snapshot en el que los enemigos 3 y 7 se han dado de baja y el resto no se ha movido
 - **THEN** hay exactamente 8 sprites de enemigo visibles
-- **AND** para cada enemigo del snapshot hay un sprite visible en su posición (error ≤ 0,001) con la apariencia
-  y el tamaño de su tipo
+- **AND** para cada enemigo del snapshot hay un sprite de enemigo visible en su posición (error ≤ 0,001) con el
+  aspecto de su tipo
 
 #### Scenario: Todos dados de baja
 - **GIVEN** un snapshot con 200 enemigos ya pintado
 - **WHEN** se pinta un snapshot sin enemigos
-- **THEN** no hay ningún sprite de enemigo visible
+- **THEN** no hay ningún sprite de enemigo visible (los cadáveres se cuentan aparte)
 
 #### Scenario: Reposición tras bajas
 - **GIVEN** un snapshot con 200 enemigos ya pintado
 - **WHEN** se pinta un snapshot con 150 de esos enemigos y 50 enemigos nuevos de otro tipo
-- **THEN** hay exactamente 200 sprites visibles, cada uno con la posición, apariencia y tamaño de un enemigo
+- **THEN** hay exactamente 200 sprites de enemigo visibles, cada uno con la posición y el aspecto de un enemigo
   distinto del snapshot
+
+#### Scenario: Aspecto por tipo
+- **GIVEN** un snapshot con 1 `goblin-torch`, 1 `goblin-tnt` y 1 `goblin-barrel`
+- **WHEN** se pinta el snapshot
+- **THEN** cada sprite de enemigo usa la hoja del aspecto de su tipo y las tres hojas son distintas
 
 ### Requirement: Sin tiempo acumulado durante la elección
 El sistema SHALL no ejecutar ticks ni acumular tiempo real mientras la partida está eligiendo mejora: los frames que
@@ -750,3 +757,4 @@ al pulsar `Jugar` tras `Volver al menú`. Ninguna de ellas vuelve a leer la URL 
 <!-- historial: 0008-e2e-fast-sim (2026-11-20) -->
 <!-- historial: 0009-main-menu (2026-11-20) -->
 <!-- historial: 0010-balance-pass (2026-11-20) -->
+<!-- historial: 0012-sprite-rendering (2026-11-22) -->

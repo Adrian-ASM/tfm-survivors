@@ -119,10 +119,11 @@ abrirse ninguna oferta de mejoras (misma regla que el tick de la muerte, ver `ru
 - **THEN** ningún enemigo del snapshot del tick 120 tiene un identificador que no estuviera en el del tick 119
 
 #### Scenario: Una baja en el tick de la victoria cuenta y deja su gema
-- **GIVEN** una partida con duración objetivo de 120 ticks, 5 bajas acumuladas y un bug con vida 4 que muere por un
-  impacto del Linter en el tick 120
+- **GIVEN** una partida con duración objetivo de 120 ticks, 5 bajas acumuladas y un `goblin-torch` con vida 4 que muere
+  por un impacto del Linter en el tick 120
 - **WHEN** se ejecuta el tick 120
-- **THEN** la partida está terminada con victoria, las bajas valen 6 y el snapshot contiene la gema de ese bug
+- **THEN** la partida está terminada con victoria, las bajas valen 6 y el snapshot contiene la gema de ese
+  `goblin-torch`
 
 ### Requirement: Contador de bajas
 El sistema SHALL contar las bajas de la partida: cada enemigo que queda dado de baja (su vida llega a 0, ver
@@ -138,12 +139,12 @@ bajas.
 - **THEN** las bajas valen 0
 
 #### Scenario: Varias bajas en un tick
-- **GIVEN** una partida con 2 bajas y 3 bugs con vida 4 dentro del radio de un pulso de Tests con `damage` 4
+- **GIVEN** una partida con 2 bajas y 3 `goblin-torch` con vida 4 dentro del radio de un pulso de Tests con `damage` 4
 - **WHEN** Tests dispara en el tick n
-- **THEN** el snapshot del tick n tiene 5 bajas y ninguno de esos 3 bugs
+- **THEN** el snapshot del tick n tiene 5 bajas y ninguno de esos 3 enemigos
 
 #### Scenario: Una baja cuenta una sola vez
-- **GIVEN** un bug con vida 4 que recibe en el mismo tick 2 impactos del Linter con `damage` 6
+- **GIVEN** un `goblin-torch` con vida 4 que recibe en el mismo tick 2 impactos del Linter con `damage` 6
 - **WHEN** se ejecuta ese tick
 - **THEN** las bajas suben exactamente en 1
 
@@ -159,7 +160,7 @@ bajas.
 
 #### Scenario: Baja en el tick de la muerte
 - **GIVEN** una partida con 7 bajas, el jugador a vida 10 con un enemigo de damage 10 en contacto en el tick n y un
-  bug con vida 4 a 300 px que muere por el Linter en el tick n
+  `goblin-torch` con vida 4 a 300 px que muere por el Linter en el tick n
 - **WHEN** se ejecuta el tick n y después se piden 600 ticks más
 - **THEN** el snapshot del tick n tiene 8 bajas y resultado derrota, y tras los 600 ticks las bajas siguen en 8
 
@@ -300,3 +301,4 @@ balance de esta spec MUST ejecutarse dentro de la suite unitaria de `npm run ver
 
 <!-- historial: 0006-run-lifecycle-hud (2026-11-20) -->
 <!-- historial: 0010-balance-pass (2026-11-20) -->
+<!-- historial: 0012-sprite-rendering (2026-11-22) -->

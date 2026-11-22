@@ -172,12 +172,12 @@ por estadística:
 
 #### Scenario: Más daño del Linter
 - **GIVEN** `strict-rules` en nivel 1 (Linter con `damage` 9)
-- **WHEN** un proyectil del Linter creado después de la elección impacta a un bug con vida 10
-- **THEN** el bug queda con vida 1
+- **WHEN** un proyectil del Linter creado después de la elección impacta a un `goblin-torch` con vida 10
+- **THEN** el `goblin-torch` queda con vida 1
 
 #### Scenario: Mejoras acumuladas que matan de un impacto
 - **GIVEN** `strict-rules` en nivel 5 (Linter con `damage` 21)
-- **WHEN** un proyectil del Linter impacta a un bug con vida 10 y otro a un merge-conflict con vida 20
+- **WHEN** un proyectil del Linter impacta a un `goblin-torch` con vida 10 y otro a un `goblin-barrel` con vida 20
 - **THEN** ambos quedan dados de baja con un solo impacto
 
 #### Scenario: Cadencia mejorada sin reiniciar la carga
@@ -192,14 +192,14 @@ por estadística:
 - **THEN** el objetivo es ese enemigo y se crea 1 proyectil
 
 #### Scenario: Más radio del pulso
-- **GIVEN** `coverage` en nivel 1 (`radius` 105) y dos bugs de radio 10 a distancias 114 y 115 del jugador
+- **GIVEN** `coverage` en nivel 1 (`radius` 105) y dos `goblin-torch` de radio 10 a distancias 114 y 115 del jugador
 - **WHEN** Tests dispara
 - **THEN** el de 114 pierde 4 de vida y el de 115 no pierde vida
 
 #### Scenario: Más daño de Tests
-- **GIVEN** `hard-asserts` en nivel 1 (Tests con `damage` 6) y un bug con vida 10 en el radio del pulso
+- **GIVEN** `hard-asserts` en nivel 1 (Tests con `damage` 6) y un `goblin-torch` con vida 10 en el radio del pulso
 - **WHEN** Tests dispara
-- **THEN** el bug queda con vida 4
+- **THEN** el `goblin-torch` queda con vida 4
 
 #### Scenario: Cadencia de Tests mejorada
 - **GIVEN** `watch-mode` en nivel 1 (`cooldownTicks` 78) elegido antes del tick 1 y un objetivo permanente en el
@@ -213,8 +213,8 @@ por estadística:
 - **THEN** el jugador está en (700, 270) con un error ≤ 0,001
 
 #### Scenario: Más radio de recogida
-- **GIVEN** `pickupRadius` base 64, `context-window` en nivel 1 (efectivo 96), un jugador quieto en (480, 270) y una gema en
-  (570, 270) (distancia 90)
+- **GIVEN** `pickupRadius` base 64, `context-window` en nivel 1 (efectivo 96), un jugador quieto en (480, 270) y una
+  gema en (570, 270) (distancia 90)
 - **WHEN** se ejecuta 1 tick
 - **THEN** la gema está atraída y en (564, 270)
 
@@ -272,3 +272,4 @@ recoger gemas → subir de nivel → elegir mejora → seguir jugando.
   los ticks del snapshot vuelven a avanzar
 
 <!-- historial: 0005-xp-and-level-up (2026-11-19) -->
+<!-- historial: 0012-sprite-rendering (2026-11-22) -->
