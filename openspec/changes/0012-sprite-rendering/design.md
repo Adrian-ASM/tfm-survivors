@@ -73,7 +73,7 @@ Dimensiones leídas de la imagen en esta fase; las fija un test (D9) leyendo la 
 | 3 | `Factions/Knights/Troops/Dead/Dead.png` | 128 | 7 × 2 | cadáver: 1-13, sin bucle (el 0 está vacío) |
 | 4 | `Factions/Goblins/Troops/Torch/Red/Torch_Red.png` | 192 | 7 × 5 | `goblin-torch`: idle 0-6, walk 7-12 |
 | 5 | `Factions/Goblins/Troops/TNT/Red/TNT_Red.png` | 192 | 7 × 3 | `goblin-tnt`: idle 0-5, walk 7-12 |
-| 6 | `Factions/Goblins/Troops/Barrel/Red/Barrel_Red.png` | **128** | 6 × 6 | `goblin-barrel`: idle 0, walk 18-23 (fila "move"; se confirma a ojo en apply) |
+| 6 | `Factions/Goblins/Troops/Barrel/Red/Barrel_Red.png` | **128** | 6 × 6 | `goblin-barrel`: idle 0, walk **24-26** (apply, R1: la fila 18-23 es "esconderse"; la de correr es la 5.ª, 3 frames) |
 | 7 | `Resources/Resources/G_Idle.png` | 128 | 1 × 1 | gema de XP: frame 0 (saco de oro) |
 | 8 | `Terrain/Ground/Tilemap_Flat.png` | 64 | 10 × 4 | suelo: frame 11 (centro del bloque de hierba 3 × 3) |
 

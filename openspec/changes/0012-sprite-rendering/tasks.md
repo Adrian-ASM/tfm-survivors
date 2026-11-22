@@ -54,7 +54,7 @@
   - Escenarios: SR "Valores fuera de rango", "Animaciones obligatorias y campos desconocidos".
 - [x] 3.2 Rutas de hoja: regex de D2 y pertenencia a `registered` (`public/assets/tiny-swords/` + `file`).
   - Escenarios: SR "Rutas de hoja no admitidas" (7 casos, el error nombra la hoja de `goblin-torch`).
-- [ ] 3.3 `content/appearance.json` del repo (índices de D4, escalas y orígenes de D5, `maxCorpses` 64,
+- [x] 3.3 `content/appearance.json` del repo (índices de D4, escalas y orígenes de D5, `maxCorpses` 64,
   `placeholderColor` desde los colores actuales). Test de contenido: cabecera IHDR de cada PNG → rejilla exacta e
   índices ≤ `cols × rows − 1`; cada `file` en la nota y cada entrada usada (sin peso muerto); `source` de cada
   aspecto contiene `Archer`/`Torch`/`TNT`/`Barrel`/`Dead.png`/`Arrow.png` y empieza por `Tiny Swords (Update 010)/`.
