@@ -33,7 +33,7 @@
   `Free Pack`/`Free_Pack`/`FreePack` en la ruta, `sha256`/`bytes` distintos (digest inyectado como mapa).
   - Escenarios: AP "PNG sin registrar", "Asset gráfico fuera de la carpeta de assets", "Entrada sin fichero",
     "Ficheros prohibidos", "Mayúsculas en la extensión", "Ruta del Free Pack en el repositorio".
-- [ ] 2.3 Ejecución en `scripts/guard-staged.mjs` (pre-commit y `guard:all`): una pasada global sobre
+- [x] 2.3 Ejecución en `scripts/guard-staged.mjs` (pre-commit y `guard:all`): una pasada global sobre
   `git ls-files -z`, contenido leído del índice (`git cat-file blob :<ruta>`, `node:crypto`). Añadir
   `*.png binary` a `.gitattributes`. Rojo: `tests/guardrails/guard-staged.test.ts` con lister y lector inyectados
   y un PNG sin entrada → código ≠ 0 y salida que nombra el PNG.

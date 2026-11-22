@@ -6,14 +6,18 @@
 //   node scripts/guard-staged.mjs         → contenido PREPARADO de los ficheros del commit (pre-commit)
 //   node scripts/guard-staged.mjs --all   → todos los ficheros versionados (CI)
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { check as checkArchitecture } from '../.claude/hooks/guard-architecture.mjs';
+import { PROVENANCE_PATH, checkAssets } from '../.claude/hooks/guard-assets.mjs';
 import { check as checkSecrets } from '../.claude/hooks/guard-secrets.mjs';
 
 const CHECKS = [checkSecrets, checkArchitecture];
 const BINARY = /\.(png|jpe?g|gif|webp|ico|bmp|mp3|ogg|wav|woff2?|ttf|otf|zip|gz|pdf)$/i;
 const MAX_BUFFER = 256 * 1024 * 1024;
+// Assets cuyo hash comprueba la nota de procedencia (las imágenes, siempre binarias: design R2).
+const ASSET = /\.(png|jpe?g|gif|webp|svg|ico|bmp|aseprite)$/i;
 
 const all = process.argv.includes('--all');
 const root = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
@@ -39,9 +43,10 @@ for (const path of deleted) console.warn(`⚠ guard: ${path} está borrado del d
  * Contenido preparado (índice) de todos los ficheros con UNA sola llamada a git.
  * Formato de `git cat-file --batch`: "<sha> <tipo> <bytes>\n<contenido>\n" o "<objeto> missing\n".
  */
-function readIndex(paths) {
+function readIndexBlobs(paths) {
+  const blobs = new Map();
+  if (paths.length === 0) return blobs;
   const out = git(['cat-file', '--batch'], paths.map((p) => `:${p}\n`).join(''));
-  const contents = new Map();
   let pos = 0;
   for (const path of paths) {
     const eol = out.indexOf(0x0a, pos);
@@ -49,10 +54,15 @@ function readIndex(paths) {
     pos = eol + 1;
     if (header.endsWith(' missing')) continue;
     const size = Number(header.split(' ')[2]);
-    contents.set(path, out.toString('utf8', pos, pos + size));
+    blobs.set(path, out.subarray(pos, pos + size));
     pos += size + 1;
   }
-  return contents;
+  return blobs;
+}
+
+function readIndex(paths) {
+  const blobs = readIndexBlobs(paths);
+  return new Map([...blobs].map(([path, blob]) => [path, blob.toString('utf8')]));
 }
 
 /** En --all (CI), el contenido versionado en disco. */
@@ -72,6 +82,33 @@ for (const path of files) {
     const lines = check({ file_path: path, content }, root);
     if (lines.length > 0) failures.push(lines.join('\n'));
   }
+}
+
+failures.push(...provenanceFailures());
+
+/**
+ * Pasada global de procedencia del arte (design D8 de 0012), una vez en los dos modos: lista del índice
+ * (`git ls-files`; en pre-commit incluye lo preparado) y bytes leídos del índice, iguales en Windows y Linux.
+ */
+function provenanceFailures() {
+  const versioned = git(['ls-files', '-z']).toString('utf8').split('\0').filter(Boolean);
+  const wanted = versioned.filter((f) => f === PROVENANCE_PATH || ASSET.test(f));
+  const blobs = readIndexBlobs(wanted);
+  const note = blobs.get(PROVENANCE_PATH);
+  let provenance;
+  if (note !== undefined) {
+    try {
+      provenance = JSON.parse(note.toString('utf8'));
+    } catch (error) {
+      return [`${PROVENANCE_PATH}: no es JSON válido (${error.message}).`];
+    }
+  }
+  const digest = (path) => {
+    const blob = blobs.get(path) ?? Buffer.alloc(0);
+    return { sha256: createHash('sha256').update(blob).digest('hex'), bytes: blob.length };
+  };
+  const lines = checkAssets({ files: versioned, provenance, digest });
+  return lines.length > 0 ? [lines.join('\n')] : [];
 }
 
 if (failures.length > 0) {
