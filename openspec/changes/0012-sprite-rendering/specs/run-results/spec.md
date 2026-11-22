@@ -3,11 +3,31 @@
 <!-- Ruta: openspec/changes/0012-sprite-rendering/specs/run-results/spec.md
      Palabras normativas: SHALL / MUST. Escenarios GIVEN/WHEN/THEN verificables por test. -->
 
-> Cambios: la vista limpia tras reiniciar con R incluye los cadáveres de enemigos (ver `sprite-rendering`) y el
-> estado del sprite del jugador, y se verifica con la sonda de render.
+> Cambios:
+> - La vista limpia tras reiniciar con R incluye los cadáveres de enemigos y el estado del sprite del jugador (ver
+>   `sprite-rendering`), y se verifica con la sonda de render.
+> - Nombre del juego en los mensajes: ninguna spec viva fijaba el nombre dentro de los textos de resultados (solo
+>   fragmentos como `no válido` o `progress`), así que se añade como requisito.
 
 ## ADDED Requirements
-<!-- Ninguno. -->
+
+### Requirement: Nombre del juego en los mensajes de resultados
+El sistema SHALL usar `Greentide Vanguard` cuando un mensaje del overlay de resultados, del menú de inicio o un aviso
+por consola sobre el progreso nombra el juego: el mensaje de import rechazado (el que contiene `no válido`) y el
+aviso de datos dañados (el que menciona `progress`). Ninguno de esos mensajes MUST contener `Sprint Survivors`. Los
+fragmentos que fijan otras specs (`importado`, `no válido`, `64 KiB`, `borrado`, `progress`) se conservan.
+
+#### Scenario: Import rechazado
+- **GIVEN** una partida terminada con el overlay de resultados visible
+- **WHEN** se importa un fichero con el texto `hola`
+- **THEN** el overlay muestra un mensaje que contiene `no válido` y `Greentide Vanguard` y no contiene
+  `Sprint Survivors`
+
+#### Scenario: Aviso de datos dañados
+- **GIVEN** un valor `{ roto` guardado en `sprint-survivors/progress`
+- **WHEN** se carga la página
+- **THEN** se emite 1 aviso por consola que menciona `progress` y ningún aviso ni mensaje visible contiene
+  `Sprint Survivors`
 
 ## MODIFIED Requirements
 
@@ -15,9 +35,9 @@
 La vista SHALL pintar, desde el primer frame de la partida nueva, exactamente los elementos de su snapshot: MUST
 NOT quedar visible ningún sprite de enemigo, cadáver (aunque su animación de muerte no haya terminado, ver
 `sprite-rendering`), proyectil, pulso o gema de la partida terminada, ni el overlay de resultados ni el de elección.
-El jugador de la partida nueva se pinta en su posición inicial, sin la animación de muerte de la partida terminada y
-sin heredar su orientación. El HUD muestra los valores de la partida nueva. Reiniciar varias veces seguidas MUST NOT
-dejar sprites visibles que no correspondan al snapshot.
+El jugador de la partida nueva se pinta en su posición inicial, en `idle` y sin heredar la orientación de la partida
+terminada. El HUD muestra los valores de la partida nueva. Reiniciar varias veces seguidas MUST NOT dejar sprites
+visibles que no correspondan al snapshot.
 
 #### Scenario: Primer frame tras reiniciar
 - **GIVEN** una partida terminada ya pintada con 200 enemigos, 32 proyectiles, 1 pulso, 300 gemas y 10 cadáveres en

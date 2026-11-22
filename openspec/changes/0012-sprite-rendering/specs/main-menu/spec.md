@@ -3,12 +3,37 @@
 <!-- Ruta: openspec/changes/0012-sprite-rendering/specs/main-menu/spec.md
      Palabras normativas: SHALL / MUST. Escenarios GIVEN/WHEN/THEN verificables por test. -->
 
-> Cambios: la limpieza tras `Volver al menú` y "Cinco ciclos menú-partida" pasan a verificarse con la sonda de
-> render (ver "Sonda de render para E2E" en `sprite-rendering`), lo que cierra la deuda 0009 · W2. "Sprites de
-> enemigo" son los de enemigos **vivos**; los cadáveres se cuentan aparte y también deben desaparecer.
+> Cambios:
+> - La limpieza tras `Volver al menú` y "Cinco ciclos menú-partida" pasan a verificarse con la sonda de render (ver
+>   "Sonda de render para E2E" en `sprite-rendering`), lo que cierra la deuda 0009 · W2. "Sprites de enemigo" son los
+>   de enemigos vivos; los cadáveres se cuentan aparte y también deben desaparecer.
+> - Nombre visible del juego: "Greentide Vanguard". Ninguna spec viva fijaba el texto del título, así que se añade
+>   como requisito. Las claves técnicas (`sprint-survivors/progress`, `sprint-survivors-progress.json`,
+>   `window.__sprint`) no cambian.
 
 ## ADDED Requirements
-<!-- Ninguno. -->
+
+### Requirement: Nombre visible del juego
+El sistema SHALL mostrar como nombre del juego `Greentide Vanguard` en el título del menú de inicio y en el título del
+documento (`<title>` de `index.html`). Ningún texto visible del menú ni el título del documento MUST contener
+`Sprint Survivors`. El cambio de nombre MUST NOT cambiar la clave de `localStorage` `sprint-survivors/progress`, el
+nombre del fichero exportado `sprint-survivors-progress.json` ni la sonda `window.__sprint`.
+
+#### Scenario: Título en el menú y en el documento
+- **GIVEN** la build de producción servida sin parámetros
+- **WHEN** termina la carga y se ve el menú de inicio
+- **THEN** el título del menú es `Greentide Vanguard` y `document.title` contiene `Greentide Vanguard`
+- **AND** ni el texto visible del menú ni `document.title` contienen `Sprint Survivors`
+
+#### Scenario: Claves técnicas sin cambios
+- **GIVEN** un progreso con récords (300, 8, 120) guardado antes de este change en `sprint-survivors/progress`
+- **WHEN** se carga la página tras el change y se pulsa `Exportar` en el menú
+- **THEN** se descarga `sprint-survivors-progress.json` con récords (300, 8, 120), igual campo a campo al guardado
+
+#### Scenario: Export antiguo importable
+- **GIVEN** un fichero exportado antes de este change con 2 entradas de historial y un navegador sin progreso
+- **WHEN** se importa desde el menú
+- **THEN** el menú muestra un mensaje que contiene `importado` y un `Exportar` posterior contiene esas 2 entradas
 
 ## MODIFIED Requirements
 
@@ -31,10 +56,8 @@ cadáveres se cuentan aparte.
 
 #### Scenario: Volver al menú con cadáveres en curso
 - **GIVEN** `?e2e&seed=7` y una partida en pausa en un frame en que la sonda de render informa de ≥ 1 cadáver
-  visible
 - **WHEN** se pulsa `Volver al menú` y se pintan 60 frames en el menú
-- **THEN** en los 60 frames la sonda de render informa de 0 cadáveres y 0 sprites de jugador, enemigo, proyectil,
-  pulso y gema
+- **THEN** en los 60 frames la sonda informa de 0 cadáveres y 0 sprites de jugador, enemigo, proyectil, pulso y gema
 - **AND** al pulsar `Jugar`, en el primer frame de la partida nueva hay 0 cadáveres
 
 #### Scenario: La partida abandonada no se guarda
@@ -59,8 +82,8 @@ cadáveres se cuentan aparte.
   de 1 sprite de jugador salvo en los frames en que el parpadeo lo oculta
 - **AND** en el primer frame del menú tras cada uno de los 5 `Volver al menú` la sonda informa de 0 sprites de
   jugador, enemigo, cadáver, proyectil, pulso y gema
-- **AND** en el primer frame de cada partida hay 0 cadáveres, en ningún frame hay más de `maxCorpses` y existe
-  exactamente 1 partida durante el sexto ciclo
+- **AND** en el primer frame de cada partida hay 0 cadáveres, en ningún frame hay más de 64 y existe exactamente 1
+  partida durante el sexto ciclo
 
 ## REMOVED Requirements
 <!-- Ninguno. -->
