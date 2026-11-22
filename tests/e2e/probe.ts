@@ -24,6 +24,7 @@ export async function expectSpeed(page: Page, speed: number): Promise<void> {
 
 export interface EnemyView {
   id: number;
+  type: string;
   x: number;
   y: number;
   radius: number;
@@ -72,6 +73,24 @@ export interface ProgressView {
   notices: string[];
 }
 
+/** Sprites visibles y con aspecto de reserva de un tipo (change 0012, design D7). */
+export interface SpriteCountView {
+  visible: number;
+  placeholder: number;
+}
+
+/** Sonda de render: recuentos del último frame pintado (a 0 en el menú). */
+export interface SpritesView {
+  ground: SpriteCountView;
+  player: SpriteCountView;
+  enemies: SpriteCountView;
+  corpses: SpriteCountView;
+  projectiles: SpriteCountView;
+  pulses: SpriteCountView;
+  gems: SpriteCountView;
+  enemyPlaceholders: Record<string, number>;
+}
+
 interface Probe {
   __sprint?: {
     seed: number;
@@ -83,6 +102,8 @@ interface Probe {
     /** Pantalla visible (change 0009) y partidas creadas en la carga. */
     screen?: 'menu' | 'playing' | 'paused';
     runs?: number;
+    /** Sonda de sprites (change 0012). */
+    sprites?: SpritesView;
   };
 }
 
@@ -99,8 +120,119 @@ export const probe = (page: Page) =>
           progress: p.progress,
           screen: p.screen ?? null,
           runs: p.runs ?? null,
+          sprites: p.sprites ?? null,
         }
       : null;
+  });
+
+/** Resumen del muestreador de sprites (ver `startSpriteSampler`). */
+export interface SpriteSample {
+  /** Frames muestreados con partida (snapshot no nulo) y en el menú. */
+  frames: number;
+  menuFrames: number;
+  /** Primeras discrepancias entre la sonda de sprites y el snapshot del mismo frame. */
+  mismatches: string[];
+  maxCorpses: number;
+  /** Frames con algún sprite de reserva (de cualquier tipo). */
+  placeholderFrames: number;
+  /** Frames con ≥ 1 enemigo, proyectil y gema visibles a la vez. */
+  fullFrames: number;
+  /** Frames en que el suelo no era exactamente 1 sprite visible. */
+  groundMisses: number;
+  /** Frames en que reserva por tipo de enemigo ≠ enemigos de ese tipo en el snapshot (`placeholderType`). */
+  typeMismatches: number;
+}
+
+interface SamplerWindow {
+  __spriteSampler?: { stop: boolean; result: SpriteSample };
+}
+
+/**
+ * Instala en la página un muestreador con `requestAnimationFrame` (design D7) que, en cada frame,
+ * compara la sonda de sprites con el snapshot pintado en la misma llamada: enemigos, proyectiles,
+ * pulsos y gemas visibles = elementos del snapshot; jugador según el parpadeo (periodo 4); cadáveres
+ * ≤ 64; en el menú, todo a 0. Si `placeholderType` se da, exige que todos los enemigos de ese tipo
+ * usen reserva y ningún otro sprite. Sin `page.evaluate` por frame: el resultado se lee al final.
+ */
+export async function startSpriteSampler(page: Page, placeholderType?: string): Promise<void> {
+  await page.evaluate((only) => {
+    const w = window as unknown as Probe & SamplerWindow;
+    const result: SpriteSample = {
+      frames: 0,
+      menuFrames: 0,
+      mismatches: [],
+      maxCorpses: 0,
+      placeholderFrames: 0,
+      fullFrames: 0,
+      groundMisses: 0,
+      typeMismatches: 0,
+    };
+    const state = { stop: false, result };
+    w.__spriteSampler = state;
+    const miss = (text: string) => {
+      if (result.mismatches.length < 10) result.mismatches.push(text);
+    };
+    const tick = () => {
+      if (state.stop) return;
+      const p = w.__sprint;
+      const s = p?.sprites;
+      const snap = p?.snapshot;
+      if (s) {
+        result.maxCorpses = Math.max(result.maxCorpses, s.corpses.visible);
+        if (s.corpses.visible > 64) miss(`cadáveres ${String(s.corpses.visible)}`);
+        const kinds = [s.player, s.enemies, s.corpses, s.projectiles, s.pulses, s.gems];
+        if (!snap) {
+          result.menuFrames += 1;
+          if (kinds.some((k) => k.visible !== 0)) miss('menú con sprites visibles');
+        } else {
+          result.frames += 1;
+          const t = snap.tick;
+          const pairs: [string, number, number][] = [
+            ['enemigos', s.enemies.visible, snap.enemies.length],
+            ['proyectiles', s.projectiles.visible, snap.projectiles.length],
+            ['pulsos', s.pulses.visible, snap.pulses.length],
+            ['gemas', s.gems.visible, snap.gems.length],
+          ];
+          for (const [name, got, want] of pairs) {
+            if (got !== want) miss(`tick ${String(t)}: ${name} ${String(got)} ≠ ${String(want)}`);
+          }
+          const blinkVisible =
+            snap.status === 'over' || !snap.player.invulnerable || Math.floor(t / 4) % 2 === 0;
+          if (s.player.visible !== (blinkVisible ? 1 : 0)) miss(`tick ${String(t)}: jugador`);
+          if (s.ground.visible !== 1) result.groundMisses += 1;
+          const reserve = [s.ground, ...kinds].reduce((n, k) => n + k.placeholder, 0);
+          if (reserve > 0) result.placeholderFrames += 1;
+          if (s.enemies.visible > 0 && s.projectiles.visible > 0 && s.gems.visible > 0) {
+            result.fullFrames += 1;
+          }
+          if (only !== undefined) {
+            const ofType = snap.enemies.filter((e) => e.type === only).length;
+            const others = Object.entries(s.enemyPlaceholders).filter(([k]) => k !== only);
+            const otherKinds = [s.ground, s.player, s.corpses, s.projectiles, s.gems];
+            if (
+              s.enemyPlaceholders[only] !== ofType ||
+              s.enemies.placeholder !== ofType ||
+              others.some(([, n]) => n !== 0) ||
+              otherKinds.some((k) => k.placeholder !== 0)
+            ) {
+              result.typeMismatches += 1;
+            }
+          }
+        }
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, placeholderType);
+}
+
+/** Para el muestreador y devuelve su resumen. */
+export const stopSpriteSampler = (page: Page): Promise<SpriteSample> =>
+  page.evaluate(() => {
+    const state = (window as unknown as SamplerWindow).__spriteSampler;
+    if (!state) throw new Error('No hay muestreador instalado');
+    state.stop = true;
+    return state.result;
   });
 
 /**

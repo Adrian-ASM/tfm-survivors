@@ -131,23 +131,23 @@
   - Escenarios: SR "Directivas sin cambios"; MM "Título en el menú y en el documento" (documento).
 
 ## 7. E2E (`npm run test:e2e`)
-- [ ] 7.1 `tests/e2e/probe.ts` con el tipo `sprites`; `smoke.spec.ts`: CSP y consola desde el menú y con `?e2e`,
+- [x] 7.1 `tests/e2e/probe.ts` con el tipo `sprites`; `smoke.spec.ts`: CSP y consola desde el menú y con `?e2e`,
   0 placeholders, muestreador `requestAnimationFrame` de 600 frames; título del documento y del menú.
   - Escenarios: SR "Partida con arte", "Desde el menú", "Con e2e"; MM "Título en el menú y en el documento".
-- [ ] 7.2 Hoja rota: `page.route(...).abort()` sobre la hoja de `goblin-torch` (R3: ignorar solo su
+- [x] 7.2 Hoja rota: `page.route(...).abort()` sobre la hoja de `goblin-torch` (R3: ignorar solo su
   "Failed to load resource").
   - Escenarios: SR "Hoja que no carga".
-- [ ] 7.3 Sonda: recuento coherente durante 600 frames, menú tras Volver al menú, sin sonda sin `?e2e`.
+- [x] 7.3 Sonda: recuento coherente durante 600 frames, menú tras Volver al menú, sin sonda sin `?e2e`.
   - Escenarios: SR "Recuento coherente con el snapshot", "Sonda en el menú", "Sin sonda fuera de E2E".
-- [ ] 7.4 `menu-flow.spec.ts`: volver al menú desde la pausa y con cadáveres en curso (semilla 7), cinco ciclos con
+- [x] 7.4 `menu-flow.spec.ts`: volver al menú desde la pausa y con cadáveres en curso (semilla 7), cinco ciclos con
   muestreador y aserción final.
   - Escenarios: MM "Volver al menú desde la pausa", "Volver al menú con cadáveres en curso", "Cinco ciclos
     menú-partida"; SR "Volver al menú con cadáveres en curso".
-- [ ] 7.5 `results.spec.ts` y progreso: cinco reinicios con la sonda; claves técnicas sin cambios y export antiguo
+- [x] 7.5 `results.spec.ts` y progreso: cinco reinicios con la sonda; claves técnicas sin cambios y export antiguo
   importable; ningún texto visible ni aviso con `Sprint Survivors`.
   - Escenarios: RR "Cinco reinicios seguidos", "Import rechazado", "Aviso de datos dañados"; MM "Claves técnicas sin
     cambios", "Export antiguo importable".
-- [ ] 7.6 `tests/remote/public.spec.ts`: cada hoja del manifiesto responde 200 `image/png` bajo `/tfm-survivors/`,
+- [x] 7.6 `tests/remote/public.spec.ts`: cada hoja del manifiesto responde 200 `image/png` bajo `/tfm-survivors/`,
   0 violaciones de CSP. Solo se compila/lista en apply; se ejecuta a demanda tras el merge.
   - Escenarios: SR "Arte en la URL pública".
 

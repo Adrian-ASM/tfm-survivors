@@ -203,3 +203,49 @@ test('Scenario: Jugar, guardar, exportar e importar en producción y persistenci
   expect(pageErrors(watch.messages)).toEqual([]);
   expect(new Set(watch.documents)).toEqual(new Set([TARGET.origin]));
 });
+
+// Change 0012 (spec sprite-rendering, "Arte en la URL pública"): cada hoja de los datos de aspecto
+// se pide bajo la base y responde 200 image/png, sin violaciones de CSP ni errores no capturados.
+// Se lee con fs: el cargador de Playwright exige `with { type: 'json' }` para importar JSON.
+interface AspectSheet {
+  sheet: { file: string };
+}
+const appearanceJson = JSON.parse(
+  readFileSync(new URL('../../content/appearance.json', import.meta.url), 'utf8'),
+) as Record<'player' | 'projectile' | 'gem' | 'ground' | 'corpse', AspectSheet> & {
+  enemies: Record<string, AspectSheet>;
+};
+const SHEETS = [
+  ...new Set(
+    [
+      appearanceJson.player,
+      ...Object.values(appearanceJson.enemies),
+      appearanceJson.projectile,
+      appearanceJson.gem,
+      appearanceJson.ground,
+      appearanceJson.corpse,
+    ].map((a) => a.sheet.file),
+  ),
+];
+
+test('Scenario: Arte en la URL pública (cada hoja 200 image/png bajo la base)', async ({
+  page,
+  watch,
+}) => {
+  const sheets = new Map<string, { status: number; type: string }>();
+  page.on('response', (r) => {
+    const path = decodeURIComponent(new URL(r.url()).pathname);
+    const file = SHEETS.find((f) => path === `${TARGET.pathname}assets/tiny-swords/${f}`);
+    if (file) sheets.set(file, { status: r.status(), type: r.headers()['content-type'] ?? '' });
+  });
+  await page.goto('./');
+  await menuPanel(page).getByRole('button', { name: 'Jugar', exact: true }).click();
+  await expect(menuPanel(page)).toBeHidden();
+  await expect.poll(() => sheets.size).toBe(SHEETS.length);
+
+  for (const file of SHEETS) {
+    expect(sheets.get(file), file).toEqual({ status: 200, type: 'image/png' });
+  }
+  expect(await cspState(page)).toEqual({ violations: [], metas: 1 });
+  expect(pageErrors(watch.messages)).toEqual([]);
+});

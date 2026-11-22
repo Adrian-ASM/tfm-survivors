@@ -342,7 +342,11 @@ Contrastado con todas las deltas (`sprite-rendering` reescrita, `asset-provenanc
 - **R6 · Importar `PROVENANCE.json` desde `public/`**: Vite puede rechazar o advertir al importar desde `publicDir`.
   Se prueba en la tarea de composición con `npm run build` y `vite dev`. Si falla, la nota pasa a
   `content/asset-provenance.json` (versionada, mismo formato) y se anota aquí; la spec deja la ubicación al design.
-- **R7 · API 4.2.1** (confirmado en apply, tarea 5.1, en los tipos de `node_modules/phaser`: `imageLoadType`,
-  `load.spritesheet`, `Loader.Events.FILE_LOAD_ERROR`, enum `Phaser.TintModes` con `setTintMode`,
-  `add.tileSprite` y `Graphics#generateTexture`; sin discrepancias): `imageLoadType`, `TintModes`/`setTintMode`, `TileSprite`, `generateTexture` se confirman en
+  **Resultado en apply (tarea 6.2)**: `npm run build` pasa, pero `vite dev` avisa "Assets in public directory
+  cannot be imported from JavaScript". Se aplica la salida prevista: la nota vive en
+  `content/asset-provenance.json` y `PROVENANCE_PATH` del guardarraíl apunta ahí.
+- **R7 · API 4.2.1**: `imageLoadType`, `TintModes`/`setTintMode`, `TileSprite`, `generateTexture` se confirman en
   los tipos de `node_modules/phaser` en la primera tarea de infraestructura con motor; si discrepan, mandan los tipos.
+  **Confirmado en apply (tarea 5.1)**: `imageLoadType`, `load.spritesheet`, `Loader.Events.FILE_LOAD_ERROR`, enum
+  `Phaser.TintModes` con `setTintMode`, `add.tileSprite` y `Graphics#generateTexture` existen en los tipos 4.2.1;
+  sin discrepancias.

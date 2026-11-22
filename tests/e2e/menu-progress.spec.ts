@@ -172,3 +172,45 @@ test('Mismo fichero desde los dos sitios y mensajes del overlay que no pasan al 
   const e2 = await exportFrom(page, menuButton(page, 'Exportar'));
   expect(e2).toBe(e1);
 });
+
+// Change 0012 (spec main-menu): el título cambia, las claves técnicas no.
+test('Scenario: Claves técnicas sin cambios (récords 300, 8, 120 guardados antes del change)', async ({
+  page,
+}) => {
+  const before = progressText({
+    records: { bestTimeSeconds: 300, bestLevel: 8, maxKills: 120 },
+    history: [],
+  });
+  await seedProgress(page, before);
+  await page.goto(playerUrl());
+
+  const text = await exportFrom(page, menuButton(page, 'Exportar'));
+
+  expect(decoded(text)).toStrictEqual(decoded(before));
+  expect(await stored(page)).toBe(before);
+});
+
+test('Scenario: Export antiguo importable (2 entradas, navegador sin progreso)', async ({
+  page,
+}) => {
+  await page.goto(playerUrl());
+
+  await importFrom(page, menuButton(page, 'Importar'), G_TEXT);
+
+  await expect(menuMessage(page)).toContainText('importado');
+  const text = await exportFrom(page, menuButton(page, 'Exportar'));
+  expect(decoded(text)?.history).toStrictEqual(G.history);
+  expect(await page.locator('body').innerText()).not.toContain('Sprint Survivors');
+});
+
+test('Scenario: Import rechazado desde el menú (no válido y Greentide Vanguard)', async ({
+  page,
+}) => {
+  await page.goto(playerUrl());
+
+  await importFrom(page, menuButton(page, 'Importar'), 'hola');
+
+  await expect(menuMessage(page)).toContainText('no válido');
+  await expect(menuMessage(page)).toContainText('Greentide Vanguard');
+  await expect(menuMessage(page)).not.toContainText('Sprint Survivors');
+});

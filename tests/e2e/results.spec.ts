@@ -8,6 +8,8 @@ import {
   playChoosingFirst,
   probe,
   snapshotOf,
+  startSpriteSampler,
+  stopSpriteSampler,
 } from './probe';
 
 // Bucle jugar → perder → resultados → reiniciar (spec run-results, "Derrota y reinicio en el
@@ -83,5 +85,33 @@ test('Derrota y reinicio en el navegador: ?seed=42 sin input pierde, muestra res
   expect(fresh?.results).toBeNull();
   // Spec simulation-loop, "La velocidad se mantiene al reiniciar": R no relee la URL.
   expect(fresh?.speed).toBe(E2E_SPEED);
+  expect(problems).toEqual([]);
+});
+
+// Change 0012 (spec run-results): cinco reinicios con R y una sexta partida con la sonda coherente.
+test('Scenario: Cinco reinicios seguidos (0 cadáveres al empezar cada una; sexta coherente)', async ({
+  page,
+}) => {
+  test.setTimeout(300_000);
+  const problems = collect(page, ['error']);
+  await page.goto(gameUrl({ seed: 42, speed: E2E_SPEED }));
+  await expectSpeed(page, E2E_SPEED);
+  await expect.poll(async () => (await snapshotOf(page))?.tick ?? null).not.toBeNull();
+  await focusGame(page);
+  const corpsesAtStart: number[] = [];
+  for (let game = 0; game < 5; game++) {
+    const ended = await playChoosingFirst(page, (s) => s.status === 'over', 50_000);
+    expect(ended, `partida ${String(game + 1)}`).not.toBeNull();
+    expect((ended?.enemies.length ?? 0) > 0 && (ended?.gems.length ?? 0) > 0).toBe(true);
+    await page.keyboard.press('r');
+    await expect.poll(async () => (await snapshotOf(page))?.status).toBe('running');
+    corpsesAtStart.push((await probe(page))?.sprites?.corpses.visible ?? -1);
+  }
+  await startSpriteSampler(page);
+  await playChoosingFirst(page, (s) => s.tick >= 600 || s.status === 'over', 30_000);
+  const sample = await stopSpriteSampler(page);
+
+  expect(corpsesAtStart).toEqual([0, 0, 0, 0, 0]);
+  expect(sample.mismatches).toEqual([]);
   expect(problems).toEqual([]);
 });
