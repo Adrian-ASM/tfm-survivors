@@ -15,7 +15,8 @@ Consulta la matriz de AGENTS.md §5. Si es trivial → prompt directo. Si es inc
 ## 1. Preparar el change
 
 1. Id: `NNNN-kebab-case` (siguiente número libre en `openspec/changes/` y `openspec/changes/archive/`).
-2. Worktree y rama: skill `worktree-flow` → `change/NNNN-…`.
+2. Worktree y rama: skill `worktree-flow` → `change/NNNN-…`. Si el worktree ya existía, comprueba que tiene
+   `node_modules` (si no, `npm ci`) antes del primer commit, también el de los artefactos de planificación.
 3. Crea `openspec/changes/<id>/` y, si existe una issue en GitHub, anota su número en `proposal.md`.
 
 ## 2. Fases

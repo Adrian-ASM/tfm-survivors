@@ -18,6 +18,9 @@
     "smoke:public": "playwright test --config playwright.remote.config.ts",
     "guard:all": "node scripts/guard-staged.mjs --all",
     "verify": "npm run lint && npm run typecheck && npm run guard:all && npm run test",
+    "lint:fast": "eslint --cache --cache-location node_modules/.cache/eslint/ .",
+    "test:fast": "vitest run --changed --exclude tests/domain/balance.test.ts",
+    "verify:fast": "npm run lint:fast && npm run typecheck && npm run test:fast",
     "prepare": "husky",
     "bench": "vitest bench --run --reporter=verbose"
   },

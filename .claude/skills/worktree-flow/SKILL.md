@@ -19,6 +19,10 @@ cd ../<repo>.worktrees/<id> && npm ci   # cada worktree tiene su node_modules
 ```
 En Windows puedes usar `scripts/worktree.ps1 new <id>`.
 
+**Worktree ya existente** (creado por la app, aparcado o rebasado): si no tiene `node_modules`, ejecuta `npm ci`
+antes del primer commit. Sin dependencias husky no está instalado, el pre-commit no corre y el formato o el lint
+fallan después (0012: hizo falta un commit `style: prettier`).
+
 Comprueba que los hooks de commit están activos: `git config --get core.hooksPath` debe apuntar a una carpeta que
 exista **en este worktree** (`.husky/_`). Un worktree creado por la app puede heredar una ruta absoluta del checkout
 principal que no existe, y entonces el pre-commit no se ejecuta (0011). Arréglalo con
