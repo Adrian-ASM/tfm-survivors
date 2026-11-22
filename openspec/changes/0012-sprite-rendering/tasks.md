@@ -62,10 +62,10 @@
   - Escenarios: SR "Datos del repositorio", "Hoja de cada elemento".
 
 ## 4. Infraestructura · render puro (sin Phaser como valor)
-- [ ] 4.1 `src/infrastructure/phaser/art/animation.ts`: `AnimClock.advance(deltaMs, frozen)`, `frameAt`
+- [x] 4.1 `src/infrastructure/phaser/art/animation.ts`: `AnimClock.advance(deltaMs, frozen)`, `frameAt`
   (bucle / sin bucle), `animDone`. Test `tests/infrastructure/animation.test.ts`.
   - Escenarios: SR "Avance de la animación" (fórmula ±1 frame), "Mundo detenido" (reloj congelado).
-- [ ] 4.2 `Motion` en `animation.ts`: Δ con umbral 0,001, orientación con `facing`, solo se actualiza con tick nuevo,
+- [x] 4.2 `Motion` en `animation.ts`: Δ con umbral 0,001, orientación con `facing`, solo se actualiza con tick nuevo,
   `reset()` a `idle` sin voltear.
   - Escenarios: SR "Umbral de movimiento", "Jugador que gira", "Dibujo que mira a la izquierda", "Frames sin tick".
 - [ ] 4.3 `art/looks.ts`: `resolveLooks(appearance, frames)`; hoja ausente o índice fuera de rango → reserva
