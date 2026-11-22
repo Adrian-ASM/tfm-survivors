@@ -62,6 +62,34 @@ describe('Datos de aspecto validados · forma y rangos', () => {
   });
 });
 
+describe('Datos de aspecto validados · rutas de hoja (design D2)', () => {
+  it.each([
+    '',
+    '../secreto.png',
+    '/torch.png',
+    'https://ejemplo.com/torch.png',
+    'data:image/png;base64,AAAA',
+    'torch.gif',
+    'Factions/Goblins/Troops/Torch/Red/Otro.png',
+    'Factions/../Torch_Red.png',
+    'Factions\\Torch_Red.png',
+  ])('Scenario: Rutas de hoja no admitidas (%j)', (file) => {
+    const raw = rawAppearance();
+    const sheet = torch(raw).sheet ?? {};
+    sheet.file = file;
+    expect(failure(raw)).toBe('enemies.goblin-torch.sheet.file');
+  });
+
+  it('una hoja registrada en la nota de procedencia es válida', () => {
+    expect(parseAppearance(rawAppearance(), REGISTERED).ok).toBe(true);
+  });
+
+  it('sin nota de procedencia ninguna hoja es válida (nombra la primera)', () => {
+    const r = parseAppearance(rawAppearance(), []);
+    expect(r.ok ? '' : r.error.field).toBe('player.sheet.file');
+  });
+});
+
 describe('Datos de aspecto validados · animaciones obligatorias y campos desconocidos', () => {
   it('Scenario: Animaciones obligatorias (jugador sin walk)', () => {
     const raw = rawAppearance();

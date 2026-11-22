@@ -43,8 +43,17 @@ const DeathSchema = z.strictObject({
   loop: z.literal(false, { error: DEATH_MUST_NOT_LOOP }),
 });
 
-/** Ruta de la hoja; `loadAppearance` añade la regex de D2 y la pertenencia a la nota de procedencia. */
-export const SheetFile = z.string();
+export const SHEET_FILE_FORMAT =
+  'La hoja es una ruta .png relativa a la carpeta de assets, sin "..", sin "/" inicial ni esquema.';
+export const SHEET_NOT_REGISTERED =
+  'La hoja no figura en la nota de procedencia (PROVENANCE.json).';
+/** Carpeta versionada del arte: la ruta en la nota es esta carpeta + `file`. */
+export const ASSET_DIR = 'public/assets/tiny-swords/';
+
+/** Ruta de la hoja (design D2); `parseAppearance` comprueba además que figura en la nota. */
+const SheetFile = z
+  .string()
+  .regex(/^(?!.*\.\.)[A-Za-z0-9_][A-Za-z0-9_./-]*\.png$/, { error: SHEET_FILE_FORMAT });
 
 const BaseShape = {
   sheet: z.strictObject({ file: SheetFile, frameWidth: FrameSize, frameHeight: FrameSize }),

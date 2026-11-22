@@ -52,7 +52,7 @@
   línea, `facing`, `loop`, `death.loop` literal `false`, `walk` obligatorio en jugador y enemigos.
   Test `tests/infrastructure/appearance-content.test.ts` con un fixture válido mínimo.
   - Escenarios: SR "Valores fuera de rango", "Animaciones obligatorias y campos desconocidos".
-- [ ] 3.2 Rutas de hoja: regex de D2 y pertenencia a `registered` (`public/assets/tiny-swords/` + `file`).
+- [x] 3.2 Rutas de hoja: regex de D2 y pertenencia a `registered` (`public/assets/tiny-swords/` + `file`).
   - Escenarios: SR "Rutas de hoja no admitidas" (7 casos, el error nombra la hoja de `goblin-torch`).
 - [ ] 3.3 `content/appearance.json` del repo (índices de D4, escalas y orígenes de D5, `maxCorpses` 64,
   `placeholderColor` desde los colores actuales). Test de contenido: cabecera IHDR de cada PNG → rejilla exacta e
