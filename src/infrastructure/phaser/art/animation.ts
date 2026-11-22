@@ -48,6 +48,27 @@ export function animDone(anim: AnimSpec, ms: number): boolean {
 }
 
 /**
+ * Animación en curso de un sprite: al cambiar de animación empieza desde su primer frame. Devuelve
+ * el tiempo transcurrido desde que empezó la actual.
+ */
+export class AnimTrack<K extends string> {
+  private current: K | null = null;
+  private startMs = 0;
+
+  play(name: K, nowMs: number): number {
+    if (name !== this.current) {
+      this.current = name;
+      this.startMs = nowMs;
+    }
+    return nowMs - this.startMs;
+  }
+
+  reset(): void {
+    this.current = null;
+  }
+}
+
+/**
  * Estado y orientación de un sprite por el desplazamiento entre snapshots de ticks distintos. Un
  * frame que repite el tick conserva todo; el primero tras `reset` no hereda nada (idle, sin voltear).
  */

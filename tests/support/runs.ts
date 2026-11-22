@@ -64,10 +64,7 @@ export function ticks(run: Run, n: number, input = PlayerInput.NONE): RunSnapsho
 }
 
 /** Elige `pick(oferta)` mientras haya una oferta abierta (también las encoladas). */
-export function chooseWhileOpen(
-  run: Run,
-  pick: (offer: RunSnapshot['offer']) => number,
-): number {
+export function chooseWhileOpen(run: Run, pick: (offer: RunSnapshot['offer']) => number): number {
   let choices = 0;
   while (run.status === 'choosing') {
     const r = run.chooseUpgrade(pick(run.snapshot().offer));

@@ -74,7 +74,7 @@
 - [x] 4.4 `SlotPool`: `hide(slot, cleared)` y liberación en el orden del snapshot anterior (array preasignado).
   Test en `tests/infrastructure/slot-pool.test.ts` (o el de capas existente).
   - Escenarios: SR "Tope de cadáveres" (orden e1..e7, base), SL "Bajas en medio de la lista".
-- [ ] 4.5 `SpriteLike.ts` (sustituye a `CircleSprite`) + `SpriteKit` con `TintModes` inyectados + `FakeSprite` en
+- [x] 4.5 `SpriteLike.ts` (sustituye a `CircleSprite`) + `SpriteKit` con `TintModes` inyectados + `FakeSprite` en
   `tests/support/`, y `PlayerView` (idle/walk, volteo, parpadeo con `playerVisible`, `idle` con `over`, `reset()`).
   - Escenarios: SR "Quieto y andando", "Parpadeo con sprite animado", "Partida terminada", "Primer frame de una
     partida nueva"; RR "Primer frame tras reiniciar" (parte del jugador).
