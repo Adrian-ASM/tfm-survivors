@@ -1,3 +1,6 @@
+import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -238,5 +241,56 @@ describe('guard-assets · lista de ficheros versionados (spec asset-provenance)'
 
   it('un repositorio sin assets ni nota pasa', () => {
     expect(run(undefined, ['README.md', 'src/main.ts'])).toBe('');
+  });
+});
+
+describe('guard-assets · estado real del repositorio', () => {
+  const versioned = execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8' })
+    .split('\0')
+    .filter(Boolean);
+  const notePath = join(root, PROVENANCE_PATH);
+  const real = existsSync(notePath)
+    ? (JSON.parse(readFileSync(notePath, 'utf8')) as Provenance)
+    : undefined;
+  const diskDigest = (path: string): Digest => {
+    const blob = readFileSync(join(root, path));
+    return { sha256: createHash('sha256').update(blob).digest('hex'), bytes: blob.length };
+  };
+
+  it('Scenario: Nota del repositorio', () => {
+    expect(real).toMatchObject({
+      pack: 'Tiny Swords',
+      author: 'Pixel Frog',
+      version: 'Update 010',
+      license: 'CC0',
+      confirmedOn: '2026-11-22',
+    });
+    const entries = real?.files ?? [];
+    expect(entries.length).toBeGreaterThanOrEqual(1);
+    for (const e of entries) {
+      expect(e.path?.length ?? 0).toBeGreaterThan(0);
+      expect(e.source?.length ?? 0).toBeGreaterThan(0);
+    }
+  });
+
+  it('Scenario: Estado real del repositorio', () => {
+    expect(checkAssets({ files: versioned, provenance: real, digest: diskDigest })).toEqual([]);
+  });
+
+  it('la nota del repositorio no enlaza capturas ni pruebas de la confirmación', () => {
+    expect(JSON.stringify(real ?? {})).not.toMatch(/\.(png|jpe?g|pdf)"?\s*[,}]\s*$/m);
+    expect(Object.keys(real ?? {}).sort()).toEqual(
+      ['author', 'confirmedOn', 'files', 'homepage', 'license', 'note', 'pack', 'version'].sort(),
+    );
+  });
+
+  it('Scenario: PNG sin registrar (lista real + public/assets/extra/Goblin_Red.png)', () => {
+    const extra = 'public/assets/extra/Goblin_Red.png';
+    const out = checkAssets({
+      files: [...versioned, extra],
+      provenance: real,
+      digest: (p) => (p === extra ? { sha256: '', bytes: 0 } : diskDigest(p)),
+    });
+    expect(out.join('\n')).toContain(extra);
   });
 });

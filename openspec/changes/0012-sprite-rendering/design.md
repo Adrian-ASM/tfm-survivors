@@ -83,7 +83,8 @@ Dimensiones leídas de la imagen en esta fase; las fija un test (D9) leyendo la 
 - Color: Arquero azul contra goblins rojos (contraste de bando). Los tres goblins se distinguen por silueta.
 - No entran: `.aseprite`, `.DS_Store` (hay en todas las carpetas del pack), `Archer + Bow.zip`, otros colores,
   `Warrior`, `Pawn`, `HappySheep`, `Buildings`, `UI`, `Effects`, `Deco`.
-- **Peso: no medido** (esta fase no tiene shell). Estimación por dimensiones y paleta: 0,1-0,3 MB en total. La
+- **Peso medido en apply (tarea 2.4): 219.672 bytes (≈ 0,21 MB) los 8 PNG**; dimensiones IHDR iguales a la
+  tabla. Texto original de la fase de design: no medido (esta fase no tiene shell). Estimación por dimensiones y paleta: 0,1-0,3 MB en total. La
   tarea de copia lo mide (`Get-Item`/`fs.statSync`) y lo escribe en `bytes` de `PROVENANCE.json`, que el
   guardarraíl comprueba; el verify-report anota el peso de `dist/`. Memoria de GPU: ~20 MB (RGBA de las 8 hojas;
   la del Arquero, 1536 × 1344, es la mayor con ~8 MB).

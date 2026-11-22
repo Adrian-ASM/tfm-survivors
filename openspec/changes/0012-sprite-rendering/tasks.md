@@ -39,7 +39,7 @@
   y un PNG sin entrada → código ≠ 0 y salida que nombra el PNG.
   - Hecho: sin red ni acceso a la carpeta original del pack.
   - Escenarios: AP "Verify en rojo", "Sin red ni pack".
-- [ ] 2.4 Copiar los 8 PNG de D4 a `public/assets/tiny-swords/<ruta del pack>` (sin `.aseprite`, `.DS_Store` ni
+- [x] 2.4 Copiar los 8 PNG de D4 a `public/assets/tiny-swords/<ruta del pack>` (sin `.aseprite`, `.DS_Store` ni
   zip) y crear `PROVENANCE.json` (autor Pixel Frog, `confirmedOn: "2026-11-22"`, `source` con prefijo
   `Tiny Swords (Update 010)/`, `sha256` y `bytes` medidos). Rojo: test "estado real" de `assets.test.ts` (lee el
   repo real) falla sin la nota.
