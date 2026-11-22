@@ -60,26 +60,26 @@ const distance = (a: { x: number; y: number }, b: { x: number; y: number }): num
 describe('Run · oleadas por tramos', () => {
   it('Cambio de tramo', () => {
     const config = aWavesConfig({
-      segments: [aSegment(['bug'], 1), aSegment(['memory-leak'], 1, 30)],
+      segments: [aSegment(['goblin-torch'], 1), aSegment(['goblin-tnt'], 1, 30)],
     });
     // Prueba el spawn, no el daño: con la vida por defecto el jugador quieto muere antes del tramo 2.
     const { births } = simulate(withPlayer(config, { maxHealth: LONG_RUN_HEALTH }), 3600);
     const before = births.filter((b) => b.tick < 1790).map((b) => b.enemy.type);
     const after = births.filter((b) => b.tick > 1810).map((b) => b.enemy.type);
-    expect(new Set(before)).toEqual(new Set(['bug']));
-    expect(new Set(after)).toEqual(new Set(['memory-leak']));
+    expect(new Set(before)).toEqual(new Set(['goblin-torch']));
+    expect(new Set(after)).toEqual(new Set(['goblin-tnt']));
   });
 
   it('Un solo tramo', () => {
-    const { births } = simulate(aWavesConfig({ segments: [aSegment(['bug'], 1)] }), 36_000);
+    const { births } = simulate(aWavesConfig({ segments: [aSegment(['goblin-torch'], 1)] }), 36_000);
     expect(births.length).toBeGreaterThan(0);
-    expect(births.every((b) => b.enemy.type === 'bug')).toBe(true);
+    expect(births.every((b) => b.enemy.type === 'goblin-torch')).toBe(true);
   });
 });
 
 describe('Run · posición de aparición', () => {
   it('Jugador en una esquina', () => {
-    const config = aWavesConfig({ segments: [aSegment(['bug', 'memory-leak'], 5)] });
+    const config = aWavesConfig({ segments: [aSegment(['goblin-torch', 'goblin-tnt'], 5)] });
     const { births } = simulate(config, 3600, { setup: { player: { x: 16, y: 16 } } });
     expect(births.length).toBeGreaterThan(0);
     for (const b of births) {
@@ -91,7 +91,7 @@ describe('Run · posición de aparición', () => {
 
   it('Ninguna posición válida', () => {
     const config = aWavesConfig({
-      segments: [aSegment(['bug'], 5)],
+      segments: [aSegment(['goblin-torch'], 5)],
       spawn: { minDistance: 2000, maxAttempts: 8 },
     });
     const random = new CountingRandom(new Mulberry32RandomGenerator(42));
@@ -117,7 +117,7 @@ describe('Run · posición de aparición', () => {
     // Jugador en (16, 16): con 0,625 (225°) el punto del anillo cae en la esquina, a < 200 → inválido;
     // con 0,125 (45°) queda a 582,7 → válido.
     const stub = new StubRandom(0.625);
-    const config = aWavesConfig({ segments: [aSegment(['bug'], 1)] });
+    const config = aWavesConfig({ segments: [aSegment(['goblin-torch'], 1)] });
     const { births } = simulate(config, 121, {
       random: stub,
       setup: { player: { x: 16, y: 16 } },
@@ -132,8 +132,8 @@ describe('Run · posición de aparición', () => {
 describe('Run · catálogo', () => {
   it('Valores de cada tipo llegan al dominio', () => {
     const config = aWavesConfig({
-      types: [{ id: 'bug', speed: 90, radius: 10, cost: 1, damage: 5, health: 10, xp: 1 }],
-      segments: [aSegment(['bug'], 1)],
+      types: [{ id: 'goblin-torch', speed: 90, radius: 10, cost: 1, damage: 5, health: 10, xp: 1 }],
+      segments: [aSegment(['goblin-torch'], 1)],
     });
     const { run, births } = simulate(config, 60);
     const born = births[0]?.enemy;

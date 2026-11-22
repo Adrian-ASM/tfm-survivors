@@ -154,17 +154,17 @@ describe('Contenido de enemigos y oleadas validado · vida, daño y máximo de p
     const config = parseRunConfig(raw);
     if (!config.ok) throw new Error(config.error.message);
     const rules = buildRunRules(config.value);
-    const bug = rules.ok ? rules.value.catalog.get('bug') : undefined;
+    const bug = rules.ok ? rules.value.catalog.get('goblin-torch') : undefined;
     expect(bug).toMatchObject(values);
   });
 });
 
 describe('XP de los enemigos y radio de recogida validados (0005)', () => {
-  it('Scenario: XP por defecto de cada tipo (bug 1, merge-conflict 2, memory-leak 4)', () => {
+  it('Scenario: XP por defecto de cada tipo (torch 1, barrel 2, tnt 4)', () => {
     const r = loadRunConfig();
     if (!r.ok) throw new Error(r.error.message);
     const xp = Object.fromEntries(r.value.enemies.types.map((t) => [t.id, t.xp]));
-    expect(xp).toEqual({ bug: 1, 'merge-conflict': 2, 'memory-leak': 4 });
+    expect(xp).toEqual({ 'goblin-torch': 1, 'goblin-barrel': 2, 'goblin-tnt': 4 });
   });
 
   it.each([0, -1, 1.5])('Scenario: XP inválida o ausente (xp %s)', (xp) => {
@@ -302,7 +302,7 @@ describe('Contenido de enemigos y oleadas validado · forma y rangos (zod)', () 
 describe('Contenido de enemigos y oleadas validado · reglas cruzadas (dominio desde zod)', () => {
   it('Oleada con un tipo inexistente', () => {
     const raw = rawContent();
-    raw.waves.segments[0].types = ['bug', 'segfault'];
+    raw.waves.segments[0].types = ['goblin-torch', 'segfault'];
     const e = failure(raw);
     expect(e.field).toBe('waves.segments.0.types.1');
     expect(e.message).toContain('segfault');
@@ -322,7 +322,7 @@ describe('Contenido de enemigos y oleadas validado · reglas cruzadas (dominio d
 
   it('Identificador duplicado', () => {
     const raw = rawContent();
-    raw.enemies.types[1].id = 'bug';
+    raw.enemies.types[1].id = 'goblin-torch';
     expect(failure(raw).field).toBe('enemies.types.1.id');
   });
 
@@ -335,9 +335,9 @@ describe('Contenido de enemigos y oleadas validado · reglas cruzadas (dominio d
   it('Tramos desordenados o repetidos', () => {
     const raw = rawContent();
     raw.waves.segments = [
-      { fromSecond: 0, budgetPerSecond: 1, types: ['bug'] },
-      { fromSecond: 60, budgetPerSecond: 1, types: ['bug'] },
-      { fromSecond: 60, budgetPerSecond: 1, types: ['bug'] },
+      { fromSecond: 0, budgetPerSecond: 1, types: ['goblin-torch'] },
+      { fromSecond: 60, budgetPerSecond: 1, types: ['goblin-torch'] },
+      { fromSecond: 60, budgetPerSecond: 1, types: ['goblin-torch'] },
     ];
     expect(failure(raw).field).toBe('waves.segments.2.fromSecond');
   });
@@ -401,10 +401,37 @@ describe('Contenido por defecto del repositorio', () => {
 
   it('Contenido por defecto', () => {
     const types = config?.enemies.types ?? [];
-    expect(types.map((t) => t.id)).toEqual(['bug', 'memory-leak', 'merge-conflict']);
+    expect(types.map((t) => t.id)).toEqual(['goblin-torch', 'goblin-tnt', 'goblin-barrel']);
     for (const t of types) {
       expect(Math.min(t.speed, t.radius, t.cost, t.health, t.damage)).toBeGreaterThan(0);
     }
+  });
+
+  it('Scenario: Catálogo de tipos de enemigo (ids goblin con los stats heredados, mismo orden)', () => {
+    const stats = (config?.enemies.types ?? []).map((t) => [
+      t.id,
+      t.speed,
+      t.radius,
+      t.health,
+      t.damage,
+      t.xp,
+    ]);
+    expect(stats).toEqual([
+      ['goblin-torch', 90, 10, 10, 5, 1],
+      ['goblin-tnt', 45, 22, 45, 15, 4],
+      ['goblin-barrel', 70, 16, 20, 8, 2],
+    ]);
+  });
+
+  it('Scenario: Contenido de enemigos y oleadas validado (oleadas con los ids goblin)', () => {
+    const segments = (config?.waves.segments ?? []).map((s) => s.types);
+    expect(segments).toEqual([
+      ['goblin-torch'],
+      ['goblin-torch', 'goblin-barrel'],
+      ['goblin-torch', 'goblin-barrel', 'goblin-tnt'],
+      ['goblin-torch', 'goblin-barrel', 'goblin-tnt'],
+      ['goblin-torch', 'goblin-barrel', 'goblin-tnt'],
+    ]);
   });
 
   it('Oleadas que crecen con el contenido por defecto', () => {

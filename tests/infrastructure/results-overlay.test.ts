@@ -104,12 +104,12 @@ describe('ResultsOverlay (spec run-results)', () => {
 /** Partida terminada (derrota con un bug letal en el tick 1, o victoria con 1 s de duración). */
 function endedRun(outcome: 'won' | 'lost'): StartedRun {
   const base = aDefaultConfig();
-  const lethal = base.enemies.types.map((t) => (t.id === 'bug' ? { ...t, damage: 1e6 } : t));
+  const lethal = base.enemies.types.map((t) => (t.id === 'goblin-torch' ? { ...t, damage: 1e6 } : t));
   const config: RunConfig =
     outcome === 'won'
       ? { ...base, run: { durationSeconds: 1 } }
       : { ...base, enemies: { types: lethal } };
-  const setup = outcome === 'won' ? {} : { enemies: [{ type: 'bug', x: 480, y: 270 }] };
+  const setup = outcome === 'won' ? {} : { enemies: [{ type: 'goblin-torch', x: 480, y: 270 }] };
   const r = new StartRun().execute(config, new Mulberry32RandomGenerator(42), setup);
   if (!r.ok) throw new Error(r.error.message);
   for (let i = 0; i < 60 && r.value.tickRun.status !== 'over'; i++) {

@@ -29,7 +29,7 @@ function busyConfig(): RunConfig {
   return {
     ...base,
     enemies: { types: [...base.enemies.types, probe] },
-    waves: aWavesConfig({ segments: [aSegment(['bug'], 0)] }).waves,
+    waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 0)] }).waves,
   };
 }
 
@@ -69,7 +69,7 @@ describe('Simulación congelada mientras se elige mejora', () => {
 
 const quietDefault = (patch: Partial<RunConfig> = {}): RunConfig => ({
   ...aDefaultConfig(),
-  waves: aWavesConfig({ segments: [aSegment(['bug'], 0)] }).waves,
+  waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 0)] }).waves,
   ...patch,
 });
 const atPlayer = { x: 480, y: 270 };

@@ -14,7 +14,7 @@ import { weaponsOf } from '../support/weapons';
 
 const PX = 480;
 const PY = 270;
-const bugType = aProbeType({ id: 'bug', speed: 90, damage: 5, health: 10 });
+const bugType = aProbeType({ id: 'goblin-torch', speed: 90, damage: 5, health: 10 });
 
 /** Ticks (1-based) en los que aparece algún proyectil con id no visto antes. */
 function projectileTicks(snaps: readonly RunSnapshot[]): number[] {
@@ -57,9 +57,9 @@ describe('Run · paso de armas en el tick', () => {
   });
 
   it('Scenario: Las armas apuntan tras la persecución (101 → 99,5: pulso y vida 6)', () => {
-    const bug = aProbeType({ id: 'bug', speed: 90, health: 10, damage: 5 });
+    const bug = aProbeType({ id: 'goblin-torch', speed: 90, health: 10, damage: 5 });
     const run = startRun(armed(weaponsOf([TESTS]), bug), {
-      enemies: [{ type: 'bug', x: PX + 101, y: PY }],
+      enemies: [{ type: 'goblin-torch', x: PX + 101, y: PY }],
     });
     const [s1] = ticks(run, 1);
     expect(s1?.pulses).toHaveLength(1);
@@ -69,7 +69,7 @@ describe('Run · paso de armas en el tick', () => {
   it('Scenario: Un enemigo recién aparecido no es objetivo en su tick de aparición', () => {
     // Vista pequeña, margin 0 y minDistance 0: aparece a ~71 px, dentro de alcance y del pulso.
     const base = aWavesConfig({
-      segments: [aSegment(['bug'], 60)],
+      segments: [aSegment(['goblin-torch'], 60)],
       spawn: { margin: 0, minDistance: 0 },
     });
     const config: RunConfig = withWeapons(
@@ -85,8 +85,8 @@ describe('Run · paso de armas en el tick', () => {
   it('Scenario: La baja impide el contacto en ese tick (vida del jugador sigue en 100)', () => {
     // Bug rápido (20 px/tick) a 100 px: entra en contacto en el tick 4, justo cuando lo alcanza
     // el proyectil del tick 1 (24 px frente a 20 px).
-    const fast = aProbeType({ id: 'bug', speed: 1200, damage: 5, health: 10 });
-    const setup = { enemies: [{ type: 'bug', x: PX + 100, y: PY, health: 4 }] };
+    const fast = aProbeType({ id: 'goblin-torch', speed: 1200, damage: 5, health: 10 });
+    const setup = { enemies: [{ type: 'goblin-torch', x: PX + 100, y: PY, health: 4 }] };
     const control = ticks(startRun(armed(weaponsOf([]), fast), setup), 4);
     expect(control.map((s) => s.player.health)).toEqual([100, 100, 100, 95]);
     const snaps = ticks(startRun(armed(weaponsOf([LINTER]), fast), setup), 4);
@@ -97,10 +97,10 @@ describe('Run · paso de armas en el tick', () => {
 
   it('Scenario: Reposición en el mismo tick y Una baja libera el hueco antes del director (maxAlive 1)', () => {
     const config = withWeapons(
-      aContactConfig({ segments: [aSegment(['bug'], 60)], maxAlive: 1, types: [bugType] }),
+      aContactConfig({ segments: [aSegment(['goblin-torch'], 60)], maxAlive: 1, types: [bugType] }),
       weaponsOf([LINTER]),
     );
-    const run = startRun(config, { enemies: [{ type: 'bug', x: PX + 100, y: PY, health: 4 }] });
+    const run = startRun(config, { enemies: [{ type: 'goblin-torch', x: PX + 100, y: PY, health: 4 }] });
     let snap = run.snapshot();
     while (snap.enemies[0]?.id === 0 && snap.tick < 60) snap = ticks(run, 1)[0] ?? snap;
     expect(snap.tick).toBeLessThan(60);
@@ -123,7 +123,7 @@ describe('Run · snapshot con armas', () => {
 
   it('Scenario: Carga de las armas en el snapshot (Linter 31–100, Tests 91–100)', () => {
     const run = startRun(armed(DEFAULT_WEAPONS, bugType), {
-      enemies: [{ type: 'bug', x: PX + 50, y: PY, health: 4 }],
+      enemies: [{ type: 'goblin-torch', x: PX + 50, y: PY, health: 4 }],
     });
     const snaps = ticks(run, 100);
     expect(snaps[1]?.enemies).toEqual([]);
@@ -136,9 +136,9 @@ describe('Run · snapshot con armas', () => {
 
   it('Scenario: Pulso identificado en el snapshot (disparo en 40, leído en 43)', () => {
     // Bug lento (1 px/tick) que empieza a 139 px: entra en el radio del pulso (< 100) en el tick 40.
-    const slow = aProbeType({ id: 'bug', speed: 60, health: 100 });
+    const slow = aProbeType({ id: 'goblin-torch', speed: 60, health: 100 });
     const run = startRun(armed(weaponsOf([TESTS]), slow), {
-      enemies: [{ type: 'bug', x: PX + 139, y: PY }],
+      enemies: [{ type: 'goblin-torch', x: PX + 139, y: PY }],
     });
     const snaps = ticks(run, 43);
     expect(snaps.filter((s) => s.pulses.length > 0).map((s) => s.tick)).toEqual([40, 41, 42, 43]);
@@ -146,9 +146,9 @@ describe('Run · snapshot con armas', () => {
   });
 
   it('indica daño reciente de T a T + 3 (hitFlashTicks 4)', () => {
-    const tough = aProbeType({ id: 'bug', speed: 60, health: 100 });
+    const tough = aProbeType({ id: 'goblin-torch', speed: 60, health: 100 });
     const run = startRun(armed(weaponsOf([TESTS]), tough), {
-      enemies: [{ type: 'bug', x: PX + 139, y: PY }],
+      enemies: [{ type: 'goblin-torch', x: PX + 139, y: PY }],
     });
     const snaps = ticks(run, 45);
     const flags = snaps.slice(38, 45).map((s) => s.enemies[0]?.damaged);

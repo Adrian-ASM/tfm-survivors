@@ -17,8 +17,8 @@ function catalog(): EnemyCatalog {
   if (!arena.ok) throw new Error(arena.error.message);
   const r = EnemyCatalog.create(
     [
-      { id: 'bug', speed: 90, radius: 10, cost: 1, damage: 5, health: 10, xp: 1 },
-      { id: 'memory-leak', speed: 45, radius: 22, cost: 3, damage: 5, health: 10, xp: 1 },
+      { id: 'goblin-torch', speed: 90, radius: 10, cost: 1, damage: 5, health: 10, xp: 1 },
+      { id: 'goblin-tnt', speed: 45, radius: 22, cost: 3, damage: 5, health: 10, xp: 1 },
     ],
     arena.value,
   );
@@ -26,7 +26,7 @@ function catalog(): EnemyCatalog {
   return r.value;
 }
 
-const seg = (fromSecond: number, types: string[] = ['bug'], budgetPerSecond = 1) => ({
+const seg = (fromSecond: number, types: string[] = ['goblin-torch'], budgetPerSecond = 1) => ({
   fromSecond,
   budgetPerSecond,
   types,
@@ -46,14 +46,14 @@ function failure(segments: WaveSegmentConfig[]): { field: string; message: strin
 
 describe('WaveTable · validación', () => {
   it('resuelve los tipos de cada tramo contra el catálogo', () => {
-    const t = table([seg(0), seg(30, ['memory-leak', 'bug'], 2)]);
+    const t = table([seg(0), seg(30, ['goblin-tnt', 'goblin-torch'], 2)]);
     expect(t.segments).toHaveLength(2);
-    expect(t.segments[1]?.types.map((type) => type.id)).toEqual(['memory-leak', 'bug']);
+    expect(t.segments[1]?.types.map((type) => type.id)).toEqual(['goblin-tnt', 'goblin-torch']);
     expect(t.segments[1]?.budgetPerSecond).toBe(2);
   });
 
   it('Oleada con un tipo inexistente', () => {
-    const e = failure([seg(0, ['bug', 'segfault'])]);
+    const e = failure([seg(0, ['goblin-torch', 'segfault'])]);
     expect(e.field).toBe('waves.segments.0.types.1');
     expect(e.message).toContain(UNKNOWN_ENEMY_TYPE);
     expect(e.message).toContain('segfault');
@@ -89,14 +89,14 @@ describe('WaveTable · validación', () => {
   });
 
   it.each([-1, Number.NaN])('rechaza un budgetPerSecond negativo o no finito (%s)', (budget) => {
-    expect(failure([seg(0, ['bug'], budget)])).toMatchObject({
+    expect(failure([seg(0, ['goblin-torch'], budget)])).toMatchObject({
       field: 'waves.segments.0.budgetPerSecond',
       message: BUDGET_MUST_BE_NON_NEGATIVE,
     });
   });
 
   it('acepta un budgetPerSecond 0', () => {
-    expect(WaveTable.create([seg(0, ['bug'], 0)], catalog()).ok).toBe(true);
+    expect(WaveTable.create([seg(0, ['goblin-torch'], 0)], catalog()).ok).toBe(true);
   });
 });
 

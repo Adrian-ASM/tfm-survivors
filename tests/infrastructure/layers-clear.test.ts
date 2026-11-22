@@ -111,7 +111,7 @@ describe('Vista limpia tras reiniciar (spec run-results, capas)', () => {
       tick: 900,
       enemies: Array.from({ length: 200 }, (_, i) => ({
         ...at(i),
-        type: 'bug',
+        type: 'goblin-torch',
         health: 10,
         damaged: false,
       })),

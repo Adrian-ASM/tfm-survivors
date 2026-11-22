@@ -29,7 +29,7 @@ function quiet(): { run: Run; loop: FixedStepLoop; tickRun: TickRun } {
 /** Partida que abre una oferta en el 3.er tick que ejecuta (gema a 36 px con XP 4 de 5). */
 function offeringAtThird(): { run: Run; loop: FixedStepLoop; tickRun: TickRun } {
   const base = aDefaultConfig();
-  const config = { ...base, waves: aWavesConfig({ segments: [aSegment(['bug'], 0)] }).waves };
+  const config = { ...base, waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 0)] }).waves };
   const run = startRun(config, {
     player: CENTER,
     gems: [{ x: 516, y: 270, value: 1 }],
@@ -153,7 +153,7 @@ describe('advanceFrame · corte del frame', () => {
 function doomed(): StartedRun {
   const r = new StartRun().execute(lethalConfig(), new Mulberry32RandomGenerator(42), {
     player: CENTER,
-    enemies: [{ type: 'bug', ...CENTER }],
+    enemies: [{ type: 'goblin-torch', ...CENTER }],
   });
   if (!r.ok) throw new Error(r.error.message);
   return r.value;

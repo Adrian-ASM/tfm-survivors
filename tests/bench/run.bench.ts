@@ -149,9 +149,9 @@ function runAtCap(): Run {
   return run;
 }
 
-/** 200 `bug` (vida BENCH_HEALTH) en el centro del jugador desde el tick 0 (contacto continuo). */
+/** 200 `goblin-torch` (vida BENCH_HEALTH) en el centro del jugador desde el tick 0 (contacto continuo). */
 function runPiledOnPlayer(): Run {
-  const enemies = Array.from({ length: CAP }, () => ({ type: 'bug', x: 480, y: 270 }));
+  const enemies = Array.from({ length: CAP }, () => ({ type: 'goblin-torch', x: 480, y: 270 }));
   return start({ enemies });
 }
 

@@ -1,8 +1,16 @@
 {
   "types": [
-    { "id": "bug", "speed": 90, "radius": 10, "cost": 1, "damage": 5, "health": 10, "xp": 1 },
     {
-      "id": "memory-leak",
+      "id": "goblin-torch",
+      "speed": 90,
+      "radius": 10,
+      "cost": 1,
+      "damage": 5,
+      "health": 10,
+      "xp": 1
+    },
+    {
+      "id": "goblin-tnt",
       "speed": 45,
       "radius": 22,
       "cost": 3,
@@ -11,7 +19,7 @@
       "xp": 4
     },
     {
-      "id": "merge-conflict",
+      "id": "goblin-barrel",
       "speed": 70,
       "radius": 16,
       "cost": 2,

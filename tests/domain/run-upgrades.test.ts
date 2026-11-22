@@ -19,8 +19,8 @@ import { weaponsOf } from '../support/weapons';
 const CENTER = { x: 480, y: 270 };
 /** Tipos quietos (1e-20 px/s: la persecución no cambia su posición) con la vida de los tipos por defecto (para colocar objetivos donde se quiera). */
 const STILL = [
-  aProbeType({ id: 'bug', speed: 1e-20, health: 10, damage: 5 }),
-  aProbeType({ id: 'merge-conflict', speed: 1e-20, health: 20, damage: 8, radius: 16 }),
+  aProbeType({ id: 'goblin-torch', speed: 1e-20, health: 10, damage: 5 }),
+  aProbeType({ id: 'goblin-barrel', speed: 1e-20, health: 20, damage: 8, radius: 16 }),
 ];
 
 /** Solo las mejoras del jugador o de un arma equipada (el catálogo rechaza armas inexistentes). */
@@ -37,7 +37,7 @@ function weaponRun(
   const config: RunConfig = {
     ...base,
     enemies: { types: STILL },
-    waves: aWavesConfig({ types: STILL, segments: [aSegment(['bug'], 0)] }).waves,
+    waves: aWavesConfig({ types: STILL, segments: [aSegment(['goblin-torch'], 0)] }).waves,
     weapons: weaponsOf(weapons),
     upgrades: { upgrades: list.filter((u) => fitsLoadout(u, weapons)) },
   };
@@ -45,7 +45,7 @@ function weaponRun(
 }
 
 const bugAt = (x: number, y = 270, health?: number) => ({
-  type: 'bug',
+  type: 'goblin-torch',
   x,
   y,
   ...(health === undefined ? {} : { health }),
@@ -67,7 +67,7 @@ describe('Efectos de las mejoras de arma', () => {
   });
 
   it('Scenario: Mejoras acumuladas que matan de un impacto (strict-rules 5: damage 21)', () => {
-    const enemies = [bugAt(580), { type: 'merge-conflict', x: 380, y: 270 }];
+    const enemies = [bugAt(580), { type: 'goblin-barrel', x: 380, y: 270 }];
     const run = weaponRun([LINTER], { enemies, upgrades: { 'strict-rules': 5 } });
     const snaps = ticks(run, 60);
     // Un proyectil por baja: el Linter (cadencia 30) solo ha disparado una vez antes del tick 31.
@@ -134,7 +134,7 @@ describe('Efectos de las mejoras de arma', () => {
     const tough = weaponRun(
       [LINTER],
       {
-        enemies: [{ type: 'merge-conflict', x: 580, y: 270, health: 19 }],
+        enemies: [{ type: 'goblin-barrel', x: 580, y: 270, health: 19 }],
         gems: [gemOnTick(3)],
         experience: { level: 1, xp: 4 },
       },
@@ -187,7 +187,7 @@ describe('Efectos de las mejoras del jugador', () => {
     const config: RunConfig = {
       ...base,
       enemies: { types },
-      waves: aWavesConfig({ types, segments: [aSegment(['bug'], 0)] }).waves,
+      waves: aWavesConfig({ types, segments: [aSegment(['goblin-torch'], 0)] }).waves,
       upgrades: { upgrades: list },
     };
     return startRun(config, { player: CENTER, ...setup });

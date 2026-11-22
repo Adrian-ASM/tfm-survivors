@@ -9,13 +9,13 @@
      `src/domain` y `src/application`: 0 líneas de diff en todo el change. -->
 
 ## 1. Renombrado de ids (mecánico, sin arte)
-- [ ] 1.1 Ids en el contenido. Rojo: `tests/infrastructure/content.test.ts` espera los ids `goblin-torch`,
+- [x] 1.1 Ids en el contenido. Rojo: `tests/infrastructure/content.test.ts` espera los ids `goblin-torch`,
   `goblin-tnt`, `goblin-barrel` en ese orden con los mismos stats (90/10/10/5/1, 45/22/45/15/4, 70/16/20/8/2).
   Cambiar `content/enemies.json` y `content/waves.json` in situ, **mismo orden** en `types` y en cada segmento.
   - Hecho: `npm run verify` verde, incluida la banda de `tests/domain/balance.test.ts` (25-35 victorias en semillas
     1..50, quieto pierde antes de 180 s) sin recalibrar; `determinism*.test.ts` verdes.
   - Escenarios: ES "Catálogo de tipos de enemigo" y "Contenido de enemigos y oleadas validado" (renombrados).
-- [ ] 1.2 Literales antiguos fuera del contenido. Rojo: `tests/guardrails/legacy-enemy-ids.test.ts` busca
+- [x] 1.2 Literales antiguos fuera del contenido. Rojo: `tests/guardrails/legacy-enemy-ids.test.ts` busca
   `'bug'`, `"bug"`, `'memory-leak'`, `"merge-conflict"`… en `src/**`, `tests/**` y `content/**` y espera 0.
   Renombrar en `tests/support/{builders,finishedRuns}.ts`, `tests/bench/run.bench.ts`, tests de dominio,
   aplicación e infraestructura y las claves de `src/infrastructure/phaser/enemyPalette.ts` (se borra en 5.2).

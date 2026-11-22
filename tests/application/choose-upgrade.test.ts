@@ -10,7 +10,7 @@ function started(random = new CountingRandom(new StubRandom(0.5))) {
   const base = aDefaultConfig();
   const config: RunConfig = {
     ...base,
-    waves: aWavesConfig({ segments: [aSegment(['bug'], 0)] }).waves,
+    waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 0)] }).waves,
   };
   const r = new StartRun().execute(config, random, {
     gems: [{ x: 500, y: 270, value: 1 }],

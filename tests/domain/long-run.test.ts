@@ -128,7 +128,7 @@ describe('Partidas largas (10 min)', () => {
   });
 
   it('Mezcla de tipos', () => {
-    const all = ['bug', 'memory-leak', 'merge-conflict'];
+    const all = ['goblin-torch', 'goblin-tnt', 'goblin-barrel'];
     const config = withPlayer(aWavesConfig({ segments: [aSegment(all, 2)] }), {
       maxHealth: LONG_RUN_HEALTH,
     });
@@ -139,6 +139,6 @@ describe('Partidas largas (10 min)', () => {
       for (const e of run.snapshot().enemies) seen.add(e.type);
       if (seen.size === all.length) break;
     }
-    expect([...seen].sort()).toEqual(all);
+    expect([...seen].sort()).toEqual([...all].sort());
   });
 });

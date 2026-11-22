@@ -24,7 +24,7 @@ const levelUp = (xp: number, value: number, level = 1): RunSetup => ({
 /** Contenido por defecto sin spawns (solo lo que pone el `RunSetup`). */
 const quiet = (base: RunConfig = aDefaultConfig()): RunConfig => ({
   ...base,
-  waves: aWavesConfig({ segments: [aSegment(['bug'], 0)] }).waves,
+  waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 0)] }).waves,
 });
 
 /** Valores de azar consumidos por el primer tick. */
@@ -73,7 +73,7 @@ describe('Oferta de mejoras', () => {
 
   it('Scenario: El director actúa antes de abrir la oferta (bug nuevo y oferta en el tick n)', () => {
     const base = aDefaultConfig();
-    const config = { ...base, waves: aWavesConfig({ segments: [aSegment(['bug'], 60)] }).waves };
+    const config = { ...base, waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 60)] }).waves };
     const [first] = ticks(startRun(config, levelUp(4, 1)), 1);
     expect(first?.enemies).toHaveLength(1);
     expect(first?.status).toBe('choosing');

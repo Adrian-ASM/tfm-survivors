@@ -64,36 +64,36 @@ const only = (types: string[], budgetPerSecond: number, fromSecond = 0): Segment
 
 describe('WaveDirector · presupuesto', () => {
   it('Ritmo constante con coste 1', () => {
-    const h = harness([only(['bug'], 1)], { maxBudget: 3 });
+    const h = harness([only(['goblin-torch'], 1)], { maxBudget: 3 });
     h.run(615);
     expect(h.spawned).toHaveLength(10);
     expect(h.spawned[0]?.tick).toBe(60);
   });
 
   it('El coste retrasa la aparición', () => {
-    const h = harness([only(['memory-leak'], 1)], { maxBudget: 3 });
+    const h = harness([only(['goblin-tnt'], 1)], { maxBudget: 3 });
     h.run(175);
     expect(h.spawned).toHaveLength(0);
     h.run(10);
     expect(h.spawned).toHaveLength(1);
-    expect(h.spawned[0]).toEqual({ tick: 180, type: 'memory-leak' });
+    expect(h.spawned[0]).toEqual({ tick: 180, type: 'goblin-tnt' });
   });
 
   it('Varios spawns en un tick', () => {
-    const h = harness([only(['bug'], 630)], { maxBudget: 20 });
+    const h = harness([only(['goblin-torch'], 630)], { maxBudget: 20 });
     h.run(1);
     expect(h.spawned).toHaveLength(10);
   });
 
   it('Tramo sin presupuesto', () => {
-    const h = harness([only(['bug'], 0)]);
+    const h = harness([only(['goblin-torch'], 0)]);
     h.run(600);
     expect(h.spawned).toHaveLength(0);
   });
 
   it('elige el tipo pendiente con 1 valor del generador, también con un solo tipo', () => {
     const stub = new StubRandom(0.5);
-    const h = harness([only(['bug'], 1)], { random: stub });
+    const h = harness([only(['goblin-torch'], 1)], { random: stub });
     h.run(1);
     expect(stub.calls).toBe(1);
     h.run(59);
@@ -102,7 +102,7 @@ describe('WaveDirector · presupuesto', () => {
   });
 
   it('elige el tipo con floor(next() · n) entre los tipos del tramo', () => {
-    const types = ['bug', 'merge-conflict', 'memory-leak'];
+    const types = ['goblin-torch', 'goblin-barrel', 'goblin-tnt'];
     const pick = (value: number): string | undefined => {
       const h = harness([only(types, 180)], { random: new StubRandom(value) });
       h.run(1);
@@ -114,14 +114,14 @@ describe('WaveDirector · presupuesto', () => {
 
 describe('WaveDirector · tope de vivos', () => {
   it('Se alcanza el tope', () => {
-    const h = harness([only(['bug'], 1000)], { maxBudget: 20 });
+    const h = harness([only(['goblin-torch'], 1000)], { maxBudget: 20 });
     h.run(13);
     expect(h.spawned).toHaveLength(200);
   });
 
   it('El tope se mantiene, sin consumir azar', () => {
     const stub = new StubRandom(0.5);
-    const h = harness([only(['bug'], 1000)], { maxBudget: 20, random: stub });
+    const h = harness([only(['goblin-torch'], 1000)], { maxBudget: 20, random: stub });
     h.run(13);
     const calls = stub.calls;
     h.run(600);
@@ -130,13 +130,13 @@ describe('WaveDirector · tope de vivos', () => {
   });
 
   it('Tope mínimo', () => {
-    const h = harness([only(['bug'], 10)], { maxAlive: 1 });
+    const h = harness([only(['goblin-torch'], 10)], { maxAlive: 1 });
     h.run(600);
     expect(h.spawned).toHaveLength(1);
   });
 
   it('Presupuesto en el máximo al abrirse varios huecos (3 y después 4)', () => {
-    const h = harness([only(['bug'], 60)], { maxAlive: 5, maxBudget: 3, alive: 5 });
+    const h = harness([only(['goblin-torch'], 60)], { maxAlive: 5, maxBudget: 3, alive: 5 });
     h.run(600);
     expect(h.spawned).toHaveLength(0);
     h.kill(5);
@@ -147,14 +147,14 @@ describe('WaveDirector · tope de vivos', () => {
   });
 
   it('Huecos sin presupuesto suficiente', () => {
-    const h = harness([only(['bug'], 0)], { maxAlive: 5, maxBudget: 3, alive: 5 });
+    const h = harness([only(['goblin-torch'], 0)], { maxAlive: 5, maxBudget: 3, alive: 5 });
     h.kill(2);
     h.run(600);
     expect(h.alive()).toBe(3);
   });
 
   it('bajo el tope nunca aparecen más de los huecos libres, aunque sobre presupuesto', () => {
-    const h = harness([only(['bug'], 6000)], { maxAlive: 5, maxBudget: 20, alive: 5 });
+    const h = harness([only(['goblin-torch'], 6000)], { maxAlive: 5, maxBudget: 20, alive: 5 });
     h.run(10);
     h.kill(1);
     h.run(1);
@@ -165,21 +165,21 @@ describe('WaveDirector · tope de vivos', () => {
 
 describe('WaveDirector · máximo de presupuesto guardado', () => {
   it('El máximo acota los spawns de un tick (630/s, máximo 5 → 5)', () => {
-    const h = harness([only(['bug'], 630)], { maxBudget: 5 });
+    const h = harness([only(['goblin-torch'], 630)], { maxBudget: 5 });
     h.run(1);
     expect(h.spawned).toHaveLength(5);
   });
 
-  it('Máximo de presupuesto igual al coste más caro: 1 memory-leak en 185 ticks', () => {
-    const h = harness([only(['memory-leak'], 1)], { maxBudget: 3 });
+  it('Máximo de presupuesto igual al coste más caro: 1 goblin-tnt en 185 ticks', () => {
+    const h = harness([only(['goblin-tnt'], 1)], { maxBudget: 3 });
     h.run(185);
-    expect(h.spawned).toEqual([{ tick: 180, type: 'memory-leak' }]);
+    expect(h.spawned).toEqual([{ tick: 180, type: 'goblin-tnt' }]);
   });
 });
 
 describe('WaveDirector · aplazamiento', () => {
   it('El presupuesto no se pierde al aplazar', () => {
-    const h = harness([only(['bug'], 1)], { accept: (tick) => tick >= 121 });
+    const h = harness([only(['goblin-torch'], 1)], { accept: (tick) => tick >= 121 });
     h.run(120);
     expect(h.spawned).toHaveLength(0);
     h.run(1);
@@ -188,7 +188,7 @@ describe('WaveDirector · aplazamiento', () => {
 
   it('aplazar mantiene el tipo pendiente y no vuelve a sortearlo', () => {
     const stub = new StubRandom(0.9);
-    const h = harness([only(['bug', 'memory-leak'], 1)], {
+    const h = harness([only(['goblin-torch', 'goblin-tnt'], 1)], {
       random: stub,
       accept: (tick) => tick > 300,
     });
@@ -196,12 +196,12 @@ describe('WaveDirector · aplazamiento', () => {
     expect(stub.calls).toBe(1);
     stub.value = 0;
     h.run(1);
-    expect(h.spawned[0]).toEqual({ tick: 301, type: 'memory-leak' });
+    expect(h.spawned[0]).toEqual({ tick: 301, type: 'goblin-tnt' });
   });
 
   it('un aplazamiento termina el tick: un solo intento de colocación por tick', () => {
     let attempts = 0;
-    const h = harness([only(['bug'], 6000)], {
+    const h = harness([only(['goblin-torch'], 6000)], {
       accept: () => {
         attempts += 1;
         return false;
@@ -214,20 +214,20 @@ describe('WaveDirector · aplazamiento', () => {
 
 describe('WaveDirector · cambio de tramo', () => {
   it('Cambio de tramo', () => {
-    const h = harness([only(['bug'], 1), only(['memory-leak'], 1, 30)]);
+    const h = harness([only(['goblin-torch'], 1), only(['goblin-tnt'], 1, 30)]);
     h.run(3600);
     const before = h.spawned.filter((s) => s.tick < 1790).map((s) => s.type);
     const after = h.spawned.filter((s) => s.tick > 1810).map((s) => s.type);
-    expect(new Set(before)).toEqual(new Set(['bug']));
-    expect(new Set(after)).toEqual(new Set(['memory-leak']));
+    expect(new Set(before)).toEqual(new Set(['goblin-torch']));
+    expect(new Set(after)).toEqual(new Set(['goblin-tnt']));
   });
 
   it('conserva el presupuesto y vuelve a elegir el pendiente con los tipos del tramo nuevo', () => {
-    const h = harness([only(['memory-leak'], 1), only(['bug'], 1, 2)]);
+    const h = harness([only(['goblin-tnt'], 1), only(['goblin-torch'], 1, 2)]);
     h.run(120);
     expect(h.spawned).toEqual([
-      { tick: 120, type: 'bug' },
-      { tick: 120, type: 'bug' },
+      { tick: 120, type: 'goblin-torch' },
+      { tick: 120, type: 'goblin-torch' },
     ]);
   });
 });

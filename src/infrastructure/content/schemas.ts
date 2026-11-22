@@ -61,7 +61,7 @@ import {
 // `buildRunRules` desde el superRefine del loader.
 
 export const ENEMY_ID_FORMAT =
-  'El id de un enemigo usa minúsculas, dígitos y guiones (p. ej. memory-leak).';
+  'El id de un enemigo usa minúsculas, dígitos y guiones (p. ej. goblin-tnt).';
 
 const EnemyId = z.string().regex(/^[a-z][a-z0-9-]*$/, { error: ENEMY_ID_FORMAT });
 const Count = (error: string) => z.number().int({ error }).min(1, { error });

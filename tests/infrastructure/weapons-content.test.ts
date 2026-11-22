@@ -27,11 +27,11 @@ describe('Contenido de armas validado', () => {
     expect(weapons?.weapons.map((w) => w.id)).toEqual(['linter', 'tests']);
   });
 
-  it('Scenario: Daños base distintos y menores que la vida del bug', () => {
+  it('Scenario: Daños base distintos y menores que la vida del goblin-torch', () => {
     const [linter, tests] = weapons?.weapons ?? [];
-    const bug = loaded.ok ? loaded.value.enemies.types.find((t) => t.id === 'bug') : undefined;
+    const torch = loaded.ok ? loaded.value.enemies.types.find((t) => t.id === 'goblin-torch') : undefined;
     expect(linter?.damage).not.toBe(tests?.damage);
-    expect(Math.max(linter?.damage ?? 99, tests?.damage ?? 99)).toBeLessThan(bug?.health ?? 0);
+    expect(Math.max(linter?.damage ?? 99, tests?.damage ?? 99)).toBeLessThan(torch?.health ?? 0);
   });
 
   it.each([

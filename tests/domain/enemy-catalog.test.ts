@@ -20,7 +20,7 @@ function arena(): Arena {
 }
 
 const bug: EnemyTypeConfig = {
-  id: 'bug',
+  id: 'goblin-torch',
   speed: 90,
   radius: 10,
   cost: 1,
@@ -29,7 +29,7 @@ const bug: EnemyTypeConfig = {
   xp: 1,
 };
 const leak: EnemyTypeConfig = {
-  id: 'memory-leak',
+  id: 'goblin-tnt',
   speed: 45,
   radius: 22,
   cost: 3,
@@ -42,14 +42,14 @@ describe('EnemyCatalog', () => {
   it('crea los tipos con sus valores y los busca por id', () => {
     const r = EnemyCatalog.create([bug, leak], arena());
     if (!r.ok) throw new Error(r.error.message);
-    expect(r.value.get('memory-leak')).toMatchObject(leak);
+    expect(r.value.get('goblin-tnt')).toMatchObject(leak);
     expect(r.value.get('segfault')).toBeUndefined();
-    expect(r.value.ids).toEqual(['bug', 'memory-leak']);
+    expect(r.value.ids).toEqual(['goblin-torch', 'goblin-tnt']);
   });
 
   it('los tipos son inmutables', () => {
     const r = EnemyCatalog.create([bug], arena());
-    const type = r.ok ? r.value.get('bug') : undefined;
+    const type = r.ok ? r.value.get('goblin-torch') : undefined;
     expect(() => {
       (type as unknown as { speed: number }).speed = 1;
     }).toThrow(TypeError);
@@ -92,7 +92,7 @@ describe('EnemyCatalog', () => {
     if (!r.ok) {
       expect(r.error.field).toBe('enemies.types.2.id');
       expect(r.error.message).toContain(ENEMY_ID_MUST_BE_UNIQUE);
-      expect(r.error.message).toContain('bug');
+      expect(r.error.message).toContain('goblin-torch');
     }
   });
 
@@ -127,7 +127,7 @@ describe('EnemyCatalog', () => {
     const types = DEFAULT_ENEMY_TYPES.map((t) => ({ ...t, xp: 1 }));
     const r = EnemyCatalog.create(types, arena());
     if (!r.ok) throw new Error(r.error.message);
-    expect(r.value.get('memory-leak')?.xp).toBe(1);
+    expect(r.value.get('goblin-tnt')?.xp).toBe(1);
   });
 
   it('Contenido por defecto: vida, daño > 0 y XP ≥ 1 en los 3 tipos', () => {
@@ -139,21 +139,21 @@ describe('EnemyCatalog', () => {
       return [id, t?.damage, t?.health, t?.xp];
     });
     expect(values).toEqual([
-      ['bug', 5, 10, 1],
-      ['memory-leak', 15, 45, 4],
-      ['merge-conflict', 8, 20, 2],
+      ['goblin-torch', 5, 10, 1],
+      ['goblin-tnt', 15, 45, 4],
+      ['goblin-barrel', 8, 20, 2],
     ]);
   });
 });
 
 describe('EnemyCatalog · maxCost', () => {
   it('es el coste del tipo más caro, sin depender del orden', () => {
-    const merge = { ...bug, id: 'merge-conflict', cost: 2 };
+    const merge = { ...bug, id: 'goblin-barrel', cost: 2 };
     const a = EnemyCatalog.create([bug, leak, merge], arena());
     const b = EnemyCatalog.create([merge, bug, leak], arena());
     if (!a.ok || !b.ok) throw new Error('catálogo inválido');
     expect([a.value.maxCost, b.value.maxCost]).toEqual([3, 3]);
-    expect(a.value.mostExpensive?.id).toBe('memory-leak');
+    expect(a.value.mostExpensive?.id).toBe('goblin-tnt');
   });
 
   it('vale 0 en un catálogo vacío', () => {

@@ -43,7 +43,7 @@ describe('pickByPriority (elección del bot de referencia)', () => {
 // Política de movimiento del bot de referencia (medición de ganabilidad de 0006, spec de 0010).
 describe('fleeInput (movimiento del bot de referencia)', () => {
   it('Scenario: Huida de un enemigo', () => {
-    const run = startRun(aDefaultConfig(), { enemies: [{ type: 'bug', x: 580, y: 270 }] });
+    const run = startRun(aDefaultConfig(), { enemies: [{ type: 'goblin-torch', x: 580, y: 270 }] });
 
     const input = fleeInput(run.snapshot());
 
@@ -52,7 +52,7 @@ describe('fleeInput (movimiento del bot de referencia)', () => {
   });
 
   it('Scenario: Enemigo fuera de rango', () => {
-    const run = startRun(aDefaultConfig(), { enemies: [{ type: 'bug', x: 630, y: 270 }] });
+    const run = startRun(aDefaultConfig(), { enemies: [{ type: 'goblin-torch', x: 630, y: 270 }] });
 
     expect(fleeInput(run.snapshot())).toBe(PlayerInput.NONE);
   });

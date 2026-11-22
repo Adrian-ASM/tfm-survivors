@@ -63,51 +63,51 @@ describe('EnemyLayer', () => {
     const { l, created } = layer(200);
     expect(created).toHaveLength(200);
     expect(created.every((c) => !c.visible)).toBe(true);
-    const many = Array.from({ length: 200 }, (_, i) => enemy(i, 'bug', i, i));
+    const many = Array.from({ length: 200 }, (_, i) => enemy(i, 'goblin-torch', i, i));
     for (let frame = 0; frame < 10; frame++) l.sync(many);
     expect(created).toHaveLength(200);
   });
 
   it('posiciona los n primeros huecos y los hace visibles con el radio y el color del tipo', () => {
     const { l, created } = layer(4);
-    l.sync([enemy(0, 'bug', 10, 20), enemy(1, 'memory-leak', 30, 40, 22)]);
+    l.sync([enemy(0, 'goblin-torch', 10, 20), enemy(1, 'goblin-tnt', 30, 40, 22)]);
     expect(created.slice(0, 2).map((c) => [c.x, c.y, c.radius, c.color, c.visible])).toEqual([
-      [10, 20, 10, enemyPalette('bug'), true],
-      [30, 40, 22, enemyPalette('memory-leak'), true],
+      [10, 20, 10, enemyPalette('goblin-torch'), true],
+      [30, 40, 22, enemyPalette('goblin-tnt'), true],
     ]);
     expect(created.slice(2).every((c) => !c.visible)).toBe(true);
   });
 
   it('oculta los huecos sobrantes cuando hay menos enemigos', () => {
     const { l, created } = layer(3);
-    l.sync([enemy(0, 'bug', 1, 1), enemy(1, 'bug', 2, 2), enemy(2, 'bug', 3, 3)]);
-    l.sync([enemy(0, 'bug', 1, 1)]);
+    l.sync([enemy(0, 'goblin-torch', 1, 1), enemy(1, 'goblin-torch', 2, 2), enemy(2, 'goblin-torch', 3, 3)]);
+    l.sync([enemy(0, 'goblin-torch', 1, 1)]);
     expect(created.map((c) => c.visible)).toEqual([true, false, false]);
   });
 
   it('cambia radio y color solo si cambia el tipo del hueco', () => {
     const { l, created } = layer(1);
-    l.sync([enemy(0, 'bug', 1, 1)]);
-    l.sync([enemy(0, 'bug', 5, 5)]);
+    l.sync([enemy(0, 'goblin-torch', 1, 1)]);
+    l.sync([enemy(0, 'goblin-torch', 5, 5)]);
     expect(created[0]?.restyles).toBe(1);
-    l.sync([enemy(7, 'merge-conflict', 5, 5, 16)]);
+    l.sync([enemy(7, 'goblin-barrel', 5, 5, 16)]);
     expect(created[0]?.restyles).toBe(2);
-    expect([created[0]?.radius, created[0]?.color]).toEqual([16, enemyPalette('merge-conflict')]);
+    expect([created[0]?.radius, created[0]?.color]).toEqual([16, enemyPalette('goblin-barrel')]);
   });
 
   it('ignora los enemigos que no caben en el pool', () => {
     const { l, created } = layer(1);
-    l.sync([enemy(0, 'bug', 1, 1), enemy(1, 'bug', 2, 2)]);
+    l.sync([enemy(0, 'goblin-torch', 1, 1), enemy(1, 'goblin-torch', 2, 2)]);
     expect(created).toHaveLength(1);
     expect([created[0]?.x, created[0]?.y]).toEqual([1, 1]);
   });
 });
 
 describe('EnemyLayer · bajas (hueco asociado al id)', () => {
-  const TYPES = ['bug', 'memory-leak', 'merge-conflict'] as const;
-  const RADII = { bug: 10, 'memory-leak': 22, 'merge-conflict': 16 } as const;
+  const TYPES = ['goblin-torch', 'goblin-tnt', 'goblin-barrel'] as const;
+  const RADII = { 'goblin-torch': 10, 'goblin-tnt': 22, 'goblin-barrel': 16 } as const;
   const mixed = (id: number): EnemySnapshot => {
-    const type = TYPES[id % 3] ?? 'bug';
+    const type = TYPES[id % 3] ?? 'goblin-torch';
     return enemy(id, type, id * 3, id * 2, RADII[type]);
   };
   const visible = (created: FakeCircle[]) => created.filter((c) => c.visible);
@@ -149,10 +149,10 @@ describe('EnemyLayer · bajas (hueco asociado al id)', () => {
 
   it('Reposición tras bajas: 150 supervivientes y 50 nuevos de otro tipo en el mismo frame', () => {
     const { l, created } = layer(200);
-    l.sync(Array.from({ length: 200 }, (_, i) => enemy(i, 'bug', i, i)));
+    l.sync(Array.from({ length: 200 }, (_, i) => enemy(i, 'goblin-torch', i, i)));
     const next = [
-      ...Array.from({ length: 150 }, (_, i) => enemy(i + 50, 'bug', i + 50, i + 50)),
-      ...Array.from({ length: 50 }, (_, i) => enemy(200 + i, 'memory-leak', i, 500, 22)),
+      ...Array.from({ length: 150 }, (_, i) => enemy(i + 50, 'goblin-torch', i + 50, i + 50)),
+      ...Array.from({ length: 50 }, (_, i) => enemy(200 + i, 'goblin-tnt', i, 500, 22)),
     ];
     l.sync(next);
     expect(visible(created)).toHaveLength(200);
@@ -162,20 +162,20 @@ describe('EnemyLayer · bajas (hueco asociado al id)', () => {
 
   it('el hueco liberado lo reutiliza el siguiente enemigo nuevo', () => {
     const { l, created } = layer(2);
-    l.sync([enemy(0, 'bug', 1, 1), enemy(1, 'bug', 2, 2)]);
+    l.sync([enemy(0, 'goblin-torch', 1, 1), enemy(1, 'goblin-torch', 2, 2)]);
     const slotOf0 = created.find((c) => c.x === 1);
-    l.sync([enemy(1, 'bug', 2, 2)]);
+    l.sync([enemy(1, 'goblin-torch', 2, 2)]);
     expect(slotOf0?.visible).toBe(false);
-    l.sync([enemy(1, 'bug', 2, 2), enemy(2, 'memory-leak', 9, 9, 22)]);
+    l.sync([enemy(1, 'goblin-torch', 2, 2), enemy(2, 'goblin-tnt', 9, 9, 22)]);
     expect(slotOf0 && [slotOf0.x, slotOf0.radius, slotOf0.visible]).toEqual([9, 22, true]);
     expect(created).toHaveLength(2);
   });
 
   it('un enemigo conserva su sprite aunque cambie de posición en la lista', () => {
     const { l, created } = layer(3);
-    l.sync([enemy(0, 'bug', 1, 1), enemy(1, 'memory-leak', 2, 2, 22)]);
+    l.sync([enemy(0, 'goblin-torch', 1, 1), enemy(1, 'goblin-tnt', 2, 2, 22)]);
     const leak = created.find((c) => c.radius === 22);
-    l.sync([enemy(1, 'memory-leak', 5, 5, 22)]);
+    l.sync([enemy(1, 'goblin-tnt', 5, 5, 22)]);
     expect(leak && [leak.x, leak.restyles]).toEqual([5, 1]);
   });
 });
@@ -185,32 +185,32 @@ describe('EnemyLayer · destello de daño', () => {
 
   it('Scenario: Indicación visual de daño (destello mientras el enemigo lo indica)', () => {
     const { l, created } = layer(2);
-    l.sync([hurt(enemy(0, 'bug', 1, 1)), enemy(1, 'bug', 2, 2)]);
-    expect(created.slice(0, 2).map((c) => c.color)).toEqual([FLASH_COLOR, enemyPalette('bug')]);
-    l.sync([enemy(0, 'bug', 1, 1), enemy(1, 'bug', 2, 2)]);
-    expect(created[0]?.color).toBe(enemyPalette('bug'));
+    l.sync([hurt(enemy(0, 'goblin-torch', 1, 1)), enemy(1, 'goblin-torch', 2, 2)]);
+    expect(created.slice(0, 2).map((c) => c.color)).toEqual([FLASH_COLOR, enemyPalette('goblin-torch')]);
+    l.sync([enemy(0, 'goblin-torch', 1, 1), enemy(1, 'goblin-torch', 2, 2)]);
+    expect(created[0]?.color).toBe(enemyPalette('goblin-torch'));
   });
 
   it('repinta solo cuando cambia el tipo o la indicación de daño', () => {
     const { l, created } = layer(1);
-    l.sync([hurt(enemy(0, 'bug', 1, 1))]);
-    l.sync([hurt(enemy(0, 'bug', 2, 2))]);
-    l.sync([hurt(enemy(0, 'bug', 3, 3))]);
+    l.sync([hurt(enemy(0, 'goblin-torch', 1, 1))]);
+    l.sync([hurt(enemy(0, 'goblin-torch', 2, 2))]);
+    l.sync([hurt(enemy(0, 'goblin-torch', 3, 3))]);
     expect(created[0]?.fills).toBe(1);
-    l.sync([enemy(0, 'bug', 4, 4)]);
-    l.sync([enemy(0, 'bug', 5, 5)]);
+    l.sync([enemy(0, 'goblin-torch', 4, 4)]);
+    l.sync([enemy(0, 'goblin-torch', 5, 5)]);
     expect(created[0]?.fills).toBe(2);
   });
 
   it('el destello es un color distinto de los de la paleta', () => {
-    const colors = ['bug', 'memory-leak', 'merge-conflict', 'x'].map(enemyPalette);
+    const colors = ['goblin-torch', 'goblin-tnt', 'goblin-barrel', 'x'].map(enemyPalette);
     expect(colors).not.toContain(FLASH_COLOR);
   });
 });
 
 describe('enemyPalette', () => {
   it('da un color distinto a cada tipo por defecto', () => {
-    const colors = ['bug', 'memory-leak', 'merge-conflict'].map(enemyPalette);
+    const colors = ['goblin-torch', 'goblin-tnt', 'goblin-barrel'].map(enemyPalette);
     expect(new Set(colors).size).toBe(3);
     expect(colors).not.toContain(DEFAULT_ENEMY_COLOR);
   });

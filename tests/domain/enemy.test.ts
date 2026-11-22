@@ -10,7 +10,7 @@ const ARENA = ((): Arena => {
   return r.value;
 })();
 
-function enemy(speed: number, x: number, y: number, radius = 10, id = 'bug', health = 10): Enemy {
+function enemy(speed: number, x: number, y: number, radius = 10, id = 'goblin-torch', health = 10): Enemy {
   const type = EnemyType.create(
     { id, speed, radius, cost: 1, damage: 7, health, xp: 1 },
     ARENA,
@@ -21,7 +21,7 @@ function enemy(speed: number, x: number, y: number, radius = 10, id = 'bug', hea
 }
 
 describe('Enemy · vida y baja', () => {
-  const withHealth = (health: number): Enemy => enemy(90, 100, 100, 10, 'bug', health);
+  const withHealth = (health: number): Enemy => enemy(90, 100, 100, 10, 'goblin-torch', health);
 
   it('Vida inicial del tipo', () => {
     const e = withHealth(5);
@@ -52,7 +52,7 @@ describe('Enemy · vida y baja', () => {
 
   it('vida inicial opcional al aparecer (RunSetup); por defecto la del tipo', () => {
     const type = EnemyType.create(
-      { id: 'bug', speed: 90, radius: 10, cost: 1, damage: 5, health: 10, xp: 1 },
+      { id: 'goblin-torch', speed: 90, radius: 10, cost: 1, damage: 5, health: 10, xp: 1 },
       ARENA,
       'enemies.types.0',
     );
@@ -85,7 +85,7 @@ describe('Enemy · indicación de daño reciente', () => {
   });
 
   it('un golpe sobre un enemigo ya dado de baja no renueva el destello', () => {
-    const e = enemy(90, 100, 100, 10, 'bug', 5);
+    const e = enemy(90, 100, 100, 10, 'goblin-torch', 5);
     e.takeDamage(5, 10);
     e.takeDamage(5, 20);
     expect(e.damagedAt(20, FLASH)).toBe(false);
@@ -127,7 +127,7 @@ describe('Enemy · persecución en línea recta', () => {
 
   it('Dos tipos, dos velocidades', () => {
     const bug = enemy(90, 100, 100);
-    const leak = enemy(45, 100, 440, 22, 'memory-leak');
+    const leak = enemy(45, 100, 440, 22, 'goblin-tnt');
     chaseFor(bug, 60, 900, 270);
     chaseFor(leak, 60, 900, 270);
     expect(Math.hypot(bug.x - 100, bug.y - 100)).toBeCloseTo(90, 3);
@@ -144,7 +144,7 @@ describe('Enemy · persecución en línea recta', () => {
 describe('Enemy · identidad y aparición', () => {
   it('conserva id, tipo y radio del tipo', () => {
     const e = enemy(90, 100, 100, 10);
-    expect([e.id, e.type.id, e.radius]).toEqual([0, 'bug', 10]);
+    expect([e.id, e.type.id, e.radius]).toEqual([0, 'goblin-torch', 10]);
   });
 
   it('nace recortado a la arena', () => {

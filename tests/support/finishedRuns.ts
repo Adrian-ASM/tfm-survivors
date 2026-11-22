@@ -45,7 +45,7 @@ const CENTER = { x: 480, y: 270 };
 /** Contenido por defecto con un bug letal. */
 export const lethalConfig = (): RunConfig => {
   const base = aDefaultConfig();
-  const types = base.enemies.types.map((t) => (t.id === 'bug' ? { ...t, damage: 1e6 } : t));
+  const types = base.enemies.types.map((t) => (t.id === 'goblin-torch' ? { ...t, damage: 1e6 } : t));
   return { ...base, enemies: { types } };
 };
 
@@ -54,7 +54,7 @@ export class DoomedStartRun extends StartRun {
   override execute(config: RunConfig, random: RandomGenerator) {
     return super.execute(config, random, {
       player: CENTER,
-      enemies: [{ type: 'bug', ...CENTER }],
+      enemies: [{ type: 'goblin-torch', ...CENTER }],
     });
   }
 }

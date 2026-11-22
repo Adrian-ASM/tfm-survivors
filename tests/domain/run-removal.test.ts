@@ -174,8 +174,8 @@ describe('Bajas, director y persecución', () => {
   it('Un enemigo recién aparecido no golpea en su tick de aparición', () => {
     const run = startRun(
       aContactConfig({
-        types: [aProbeType({ id: 'bug', speed: 90 })],
-        segments: [aSegment(['bug'], 1)],
+        types: [aProbeType({ id: 'goblin-torch', speed: 90 })],
+        segments: [aSegment(['goblin-torch'], 1)],
       }),
     );
     const snaps = ticks(run, 60);
