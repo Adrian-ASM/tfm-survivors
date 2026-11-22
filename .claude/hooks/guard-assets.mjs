@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // Guardarraíl de procedencia del arte (spec asset-provenance, change 0012, design D8).
+// Modo hook registrado en .claude/settings.json (verify-report W5).
 // `checkAssets` es pura: recibe la lista de ficheros versionados, la nota de procedencia ya leída y un
 // `digest(path) → { sha256, bytes }` inyectado. La ejecuta scripts/guard-staged.mjs (pre-commit y CI).
 import { relativePath, runAsHook } from './lib.mjs';

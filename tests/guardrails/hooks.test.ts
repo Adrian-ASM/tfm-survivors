@@ -117,3 +117,37 @@ describe('guard-secrets · sin exenciones por fichero (verify-report S13, N2)', 
     },
   );
 });
+
+// verify-report W5 (change 0012): la capa de agente (AGENTS.md §3) cubre también los assets.
+describe('hooks · registro en .claude/settings.json', () => {
+  type Settings = {
+    hooks: { PreToolUse: { matcher: string; hooks: { command: string }[] }[] };
+  };
+  const settings = JSON.parse(
+    readFileSync(join(root, '.claude', 'settings.json'), 'utf8'),
+  ) as Settings;
+  const writes = settings.hooks.PreToolUse.find((h) => h.matcher === 'Edit|MultiEdit|Write');
+
+  it.each(['guard-secrets.mjs', 'guard-architecture.mjs', 'guard-assets.mjs'])(
+    '%s se ejecuta antes de Edit, MultiEdit y Write',
+    (name) => {
+      const commands = (writes?.hooks ?? []).map((h) => h.command);
+      expect(commands).toContain(`node "$CLAUDE_PROJECT_DIR/.claude/hooks/${name}"`);
+    },
+  );
+});
+
+describe('guard-assets · modo hook (spec asset-provenance)', () => {
+  it.each(['public/assets/pack.zip', 'public/assets/Thumbs.db', 'public/Free Pack/a.png'])(
+    'bloquea la escritura de %s',
+    (path) => {
+      const r = hook('guard-assets.mjs', path, '');
+      expect(r.code).toBe(2);
+      expect(r.out).toContain(path);
+    },
+  );
+
+  it('no bloquea un PNG con ruta permitida', () => {
+    expect(hook('guard-assets.mjs', 'public/assets/goblins/Torch_Red.png', '').code).toBe(0);
+  });
+});
