@@ -98,3 +98,23 @@ Todas marcadas salvo 8.2, que es del orquestador y está pendiente a propósito.
 de los grupos 1 a 8.
 
 C: 0 · W: 7 · S: 5
+
+## Re-verify (b205e0f)
+
+Alcance: diff `978ac43..HEAD` (4 commits). Sin cambios en `src/` ni en composición, así que no se repite E2E.
+`npm run verify`: verde, 122 ficheros / 1385 tests (+11 respecto a antes).
+
+| Hallazgo | Estado | Evidencia |
+|---|---|---|
+| W1 id antiguo en oleada | Resuelto | `content.test.ts` con `it.each` de 3 ids compuestos; comprueba `field` y que el mensaje contiene el id |
+| W2 trazabilidad | Resuelto | Títulos de spec en `arsenal.test.ts`, `run-choosing.test.ts`, `run-damage.test.ts`; nuevo "Stats heredados sin cambios" con valores literales |
+| W3 ADR-0012 | Resuelto | Estado "aceptada" |
+| W4 andar del Barrel | Resuelto (por el orquestador) | Hoja y `vite dev` revisados; consta en el diario de reanudación |
+| W5 guard-assets | Resuelto | Registrado en `.claude/settings.json`, con test en `hooks.test.ts` |
+| W6 hooks de commit | Resuelto | Incidente en el diario del apply (líneas 57-61) |
+| W7 TDD 4.1 y 4.3 | Resuelto | Declarado en el diario del apply (línea 70) |
+
+Tarea 8.2: el GDD v2.0 incluye el título "Greentide Vanguard", los ids `goblin-*` y la entrada de 0012. Sin marcadores
+`{ex-*}` en las specs. Marcada `[x]` en `tasks.md`. Todas las tareas están hechas.
+
+C: 0 · W: 0 · S: 5

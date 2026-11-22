@@ -155,6 +155,6 @@
 - [x] 8.1 `docs/adr/0012-arte-cc0-versionado-con-procedencia.md` (plantilla 0000; "Sustituye a" el aparcado ya
   borrado), `README.md` y `AGENTS.md` (título y estado: arte, guardarraíl de procedencia, sonda `sprites`), diario
   de IA del apply. Hecho: `npm run verify` verde y `legacy-enemy-ids` verde.
-- [ ] 8.2 (Orquestador, antes de archivar) Pedir al `game-designer` que actualice `docs/gdd.md` con el título
+- [x] 8.2 (Orquestador, antes de archivar) Pedir al `game-designer` que actualice `docs/gdd.md` con el título
   `Greentide Vanguard` y los ids `goblin-torch`/`goblin-tnt`/`goblin-barrel`; comprobar que ninguna delta conserva
   marcadores `{ex-*}`.
