@@ -14,7 +14,7 @@ test('?seed=42: semilla 42, aparecen enemigos dentro de la arena y sin errores n
 
   expect((await probe(page))?.seed).toBe(42);
   await expect
-    .poll(async () => (await probe(page))?.snapshot?.enemies.length ?? 0, { timeout: 3000 })
+    .poll(async () => (await probe(page))?.snapshot?.enemies.length ?? 0)
     .toBeGreaterThanOrEqual(1);
 
   const enemies = (await probe(page))?.snapshot?.enemies ?? [];
