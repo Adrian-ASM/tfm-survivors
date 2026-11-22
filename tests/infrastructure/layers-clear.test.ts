@@ -1,24 +1,25 @@
 import { describe, expect, it } from 'vitest';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
+import type { RingSprite } from '../../src/infrastructure/phaser/PulseLayer';
+import { emptyCounts } from '../../src/infrastructure/phaser/renderCounts';
+import { RenderLayers } from '../../src/infrastructure/phaser/RenderLayers';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
-import { EnemyLayer, type CircleSprite } from '../../src/infrastructure/phaser/EnemyLayer';
-import { GemLayer } from '../../src/infrastructure/phaser/GemLayer';
-import { ProjectileLayer } from '../../src/infrastructure/phaser/ProjectileLayer';
-import { PulseLayer, type RingSprite } from '../../src/infrastructure/phaser/PulseLayer';
-import { SlotPool } from '../../src/infrastructure/phaser/SlotPool';
 import { aDefaultConfig, withPlayer } from '../support/builders';
+import { fakeKit } from '../support/FakeSprite';
+import { someLooks } from '../support/looks';
 import { chooseFirstWhileOpen, startRun } from '../support/runs';
 
-class FakeSprite implements CircleSprite, RingSprite {
+// Specs run-results ("Primer frame tras reiniciar", "Cinco reinicios seguidos") y sprite-rendering
+// ("R con cadáveres en curso", "Sonda en el menú") sobre `RenderLayers` (change 0012).
+const FRAME_MS = 16.667;
+
+class FakeRing implements RingSprite {
   visible = true;
   setPosition(): this {
     return this;
   }
   setRadius(): this {
-    return this;
-  }
-  setFillStyle(): this {
     return this;
   }
   setAlpha(): this {
@@ -30,37 +31,35 @@ class FakeSprite implements CircleSprite, RingSprite {
   }
 }
 
-/** Las 4 capas de la escena con sus sprites dobles, como en `GameScene`. */
-function layers() {
-  const sprites = { enemies: [] as FakeSprite[], gems: [] as FakeSprite[] };
-  const projectiles: FakeSprite[] = [];
-  const pulses: FakeSprite[] = [];
-  const make = (into: FakeSprite[]) => () => {
-    const s = new FakeSprite();
-    into.push(s);
-    return s;
+function view() {
+  const layers = new RenderLayers(
+    {
+      kit: fakeKit(),
+      ring: () => new FakeRing(),
+      looks: someLooks(),
+      capacity: {
+        enemies: 200,
+        projectiles: 32,
+        pulses: 4,
+        gems: 300,
+        corpses: 64,
+        visualTicks: new Map([['tests', 8]]),
+      },
+    },
+    { visible: 1, placeholder: 0 },
+  );
+  const paint = (s: RunSnapshot): void => {
+    layers.advance(FRAME_MS, false);
+    layers.render(s);
   };
-  const enemyLayer = new EnemyLayer(200, make(sprites.enemies));
-  const gemLayer = new GemLayer(300, make(sprites.gems));
-  const projectileLayer = new ProjectileLayer(32, make(projectiles));
-  const pulseLayer = new PulseLayer(4, new Map([['tests', 8]]), make(pulses));
-  const visible = () =>
-    [sprites.enemies, projectiles, pulses, sprites.gems].map(
-      (list) => list.filter((s) => s.visible).length,
-    );
-  const paint = (s: RunSnapshot) => {
-    enemyLayer.sync(s.enemies);
-    gemLayer.sync(s.gems);
-    projectileLayer.sync(s.projectiles);
-    pulseLayer.sync(s.pulses, s.tick);
-  };
-  const clear = () => {
-    enemyLayer.clear();
-    gemLayer.clear();
-    projectileLayer.clear();
-    pulseLayer.clear();
-  };
-  return { paint, clear, visible };
+  const c = layers.counts;
+  const visible = () => [
+    c.enemies.visible,
+    c.projectiles.visible,
+    c.pulses.visible,
+    c.gems.visible,
+  ];
+  return { layers, paint, visible };
 }
 
 const counts = (s: RunSnapshot) => [
@@ -81,31 +80,12 @@ function playedSnapshots(seed: number, n: number): RunSnapshot[] {
   });
 }
 
-describe('SlotPool.clear()', () => {
-  it('oculta todo y un id que reaparece entra con appearing = true', () => {
-    const shows: boolean[] = [];
-    let hidden = 0;
-    const pool = new SlotPool<{ id: number }, object>(4, () => ({}), {
-      show: (_s, _item, appearing) => shows.push(appearing),
-      hide: () => {
-        hidden += 1;
-      },
-    });
-    pool.sync([{ id: 0 }, { id: 1 }]);
+const at = (id: number) => ({ id, x: 100 + (id % 50), y: 100, radius: 5 });
 
-    pool.clear();
-    pool.sync([{ id: 0 }]);
-
-    expect(hidden).toBe(2);
-    expect(shows).toEqual([true, true, true]);
-  });
-});
-
-describe('Vista limpia tras reiniciar (spec run-results, capas)', () => {
+describe('Vista limpia tras reiniciar (spec run-results y sprite-rendering)', () => {
   it('Scenario: Primer frame tras reiniciar (de 200/32/1/300 sprites a 0 en el tick 0)', () => {
-    const view = layers();
+    const v = view();
     const fresh = startRun(aDefaultConfig()).snapshot();
-    const at = (id: number) => ({ id, x: 100 + (id % 50), y: 100, radius: 5 });
     const ended: RunSnapshot = {
       ...fresh,
       tick: 900,
@@ -119,32 +99,72 @@ describe('Vista limpia tras reiniciar (spec run-results, capas)', () => {
       pulses: [{ weapon: 'tests', firedAt: 898, x: 480, y: 270, radius: 90 }],
       gems: Array.from({ length: 300 }, (_, i) => at(i)),
     };
-    view.paint(ended);
-    const before = view.visible();
+    v.paint(ended);
+    const before = v.visible();
 
-    view.clear();
-    view.paint(fresh);
+    v.layers.clear();
+    v.paint(fresh);
 
     expect(before).toEqual([200, 32, 1, 300]);
-    expect(view.visible()).toEqual([0, 0, 0, 0]);
+    expect(v.visible()).toEqual([0, 0, 0, 0]);
+    expect(v.layers.counts.player.visible).toBe(1);
+  });
+
+  it('Scenario: R con cadáveres en curso (10 cadáveres, 15 enemigos y 40 gemas → 0 en 61 frames)', () => {
+    const v = view();
+    const fresh = startRun(aDefaultConfig()).snapshot();
+    const foes = (n: number) =>
+      Array.from({ length: n }, (_, i) => ({
+        ...at(i),
+        type: 'goblin-torch',
+        health: 10,
+        damaged: false,
+      }));
+    v.paint({ ...fresh, tick: 500, enemies: foes(25) });
+    const ended = {
+      ...fresh,
+      tick: 501,
+      enemies: foes(25).slice(10),
+      gems: Array.from({ length: 40 }, (_, i) => at(i)),
+      status: 'over',
+      outcome: 'lost',
+    } as RunSnapshot;
+    v.paint(ended);
+    expect([v.layers.counts.corpses.visible, v.layers.counts.enemies.visible]).toEqual([10, 15]);
+
+    v.layers.clear();
+    v.paint(fresh);
+    expect(v.visible()).toEqual([0, 0, 0, 0]);
+    expect(v.layers.counts.player.visible).toBe(1);
+    for (let f = 0; f <= 60; f++) {
+      expect(v.layers.counts.corpses.visible).toBe(0);
+      v.paint({ ...fresh, tick: f + 1 });
+    }
   });
 
   it('Scenario: Cinco reinicios seguidos (en la sexta, sprites visibles = elementos del snapshot)', () => {
-    const view = layers();
+    const v = view();
     for (let game = 1; game <= 5; game++) {
       const snaps = playedSnapshots(game, 900);
-      for (const s of snaps) view.paint(s);
+      for (const s of snaps) v.paint(s);
       const last = snaps.at(-1);
       expect([last?.enemies.length, last?.gems.length].every((n) => (n ?? 0) > 0)).toBe(true);
-      view.clear();
+      v.layers.clear();
     }
 
     const sixth = playedSnapshots(6, 600);
     const mismatches = sixth.filter((s) => {
-      view.paint(s);
-      return view.visible().join() !== counts(s).join();
+      v.paint(s);
+      return v.visible().join() !== counts(s).join() || v.layers.counts.corpses.visible > 64;
     });
 
     expect(mismatches).toHaveLength(0);
+  });
+
+  it('Scenario: Sonda en el menú (recuentos a 0 con las claves de enemigo)', () => {
+    const c = emptyCounts(['goblin-torch', 'goblin-tnt', 'goblin-barrel']);
+    const kinds = [c.player, c.enemies, c.corpses, c.projectiles, c.pulses, c.gems];
+    expect(kinds.every((k) => k.visible === 0 && k.placeholder === 0)).toBe(true);
+    expect(c.enemyPlaceholders).toEqual({ 'goblin-torch': 0, 'goblin-tnt': 0, 'goblin-barrel': 0 });
   });
 });

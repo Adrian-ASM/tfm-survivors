@@ -78,26 +78,26 @@
   `tests/support/`, y `PlayerView` (idle/walk, volteo, parpadeo con `playerVisible`, `idle` con `over`, `reset()`).
   - Escenarios: SR "Quieto y andando", "Parpadeo con sprite animado", "Partida terminada", "Primer frame de una
     partida nueva"; RR "Primer frame tras reiniciar" (parte del jugador).
-- [ ] 4.6 `EnemyLayer`: `SpriteLike` + `Look` por tipo + `Motion` por hueco (reinicio al aparecer); destello
+- [x] 4.6 `EnemyLayer`: `SpriteLike` + `Look` por tipo + `Motion` por hueco (reinicio al aparecer); destello
   `setTint(0xffffff)` + `FILL`, normal `MULTIPLY` o `placeholderColor`; escala y origen del aspecto.
   - Escenarios: SR "Hueco reutilizado", "Escala independiente de la hitbox"; SL "Aspecto por tipo", "Reposición
     tras bajas", "Todos dados de baja"; AW "Indicación de daño fiel al snapshot", "Indicación de daño con aspecto de
     reserva".
-- [ ] 4.7 `CorpseLayer`: `maxCorpses` preasignados, `spawn(x, y, facingLeft, radius)` → `false` con el tope lleno,
+- [x] 4.7 `CorpseLayer`: `maxCorpses` preasignados, `spawn(x, y, facingLeft, radius)` → `false` con el tope lleno,
   `sync(clockMs)` con `frameAt`/`animDone`, `clear()`.
   - Escenarios: SR "Muerte y desaparición", "Tope de cadáveres", "Tope de un cadáver", "Muerte con aspecto de
     reserva".
-- [ ] 4.8 `ProjectileLayer`: flecha, rotación `atan2(Δy, Δx)` (+π con `facing: 'left'`), 0 en el primer frame.
+- [x] 4.8 `ProjectileLayer`: flecha, rotación `atan2(Δy, Δx)` (+π con `facing: 'left'`), 0 en el primer frame.
   - Escenarios: SR "Rotación de la flecha", "Flechas y gemas" (parte flechas); AW "Sprites de proyectiles".
-- [ ] 4.9 `GemLayer` con el aspecto de la gema (frame fijo, tamaño por aspecto, no por `gemRadius`).
+- [x] 4.9 `GemLayer` con el aspecto de la gema (frame fijo, tamaño por aspecto, no por `gemRadius`).
   - Escenarios: XG "Recogidas y nuevas", "Tope de gemas pintado", "Todas recogidas"; SR "Flechas y gemas" (gemas).
-- [ ] 4.10 `RenderLayers.advance/render`: un `advance` por `update`; `frozen` con pausa, `choosing` y `over`; muerte
+- [x] 4.10 `RenderLayers.advance/render`: un `advance` por `update`; `frozen` con pausa, `choosing` y `over`; muerte
   por delta del snapshot → `corpses.spawn` en el orden anterior; nada de cadáveres por enemigos nunca pintados.
   Test de caracterización en `tests/domain/` (solo tests): semilla 42, 1.200 ticks de 1 y de 8 en 8, ids salientes
   = aumento de `kills`.
   - Escenarios: SR "Pulso que mata a varios en el mismo tick", "Fin de la partida", "Muerte a velocidad acelerada",
     "Cadáver con el mundo detenido", "Mundo detenido", "Salidas iguales a bajas".
-- [ ] 4.11 `RenderLayers.clear()` + `renderCounts.ts` (`SpriteCounts` reutilizado con `ground`,
+- [x] 4.11 `RenderLayers.clear()` + `renderCounts.ts` (`SpriteCounts` reutilizado con `ground`,
   `enemyPlaceholders` por tipo; contadores incrementales; menú → todo a 0).
   - Escenarios: SR "R con cadáveres en curso", "Pulso sin sprite", "Recuento coherente con el snapshot" (unitario),
     "Sonda en el menú" (unitario); RR "Primer frame tras reiniciar".
@@ -112,14 +112,14 @@
   `BootScene` + `BOOT_SCENE_KEY`: lógica pura `sheetsToLoad(appearance)` (un load por `file` distinto) y
   `nextSceneKey(e2e)`, probadas; la escena solo llama al motor.
   - Escenarios: SR "Con e2e" (no se ve el menú; parte unitaria), "Hoja que no carga" (`FILE_LOAD_ERROR` solo anota).
-- [ ] 5.2 `GameScene`: suelo `TileSprite` 960 × 540 (o `Rectangle` de reserva), orden de pintado de design,
+- [x] 5.2 `GameScene`: suelo `TileSprite` 960 × 540 (o `Rectangle` de reserva), orden de pintado de design,
   `RenderLayers`; borrar `enemyPalette.ts`. Test del suelo con una costura (`GroundView`): cubre (0,0)–(960,540),
   primero en profundidad, posición fija.
   - Hecho: R1 cerrado en `vite dev` (fila de andar del Barrel confirmada o corregida en `appearance.json`).
   - Escenarios: SR "Fondo de hierba".
 
 ## 6. Composición
-- [ ] 6.1 `src/composition/contentBoot.ts`: `bootContent(raw, report, registered)` = contenido + manifiesto +
+- [x] 6.1 `src/composition/contentBoot.ts`: `bootContent(raw, report, registered)` = contenido + manifiesto +
   `checkAppearanceRefs`; sin motor ni DOM. Test `tests/composition/content-boot.test.ts`.
   - Escenarios: SR "Tipos de enemigo y aspectos desalineados", "Datos inválidos en el arranque" (con y sin
     `?e2e`), "Los aspectos no cambian la simulación" (protección: escalas × 2, 1.200 ticks, semilla 42).

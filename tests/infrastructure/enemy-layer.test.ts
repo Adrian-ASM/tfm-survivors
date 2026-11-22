@@ -1,228 +1,219 @@
 import { describe, expect, it } from 'vitest';
 import type { EnemySnapshot } from '../../src/domain/run/RunSnapshot';
-import {
-  EnemyLayer,
-  FLASH_COLOR,
-  type CircleSprite,
-} from '../../src/infrastructure/phaser/EnemyLayer';
-import { DEFAULT_ENEMY_COLOR, enemyPalette } from '../../src/infrastructure/phaser/enemyPalette';
+import { PLACEHOLDER_SIZE, PLACEHOLDER_TEXTURE } from '../../src/infrastructure/phaser/art/looks';
+import { EnemyLayer, type CorpseSink } from '../../src/infrastructure/phaser/EnemyLayer';
+import { WHITE } from '../../src/infrastructure/phaser/SpriteLike';
+import { BARREL_FILE, TNT_FILE, TORCH_FILE } from '../support/appearance';
+import { FAKE_TINT, fakeKit } from '../support/FakeSprite';
+import { someLooks } from '../support/looks';
 
-/** Doble de un círculo del motor: registra su estado y cuántas veces se recolorea o redimensiona. */
-class FakeCircle implements CircleSprite {
-  x = 0;
-  y = 0;
-  radius = 1;
-  color = 0;
-  visible = true;
-  restyles = 0;
-  fills = 0;
+// Specs simulation-loop ("Pintado de los enemigos vivos"), sprite-rendering y auto-weapons (0012).
+const FRAME_MS = 16.667;
+const IDLE = [0, 1];
+const WALK = [6, 7, 8, 9];
 
-  setPosition(x: number, y: number): this {
-    this.x = x;
-    this.y = y;
-    return this;
-  }
-  setRadius(radius: number): this {
-    this.radius = radius;
-    this.restyles += 1;
-    return this;
-  }
-  setFillStyle(color: number): this {
-    this.color = color;
-    this.fills += 1;
-    return this;
-  }
-  setVisible(visible: boolean): this {
-    this.visible = visible;
-    return this;
-  }
-}
-
-function layer(capacity: number) {
-  const created: FakeCircle[] = [];
-  const l = new EnemyLayer(capacity, () => {
-    const c = new FakeCircle();
-    created.push(c);
-    return c;
-  });
-  return { l, created };
-}
-
-const enemy = (id: number, type: string, x: number, y: number, radius = 10): EnemySnapshot => ({
+const enemy = (
+  id: number,
+  type: string,
+  x: number,
+  y: number,
+  opts: { radius?: number; damaged?: boolean } = {},
+): EnemySnapshot => ({
   id,
   type,
   x,
   y,
-  radius,
+  radius: opts.radius ?? 10,
   health: 10,
-  damaged: false,
+  damaged: opts.damaged ?? false,
 });
 
-describe('EnemyLayer', () => {
+class SpyCorpses implements CorpseSink {
+  readonly spawned: { x: number; y: number; facingLeft: boolean; radius: number }[] = [];
+  spawn(x: number, y: number, facingLeft: boolean, radius: number): boolean {
+    this.spawned.push({ x, y, facingLeft, radius });
+    return true;
+  }
+}
+
+function layer(
+  capacity: number,
+  opts: { missing?: string[]; edit?: Parameters<typeof someLooks>[0] } = {},
+) {
+  const kit = fakeKit();
+  const corpses = new SpyCorpses();
+  const looks = someLooks(opts.edit, opts.missing);
+  const l = new EnemyLayer(capacity, kit, looks.enemies, corpses);
+  let tick = 0;
+  const sync = (enemies: readonly EnemySnapshot[]): void => {
+    tick += 1;
+    l.sync(enemies, tick, tick * FRAME_MS);
+  };
+  return { l, sync, sprites: kit.created, corpses };
+}
+
+const visible = <T extends { visible: boolean }>(sprites: T[]): T[] =>
+  sprites.filter((s) => s.visible);
+
+describe('EnemyLayer · pool y aspecto por tipo', () => {
   it('preasigna el pool completo, oculto, y no crea más al sincronizar', () => {
-    const { l, created } = layer(200);
-    expect(created).toHaveLength(200);
-    expect(created.every((c) => !c.visible)).toBe(true);
+    const { sync, sprites } = layer(200);
+    expect(sprites).toHaveLength(200);
+    expect(visible(sprites)).toHaveLength(0);
     const many = Array.from({ length: 200 }, (_, i) => enemy(i, 'goblin-torch', i, i));
-    for (let frame = 0; frame < 10; frame++) l.sync(many);
-    expect(created).toHaveLength(200);
+    for (let frame = 0; frame < 10; frame++) sync(many);
+    expect(sprites).toHaveLength(200);
   });
 
-  it('posiciona los n primeros huecos y los hace visibles con el radio y el color del tipo', () => {
-    const { l, created } = layer(4);
-    l.sync([enemy(0, 'goblin-torch', 10, 20), enemy(1, 'goblin-tnt', 30, 40, 22)]);
-    expect(created.slice(0, 2).map((c) => [c.x, c.y, c.radius, c.color, c.visible])).toEqual([
-      [10, 20, 10, enemyPalette('goblin-torch'), true],
-      [30, 40, 22, enemyPalette('goblin-tnt'), true],
+  it('Scenario: Aspecto por tipo (tres hojas distintas)', () => {
+    const { sync, sprites } = layer(4);
+    sync([
+      enemy(0, 'goblin-torch', 10, 20),
+      enemy(1, 'goblin-tnt', 30, 40, { radius: 22 }),
+      enemy(2, 'goblin-barrel', 50, 60, { radius: 16 }),
     ]);
-    expect(created.slice(2).every((c) => !c.visible)).toBe(true);
-  });
-
-  it('oculta los huecos sobrantes cuando hay menos enemigos', () => {
-    const { l, created } = layer(3);
-    l.sync([
-      enemy(0, 'goblin-torch', 1, 1),
-      enemy(1, 'goblin-torch', 2, 2),
-      enemy(2, 'goblin-torch', 3, 3),
+    expect(sprites.slice(0, 3).map((s) => [s.texture, s.x, s.y, s.visible])).toEqual([
+      [TORCH_FILE, 10, 20, true],
+      [TNT_FILE, 30, 40, true],
+      [BARREL_FILE, 50, 60, true],
     ]);
-    l.sync([enemy(0, 'goblin-torch', 1, 1)]);
-    expect(created.map((c) => c.visible)).toEqual([true, false, false]);
   });
 
-  it('cambia radio y color solo si cambia el tipo del hueco', () => {
-    const { l, created } = layer(1);
-    l.sync([enemy(0, 'goblin-torch', 1, 1)]);
-    l.sync([enemy(0, 'goblin-torch', 5, 5)]);
-    expect(created[0]?.restyles).toBe(1);
-    l.sync([enemy(7, 'goblin-barrel', 5, 5, 16)]);
-    expect(created[0]?.restyles).toBe(2);
-    expect([created[0]?.radius, created[0]?.color]).toEqual([16, enemyPalette('goblin-barrel')]);
+  it('Scenario: Escala independiente de la hitbox (192 px, escala 0,5, origen (0,5; 0,75))', () => {
+    const { sync, sprites } = layer(2, {
+      edit: (raw) => {
+        const tnt = raw.enemies['goblin-tnt'] ?? {};
+        tnt.scale = 0.5;
+        tnt.origin = { x: 0.5, y: 0.75 };
+      },
+    });
+    sync([
+      enemy(0, 'goblin-tnt', 400, 300, { radius: 22 }),
+      enemy(1, 'goblin-tnt', 400, 300, { radius: 30 }),
+    ]);
+    for (const s of sprites) {
+      expect(192 * s.scale).toBeCloseTo(96, 3);
+      const tl = s.topLeft(192, 192);
+      expect(tl.x + 0.5 * 96).toBeCloseTo(400, 3);
+      expect(tl.y + 0.75 * 96).toBeCloseTo(300, 3);
+    }
   });
 
-  it('ignora los enemigos que no caben en el pool', () => {
-    const { l, created } = layer(1);
-    l.sync([enemy(0, 'goblin-torch', 1, 1), enemy(1, 'goblin-torch', 2, 2)]);
-    expect(created).toHaveLength(1);
-    expect([created[0]?.x, created[0]?.y]).toEqual([1, 1]);
+  it('Scenario: Tamaño del aspecto de reserva (hoja sin cargar, radio 10 en (300, 200))', () => {
+    const { sync, sprites, l } = layer(2, { missing: [TORCH_FILE] });
+    sync([enemy(0, 'goblin-torch', 300, 200), enemy(1, 'goblin-tnt', 10, 10)]);
+    const [s] = sprites;
+    expect(s?.texture).toBe(PLACEHOLDER_TEXTURE);
+    expect((s?.scale ?? 0) * PLACEHOLDER_SIZE).toBeCloseTo(20, 3);
+    expect([s?.originX, s?.originY, s?.x, s?.y]).toEqual([0.5, 0.5, 300, 200]);
+    expect(s?.tint).toBe(0xe5484d);
+    expect(l.counts).toEqual({ visible: 2, placeholder: 1 });
+    expect(l.placeholdersByType).toEqual({
+      'goblin-torch': 1,
+      'goblin-tnt': 0,
+      'goblin-barrel': 0,
+    });
   });
 });
 
 describe('EnemyLayer · bajas (hueco asociado al id)', () => {
-  const TYPES = ['goblin-torch', 'goblin-tnt', 'goblin-barrel'] as const;
-  const RADII = { 'goblin-torch': 10, 'goblin-tnt': 22, 'goblin-barrel': 16 } as const;
-  const mixed = (id: number): EnemySnapshot => {
-    const type = TYPES[id % 3] ?? 'goblin-torch';
-    return enemy(id, type, id * 3, id * 2, RADII[type]);
-  };
-  const visible = (created: FakeCircle[]) => created.filter((c) => c.visible);
-  /** Cada enemigo tiene un sprite visible propio en su posición, con su tamaño y color. */
-  const expectPainted = (created: FakeCircle[], enemies: readonly EnemySnapshot[]): void => {
-    const used = new Set<FakeCircle>();
-    for (const e of enemies) {
-      const sprite = visible(created).find(
-        (c) =>
-          !used.has(c) &&
-          Math.abs(c.x - e.x) <= 0.001 &&
-          Math.abs(c.y - e.y) <= 0.001 &&
-          c.radius === e.radius &&
-          c.color === enemyPalette(e.type),
-      );
-      expect(sprite, `enemigo ${String(e.id)}`).toBeDefined();
-      if (sprite) used.add(sprite);
+  const ten = Array.from({ length: 10 }, (_, i) =>
+    enemy(i + 1, i % 2 ? 'goblin-tnt' : 'goblin-torch', 10 * i, 5 * i),
+  );
+
+  it('Scenario: Bajas en medio de la lista (3 y 7: 8 visibles, cada uno en su posición)', () => {
+    const { sync, sprites } = layer(10);
+    sync(ten);
+    const rest = ten.filter((e) => e.id !== 3 && e.id !== 7);
+    sync(rest);
+    const shown = visible(sprites).map((s) => [s.x, s.y, s.texture]);
+    expect(shown).toHaveLength(8);
+    for (const e of rest) {
+      expect(shown).toContainEqual([e.x, e.y, e.type === 'goblin-tnt' ? TNT_FILE : TORCH_FILE]);
     }
-  };
-
-  it('Bajas en medio de la lista: 8 visibles y nadie se repinta', () => {
-    const { l, created } = layer(10);
-    const all = Array.from({ length: 10 }, (_, i) => mixed(i + 1));
-    l.sync(all);
-    const restyles = created.map((c) => c.restyles);
-    const survivors = all.filter((e) => e.id !== 3 && e.id !== 7);
-    l.sync(survivors);
-    expect(visible(created)).toHaveLength(8);
-    expectPainted(created, survivors);
-    expect(created.map((c) => c.restyles)).toEqual(restyles);
   });
 
-  it('Todos dados de baja: ningún sprite visible', () => {
-    const { l, created } = layer(200);
-    l.sync(Array.from({ length: 200 }, (_, i) => mixed(i)));
-    l.sync([]);
-    expect(visible(created)).toHaveLength(0);
+  it('Scenario: Todos dados de baja (200 pintados y después ninguno)', () => {
+    const { sync, sprites, l } = layer(200);
+    sync(Array.from({ length: 200 }, (_, i) => enemy(i, 'goblin-torch', i, i)));
+    sync([]);
+    expect(visible(sprites)).toHaveLength(0);
+    expect(l.counts.visible).toBe(0);
   });
 
-  it('Reposición tras bajas: 150 supervivientes y 50 nuevos de otro tipo en el mismo frame', () => {
-    const { l, created } = layer(200);
-    l.sync(Array.from({ length: 200 }, (_, i) => enemy(i, 'goblin-torch', i, i)));
+  it('Scenario: Reposición tras bajas (150 supervivientes y 50 nuevos de otro tipo)', () => {
+    const { sync, sprites, l } = layer(200);
+    const first = Array.from({ length: 200 }, (_, i) => enemy(i, 'goblin-torch', i, 0));
+    sync(first);
     const next = [
-      ...Array.from({ length: 150 }, (_, i) => enemy(i + 50, 'goblin-torch', i + 50, i + 50)),
-      ...Array.from({ length: 50 }, (_, i) => enemy(200 + i, 'goblin-tnt', i, 500, 22)),
+      ...first.slice(0, 150),
+      ...Array.from({ length: 50 }, (_, i) => enemy(1000 + i, 'goblin-tnt', i, 500)),
     ];
-    l.sync(next);
-    expect(visible(created)).toHaveLength(200);
-    expectPainted(created, next);
-    expect(created).toHaveLength(200);
+    sync(next);
+    const shown = visible(sprites).map((s) => [s.texture, s.x, s.y].join('@'));
+    expect(new Set(shown).size).toBe(200);
+    expect(shown.filter((k) => k.startsWith(TNT_FILE))).toHaveLength(50);
+    expect(l.counts.visible).toBe(200);
   });
 
-  it('el hueco liberado lo reutiliza el siguiente enemigo nuevo', () => {
-    const { l, created } = layer(2);
-    l.sync([enemy(0, 'goblin-torch', 1, 1), enemy(1, 'goblin-torch', 2, 2)]);
-    const slotOf0 = created.find((c) => c.x === 1);
-    l.sync([enemy(1, 'goblin-torch', 2, 2)]);
-    expect(slotOf0?.visible).toBe(false);
-    l.sync([enemy(1, 'goblin-torch', 2, 2), enemy(2, 'goblin-tnt', 9, 9, 22)]);
-    expect(slotOf0 && [slotOf0.x, slotOf0.radius, slotOf0.visible]).toEqual([9, 22, true]);
-    expect(created).toHaveLength(2);
+  it('una baja avisa al sumidero de cadáveres con la última posición pintada', () => {
+    const { sync, corpses } = layer(4);
+    sync([enemy(1, 'goblin-torch', 300, 200)]);
+    sync([]);
+    expect(corpses.spawned).toEqual([{ x: 300, y: 200, facingLeft: false, radius: 10 }]);
   });
 
-  it('un enemigo conserva su sprite aunque cambie de posición en la lista', () => {
-    const { l, created } = layer(3);
-    l.sync([enemy(0, 'goblin-torch', 1, 1), enemy(1, 'goblin-tnt', 2, 2, 22)]);
-    const leak = created.find((c) => c.radius === 22);
-    l.sync([enemy(1, 'goblin-tnt', 5, 5, 22)]);
-    expect(leak && [leak.x, leak.restyles]).toEqual([5, 1]);
+  it('clear() no genera cadáveres', () => {
+    const { sync, corpses, l, sprites } = layer(4);
+    sync([enemy(1, 'goblin-torch', 300, 200)]);
+    l.clear();
+    expect(corpses.spawned).toEqual([]);
+    expect(visible(sprites)).toHaveLength(0);
   });
 });
 
-describe('EnemyLayer · destello de daño', () => {
-  const hurt = (e: EnemySnapshot): EnemySnapshot => ({ ...e, damaged: true });
-
-  it('Scenario: Indicación visual de daño (destello mientras el enemigo lo indica)', () => {
-    const { l, created } = layer(2);
-    l.sync([hurt(enemy(0, 'goblin-torch', 1, 1)), enemy(1, 'goblin-torch', 2, 2)]);
-    expect(created.slice(0, 2).map((c) => c.color)).toEqual([
-      FLASH_COLOR,
-      enemyPalette('goblin-torch'),
-    ]);
-    l.sync([enemy(0, 'goblin-torch', 1, 1), enemy(1, 'goblin-torch', 2, 2)]);
-    expect(created[0]?.color).toBe(enemyPalette('goblin-torch'));
+describe('EnemyLayer · animación y orientación', () => {
+  it('Scenario: Hueco reutilizado (id 7 andando a la izquierda muere; id 9 en su hueco: idle)', () => {
+    const { sync, sprites } = layer(1);
+    for (let i = 0; i < 5; i++) sync([enemy(7, 'goblin-torch', 100 - 3 * i, 100)]);
+    const [s] = sprites;
+    expect([s?.flipX, WALK.includes(s?.frame ?? -1)]).toEqual([true, true]);
+    sync([enemy(9, 'goblin-torch', 800, 100)]);
+    expect([s?.flipX, IDLE.includes(s?.frame ?? -1)]).toEqual([false, true]);
   });
 
-  it('repinta solo cuando cambia el tipo o la indicación de daño', () => {
-    const { l, created } = layer(1);
-    l.sync([hurt(enemy(0, 'goblin-torch', 1, 1))]);
-    l.sync([hurt(enemy(0, 'goblin-torch', 2, 2))]);
-    l.sync([hurt(enemy(0, 'goblin-torch', 3, 3))]);
-    expect(created[0]?.fills).toBe(1);
-    l.sync([enemy(0, 'goblin-torch', 4, 4)]);
-    l.sync([enemy(0, 'goblin-torch', 5, 5)]);
-    expect(created[0]?.fills).toBe(2);
-  });
-
-  it('el destello es un color distinto de los de la paleta', () => {
-    const colors = ['goblin-torch', 'goblin-tnt', 'goblin-barrel', 'x'].map(enemyPalette);
-    expect(colors).not.toContain(FLASH_COLOR);
+  it('Scenario: Umbral de movimiento (0,0005 px: idle)', () => {
+    const { sync, sprites } = layer(1);
+    sync([enemy(1, 'goblin-torch', 100, 100)]);
+    sync([enemy(1, 'goblin-torch', 103, 100)]);
+    expect(WALK).toContain(sprites[0]?.frame);
+    sync([enemy(1, 'goblin-torch', 103.0005, 100)]);
+    expect(IDLE).toContain(sprites[0]?.frame);
   });
 });
 
-describe('enemyPalette', () => {
-  it('da un color distinto a cada tipo por defecto', () => {
-    const colors = ['goblin-torch', 'goblin-tnt', 'goblin-barrel'].map(enemyPalette);
-    expect(new Set(colors).size).toBe(3);
-    expect(colors).not.toContain(DEFAULT_ENEMY_COLOR);
+describe('EnemyLayer · indicación de daño', () => {
+  it('Scenario: Indicación de daño fiel al snapshot (FILL blanco y vuelta a MULTIPLY)', () => {
+    const { sync, sprites } = layer(1);
+    sync([enemy(1, 'goblin-torch', 0, 0, { damaged: true })]);
+    expect([sprites[0]?.tint, sprites[0]?.tintMode]).toEqual([WHITE, FAKE_TINT.fill]);
+    sync([enemy(1, 'goblin-torch', 0, 0)]);
+    expect([sprites[0]?.tint, sprites[0]?.tintMode]).toEqual([WHITE, FAKE_TINT.multiply]);
   });
 
-  it('usa un color por defecto si el id no está en la paleta', () => {
-    expect(enemyPalette('segfault')).toBe(DEFAULT_ENEMY_COLOR);
+  it('Scenario: Indicación de daño con aspecto de reserva (destello y vuelta a su color)', () => {
+    const { sync, sprites } = layer(1, { missing: [TORCH_FILE] });
+    sync([enemy(1, 'goblin-torch', 0, 0, { damaged: true })]);
+    expect([sprites[0]?.tint, sprites[0]?.tintMode]).toEqual([WHITE, FAKE_TINT.fill]);
+    sync([enemy(1, 'goblin-torch', 0, 0)]);
+    expect([sprites[0]?.tint, sprites[0]?.tintMode]).toEqual([0xe5484d, FAKE_TINT.multiply]);
+  });
+
+  it('solo retinta cuando cambia la indicación', () => {
+    const { sync, sprites } = layer(1);
+    sync([enemy(1, 'goblin-torch', 0, 0)]);
+    const before = sprites[0]?.tintSets ?? 0;
+    for (let i = 0; i < 10; i++) sync([enemy(1, 'goblin-torch', i, 0)]);
+    expect(sprites[0]?.tintSets).toBe(before);
   });
 });
