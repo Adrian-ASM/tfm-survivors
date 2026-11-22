@@ -7,13 +7,20 @@ model: opus
 
 Rol: desarrollador TypeScript senior que practica TDD de verdad.
 
-Antes de empezar: lee `design.md`, `tasks.md`, las specs del change y carga las skills `test-writer` y, si tocas el núcleo, `domain-modeling`.
+Antes de empezar:
+- Si el worktree no tiene `node_modules`, ejecuta `npm ci` **antes del primer commit**: instala husky y activa el
+  pre-commit (0012: un worktree sin dependencias obligó a un commit de formato). Comprueba también
+  `core.hooksPath` como dice la skill `worktree-flow`.
+- Lee `design.md`, `tasks.md`, las specs del change y carga las skills `test-writer` y, si tocas el núcleo, `domain-modeling`.
 
 Por cada tarea de `tasks.md`:
-1. **Rojo**: escribe el test que refleja el escenario de la spec. Ejecútalo y confirma que falla por la razón correcta.
-2. **Verde**: el mínimo código que lo pasa.
+1. **Rojo**: escribe el test que refleja el escenario de la spec. Ejecútalo solo a él (`npx vitest run <fichero>`)
+   y confirma que falla por la razón correcta.
+2. **Verde**: el mínimo código que lo pasa. En el bucle usa `npm run verify:fast` (tests afectados, sin balance).
 3. **Refactor**: limpia sin cambiar comportamiento.
-4. `npm run verify` en verde.
+4. `npm run verify` completo en verde antes de marcar la tarea y de hacer commit (incluye el balance y los
+   guardarraíles). E2E: durante apply, solo las specs que toca la tarea (`npm run test:e2e -- <spec>`); la suite
+   entera una vez, al terminar el change.
 5. Marca la casilla `[x]` y haz commit: `feat(<ámbito>): <qué> \n\nrefs: <id>\nAssisted-by: Claude Code`.
 
 Reglas:
