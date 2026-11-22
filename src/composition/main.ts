@@ -2,15 +2,22 @@
 // Primero: configura zod antes de que se construya ningún esquema (CSP sin 'unsafe-eval').
 import '../infrastructure/validation/cspSafeZod';
 import Phaser from 'phaser';
+import appearanceJson from '../../content/appearance.json';
+import provenanceJson from '../../content/asset-provenance.json';
 import { RestartRun } from '../application/RestartRun';
 import { buildRunRules, type RunConfig } from '../domain/run/RunConfig';
 import type { RunSnapshot } from '../domain/run/RunSnapshot';
 import type { DomainError } from '../domain/shared/Result';
-import { loadRunConfig } from '../infrastructure/content/loadRunConfig';
+import { repositoryContent } from '../infrastructure/content/loadRunConfig';
+import { MENU_LABELS } from '../infrastructure/dom/menuText';
 import { PausePanel } from '../infrastructure/dom/PausePanel';
 import { GameScene, type SceneCapacity, type Screen } from '../infrastructure/phaser/GameScene';
 import { MenuScene } from '../infrastructure/phaser/MenuScene';
+import { emptyCounts, type SpriteCounts } from '../infrastructure/phaser/renderCounts';
 import type { ResultsView } from '../infrastructure/phaser/resultsText';
+import { BootScene } from '../infrastructure/phaser/BootScene';
+import { assetUrl } from './assetUrl';
+import { bootContent } from './contentBoot';
 import { resolveSeed } from '../infrastructure/url/resolveSeed';
 import { resolveSpeed } from '../infrastructure/url/resolveSpeed';
 import { wireProgress, type ProgressProbe } from './progressWiring';
@@ -33,9 +40,12 @@ interface E2EProbe {
   /** Pantalla visible y partidas creadas en la carga (Jugar y reinicios con R). */
   screen: Screen;
   runs: number;
+  /** Sprites visibles y de reserva del último frame pintado (design 0012 D7); a 0 en el menú. */
+  sprites: SpriteCounts;
 }
 
-const TITLE = 'Sprint Survivors';
+/** Nombre visible del juego (change 0012): una sola fuente para el menú y el documento. */
+const TITLE = MENU_LABELS.title;
 
 function showContentError(root: HTMLElement, error: DomainError): void {
   const box = document.createElement('div');
@@ -52,7 +62,7 @@ const randomSeed = (): number => crypto.getRandomValues(new Uint32Array(1))[0] ?
  * Tamaño de los pools de la escena desde el contenido ya validado: `pulseCapacity` del peor caso
  * de las mejoras (ADR-0008) y `maxGems`.
  */
-function sceneCapacity(config: RunConfig): SceneCapacity {
+function sceneCapacity(config: RunConfig, corpses: number): SceneCapacity {
   const rules = buildRunRules(config);
   if (!rules.ok) throw new Error(rules.error.message);
   const { loadout, pulseCapacity, gems } = rules.value;
@@ -65,6 +75,7 @@ function sceneCapacity(config: RunConfig): SceneCapacity {
     projectiles: loadout.maxProjectiles,
     pulses: pulseCapacity,
     gems: gems.maxGems,
+    corpses,
     visualTicks,
   };
 }
@@ -73,11 +84,19 @@ function bootstrap(): void {
   const root = document.getElementById('game');
   if (!root) throw new Error('Falta el contenedor #game en index.html');
 
-  const config = loadRunConfig();
-  if (!config.ok) {
-    showContentError(root, config.error);
-    return;
-  }
+  // Contenido de juego + datos de aspecto + su cruce, antes de crear el menú o la partida (0012).
+  const booted = bootContent(
+    { content: repositoryContent(), appearance: appearanceJson },
+    (error) => {
+      console.error(`Contenido inválido en ${error.field}: ${error.message}`);
+      showContentError(root, error);
+    },
+    provenanceJson.files.map((f) => f.path),
+  );
+  if (!booted) return;
+  const config = { value: booted.config };
+  const { appearance } = booted;
+  const menuSprites = emptyCounts(Object.keys(appearance.enemies));
   const { seed, warning } = resolveSeed(window.location.search, randomSeed);
   if (warning) console.warn(warning);
   // Una sola vez por carga: los reinicios no releen la URL ni avisan (spec simulation-loop).
@@ -94,6 +113,7 @@ function bootstrap(): void {
     results: null,
     screen: e2e ? 'playing' : 'menu',
     runs: 0,
+    sprites: menuSprites,
     get progress() {
       return progress.probe();
     },
@@ -119,6 +139,7 @@ function bootstrap(): void {
     if (screen !== 'menu') return;
     probe.snapshot = null;
     probe.results = null;
+    probe.sprites = menuSprites;
   };
   // Sin ?e2e no hay sonda (spec main-menu, "Sin sonda fuera de E2E").
   if (e2e) Object.defineProperty(window, '__sprint', { value: probe });
@@ -126,12 +147,15 @@ function bootstrap(): void {
   const game = new GameScene({
     launcher,
     restartRun: new RestartRun(config.value, nextRandom),
-    capacity: sceneCapacity(config.value),
+    capacity: sceneCapacity(config.value, appearance.maxCorpses),
+    appearance,
     progress: progress.scene,
     pause,
-    onRender: (snapshot, results) => {
+    // Snapshot y sprites en la misma llamada: cualquier lectura ve un par coherente (design D7).
+    onRender: (snapshot, results, sprites) => {
       probe.snapshot = snapshot;
       probe.results = results;
+      probe.sprites = sprites;
     },
     onScreen,
     simSpeed: speed.speed,
@@ -147,6 +171,12 @@ function bootstrap(): void {
     TITLE,
   );
 
+  const boot = new BootScene({
+    appearance,
+    assetUrl: (file) => assetUrl(import.meta.env.BASE_URL, file),
+    e2e,
+  });
+
   // El canvas tiene el tamaño de la vista (unidades de mundo): una sola fuente para lo que se ve.
   const { view } = config.value.arena;
   new Phaser.Game({
@@ -155,8 +185,11 @@ function bootstrap(): void {
     width: view.width,
     height: view.height,
     backgroundColor: BACKGROUND,
-    // Phaser arranca la primera escena de la lista: con ?e2e, la partida (arranque de antes).
-    scene: e2e ? [game, menu] : [menu, game],
+    // Imágenes con <img> (sin XHR ni blob:): la CSP de index.html no cambia (design D2).
+    loader: { imageLoadType: 'HTMLImageElement' },
+    // Phaser arranca la primera escena: BootScene carga las hojas y arranca el menú o, con ?e2e,
+    // la partida (arranque de antes, ADR-0011).
+    scene: [boot, menu, game],
   });
 }
 

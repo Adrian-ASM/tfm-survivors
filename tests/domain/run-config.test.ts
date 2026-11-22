@@ -59,7 +59,7 @@ describe('buildRunRules', () => {
     if (!r.ok) throw new Error(r.error.message);
     const { arena, view, catalog, table, spawn } = r.value;
     expect([arena.width, arena.height, view.width, view.height]).toEqual([960, 540, 960, 540]);
-    expect(catalog.ids).toEqual(['bug', 'memory-leak', 'merge-conflict']);
+    expect(catalog.ids).toEqual(['goblin-torch', 'goblin-tnt', 'goblin-barrel']);
     expect(table.segments.map((s) => s.fromSecond)).toEqual([0, 60, 180, 300, 480]);
     expect(spawn).toMatchObject({ maxAlive: 200, minDistance: 200, maxAttempts: 8, margin: 32 });
   });
@@ -107,11 +107,13 @@ describe('buildRunRules', () => {
     const badType = {
       ...base,
       enemies: {
-        types: [{ id: 'bug', speed: 0, radius: 10, cost: 1, damage: 5, health: 10, xp: 1 }],
+        types: [
+          { id: 'goblin-torch', speed: 0, radius: 10, cost: 1, damage: 5, health: 10, xp: 1 },
+        ],
       },
     };
     expect(failure(badType).field).toBe('enemies.types.0.speed');
-    const segments = [{ fromSecond: 0, budgetPerSecond: 1, types: ['bug', 'segfault'] }];
+    const segments = [{ fromSecond: 0, budgetPerSecond: 1, types: ['goblin-torch', 'segfault'] }];
     const e = failure(withWaves({ segments }));
     expect(e.field).toBe('waves.segments.0.types.1');
     expect(e.message).toBe(`${UNKNOWN_ENEMY_TYPE}: segfault`);
@@ -130,7 +132,7 @@ describe('buildRunRules', () => {
     expect(e.field).toBe('waves.maxBudget');
     expect(e.message).toContain(MAX_BUDGET_BELOW_MAX_COST);
     expect(e.message).toContain('3');
-    expect(e.message).toContain('memory-leak');
+    expect(e.message).toContain('goblin-tnt');
   });
 
   it('Máximo de presupuesto igual al coste más caro (validación)', () => {

@@ -41,7 +41,9 @@ function frames(s: StartedRun, n: number): void {
 /** Contenido por defecto con un bug letal: la partida avanzada muere en su primer tick. */
 const lethal = (): RunConfig => {
   const base = aDefaultConfig();
-  const types = base.enemies.types.map((t) => (t.id === 'bug' ? { ...t, damage: 1e6 } : t));
+  const types = base.enemies.types.map((t) =>
+    t.id === 'goblin-torch' ? { ...t, damage: 1e6 } : t,
+  );
   return { ...base, enemies: { types } };
 };
 
@@ -50,8 +52,8 @@ function advancedAndLost(): TickRun {
   const s = started(lethal(), {
     player: CENTER,
     enemies: [
-      { type: 'bug', ...CENTER },
-      { type: 'memory-leak', x: 100, y: 100 },
+      { type: 'goblin-torch', ...CENTER },
+      { type: 'goblin-tnt', x: 100, y: 100 },
     ],
     gems: [{ x: 40, y: 40, value: 1 }],
     experience: { level: 15, xp: 0 },

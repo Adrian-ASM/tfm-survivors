@@ -3,18 +3,22 @@
   "maxBudget": 10,
   "spawn": { "margin": 32, "minDistance": 200, "maxAttempts": 8 },
   "segments": [
-    { "fromSecond": 0, "budgetPerSecond": 1, "types": ["bug"] },
-    { "fromSecond": 60, "budgetPerSecond": 2, "types": ["bug", "merge-conflict"] },
+    { "fromSecond": 0, "budgetPerSecond": 1, "types": ["goblin-torch"] },
+    { "fromSecond": 60, "budgetPerSecond": 2, "types": ["goblin-torch", "goblin-barrel"] },
     {
       "fromSecond": 180,
       "budgetPerSecond": 2.5,
-      "types": ["bug", "merge-conflict", "memory-leak"]
+      "types": ["goblin-torch", "goblin-barrel", "goblin-tnt"]
     },
-    { "fromSecond": 300, "budgetPerSecond": 4, "types": ["bug", "merge-conflict", "memory-leak"] },
+    {
+      "fromSecond": 300,
+      "budgetPerSecond": 4,
+      "types": ["goblin-torch", "goblin-barrel", "goblin-tnt"]
+    },
     {
       "fromSecond": 480,
       "budgetPerSecond": 5.6,
-      "types": ["bug", "merge-conflict", "memory-leak"]
+      "types": ["goblin-torch", "goblin-barrel", "goblin-tnt"]
     }
   ]
 }

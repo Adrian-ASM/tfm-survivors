@@ -1,4 +1,4 @@
-# Sprint Survivors · TFM Máster de Desarrollo con IA
+# Greentide Vanguard · TFM Máster de Desarrollo con IA
 
 > Survivors-like 2D para navegador desarrollado con Spec-Driven Development, Clean Architecture y agentes de IA.
 
@@ -10,8 +10,8 @@
 | **Usuario de prueba** | No aplica en la fase 1 (sin login). |
 
 ## 1. Descripción general
-*Sprint Survivors*: una dev atrapada en un sprint infinito sobrevive a oleadas de *bugs*, *memory leaks* y
-*merge conflicts* con armas automáticas (linter, tests, refactor). Metáfora del propio TFM. Ver `docs/gdd.md`.
+*Greentide Vanguard*: un arquero sobrevive a oleadas de goblins (antorcha, TNT y barril) con armas automáticas.
+Arte pixel de Tiny Swords (Update 010, CC0) desde el change 0012. Ver `docs/gdd.md`.
 
 ## 2. Stack tecnológico
 TypeScript 6 estricto · Vite 8 · Phaser 4.2.1 (ADR-0001) · Vitest · Playwright · zod · ESLint + husky ·
@@ -81,4 +81,8 @@ Desde GitHub Actions: workflow `smoke-public` (*Actions → smoke-public → Run
 `playwright-report/smoke` como artefacto.
 
 ## Licencia y créditos
-_Pendiente (incluir procedencia de assets generados con IA)._
+- Arte: *Tiny Swords* (Update 010) de Pixel Frog, **CC0** (confirmado por el autor el 2026-11-22). Solo los 8 PNG
+  que usa el juego, en `public/assets/tiny-swords/`, con su procedencia (ruta en el pack, `sha256` y bytes) en
+  `content/asset-provenance.json`. Nada del *Free Pack* (no es CC0): lo impide un guardarraíl en pre-commit y CI
+  (ADR-0012).
+- Código: _pendiente_.

@@ -4,14 +4,11 @@ import type { StartedRun } from '../../application/StartRun';
 import type { TickRun } from '../../application/TickRun';
 import type { RunSnapshot } from '../../domain/run/RunSnapshot';
 import { ChoiceKeys, choiceIndex } from './ChoiceKeys';
-import { EnemyLayer, type CircleSprite } from './EnemyLayer';
-import { GemLayer } from './GemLayer';
 import type { Hud } from './Hud';
 import { KeyboardInput } from './KeyboardInput';
 import { PauseGate, type PauseAction } from './PauseGate';
 import { PauseKey } from './PauseKey';
-import { ProjectileLayer } from './ProjectileLayer';
-import { PulseLayer, type RingSprite } from './PulseLayer';
+import type { RingSprite } from './PulseLayer';
 import { RestartKey } from './RestartKey';
 import { GAME_SCENE_KEY, MENU_SCENE_KEY } from './sceneKeys';
 import type { ResultsOverlay } from './ResultsOverlay';
@@ -19,9 +16,13 @@ import type { ResultsView } from './resultsText';
 import type { RunLauncher } from './RunLauncher';
 import { createHud, createResultsOverlay, createUpgradeOverlay } from './sceneWidgets';
 import type { UpgradeOverlay } from './UpgradeOverlay';
-import { playerVisible } from './playerBlink';
+import type { Appearance } from '../content/appearanceSchema';
+import { resolveLooks } from './art/looks';
+import { ensurePlaceholderTexture, spriteKit, textureFrames } from './phaserArt';
+import type { SpriteCounts } from './renderCounts';
+import { createPlayfield, type GroundFactory } from './GroundView';
+import type { RenderLayers } from './RenderLayers';
 
-const PLAYER_COLOR = 0x3dd68c;
 const PULSE_COLOR = 0x7ce2fe;
 const PULSE_LINE_WIDTH = 2;
 
@@ -35,6 +36,8 @@ export interface SceneCapacity {
   readonly projectiles: number;
   readonly pulses: number;
   readonly gems: number;
+  /** Tope de cadáveres visibles a la vez (datos de aspecto, design D6). */
+  readonly corpses: number;
   readonly visualTicks: ReadonlyMap<string, number>;
 }
 
@@ -58,12 +61,18 @@ export interface PauseView {
 export type Screen = 'menu' | 'playing' | 'paused';
 
 /** Lo que la escena ha pintado en un frame (para el probe de E2E). */
-export type OnRender = (snapshot: RunSnapshot, results: ResultsView | null) => void;
+export type OnRender = (
+  snapshot: RunSnapshot,
+  results: ResultsView | null,
+  sprites: SpriteCounts,
+) => void;
 
 export interface GameSceneDeps {
   readonly launcher: RunLauncher;
   readonly restartRun: RestartRun;
   readonly capacity: SceneCapacity;
+  /** Datos de aspecto validados (las hojas las carga `BootScene`). */
+  readonly appearance: Appearance;
   readonly progress: SceneProgress;
   readonly pause: PauseView;
   readonly onRender?: OnRender;
@@ -73,11 +82,7 @@ export interface GameSceneDeps {
 }
 
 interface Widgets {
-  readonly player: Phaser.GameObjects.Arc;
-  readonly enemies: EnemyLayer;
-  readonly projectiles: ProjectileLayer;
-  readonly pulses: PulseLayer;
-  readonly gems: GemLayer;
+  readonly layers: RenderLayers;
   readonly hud: Hud;
   readonly offer: UpgradeOverlay;
   readonly results: ResultsOverlay;
@@ -114,20 +119,32 @@ export class GameScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.leave();
     });
-    // Orden de creación = orden de pintado: anillos, gemas, enemigos, proyectiles, jugador, HUD y
-    // overlays encima de todo.
-    const circle = (): CircleSprite => this.add.circle(0, 0, 1, 0).setVisible(false);
+    // Orden de creación = orden de pintado: suelo, anillos, gemas, cadáveres, enemigos,
+    // proyectiles, jugador, HUD y overlays encima de todo (design 0012).
+    ensurePlaceholderTexture(this);
     const ring = (): RingSprite =>
       this.add.circle(0, 0, 1).setStrokeStyle(PULSE_LINE_WIDTH, PULSE_COLOR).setVisible(false);
-    const { enemies, projectiles, pulses, gems, visualTicks } = this.deps.capacity;
+    const ground: GroundFactory = {
+      tiles: (width, height, texture, frame, tileScale) => {
+        this.add
+          .tileSprite(0, 0, width, height, texture, frame)
+          .setOrigin(0, 0)
+          .setTileScale(tileScale);
+      },
+      rect: (width, height, color) => {
+        this.add.rectangle(0, 0, width, height, color).setOrigin(0, 0);
+      },
+    };
+    const looks = resolveLooks(this.deps.appearance, textureFrames(this));
+    const { width, height } = this.scale;
+    const { layers } = createPlayfield(
+      { kit: spriteKit(this), ring, looks, capacity: this.deps.capacity },
+      ground,
+      { width, height },
+    );
     const snapshot = started.tickRun.snapshot();
-    const { x, y, radius } = snapshot.player;
     this.w = {
-      pulses: new PulseLayer(pulses, visualTicks, ring),
-      gems: new GemLayer(gems, circle),
-      enemies: new EnemyLayer(enemies, circle),
-      projectiles: new ProjectileLayer(projectiles, circle),
-      player: this.add.circle(x, y, radius, PLAYER_COLOR),
+      layers,
       hud: createHud(this),
       offer: createUpgradeOverlay(this),
       results: createResultsOverlay(this),
@@ -155,6 +172,8 @@ export class GameScene extends Phaser.Scene {
       this.scene.start(MENU_SCENE_KEY);
       return;
     }
+    // Reloj de render: una vez por frame, congelado con el mundo detenido.
+    w.layers.advance(deltaMs, this.gate.paused);
     // Partida de este frame: la actual o, si R reinicia, la nueva.
     let current = started;
     if (!this.gate.paused) {
@@ -176,10 +195,7 @@ export class GameScene extends Phaser.Scene {
     const next = this.deps.restartRun.execute(current.tickRun);
     if (!next.ok) return current;
     this.started = next.value;
-    w.enemies.clear();
-    w.projectiles.clear();
-    w.pulses.clear();
-    w.gems.clear();
+    w.layers.clear();
     return next.value;
   }
 
@@ -203,17 +219,12 @@ export class GameScene extends Phaser.Scene {
     const started = this.started;
     if (!w || !started) return;
     this.last = snapshot;
-    w.player.setPosition(snapshot.player.x, snapshot.player.y);
-    w.player.setVisible(playerVisible(snapshot));
-    w.pulses.sync(snapshot.pulses, snapshot.tick);
-    w.gems.sync(snapshot.gems);
-    w.enemies.sync(snapshot.enemies);
-    w.projectiles.sync(snapshot.projectiles);
+    w.layers.render(snapshot);
     w.hud.sync(snapshot);
     w.offer.sync(snapshot.offer);
     w.results.sync(snapshot);
     // En el frame en que termina la partida: se guarda antes de que R pueda leerse (spec).
     this.deps.progress.sync(snapshot, started.tickRun);
-    this.deps.onRender?.(snapshot, w.results.view);
+    this.deps.onRender?.(snapshot, w.results.view, w.layers.counts);
   }
 }

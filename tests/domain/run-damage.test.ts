@@ -39,17 +39,17 @@ const one = (type: string, health?: number): RunSetup => ({
 });
 
 describe('Run · daño acumulado con las armas por defecto', () => {
-  it('Scenario: Ningún arma mata a un bug de un impacto (Linter → 4; Tests → 6)', () => {
-    expect(history(play(weaponsOf([LINTER]), one('bug'), 29))).toEqual({
+  it('Scenario: Ningún arma mata a un goblin-torch de un impacto (Linter → 4; Tests → 6)', () => {
+    expect(history(play(weaponsOf([LINTER]), one('goblin-torch'), 29))).toEqual({
       lives: [10, 4],
       gone: false,
     });
-    const near = { enemies: [{ type: 'bug', x: PX + 50, y: PY }] };
+    const near = { enemies: [{ type: 'goblin-torch', x: PX + 50, y: PY }] };
     expect(history(play(weaponsOf([TESTS]), near, 1))).toEqual({ lives: [6], gone: false });
   });
 
-  it('Scenario: Linter mata a un bug en 2 impactos (no aparece en el snapshot del tick n)', () => {
-    const snaps = play(weaponsOf([LINTER]), one('bug', 4), 30);
+  it('Scenario: Linter mata a un goblin-torch en 2 impactos (no aparece en el snapshot del tick n)', () => {
+    const snaps = play(weaponsOf([LINTER]), one('goblin-torch', 4), 30);
     const n = snaps.findIndex((s) => s.enemies.length === 0);
     expect(n).toBeGreaterThan(0);
     // En el tick n desaparece a la vez el proyectil que lo ha alcanzado.
@@ -57,8 +57,8 @@ describe('Run · daño acumulado con las armas por defecto', () => {
     expect(snaps[n]?.projectiles).toHaveLength(0);
   });
 
-  it('Scenario: Tests mata a un bug en 3 pulsos (vida 2 tras 2 pulsos)', () => {
-    const near = { enemies: [{ type: 'bug', x: PX + 50, y: PY }] };
+  it('Scenario: Tests mata a un goblin-torch en 3 pulsos (vida 2 tras 2 pulsos)', () => {
+    const near = { enemies: [{ type: 'goblin-torch', x: PX + 50, y: PY }] };
     const snaps = play(weaponsOf([TESTS]), near, 181);
     expect(history(snaps.slice(0, 180))).toEqual({ lives: [6, 2], gone: false });
     expect(history(snaps)).toMatchObject({ gone: true });
@@ -66,14 +66,14 @@ describe('Run · daño acumulado con las armas por defecto', () => {
   });
 
   it('Scenario: Combinación de armas (6 + 4 = 10: baja exacta)', () => {
-    const near = { enemies: [{ type: 'bug', x: PX + 50, y: PY }] };
+    const near = { enemies: [{ type: 'goblin-torch', x: PX + 50, y: PY }] };
     expect(history(play(DEFAULT_WEAPONS, near, 30))).toEqual({ lives: [6], gone: true });
   });
 
-  it('Scenario: Enemigos más resistentes (merge-conflict 4 impactos; memory-leak 8)', () => {
-    const merge = history(play(weaponsOf([LINTER]), one('merge-conflict'), 30 * 4));
+  it('Scenario: Enemigos más resistentes (goblin-barrel 4 impactos; goblin-tnt 8)', () => {
+    const merge = history(play(weaponsOf([LINTER]), one('goblin-barrel'), 30 * 4));
     expect(merge).toEqual({ lives: [20, 14, 8, 2], gone: true });
-    const leak = history(play(weaponsOf([LINTER]), one('memory-leak'), 30 * 8));
+    const leak = history(play(weaponsOf([LINTER]), one('goblin-tnt'), 30 * 8));
     expect(leak).toEqual({ lives: [45, 39, 33, 27, 21, 15, 9, 3], gone: true });
   });
 });
@@ -83,7 +83,7 @@ describe('Run · un enemigo dañado sigue persiguiendo', () => {
     ['Linter', weaponsOf([LINTER])],
     ['Tests', weaponsOf([TESTS])],
   ])('Scenario: Misma trayectoria con y sin daño; El impacto no empuja (%s)', (_name, weapons) => {
-    const setup = { enemies: [{ type: 'bug', x: 380, y: PY }] };
+    const setup = { enemies: [{ type: 'goblin-torch', x: 380, y: PY }] };
     const hit = play(weapons, setup, 20);
     const clean = play(NO_WEAPONS, setup, 20);
     expect(hit.some((s) => s.enemies[0]?.damaged)).toBe(true);

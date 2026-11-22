@@ -8,7 +8,7 @@ export type PanelMessage = 'imported' | 'too-large' | 'invalid';
 export const PANEL_MESSAGES: Readonly<Record<PanelMessage, string>> = {
   imported: 'Progreso importado y fusionado',
   'too-large': 'Fichero rechazado: ocupa más de 64 KiB',
-  invalid: 'Fichero no válido: no es un progreso de Sprint Survivors',
+  invalid: 'Fichero no válido: no es un progreso de Greentide Vanguard',
 };
 
 /** Avisos del panel (spec run-results). */
@@ -19,7 +19,7 @@ export const PANEL_NOTICES = {
 
 /** Único aviso de consola al cargar datos guardados dañados (spec: menciona `progress`). */
 export const PROGRESS_CORRUPT_WARNING =
-  'Sprint Survivors: el progress guardado está dañado o es de otra versión; se usa el progreso vacío';
+  'Greentide Vanguard: el progress guardado está dañado o es de otra versión; se usa el progreso vacío';
 
 /** Estado del progreso que decide los avisos. */
 export interface PanelFlags {

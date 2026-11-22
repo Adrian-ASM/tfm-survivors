@@ -106,7 +106,7 @@ describe('TickRun', () => {
   });
 
   it('StartRun propaga el error de contenido de enemigos y oleadas', () => {
-    const config = aWavesConfig({ segments: [aSegment(['bug', 'segfault'], 1)] });
+    const config = aWavesConfig({ segments: [aSegment(['goblin-torch', 'segfault'], 1)] });
     const r = new StartRun().execute(config, new Mulberry32RandomGenerator(1));
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error.field).toBe('waves.segments.0.types.1');
@@ -142,7 +142,10 @@ describe('TickRun · sin tiempo acumulado durante la elección', () => {
   /** Partida que abre una oferta en el tick 1 (gema a 20 px con XP 4). */
   function offering() {
     const base = aDefaultConfig();
-    const config = { ...base, waves: aWavesConfig({ segments: [aSegment(['bug'], 0)] }).waves };
+    const config = {
+      ...base,
+      waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 0)] }).waves,
+    };
     const run = startRun(config, {
       player: { x: 480, y: 270 },
       gems: [{ x: 500, y: 270, value: 1 }],
@@ -184,7 +187,10 @@ describe('TickRun · sin tiempo acumulado durante la elección', () => {
 describe('TickRun · acumulador', () => {
   it('no acumula tiempo con la partida eligiendo ni terminada, y corta el frame que abre la oferta', () => {
     const base = aDefaultConfig();
-    const config = { ...base, waves: aWavesConfig({ segments: [aSegment(['bug'], 0)] }).waves };
+    const config = {
+      ...base,
+      waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 0)] }).waves,
+    };
     const run = startRun(config, {
       player: { x: 480, y: 270 },
       gems: [{ x: 500, y: 270, value: 1 }],

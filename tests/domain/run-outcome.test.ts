@@ -25,7 +25,7 @@ const CENTER = { x: 480, y: 270 };
 const contactAt = (n: number, type = 'probe') => ({ type, x: 480 + 25 + n, y: 270 });
 
 /** Bug quieto (velocidad ínfima, vida 10, XP 1) para colocar bajas donde se quiera. */
-const STILL_BUG = aProbeType({ id: 'bug', speed: 1e-6, health: 10, xp: 1, damage: 5 });
+const STILL_BUG = aProbeType({ id: 'goblin-torch', speed: 1e-6, health: 10, xp: 1, damage: 5 });
 /** Enemigo duro y rápido (10 px/tick) que solo sirve para golpear al jugador en un tick dado. */
 const RUNNER = aProbeType({ id: 'probe', speed: 600, health: 1e6, damage: 10 });
 
@@ -46,7 +46,7 @@ const runnerAt = (n: number) => ({ type: 'probe', x: 480 - (20 + 10 * n), y: 270
 /** Tick en que el Linter abate a un bug de vida 4 a 300 px (partida de control, sin golpe). */
 function linterKillTick(): number {
   const control = at(killsConfig([LINTER]), {
-    enemies: [{ type: 'bug', x: 780, y: 270, health: 4 }],
+    enemies: [{ type: 'goblin-torch', x: 780, y: 270, health: 4 }],
   });
   const snaps = ticks(control, 120);
   return snaps.findIndex((s) => s.kills === 1) + 1;
@@ -54,7 +54,12 @@ function linterKillTick(): number {
 
 describe('Contador de bajas (spec run-outcome)', () => {
   it('Scenario: Varias bajas en un tick (2 bajas + 3 bugs en el pulso ⇒ 5)', () => {
-    const bugs = [0, 1, 2].map((i) => ({ type: 'bug', x: 540, y: 250 + 20 * i, health: 4 }));
+    const bugs = [0, 1, 2].map((i) => ({
+      type: 'goblin-torch',
+      x: 540,
+      y: 250 + 20 * i,
+      health: 4,
+    }));
     const run = at(killsConfig([TESTS]), { kills: 2, enemies: bugs });
 
     const [first] = ticks(run, 1);
@@ -65,7 +70,9 @@ describe('Contador de bajas (spec run-outcome)', () => {
 
   it('Scenario: Una baja cuenta una sola vez (2 impactos del Linter de damage 6 sobre vida 4)', () => {
     const linters = [aLinter({ id: 'a' }), aLinter({ id: 'b' })];
-    const run = at(killsConfig(linters), { enemies: [{ type: 'bug', x: 520, y: 270, health: 4 }] });
+    const run = at(killsConfig(linters), {
+      enemies: [{ type: 'goblin-torch', x: 520, y: 270, health: 4 }],
+    });
 
     const snaps = ticks(run, 10);
 
@@ -107,7 +114,7 @@ describe('Contador de bajas (spec run-outcome)', () => {
     const n = linterKillTick();
     const run = at(killsConfig([LINTER], 10), {
       kills: 7,
-      enemies: [{ type: 'bug', x: 780, y: 270, health: 4 }, runnerAt(n)],
+      enemies: [{ type: 'goblin-torch', x: 780, y: 270, health: 4 }, runnerAt(n)],
     });
 
     const death = ticks(run, n).at(-1);
@@ -132,7 +139,7 @@ describe('Fin de partida al llegar a vida 0 (spec run-state)', () => {
   it('Scenario: Una baja en el tick de la muerte deja su gema (bug a 300 px abatido por el Linter)', () => {
     const n = linterKillTick();
     const run = at(killsConfig([LINTER], 10), {
-      enemies: [{ type: 'bug', x: 780, y: 270, health: 4 }, runnerAt(n)],
+      enemies: [{ type: 'goblin-torch', x: 780, y: 270, health: 4 }, runnerAt(n)],
     });
 
     const death = ticks(run, n).at(-1);
@@ -301,13 +308,13 @@ describe('Prioridades en el tick de la victoria (spec run-outcome)', () => {
   });
 
   it('Scenario: Una baja en el tick de la victoria cuenta y deja su gema (5 ⇒ 6 bajas)', () => {
-    const types = [aProbeType({ id: 'bug', speed: 30, health: 10, xp: 1, damage: 5 })];
+    const types = [aProbeType({ id: 'goblin-torch', speed: 30, health: 10, xp: 1, damage: 5 })];
     const config = (seconds: number) =>
       withDuration(withWeapons(aContactConfig({ types }), weaponsOf([LINTER])), seconds);
     const bugAt = (x: number): RunSetup => ({
       player: CENTER,
       kills: 5,
-      enemies: [{ type: 'bug', x, y: 270, health: 4 }],
+      enemies: [{ type: 'goblin-torch', x, y: 270, health: 4 }],
     });
     const probe = ticks(startRun(config(600), bugAt(885)), 120);
     const k0 = probe.findIndex((s) => s.kills === 6) + 1;
@@ -348,11 +355,11 @@ describe('Orden de los pasos en el tick de la victoria (spec simulation-loop)', 
   });
 
   it('Scenario: Las armas actúan en el tick de la victoria (Tests abate un bug de vida 4)', () => {
-    const types = [aProbeType({ id: 'bug', speed: 60, health: 10, xp: 1, damage: 5 })];
+    const types = [aProbeType({ id: 'goblin-torch', speed: 60, health: 10, xp: 1, damage: 5 })];
     const config = withDuration(withWeapons(aContactConfig({ types }), weaponsOf([TESTS])), 2);
     const run = startRun(config, {
       player: CENTER,
-      enemies: [{ type: 'bug', x: 480 + 219.5, y: 270, health: 4 }],
+      enemies: [{ type: 'goblin-torch', x: 480 + 219.5, y: 270, health: 4 }],
     });
 
     const snaps = ticks(run, 120);

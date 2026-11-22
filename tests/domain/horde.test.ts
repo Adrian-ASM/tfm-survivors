@@ -12,7 +12,7 @@ function rules(): RunRules {
 }
 
 const { arena, catalog } = rules();
-const bug = catalog.get('bug') as EnemyType;
+const bug = catalog.get('goblin-torch') as EnemyType;
 
 /** Horda con `count` bugs iniciales (ids 0 … count − 1). */
 function hordeOf(count: number): Horde {

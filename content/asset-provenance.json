@@ -1,0 +1,67 @@
+{
+  "pack": "Tiny Swords",
+  "author": "Pixel Frog",
+  "version": "Update 010",
+  "license": "CC0",
+  "confirmedOn": "2026-11-22",
+  "homepage": "https://pixelfrog-assets.itch.io/tiny-swords",
+  "note": "Arte de Tiny Swords (Update 010) de Pixel Frog. El autor confirmó el 2026-11-22 que esta versión es CC0. No incluye nada del Tiny Swords Free Pack (no es CC0). Rutas de origen relativas a la carpeta del pack; sha256 y bytes medidos al copiar (change 0012).",
+  "files": [
+    {
+      "path": "public/assets/tiny-swords/Factions/Goblins/Troops/Barrel/Red/Barrel_Red.png",
+      "source": "Tiny Swords (Update 010)/Factions/Goblins/Troops/Barrel/Red/Barrel_Red.png",
+      "version": "Update 010",
+      "sha256": "cca36684f2c8f81afc4d3f58bca01f0993f1297d737caafdad486d3de579e4d4",
+      "bytes": 28807
+    },
+    {
+      "path": "public/assets/tiny-swords/Factions/Goblins/Troops/TNT/Red/TNT_Red.png",
+      "source": "Tiny Swords (Update 010)/Factions/Goblins/Troops/TNT/Red/TNT_Red.png",
+      "version": "Update 010",
+      "sha256": "fcf80953138170e9ea3ea9b93e6007869c7f1dd05ee51034429d92c54e0b0f66",
+      "bytes": 30377
+    },
+    {
+      "path": "public/assets/tiny-swords/Factions/Goblins/Troops/Torch/Red/Torch_Red.png",
+      "source": "Tiny Swords (Update 010)/Factions/Goblins/Troops/Torch/Red/Torch_Red.png",
+      "version": "Update 010",
+      "sha256": "0612b50e25f5b5fe97600693ceca88be5244a54049cce9eb5f7a8ded437f00a6",
+      "bytes": 57994
+    },
+    {
+      "path": "public/assets/tiny-swords/Factions/Knights/Troops/Archer/Arrow/Arrow.png",
+      "source": "Tiny Swords (Update 010)/Factions/Knights/Troops/Archer/Arrow/Arrow.png",
+      "version": "Update 010",
+      "sha256": "ba35a379a56693fe997a30d7ed6a49add03f10876d98abf5a89889f08ba9af74",
+      "bytes": 447
+    },
+    {
+      "path": "public/assets/tiny-swords/Factions/Knights/Troops/Archer/Blue/Archer_Blue.png",
+      "source": "Tiny Swords (Update 010)/Factions/Knights/Troops/Archer/Blue/Archer_Blue.png",
+      "version": "Update 010",
+      "sha256": "0a2e1efff6d653d32777b99ca01f9018fbf27080f2aff645f0fafde175e8b7ec",
+      "bytes": 64044
+    },
+    {
+      "path": "public/assets/tiny-swords/Factions/Knights/Troops/Dead/Dead.png",
+      "source": "Tiny Swords (Update 010)/Factions/Knights/Troops/Dead/Dead.png",
+      "version": "Update 010",
+      "sha256": "2b621f86ef18fd92e4c4cc1718cc091fe62e2334d8ea54632eed7cb2995ef1fe",
+      "bytes": 8041
+    },
+    {
+      "path": "public/assets/tiny-swords/Resources/Resources/G_Idle.png",
+      "source": "Tiny Swords (Update 010)/Resources/Resources/G_Idle.png",
+      "version": "Update 010",
+      "sha256": "ee9a2018e179b95839105d0b6d39725f22ae57e28d73532421fb1994c4b4de78",
+      "bytes": 1179
+    },
+    {
+      "path": "public/assets/tiny-swords/Terrain/Ground/Tilemap_Flat.png",
+      "source": "Tiny Swords (Update 010)/Terrain/Ground/Tilemap_Flat.png",
+      "version": "Update 010",
+      "sha256": "683b4ebc6dff10d2bf6e2bd34c24d732defdc65abcb0f5b9f509655aff8bec56",
+      "bytes": 28783
+    }
+  ]
+}

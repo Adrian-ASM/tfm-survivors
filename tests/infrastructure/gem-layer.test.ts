@@ -1,50 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import type { GemSnapshot } from '../../src/domain/run/RunSnapshot';
-import type { CircleSprite } from '../../src/infrastructure/phaser/EnemyLayer';
-import { GEM_COLOR, GemLayer } from '../../src/infrastructure/phaser/GemLayer';
+import { GemLayer } from '../../src/infrastructure/phaser/GemLayer';
+import { GEM_FILE } from '../support/appearance';
+import { fakeKit } from '../support/FakeSprite';
+import { someLooks } from '../support/looks';
 
-class FakeCircle implements CircleSprite {
-  x = 0;
-  y = 0;
-  radius = 0;
-  color = 0;
-  visible = true;
-  resizes = 0;
-
-  setPosition(x: number, y: number): this {
-    this.x = x;
-    this.y = y;
-    return this;
-  }
-  setRadius(radius: number): this {
-    this.radius = radius;
-    this.resizes += 1;
-    return this;
-  }
-  setFillStyle(color: number): this {
-    this.color = color;
-    return this;
-  }
-  setVisible(visible: boolean): this {
-    this.visible = visible;
-    return this;
-  }
-}
+// Specs xp-gems (pintado de gemas) y sprite-rendering ("Flechas y gemas") (change 0012).
+const gem = (id: number, x: number, y: number, radius = 5): GemSnapshot => ({ id, x, y, radius });
+const gems = (from: number, n: number) =>
+  Array.from({ length: n }, (_, i) => gem(from + i, 10 * i, 3 * i));
 
 function layer(capacity: number) {
-  const created: FakeCircle[] = [];
-  const l = new GemLayer(capacity, () => {
-    const c = new FakeCircle();
-    created.push(c);
-    return c;
-  });
-  return { l, created };
+  const kit = fakeKit();
+  const l = new GemLayer(capacity, kit, someLooks().gem);
+  return { l, created: kit.created };
 }
 
-const gem = (id: number, x: number, y: number): GemSnapshot => ({ id, x, y, radius: 5 });
-const gems = (from: number, n: number) =>
-  Array.from({ length: n }, (_, i) => gem(from + i, i * 3, 7));
-const visible = (created: FakeCircle[]) => created.filter((c) => c.visible);
+const visible = <T extends { visible: boolean }>(sprites: T[]): T[] =>
+  sprites.filter((s) => s.visible);
 
 describe('GemLayer', () => {
   it('Scenario: Recogidas y nuevas (10 pintadas; 3 recogidas y 2 nuevas: 9 visibles)', () => {
@@ -62,8 +35,9 @@ describe('GemLayer', () => {
     for (const g of next) {
       const s = shown.filter((c) => Math.abs(c.x - g.x) <= 0.001 && Math.abs(c.y - g.y) <= 0.001);
       expect(s, 'gema ' + String(g.id)).toHaveLength(1);
-      expect(s[0]?.radius).toBe(5);
+      expect(s[0]?.texture).toBe(GEM_FILE);
     }
+    expect(l.counts).toEqual({ visible: 9, placeholder: 0 });
   });
 
   it('Scenario: Tope de gemas pintado (300 gemas: 300 visibles, sin crear más)', () => {
@@ -77,13 +51,15 @@ describe('GemLayer', () => {
     const { l, created } = layer(300);
     l.sync(gems(0, 300));
     l.sync([]);
-    expect(visible(created)).toHaveLength(0);
+    expect([visible(created).length, l.counts.visible]).toEqual([0, 0]);
   });
 
-  it('un color fijo y el radio solo al ocupar un hueco', () => {
-    const { l, created } = layer(1);
-    l.sync([gem(1, 0, 0)]);
-    l.sync([gem(1, 6, 0)]);
-    expect([created[0]?.color, created[0]?.radius, created[0]?.resizes]).toEqual([GEM_COLOR, 5, 1]);
+  it('Scenario: Flechas y gemas (tamaño por aspecto, no por gemRadius; frame fijo, sin rotar)', () => {
+    const { l, created } = layer(2);
+    l.sync([gem(1, 0, 0, 5), gem(2, 10, 0, 9)]);
+    expect(created.map((s) => [s.scale, s.frame, s.rotation, s.flipX])).toEqual([
+      [0.5, 0, 0, false],
+      [0.5, 0, 0, false],
+    ]);
   });
 });

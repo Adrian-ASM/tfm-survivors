@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -87,6 +88,93 @@ describe('guard-staged · pre-commit', () => {
     expect(out).not.toContain('ñandú');
     expect(out).toContain('RandomGenerator');
     expect(out).not.toContain('No se pudo leer');
+  });
+});
+
+// Spec asset-provenance (0012, design D8): pasada global sobre `git ls-files` con el contenido del índice.
+const NOTE_PATH = 'content/asset-provenance.json';
+const PNG_PATH = 'public/assets/tiny-swords/Terrain/Ground/Tilemap_Flat.png';
+const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x0d, 0x0a, 0x7f]);
+
+function stageBinary(path: string, content: Buffer): void {
+  mkdirSync(dirname(join(repo, path)), { recursive: true });
+  writeFileSync(join(repo, path), content);
+  git('add', '-f', path);
+}
+
+function noteFor(sha256: string, bytes: number): string {
+  const files = [
+    {
+      path: PNG_PATH,
+      source: 'Tiny Swords (Update 010)/Terrain/Ground/Tilemap_Flat.png',
+      version: 'Update 010',
+      sha256,
+      bytes,
+    },
+  ];
+  const note = {
+    pack: 'Tiny Swords',
+    author: 'Pixel Frog',
+    version: 'Update 010',
+    license: 'CC0',
+    confirmedOn: '2026-11-22',
+    homepage: 'https://pixelfrog-assets.itch.io/tiny-swords',
+    note: 'CC0',
+    files,
+  };
+  return `${JSON.stringify(note, null, 2)}\n`;
+}
+
+const sha256Of = (b: Buffer) => createHash('sha256').update(b).digest('hex');
+
+describe('guard-staged · procedencia del arte', () => {
+  it('Scenario: Verify en rojo (PNG versionado sin entrada en la nota)', () => {
+    stageBinary(PNG_PATH, PNG);
+    const { code, out } = guard();
+    expect(code).not.toBe(0);
+    expect(out).toContain(PNG_PATH);
+  });
+
+  it('Scenario: Verify en rojo también en --all (CI)', () => {
+    stageBinary(PNG_PATH, PNG);
+    git('-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '--no-verify', '-m', 'x');
+    const { code, out } = guard('--all');
+    expect(code).not.toBe(0);
+    expect(out).toContain(PNG_PATH);
+  });
+
+  it('Scenario: Sin red ni pack (PNG con su entrada y su hash: pasa en los dos modos)', () => {
+    stageBinary(PNG_PATH, PNG);
+    stage(NOTE_PATH, noteFor(sha256Of(PNG), PNG.length));
+    const staged = guard();
+    expect(staged.code, staged.out).toBe(0);
+    git('-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '--no-verify', '-m', 'x');
+    const all = guard('--all');
+    expect(all.code, all.out).toBe(0);
+  });
+
+  it('el hash se calcula sobre los bytes del índice (sin conversión de finales de línea)', () => {
+    stageBinary(PNG_PATH, PNG);
+    stage(NOTE_PATH, noteFor('0'.repeat(64), PNG.length));
+    const { code, out } = guard();
+    expect(code).not.toBe(0);
+    expect(out).toContain('sha256');
+  });
+
+  it('un .DS_Store preparado bloquea el commit', () => {
+    stage('public/assets/.DS_Store', 'x');
+    const { code, out } = guard();
+    expect(code).not.toBe(0);
+    expect(out).toContain('public/assets/.DS_Store');
+  });
+
+  it('una nota que no es JSON se informa sin traza', () => {
+    stageBinary(PNG_PATH, PNG);
+    stage(NOTE_PATH, '{ no es json');
+    const { code, out } = guard();
+    expect(code).not.toBe(0);
+    expect(out).toContain(NOTE_PATH);
+    expect(out).not.toContain('at JSON.parse');
   });
 });
 

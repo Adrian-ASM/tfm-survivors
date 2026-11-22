@@ -29,7 +29,7 @@ function busyConfig(): RunConfig {
   return {
     ...base,
     enemies: { types: [...base.enemies.types, probe] },
-    waves: aWavesConfig({ segments: [aSegment(['bug'], 0)] }).waves,
+    waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 0)] }).waves,
   };
 }
 
@@ -69,7 +69,7 @@ describe('Simulación congelada mientras se elige mejora', () => {
 
 const quietDefault = (patch: Partial<RunConfig> = {}): RunConfig => ({
   ...aDefaultConfig(),
-  waves: aWavesConfig({ segments: [aSegment(['bug'], 0)] }).waves,
+  waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 0)] }).waves,
   ...patch,
 });
 const atPlayer = { x: 480, y: 270 };
@@ -273,7 +273,7 @@ describe('Cadencia y elecciones', () => {
     { x: 480 + 21 + 6 * (n - 1) + 3, y: 270, value: 1, attracted: true },
   ];
 
-  it('Scenario: Mejora de cadencia a mitad de recarga (fast-ci en la oferta del tick 10: 1, 31, 57, 83)', () => {
+  it('Scenario: Cadencia mejorada sin reiniciar la carga (fast-ci en la oferta del tick 10: 1, 31, 57, 83)', () => {
     const run = weaponRun([LINTER], [anUpgrade('fast-ci')], {
       enemies: target,
       gems: gemOnTick(10),

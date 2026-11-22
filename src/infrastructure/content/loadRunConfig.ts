@@ -64,7 +64,12 @@ export function parseRunConfig(raw: {
 
 /** Contenido versionado en content/*.json, empaquetado por Vite. */
 export function loadRunConfig(): Result<RunConfig, DomainError> {
-  return parseRunConfig({
+  return parseRunConfig(repositoryContent());
+}
+
+/** Contenido crudo del repositorio, sin validar (lo valida `parseRunConfig`). */
+export function repositoryContent(): Parameters<typeof parseRunConfig>[0] {
+  return {
     player: playerJson,
     arena: arenaJson,
     enemies: enemiesJson,
@@ -73,5 +78,5 @@ export function loadRunConfig(): Result<RunConfig, DomainError> {
     progression: progressionJson,
     upgrades: upgradesJson,
     run: runJson,
-  });
+  };
 }

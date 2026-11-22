@@ -11,7 +11,7 @@ import { weaponsOf } from '../support/weapons';
 /** Tipos quietos (velocidad ínfima) para colocar bajas donde se quiera. */
 const still = (id: string, xp: number, damage = 5) =>
   aProbeType({ id, speed: 1e-6, health: 10, xp, damage });
-const STILL_TYPES = [still('bug', 1), still('merge-conflict', 2), still('memory-leak', 4)];
+const STILL_TYPES = [still('goblin-torch', 1), still('goblin-barrel', 2), still('goblin-tnt', 4)];
 
 function config(
   weapons: readonly (typeof LINTER)[],
@@ -32,7 +32,9 @@ const run = (c: RunConfig, setup: RunSetup) =>
 
 describe('Suelta de gema por baja', () => {
   it('Scenario: Un bug abatido suelta una gema (en su posición, con radio 5)', () => {
-    const r = run(config([LINTER]), { enemies: [{ type: 'bug', x: 780, y: 270, health: 4 }] });
+    const r = run(config([LINTER]), {
+      enemies: [{ type: 'goblin-torch', x: 780, y: 270, health: 4 }],
+    });
     const snaps = ticks(r, 60);
     const n = snaps.findIndex((s) => s.enemies.length === 0);
     expect(n).toBeGreaterThan(0);
@@ -46,9 +48,9 @@ describe('Suelta de gema por baja', () => {
 
   it('Scenario: Varias bajas en el mismo tick (a1, a2, a3 en un pulso: ids en ese orden)', () => {
     const enemies = [
-      { type: 'bug', x: 560, y: 270, health: 4 },
-      { type: 'bug', x: 400, y: 270, health: 4 },
-      { type: 'bug', x: 480, y: 190, health: 4 },
+      { type: 'goblin-torch', x: 560, y: 270, health: 4 },
+      { type: 'goblin-torch', x: 400, y: 270, health: 4 },
+      { type: 'goblin-torch', x: 480, y: 190, health: 4 },
     ];
     const [first] = ticks(run(config([TESTS]), { enemies }), 1);
     expect(first?.enemies).toEqual([]);
@@ -60,18 +62,21 @@ describe('Suelta de gema por baja', () => {
   });
 
   it('Scenario: Sin baja no hay gema (bug con vida 10 que queda en 4)', () => {
-    const r = run(config([LINTER]), { enemies: [{ type: 'bug', x: 780, y: 270 }] });
+    const r = run(config([LINTER]), { enemies: [{ type: 'goblin-torch', x: 780, y: 270 }] });
     const snaps = ticks(r, 60);
     expect(snaps.at(-1)?.enemies.map((e) => e.health)).toEqual([4]);
     expect(snaps.every((s) => s.gems.length === 0)).toBe(true);
   });
 
   it('Scenario: Una baja en el tick de la muerte deja su gema', () => {
-    const types = [still('bug', 1), aProbeType({ id: 'probe', damage: 10, health: 5, xp: 1 })];
+    const types = [
+      still('goblin-torch', 1),
+      aProbeType({ id: 'probe', damage: 10, health: 5, xp: 1 }),
+    ];
     const c = config([TESTS], { types, maxHealth: 10 });
     const enemies = [
       { type: 'probe', x: 480, y: 270 },
-      { type: 'bug', x: 560, y: 270, health: 4 },
+      { type: 'goblin-torch', x: 560, y: 270, health: 4 },
     ];
     const [first] = ticks(run(c, { enemies }), 1);
     expect(first?.status).toBe('over');
@@ -80,7 +85,7 @@ describe('Suelta de gema por baja', () => {
 
   it('Scenario: Tope lleno (300 gemas lejos: mismos ids y nada nuevo)', () => {
     const gems = Array.from({ length: 300 }, () => ({ x: 20, y: 20, value: 1 }));
-    const enemies = [{ type: 'bug', x: 560, y: 270, health: 4 }];
+    const enemies = [{ type: 'goblin-torch', x: 560, y: 270, health: 4 }];
     const r = run(config([TESTS]), { gems, enemies });
     const before = r.snapshot().gems.map((g) => g.id);
     const [first] = ticks(r, 1);
@@ -99,7 +104,7 @@ describe('Paso de gemas en el tick (tras el contacto)', () => {
   });
 
   it('Scenario: Gema de una baja junto al jugador (se crea, se atrae y se recoge en el tick n)', () => {
-    const enemies = [{ type: 'bug', x: 490, y: 270, health: 4 }];
+    const enemies = [{ type: 'goblin-torch', x: 490, y: 270, health: 4 }];
     const [first] = ticks(run(config([TESTS]), { enemies }), 1);
     expect(first?.enemies).toEqual([]);
     expect(first?.gems).toEqual([]);
@@ -155,7 +160,10 @@ describe('Paso de gemas en el tick (tras el contacto)', () => {
   });
 
   it('Scenario: Las gemas no consumen azar (10 gemas más, mismo azar tras el tick)', () => {
-    const c = { ...config([]), waves: aContactConfig({ segments: [aSegment(['bug'], 5)] }).waves };
+    const c = {
+      ...config([]),
+      waves: aContactConfig({ segments: [aSegment(['goblin-torch'], 5)] }).waves,
+    };
     const gems = Array.from({ length: 10 }, (_, i) => ({ x: 20 + i, y: 20, value: 1 }));
     const a = new CountingRandom(new Mulberry32RandomGenerator(9));
     const b = new CountingRandom(new Mulberry32RandomGenerator(9));
@@ -180,15 +188,15 @@ describe('XP de cada tipo al recoger su gema', () => {
   }
 
   it.each([
-    ['bug', 1],
-    ['merge-conflict', 2],
-    ['memory-leak', 4],
+    ['goblin-torch', 1],
+    ['goblin-barrel', 2],
+    ['goblin-tnt', 4],
   ])('Scenario: Valor según el tipo (%s: %s XP)', (type, xp) => {
     expect(xpOf(STILL_TYPES, type)).toBe(xp);
   });
 
   it('Scenario: Valores de cada tipo llegan al dominio (bug con xp 3: gema de 3 XP)', () => {
-    expect(xpOf([still('bug', 3)], 'bug')).toBe(3);
+    expect(xpOf([still('goblin-torch', 3)], 'goblin-torch')).toBe(3);
   });
 
   it('Scenario: Tope lleno (al recoger la más antigua suma 2 de XP)', () => {
@@ -196,7 +204,7 @@ describe('XP de cada tipo al recoger su gema', () => {
       { x: 480, y: 100, value: 1 },
       ...Array.from({ length: 299 }, () => ({ x: 20, y: 20, value: 1 })),
     ];
-    const enemies = [{ type: 'bug', x: 560, y: 270, health: 4 }];
+    const enemies = [{ type: 'goblin-torch', x: 560, y: 270, health: 4 }];
     const r = run(config([TESTS]), { gems, enemies });
     ticks(r, 1);
     const snaps = ticks(r, 40, PlayerInput.of(0, -1));
@@ -206,9 +214,9 @@ describe('XP de cada tipo al recoger su gema', () => {
 
   it('Scenario: Varias bajas con el tope lleno (maxGems 1: g1 suma 1 + 1 + 2 + 4 = 8)', () => {
     const enemies = [
-      { type: 'bug', x: 560, y: 270, health: 4 },
-      { type: 'merge-conflict', x: 400, y: 270, health: 4 },
-      { type: 'memory-leak', x: 480, y: 190, health: 4 },
+      { type: 'goblin-torch', x: 560, y: 270, health: 4 },
+      { type: 'goblin-barrel', x: 400, y: 270, health: 4 },
+      { type: 'goblin-tnt', x: 480, y: 190, health: 4 },
     ];
     const gems = [{ x: 480, y: 100, value: 1 }];
     const r = run(config([TESTS], { maxGems: 1 }), { gems, enemies });

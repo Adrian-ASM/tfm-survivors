@@ -12,9 +12,12 @@ import {
   menuButton,
   menuPanel,
   pauseOverlay,
+  playChoosingFirst,
   playerUrl,
   probe,
   snapshotOf,
+  startSpriteSampler,
+  stopSpriteSampler,
   waitFrames,
   watchCsp,
 } from './probe';
@@ -88,7 +91,9 @@ test('Jugar y Esc tras usar los botones del menú: 1 partida y en pausa', async 
   await expect.poll(async () => (await snapshotOf(page))?.tick ?? 0).toBeGreaterThan(10);
   await focusGame(page);
   await backToMenu(page);
-  const before = await page.evaluate(() => window.localStorage.getItem('sprint-survivors/progress'));
+  const before = await page.evaluate(() =>
+    window.localStorage.getItem('sprint-survivors/progress'),
+  );
   // Volver al menú no guarda la partida abandonada.
   expect(before).toBe(progressText(P0));
 
@@ -97,7 +102,11 @@ test('Jugar y Esc tras usar los botones del menú: 1 partida y en pausa', async 
   await menuButton(page, 'Importar').click();
   await (
     await chooser
-  ).setFiles({ name: 'f.json', mimeType: 'application/json', buffer: Buffer.from(progressText(F)) });
+  ).setFiles({
+    name: 'f.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(progressText(F)),
+  });
   await expect(menuPanel(page).getByRole('status')).toContainText('importado');
   await menuButton(page, 'Borrar datos').click();
   await confirmDialog(page).getByRole('button', { name: 'Cancelar' }).click();
@@ -107,4 +116,91 @@ test('Jugar y Esc tras usar los botones del menú: 1 partida y en pausa', async 
 
   await expect(pauseOverlay(page)).toBeVisible();
   expect(await probe(page)).toMatchObject({ runs: 2, screen: 'paused' });
+});
+
+// Change 0012 (specs main-menu y sprite-rendering): limpieza de sprites al salir de la partida.
+test('Scenario: Volver al menú con cadáveres en curso (?e2e&seed=7: menú a 0; partida nueva sin cadáveres)', async ({
+  page,
+}) => {
+  test.setTimeout(60_000);
+  const problems = collect(page, ['error']);
+  await page.goto(gameUrl({ seed: 7 }));
+  await focusGame(page);
+  await expect
+    .poll(async () => (await probe(page))?.sprites?.corpses.visible ?? 0, { timeout: 30_000 })
+    .toBeGreaterThan(0);
+  await page.keyboard.press('Escape');
+  await expect(pauseOverlay(page)).toBeVisible();
+  await pauseOverlay(page).getByRole('button', { name: 'Volver al menú' }).click();
+  await expect(menuPanel(page)).toBeVisible();
+  await startSpriteSampler(page);
+  await waitFrames(page, 60);
+  const inMenu = await stopSpriteSampler(page);
+  await menuButton(page, 'Jugar').click();
+  await expect.poll(async () => (await probe(page))?.screen).toBe('playing');
+  const first = (await probe(page))?.sprites;
+
+  expect(inMenu.menuFrames).toBeGreaterThanOrEqual(55);
+  expect(inMenu.mismatches).toEqual([]);
+  expect(first?.corpses.visible).toBe(0);
+  expect(problems).toEqual([]);
+});
+
+test('Scenario: Cinco ciclos menú-partida (sonda coherente y 0 cadáveres tras cada Volver al menú)', async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  const problems = collect(page, ['error']);
+  await page.goto(gameUrl({ seed: 42 }));
+  await expect.poll(async () => (await snapshotOf(page))?.tick ?? 0).toBeGreaterThan(30);
+  await startSpriteSampler(page);
+  const corpsesInMenu: number[] = [];
+  for (let cycle = 0; cycle < 5; cycle++) {
+    await focusGame(page);
+    await waitFrames(page, 120);
+    await backToMenu(page);
+    await waitFrames(page, 2);
+    corpsesInMenu.push((await probe(page))?.sprites?.corpses.visible ?? -1);
+    await menuButton(page, 'Jugar').click();
+    await expect.poll(async () => (await probe(page))?.screen).toBe('playing');
+  }
+  await waitFrames(page, 120);
+  const sample = await stopSpriteSampler(page);
+
+  expect(corpsesInMenu).toEqual([0, 0, 0, 0, 0]);
+  expect(sample.mismatches).toEqual([]);
+  expect(sample.menuFrames).toBeGreaterThan(0);
+  expect(problems).toEqual([]);
+});
+
+test('Scenario: Volver al menú desde la pausa (tick ≥ 3.000 con enemigos, proyectiles y gemas)', async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  await page.goto(gameUrl({ seed: 42, speed: 8 }));
+  await expect.poll(async () => (await snapshotOf(page))?.tick ?? null).not.toBeNull();
+  await focusGame(page);
+  const busy = (s: { tick: number; enemies: unknown[]; projectiles: unknown[]; gems: unknown[] }) =>
+    s.tick >= 3000 && s.enemies.length > 0 && s.projectiles.length > 0 && s.gems.length > 0;
+  const reached = await playChoosingFirst(page, (s) => busy(s) || s.status === 'over', 60_000);
+  expect(reached && busy(reached)).toBe(true);
+  await page.keyboard.press('Escape');
+  await expect(pauseOverlay(page)).toBeVisible();
+  await pauseOverlay(page).getByRole('button', { name: 'Volver al menú' }).click();
+  // El clic lo lee el siguiente update de la partida; el menú se muestra en el frame posterior.
+  await expect(menuPanel(page)).toBeVisible();
+  await waitFrames(page, 1);
+  const s = (await probe(page))?.sprites;
+
+  expect(await menuPanel(page).getByRole('button').allTextContents()).toEqual([
+    'Jugar',
+    'Exportar',
+    'Importar',
+    'Borrar datos',
+  ]);
+  expect(
+    [s?.player, s?.enemies, s?.corpses, s?.projectiles, s?.pulses, s?.gems].map((k) => k?.visible),
+  ).toEqual([0, 0, 0, 0, 0, 0]);
+  await expect(pauseOverlay(page)).toBeHidden();
+  await expect(page.locator('.results-panel')).toBeHidden();
 });

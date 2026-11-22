@@ -31,6 +31,8 @@ interface Ring {
  * motor por frame.
  */
 export class PulseLayer {
+  /** Anillos visibles para la sonda (un anillo nunca es aspecto de reserva). */
+  readonly counts = { visible: 0, placeholder: 0 };
   private readonly rings: Ring[];
 
   constructor(
@@ -51,6 +53,7 @@ export class PulseLayer {
   }
 
   sync(pulses: readonly PulseSnapshot[], tick: number): void {
+    this.counts.visible = Math.min(pulses.length, this.rings.length);
     for (let i = 0; i < this.rings.length; i++) {
       const ring = this.rings[i];
       if (!ring) continue;

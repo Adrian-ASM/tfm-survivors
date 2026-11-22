@@ -79,7 +79,7 @@ describe('Run', () => {
   );
 
   it('mantiene las reglas del contenido de enemigos como defensa', () => {
-    const config = aWavesConfig({ segments: [aSegment(['bug', 'segfault'], 1)] });
+    const config = aWavesConfig({ segments: [aSegment(['goblin-torch', 'segfault'], 1)] });
     const r = Run.start(config, new Mulberry32RandomGenerator(1));
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error.message).toContain('segfault');
@@ -88,14 +88,16 @@ describe('Run', () => {
 
 describe('Run · snapshot con enemigos', () => {
   const bugsOnly = (budgetPerSecond: number): RunConfig =>
-    aWavesConfig({ segments: [aSegment(['bug'], budgetPerSecond)] });
+    aWavesConfig({ segments: [aSegment(['goblin-torch'], budgetPerSecond)] });
 
   it('Enemigos en el snapshot', () => {
     const run = startedRun(bugsOnly(1));
     for (let i = 0; i < 615; i++) run.tick(PlayerInput.NONE);
     const { enemies } = run.snapshot();
     expect(enemies).toHaveLength(10);
-    expect(enemies.every((e) => e.type === 'bug' && e.radius === 10 && e.health === 10)).toBe(true);
+    expect(
+      enemies.every((e) => e.type === 'goblin-torch' && e.radius === 10 && e.health === 10),
+    ).toBe(true);
     expect(new Set(enemies.map((e) => e.id)).size).toBe(10);
     expect(enemies.map((e) => e.id)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
   });
@@ -176,13 +178,13 @@ describe('Run · estado inicial opcional (RunSetup)', () => {
   it('coloca enemigos iniciales con el radio de su tipo, recortados a la arena', () => {
     const run = startedRun(aRunConfig(), {
       enemies: [
-        { type: 'bug', x: 100, y: 270 },
-        { type: 'memory-leak', x: 2000, y: 0 },
+        { type: 'goblin-torch', x: 100, y: 270 },
+        { type: 'goblin-tnt', x: 2000, y: 0 },
       ],
     });
     expect(run.snapshot().enemies).toEqual([
-      { id: 0, type: 'bug', x: 100, y: 270, radius: 10, health: 10, damaged: false },
-      { id: 1, type: 'memory-leak', x: 938, y: 22, radius: 22, health: 45, damaged: false },
+      { id: 0, type: 'goblin-torch', x: 100, y: 270, radius: 10, health: 10, damaged: false },
+      { id: 1, type: 'goblin-tnt', x: 938, y: 22, radius: 22, health: 45, damaged: false },
     ]);
   });
 
@@ -207,8 +209,8 @@ describe('Run · estado inicial opcional (RunSetup)', () => {
   it('Scenario: Armas equipadas al inicio (vida inicial de un enemigo fijada al preparar)', () => {
     const run = startedRun(aRunConfig(), {
       enemies: [
-        { type: 'bug', x: 100, y: 100, health: 4 },
-        { type: 'bug', x: 200, y: 100 },
+        { type: 'goblin-torch', x: 100, y: 100, health: 4 },
+        { type: 'goblin-torch', x: 200, y: 100 },
       ],
     });
     expect(run.snapshot().enemies.map((e) => e.health)).toEqual([4, 10]);
@@ -219,8 +221,8 @@ describe('Run · estado inicial opcional (RunSetup)', () => {
     (health) => {
       const setup = {
         enemies: [
-          { type: 'bug', x: 100, y: 100 },
-          { type: 'bug', x: 1, y: 1, health },
+          { type: 'goblin-torch', x: 100, y: 100 },
+          { type: 'goblin-torch', x: 1, y: 1, health },
         ],
       };
       const r = Run.start(aRunConfig(), new Mulberry32RandomGenerator(1), setup);

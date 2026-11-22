@@ -6,7 +6,7 @@
 
 ## 1. Visión general
 
-**Sprint Survivors**: juego 2D *survivors-like* para navegador (TFM del Máster de Desarrollo con IA).
+**Greentide Vanguard** (antes *Sprint Survivors*): juego 2D *survivors-like* para navegador (TFM del Máster de Desarrollo con IA).
 El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir de nivel se elige 1 de 3 mejoras.
 
 - **Stack**: TypeScript estricto · Vite · **Phaser 4.2.1** (ADR-0001) · Vitest · Playwright · zod.
@@ -21,6 +21,11 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   victorias) e invariante "quieto pierde antes de 180 s" con todas ellas (change 0010).
   Publicado en `https://adrian-asm.github.io/tfm-survivors/` (job `deploy` de `ci.yml` tras `quality` y `e2e` en
   push a `main`); smoke remoto **a demanda**, nunca en push ni PR (change 0011). Backlog Must completo.
+  Arte CC0 de Tiny Swords Update 010 (change 0012, ADR-0012): sprites animados del arquero y tres goblins
+  (`goblin-torch`, `goblin-tnt`, `goblin-barrel`), cadáveres, flechas, gemas y suelo, con datos en
+  `content/appearance.json` y aspecto de reserva si una hoja no carga. Guardarraíl de procedencia
+  (`.claude/hooks/guard-assets.mjs` sobre `git ls-files`, nota en `content/asset-provenance.json`): ningún asset
+  gráfico sin entrada ni nada del Free Pack. Sonda E2E `window.__sprint.sprites` con recuentos por tipo.
   Fuente de verdad del comportamiento: `openspec/specs/`.
 
 ## 2. Comandos
@@ -32,7 +37,7 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
 | `npm run dev` | Servidor de desarrollo (`http://localhost:5173/tfm-survivors/`) |
 | `npm run verify` | lint + typecheck + guardarraíl sobre todo el repo + tests unitarios. **Ejecútalo al cerrar cada tarea y antes de cada commit. No cierres una tarea en rojo.** |
 | `npm run verify:fast` | Bucle rojo → verde: lint con caché + typecheck + solo los tests afectados por los cambios sin commitear (`vitest --changed`), sin el test de balance. No sustituye a `verify` |
-| `npm run test:e2e` | Build + `vite preview` + Playwright (chromium). Durante apply, solo las specs afectadas: `npm run test:e2e -- menu-flow results` (filtro por nombre de fichero) o `-- --grep "<título>"`; la suite entera al cerrar el change y en CI |
+| `npm run test:e2e` | Build + `vite preview` + Playwright (chromium). Durante apply, solo las specs afectadas: `npm run test:e2e -- menu-flow results` (filtro por nombre de fichero) o `-- --grep "<título>"`; la suite entera al cerrar el change y en CI. Antes de hacer push, si el change toca render o E2E: `CI_LIKE=1` (sin GPU y márgenes de CI) con `--workers=12 --repeat-each=3` para reproducir la lentitud del runner. Nunca se itera con pushes a ciegas |
 | `npm run smoke:public` | Smoke de Playwright contra la URL pública (o `SMOKE_URL`). A demanda: fuera de `verify` y de CI; en Actions, workflow `smoke-public` (`workflow_dispatch`) |
 | `npm run bench` | Benchmark del núcleo (Vitest bench). Depende de la máquina: no bloquea `verify` ni CI |
 | `npm run build` | Build de producción (`dist/`) |

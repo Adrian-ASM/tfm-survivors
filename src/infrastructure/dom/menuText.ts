@@ -24,6 +24,6 @@ export const MENU_LABELS = {
   resume: 'Reanudar',
   toMenu: 'Volver al menú',
   pause: 'Pausa',
-  title: 'Sprint Survivors',
+  title: 'Greentide Vanguard',
   confirmQuestion: '¿Borrar el progreso guardado (récords e historial)?',
 } as const;

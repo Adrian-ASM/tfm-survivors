@@ -1,34 +1,39 @@
 import type { GemSnapshot } from '../../domain/run/RunSnapshot';
-import type { CircleSprite } from './EnemyLayer';
+import type { StillLook } from './art/looks';
+import type { SpriteCount } from './PlayerView';
 import { SlotPool } from './SlotPool';
-
-/** Color de las gemas de XP (presentación). */
-export const GEM_COLOR = 0x4fd1c5;
+import { PaintedSprite, type SpriteKit } from './SpriteLike';
 
 /**
- * Pinta las gemas del snapshot sobre un pool de `maxGems` círculos preasignados, asociados por id
- * (ADR-0006): ningún sprite de una gema recogida queda visible y no se crean objetos del motor
- * por frame. El radio se fija al ocupar un hueco.
+ * Pinta las gemas del snapshot con el aspecto de la gema (frame fijo, tamaño por aspecto) sobre un
+ * pool de `maxGems` sprites preasignados, asociados por id (ADR-0006): ningún sprite de una gema
+ * recogida queda visible y no se crean objetos del motor por frame.
  */
 export class GemLayer {
-  private readonly pool: SlotPool<GemSnapshot, CircleSprite>;
+  readonly counts: SpriteCount = { visible: 0, placeholder: 0 };
+  private readonly pool: SlotPool<GemSnapshot, PaintedSprite>;
 
-  constructor(capacity: number, create: () => CircleSprite) {
-    const newSprite = (): CircleSprite => {
-      const sprite = create();
-      sprite.setFillStyle(GEM_COLOR);
-      sprite.setVisible(false);
-      return sprite;
-    };
+  constructor(
+    capacity: number,
+    kit: SpriteKit,
+    private readonly look: StillLook,
+  ) {
+    const newSprite = (): PaintedSprite => new PaintedSprite(kit.create(), kit.tint);
     this.pool = new SlotPool(capacity, newSprite, {
-      show: (sprite, p, appearing) => {
-        sprite.setPosition(p.x, p.y);
+      show: (painted, g, appearing) => {
         if (appearing) {
-          sprite.setRadius(p.radius);
-          sprite.setVisible(true);
+          painted
+            .look(look, g.radius)
+            .setFrame(look, look.idle.frames[0] ?? 0)
+            .paint(look, false);
+          this.count(1);
         }
+        painted.at(g.x, g.y).show(true);
       },
-      hide: (sprite) => sprite.setVisible(false),
+      hide: (painted) => {
+        painted.show(false);
+        this.count(-1);
+      },
     });
   }
 
@@ -39,5 +44,10 @@ export class GemLayer {
   /** Oculta todos los sprites (reinicio de partida). */
   clear(): void {
     this.pool.clear();
+  }
+
+  private count(delta: number): void {
+    this.counts.visible += delta;
+    if (this.look.placeholder) this.counts.placeholder += delta;
   }
 }

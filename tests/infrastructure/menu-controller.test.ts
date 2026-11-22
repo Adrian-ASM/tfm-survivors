@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MenuController } from '../../src/infrastructure/menu/MenuController';
+import { MENU_LABELS, MENU_MESSAGES } from '../../src/infrastructure/dom/menuText';
 
 const confirming = (): MenuController => {
   const menu = new MenuController();
@@ -92,5 +93,13 @@ describe('MenuController (spec main-menu)', () => {
     menu.show();
 
     expect([menu.state, menu.takePlay(), menu.requestPlay()]).toEqual(['idle', false, true]);
+  });
+});
+
+describe('Título del juego en el menú (spec main-menu, change 0012)', () => {
+  it('Scenario: Título en el menú y en el documento (parte del menú: Greentide Vanguard)', () => {
+    expect(MENU_LABELS.title).toBe('Greentide Vanguard');
+    const texts = [...Object.values(MENU_LABELS), ...Object.values(MENU_MESSAGES)];
+    expect(texts.some((t) => t.includes('Sprint Survivors'))).toBe(false);
   });
 });
