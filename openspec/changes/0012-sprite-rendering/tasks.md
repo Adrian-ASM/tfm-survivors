@@ -47,7 +47,7 @@
   - Escenarios: AP "Nota del repositorio", "Estado real del repositorio".
 
 ## 3. Infraestructura · datos de aspecto
-- [ ] 3.1 `src/infrastructure/content/appearanceSchema.ts` + `loadAppearance.ts` (`parseAppearance(raw,
+- [x] 3.1 `src/infrastructure/content/appearanceSchema.ts` + `loadAppearance.ts` (`parseAppearance(raw,
   registered)` → `Result` con la ruta del campo unida por `.`). `z.strictObject` en todos los niveles; hoja en
   línea, `facing`, `loop`, `death.loop` literal `false`, `walk` obligatorio en jugador y enemigos.
   Test `tests/infrastructure/appearance-content.test.ts` con un fixture válido mínimo.
