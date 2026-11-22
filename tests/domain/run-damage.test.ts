@@ -39,7 +39,7 @@ const one = (type: string, health?: number): RunSetup => ({
 });
 
 describe('Run · daño acumulado con las armas por defecto', () => {
-  it('Scenario: Ningún arma mata a un bug de un impacto (Linter → 4; Tests → 6)', () => {
+  it('Scenario: Ningún arma mata a un goblin-torch de un impacto (Linter → 4; Tests → 6)', () => {
     expect(history(play(weaponsOf([LINTER]), one('goblin-torch'), 29))).toEqual({
       lives: [10, 4],
       gone: false,
@@ -48,7 +48,7 @@ describe('Run · daño acumulado con las armas por defecto', () => {
     expect(history(play(weaponsOf([TESTS]), near, 1))).toEqual({ lives: [6], gone: false });
   });
 
-  it('Scenario: Linter mata a un bug en 2 impactos (no aparece en el snapshot del tick n)', () => {
+  it('Scenario: Linter mata a un goblin-torch en 2 impactos (no aparece en el snapshot del tick n)', () => {
     const snaps = play(weaponsOf([LINTER]), one('goblin-torch', 4), 30);
     const n = snaps.findIndex((s) => s.enemies.length === 0);
     expect(n).toBeGreaterThan(0);
@@ -57,7 +57,7 @@ describe('Run · daño acumulado con las armas por defecto', () => {
     expect(snaps[n]?.projectiles).toHaveLength(0);
   });
 
-  it('Scenario: Tests mata a un bug en 3 pulsos (vida 2 tras 2 pulsos)', () => {
+  it('Scenario: Tests mata a un goblin-torch en 3 pulsos (vida 2 tras 2 pulsos)', () => {
     const near = { enemies: [{ type: 'goblin-torch', x: PX + 50, y: PY }] };
     const snaps = play(weaponsOf([TESTS]), near, 181);
     expect(history(snaps.slice(0, 180))).toEqual({ lives: [6, 2], gone: false });
