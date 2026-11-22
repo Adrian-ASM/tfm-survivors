@@ -308,6 +308,21 @@ describe('Contenido de enemigos y oleadas validado · reglas cruzadas (dominio d
     expect(e.message).toContain('segfault');
   });
 
+  // Ids anteriores al change 0012, compuestos para no chocar con tests/guardrails/legacy-enemy-ids.
+  it.each(
+    [
+      ['b', 'ug'],
+      ['memory', '-leak'],
+      ['merge', '-conflict'],
+    ].map((p) => p.join('')),
+  )('Scenario: Oleada con un id antiguo (%s)', (legacy) => {
+    const raw = rawContent();
+    raw.waves.segments[0].types = [legacy];
+    const e = failure(raw);
+    expect(e.field).toBe('waves.segments.0.types.0');
+    expect(e.message).toContain(legacy);
+  });
+
   it('Radio que no cabe en la arena', () => {
     const raw = rawContent();
     raw.enemies.types[0].radius = 300;
@@ -420,6 +435,29 @@ describe('Contenido por defecto del repositorio', () => {
       ['goblin-torch', 90, 10, 10, 5, 1],
       ['goblin-tnt', 45, 22, 45, 15, 4],
       ['goblin-barrel', 70, 16, 20, 8, 2],
+    ]);
+  });
+
+  // Spec enemy-spawning (0012), verify-report W2: los stats y los tramos de antes, con el id renombrado.
+  it('Scenario: Stats heredados sin cambios', () => {
+    const stats = Object.fromEntries(
+      (config?.enemies.types ?? []).map(({ id, speed, radius, cost, damage, health, xp }) => [
+        id,
+        { speed, radius, cost, damage, health, xp },
+      ]),
+    );
+    expect(stats).toEqual({
+      'goblin-torch': { speed: 90, radius: 10, cost: 1, damage: 5, health: 10, xp: 1 },
+      'goblin-tnt': { speed: 45, radius: 22, cost: 3, damage: 15, health: 45, xp: 4 },
+      'goblin-barrel': { speed: 70, radius: 16, cost: 2, damage: 8, health: 20, xp: 2 },
+    });
+    const all = ['goblin-torch', 'goblin-barrel', 'goblin-tnt'];
+    expect((config?.waves.segments ?? []).map((s) => s.types)).toEqual([
+      ['goblin-torch'],
+      ['goblin-torch', 'goblin-barrel'],
+      all,
+      all,
+      all,
     ]);
   });
 

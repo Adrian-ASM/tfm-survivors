@@ -273,7 +273,7 @@ describe('Cadencia y elecciones', () => {
     { x: 480 + 21 + 6 * (n - 1) + 3, y: 270, value: 1, attracted: true },
   ];
 
-  it('Scenario: Mejora de cadencia a mitad de recarga (fast-ci en la oferta del tick 10: 1, 31, 57, 83)', () => {
+  it('Scenario: Cadencia mejorada sin reiniciar la carga (fast-ci en la oferta del tick 10: 1, 31, 57, 83)', () => {
     const run = weaponRun([LINTER], [anUpgrade('fast-ci')], {
       enemies: target,
       gems: gemOnTick(10),

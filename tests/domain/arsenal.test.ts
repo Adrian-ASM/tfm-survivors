@@ -186,13 +186,13 @@ describe('Arsenal · proyectiles en vuelo', () => {
     expect(arsenal.projectiles).toHaveLength(0);
   });
 
-  it('Scenario: Varios proyectiles sobre el mismo bug en un tick', () => {
+  it('Scenario: Varios proyectiles sobre el mismo goblin-torch en un tick', () => {
     const three = [1, 2, 3].map((i) => aLinter({ id: `l${String(i)}`, cooldownTicks: 1000 }));
     const arsenal = anArsenal(weaponsOf(three));
-    const bug = new FakeTarget(580, 270);
-    const kills = stepTicks(arsenal, 1, 12, [bug]);
-    expect([bug.alive, kills]).toEqual([false, 1]);
-    expect(bug.hits).toEqual([12, 12]);
+    const torch = new FakeTarget(580, 270);
+    const kills = stepTicks(arsenal, 1, 12, [torch]);
+    expect([torch.alive, kills]).toEqual([false, 1]);
+    expect(torch.hits).toEqual([12, 12]);
     expect(arsenal.projectiles).toHaveLength(1);
   });
 
