@@ -1,6 +1,6 @@
 # ADR-0012 · Arte CC0 de Tiny Swords (Update 010) versionado en `public/`, con procedencia comprobada
 
-- **Estado**: propuesta (change 0012-sprite-rendering)
+- **Estado**: aceptada (change 0012-sprite-rendering, implementada en apply y sin Critical en verify)
 - **Fecha**: 2026-11-22
 - **Sustituye a**: la propuesta aparcada "Arte local descubierto en build" (`0012-arte-local-descubierto-en-build.md`,
   2026-11-20). Nunca se aceptó ni llegó a `main`; se borra del change (ver "Por qué se borra y no se marca").

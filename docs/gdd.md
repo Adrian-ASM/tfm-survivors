@@ -1,17 +1,22 @@
-# GDD-lite · v2.0 (v1 aprobado 2026-11-19; v1.1 tras 0007; v2.0 "medieval" decidida 2026-11-22, tras 0011)
+# Greentide Vanguard · GDD-lite · v2.0 (v1 aprobado 2026-11-19; v1.1 tras 0007; v2.0 "medieval" decidida 2026-11-22, tras 0011)
 
 > Borrador que mantiene el agente `game-designer`; las decisiones son del autor. La v2.0 cambia la visión
 > (temática, género, mapa, recursos); lo construido en 0001–0011 se conserva y se reutiliza.
 
 ## Concepto
-Juego 2D para navegador, partidas de ~10 minutos: **survivors-like + exploración + toques de tower defense**.
-Un caballero contra hordas de goblins en un mapa medieval generado por semilla. El jugador solo se mueve; las armas
+Juego 2D para navegador, partidas de 5 a 10 minutos (que inviten a echar otra; 10 min como máximo):
+**survivors-like + exploración + toques de tower defense**.
+Un caballero de la facción (arquetipo inicial: Arquero) contra hordas de goblins en un mapa medieval generado por
+semilla. El jugador solo se mueve; las armas
 atacan solas; al subir de nivel elige 1 de 3 mejoras; explorar el mapa se recompensa con recursos que se gastan en
 mejorar el arma y en construir defensas.
 
-**Temática** (v2.0, 2026-11-22): caballeros contra goblins. Sustituye a "Sprint Survivors" (dev en un sprint infinito;
-v1 la había elegido para no parecerse a *Bug Bane Survivors*). El título y los ids de enemigos del código
-(`bug`, `memory-leak`, `merge-conflict`) quedan por renombrar (ver Preguntas abiertas).
+**Temática** (v2.0, 2026-11-22): caballeros contra goblins. Título: **"Greentide Vanguard"** (decidido 2026-11-22),
+que sustituye a "Sprint Survivors" (dev en un sprint infinito; v1 la había elegido para no parecerse a
+*Bug Bane Survivors*). Los ids de enemigo pasan a `goblin-torch` (antes `bug`), `goblin-tnt` (`memory-leak`) y
+`goblin-barrel` (`merge-conflict`), con los mismos stats; sus comportamientos propios siguen en 0016. El nombre del
+repo, la URL de Pages y las claves técnicas `sprint-survivors` (localStorage, nombre del export, `window.__sprint`)
+se mantienen; renombrarlos es una posible tarea futura, no decidida.
 
 **Arte base**: Tiny Swords "Update 010" de Pixel Frog (versión antigua, **CC0**: se puede versionar y publicar).
 El Free Pack actual **no** es CC0 (prohíbe redistribuir): solo uso local, nunca en el repo ni en Pages.
@@ -158,11 +163,12 @@ Los changes 0008 (infraestructura de tests) y 0010 (equilibrio) no añaden Must:
 Hechos: 0001 walking-skeleton → 0002 enemy-spawning → 0003 collisions-and-damage → 0004 auto-weapons →
 0005 xp-and-level-up → 0006 run-lifecycle + HUD → 0007 local-save-export → 0008 e2e-fast-sim →
 0009 main-menu → 0010 balance-pass → 0011 public-deploy.
+Implementado, pendiente de PR y archivo: 0012 sprite-rendering.
 
 Pendientes:
 | Change | Contenido | Prioridad | Spike previo |
 |---|---|---|---|
-| 0012 sprite-rendering | Se **retoma** (estaba planificado y aparcado en la rama local `change/0012-sprite-rendering`) reabriendo la decisión de assets: se versiona el pack CC0, con ids y tema medieval (jugador arquero, goblins). Esta versión del GDD sustituye a la edición previa de la rama aparcada | Must | |
+| 0012 sprite-rendering | **Implementado (pendiente de PR y archivo)**: arte CC0 de Update 010 versionado con nota de procedencia (`content/asset-provenance.json`), ids y tema medieval (jugador: el Arquero del pack; goblins). La elección de personaje y el Guerrero siguen en 0017 | Must | |
 | 0013 world-camera | Mundo grande + cámara que sigue + límites | Must | |
 | 0014 procedural-map | Mapa procedural por semilla + colisión del jugador; reserva la zona de inicio con el castillo | Must | Autotiling de orillas y si el mapa se ve bien |
 | 0015 flow-field | Navegación por campo de flujo | Must | Con cientos de enemigos |
@@ -186,13 +192,14 @@ Decididas (2026-11-22, ya recogidas arriba): castillo en el punto de inicio del 
 Update 010 es CC0; armas actuales reconvertidas en arco y tajo; Supervivencia por defecto, Objetivos *Should*,
 Infinito *Could*.
 
+Cerrada (2026-11-22): **Título** = "Greentide Vanguard" (ver Temática). Renombrar repo, URL de Pages y claves
+`sprint-survivors` queda como posible tarea futura, no decidida.
+
 Siguen abiertas:
-1. **Título**: sin decidir. Candidatos: "Last Keep", "Goblin Tide", "Hold the Banner", "Keep Survivors" (evitar
-   "Tiny Swords": es el nombre del pack). Hasta decidirlo, el renombrado del título, de los ids `bug`,
-   `memory-leak`, `merge-conflict` y del repo/URL de Pages queda pendiente.
-2. **Duración del temporizador** en Supervivencia: explorar para mejorar consume tiempo, así que ~10 min puede
-   quedarse corto o largo. Se fija con playtests.
-3. **Equilibrio**: sin criterio nuevo. La banda 25–35 de 0010 no se da por válida con el nuevo mapa y los recursos;
+1. **Duración del temporizador** en Supervivencia: objetivo de 5 a 10 minutos por partida (que invite a echar otra),
+   con 10 min como máximo. Hoy dura 600 s. Se fija con playtests cuando estén el mapa y la exploración; cambiarla
+   obliga a volver a medir el balance.
+2. **Equilibrio**: sin criterio nuevo. La banda 25–35 de 0010 no se da por válida con el nuevo mapa y los recursos;
    se decidirá iterando con playtests y el bot tras cada change de contenido.
 
 ## Deuda registrada
@@ -207,7 +214,7 @@ Siguen abiertas:
 | 0008 · W3 | El objetivo de suite E2E < 60 s depende de `workers: 2` (con 1 worker ~70 s) y la derrota a `speed=8` (~10 s) tiene poco margen frente al tope de 12 s; `retries: 1` en CI puede enmascarar flakiness. Vigilar los tiempos del job `e2e`. | Revisar si CI da reintentos |
 | 0008 · S1/S2 | Sin E2E de `?e2e&speed=<inválido>` aislado ni de `?speed=8` sin `?e2e` avanzando a ritmo normal (cubierto en unitario). | Con 0009 si se tocan los E2E de arranque |
 | 0009 · W1 | La sonda E2E no expone la visibilidad del HUD: "HUD en el menú" y "HUD tras Volver al menú" solo se cubren por capas (tests de Node), no en navegador. | Si un change toca el HUD o la sonda |
-| 0009 · W2 | Sin E2E que compruebe los sprites tras Volver al menú ni el escenario "Cinco ciclos menú-partida" (la sonda no cuenta sprites); la limpieza depende de que Phaser destruya la escena al apagarla. | **Con 0012** (arte) o si aparece una fuga |
+| 0009 · W2 | **Saldada con 0012.** Sin E2E que compruebe los sprites tras Volver al menú ni el escenario "Cinco ciclos menú-partida" (la sonda no cuenta sprites); la limpieza depende de que Phaser destruya la escena al apagarla. | Change 0012 (implementado) |
 | 0009 · W6 | Dos E2E juegan con semilla aleatoria (lo exige la spec tras Volver al menú) a `speed=15`: duración no determinista, timeout holgado. | Vigilar el job `e2e` |
 | 0010 · W1 | "Sin semillas sueltas de balance" se comprueba con grep, sin test automático que lo vigile. | Si reaparecen semillas fijas |
 | 0010 · W2 | Margen estrecho de la tasa: 30/50 en una banda 25–35, con ±3–4 victorias de ruido entre factores contiguos. Un ajuste pequeño de contenido puede sacarla de la banda: hay que volver a medir. | Cualquier change que toque `content/` (todos los de 0016 en adelante) |
@@ -233,3 +240,8 @@ con todas antes de 180 s (máx. ~94 s). Palanca: `budgetPerSecond` ×0,8 en los 
 ### 0011 public-deploy · hecho (PR #24)
 El despliegue ya existía en `ci.yml`; el change añadió la spec `public-deploy`, el smoke remoto a demanda y la nota
 de CSP en Pages de ADR-0004. Aviso v2.0: lo que se publique en Pages debe ser solo CC0 (ver Concepto).
+
+### 0012 sprite-rendering · implementado (pendiente de PR y archivo)
+Sprites animados del pack Update 010 (CC0) para el jugador (Arquero) y los goblins, con nota de procedencia en
+`content/asset-provenance.json`; ids de enemigo `goblin-torch`, `goblin-tnt`, `goblin-barrel` con los mismos stats.
+Núcleo sin cambios. Salda la deuda 0009 · W2.
