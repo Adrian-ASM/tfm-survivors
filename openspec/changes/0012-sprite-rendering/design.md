@@ -155,7 +155,7 @@ Dimensiones leídas de la imagen en esta fase; las fija un test (D9) leyendo la 
   `Thumbs.db`, `desktop.ini`, `.aseprite`, `.zip .rar .7z .tar .gz`); `Free Pack`/`Free_Pack`/`FreePack` (sin
   mayúsculas) en una ruta versionada o en `source`; asset sin entrada; entrada sin fichero; `path` repetido;
   `sha256`/`bytes` distintos; cabecera o entrada incompleta; `license` ≠ `CC0`; `version` ≠ `Update 010`.
-- `PROVENANCE.json` en `public/assets/tiny-swords/` (machine-readable; el texto humano va en `note`):
+- `PROVENANCE.json` en `public/assets/tiny-swords/` (**en apply, `content/asset-provenance.json`: ver R6**; machine-readable; el texto humano va en `note`):
   `{ pack: "Tiny Swords", author: "Pixel Frog", version: "Update 010", license: "CC0",
   confirmedOn: "2026-11-22", homepage: <URL de itch.io>, note,
   files: [{ path, source, version: "Update 010", sha256, bytes }] }`. `path` relativo a la raíz del repo; `source`
@@ -342,5 +342,7 @@ Contrastado con todas las deltas (`sprite-rendering` reescrita, `asset-provenanc
 - **R6 · Importar `PROVENANCE.json` desde `public/`**: Vite puede rechazar o advertir al importar desde `publicDir`.
   Se prueba en la tarea de composición con `npm run build` y `vite dev`. Si falla, la nota pasa a
   `content/asset-provenance.json` (versionada, mismo formato) y se anota aquí; la spec deja la ubicación al design.
-- **R7 · API 4.2.1**: `imageLoadType`, `TintModes`/`setTintMode`, `TileSprite`, `generateTexture` se confirman en
+- **R7 · API 4.2.1** (confirmado en apply, tarea 5.1, en los tipos de `node_modules/phaser`: `imageLoadType`,
+  `load.spritesheet`, `Loader.Events.FILE_LOAD_ERROR`, enum `Phaser.TintModes` con `setTintMode`,
+  `add.tileSprite` y `Graphics#generateTexture`; sin discrepancias): `imageLoadType`, `TintModes`/`setTintMode`, `TileSprite`, `generateTexture` se confirman en
   los tipos de `node_modules/phaser` en la primera tarea de infraestructura con motor; si discrepan, mandan los tipos.

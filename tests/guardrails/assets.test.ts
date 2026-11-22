@@ -78,8 +78,8 @@ describe('guard-assets · nota de procedencia (spec asset-provenance)', () => {
     expect(checkAssets({ files: FILES, provenance: aNote(), digest })).toEqual([]);
   });
 
-  it('la nota vive junto a los assets', () => {
-    expect(PROVENANCE_PATH).toBe(`${BASE}/PROVENANCE.json`);
+  it('la nota vive en content/ (design R6: Vite no importa JSON de public/)', () => {
+    expect(PROVENANCE_PATH).toBe('content/asset-provenance.json');
   });
 
   it.each(['pack', 'author', 'version', 'license', 'confirmedOn'])(

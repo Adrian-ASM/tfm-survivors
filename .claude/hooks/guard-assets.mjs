@@ -4,7 +4,8 @@
 // `digest(path) → { sha256, bytes }` inyectado. La ejecuta scripts/guard-staged.mjs (pre-commit y CI).
 import { relativePath, runAsHook } from './lib.mjs';
 
-export const PROVENANCE_PATH = 'public/assets/tiny-swords/PROVENANCE.json';
+/** Nota de procedencia (design D8; en content/ por R6: Vite no importa JSON de public/). */
+export const PROVENANCE_PATH = 'content/asset-provenance.json';
 
 const HEADER = {
   pack: 'Tiny Swords',

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import appearanceJson from '../../content/appearance.json';
-import provenanceJson from '../../public/assets/tiny-swords/PROVENANCE.json';
+import provenanceJson from '../../content/asset-provenance.json';
 import { bootContent, checkAppearanceRefs } from '../../src/composition/contentBoot';
 import type { DomainError } from '../../src/domain/shared/Result';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';

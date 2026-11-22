@@ -92,7 +92,7 @@ describe('guard-staged · pre-commit', () => {
 });
 
 // Spec asset-provenance (0012, design D8): pasada global sobre `git ls-files` con el contenido del índice.
-const NOTE_PATH = 'public/assets/tiny-swords/PROVENANCE.json';
+const NOTE_PATH = 'content/asset-provenance.json';
 const PNG_PATH = 'public/assets/tiny-swords/Terrain/Ground/Tilemap_Flat.png';
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x0d, 0x0a, 0x7f]);
 

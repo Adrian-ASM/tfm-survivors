@@ -13,7 +13,7 @@ interface Entry {
   path: string;
   source: string;
 }
-const provenance = readJson(`${ASSET_DIR}PROVENANCE.json`) as { files: Entry[] };
+const provenance = readJson('content/asset-provenance.json') as { files: Entry[] };
 const registered = provenance.files.map((f) => f.path);
 const enemyIds = (readJson('content/enemies.json') as { types: { id: string }[] }).types.map(
   (t) => t.id,

@@ -107,7 +107,7 @@
   - Escenarios: RR "Import rechazado", "Aviso de datos dañados"; MM "Título en el menú y en el documento" (menú).
 
 ## 5. Infraestructura · adaptadores Phaser
-- [ ] 5.1 R7: confirmar en `node_modules/phaser` (4.2.1) `imageLoadType`, `load.spritesheet`, `FILE_LOAD_ERROR`,
+- [x] 5.1 R7: confirmar en `node_modules/phaser` (4.2.1) `imageLoadType`, `load.spritesheet`, `FILE_LOAD_ERROR`,
   `TintModes`/`setTintMode`, `TileSprite`, `Graphics#generateTexture`; anotar discrepancias en el design.
   `BootScene` + `BOOT_SCENE_KEY`: lógica pura `sheetsToLoad(appearance)` (un load por `file` distinto) y
   `nextSceneKey(e2e)`, probadas; la escena solo llama al motor.
@@ -123,7 +123,7 @@
   `checkAppearanceRefs`; sin motor ni DOM. Test `tests/composition/content-boot.test.ts`.
   - Escenarios: SR "Tipos de enemigo y aspectos desalineados", "Datos inválidos en el arranque" (con y sin
     `?e2e`), "Los aspectos no cambian la simulación" (protección: escalas × 2, 1.200 ticks, semilla 42).
-- [ ] 6.2 `main.ts`: `assetUrl` (`BASE_URL` + `assets/tiny-swords/` + `file`), `loader.imageLoadType`,
+- [x] 6.2 `main.ts`: `assetUrl` (`BASE_URL` + `assets/tiny-swords/` + `file`), `loader.imageLoadType`,
   `[boot, menu, game]`, `capacity.corpses`, `probe.sprites`, `TITLE`, import de `PROVENANCE.json` (R6: probar
   `npm run build` y `vite dev`; si falla, mover la nota a `content/` y anotarlo). `index.html` `<title>` y
   `package.json` `description`. Rojo: test de `assetUrl`; además test que congela las directivas CSP de

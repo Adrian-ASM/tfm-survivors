@@ -46,7 +46,7 @@ const DeathSchema = z.strictObject({
 export const SHEET_FILE_FORMAT =
   'La hoja es una ruta .png relativa a la carpeta de assets, sin "..", sin "/" inicial ni esquema.';
 export const SHEET_NOT_REGISTERED =
-  'La hoja no figura en la nota de procedencia (PROVENANCE.json).';
+  'La hoja no figura en la nota de procedencia (content/asset-provenance.json).';
 /** Carpeta versionada del arte: la ruta en la nota es esta carpeta + `file`. */
 export const ASSET_DIR = 'public/assets/tiny-swords/';
 

@@ -3,7 +3,7 @@
 import '../infrastructure/validation/cspSafeZod';
 import Phaser from 'phaser';
 import appearanceJson from '../../content/appearance.json';
-import provenanceJson from '../../public/assets/tiny-swords/PROVENANCE.json';
+import provenanceJson from '../../content/asset-provenance.json';
 import { RestartRun } from '../application/RestartRun';
 import { buildRunRules, type RunConfig } from '../domain/run/RunConfig';
 import type { RunSnapshot } from '../domain/run/RunSnapshot';
@@ -15,6 +15,8 @@ import { GameScene, type SceneCapacity, type Screen } from '../infrastructure/ph
 import { MenuScene } from '../infrastructure/phaser/MenuScene';
 import { emptyCounts, type SpriteCounts } from '../infrastructure/phaser/renderCounts';
 import type { ResultsView } from '../infrastructure/phaser/resultsText';
+import { BootScene } from '../infrastructure/phaser/BootScene';
+import { assetUrl } from './assetUrl';
 import { bootContent } from './contentBoot';
 import { resolveSeed } from '../infrastructure/url/resolveSeed';
 import { resolveSpeed } from '../infrastructure/url/resolveSpeed';
@@ -169,6 +171,12 @@ function bootstrap(): void {
     TITLE,
   );
 
+  const boot = new BootScene({
+    appearance,
+    assetUrl: (file) => assetUrl(import.meta.env.BASE_URL, file),
+    e2e,
+  });
+
   // El canvas tiene el tamaño de la vista (unidades de mundo): una sola fuente para lo que se ve.
   const { view } = config.value.arena;
   new Phaser.Game({
@@ -177,8 +185,11 @@ function bootstrap(): void {
     width: view.width,
     height: view.height,
     backgroundColor: BACKGROUND,
-    // Phaser arranca la primera escena de la lista: con ?e2e, la partida (arranque de antes).
-    scene: e2e ? [game, menu] : [menu, game],
+    // Imágenes con <img> (sin XHR ni blob:): la CSP de index.html no cambia (design D2).
+    loader: { imageLoadType: 'HTMLImageElement' },
+    // Phaser arranca la primera escena: BootScene carga las hojas y arranca el menú o, con ?e2e,
+    // la partida (arranque de antes, ADR-0011).
+    scene: [boot, menu, game],
   });
 }
 
