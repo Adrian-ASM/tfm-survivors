@@ -33,6 +33,19 @@ describe('Textos del panel de progreso (spec run-results, "Overlay de resultados
     expect(view.message).toContain('importado');
   });
 
+  it('Scenario: Import rechazado (no válido y Greentide Vanguard, sin Sprint Survivors)', () => {
+    expect(PANEL_MESSAGES.invalid).toContain('no válido');
+    expect(PANEL_MESSAGES.invalid).toContain('Greentide Vanguard');
+    expect(PANEL_MESSAGES.invalid).not.toContain('Sprint Survivors');
+  });
+
+  it('Scenario: Aviso de datos dañados (menciona progress, sin Sprint Survivors)', () => {
+    const texts = [PROGRESS_CORRUPT_WARNING, ...Object.values(PANEL_NOTICES)];
+    expect(PROGRESS_CORRUPT_WARNING).toContain('progress');
+    expect(PROGRESS_CORRUPT_WARNING).toContain('Greentide Vanguard');
+    expect(texts.some((t) => t.includes('Sprint Survivors'))).toBe(false);
+  });
+
   it('los mensajes y avisos contienen los textos que fija la spec', () => {
     expect([
       PANEL_MESSAGES.imported.includes('importado'),

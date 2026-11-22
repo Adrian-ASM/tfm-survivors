@@ -9,6 +9,7 @@ import { buildRunRules, type RunConfig } from '../domain/run/RunConfig';
 import type { RunSnapshot } from '../domain/run/RunSnapshot';
 import type { DomainError } from '../domain/shared/Result';
 import { repositoryContent } from '../infrastructure/content/loadRunConfig';
+import { MENU_LABELS } from '../infrastructure/dom/menuText';
 import { PausePanel } from '../infrastructure/dom/PausePanel';
 import { GameScene, type SceneCapacity, type Screen } from '../infrastructure/phaser/GameScene';
 import { MenuScene } from '../infrastructure/phaser/MenuScene';
@@ -41,7 +42,8 @@ interface E2EProbe {
   sprites: SpriteCounts;
 }
 
-const TITLE = 'Sprint Survivors';
+/** Nombre visible del juego (change 0012): una sola fuente para el menú y el documento. */
+const TITLE = MENU_LABELS.title;
 
 function showContentError(root: HTMLElement, error: DomainError): void {
   const box = document.createElement('div');

@@ -101,7 +101,7 @@
   `enemyPlaceholders` por tipo; contadores incrementales; menú → todo a 0).
   - Escenarios: SR "R con cadáveres en curso", "Pulso sin sprite", "Recuento coherente con el snapshot" (unitario),
     "Sonda en el menú" (unitario); RR "Primer frame tras reiniciar".
-- [ ] 4.12 Título en `src/infrastructure/dom/{menuText,resultsPanelText}.ts` y en el aviso de datos dañados.
+- [x] 4.12 Título en `src/infrastructure/dom/{menuText,resultsPanelText}.ts` y en el aviso de datos dañados.
   Rojo: `results-panel-text.test.ts`/`menu-controller.test.ts` esperan `Greentide Vanguard` y ningún
   `Sprint Survivors`; los fragmentos `importado`, `no válido`, `64 KiB`, `borrado`, `progress` se conservan.
   - Escenarios: RR "Import rechazado", "Aviso de datos dañados"; MM "Título en el menú y en el documento" (menú).
