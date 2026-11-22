@@ -6,7 +6,7 @@
 
 ## 1. Visión general
 
-**Sprint Survivors**: juego 2D *survivors-like* para navegador (TFM del Máster de Desarrollo con IA).
+**Greentide Vanguard** (antes *Sprint Survivors*): juego 2D *survivors-like* para navegador (TFM del Máster de Desarrollo con IA).
 El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir de nivel se elige 1 de 3 mejoras.
 
 - **Stack**: TypeScript estricto · Vite · **Phaser 4.2.1** (ADR-0001) · Vitest · Playwright · zod.
@@ -21,6 +21,11 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   victorias) e invariante "quieto pierde antes de 180 s" con todas ellas (change 0010).
   Publicado en `https://adrian-asm.github.io/tfm-survivors/` (job `deploy` de `ci.yml` tras `quality` y `e2e` en
   push a `main`); smoke remoto **a demanda**, nunca en push ni PR (change 0011). Backlog Must completo.
+  Arte CC0 de Tiny Swords Update 010 (change 0012, ADR-0012): sprites animados del arquero y tres goblins
+  (`goblin-torch`, `goblin-tnt`, `goblin-barrel`), cadáveres, flechas, gemas y suelo, con datos en
+  `content/appearance.json` y aspecto de reserva si una hoja no carga. Guardarraíl de procedencia
+  (`.claude/hooks/guard-assets.mjs` sobre `git ls-files`, nota en `content/asset-provenance.json`): ningún asset
+  gráfico sin entrada ni nada del Free Pack. Sonda E2E `window.__sprint.sprites` con recuentos por tipo.
   Fuente de verdad del comportamiento: `openspec/specs/`.
 
 ## 2. Comandos

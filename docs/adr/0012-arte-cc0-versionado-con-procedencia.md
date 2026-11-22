@@ -45,8 +45,10 @@ Se eligen **1 + b + ii**:
 - Los PNG viven en `public/assets/tiny-swords/<ruta original del pack>` (p. ej.
   `Factions/Goblins/Troops/Torch/Red/Torch_Red.png`): la ruta del repo es la de origen, sin renombrar, para que la
   procedencia se compruebe a simple vista. Solo entra el subconjunto que usa `content/appearance.json`.
-- `public/assets/tiny-swords/PROVENANCE.json` registra pack, autor, versión, licencia (`CC0-1.0`), fecha y medio de
-  la confirmación del autor (2026-11-22) y, por fichero, `path`, `sha256` y `bytes`. Se publica con el juego.
+- `content/asset-provenance.json` registra pack, autor, versión, licencia (`CC0`) y fecha de la confirmación del
+  autor (2026-11-22) y, por fichero, `path`, `source` (ruta en el pack), `version`, `sha256` y `bytes`. Iba a vivir
+  junto a los PNG (`public/assets/tiny-swords/PROVENANCE.json`), pero `vite dev` no permite importar JSON de
+  `public/` y la composición la necesita para validar las hojas (design R6, resuelto en apply).
 - `loader.imageLoadType: 'HTMLImageElement'` en el `GameConfig`. Un `BootScene`, primera escena en los dos
   arranques, carga las hojas y arranca `MenuScene` o `GameScene`. Las texturas son globales al juego: se cargan una
   vez por carga de página.
@@ -54,11 +56,13 @@ Se eligen **1 + b + ii**:
   `AnimationManager`: así se congelan con `PauseGate` y se prueban sin motor (decisión reutilizada del ADR aparcado).
 - `.claude/hooks/guard-assets.mjs` exporta una función pura; `scripts/guard-staged.mjs` la ejecuta una vez sobre
   `git ls-files` (índice). Falla si:
-  - hay cualquier `.DS_Store`, `Thumbs.db`, `.aseprite` o comprimido (`.zip`, `.rar`, `.7z`) versionado;
+  - hay cualquier `.DS_Store`, `Thumbs.db`, `desktop.ini`, `.aseprite` o comprimido (`.zip`, `.rar`, `.7z`,
+    `.tar`, `.gz`) versionado;
   - una ruta contiene "free pack" (sin distinguir mayúsculas ni separador);
-  - una imagen (`png`, `jpg`, `jpeg`, `gif`, `webp`, `bmp`, `ico`, `svg`, `avif`) no tiene entrada en
-    `PROVENANCE.json`, o su `sha256` o `bytes` no coinciden con la entrada;
-  - una entrada de `PROVENANCE.json` no está versionada, o faltan los campos de cabecera.
+  - un asset gráfico (`png`, `jpg`, `jpeg`, `gif`, `webp`, `bmp`, `ico`, `svg`, `aseprite`, sin distinguir
+    mayúsculas, en cualquier carpeta) no tiene entrada en la nota, o su `sha256` o `bytes` no coinciden;
+  - una entrada de la nota no está versionada o se repite, su `source` es del Free Pack, o faltan campos o la
+    licencia no es `CC0` o la versión no es `Update 010`.
   El hash es lo que hace fuerte la regla: un PNG del Free Pack renombrado como uno de Update 010 no pasa.
 
 ### Por qué se borra y no se marca
@@ -71,10 +75,13 @@ change y en git (la rama aparcada).
   - Pages, CI y local muestran el mismo arte. La suite E2E prueba el camino real (CSP incluida), sin segunda build
     ni fixtures sintéticas.
   - La CSP no cambia.
-  - La licencia es comprobable: hash por fichero, fecha y medio de la confirmación, y fallo automático en commit y CI.
-  - El cambio de arte es de datos (`content/appearance.json` + `PROVENANCE.json`) y no toca el núcleo.
+  - La licencia es comprobable: hash por fichero, fecha de la confirmación (sin captura versionada, como fija la
+    spec) y fallo automático en commit y CI.
+  - El cambio de arte es de datos (`content/appearance.json` + `content/asset-provenance.json`) y no toca el
+    núcleo (diff de `src/domain` y `src/application`: 0 líneas).
 - Negativas / costes:
-  - Peso en el repo y en `dist/` (estimado 0,1-0,3 MB para 8 PNG; se mide en apply y queda en `PROVENANCE.json`).
+  - Peso en el repo y en `dist/`: 219.672 bytes (≈ 0,21 MB) los 8 PNG, medidos en apply y registrados por fichero
+    en la nota.
   - Todo `public/` se publica: el guardarraíl es la única barrera contra un PNG suelto.
   - Una textura que falla al cargar (404) deja un error de red en consola: deja de ser el caso normal, pero el
     fallback por placeholder se mantiene.
