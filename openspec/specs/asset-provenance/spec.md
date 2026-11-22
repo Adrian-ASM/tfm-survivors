@@ -1,0 +1,104 @@
+# Asset Provenance · Spec viva
+
+> Fuente de verdad del comportamiento actual. Solo se modifica al archivar un change (skill `sdd-archive`).
+
+## Purpose
+Que el repositorio solo versione arte con licencia y procedencia registradas (nota con sha256 y bytes), y nada del Free Pack, comprobado en pre-commit y en CI.
+
+## Requirements
+
+### Requirement: Nota de procedencia
+El repositorio SHALL contener una nota de procedencia que registra, para el arte de Tiny Swords: el pack
+(`Tiny Swords`), el autor (`Pixel Frog`), la versión (`Update 010`), la licencia (`CC0`), la fecha de la confirmación
+del autor de que esa versión es CC0 (`2026-11-22`) y una entrada por cada asset gráfico incluido, con su ruta en el
+repositorio y su ruta de origen dentro del pack. La nota MUST NOT exigir ni enlazar una captura o prueba versionada de
+la confirmación: basta con la fecha. Cada ruta del repositorio figura una sola vez.
+
+#### Scenario: Nota del repositorio
+- **GIVEN** el repositorio tras este change
+- **WHEN** el guardarraíl lee la nota de procedencia
+- **THEN** la nota registra pack `Tiny Swords`, autor `Pixel Frog`, versión `Update 010`, licencia `CC0` y fecha
+  `2026-11-22`
+- **AND** tiene ≥ 1 entrada y cada entrada tiene ruta en el repositorio y ruta de origen no vacías
+
+#### Scenario: Nota incompleta
+- **GIVEN** una nota sin la fecha de la confirmación, y en otros casos sin licencia, con licencia distinta de `CC0`,
+  con versión distinta de `Update 010` o con una entrada sin ruta de origen
+- **WHEN** se ejecuta el guardarraíl
+- **THEN** falla con un mensaje que nombra el campo ausente o incorrecto
+
+#### Scenario: Entrada repetida
+- **GIVEN** una nota con dos entradas para la misma ruta del repositorio
+- **WHEN** se ejecuta el guardarraíl
+- **THEN** falla con un mensaje que nombra esa ruta
+
+### Requirement: Solo assets registrados
+El sistema SHALL garantizar que cada asset gráfico de la lista de ficheros versionados tiene entrada en la nota de
+procedencia y que cada entrada de la nota corresponde a un fichero de esa lista. La lista MUST NOT contener ficheros
+de sistema (`.DS_Store`, `Thumbs.db`, `desktop.ini`), fuentes de edición (`.aseprite`) ni comprimidos (`.zip`,
+`.rar`, `.7z`, `.tar`, `.gz`) en ninguna carpeta.
+
+#### Scenario: Estado real del repositorio
+- **GIVEN** la lista real de ficheros versionados tras este change
+- **WHEN** se ejecuta el guardarraíl
+- **THEN** pasa: cada asset gráfico tiene entrada, cada entrada tiene fichero y no hay ficheros prohibidos
+
+#### Scenario: PNG sin registrar
+- **GIVEN** una lista simulada igual a la real más `public/assets/extra/Goblin_Red.png`, sin entrada en la nota
+- **WHEN** se ejecuta el guardarraíl
+- **THEN** falla con un mensaje que nombra `public/assets/extra/Goblin_Red.png`
+
+#### Scenario: Asset gráfico fuera de la carpeta de assets
+- **GIVEN** una lista simulada igual a la real más `docs/captura.jpg`, sin entrada en la nota
+- **WHEN** se ejecuta el guardarraíl
+- **THEN** falla con un mensaje que nombra `docs/captura.jpg`
+
+#### Scenario: Entrada sin fichero
+- **GIVEN** la nota real y una lista simulada sin uno de los ficheros que la nota registra
+- **WHEN** se ejecuta el guardarraíl
+- **THEN** falla con un mensaje que nombra la ruta que falta
+
+#### Scenario: Ficheros prohibidos
+- **GIVEN** una lista simulada igual a la real más, en un caso cada vez, `public/assets/.DS_Store`,
+  `assets/Thumbs.db`, `art/Archer.aseprite` o `tiny-swords.zip`
+- **WHEN** se ejecuta el guardarraíl
+- **THEN** falla con un mensaje que nombra ese fichero
+
+#### Scenario: Mayúsculas en la extensión
+- **GIVEN** una lista simulada igual a la real más `public/assets/Tree.PNG`, sin entrada en la nota
+- **WHEN** se ejecuta el guardarraíl
+- **THEN** falla con un mensaje que nombra `public/assets/Tree.PNG`
+
+### Requirement: Nada del Free Pack
+El sistema SHALL rechazar cualquier asset del Tiny Swords Free Pack, que no es CC0. El guardarraíl MUST fallar si un
+fichero de la lista de ficheros versionados, o la ruta de origen de una entrada de la nota, contiene `Free Pack`,
+`Free_Pack` o `FreePack` (sin distinguir mayúsculas), o si una entrada registra una versión distinta de `Update 010`.
+
+#### Scenario: Ruta del Free Pack en el repositorio
+- **GIVEN** una lista simulada igual a la real más `public/assets/Tiny Swords (Free Pack)/Warrior_Blue.png`, con
+  entrada en la nota
+- **WHEN** se ejecuta el guardarraíl
+- **THEN** falla con un mensaje que nombra ese fichero y el Free Pack
+
+#### Scenario: Origen del Free Pack
+- **GIVEN** la nota real con una entrada cuya ruta en el repositorio es `public/assets/tinyswords/Warrior.png` y cuya
+  ruta de origen es `Tiny Swords (Free Pack)/Units/Blue Units/Warrior/Warrior_Idle.png`, y la lista con ese fichero
+- **WHEN** se ejecuta el guardarraíl
+- **THEN** falla con un mensaje que nombra `public/assets/tinyswords/Warrior.png` y el Free Pack
+
+### Requirement: Guardarraíl de procedencia en verify y en CI
+El sistema SHALL ejecutar el guardarraíl de procedencia sobre la lista de ficheros versionados como parte de
+`npm run verify`, de modo que el check `quality` del CI falle si el guardarraíl falla. El guardarraíl MUST NOT
+necesitar red ni el pack original fuera del repositorio.
+
+#### Scenario: Verify en rojo
+- **GIVEN** una copia del repositorio con un PNG versionado sin entrada en la nota
+- **WHEN** se ejecuta `npm run verify`
+- **THEN** termina con código distinto de 0 y su salida nombra ese PNG
+
+#### Scenario: Sin red ni pack
+- **GIVEN** el repositorio tras este change, sin red y sin la carpeta original del pack en la máquina
+- **WHEN** se ejecuta el guardarraíl
+- **THEN** pasa
+
+<!-- historial: 0012-sprite-rendering (2026-11-22) -->

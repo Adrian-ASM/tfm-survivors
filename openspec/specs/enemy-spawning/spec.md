@@ -10,23 +10,33 @@ Los enemigos aparecen en oleadas que crecen con el tiempo: un director gasta un 
 ### Requirement: Catálogo de tipos de enemigo
 El sistema SHALL definir los tipos de enemigo exclusivamente desde contenido. Cada tipo tiene un identificador
 único, una velocidad, un radio, un coste, una vida (`health`), un daño por contacto (`damage`) y la XP que suelta
-al morir (`xp`). El contenido por defecto MUST incluir exactamente los 3 tipos del GDD: `bug`, `memory-leak` y
-`merge-conflict`. Los tipos solo se diferencian en esos valores.
+al morir (`xp`). El contenido por defecto MUST incluir exactamente 3 tipos, uno por unidad goblin del pack:
+`goblin-torch`, `goblin-tnt` y `goblin-barrel`. Los tipos solo se diferencian en esos valores, que son los de los
+tres tipos anteriores (`bug`, `memory-leak` y `merge-conflict`) sin cambios. Ningún id de enemigo del contenido es
+`bug`, `memory-leak` ni `merge-conflict`.
 
 #### Scenario: Contenido por defecto
 - **GIVEN** el contenido por defecto del repositorio
 - **WHEN** se carga el contenido
-- **THEN** el catálogo tiene 3 tipos con identificadores `bug`, `memory-leak` y `merge-conflict`
+- **THEN** el catálogo tiene 3 tipos con identificadores `goblin-torch`, `goblin-tnt` y `goblin-barrel`
 - **AND** cada uno tiene una velocidad > 0, un radio > 0, un coste > 0, una vida > 0, un daño > 0 y una XP ≥ 1
+
+#### Scenario: Stats heredados sin cambios
+- **GIVEN** el contenido por defecto del repositorio
+- **WHEN** se carga el contenido
+- **THEN** `goblin-torch` tiene `speed` 90, `radius` 10, `cost` 1, `damage` 5, `health` 10 y `xp` 1
+- **AND** `goblin-tnt` tiene `speed` 45, `radius` 22, `cost` 3, `damage` 15, `health` 45 y `xp` 4
+- **AND** `goblin-barrel` tiene `speed` 70, `radius` 16, `cost` 2, `damage` 8, `health` 20 y `xp` 2
+- **AND** `content/waves.json` cita en cada tramo los mismos tipos que antes del change, con el id renombrado
 
 #### Scenario: XP por defecto de cada tipo
 - **GIVEN** el contenido por defecto del repositorio
 - **WHEN** se carga el contenido
-- **THEN** `bug` tiene `xp` 1, `merge-conflict` 2 y `memory-leak` 4 (provisional, a medir en apply)
+- **THEN** `goblin-torch` tiene `xp` 1, `goblin-barrel` 2 y `goblin-tnt` 4
 
 #### Scenario: Valores de cada tipo llegan al dominio
-- **GIVEN** un tipo `bug` con `{ "speed": 90, "radius": 10, "cost": 1, "health": 5, "damage": 10, "xp": 3 }`
-- **WHEN** se carga el contenido y aparece un enemigo `bug`
+- **GIVEN** un tipo `goblin-torch` con `{ "speed": 90, "radius": 10, "cost": 1, "health": 5, "damage": 10, "xp": 3 }`
+- **WHEN** se carga el contenido y aparece un enemigo `goblin-torch`
 - **THEN** ese enemigo tiene radio 10, vida 5 y se mueve a 90 unidades/s
 - **AND** un golpe suyo resta 10 de vida al jugador
 - **AND** al morir por armas suelta una gema que da 3 de XP
@@ -49,28 +59,33 @@ nombre el campo inválido. Las reglas son las siguientes:
 - `width` y `height` de la vista son > 0.
 
 #### Scenario: Oleada con un tipo inexistente
-- **GIVEN** un tramo con `"types": ["bug", "segfault"]` y un catálogo sin `segfault`
+- **GIVEN** un tramo con `"types": ["goblin-torch", "segfault"]` y un catálogo sin `segfault`
 - **WHEN** se carga el contenido
 - **THEN** la carga falla con un error que menciona `segfault`
 - **AND** no se crea ninguna partida
 
+#### Scenario: Oleada con un id antiguo
+- **GIVEN** el contenido por defecto con un tramo cuyo `types` es `["bug"]`
+- **WHEN** se carga el contenido
+- **THEN** la carga falla con un error que menciona `bug`
+
 #### Scenario: Velocidad cero
-- **GIVEN** un tipo `bug` con `"speed": 0`
+- **GIVEN** un tipo `goblin-torch` con `"speed": 0`
 - **WHEN** se carga el contenido
 - **THEN** la carga falla con un error que menciona `speed`
 
 #### Scenario: Vida cero o negativa
-- **GIVEN** un tipo `bug` con `"health": 0` o con `"health": -5`
+- **GIVEN** un tipo `goblin-torch` con `"health": 0` o con `"health": -5`
 - **WHEN** se carga el contenido
 - **THEN** la carga falla con un error que menciona `health`
 
 #### Scenario: Daño cero o ausente
-- **GIVEN** un tipo `bug` con `"damage": 0` o sin el campo `damage`
+- **GIVEN** un tipo `goblin-torch` con `"damage": 0` o sin el campo `damage`
 - **WHEN** se carga el contenido
 - **THEN** la carga falla con un error que menciona `damage`
 
 #### Scenario: XP inválida o ausente
-- **GIVEN** un tipo `bug` con `"xp": 0`, con `"xp": -1`, con `"xp": 1.5` o sin el campo `xp`
+- **GIVEN** un tipo `goblin-torch` con `"xp": 0`, con `"xp": -1`, con `"xp": 1.5` o sin el campo `xp`
 - **WHEN** se carga el contenido
 - **THEN** la carga falla con un error que menciona `xp`
 - **AND** no se crea ninguna partida
@@ -91,7 +106,7 @@ nombre el campo inválido. Las reglas son las siguientes:
 - **THEN** la carga tiene éxito
 
 #### Scenario: Identificador duplicado
-- **GIVEN** un catálogo con dos tipos cuyo `id` es `bug`
+- **GIVEN** un catálogo con dos tipos cuyo `id` es `goblin-torch`
 - **WHEN** se carga el contenido
 - **THEN** la carga falla con un error que menciona `id`
 
@@ -121,10 +136,10 @@ nombre el campo inválido. Las reglas son las siguientes:
 - **THEN** la carga falla con un error que menciona `maxBudget`
 
 #### Scenario: Máximo de presupuesto igual al coste más caro
-- **GIVEN** un catálogo cuyo tipo más caro es `memory-leak` con coste 3, `"maxBudget": 3` y un único tramo con
-  `types: ["memory-leak"]` y `budgetPerSecond` 1
+- **GIVEN** un catálogo cuyo tipo más caro es `goblin-tnt` con coste 3, `"maxBudget": 3` y un único tramo con
+  `types: ["goblin-tnt"]` y `budgetPerSecond` 1
 - **WHEN** se carga el contenido y se ejecutan 185 ticks
-- **THEN** la carga tiene éxito y hay exactamente 1 enemigo `memory-leak` vivo
+- **THEN** la carga tiene éxito y hay exactamente 1 enemigo `goblin-tnt` vivo
 
 ### Requirement: Oleadas por tramos de tiempo
 El sistema SHALL elegir en cada tick el tramo activo de la tabla de oleadas: el último cuyo `fromSecond` sea
@@ -132,18 +147,18 @@ El sistema SHALL elegir en cada tick el tramo activo de la tabla de oleadas: el 
 los tipos permitidos en el tramo activo.
 
 #### Scenario: Cambio de tramo
-- **GIVEN** un tramo 0 con `types: ["bug"]` y un tramo 1 con `fromSecond` 30 y `types: ["memory-leak"]`, ambos
-  con `budgetPerSecond` 1, un tope de 200 y un jugador con una vida máxima suficiente para no llegar a 0 en
+- **GIVEN** un tramo 0 con `types: ["goblin-torch"]` y un tramo 1 con `fromSecond` 30 y `types: ["goblin-tnt"]`,
+  ambos con `budgetPerSecond` 1, un tope de 200 y un jugador con una vida máxima suficiente para no llegar a 0 en
   3.600 ticks
 - **WHEN** se ejecutan 3.600 ticks (60 s)
-- **THEN** todos los enemigos aparecidos antes del tick 1.790 son `bug`
-- **AND** todos los aparecidos después del tick 1.810 son `memory-leak`
+- **THEN** todos los enemigos aparecidos antes del tick 1.790 son `goblin-torch`
+- **AND** todos los aparecidos después del tick 1.810 son `goblin-tnt`
 
 #### Scenario: Un solo tramo
-- **GIVEN** una tabla con un único tramo, `fromSecond` 0 y `types: ["bug"]`, y un jugador con una vida máxima
+- **GIVEN** una tabla con un único tramo, `fromSecond` 0 y `types: ["goblin-torch"]`, y un jugador con una vida máxima
   suficiente para no llegar a 0 en 36.000 ticks
 - **WHEN** se ejecutan 36.000 ticks (10 min)
-- **THEN** todos los enemigos aparecidos son `bug`
+- **THEN** todos los enemigos aparecidos son `goblin-torch`
 
 #### Scenario: Tramo sin presupuesto
 - **GIVEN** un único tramo con `budgetPerSecond` 0
@@ -165,31 +180,31 @@ antes de gastarse: nunca vale más que `maxBudget`. Funciona así:
 - El director no actúa en el tick en que la partida termina ni en los siguientes (ver `run-state`).
 
 #### Scenario: Ritmo constante con coste 1
-- **GIVEN** un único tramo con `budgetPerSecond` 1 y `types: ["bug"]`, `bug` con coste 1, `maxBudget` 3 y un
-  tope de 200
+- **GIVEN** un único tramo con `budgetPerSecond` 1 y `types: ["goblin-torch"]`, `goblin-torch` con coste 1, `maxBudget` 3
+  y un tope de 200
 - **WHEN** se ejecutan 615 ticks (10,25 s)
 - **THEN** hay exactamente 10 enemigos vivos
 
 #### Scenario: El coste retrasa la aparición
-- **GIVEN** un único tramo con `budgetPerSecond` 1 y `types: ["memory-leak"]`, `memory-leak` con coste 3 y
-  `maxBudget` 3
+- **GIVEN** un único tramo con `budgetPerSecond` 1 y `types: ["goblin-tnt"]`, `goblin-tnt` con coste 3
+  y `maxBudget` 3
 - **WHEN** se ejecutan 175 ticks y después 10 ticks más
 - **THEN** tras 175 ticks hay 0 enemigos y tras 185 ticks hay exactamente 1
 
 #### Scenario: Varios spawns en un tick
-- **GIVEN** un único tramo con `budgetPerSecond` 630 y `types: ["bug"]`, `bug` con coste 1, `maxBudget` 20 y un
-  tope de 200
+- **GIVEN** un único tramo con `budgetPerSecond` 630 y `types: ["goblin-torch"]`, `goblin-torch` con coste 1,
+  `maxBudget` 20 y un tope de 200
 - **WHEN** se ejecuta 1 tick
 - **THEN** hay exactamente 10 enemigos vivos
 
 #### Scenario: El máximo acota los spawns de un tick
-- **GIVEN** un único tramo con `budgetPerSecond` 630 y `types: ["bug"]`, `bug` con coste 1, `maxBudget` 5 y un
-  tope de 200
+- **GIVEN** un único tramo con `budgetPerSecond` 630 y `types: ["goblin-torch"]`, `goblin-torch` con coste 1,
+  `maxBudget` 5 y un tope de 200
 - **WHEN** se ejecuta 1 tick
 - **THEN** hay exactamente 5 enemigos vivos
 
 #### Scenario: Mezcla de tipos
-- **GIVEN** un único tramo con `types: ["bug", "memory-leak", "merge-conflict"]`, `budgetPerSecond` 2,
+- **GIVEN** un único tramo con `types: ["goblin-torch", "goblin-tnt", "goblin-barrel"]`, `budgetPerSecond` 2,
   semilla 1, un tope de 200 y un jugador con una vida máxima suficiente para no llegar a 0 en 36.000 ticks
 - **WHEN** se ejecutan 36.000 ticks
 - **THEN** aparece ≥ 1 enemigo de cada uno de los 3 tipos
@@ -207,8 +222,8 @@ presupuesto acumulado con las reglas de siempre, sin superar nunca `maxAlive`, a
 alcance para más enemigos.
 
 #### Scenario: Se alcanza el tope
-- **GIVEN** un único tramo con `budgetPerSecond` 1.000 y `types: ["bug"]`, `bug` con coste 1, `maxBudget` 20 y
-  `maxAlive` 200
+- **GIVEN** un único tramo con `budgetPerSecond` 1.000 y `types: ["goblin-torch"]`, `goblin-torch` con coste 1,
+  `maxBudget` 20 y `maxAlive` 200
 - **WHEN** se ejecutan 13 ticks
 - **THEN** hay exactamente 200 enemigos vivos
 
@@ -228,8 +243,8 @@ alcance para más enemigos.
 - **THEN** hay exactamente 200 enemigos vivos (aparece 1, no 20)
 
 #### Scenario: Presupuesto en el máximo al abrirse varios huecos
-- **GIVEN** `maxAlive` 5, `maxBudget` 3, un único tramo con `budgetPerSecond` 60 y `types: ["bug"]`, `bug` con
-  coste 1, y una partida con 5 enemigos vivos que lleva 600 ticks en el tope
+- **GIVEN** `maxAlive` 5, `maxBudget` 3, un único tramo con `budgetPerSecond` 60 y `types: ["goblin-torch"]`,
+  `goblin-torch` con coste 1, y una partida con 5 enemigos vivos que lleva 600 ticks en el tope
 - **WHEN** los 5 enemigos quedan dados de baja y se ejecuta 1 tick, y después 1 tick más
 - **THEN** tras el primer tick hay exactamente 3 enemigos vivos (presupuesto guardado 3, no 600 ni 1)
 - **AND** tras el segundo tick hay exactamente 4
@@ -307,14 +322,14 @@ a los enemigos son las armas (ver `auto-weapons`): cada impacto resta el `damage
 de contenido más mejoras, ver `upgrades`). El contacto con el jugador no les quita vida.
 
 #### Scenario: Vida inicial del tipo
-- **GIVEN** un tipo `bug` con `health` 5
-- **WHEN** aparece un enemigo `bug`
+- **GIVEN** un tipo `goblin-torch` con `health` 5
+- **WHEN** aparece un enemigo `goblin-torch`
 - **THEN** su vida vale 5
 
 #### Scenario: Vida por defecto de cada tipo
 - **GIVEN** el contenido por defecto
 - **WHEN** aparece un enemigo de cada tipo
-- **THEN** `bug` tiene vida 10, `merge-conflict` 20 y `memory-leak` 45
+- **THEN** `goblin-torch` tiene vida 10, `goblin-barrel` 20 y `goblin-tnt` 45
 
 #### Scenario: Daño que no mata
 - **GIVEN** un enemigo vivo con vida inicial 5 y un arma con `damage` 3
@@ -340,7 +355,7 @@ de contenido más mejoras, ver `upgrades`). El contacto con el jugador no les qu
   sigue en vuelo
 
 #### Scenario: Identificador no reutilizado
-- **GIVEN** `maxAlive` 1, un único tramo con `budgetPerSecond` 60, `bug` con coste 1 y un enemigo vivo con
+- **GIVEN** `maxAlive` 1, un único tramo con `budgetPerSecond` 60, `goblin-torch` con coste 1 y un enemigo vivo con
   identificador X
 - **WHEN** X queda dado de baja y se ejecutan 60 ticks
 - **THEN** hay exactamente 1 enemigo vivo y su identificador es distinto de X
@@ -351,7 +366,7 @@ de contenido más mejoras, ver `upgrades`). El contacto con el jugador no les qu
 - **THEN** el enemigo sigue vivo con vida 5 y no hay ninguna gema
 
 #### Scenario: Daño efectivo con mejoras
-- **GIVEN** un bug con vida 10 y la mejora `strict-rules` en nivel 1 (Linter con `damage` 9)
+- **GIVEN** un `goblin-torch` con vida 10 y la mejora `strict-rules` en nivel 1 (Linter con `damage` 9)
 - **WHEN** recibe 1 impacto de un proyectil del Linter creado tras la elección
 - **THEN** sigue vivo con vida 1
 
@@ -359,3 +374,4 @@ de contenido más mejoras, ver `upgrades`). El contacto con el jugador no les qu
 <!-- historial: 0003-collisions-and-damage (2026-11-19) -->
 <!-- historial: 0004-auto-weapons (2026-11-19) -->
 <!-- historial: 0005-xp-and-level-up (2026-11-19) -->
+<!-- historial: 0012-sprite-rendering (2026-11-22) -->

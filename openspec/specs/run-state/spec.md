@@ -87,10 +87,10 @@ suelo y esas bajas cuentan en el contador de bajas.
 - **AND** el nivel sigue en 1 con XP 4 y la gema sigue en el snapshot
 
 #### Scenario: Una baja en el tick de la muerte deja su gema
-- **GIVEN** un jugador con vida 10, no invulnerable, un enemigo con damage 10 en contacto en el tick n y un bug con
-  vida 4 a 300 px que muere por el Linter en el tick n
+- **GIVEN** un jugador con vida 10, no invulnerable, un enemigo con damage 10 en contacto en el tick n y un
+  `goblin-torch` con vida 4 a 300 px que muere por el Linter en el tick n
 - **WHEN** se ejecuta el tick n
-- **THEN** el estado es terminada y el snapshot del tick n contiene la gema de ese bug y cuenta su baja
+- **THEN** el estado es terminada y el snapshot del tick n contiene la gema de ese `goblin-torch` y cuenta su baja
 
 #### Scenario: Muerte en el tick de la duración objetivo
 - **GIVEN** una partida con duración objetivo de 36.000 ticks, el jugador a vida 10, no invulnerable, y un enemigo
@@ -177,3 +177,4 @@ siguiente tick ejecutado continúa exactamente donde se quedó la partida.
 <!-- historial: 0004-auto-weapons (2026-11-19) -->
 <!-- historial: 0005-xp-and-level-up (2026-11-19) -->
 <!-- historial: 0006-run-lifecycle-hud (2026-11-20) -->
+<!-- historial: 0012-sprite-rendering (2026-11-22) -->

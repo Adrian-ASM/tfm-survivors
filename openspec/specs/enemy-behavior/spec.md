@@ -60,10 +60,10 @@ El sistema SHALL mover cada enemigo a la velocidad de su tipo, definida en conte
 distinta velocidad recorren distancias distintas en el mismo número de ticks.
 
 #### Scenario: Dos tipos, dos velocidades
-- **GIVEN** un jugador quieto en (900, 270), un `bug` con velocidad 90 en (100, 100) y un `memory-leak` con
-  velocidad 45 en (100, 440)
+- **GIVEN** un jugador quieto en (900, 270), un `goblin-torch` con velocidad 90 en (100, 100) y un `goblin-tnt`
+  con velocidad 45 en (100, 440)
 - **WHEN** se ejecutan 60 ticks
-- **THEN** el `bug` ha recorrido 90 unidades y el `memory-leak` 45, ambos con un error ≤ 0,001
+- **THEN** el `goblin-torch` ha recorrido 90 unidades y el `goblin-tnt` 45, ambos con un error ≤ 0,001
 
 ### Requirement: Enemigos dentro de la arena
 El sistema SHALL mantener el círculo de cada enemigo entero dentro de la arena en todo momento: su centro MUST
@@ -114,16 +114,17 @@ El sistema SHALL mantener la persecución de un enemigo vivo tras recibir daño 
 dirección hacia el jugador MUST ser las mismas que si no hubiera recibido daño. Recibir daño no desplaza al enemigo.
 
 #### Scenario: Misma trayectoria con y sin daño
-- **GIVEN** dos partidas idénticas con un jugador quieto en (480, 270) y un bug de vida 10 en (380, 270), en las que
-  en una el bug recibe un impacto del Linter en el tick n (vida 4) y en la otra no recibe daño
+- **GIVEN** dos partidas idénticas con un jugador quieto en (480, 270) y un `goblin-torch` de vida 10 en (380, 270), en
+  las que en una el `goblin-torch` recibe un impacto del Linter en el tick n (vida 4) y en la otra no recibe daño
 - **WHEN** se ejecutan los ticks n a n + 10
-- **THEN** la posición del bug es la misma en ambas partidas en cada uno de esos ticks (error ≤ 0,001)
+- **THEN** la posición del `goblin-torch` es la misma en ambas partidas en cada uno de esos ticks (error ≤ 0,001)
 
 #### Scenario: El impacto no empuja
-- **GIVEN** un bug en la posición P al terminar la persecución del tick n
+- **GIVEN** un `goblin-torch` en la posición P al terminar la persecución del tick n
 - **WHEN** recibe un impacto del Linter o un pulso de Tests en el paso de armas del tick n
 - **THEN** en el snapshot del tick n sigue exactamente en P
 
 <!-- historial: 0002-enemy-spawning (2026-11-19) -->
 <!-- historial: 0003-collisions-and-damage (2026-11-19) -->
 <!-- historial: 0004-auto-weapons (2026-11-19) -->
+<!-- historial: 0012-sprite-rendering (2026-11-22) -->
