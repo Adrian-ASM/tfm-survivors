@@ -54,7 +54,12 @@ function linterKillTick(): number {
 
 describe('Contador de bajas (spec run-outcome)', () => {
   it('Scenario: Varias bajas en un tick (2 bajas + 3 bugs en el pulso ⇒ 5)', () => {
-    const bugs = [0, 1, 2].map((i) => ({ type: 'goblin-torch', x: 540, y: 250 + 20 * i, health: 4 }));
+    const bugs = [0, 1, 2].map((i) => ({
+      type: 'goblin-torch',
+      x: 540,
+      y: 250 + 20 * i,
+      health: 4,
+    }));
     const run = at(killsConfig([TESTS]), { kills: 2, enemies: bugs });
 
     const [first] = ticks(run, 1);
@@ -65,7 +70,9 @@ describe('Contador de bajas (spec run-outcome)', () => {
 
   it('Scenario: Una baja cuenta una sola vez (2 impactos del Linter de damage 6 sobre vida 4)', () => {
     const linters = [aLinter({ id: 'a' }), aLinter({ id: 'b' })];
-    const run = at(killsConfig(linters), { enemies: [{ type: 'goblin-torch', x: 520, y: 270, health: 4 }] });
+    const run = at(killsConfig(linters), {
+      enemies: [{ type: 'goblin-torch', x: 520, y: 270, health: 4 }],
+    });
 
     const snaps = ticks(run, 10);
 

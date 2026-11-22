@@ -73,7 +73,10 @@ describe('Oferta de mejoras', () => {
 
   it('Scenario: El director actúa antes de abrir la oferta (bug nuevo y oferta en el tick n)', () => {
     const base = aDefaultConfig();
-    const config = { ...base, waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 60)] }).waves };
+    const config = {
+      ...base,
+      waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 60)] }).waves,
+    };
     const [first] = ticks(startRun(config, levelUp(4, 1)), 1);
     expect(first?.enemies).toHaveLength(1);
     expect(first?.status).toBe('choosing');

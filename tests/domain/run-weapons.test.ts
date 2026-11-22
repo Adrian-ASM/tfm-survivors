@@ -100,7 +100,9 @@ describe('Run · paso de armas en el tick', () => {
       aContactConfig({ segments: [aSegment(['goblin-torch'], 60)], maxAlive: 1, types: [bugType] }),
       weaponsOf([LINTER]),
     );
-    const run = startRun(config, { enemies: [{ type: 'goblin-torch', x: PX + 100, y: PY, health: 4 }] });
+    const run = startRun(config, {
+      enemies: [{ type: 'goblin-torch', x: PX + 100, y: PY, health: 4 }],
+    });
     let snap = run.snapshot();
     while (snap.enemies[0]?.id === 0 && snap.tick < 60) snap = ticks(run, 1)[0] ?? snap;
     expect(snap.tick).toBeLessThan(60);

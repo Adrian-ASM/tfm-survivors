@@ -80,7 +80,11 @@ describe('EnemyLayer', () => {
 
   it('oculta los huecos sobrantes cuando hay menos enemigos', () => {
     const { l, created } = layer(3);
-    l.sync([enemy(0, 'goblin-torch', 1, 1), enemy(1, 'goblin-torch', 2, 2), enemy(2, 'goblin-torch', 3, 3)]);
+    l.sync([
+      enemy(0, 'goblin-torch', 1, 1),
+      enemy(1, 'goblin-torch', 2, 2),
+      enemy(2, 'goblin-torch', 3, 3),
+    ]);
     l.sync([enemy(0, 'goblin-torch', 1, 1)]);
     expect(created.map((c) => c.visible)).toEqual([true, false, false]);
   });
@@ -186,7 +190,10 @@ describe('EnemyLayer · destello de daño', () => {
   it('Scenario: Indicación visual de daño (destello mientras el enemigo lo indica)', () => {
     const { l, created } = layer(2);
     l.sync([hurt(enemy(0, 'goblin-torch', 1, 1)), enemy(1, 'goblin-torch', 2, 2)]);
-    expect(created.slice(0, 2).map((c) => c.color)).toEqual([FLASH_COLOR, enemyPalette('goblin-torch')]);
+    expect(created.slice(0, 2).map((c) => c.color)).toEqual([
+      FLASH_COLOR,
+      enemyPalette('goblin-torch'),
+    ]);
     l.sync([enemy(0, 'goblin-torch', 1, 1), enemy(1, 'goblin-torch', 2, 2)]);
     expect(created[0]?.color).toBe(enemyPalette('goblin-torch'));
   });

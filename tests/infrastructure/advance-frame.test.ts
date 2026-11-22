@@ -29,7 +29,10 @@ function quiet(): { run: Run; loop: FixedStepLoop; tickRun: TickRun } {
 /** Partida que abre una oferta en el 3.er tick que ejecuta (gema a 36 px con XP 4 de 5). */
 function offeringAtThird(): { run: Run; loop: FixedStepLoop; tickRun: TickRun } {
   const base = aDefaultConfig();
-  const config = { ...base, waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 0)] }).waves };
+  const config = {
+    ...base,
+    waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 0)] }).waves,
+  };
   const run = startRun(config, {
     player: CENTER,
     gems: [{ x: 516, y: 270, value: 1 }],

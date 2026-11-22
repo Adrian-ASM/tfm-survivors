@@ -29,7 +29,9 @@ describe('Contenido de armas validado', () => {
 
   it('Scenario: Daños base distintos y menores que la vida del goblin-torch', () => {
     const [linter, tests] = weapons?.weapons ?? [];
-    const torch = loaded.ok ? loaded.value.enemies.types.find((t) => t.id === 'goblin-torch') : undefined;
+    const torch = loaded.ok
+      ? loaded.value.enemies.types.find((t) => t.id === 'goblin-torch')
+      : undefined;
     expect(linter?.damage).not.toBe(tests?.damage);
     expect(Math.max(linter?.damage ?? 99, tests?.damage ?? 99)).toBeLessThan(torch?.health ?? 0);
   });

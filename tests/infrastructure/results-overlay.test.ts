@@ -104,7 +104,9 @@ describe('ResultsOverlay (spec run-results)', () => {
 /** Partida terminada (derrota con un bug letal en el tick 1, o victoria con 1 s de duración). */
 function endedRun(outcome: 'won' | 'lost'): StartedRun {
   const base = aDefaultConfig();
-  const lethal = base.enemies.types.map((t) => (t.id === 'goblin-torch' ? { ...t, damage: 1e6 } : t));
+  const lethal = base.enemies.types.map((t) =>
+    t.id === 'goblin-torch' ? { ...t, damage: 1e6 } : t,
+  );
   const config: RunConfig =
     outcome === 'won'
       ? { ...base, run: { durationSeconds: 1 } }

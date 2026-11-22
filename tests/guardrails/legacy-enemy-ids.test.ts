@@ -6,7 +6,9 @@ import { describe, expect, it } from 'vitest';
 // `goblin-torch`, `goblin-tnt` y `goblin-barrel`. La prosa con "bug" como "error" no cuenta: solo
 // se buscan los literales entre comillas y los dos ids compuestos.
 const ROOT = join(import.meta.dirname, '..', '..');
-const SELF = relative(ROOT, import.meta.filename).split(sep).join('/');
+const SELF = relative(ROOT, import.meta.filename)
+  .split(sep)
+  .join('/');
 const FOLDERS = ['src', 'tests', 'content'];
 const LEGACY = [/'bug'/, /"bug"/, /`bug`/, /memory-leak/, /merge-conflict/];
 

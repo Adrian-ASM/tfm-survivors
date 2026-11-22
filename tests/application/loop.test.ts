@@ -142,7 +142,10 @@ describe('TickRun · sin tiempo acumulado durante la elección', () => {
   /** Partida que abre una oferta en el tick 1 (gema a 20 px con XP 4). */
   function offering() {
     const base = aDefaultConfig();
-    const config = { ...base, waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 0)] }).waves };
+    const config = {
+      ...base,
+      waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 0)] }).waves,
+    };
     const run = startRun(config, {
       player: { x: 480, y: 270 },
       gems: [{ x: 500, y: 270, value: 1 }],
@@ -184,7 +187,10 @@ describe('TickRun · sin tiempo acumulado durante la elección', () => {
 describe('TickRun · acumulador', () => {
   it('no acumula tiempo con la partida eligiendo ni terminada, y corta el frame que abre la oferta', () => {
     const base = aDefaultConfig();
-    const config = { ...base, waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 0)] }).waves };
+    const config = {
+      ...base,
+      waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 0)] }).waves,
+    };
     const run = startRun(config, {
       player: { x: 480, y: 270 },
       gems: [{ x: 500, y: 270, value: 1 }],

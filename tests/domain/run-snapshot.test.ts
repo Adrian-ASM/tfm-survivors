@@ -67,7 +67,10 @@ describe('Snapshot no mutable desde fuera (resultado, bajas y duración)', () =>
   it('Scenario: Snapshot no mutable desde fuera (partida en curso y partida terminada)', () => {
     const lethal = { ...aDefaultConfig(), player: { ...aDefaultConfig().player, maxHealth: 1 } };
     const live = startRun(quiet());
-    const ended = startRun(lethal, { player: CENTER, enemies: [{ type: 'goblin-torch', ...CENTER }] });
+    const ended = startRun(lethal, {
+      player: CENTER,
+      enemies: [{ type: 'goblin-torch', ...CENTER }],
+    });
     ticks(ended, 1);
     for (const run of [live, ended]) {
       const snap = run.snapshot();

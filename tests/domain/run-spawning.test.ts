@@ -71,7 +71,10 @@ describe('Run · oleadas por tramos', () => {
   });
 
   it('Un solo tramo', () => {
-    const { births } = simulate(aWavesConfig({ segments: [aSegment(['goblin-torch'], 1)] }), 36_000);
+    const { births } = simulate(
+      aWavesConfig({ segments: [aSegment(['goblin-torch'], 1)] }),
+      36_000,
+    );
     expect(births.length).toBeGreaterThan(0);
     expect(births.every((b) => b.enemy.type === 'goblin-torch')).toBe(true);
   });

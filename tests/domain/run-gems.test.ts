@@ -32,7 +32,9 @@ const run = (c: RunConfig, setup: RunSetup) =>
 
 describe('Suelta de gema por baja', () => {
   it('Scenario: Un bug abatido suelta una gema (en su posición, con radio 5)', () => {
-    const r = run(config([LINTER]), { enemies: [{ type: 'goblin-torch', x: 780, y: 270, health: 4 }] });
+    const r = run(config([LINTER]), {
+      enemies: [{ type: 'goblin-torch', x: 780, y: 270, health: 4 }],
+    });
     const snaps = ticks(r, 60);
     const n = snaps.findIndex((s) => s.enemies.length === 0);
     expect(n).toBeGreaterThan(0);
@@ -67,7 +69,10 @@ describe('Suelta de gema por baja', () => {
   });
 
   it('Scenario: Una baja en el tick de la muerte deja su gema', () => {
-    const types = [still('goblin-torch', 1), aProbeType({ id: 'probe', damage: 10, health: 5, xp: 1 })];
+    const types = [
+      still('goblin-torch', 1),
+      aProbeType({ id: 'probe', damage: 10, health: 5, xp: 1 }),
+    ];
     const c = config([TESTS], { types, maxHealth: 10 });
     const enemies = [
       { type: 'probe', x: 480, y: 270 },
@@ -155,7 +160,10 @@ describe('Paso de gemas en el tick (tras el contacto)', () => {
   });
 
   it('Scenario: Las gemas no consumen azar (10 gemas más, mismo azar tras el tick)', () => {
-    const c = { ...config([]), waves: aContactConfig({ segments: [aSegment(['goblin-torch'], 5)] }).waves };
+    const c = {
+      ...config([]),
+      waves: aContactConfig({ segments: [aSegment(['goblin-torch'], 5)] }).waves,
+    };
     const gems = Array.from({ length: 10 }, (_, i) => ({ x: 20 + i, y: 20, value: 1 }));
     const a = new CountingRandom(new Mulberry32RandomGenerator(9));
     const b = new CountingRandom(new Mulberry32RandomGenerator(9));

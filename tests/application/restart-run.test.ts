@@ -41,7 +41,9 @@ function frames(s: StartedRun, n: number): void {
 /** Contenido por defecto con un bug letal: la partida avanzada muere en su primer tick. */
 const lethal = (): RunConfig => {
   const base = aDefaultConfig();
-  const types = base.enemies.types.map((t) => (t.id === 'goblin-torch' ? { ...t, damage: 1e6 } : t));
+  const types = base.enemies.types.map((t) =>
+    t.id === 'goblin-torch' ? { ...t, damage: 1e6 } : t,
+  );
   return { ...base, enemies: { types } };
 };
 

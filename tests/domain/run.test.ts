@@ -95,7 +95,9 @@ describe('Run · snapshot con enemigos', () => {
     for (let i = 0; i < 615; i++) run.tick(PlayerInput.NONE);
     const { enemies } = run.snapshot();
     expect(enemies).toHaveLength(10);
-    expect(enemies.every((e) => e.type === 'goblin-torch' && e.radius === 10 && e.health === 10)).toBe(true);
+    expect(
+      enemies.every((e) => e.type === 'goblin-torch' && e.radius === 10 && e.health === 10),
+    ).toBe(true);
     expect(new Set(enemies.map((e) => e.id)).size).toBe(10);
     expect(enemies.map((e) => e.id)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
   });

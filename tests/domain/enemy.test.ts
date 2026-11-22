@@ -10,7 +10,14 @@ const ARENA = ((): Arena => {
   return r.value;
 })();
 
-function enemy(speed: number, x: number, y: number, radius = 10, id = 'goblin-torch', health = 10): Enemy {
+function enemy(
+  speed: number,
+  x: number,
+  y: number,
+  radius = 10,
+  id = 'goblin-torch',
+  health = 10,
+): Enemy {
   const type = EnemyType.create(
     { id, speed, radius, cost: 1, damage: 7, health, xp: 1 },
     ARENA,

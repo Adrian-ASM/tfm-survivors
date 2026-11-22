@@ -107,7 +107,9 @@ describe('buildRunRules', () => {
     const badType = {
       ...base,
       enemies: {
-        types: [{ id: 'goblin-torch', speed: 0, radius: 10, cost: 1, damage: 5, health: 10, xp: 1 }],
+        types: [
+          { id: 'goblin-torch', speed: 0, radius: 10, cost: 1, damage: 5, health: 10, xp: 1 },
+        ],
       },
     };
     expect(failure(badType).field).toBe('enemies.types.0.speed');
