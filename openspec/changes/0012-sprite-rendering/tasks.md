@@ -24,7 +24,7 @@
   - Escenarios: deltas de renombrado de AW, EB, ES, SL, XG, UP, RO y RS (sin cambio de comportamiento).
 
 ## 2. Assets y procedencia (repo + guardarraíl)
-- [ ] 2.1 Reglas de la nota en `.claude/hooks/guard-assets.mjs`: `checkAssets({ files, provenance, digest })`
+- [x] 2.1 Reglas de la nota en `.claude/hooks/guard-assets.mjs`: `checkAssets({ files, provenance, digest })`
   pura; esta tarea cubre solo la cabecera y las entradas (pack, autor, `version: "Update 010"`, `license: "CC0"`,
   `confirmedOn`, `path`/`source`/`version` por entrada, `path` repetido). Test `tests/guardrails/assets.test.ts`.
   - Escenarios: AP "Nota incompleta", "Entrada repetida", "Origen del Free Pack".
