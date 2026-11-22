@@ -28,7 +28,7 @@
   pura; esta tarea cubre solo la cabecera y las entradas (pack, autor, `version: "Update 010"`, `license: "CC0"`,
   `confirmedOn`, `path`/`source`/`version` por entrada, `path` repetido). Test `tests/guardrails/assets.test.ts`.
   - Escenarios: AP "Nota incompleta", "Entrada repetida", "Origen del Free Pack".
-- [ ] 2.2 Reglas sobre la lista de ficheros: asset gráfico (9 extensiones, sin mayúsculas) sin entrada en cualquier
+- [x] 2.2 Reglas sobre la lista de ficheros: asset gráfico (9 extensiones, sin mayúsculas) sin entrada en cualquier
   carpeta, entrada sin fichero, prohibidos (`.DS_Store`, `Thumbs.db`, `desktop.ini`, `.aseprite`, comprimidos),
   `Free Pack`/`Free_Pack`/`FreePack` en la ruta, `sha256`/`bytes` distintos (digest inyectado como mapa).
   - Escenarios: AP "PNG sin registrar", "Asset gráfico fuera de la carpeta de assets", "Entrada sin fichero",

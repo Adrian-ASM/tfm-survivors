@@ -16,6 +16,9 @@ const VERSION = HEADER.version;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const SHA256 = /^[0-9a-f]{64}$/;
 const FREE_PACK = /free[ _]?pack/i;
+const GRAPHIC = /\.(png|jpe?g|gif|webp|svg|ico|bmp|aseprite)$/i;
+const FORBIDDEN_EXT = /\.(aseprite|zip|rar|7z|tar|gz)$/i;
+const FORBIDDEN_NAMES = new Set(['.ds_store', 'thumbs.db', 'desktop.ini']);
 const NOTE = `Nota de procedencia (${PROVENANCE_PATH})`;
 
 const isText = (v) => typeof v === 'string' && v.trim() !== '';
@@ -65,20 +68,51 @@ function noteProblems(provenance) {
   });
   return problems;
 }
+/** Reglas de ruta de un fichero versionado: prohibidos y Free Pack. */
+function pathProblems(path) {
+  const problems = [];
+  const name = path.split('/').pop() ?? '';
+  if (FORBIDDEN_NAMES.has(name.toLowerCase()) || FORBIDDEN_EXT.test(name))
+    problems.push(`${path}: fichero prohibido en el repositorio (sistema, edición o comprimido).`);
+  if (FREE_PACK.test(path))
+    problems.push(`${path}: ruta del Tiny Swords Free Pack, que no es CC0.`);
+  return problems;
+}
 
+function digestProblems(entry, digest) {
+  const actual = digest(entry.path);
+  const problems = [];
+  if (actual.sha256 !== entry.sha256)
+    problems.push(`${entry.path}: el sha256 del fichero no coincide con la nota.`);
+  if (actual.bytes !== entry.bytes)
+    problems.push(`${entry.path}: bytes = ${actual.bytes}, la nota dice ${entry.bytes}.`);
+  return problems;
+}
 
 /** Reglas de procedencia. Devuelve las líneas de error ([] si cumple). */
 export function checkAssets({ files, provenance, digest }) {
-  void files;
-  void digest;
-  if (provenance === undefined) return [];
-  return noteProblems(provenance);
+  const problems = files.flatMap(pathProblems);
+  const entries = Array.isArray(provenance?.files) ? provenance.files : [];
+  const registered = new Set(entries.map((e) => e?.path).filter(isText));
+  const versioned = new Set(files);
+  for (const path of files) {
+    if (GRAPHIC.test(path) && !FORBIDDEN_EXT.test(path) && !registered.has(path))
+      problems.push(`${path}: asset gráfico sin entrada en ${PROVENANCE_PATH}.`);
+  }
+  if (provenance === undefined) return problems;
+  problems.push(...noteProblems(provenance));
+  for (const entry of entries) {
+    if (!isText(entry?.path)) continue;
+    if (!versioned.has(entry.path))
+      problems.push(`${entry.path}: la nota lo registra pero no está versionado.`);
+    else problems.push(...digestProblems(entry, digest));
+  }
+  return problems;
 }
 
 /** Modo hook de Claude Code: solo las reglas de ruta (las copias por shell no pasan por aquí). */
 export function check(toolInput = {}, projectDir = undefined) {
-  const path = relativePath(toolInput.file_path, projectDir);
-  return FREE_PACK.test(path) ? [`${path}: ruta del Tiny Swords Free Pack, que no es CC0.`] : [];
+  return pathProblems(relativePath(toolInput.file_path, projectDir));
 }
 
 await runAsHook(import.meta.url, check);

@@ -148,3 +148,95 @@ describe('guard-assets · nota de procedencia (spec asset-provenance)', () => {
     expect(out).toContain('Free Pack');
   });
 });
+
+describe('guard-assets · lista de ficheros versionados (spec asset-provenance)', () => {
+  it.each([
+    'public/assets/extra/Goblin_Red.png',
+    'docs/captura.jpg',
+    'public/assets/Tree.PNG',
+    'src/icon.svg',
+    'favicon.ico',
+    'a/b.webp',
+    'c.gif',
+    'd.jpeg',
+    'e.bmp',
+  ])('Scenario: PNG sin registrar / fuera de la carpeta / mayúsculas (%s)', (extra) => {
+    const out = run(aNote(), [...FILES, extra]);
+    expect(out).toContain(extra);
+  });
+
+  it('Scenario: Entrada sin fichero', () => {
+    const out = run(
+      aNote(),
+      FILES.filter((f) => f !== ARROW),
+    );
+    expect(out).toContain(ARROW);
+  });
+
+  it.each([
+    'public/assets/.DS_Store',
+    'assets/Thumbs.db',
+    'x/desktop.ini',
+    'art/Archer.aseprite',
+    'tiny-swords.zip',
+    'a.rar',
+    'b.7z',
+    'c.tar',
+    'd.tar.gz',
+  ])('Scenario: Ficheros prohibidos (%s)', (extra) => {
+    expect(run(aNote(), [...FILES, extra])).toContain(extra);
+  });
+
+  it('Scenario: Ruta del Free Pack en el repositorio (con entrada en la nota)', () => {
+    const free = 'public/assets/Tiny Swords (Free Pack)/Warrior_Blue.png';
+    const note = aNote();
+    note.files = [
+      ...(note.files ?? []),
+      {
+        path: free,
+        source: 'Tiny Swords (Update 010)/Warrior_Blue.png',
+        version: 'Update 010',
+        sha256: 'f'.repeat(64),
+        bytes: 1,
+      },
+    ];
+    const out = run(note, [...FILES, free]);
+    expect(out).toContain(free);
+    expect(out).toContain('Free Pack');
+  });
+
+  it.each(['free_pack/x.txt', 'FreePack.md', 'docs/FREE PACK/a.md'])(
+    'variantes de Free Pack sin distinguir mayúsculas (%s)',
+    (extra) => {
+      expect(run(aNote(), [...FILES, extra])).toContain(extra);
+    },
+  );
+
+  it('sha256 distinto del fichero', () => {
+    const note = aNote();
+    const first = note.files?.[0] ?? {};
+    first.sha256 = 'c'.repeat(64);
+    const out = run(note);
+    expect(out).toContain(ARCHER);
+    expect(out).toContain('sha256');
+  });
+
+  it('bytes distintos del fichero', () => {
+    const note = aNote();
+    const second = note.files?.[1] ?? {};
+    second.bytes = 21;
+    const out = run(note);
+    expect(out).toContain(ARROW);
+    expect(out).toContain('bytes');
+  });
+
+  it('assets sin nota de procedencia', () => {
+    const out = run(undefined);
+    expect(out).toContain(ARCHER);
+    expect(out).toContain(PROVENANCE_PATH);
+  });
+
+  it('un repositorio sin assets ni nota pasa', () => {
+    expect(run(undefined, ['README.md', 'src/main.ts'])).toBe('');
+  });
+});
