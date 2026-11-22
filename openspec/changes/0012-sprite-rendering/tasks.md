@@ -71,7 +71,7 @@
 - [x] 4.3 `art/looks.ts`: `resolveLooks(appearance, frames)`; hoja ausente o índice fuera de rango → reserva
   `placeholder:disc` con `scale = 2r / 64` por elemento, origen (0,5; 0,5), sin volteo ni rotación.
   - Escenarios: SR "Frame fuera de la hoja", "Tamaño del aspecto de reserva".
-- [ ] 4.4 `SlotPool`: `hide(slot, cleared)` y liberación en el orden del snapshot anterior (array preasignado).
+- [x] 4.4 `SlotPool`: `hide(slot, cleared)` y liberación en el orden del snapshot anterior (array preasignado).
   Test en `tests/infrastructure/slot-pool.test.ts` (o el de capas existente).
   - Escenarios: SR "Tope de cadáveres" (orden e1..e7, base), SL "Bajas en medio de la lista".
 - [ ] 4.5 `SpriteLike.ts` (sustituye a `CircleSprite`) + `SpriteKit` con `TintModes` inyectados + `FakeSprite` en
