@@ -68,7 +68,7 @@
 - [x] 4.2 `Motion` en `animation.ts`: Δ con umbral 0,001, orientación con `facing`, solo se actualiza con tick nuevo,
   `reset()` a `idle` sin voltear.
   - Escenarios: SR "Umbral de movimiento", "Jugador que gira", "Dibujo que mira a la izquierda", "Frames sin tick".
-- [ ] 4.3 `art/looks.ts`: `resolveLooks(appearance, frames)`; hoja ausente o índice fuera de rango → reserva
+- [x] 4.3 `art/looks.ts`: `resolveLooks(appearance, frames)`; hoja ausente o índice fuera de rango → reserva
   `placeholder:disc` con `scale = 2r / 64` por elemento, origen (0,5; 0,5), sin volteo ni rotación.
   - Escenarios: SR "Frame fuera de la hoja", "Tamaño del aspecto de reserva".
 - [ ] 4.4 `SlotPool`: `hide(slot, cleared)` y liberación en el orden del snapshot anterior (array preasignado).
