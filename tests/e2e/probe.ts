@@ -235,6 +235,70 @@ export const stopSpriteSampler = (page: Page): Promise<SpriteSample> =>
     return state.result;
   });
 
+/** Lo que la sonda tenía en el primer frame pintado de una partida nueva. */
+export interface FirstFrameView {
+  runs: number;
+  speed: number | null;
+  snapshot: SnapshotView | null;
+  results: ResultsViewData | null;
+  sprites: SpritesView | null;
+}
+
+interface FirstFrameWindow {
+  __firstFrame?: { stop: boolean; frame: FirstFrameView | null };
+}
+
+/**
+ * Vigila con `requestAnimationFrame` la siguiente partida creada (`runs` sube) y guarda la sonda
+ * del primer frame en que aparece. La sonda se escribe en `onRender` (snapshot, resultados y
+ * sprites en la misma llamada, design D7): corra este callback antes o después del de Phaser en
+ * el frame, lo primero que ve con `runs` mayor es el primer render de la partida nueva. Lo guarda
+ * aunque la prueba lea mucho después: el
+ * resultado no depende de cuándo llega la lectura (en CI, tras R podían pasar > 100 ticks y la
+ * partida nueva ya tenía su primera baja). Llamar antes de pulsar R; leer con `firstFrameOfNextRun`.
+ */
+export async function watchNextRun(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const w = window as unknown as Probe & FirstFrameWindow;
+    const before = w.__sprint?.runs ?? 0;
+    const state: { stop: boolean; frame: FirstFrameView | null } = { stop: false, frame: null };
+    w.__firstFrame = state;
+    const tick = () => {
+      if (state.stop) return;
+      const p = w.__sprint;
+      if (p && (p.runs ?? 0) > before && p.snapshot) {
+        // Copia profunda: la sonda se reescribe en cada frame.
+        state.frame = JSON.parse(
+          JSON.stringify({
+            runs: p.runs ?? 0,
+            speed: p.speed ?? null,
+            snapshot: p.snapshot,
+            results: p.results,
+            sprites: p.sprites ?? null,
+          }),
+        ) as FirstFrameView;
+        return;
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+}
+
+/** Espera a que `watchNextRun` capture el primer frame de la partida nueva y lo devuelve. */
+export async function firstFrameOfNextRun(page: Page): Promise<FirstFrameView> {
+  const read = () =>
+    page.evaluate(() => (window as unknown as FirstFrameWindow).__firstFrame?.frame ?? null);
+  await expect.poll(read).not.toBeNull();
+  const frame = await read();
+  if (!frame) throw new Error('Sin primer frame de la partida nueva');
+  await page.evaluate(() => {
+    const state = (window as unknown as FirstFrameWindow).__firstFrame;
+    if (state) state.stop = true;
+  });
+  return frame;
+}
+
 /**
  * Da el foco al canvas para que el teclado llegue al juego, con un clic en una esquina (lejos de
  * las cartas del overlay).
