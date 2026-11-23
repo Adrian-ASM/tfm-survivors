@@ -18,7 +18,7 @@
     mover el balance hasta 2.4. El literal vive solo en `content/`, nunca en `tests/`.
   - Escenarios: "Arena mayor que el anillo" (arena 4.000 × 4.000 y `ringRadius` 1.500 explícitos), "El presupuesto
     no se pierde al aplazar" (sigue en verde).
-- [ ] 1.2 La vista sale del núcleo (design D2, D3).
+- [x] 1.2 La vista sale del núcleo (design D2, D3).
   - Rojo: `tests/infrastructure/content.test.ts`: con el contenido por defecto, `parseRunConfig` da
     `arena` = `{ width, height }` sin `view` y `waves.spawn` sin tamaño de vista; `buildRunRules` no expone `view`.
   - Código: borrar `src/domain/arena/View.ts` y `tests/domain/view.test.ts`; `RunRules` sin `view`; `RunConfig.arena`;

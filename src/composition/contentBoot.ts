@@ -2,19 +2,25 @@ import type { RunConfig } from '../domain/run/RunConfig';
 import { err, invalidConfig, ok, type DomainError, type Result } from '../domain/shared/Result';
 import type { Appearance } from '../infrastructure/content/appearanceSchema';
 import { checkTileScales, parseAppearance } from '../infrastructure/content/loadAppearance';
-import { parseRunConfig } from '../infrastructure/content/loadRunConfig';
+import {
+  parseContent,
+  type RawContentFiles,
+  type ViewSize,
+} from '../infrastructure/content/loadRunConfig';
 
 export const APPEARANCE_MISSING = 'Falta el aspecto de este tipo de enemigo.';
 export const APPEARANCE_UNKNOWN = 'Aspecto de un tipo de enemigo que no existe en enemies.json.';
 
 /** Contenido crudo del arranque: el de juego (`content/*.json`) y los datos de aspecto. */
 export interface RawBoot {
-  readonly content: Parameters<typeof parseRunConfig>[0];
+  readonly content: RawContentFiles;
   readonly appearance: unknown;
 }
 
 export interface BootedContent {
   readonly config: RunConfig;
+  /** Tope de vista del lienzo (presentación): no llega al núcleo. */
+  readonly maxView: ViewSize;
   readonly appearance: Appearance;
 }
 
@@ -44,25 +50,26 @@ export function bootContent(
   report: (error: DomainError) => void,
   registered: readonly string[],
 ): BootedContent | null {
-  const config = parseRunConfig(raw.content);
-  if (!config.ok) {
-    report(config.error);
+  const content = parseContent(raw.content);
+  if (!content.ok) {
+    report(content.error);
     return null;
   }
+  const { config, maxView } = content.value;
   const appearance = parseAppearance(raw.appearance, registered);
   if (!appearance.ok) {
     report(appearance.error);
     return null;
   }
-  const refs = checkAppearanceRefs(appearance.value, config.value);
+  const refs = checkAppearanceRefs(appearance.value, config);
   if (!refs.ok) {
     report(refs.error);
     return null;
   }
-  const scales = checkTileScales(appearance.value, config.value.map.cellSize);
+  const scales = checkTileScales(appearance.value, config.map.cellSize);
   if (!scales.ok) {
     report(scales.error);
     return null;
   }
-  return { config: config.value, appearance: appearance.value };
+  return { config, maxView, appearance: appearance.value };
 }

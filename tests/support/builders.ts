@@ -189,7 +189,6 @@ export const DEFAULT_PICKUP_RADIUS = 128;
 export const SCENARIO_ARENA: RunConfig['arena'] = {
   width: 960,
   height: 540,
-  view: { width: 960, height: 540 },
 };
 
 /**
@@ -199,12 +198,8 @@ export const SCENARIO_ARENA: RunConfig['arena'] = {
  */
 export const DEFAULT_MAP: RunConfig['map'] = structuredClone(mapJson);
 
-/** Mundo y vista del contenido por defecto, leídos de content/arena.json (una sola fuente). */
-const CONTENT_ARENA: RunConfig['arena'] = {
-  width: arenaJson.width,
-  height: arenaJson.height,
-  view: { width: arenaJson.view.width, height: arenaJson.view.height },
-};
+/** Mundo del contenido por defecto, leído de content/arena.json (una sola fuente). */
+const CONTENT_ARENA: RunConfig['arena'] = { width: arenaJson.width, height: arenaJson.height };
 
 /**
  * Contenido de partida de la spec (arena de escenario 960 × 540, radio 16, velocidad 200 px/s, vida 100,
@@ -374,6 +369,9 @@ export interface RawContent {
 
 /** Copia nueva del contenido por defecto en forma de ficheros (cada llamada es independiente). */
 export const rawContent = (): RawContent =>
-  structuredClone(aDefaultConfig()) as unknown as RawContent;
+  ({
+    ...structuredClone(aDefaultConfig()),
+    arena: structuredClone(arenaJson),
+  }) as unknown as RawContent;
 
 export const TICK_MS = 1000 / 60;

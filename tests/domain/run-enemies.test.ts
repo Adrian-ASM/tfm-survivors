@@ -64,7 +64,7 @@ describe('Run · persecución', () => {
     });
     const config: RunConfig = {
       ...base,
-      arena: { width: 4000, height: 4000, view: { width: 960, height: 540 } },
+      arena: { width: 4000, height: 4000 },
     };
     // StubRandom(0): tipo 0 del tramo y ángulo 0 → P = jugador + (radio del anillo, 0).
     const r = Run.start(config, new StubRandom(0));

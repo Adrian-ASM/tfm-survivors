@@ -17,7 +17,7 @@ const immortal = (config: RunConfig): RunConfig => ({
 
 const bigWorld = (config: RunConfig): RunConfig => ({
   ...config,
-  arena: { width: 4000, height: 4000, view: config.arena.view },
+  arena: { width: 4000, height: 4000 },
 });
 
 /** ¿Algún enemigo a ≤ r_jugador + r_enemigo del jugador? */

@@ -48,7 +48,8 @@ const RunConfigSchema = z
     }
   });
 
-export function parseRunConfig(raw: {
+/** Contenido crudo de los ficheros de content/, sin validar. */
+export interface RawContentFiles {
   player: unknown;
   arena: unknown;
   enemies: unknown;
@@ -58,14 +59,40 @@ export function parseRunConfig(raw: {
   upgrades: unknown;
   run: unknown;
   map: unknown;
-}): Result<RunConfig, DomainError> {
+}
+
+/** Tamaño en píxeles CSS (presentación): nunca llega al núcleo. */
+export interface ViewSize {
+  readonly width: number;
+  readonly height: number;
+}
+
+/**
+ * Contenido validado, separado por destino (ADR-0015): `config` es lo único que recibe el núcleo
+ * (el mundo, sin ningún tamaño de vista); `maxView` es solo para la presentación.
+ */
+export interface ParsedContent {
+  readonly config: RunConfig;
+  readonly maxView: ViewSize;
+}
+
+export function parseContent(raw: RawContentFiles): Result<ParsedContent, DomainError> {
   const parsed = RunConfigSchema.safeParse(raw);
-  if (parsed.success) return ok(parsed.data);
+  if (parsed.success) {
+    const { view, ...world } = parsed.data.arena;
+    return ok({ config: { ...parsed.data, arena: world }, maxView: view });
+  }
   const issue = parsed.error.issues[0];
   const path = (issue?.path ?? []).map(String);
   // Un campo desconocido se nombra a sí mismo (spec procedural-map: "nombra `lakes`").
   if (issue?.code === 'unrecognized_keys' && issue.keys[0] !== undefined) path.push(issue.keys[0]);
   return err(invalidConfig(path.join('.'), issue?.message ?? 'Contenido inválido'));
+}
+
+/** Configuración de partida para el núcleo (sin el tope de vista). */
+export function parseRunConfig(raw: RawContentFiles): Result<RunConfig, DomainError> {
+  const parsed = parseContent(raw);
+  return parsed.ok ? ok(parsed.value.config) : parsed;
 }
 
 /** Contenido versionado en content/*.json, empaquetado por Vite. */
@@ -74,7 +101,7 @@ export function loadRunConfig(): Result<RunConfig, DomainError> {
 }
 
 /** Contenido crudo del repositorio, sin validar (lo valida `parseRunConfig`). */
-export function repositoryContent(): Parameters<typeof parseRunConfig>[0] {
+export function repositoryContent(): RawContentFiles {
   return {
     player: playerJson,
     arena: arenaJson,

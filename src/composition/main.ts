@@ -229,8 +229,8 @@ function bootstrap(): void {
     e2e,
   });
 
-  // El canvas tiene el tamaño de la vista (unidades de mundo): una sola fuente para lo que se ve.
-  const { view } = config.value.arena;
+  // El canvas tiene el tamaño del tope de vista (unidades de mundo): fuera del núcleo (0017).
+  const view = booted.maxView;
   const phaserGame = new Phaser.Game({
     type: Phaser.AUTO,
     parent: root,

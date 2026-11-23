@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { VIEW_SIZE_MUST_BE_POSITIVE } from '../../domain/arena/View';
 import { RUN_DURATION_MUST_BE_INTEGER } from '../../domain/run/RunDuration';
 import {
   BRIDGES_OUT_OF_RANGE,
@@ -88,6 +87,7 @@ export const PlayerSchema = z.strictObject({
   pickupRadius: z.number().positive({ error: PICKUP_RADIUS_MUST_BE_POSITIVE }),
 });
 
+export const VIEW_SIZE_MUST_BE_POSITIVE = 'El tamaño de la vista debe ser positivo.';
 export const WORLD_NARROWER_THAN_VIEW = 'El ancho del mundo debe ser al menos el de la vista.';
 export const WORLD_LOWER_THAN_VIEW = 'El alto del mundo debe ser al menos el de la vista.';
 

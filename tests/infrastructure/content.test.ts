@@ -45,7 +45,7 @@ function failure(raw: RawContent): { field: string; message: string } {
 /** Contenido crudo con la arena explícita de escenario 960 × 540 (casos de radio de las specs). */
 function inScenarioArena(): RawContent {
   const raw = rawContent();
-  raw.arena = structuredClone(SCENARIO_ARENA);
+  raw.arena = { ...structuredClone(SCENARIO_ARENA), view: { width: 960, height: 540 } };
   return raw;
 }
 
@@ -478,9 +478,20 @@ describe('Contenido por defecto del repositorio', () => {
     }
   });
 
-  // Spec world-camera (0013): el mundo y la vista son medidas distintas del contenido.
-  it('Scenario: Contenido por defecto (mundo 1.920 × 1.080 y vista 960 × 540)', () => {
-    expect(config?.arena).toEqual({ width: 1920, height: 1080, view: { width: 960, height: 540 } });
+  // Spec world-camera (0017): el núcleo recibe el mundo, pero no el tope de vista ni la ventana.
+  it('Scenario: Contenido por defecto (el núcleo recibe el mundo sin ningún tamaño de vista)', () => {
+    expect(config?.arena).toEqual({ width: 1920, height: 1080 });
+  });
+
+  // Spec enemy-spawning (0017): "Radio del anillo por defecto", sin tamaño de vista ni de ventana.
+  it('Scenario: Radio del anillo por defecto (spawn sin tamaño de vista; reglas sin view)', () => {
+    expect(Object.keys(config?.waves.spawn ?? {}).sort()).toEqual([
+      'maxAttempts',
+      'minDistance',
+      'ringRadius',
+    ]);
+    const rules = config ? buildRunRules(config) : null;
+    expect(rules?.ok && 'view' in rules.value).toBe(false);
   });
 
   it('Scenario: Catálogo de tipos de enemigo (ids goblin con los stats heredados, mismo orden)', () => {

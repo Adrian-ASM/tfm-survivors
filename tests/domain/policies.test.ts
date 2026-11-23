@@ -118,7 +118,7 @@ describe('fleeInput (movimiento del bot de referencia, mundo 1.920 × 1.080)', (
 describe('Bot ligado a la configuración de la partida (0013)', () => {
   const bigWorld = (): RunConfig => ({
     ...aDefaultConfig(),
-    arena: { width: 4000, height: 4000, view: aDefaultConfig().arena.view },
+    arena: { width: 4000, height: 4000 },
   });
 
   it('Scenario: El bot huye de las paredes del mundo real (pared derecha a 20 px)', () => {

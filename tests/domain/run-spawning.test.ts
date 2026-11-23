@@ -62,11 +62,10 @@ class CountingRandom implements RandomGenerator {
 const insideArena = (
   { x, y, radius }: EnemySnapshot,
   arena: RunConfig['arena'] = SCENARIO_ARENA,
-): boolean =>
-  x >= radius && x <= arena.width - radius && y >= radius && y <= arena.height - radius;
+): boolean => x >= radius && x <= arena.width - radius && y >= radius && y <= arena.height - radius;
 
-/** Mundo explícito de los escenarios de 0013: 1.920 × 1.080 con la vista de 960 × 540. */
-const WORLD: RunConfig['arena'] = { width: 1920, height: 1080, view: { width: 960, height: 540 } };
+/** Mundo explícito de los escenarios de 0013: 1.920 × 1.080. */
+const WORLD: RunConfig['arena'] = { width: 1920, height: 1080 };
 const inWorld = (config: RunConfig): RunConfig => ({ ...config, arena: WORLD });
 const distance = (a: { x: number; y: number }, b: { x: number; y: number }): number =>
   Math.hypot(a.x - b.x, a.y - b.y);

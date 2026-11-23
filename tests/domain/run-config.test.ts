@@ -54,11 +54,11 @@ function failure(config: RunConfig): { field: string; message: string } {
 }
 
 describe('buildRunRules', () => {
-  it('compone arena, vista, catálogo, tabla y reglas de spawn del contenido por defecto', () => {
+  it('compone arena, catálogo, tabla y reglas de spawn del contenido por defecto', () => {
     const r = buildRunRules(aRunConfig());
     if (!r.ok) throw new Error(r.error.message);
-    const { arena, view, catalog, table, spawn } = r.value;
-    expect([arena.width, arena.height, view.width, view.height]).toEqual([960, 540, 960, 540]);
+    const { arena, catalog, table, spawn } = r.value;
+    expect([arena.width, arena.height]).toEqual([960, 540]);
     expect(catalog.ids).toEqual(['goblin-torch', 'goblin-tnt', 'goblin-barrel']);
     expect(table.segments.map((s) => s.fromSecond)).toEqual([0, 60, 180, 300, 480]);
     expect(spawn).toMatchObject({ maxAlive: 200, minDistance: 200, maxAttempts: 8 });
@@ -95,12 +95,6 @@ describe('buildRunRules', () => {
   it('acepta minDistance 0 y minDistance mayor que el anillo', () => {
     expect(buildRunRules(withWaves({}, { minDistance: 0 })).ok).toBe(true);
     expect(buildRunRules(withWaves({}, { minDistance: 2000 })).ok).toBe(true);
-  });
-
-  it('rechaza una vista sin tamaño', () => {
-    const base = aRunConfig();
-    const config = { ...base, arena: { ...base.arena, view: { width: 0, height: 540 } } };
-    expect(failure(config).field).toBe('arena.view.width');
   });
 
   it('propaga las reglas del catálogo y de la tabla con la ruta del campo', () => {
