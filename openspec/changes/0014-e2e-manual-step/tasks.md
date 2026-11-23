@@ -263,7 +263,7 @@
   - Hecho: la guarda incluye el fichero (bloques sin etiqueta), `verify` verde y `npm run test:e2e -- progress`
     verde.
 
-- [ ] 4.6 **`pause.spec.ts`**: Esc y reanudar, botón, teclas en pausa, Esc durante la oferta y Esc con la partida
+- [x] 4.6 **`pause.spec.ts`**: Esc y reanudar, botón, teclas en pausa, Esc durante la oferta y Esc con la partida
   terminada.
   - Cambios: `step(60)` en pausa devuelve 0 con el snapshot igual; tras reanudar, `step(1)` da n + 1. Fuera
     `waitForTimeout(PAUSED_MS/1000/300)` y los polls del tick. Se queda `@realtime` "velocidad 8".

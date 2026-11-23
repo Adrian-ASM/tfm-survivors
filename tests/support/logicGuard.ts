@@ -14,6 +14,7 @@ export const LOGIC_GUARDED_SPECS: readonly string[] = [
   'weapons.spec.ts',
   'results.spec.ts',
   'progress.spec.ts',
+  'pause.spec.ts',
 ];
 
 export type ClockWaitRule = 'waitForTimeout' | 'playChoosingFirst' | 'poll-tick';
