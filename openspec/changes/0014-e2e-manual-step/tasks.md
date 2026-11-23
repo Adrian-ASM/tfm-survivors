@@ -158,7 +158,7 @@
 - [x] 2.3 **Helpers `waitForRun`, `stepUntil`, `playToEnd` y `holdKey` y E2E de estados** (design §5).
   - Ficheros: `tests/e2e/probe.ts` y `tests/e2e/manual-step.spec.ts`.
   - Test E2E con manual:
-    - semilla 7: `step(3600)` devuelve k con la oferta visible; `step(10)` devuelve 0; se pulsa 1 y `step(10)`
+    - semilla 7: `step(3600)` (4.800 tras 0013) devuelve k con la oferta visible; `step(10)` devuelve 0; se pulsa 1 y `step(10)`
       devuelve 10;
     - oferta en el último tick: `step(k − n)` desde n;
     - fin a mitad: `playToEnd` muestra resultados y deja una entrada en `progress.history` al resolverse;

@@ -158,8 +158,8 @@ una tras otra en el orden en que se hicieron, sin perder ni duplicar ticks; cada
 
 #### Scenario: Oferta a mitad de step
 - **GIVEN** la URL `?e2e&manual&seed=7` y una partida en el tick 0 cuya primera oferta se abre en el tick k
-  (k < 3.600)
-- **WHEN** se llama a `step(3600)`
+  (k < 4.800)
+- **WHEN** se llama a `step(4800)`
 - **THEN** devuelve k, `snapshot.tick` vale k, la partida está eligiendo mejora y la oferta está visible
 - **AND** un `step(10)` posterior devuelve 0 y el snapshot sigue en el tick k
 - **AND** tras elegir la opción de índice 0, `step(10)` devuelve 10 y `snapshot.tick` vale k + 10
