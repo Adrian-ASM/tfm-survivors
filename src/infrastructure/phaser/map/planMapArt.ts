@@ -1,7 +1,8 @@
+import type { CellType } from '../../../domain/map/CellType';
 import type { MapSnapshot } from '../../../domain/map/MapSnapshot';
 import type { MapLooks } from './mapLooks';
 import { bridgeOrientation, riverSides, shoreCells, type RiverSides } from './shoreTiles';
-import { bestRuns, shoreTileCells, waterTileCells, type TileRun } from './tileRuns';
+import { bestRuns, shoreTileCells, waterTileCells, type KeyedCell, type TileRun } from './tileRuns';
 import { treeModels } from './treeChoices';
 
 // Plan del pintado del mapa (design 0016 §5.2 y §12.2): convierte el snapshot del mapa y los
@@ -54,11 +55,40 @@ export interface RectDraw {
 
 export type LowDraw = TileDraw | SpriteDraw | RectDraw;
 
+/** Elementos de un tipo pintados y cuántos de ellos con reserva (sonda `sprites.mapArt`, B9). */
+export interface ElementCount {
+  readonly painted: number;
+  readonly fallback: number;
+}
+
+/** Recuentos por elemento del mapa (spec "Sonda de render para E2E", design §12.2 B9). */
+export interface MapArtCounts {
+  readonly water: ElementCount;
+  readonly shore: ElementCount;
+  readonly foam: ElementCount;
+  readonly tree: ElementCount;
+  readonly canopy: ElementCount;
+  readonly bridge: ElementCount;
+  readonly castle: ElementCount;
+}
+
+/** Celdas del mapa representadas por tipo, con arte o con reserva (`sprites.cells`). */
+export interface MapCellCounts {
+  readonly trunk: number;
+  readonly water: number;
+  readonly bridge: number;
+  readonly castle: number;
+}
+
 export interface MapArtPlan {
   readonly low: readonly LowDraw[];
   readonly high: readonly SpriteDraw[];
   /** Animación de la espuma (frames y fps), o `null` si no hay espuma con arte. */
   readonly foam: { readonly frames: readonly number[]; readonly fps: number } | null;
+  readonly counts: MapArtCounts;
+  readonly cells: MapCellCounts;
+  /** Objetos de escena del plan (uno por entrada de cada capa). */
+  readonly objects: number;
 }
 
 export interface PlanContext {
@@ -107,6 +137,25 @@ class Grid {
     return (row * this.s + this.bottom(row)) / 2;
   }
 
+  /** Rectángulos de reserva de las celdas del tipo dado, agrupadas en tramos. */
+  fallback(type: CellType, color: number): RectDraw[] {
+    const cells: KeyedCell[] = [];
+    this.map.cells.forEach((t, i) => {
+      if (t !== type) return;
+      const col = i % this.map.cols;
+      cells.push({ col, row: (i - col) / this.map.cols, key: type });
+    });
+    return bestRuns(cells).map((run) => this.rect(run, color));
+  }
+
+  rect(run: Omit<TileRun, 'key'>, color: number): RectDraw {
+    const x = run.col * this.s;
+    const y = run.row * this.s;
+    const width = this.right(run.col + run.cols - 1) - x;
+    const height = this.bottom(run.row + run.rows - 1) - y;
+    return { kind: 'rect', x, y, width, height, color };
+  }
+
   tiles(run: TileRun, texture: string, frame: number, scale: number): TileDraw {
     const x = run.col * this.s;
     const y = run.row * this.s;
@@ -124,7 +173,7 @@ class Grid {
 }
 
 function waterDraws(g: Grid, looks: MapLooks): LowDraw[] {
-  if (!looks.water.art) return [];
+  if (!looks.water.art) return g.fallback('water', looks.colors.water);
   const { texture, aspect } = looks.water;
   const cells = waterTileCells(g.map, looks.shore.art);
   return bestRuns(cells).map((run) => g.tiles(run, texture, aspect.frame, aspect.scale));
@@ -157,8 +206,8 @@ function shoreDraws(g: Grid, looks: MapLooks): TileDraw[] {
   );
 }
 
-function bridgeDraws(g: Grid, looks: MapLooks): SpriteDraw[] {
-  if (!looks.bridges.art) return [];
+function bridgeDraws(g: Grid, looks: MapLooks): LowDraw[] {
+  if (!looks.bridges.art) return g.fallback('bridge', looks.colors.bridge);
   const { texture, aspect, frames } = looks.bridges;
   const out: SpriteDraw[] = [];
   g.map.cells.forEach((t, i) => {
@@ -183,9 +232,9 @@ function bridgeDraws(g: Grid, looks: MapLooks): SpriteDraw[] {
 
 /** Tronco (capa baja) y copa (capa alta) de cada celda `trunk`, partidos por el corte derivado. */
 function treeDraws(g: Grid, looks: MapLooks, decorSeed: number) {
-  const trunks: SpriteDraw[] = [];
+  const trunks: LowDraw[] = [];
   const canopies: SpriteDraw[] = [];
-  if (!looks.trees.art) return { trunks, canopies };
+  if (!looks.trees.art) return { trunks: g.fallback('trunk', looks.colors.trunk), canopies };
   const { texture, aspect } = looks.trees;
   const { frameWidth: w, frameHeight: h } = aspect.sheet;
   const cut = aspect.origin.y * h - g.s / aspect.scale;
@@ -208,10 +257,20 @@ function treeDraws(g: Grid, looks: MapLooks, decorSeed: number) {
   return { trunks, canopies };
 }
 
-/** Fachada (capa baja) y tejado (capa alta) del castillo de la huella. */
-function castleDraws(g: Grid, looks: MapLooks) {
+/**
+ * Fachada (capa baja) y tejado (capa alta) del castillo de la huella. Sin arte, 1 rectángulo sobre la
+ * huella; sin huella (mapa explícito), sus celdas `castle` sueltas siempre como rectángulos.
+ */
+function castleDraws(g: Grid, looks: MapLooks): { facade: LowDraw[]; roof: SpriteDraw[] } {
   const footprint = g.map.castle;
-  if (!footprint || !looks.castle.art) return { facade: [], roof: [] };
+  const color = looks.colors.castle;
+  if (!footprint) return { facade: g.fallback('castle', color), roof: [] };
+  if (!looks.castle.art) {
+    const { firstCol: col, firstRow: row } = footprint;
+    const cols = footprint.lastCol - col + 1;
+    const rows = footprint.lastRow - row + 1;
+    return { facade: [g.rect({ col, row, cols, rows }, color)], roof: [] };
+  }
   const { texture, aspect } = looks.castle;
   const { frameWidth: w, frameHeight: h } = aspect.sheet;
   const cut = aspect.origin.y * h - g.s / aspect.scale;
@@ -228,7 +287,26 @@ function castleDraws(g: Grid, looks: MapLooks) {
   return {
     facade: [{ ...base, role: 'castle', crop: { x: 0, y: cut, width: w, height: h - cut } }],
     roof: [{ ...base, role: 'roof', crop: { x: 0, y: 0, width: w, height: cut } }],
-  } satisfies Record<string, SpriteDraw[]>;
+  };
+}
+
+const count = (painted: number, fallback = 0): ElementCount => ({ painted, fallback });
+
+/** Recuentos de la sonda: celdas por elemento, con arte o con reserva (B9). */
+function countsOf(map: MapSnapshot, looks: MapLooks): MapArtCounts {
+  const { water, trunk, bridge } = map.counts;
+  const shores = shoreCells(map).length;
+  const art = (on: boolean, n: number) => count(n, on ? 0 : n);
+  const castle = map.castle ? 1 : 0;
+  return {
+    water: art(looks.water.art, water),
+    shore: count(looks.shore.art ? shores : 0),
+    foam: count(looks.foam.art ? shores : 0),
+    tree: art(looks.trees.art, trunk),
+    canopy: count(looks.trees.art ? trunk : 0),
+    bridge: art(looks.bridges.art, bridge),
+    castle: art(looks.castle.art, castle),
+  };
 }
 
 /**
@@ -247,6 +325,15 @@ export function planMapArt(map: MapSnapshot, looks: MapLooks, ctx: PlanContext):
     ...trunks,
     ...facade,
   ];
+  const high = [...canopies, ...roof];
   const foam = looks.foam.art && shoreCells(map).length > 0 ? looks.foam.aspect.idle : null;
-  return { low, high: [...canopies, ...roof], foam };
+  const { trunk, water, bridge, castle } = map.counts;
+  return {
+    low,
+    high,
+    foam,
+    counts: countsOf(map, looks),
+    cells: { trunk, water, bridge, castle },
+    objects: low.length + high.length,
+  };
 }

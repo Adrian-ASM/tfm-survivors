@@ -102,7 +102,7 @@ opción (script temporal en el scratchpad) y esperar su decisión.
   orillas, y la orilla antes que el tronco de su celda. — escenarios: "Elementos en su sitio", "Castillo sobre su
   huella", "Tronco y copa" (geometría del corte), "Jugador ante la puerta" (corte del tejado en y = 540), "Pintado
   del mapa" (espuma en el borde con el río, bajo la pieza)
-- [ ] 3.6 `planMapArt` con reserva y recuentos: rectángulos por elemento sin arte, celdas `castle` sueltas como
+- [x] 3.6 `planMapArt` con reserva y recuentos: rectángulos por elemento sin arte, celdas `castle` sueltas como
   rectángulos, mapa vacío sin objetos; recuentos de la sonda (`cells` + `castle`, `mapArt` con `painted`/`fallback`,
   `objects`; `shore` = `foam` = celdas de orilla en tierra, 0 sin su hoja). — escenarios: "Recuentos del mapa
   pintado" (parte pura, sobre el mapa de 42), "Reserva de cada elemento", "Reserva del castillo", "Celdas de castillo de un mapa
