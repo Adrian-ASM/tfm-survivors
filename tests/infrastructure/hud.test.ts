@@ -248,7 +248,7 @@ describe('Widgets fijos en pantalla (0013)', () => {
     const { scene, made } = fakeScene(view);
 
     createHud(scene, screenFrame(view.width, view.height));
-    const offer = createUpgradeOverlay(scene);
+    const offer = createUpgradeOverlay(scene, screenFrame(view.width, view.height));
     const results = createResultsOverlay(scene);
     offer.sync(
       ['strict-rules', 'guardrail', 'shortcuts'].map((id) => ({

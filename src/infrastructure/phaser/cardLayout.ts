@@ -4,6 +4,10 @@ import type { ScreenFrame } from './ui/screenFrame';
 export const CARD_WIDTH = 240;
 export const CARD_HEIGHT = 170;
 export const CARD_GAP = 24;
+/** Margen interior del texto de la carta y su tamaño de fuente a ×1. */
+export const CARD_TEXT_PADDING = 16;
+export const CARD_TEXT_WRAP = CARD_WIDTH - 2 * CARD_TEXT_PADDING;
+export const CARD_FONT_SIZE = 14;
 
 /** Rectángulo de una carta: centro (x, y) y tamaño, en píxeles del lienzo. */
 export interface CardRect {

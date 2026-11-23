@@ -1,10 +1,10 @@
 import type Phaser from 'phaser';
-import { CARD_WIDTH } from './cardLayout';
+import { CARD_TEXT_WRAP } from './cardLayout';
 import { Hud, type HudPlacement } from './Hud';
 import { ResultsOverlay, type ShowableText } from './ResultsOverlay';
 import { UpgradeOverlay, type CardBox, type CardParts, type CardText } from './UpgradeOverlay';
 import { XpBar } from './XpBar';
-import { screenFrame, type ScreenFrame } from './ui/screenFrame';
+import type { ScreenFrame } from './ui/screenFrame';
 import { hudLayout, type BarAnchor, type HudLayout, type TextAnchor } from './ui/uiLayout';
 
 // Fábricas de objetos del motor para el HUD y los overlays (presentación, sin lógica). Se llaman
@@ -25,7 +25,6 @@ const CARD_BORDER = 0x7ce2fe;
 const TEXT_STYLE = { fontFamily: 'monospace', fontSize: '14px', color: '#ffffff' } as const;
 const TITLE_STYLE = { ...TEXT_STYLE, fontSize: '40px' } as const;
 const RESULTS_STYLE = { ...TEXT_STYLE, fontSize: '20px' } as const;
-const CARD_TEXT_PADDING = 16;
 /** Separación vertical de las líneas del overlay de resultados respecto al centro. */
 const RESULTS_LINES_DY = [-90, -20, 15, 50, 110] as const;
 
@@ -113,8 +112,8 @@ export function createHud(scene: Scene, frame: ScreenFrame): Hud {
 }
 
 /** Overlay de elección (spec upgrades): velo y 3 cartas preasignadas. */
-export function createUpgradeOverlay(scene: Scene): UpgradeOverlay {
-  const { width, height } = scene.scale;
+export function createUpgradeOverlay(scene: Scene, frame: ScreenFrame): UpgradeOverlay {
+  const { width, height } = frame;
   const veil = scene.add
     .rectangle(width / 2, height / 2, width, height, VEIL_COLOR, VEIL_ALPHA)
     .setScrollFactor(0)
@@ -141,10 +140,14 @@ export function createUpgradeOverlay(scene: Scene): UpgradeOverlay {
         rect.on('pointerdown', handler);
       },
     };
-    const wrap = CARD_WIDTH - 2 * CARD_TEXT_PADDING;
-    return { box, name: text(wrap), description: text(wrap), level: text(wrap) };
+    return {
+      box,
+      name: text(CARD_TEXT_WRAP),
+      description: text(CARD_TEXT_WRAP),
+      level: text(CARD_TEXT_WRAP),
+    };
   });
-  return new UpgradeOverlay(veil, cards, screenFrame(width, height));
+  return new UpgradeOverlay(veil, cards, frame);
 }
 
 /** Overlay de resultados (spec run-results): velo y 5 líneas centradas, por encima de todo. */

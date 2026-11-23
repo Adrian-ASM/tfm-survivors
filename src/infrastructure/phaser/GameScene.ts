@@ -192,12 +192,13 @@ export class GameScene extends Phaser.Scene {
     // En cada entrada: Volver al menú destruye la cámara de la escena y la recrea (design D2).
     this.rig = new CameraRig(this.cameras.main, this.deps.world);
     const snapshot = started.tickRun.snapshot();
+    const frame = screenFrame(this.scale.width, this.scale.height);
     this.w = {
       mapArt,
       mapLooks,
       layers,
-      hud: createHud(this, screenFrame(this.scale.width, this.scale.height)),
-      offer: createUpgradeOverlay(this),
+      hud: createHud(this, frame),
+      offer: createUpgradeOverlay(this, frame),
       results: createResultsOverlay(this),
       move: new KeyboardInput(keyboard),
       choice: new ChoiceKeys(keyboard),

@@ -120,7 +120,7 @@
     `relayout` con el mismo frame no cambia posiciones ni tamaños; cambiar de ×1 a ×2 vuelve a pintar el texto
     (`setFontSize`) con los mismos valores.
   - Escenarios: "Muchos cambios seguidos", "Mismo tamaño", "Cambio de escalón al redimensionar".
-- [ ] 3.5 `UpgradeOverlay.relayout` con la oferta abierta (design D6). Fichero: `UpgradeOverlay.ts`.
+- [x] 3.5 `UpgradeOverlay.relayout` con la oferta abierta (design D6). Fichero: `UpgradeOverlay.ts`.
   - Rojo: `tests/infrastructure/upgrade-overlay.test.ts`: con la oferta abierta, `relayout` a 1.000 × 600 recoloca
     las cartas (`setPosition`/`setSize`) sin cerrar ni cambiar la oferta, y el `pointerdown` de la tercera da índice 2;
     el velo no elige nada; posiciones iguales con dos rectángulos de cámara distintos.

@@ -14,6 +14,13 @@ class FakePart implements OverlayPart {
   visible = false;
   x = 0;
   y = 0;
+  width = 0;
+  height = 0;
+  setSize(w: number, h: number): this {
+    this.width = w;
+    this.height = h;
+    return this;
+  }
   setVisible(v: boolean): this {
     this.visible = v;
     return this;
@@ -28,6 +35,16 @@ class FakePart implements OverlayPart {
 class FakeText extends FakePart implements CardText {
   text = '';
   writes = 0;
+  fontSize = 0;
+  wrap = 0;
+  setFontSize(size: number): this {
+    this.fontSize = size;
+    return this;
+  }
+  setWordWrapWidth(width: number): this {
+    this.wrap = width;
+    return this;
+  }
   setText(t: string): this {
     this.text = t;
     this.writes += 1;
@@ -36,14 +53,7 @@ class FakeText extends FakePart implements CardText {
 }
 
 class FakeBox extends FakePart implements CardBox {
-  width = 0;
-  height = 0;
   private handler: (() => void) | null = null;
-  setSize(w: number, h: number): this {
-    this.width = w;
-    this.height = h;
-    return this;
-  }
   onPointerDown(cb: () => void): void {
     this.handler = cb;
   }
@@ -174,5 +184,68 @@ describe('UpgradeOverlay', () => {
     o.sync([]);
     cards[0]?.box.click();
     expect(o.takeClicked()).toBe(-1);
+  });
+});
+
+// Spec world-camera (0017), "Redimensionado con la oferta abierta" (parte unitaria) y "Overlay de
+// elección con la cámara movida": el overlay solo depende del frame del lienzo.
+describe('UpgradeOverlay.relayout (0017)', () => {
+  it('Scenario: Clic tras redimensionar (1.000 × 600: cartas recolocadas, misma oferta, índice 2)', () => {
+    const { veil, cards, o } = overlay();
+    o.sync(THREE);
+    const writes = cards.map((c) => c.name.writes);
+    const frame = screenFrame(1000, 600);
+
+    o.relayout(frame);
+
+    const expected = cardLayout(frame, 3);
+    expect(cards.map((c) => [c.box.x, c.box.y, c.box.width, c.box.height])).toEqual(
+      expected.map((r) => [r.x, r.y, r.width, r.height]),
+    );
+    expect([veil.visible, veil.x, veil.y, veil.width, veil.height]).toEqual([
+      true,
+      500,
+      300,
+      1000,
+      600,
+    ]);
+    expect(cards.map((c) => c.name.writes)).toEqual(writes);
+    expect(cards.map((c) => c.name.text)).toEqual([
+      '[1] Nombre fast-ci',
+      '[2] Nombre guardrail',
+      '[3] Nombre coverage',
+    ]);
+    cards[2]?.box.click();
+    expect(o.takeClicked()).toBe(2);
+  });
+
+  it('el velo no elige nada (sin clic en carta, takeClicked da −1)', () => {
+    const { o } = overlay();
+    o.sync(THREE);
+    o.relayout(screenFrame(1000, 600));
+
+    expect(o.takeClicked()).toBe(-1);
+  });
+
+  it('Scenario: Overlay de elección con la cámara movida (las cartas solo dependen del frame)', () => {
+    const a = overlay();
+    const b = overlay();
+    for (const { o } of [a, b]) {
+      o.sync(THREE);
+      o.relayout(screenFrame(1280, 720));
+    }
+
+    expect(a.cards.map((c) => [c.box.x, c.box.y])).toEqual(b.cards.map((c) => [c.box.x, c.box.y]));
+  });
+
+  it('×1 → ×2: textos a la fuente y al ajuste de línea nuevos, posiciones escaladas', () => {
+    const { cards, o } = overlay();
+    o.sync(THREE);
+    o.relayout(screenFrame(1920, 1080));
+
+    const [first] = cardLayout(screenFrame(1920, 1080), 3);
+    expect(cards[0]?.name.fontSize).toBe(28);
+    expect(cards[0]?.name.wrap).toBe(2 * 208);
+    expect(cards[0]?.name.y).toBe((first?.y ?? 0) - 2 * 55);
   });
 });
