@@ -325,7 +325,7 @@
 
 ## 6. Documentación y cierre
 
-- [ ] 6.1 **AGENTS.md §1 y §2** (design §9).
+- [x] 6.1 **AGENTS.md §1 y §2** (design §9).
   - §2, fila `npm run test:e2e`: la receta pasa a
     `CI_LIKE=1 npm run test:e2e -- --project=realtime --repeat-each=3`, con 2 workers como CI, `CPU_THROTTLE` y
     sin reintentos; `--project=logic` para las de reglas; se quita `--workers=12`.
