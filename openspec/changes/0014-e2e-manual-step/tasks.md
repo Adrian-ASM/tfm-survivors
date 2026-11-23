@@ -274,7 +274,7 @@
     juegan tras Jugar, en manual; `waitForTimeout(500)` pasa a `waitFrames(30)`.
   - Hecho: la guarda incluye el fichero, `verify` verde y `npm run test:e2e -- clear-progress` verde.
 
-- [ ] 4.8 **`menu-progress.spec.ts`**.
+- [x] 4.8 **`menu-progress.spec.ts`**.
   - Cambios: "Jugar tras usar los botones" y "Mismo fichero desde los dos sitios" en manual (`step` y
     `playToEnd`); `waitForTimeout(300)` pasa a `waitFrames(20)`.
   - Hecho: la guarda incluye el fichero, `verify` verde y `npm run test:e2e -- menu-progress` verde.

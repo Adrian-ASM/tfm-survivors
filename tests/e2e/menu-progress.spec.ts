@@ -4,16 +4,19 @@ import { expect, test } from './fixtures';
 import { EMPTY_PROGRESS } from '../../src/domain/progress/Progress';
 import { decodeProgress } from '../../src/infrastructure/progress/progressCodec';
 import {
-  E2E_SPEED,
   backToMenu,
+  expectManual,
   focusGame,
   gameUrl,
   menuButton,
   menuPanel,
-  playChoosingFirst,
+  playToEnd,
   playerUrl,
   probe,
   snapshotOf,
+  step,
+  waitForRun,
+  waitFrames,
 } from './probe';
 import { F, P0, progressText, seedProgress } from './progressFixtures';
 // Semilla del conjunto de balance 1..50 con derrota quieta antes de 180 s (spec run-outcome).
@@ -29,7 +32,10 @@ const G = {
   history: [...F.history, ...P0.history],
 };
 const G_TEXT = progressText(G);
-const PLAY_TIMEOUT_MS = 45_000;
+/** Frames sin efecto tras cancelar el selector (un número de frames, no un tiempo). */
+const IDLE_FRAMES = 20;
+/** Ticks de la partida abandonada antes de volver al menú (modo manual, change 0014). */
+const ABANDONED_TICKS = 11;
 
 const stored = (page: Page): Promise<string | null> =>
   page.evaluate((key) => window.localStorage.getItem(key), KEY);
@@ -120,7 +126,7 @@ test('Cancelar el selector en el menú: sin mensaje y G intacto', async ({ page 
   const chooser = page.waitForEvent('filechooser');
   await menuButton(page, 'Importar').click();
   await (await chooser).setFiles([]);
-  await page.waitForTimeout(300);
+  await waitFrames(page, IDLE_FRAMES);
 
   await expect(menuMessage(page)).toBeHidden();
   expect(await stored(page)).toBe(G_TEXT);
@@ -129,8 +135,10 @@ test('Cancelar el selector en el menú: sin mensaje y G intacto', async ({ page 
 test('Jugar tras usar los botones: 1 partida nueva y el menú deja de verse con sus mensajes', async ({
   page,
 }) => {
-  await page.goto(gameUrl({ seed: 42 }));
-  await expect.poll(async () => (await snapshotOf(page))?.tick ?? 0).toBeGreaterThan(10);
+  await page.goto(gameUrl({ seed: 42, manual: true }));
+  await expectManual(page);
+  await waitForRun(page);
+  expect(await step(page, ABANDONED_TICKS)).toBe(ABANDONED_TICKS);
   await focusGame(page);
   await backToMenu(page);
   await exportFrom(page, menuButton(page, 'Exportar'));
@@ -146,17 +154,17 @@ test('Jugar tras usar los botones: 1 partida nueva y el menú deja de verse con 
   await expect(page.getByRole('dialog', { name: 'Pausa' })).toBeVisible();
 });
 
-// La 1.ª partida de la carga usa la semilla fija 90 (derrota determinista a ?speed=8). La dirección
-// menú → overlay de los mensajes, que exige jugar una partida tras Volver al menú (semilla
-// aleatoria), está en `clear-progress.spec` y en Node (`menu-progress.test`).
+// La 1.ª partida de la carga usa la semilla fija 90 (derrota determinista, en modo manual). La
+// dirección menú → overlay de los mensajes, que exige jugar una partida tras Volver al menú
+// (semilla aleatoria), está en `clear-progress.spec` y en Node (`menu-progress.test`).
 test('Mismo fichero desde los dos sitios y mensajes del overlay que no pasan al menú', async ({
   page,
 }) => {
-  test.setTimeout(60_000);
-  await page.goto(gameUrl({ seed: STILL_DEFEAT_SEED, speed: E2E_SPEED }));
-  await expect.poll(async () => (await snapshotOf(page))?.tick ?? null).not.toBeNull();
+  await page.goto(gameUrl({ seed: STILL_DEFEAT_SEED, manual: true }));
+  await expectManual(page);
+  await waitForRun(page);
   await focusGame(page);
-  const ended = await playChoosingFirst(page, (s) => s.status === 'over', PLAY_TIMEOUT_MS);
+  const ended = await playToEnd(page);
   expect(ended?.status).toBe('over');
   const results = page.locator('.results-panel');
   await expect(results).toBeVisible();

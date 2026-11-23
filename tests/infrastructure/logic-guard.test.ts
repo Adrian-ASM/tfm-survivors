@@ -1,7 +1,7 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { LOGIC_GUARDED_SPECS, findClockWaits } from '../support/logicGuard';
+import { LOGIC_GUARDED_SPECS, findClockWaits, hasLogicTests } from '../support/logicGuard';
 
 const E2E_DIR = join(import.meta.dirname, '..', 'e2e');
 
@@ -96,6 +96,22 @@ describe('findClockWaits (design 0014 §5: sin esperas de reloj en logic)', () =
 describe('Specs vigiladas', () => {
   it('la lista empieza con manual-step.spec.ts', () => {
     expect(LOGIC_GUARDED_SPECS[0]).toBe('manual-step.spec.ts');
+  });
+
+  it('hasLogicTests distingue un fichero entero de tiempo real de uno con tests de logic', () => {
+    const clock = "test('a', { tag: '@realtime' }, async () => {});";
+
+    expect([hasLogicTests(clock), hasLogicTests(`${clock}\ntest('b', async () => {});`)]).toEqual([
+      false,
+      true,
+    ]);
+  });
+
+  it('vigila todas las specs con tests de logic (y ninguna entera de tiempo real)', () => {
+    const specs = readdirSync(E2E_DIR).filter((f) => f.endsWith('.spec.ts'));
+    const withLogic = specs.filter((f) => hasLogicTests(readFileSync(join(E2E_DIR, f), 'utf8')));
+
+    expect([...LOGIC_GUARDED_SPECS].sort()).toEqual(withLogic.sort());
   });
 
   it.each(LOGIC_GUARDED_SPECS)('%s no tiene esperas de reloj fuera de @realtime', (file) => {

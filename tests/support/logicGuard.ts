@@ -16,6 +16,7 @@ export const LOGIC_GUARDED_SPECS: readonly string[] = [
   'progress.spec.ts',
   'pause.spec.ts',
   'clear-progress.spec.ts',
+  'menu-progress.spec.ts',
 ];
 
 export type ClockWaitRule = 'waitForTimeout' | 'playChoosingFirst' | 'poll-tick';
@@ -180,15 +181,23 @@ function waitsIn(bare: string, range: Range): { index: number; rule: ClockWaitRu
   return found;
 }
 
+function analysed(source: string): { m: Masked; out: Analysis } {
+  const m = mask(source);
+  const out: Analysis = { logic: [], loose: [], hasLogic: false };
+  analyse(m, 0, m.bare.length, out);
+  return { m, out };
+}
+
+/** La spec tiene al menos un test sin `@realtime` (cae en el proyecto `logic`). */
+export const hasLogicTests = (source: string): boolean => analysed(source).out.hasLogic;
+
 /**
  * Esperas de reloj que la guarda no admite en `logic`, en orden de aparición: dentro de tests o
  * describe sin `@realtime` y, si el fichero tiene algún test de `logic`, en el código suelto
  * (preámbulo, helpers, `beforeEach`).
  */
 export function findClockWaits(source: string): ClockWait[] {
-  const m = mask(source);
-  const out: Analysis = { logic: [], loose: [], hasLogic: false };
-  analyse(m, 0, m.bare.length, out);
+  const { m, out } = analysed(source);
   const ranges = out.hasLogic ? [...out.logic, ...out.loose] : out.logic;
   return ranges
     .flatMap((r) => waitsIn(m.bare, r))
