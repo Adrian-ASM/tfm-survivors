@@ -138,7 +138,7 @@
   - Escenarios: todos los de "Cámara que sigue al jugador dentro del mundo" salvo el E2E, "Redimensionado en mitad de
     la partida", "Ventana minimizada", "Misma partida con y sin pintar", "Misma partida con ventanas distintas",
     "Mismas apariciones con cualquier ventana", "Fondo con la ventana en el tope".
-- [ ] 3.7 `watchScreen(scale, sceneEvents, apply)` (design D6). Fichero: `ui/watchScreen.ts`.
+- [x] 3.7 `watchScreen(scale, sceneEvents, apply)` (design D6). Fichero: `ui/watchScreen.ts`.
   - Rojo: `tests/infrastructure/watch-screen.test.ts` con dobles `ScaleLike`/`SceneEventsLike`: llamada inicial con
     `screenFrame(gameSize)`; una llamada por RESIZE; ninguna tras SHUTDOWN; tras dos entradas en la escena, una sola
     escucha activa.
