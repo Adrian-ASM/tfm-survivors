@@ -5,5 +5,6 @@
   "trunkPatch": { "min": 3, "max": 8 },
   "rivers": 1,
   "bridges": { "min": 2, "max": 3 },
+  "castle": { "cols": 5, "rows": 4 },
   "tuning": { "riverVerticalChance": 0.5, "riverMeander": 0.25, "patchAttempts": 4000 }
 }

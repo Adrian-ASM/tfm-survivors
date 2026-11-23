@@ -16,6 +16,9 @@ export const CELL_SIZE_BELOW_PLAYER =
   'El tamaño de celda debe ser al menos el diámetro del jugador (cabe por un pasillo de 1 celda).';
 export const START_RADIUS_TOO_LARGE =
   'El radio de la zona de inicio no puede pasar de la mitad del lado menor del mundo.';
+export const CASTLE_SIZE_MUST_BE_INTEGER = 'La huella del castillo necesita enteros ≥ 1.';
+export const CASTLE_OUT_OF_GRID =
+  'La huella del castillo y su puerta deben caber en la rejilla (como mucho la mitad de columnas y filas).';
 
 /** Límites de los campos de rango (spec procedural-map, "Contenido del mapa validado"). */
 export const MAP_LIMITS = {
@@ -33,6 +36,8 @@ export interface MapConfig {
   readonly trunkPatch: { readonly min: number; readonly max: number };
   readonly rivers: number;
   readonly bridges: { readonly min: number; readonly max: number };
+  /** Huella del castillo en celdas (spec procedural-map, "Castillo en el mapa generado"). */
+  readonly castle: { readonly cols: number; readonly rows: number };
   /** Ajustes de la generación (design 0015 §3.1). */
   readonly tuning: {
     readonly riverVerticalChance: number;
@@ -57,7 +62,8 @@ const isIntRange = (r: { min: number; max: number }, top: number): boolean =>
 
 /** Campo inválido de los rangos del contenido del mapa, o null. */
 function checkRanges(config: MapConfig): DomainError | null {
-  const { cellSize, startRadius, trunkDensity, trunkPatch, rivers, bridges, tuning } = config;
+  const { cellSize, startRadius, trunkDensity, trunkPatch, rivers, bridges, castle, tuning } =
+    config;
   const checks: readonly [boolean, string, string][] = [
     [isInt(cellSize, 1), 'cellSize', CELL_SIZE_MUST_BE_INTEGER],
     [Number.isFinite(startRadius) && startRadius > 0, 'startRadius', START_RADIUS_MUST_BE_POSITIVE],
@@ -69,6 +75,8 @@ function checkRanges(config: MapConfig): DomainError | null {
     [isIntRange(trunkPatch, MAP_LIMITS.trunkPatchMax), 'trunkPatch', TRUNK_PATCH_OUT_OF_RANGE],
     [isInt(rivers, 0, MAP_LIMITS.riversMax), 'rivers', RIVERS_OUT_OF_RANGE],
     [isIntRange(bridges, MAP_LIMITS.bridgesMax), 'bridges', BRIDGES_OUT_OF_RANGE],
+    [isInt(castle.cols, 1), 'castle.cols', CASTLE_SIZE_MUST_BE_INTEGER],
+    [isInt(castle.rows, 1), 'castle.rows', CASTLE_SIZE_MUST_BE_INTEGER],
     [inRange(tuning.riverVerticalChance, 0, 1), 'tuning.riverVerticalChance', CHANCE_OUT_OF_RANGE],
     [inRange(tuning.riverMeander, 0, 1), 'tuning.riverMeander', CHANCE_OUT_OF_RANGE],
     [isInt(tuning.patchAttempts, 1), 'tuning.patchAttempts', PATCH_ATTEMPTS_MUST_BE_INTEGER],
@@ -86,7 +94,46 @@ function checkCross(config: MapConfig, arena: Arena, playerRadius: number): Doma
   if (startRadius > Math.min(arena.width, arena.height) / 2) {
     return invalidConfig('map.startRadius', START_RADIUS_TOO_LARGE);
   }
+  if (!castleFits(config, arena)) return invalidConfig('map.castle', CASTLE_OUT_OF_GRID);
   return null;
+}
+
+/**
+ * ¿Caben la huella del castillo y su puerta en la rejilla? (design 0016 §12.1 A1): como mucho
+ * ⌊columnas / 2⌋ × ⌊filas / 2⌋, centrada en la columna del centro, con la fila inferior en la del
+ * centro y la puerta justo debajo.
+ */
+function castleFits(config: MapConfig, arena: Arena): boolean {
+  const { cellSize, castle } = config;
+  const grid = gridOf(arena, cellSize);
+  const { col, row } = centerCell(arena, cellSize, grid);
+  const c0 = col - Math.floor(castle.cols / 2);
+  const r0 = row - castle.rows + 1;
+  return (
+    castle.cols <= Math.floor(grid.cols / 2) &&
+    castle.rows <= Math.floor(grid.rows / 2) &&
+    c0 >= 0 &&
+    c0 + castle.cols <= grid.cols &&
+    r0 >= 0 &&
+    row + 1 < grid.rows
+  );
+}
+
+/** Columnas y filas de la rejilla que cubre el mundo. */
+function gridOf(arena: Arena, cellSize: number): { cols: number; rows: number } {
+  return { cols: Math.ceil(arena.width / cellSize), rows: Math.ceil(arena.height / cellSize) };
+}
+
+/** Celda que contiene el centro del mundo (recortada a la rejilla). */
+export function centerCell(
+  arena: { readonly width: number; readonly height: number },
+  cellSize: number,
+  grid: { readonly cols: number; readonly rows: number },
+): { col: number; row: number } {
+  return {
+    col: Math.min(Math.floor(arena.width / 2 / cellSize), grid.cols - 1),
+    row: Math.min(Math.floor(arena.height / 2 / cellSize), grid.rows - 1),
+  };
 }
 
 /**
@@ -105,6 +152,8 @@ export class MapRules {
   private constructor(
     readonly config: MapConfig,
     arena: Arena,
+    /** Radio del jugador con el que se validaron las reglas (salidas declaradas, 0016). */
+    readonly playerRadius: number,
   ) {
     this.cellSize = config.cellSize;
     this.width = arena.width;
@@ -126,7 +175,7 @@ export class MapRules {
   ): Result<MapRules, DomainError> {
     const error = checkRanges(config) ?? checkCross(config, arena, playerRadius);
     if (error) return err(error);
-    return ok(new MapRules(config, arena));
+    return ok(new MapRules(config, arena, playerRadius));
   }
 
   get cellCount(): number {

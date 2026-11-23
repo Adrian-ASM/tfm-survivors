@@ -3,6 +3,7 @@ import { VIEW_SIZE_MUST_BE_POSITIVE } from '../../domain/arena/View';
 import { RUN_DURATION_MUST_BE_INTEGER } from '../../domain/run/RunDuration';
 import {
   BRIDGES_OUT_OF_RANGE,
+  CASTLE_SIZE_MUST_BE_INTEGER,
   CELL_SIZE_MUST_BE_INTEGER,
   CHANCE_OUT_OF_RANGE,
   MAP_LIMITS,
@@ -276,6 +277,12 @@ export const MapSchema = z.strictObject({
     .min(0, { error: RIVERS_OUT_OF_RANGE })
     .max(MAP_LIMITS.riversMax, { error: RIVERS_OUT_OF_RANGE }),
   bridges: IntRange(MAP_LIMITS.bridgesMax, BRIDGES_OUT_OF_RANGE),
+  // Huella del castillo: aquí solo enteros ≥ 1; el tope por rejilla y el encaje de huella y puerta
+  // los comprueba `MapRules` (necesitan el mundo), con el campo `map.castle`.
+  castle: z.strictObject({
+    cols: Count(CASTLE_SIZE_MUST_BE_INTEGER),
+    rows: Count(CASTLE_SIZE_MUST_BE_INTEGER),
+  }),
   tuning: z.strictObject({
     riverVerticalChance: Chance,
     riverMeander: Chance,

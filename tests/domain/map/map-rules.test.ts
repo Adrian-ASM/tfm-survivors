@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Arena } from '../../../src/domain/arena/Arena';
 import {
+  CASTLE_OUT_OF_GRID,
   CELL_SIZE_BELOW_PLAYER,
   MapRules,
   START_RADIUS_TOO_LARGE,
@@ -72,8 +73,44 @@ describe('MapRules · invariantes cruzadas con arena y jugador', () => {
     ['rivers', { rivers: 1.5 }],
     ['bridges', { bridges: { min: 0, max: 2 } }],
     ['bridges', { bridges: { min: 3, max: 2 } }],
+    ['castle.cols', { castle: { cols: 0, rows: 4 } }],
+    ['castle.rows', { castle: { cols: 5, rows: 0 } }],
+    ['castle.cols', { castle: { cols: 5.5, rows: 4 } }],
   ] as const)('defensa en el dominio: %s fuera de rango', (field, patch) => {
     const r = create(patch);
     expect(!r.ok && r.error.field).toBe(`map.${field}`);
+  });
+
+  it.each([
+    [17, 4],
+    [5, 10],
+  ])(
+    'castle { %i, %i } no cabe en la rejilla de 32 × 18 (⌊32/2⌋ = 16, ⌊18/2⌋ = 9)',
+    (cols, rows) => {
+      const r = create({ castle: { cols, rows } });
+      expect(!r.ok && r.error).toEqual({
+        code: 'invalid-config',
+        field: 'map.castle',
+        message: CASTLE_OUT_OF_GRID,
+      });
+    },
+  );
+
+  it.each([
+    [1, 1],
+    [16, 9],
+    [5, 4],
+  ])('castle { %i, %i } vale en la rejilla por defecto', (cols, rows) => {
+    expect(create({ castle: { cols, rows } }).ok).toBe(true);
+  });
+
+  it('huella y puerta deben caber también en una rejilla impar (3 × 3: castle { 1, 1 })', () => {
+    // 180 × 180 ⇒ 3 × 3 celdas, centro (1, 1): huella (1, 1) y puerta (1, 2).
+    expect(create({ castle: { cols: 1, rows: 1 }, startRadius: 60 }, 180, 180).ok).toBe(true);
+  });
+
+  it('guarda el radio del jugador con el que se validó', () => {
+    const r = create({});
+    expect(r.ok && r.value.playerRadius).toBe(16);
   });
 });

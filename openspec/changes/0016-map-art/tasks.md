@@ -14,7 +14,7 @@
   nueva en colisión, gemas, enemigos ni bot. — escenarios: "Caminabilidad por tipo y fuera de la rejilla", "Deslizar
   por la fachada del castillo", "Baja dentro del castillo", "Persecución a través del castillo", "Repulsión de un
   tronco, del agua y del castillo", "Dirección bloqueada por el castillo"
-- [ ] 1.2 `MapConfig.castle { cols, rows }`: zod (`MapSchema`, enteros ≥ 1, estricto, obligatorio) y
+- [x] 1.2 `MapConfig.castle { cols, rows }`: zod (`MapSchema`, enteros ≥ 1, estricto, obligatorio) y
   `MapRules.create` (`checkCross`: `cols ≤ ⌊columnas/2⌋`, `rows ≤ ⌊filas/2⌋`, huella y puerta dentro de la rejilla →
   `CASTLE_OUT_OF_GRID`, campo `map.castle`); `MapRules.playerRadius`; `content/map.json` con `castle {5, 4}`; builders
   de test con huella pequeña si su arena es diminuta (riesgo §14). — escenarios: "Contenido por defecto", "Valores

@@ -379,6 +379,7 @@ export interface RawContent {
     trunkPatch: { min: number; max: number };
     rivers: number;
     bridges: { min: number; max: number };
+    castle: { cols: number; rows: number };
     tuning: { riverVerticalChance: number; riverMeander: number; patchAttempts: number };
   };
 }
