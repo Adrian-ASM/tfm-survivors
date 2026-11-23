@@ -289,7 +289,7 @@ describe('Contenido de enemigos y oleadas validado · forma y rangos (zod)', () 
     ['enemies.types.0.cost', (r: RawContent) => (r.enemies.types[0].cost = -1)],
     ['arena.view.width', (r: RawContent) => (r.arena.view.width = 0)],
     ['arena.view.height', (r: RawContent) => (r.arena.view.height = -2)],
-    ['waves.spawn.margin', (r: RawContent) => (r.waves.spawn.margin = -1)],
+    ['waves.spawn.ringRadius', (r: RawContent) => (r.waves.spawn.ringRadius = 0)],
     ['waves.spawn.minDistance', (r: RawContent) => (r.waves.spawn.minDistance = -1)],
     ['waves.spawn.maxAttempts', (r: RawContent) => (r.waves.spawn.maxAttempts = 1.5)],
     [

@@ -52,7 +52,7 @@ export interface RunConfig {
     readonly maxAlive: number;
     readonly maxBudget: number;
     readonly spawn: {
-      readonly margin: number;
+      readonly ringRadius: number;
       readonly minDistance: number;
       readonly maxAttempts: number;
     };
@@ -118,7 +118,7 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
   const table = WaveTable.create(config.waves.segments, catalog.value);
   if (!table.ok) return table;
   const { maxAlive, maxBudget } = config.waves;
-  const spawn = SpawnRules.create({ maxAlive, maxBudget, ...config.waves.spawn }, view.value);
+  const spawn = SpawnRules.create({ maxAlive, maxBudget, ...config.waves.spawn });
   if (!spawn.ok) return spawn;
   const budgetError = checkBudgetCoversCatalog(spawn.value, catalog.value);
   if (budgetError) return err(budgetError);

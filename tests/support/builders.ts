@@ -1,6 +1,7 @@
 import arenaJson from '../../content/arena.json';
 import mapJson from '../../content/map.json';
 import playerJson from '../../content/player.json';
+import wavesJson from '../../content/waves.json';
 import type { RunConfig, UpgradesConfig } from '../../src/domain/run/RunConfig';
 import type { WeaponsConfig } from '../../src/domain/weapon/WeaponLoadout';
 import type { WeaponTypeConfig } from '../../src/domain/weapon/WeaponType';
@@ -157,24 +158,11 @@ export const DEFAULT_ENEMY_TYPES = [
   { id: 'goblin-barrel', speed: 70, radius: 16, cost: 2, damage: 8, health: 20, xp: 2 },
 ] as const;
 
-const ALL = ['goblin-torch', 'goblin-barrel', 'goblin-tnt'];
-
 /**
- * Tabla de oleadas y parámetros de spawn (espejo de content/waves.json). Desde 0010, los tramos de
- * 300 y 480 s están calibrados con el bot de referencia sobre las semillas 1..50.
+ * Tabla de oleadas y parámetros de spawn, leídos de content/waves.json (una sola fuente: el radio
+ * del anillo y la tabla calibrada viven solo en `content/`, spec run-outcome 0017).
  */
-export const DEFAULT_WAVES: RunConfig['waves'] = {
-  maxAlive: 200,
-  maxBudget: 10,
-  spawn: { margin: 32, minDistance: 200, maxAttempts: 8 },
-  segments: [
-    { fromSecond: 0, budgetPerSecond: 1, types: ['goblin-torch'] },
-    { fromSecond: 60, budgetPerSecond: 2, types: ['goblin-torch', 'goblin-barrel'] },
-    { fromSecond: 180, budgetPerSecond: 2.5, types: ALL },
-    { fromSecond: 300, budgetPerSecond: 4, types: ALL },
-    { fromSecond: 480, budgetPerSecond: 5.6, types: ALL },
-  ],
-};
+export const DEFAULT_WAVES: RunConfig['waves'] = structuredClone(wavesJson);
 
 /**
  * Vida del jugador para pruebas que miden el spawn y no el daño (long-run, bench): finita y válida,
@@ -355,7 +343,7 @@ export interface RawContent {
   waves: {
     maxAlive: number;
     maxBudget: number;
-    spawn: { margin: number; minDistance: number; maxAttempts: number };
+    spawn: { ringRadius: number; minDistance: number; maxAttempts: number };
     segments: [MutableSegment, MutableSegment, ...MutableSegment[]];
   };
   weapons: {

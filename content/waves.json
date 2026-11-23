@@ -1,7 +1,7 @@
 {
   "maxAlive": 200,
   "maxBudget": 10,
-  "spawn": { "margin": 32, "minDistance": 200, "maxAttempts": 8 },
+  "spawn": { "ringRadius": 582.727, "minDistance": 200, "maxAttempts": 8 },
   "segments": [
     { "fromSecond": 0, "budgetPerSecond": 1, "types": ["goblin-torch"] },
     { "fromSecond": 60, "budgetPerSecond": 2, "types": ["goblin-torch", "goblin-barrel"] },

@@ -7,7 +7,7 @@
      de literales no pueden pasar a verde por separado sin dejar el repo en rojo). -->
 
 ## 1. Dominio (refactor que conserva el comportamiento)
-- [ ] 1.1 `SpawnRules` con `ringRadius` de contenido, sin `View` (design D3).
+- [x] 1.1 `SpawnRules` con `ringRadius` de contenido, sin `View` (design D3).
   - Rojo: `tests/domain/spawn-rules.test.ts` (nuevo o ampliado): `SpawnRules.create(config)` sin `View` usa
     `ringRadius`; 0, −1, `NaN` e `Infinity` → `RING_RADIUS_MUST_BE_POSITIVE` en `waves.spawn.ringRadius`;
     `minDistance ≥ ringRadius` es válido. `tests/domain/place-spawn.test.ts` con `ringRadius` explícito.

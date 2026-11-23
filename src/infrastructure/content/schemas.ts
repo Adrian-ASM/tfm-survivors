@@ -45,6 +45,7 @@ import {
   MAX_ALIVE_MUST_BE_INTEGER,
   MAX_BUDGET_MUST_BE_POSITIVE,
   MAX_ATTEMPTS_MUST_BE_INTEGER,
+  RING_RADIUS_MUST_BE_POSITIVE,
   SPAWN_DISTANCE_MUST_BE_NON_NEGATIVE,
 } from '../../domain/wave/SpawnRules';
 import {
@@ -233,7 +234,7 @@ export const WavesSchema = z.strictObject({
   maxAlive: Count(MAX_ALIVE_MUST_BE_INTEGER),
   maxBudget: z.number().positive({ error: MAX_BUDGET_MUST_BE_POSITIVE }),
   spawn: z.strictObject({
-    margin: Distance,
+    ringRadius: z.number().positive({ error: RING_RADIUS_MUST_BE_POSITIVE }),
     minDistance: Distance,
     maxAttempts: Count(MAX_ATTEMPTS_MUST_BE_INTEGER),
   }),
