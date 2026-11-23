@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { collect, probe, snapshotOf } from './probe';
 
 // Spec simulation-loop, "Velocidad de simulación en modo E2E": resolución en el navegador, sin

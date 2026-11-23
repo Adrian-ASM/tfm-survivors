@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { collect, focusGame, probe } from './probe';
 
 const GAME_TICKS_15_S = 15 * 60;

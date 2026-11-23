@@ -197,7 +197,7 @@
     - la suma de los dos da el total de antes más los de `manual-step`.
   - Hecho: `verify` verde y `npm run test:e2e` (los dos proyectos) verde.
 
-- [ ] 3.2 **Fixture `cpuThrottle` por CDP, `parseThrottle` y regla de ESLint** (design §4.2).
+- [x] 3.2 **Fixture `cpuThrottle` por CDP, `parseThrottle` y regla de ESLint** (design §4.2).
   - Ficheros:
     - `tests/e2e/fixtures.ts`;
     - `tests/support/cpuThrottle.ts` con `parseThrottle` y `DEFAULT_CPU_THROTTLE` provisional, con un comentario

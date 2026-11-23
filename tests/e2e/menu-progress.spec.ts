@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { type Locator, type Page } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { EMPTY_PROGRESS } from '../../src/domain/progress/Progress';
 import { decodeProgress } from '../../src/infrastructure/progress/progressCodec';
 import {

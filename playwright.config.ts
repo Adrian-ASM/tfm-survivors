@@ -1,8 +1,13 @@
 import { defineConfig, devices } from '@playwright/test';
+import type { ThrottleOptions } from './tests/e2e/fixtures';
+import { parseThrottle } from './tests/support/cpuThrottle';
 
 const BASE_URL = 'http://localhost:4173/tfm-survivors/';
 const CI_LIKE = Boolean(process.env.CI_LIKE);
 const SLOW_ENV = Boolean(process.env.CI) || CI_LIKE;
+// Frenado de CPU por CDP (design 0014 §4.2): solo `realtime` y solo con CI_LIKE. En CI real, 1
+// (el runner ya es lento); `logic` no depende del reloj y frenarlo no detectaría nada nuevo.
+const cpuThrottle = CI_LIKE ? parseThrottle(process.env.CPU_THROTTLE) : 1;
 
 // Chromium de escritorio; con CI_LIKE=1, render por software como el runner de Actions sin GPU.
 const chrome = {
@@ -11,7 +16,7 @@ const chrome = {
 };
 
 // Smoke E2E contra el build de producción (vite preview), solo chromium (plan gratuito de GitHub Actions).
-export default defineConfig({
+export default defineConfig<ThrottleOptions>({
   testDir: 'tests/e2e',
   // Las esperas son de reloj real y el runner de Actions (sin GPU, 4 vCPU) pinta a menos fps:
   // en CI y con CI_LIKE se da más margen (0012: poll del tick 120 en 5 s fallaba).
@@ -28,7 +33,7 @@ export default defineConfig({
   // etiqueta @realtime). Un test sin etiqueta cae en `logic`.
   projects: [
     { name: 'logic', grepInvert: /@realtime/, use: { ...chrome } },
-    { name: 'realtime', grep: /@realtime/, use: { ...chrome } },
+    { name: 'realtime', grep: /@realtime/, use: { ...chrome, cpuThrottle } },
   ],
   webServer: {
     command: 'npm run build && npm run preview',

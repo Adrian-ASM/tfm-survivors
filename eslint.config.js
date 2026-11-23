@@ -112,6 +112,25 @@ export default tseslint.config(
     },
   },
   {
+    // Change 0014: el frenado de CPU va en un fixture automático; quien importa `test` de
+    // @playwright/test se lo salta sin darse cuenta.
+    files: ['tests/e2e/**/*.spec.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@playwright/test',
+              importNames: ['test'],
+              message: "Importa test y expect de './fixtures' (frenado de CPU, design 0014 §4.2).",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ['src/infrastructure/**/*.ts'],
     rules: {
       'no-restricted-imports': [

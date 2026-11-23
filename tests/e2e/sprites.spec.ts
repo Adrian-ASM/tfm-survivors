@@ -1,5 +1,5 @@
-import { expect, test } from '@playwright/test';
 import arena from '../../content/arena.json' with { type: 'json' };
+import { expect, test } from './fixtures';
 import {
   backToMenu,
   cornerTour,
