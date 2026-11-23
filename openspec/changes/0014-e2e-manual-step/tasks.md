@@ -75,7 +75,7 @@
     leído al empezar el step", "Manual frente a tiempo real" y "Reparto distinto de los ticks".
   - Hecho: `verify` verde, con la equivalencia fuera del test de balance.
 
-- [ ] 1.5 **`PauseGate.manualFrame`** (design §3.3).
+- [x] 1.5 **`PauseGate.manualFrame`** (design §3.3).
   - Ficheros: `src/infrastructure/phaser/PauseGate.ts` y `tests/infrastructure/pause-gate.test.ts`.
   - Test:
     - en pausa devuelve `{ ticks: 0 }` con el snapshot igual campo a campo y sin llamar a `execute`;
