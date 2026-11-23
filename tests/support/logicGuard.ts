@@ -6,7 +6,12 @@
  */
 
 /** Specs que tienen tests de `logic` y que la guarda vigila. */
-export const LOGIC_GUARDED_SPECS: readonly string[] = ['manual-step.spec.ts', 'level-up.spec.ts'];
+export const LOGIC_GUARDED_SPECS: readonly string[] = [
+  'manual-step.spec.ts',
+  'level-up.spec.ts',
+  'health.spec.ts',
+  'enemies.spec.ts',
+];
 
 export type ClockWaitRule = 'waitForTimeout' | 'playChoosingFirst' | 'poll-tick';
 

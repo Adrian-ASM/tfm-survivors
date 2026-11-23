@@ -240,7 +240,7 @@
   - Escenarios de la spec viva de level-up/upgrades que cubre hoy, sin cambiar su intención.
   - Hecho: la guarda incluye el fichero, `verify` verde y `npm run test:e2e -- level-up` verde.
 
-- [ ] 4.2 **`health.spec.ts` y `enemies.spec.ts`**.
+- [x] 4.2 **`health.spec.ts` y `enemies.spec.ts`**.
   - Cambios:
     - health: `stepUntil(health < max, 80 × 60)` con la semilla 42;
     - enemies: `step(30)` con enemigos dentro de la arena; `?seed=abc` con 1 aviso y `step(31)` devuelve 31.
