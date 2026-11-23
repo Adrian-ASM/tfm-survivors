@@ -107,7 +107,7 @@
   Escenarios: world-camera "Nada fuera del mundo en una partida real"; sprite-rendering "Fondo en las cuatro
   esquinas", "Fondo de reserva en el mundo entero".
   Test: `tests/e2e/camera.spec.ts`, `tests/e2e/sprites.spec.ts`. E2E afectados: `camera`, `sprites`
-- [ ] 4.2 Partida nueva tras acabar en una esquina: ir a (1.904, 1.064), quedarse quieto hasta la derrota, pulsar R
+- [x] 4.2 Partida nueva tras acabar en una esquina: ir a (1.904, 1.064), quedarse quieto hasta la derrota, pulsar R
   y leer con `watchNextRun` el primer frame (jugador en (960, 540), cámara en (480, 270)); lo mismo con `Volver al
   menú` + `Jugar`. Rojo: sin `CameraRig` recreado en `create()` la cámara hereda el scroll anterior.
   Escenarios: world-camera "Partida nueva tras acabar en una esquina"; player-movement "Partida nueva tras acabar en
