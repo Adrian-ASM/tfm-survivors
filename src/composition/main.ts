@@ -20,7 +20,10 @@ import { BootScene } from '../infrastructure/phaser/BootScene';
 import type { CameraView, WorldSize } from '../infrastructure/phaser/CameraRig';
 import { ManualStepper } from '../infrastructure/e2e/ManualStepper';
 import { requestStep } from '../infrastructure/e2e/stepRequest';
+import { applyUiScale } from '../infrastructure/dom/applyUiScale';
+import { screenFrame } from '../infrastructure/phaser/ui/screenFrame';
 import { assetUrl } from './assetUrl';
+import { scaleConfig } from './scaleConfig';
 import { bootContent } from './contentBoot';
 import { resolveSeed } from '../infrastructure/url/resolveSeed';
 import { resolveAdvance } from '../infrastructure/url/resolveAdvance';
@@ -230,13 +233,12 @@ function bootstrap(): void {
     e2e,
   });
 
-  // El canvas tiene el tamaño del tope de vista (unidades de mundo): fuera del núcleo (0017).
-  const view = booted.maxView;
+  // Lienzo a ventana completa con tope (0017, ADR-0014): RESIZE recortado a `maxView`, que no
+  // llega al núcleo. La vista mide lo que mide el lienzo (zoom 1).
   const phaserGame = new Phaser.Game({
     type: Phaser.AUTO,
     parent: root,
-    width: view.width,
-    height: view.height,
+    scale: { ...scaleConfig(booted.maxView), parent: root },
     backgroundColor: BACKGROUND,
     // Imágenes con <img> (sin XHR ni blob:): la CSP de index.html no cambia (design D2).
     loader: { imageLoadType: 'HTMLImageElement' },
@@ -244,6 +246,12 @@ function bootstrap(): void {
     // la partida (arranque de antes, ADR-0011).
     scene: [boot, menu, game],
   });
+  // Una sola escucha, que vive lo que el juego: escala de UI de los paneles DOM (design D6).
+  const onCanvas = (size: { width: number; height: number }): void => {
+    applyUiScale(root.style, screenFrame(size.width, size.height));
+  };
+  onCanvas(phaserGame.scale.gameSize);
+  phaserGame.scale.on(Phaser.Scale.Events.RESIZE, onCanvas);
   // `step(n)` resuelve con el frame ya pintado: POST_RENDER llega tras pintar todas las escenas,
   // una vez por frame, haya o no partida (Phaser 4.2.1, Game.step; design 0014 §3.6).
   if (stepper) {

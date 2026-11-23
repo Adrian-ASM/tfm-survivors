@@ -161,7 +161,7 @@
     máximo en la ventana mínima" (comprobación manual en 6.2).
 
 ## 4. Composición y E2E
-- [ ] 4.1 Configuración de escalado (design D1). Fichero: `src/composition/scaleConfig.ts` (puro) y `main.ts`.
+- [x] 4.1 Configuración de escalado (design D1). Fichero: `src/composition/scaleConfig.ts` (puro) y `main.ts`.
   - Rojo: `tests/composition/scale-config.test.ts`: `scaleConfig(maxView)` da `RESIZE`, `min` 1 × 1,
     `max` = `maxView`, `snap` 1 × 1, `NO_CENTER` y tamaño inicial `maxView`.
   - `main.ts`: `scale: scaleConfig(booted.maxView)`; escucha única de `phaserGame.scale` RESIZE → `applyUiScale`.
