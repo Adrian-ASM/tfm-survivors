@@ -86,9 +86,17 @@ de la partida anterior.
 - **THEN** en ambos el rectángulo visible es (0, 0)–(960, 540)
 
 #### Scenario: Nada fuera del mundo en una partida real
-- **GIVEN** la build de producción con `?e2e&seed=7` y un input que lleva al jugador a las cuatro esquinas del mundo
+- **GIVEN** la build de producción con `?e2e&map=empty&seed=7` y un input que lleva al jugador a las cuatro esquinas
+  del mundo
 - **WHEN** se pintan los frames hasta que el jugador ha tocado las cuatro esquinas
 - **THEN** en cada frame el rectángulo visible que informa la sonda está dentro de (0, 0)–(1.920, 1.080)
+
+#### Scenario: Nada fuera del mundo con el mapa real
+- **GIVEN** la build de producción con `?e2e&manual&seed=7` (mapa real) y la flecha derecha mantenida
+- **WHEN** se llama a `step(60)` 20 veces, eligiendo la opción 0 si se abre una oferta, y se lee la sonda tras cada
+  llamada
+- **THEN** en cada lectura el rectángulo visible está dentro de (0, 0)–(1.920, 1.080) y cumple la fórmula de este
+  requisito con la posición del jugador del snapshot (error ≤ 1 px)
 
 #### Scenario: Partida nueva tras acabar en una esquina
 - **GIVEN** una partida terminada ya pintada con el jugador en (1.904, 1.064)
@@ -160,3 +168,4 @@ La cámara SHALL ser solo de presentación: MUST NOT cambiar ningún snapshot, e
 - **THEN** son iguales
 
 <!-- historial: 0013-world-camera (2026-11-23) -->
+<!-- historial: 0015-procedural-map (2026-11-23) -->

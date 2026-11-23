@@ -284,3 +284,13 @@ todas bloqueadas → (0, 0). Lee el mapa por `MapSnapshot`/`GameMap`, nunca un m
 8. Bot: bloqueo con 1 tick a velocidad efectiva (antes 4 ticks a velocidad base) y (0, 0) si todo bloquea.
 9. Sonda: lista completa de 576 tipos + `emptyForced`; render con `sprites.cells` por tipo (antes `terrain` con
    reserva). Colores validados distintos dos a dos.
+
+## 12. Cambios tras el apply (anotados al archivar)
+- **Regla 3 de §3 retirada** (deuda W3, aceptada por el usuario): no se exige que el resto del mundo sea 0 o ≥ 2r,
+  porque la spec acepta celdas de 32 px con un mundo de 1.080 de alto. Con el contenido por defecto (60 px) no
+  afecta; un contenido con otra celda podría dar por alcanzable una franja de borde más estrecha que el jugador.
+- **§5 sustituida** (commit `7704b2b`): el mapa ya no es una CanvasTexture escalada del tamaño del mundo. En WebGL
+  por software esa capa, transparente en la hierba, costaba un relleno a pantalla completa por frame (CI: 14,7 → 7,3
+  fps de calibración y timeout del job `e2e`). Ahora se pinta un rectángulo por tramo de celdas no-hierba de cada
+  fila, en una `Layer` sobre el suelo, reutilizado al reiniciar; con el mapa vacío no hay objetos. Desaparece el
+  reajuste a NEAREST tras `refresh()` (ce66333).
