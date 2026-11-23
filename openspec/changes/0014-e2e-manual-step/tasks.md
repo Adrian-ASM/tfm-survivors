@@ -290,7 +290,7 @@
 
 ## 5. Calibración del frenado (design §4.3)
 
-- [ ] 5.1 **Sonda `calibration.spec.ts` (`@realtime`)**.
+- [x] 5.1 **Sonda `calibration.spec.ts` (`@realtime`)**.
   - Ficheros: `tests/e2e/calibration.spec.ts` y `measureFrames(page, frames)` en `probe.ts`.
   - Qué mide: con `?e2e&seed=42&speed=8` y el tick ≥ 1.200, sobre 300 frames de rAF, `fps`, p95 del intervalo y
     `ticksPerFrame`.

@@ -598,6 +598,43 @@ export const ticksPerFrame = (page: Page, frames = 30): Promise<number> =>
     return (read() - start) / n;
   }, frames);
 
+/** Medida de `measureFrames`: ritmo real del navegador y de la simulación. */
+export interface FrameMeasure {
+  /** Frames por segundo de reloj real. */
+  readonly fps: number;
+  /** Percentil 95 del intervalo entre frames (ms). */
+  readonly p95: number;
+  /** Ticks de simulación por frame (media). */
+  readonly ticksPerFrame: number;
+}
+
+/**
+ * Mide `frames` frames de `requestAnimationFrame` en la página (sonda de calibración, design 0014
+ * §4.3): fps y p95 con `performance.now` (código de test, no del núcleo) y ticks por frame.
+ */
+export const measureFrames = (page: Page, frames: number): Promise<FrameMeasure> =>
+  page.evaluate(async (n) => {
+    const read = () => (window as unknown as Probe).__sprint?.snapshot?.tick ?? 0;
+    const nextFrame = () => new Promise<number>((resolve) => requestAnimationFrame(resolve));
+    const intervals: number[] = [];
+    let last = await nextFrame();
+    const start = last;
+    const startTick = read();
+    for (let i = 0; i < n; i += 1) {
+      const now = await nextFrame();
+      intervals.push(now - last);
+      last = now;
+    }
+    const sorted = [...intervals].sort((a, b) => a - b);
+    const p95 = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))] ?? 0;
+    const elapsed = last - start;
+    return {
+      fps: elapsed > 0 ? (n * 1000) / elapsed : 0,
+      p95,
+      ticksPerFrame: (read() - startTick) / n,
+    };
+  }, frames);
+
 /** Espera `n` frames del navegador (`requestAnimationFrame`), no un tiempo de reloj. */
 export const waitFrames = (page: Page, n: number): Promise<void> =>
   page.evaluate(async (count) => {
