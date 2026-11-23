@@ -113,7 +113,7 @@
   Escenarios: world-camera "Partida nueva tras acabar en una esquina"; player-movement "Partida nueva tras acabar en
   una esquina".
   Test: `tests/e2e/camera.spec.ts`. E2E afectados: `camera`, `results`, `menu-flow`
-- [ ] 4.3 HUD y overlays con la cámara movida: con el jugador en (1.904, 1.064) y una oferta abierta, clic en la
+- [x] 4.3 HUD y overlays con la cámara movida: con el jugador en (1.904, 1.064) y una oferta abierta, clic en la
   tercera carta en su posición de pantalla (`cardLayout`) → índice 2, y cartas en la misma posición que con el
   jugador en (480, 270); pausa y resultados (DOM) con la misma caja de pantalla en (1.904, 16) y en (480, 270), y
   `Volver al menú` responde al clic. Rojo: clic en la carta calculada en coordenadas de mundo en vez de pantalla.

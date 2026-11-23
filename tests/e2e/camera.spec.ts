@@ -11,6 +11,8 @@ import {
   focusGame,
   gameUrl,
   menuButton,
+  menuPanel,
+  pauseOverlay,
   playChoosingFirst,
   probe,
   snapshotOf,
@@ -22,6 +24,7 @@ import {
   type FirstFrameView,
   type SnapshotView,
 } from './probe';
+import { cardLayout } from '../../src/infrastructure/phaser/cardLayout';
 
 // Spec world-camera (0013): cámara que sigue al jugador dentro del mundo y su sonda E2E. Mundo y
 // vista salen de content/arena.json (una sola fuente).
@@ -131,4 +134,95 @@ test('Scenario: Partida nueva tras acabar en una esquina (Volver al menú y Juga
 
   expectCentered(await firstFrameOfNextRun(page));
   expect(problems).toEqual([]);
+});
+
+/** Esquina por nombre del recorrido. */
+const cornerNamed = (name: string) => {
+  const c = CORNERS.find((x) => x.name === name);
+  if (!c) throw new Error(`Sin esquina ${name}`);
+  return c;
+};
+
+/** Partida `?e2e&seed=7` a E2E_SPEED con el jugador llevado a la esquina dada. */
+async function atCorner(page: Page, name: string): Promise<SnapshotView | null> {
+  await page.goto(gameUrl({ seed: 7, speed: E2E_SPEED }));
+  await expectSpeed(page, E2E_SPEED);
+  await expect.poll(async () => (await snapshotOf(page))?.tick ?? null).not.toBeNull();
+  await focusGame(page);
+  return walkToCorner(page, cornerNamed(name), WORLD, CORNER_TIMEOUT_MS);
+}
+
+/** Espera sin input (y sin elegir) a que se abra una oferta; null si termina antes. */
+async function waitOffer(page: Page): Promise<SnapshotView | null> {
+  const deadline = Date.now() + DEFEAT_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    const snap = await snapshotOf(page);
+    if (snap?.status === 'over') return null;
+    if (snap && snap.offer.length === 3) return snap;
+    await page.waitForTimeout(50);
+  }
+  return null;
+}
+
+/**
+ * La cámara de referencia es la de (480, 270), recortada en (0, 0): la misma que en la esquina
+ * superior izquierda, que se alcanza con el mismo recorrido de teclado.
+ */
+const REFERENCE = 'tl';
+
+test.describe('HUD y overlays con la cámara movida', () => {
+  test.setTimeout(120_000);
+
+  for (const [name, cameraAt] of [
+    ['br', { x: WORLD.width - VIEW.width, y: WORLD.height - VIEW.height }],
+    [REFERENCE, { x: 0, y: 0 }],
+  ] as const) {
+    test(`Scenario: Overlay de elección con la cámara movida (clic en la 3.ª carta, esquina ${name})`, async ({
+      page,
+    }) => {
+      const problems = collect(page, ['error', 'warning']);
+      expect(await atCorner(page, name)).not.toBeNull();
+
+      const offered = await waitOffer(page);
+      expect(offered).not.toBeNull();
+      expect((await probe(page))?.camera).toMatchObject(cameraAt);
+      const third = cardLayout(VIEW, 3)[2];
+      await page
+        .locator('#game canvas')
+        .click({ position: { x: third?.x ?? 0, y: third?.y ?? 0 } });
+
+      await expect.poll(async () => (await snapshotOf(page))?.offer.length).toBe(0);
+      const after = await snapshotOf(page);
+      const chosen = offered?.offer[2];
+      expect(after?.upgrades).toContainEqual({ id: chosen?.id, level: chosen?.nextLevel });
+      expect(problems).toEqual([]);
+    });
+  }
+
+  test('Scenario: Resultados y pausa con la cámara movida ((1.904, 16) frente a la referencia)', async ({
+    page,
+  }) => {
+    const boxes: Record<string, { canvas: unknown; pause: unknown; results: unknown }> = {};
+    for (const name of ['tr', REFERENCE]) {
+      expect(await atCorner(page, name)).not.toBeNull();
+      await page.keyboard.press('Escape');
+      await expect(pauseOverlay(page)).toBeVisible();
+      const pause = await pauseOverlay(page).boundingBox();
+      await pauseOverlay(page).getByRole('button', { name: 'Reanudar' }).click();
+      await focusGame(page);
+      const ended = await playChoosingFirst(page, (s) => s.status === 'over', DEFEAT_TIMEOUT_MS);
+      expect(ended?.outcome).toBe('lost');
+      await expect(page.locator('.results-panel')).toBeVisible();
+      boxes[name] = {
+        canvas: await page.locator('#game canvas').boundingBox(),
+        pause,
+        results: await page.locator('.results-panel').boundingBox(),
+      };
+    }
+    expect(boxes.tr).toEqual(boxes[REFERENCE]);
+
+    expect(await atCorner(page, 'tr')).not.toBeNull();
+    await backToMenu(page);
+    await expect(menuPanel(page)).toBeVisible();
+  });
 });
