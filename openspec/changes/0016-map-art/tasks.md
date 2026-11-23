@@ -8,7 +8,7 @@
 
 ## 1. Dominio (castillo, salida y generador)
 
-- [ ] 1.1 `CellType` + `'castle'` (código 4, `CASTLE`), no caminable; `GameMap.fromCells` la acepta; `CELL_CODE.castle =
+- [x] 1.1 `CellType` + `'castle'` (código 4, `CASTLE`), no caminable; `GameMap.fromCells` la acepta; `CELL_CODE.castle =
   'C'` en `tests/support/mapGolden.ts`. Tests con mapas explícitos (`tests/domain/map/game-map.test.ts`,
   `run-map.test.ts`, `run-gems-map.test.ts`, `policies.test.ts`, persecución): rojo por tipo inexistente; sin lógica
   nueva en colisión, gemas, enemigos ni bot. — escenarios: "Caminabilidad por tipo y fuera de la rejilla", "Deslizar

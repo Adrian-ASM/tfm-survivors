@@ -29,6 +29,17 @@ export function openMap(arena: Arena): GameMap {
 /** Celdas `'c,r'` → tipo sobre hierba (p. ej. `{ '10,4': 'trunk' }`), en orden de filas. */
 export type Layout = Readonly<Record<string, CellType>>;
 
+/**
+ * Celdas `castle` de un rectángulo de columnas `c0..c1` y filas `r0..r1` (por defecto, la huella
+ * del contenido por defecto: columnas 14–18 y filas 6–9, x en [840, 1.140] e y en [360, 600]).
+ */
+export function castleBlock(c0 = 14, c1 = 18, r0 = 6, r1 = 9): Layout {
+  const layout: Record<string, CellType> = {};
+  for (let r = r0; r <= r1; r++)
+    for (let c = c0; c <= c1; c++) layout[`${String(c)},${String(r)}`] = 'castle';
+  return layout;
+}
+
 /** Lista de tipos de la rejilla de `rules`: hierba salvo las celdas de `layout`. */
 export function cellsWith(rules: MapRules, layout: Layout): CellType[] {
   const cells: CellType[] = Array.from({ length: rules.cols * rules.rows }, () => 'grass');

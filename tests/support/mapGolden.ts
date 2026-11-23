@@ -3,7 +3,13 @@
 // `deriveSeed` o `MAP_STREAM` cambian, ese test falla y hay que regenerarla (y re-medir el balance).
 
 /** Carácter de cada tipo de celda en la firma. */
-export const CELL_CODE = { grass: '.', trunk: 'T', water: '~', bridge: '=' } as const;
+export const CELL_CODE = {
+  grass: '.',
+  trunk: 'T',
+  water: '~',
+  bridge: '=',
+  castle: 'C',
+} as const;
 
 /** Firma de una lista de tipos de celda en orden de filas (un carácter por celda). */
 export const signatureOf = (cells: readonly string[]): string =>

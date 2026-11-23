@@ -1,8 +1,11 @@
 import type { CellType } from '../../domain/map/CellType';
 import type { MapSnapshot } from '../../domain/map/MapSnapshot';
 
-/** Tipos de celda que se pintan: la hierba no (se ve el fondo). */
-export type PaintedCell = Exclude<CellType, 'grass'>;
+/**
+ * Tipos de celda que se pintan: la hierba no (se ve el fondo). El castillo (0016) aún no tiene
+ * color ni arte en este adaptador: entra con el plan del mapa (`planMapArt`).
+ */
+export type PaintedCell = Exclude<CellType, 'grass' | 'castle'>;
 
 /** Color (0xRRGGBB) de cada tipo pintado, de los datos de aspecto (`terrain`). */
 export type TerrainColors = Readonly<Record<PaintedCell, number>>;
@@ -35,7 +38,7 @@ export interface TerrainCanvas {
   rect(x: number, y: number, width: number, height: number, color: number): void;
 }
 
-const isPainted = (t: CellType): t is PaintedCell => t !== 'grass';
+const isPainted = (t: CellType): t is PaintedCell => t !== 'grass' && t !== 'castle';
 
 /**
  * Celdas no-hierba del mapa con su rectángulo de mundo (recortado al mundo `width × height`) y el

@@ -15,7 +15,7 @@ import { startRun, startSeededRun } from '../support/runs';
 import { Run } from '../../src/domain/run/Run';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import { BALANCE_SEEDS } from '../support/balanceSeeds';
-import { cellsWith, mapRules, type Layout } from '../support/mapLayouts';
+import { castleBlock, cellsWith, mapRules, type Layout } from '../support/mapLayouts';
 
 /** Opción de oferta mínima con el id dado (el resto de campos no influye en la elección). */
 const option = (id: string): OfferSnapshot => ({
@@ -160,8 +160,8 @@ describe('Bot de referencia v2 con el mapa', () => {
     return referenceBot(config, r.value.map).input(r.value.snapshot());
   }
 
-  it.each(['trunk', 'water'] as const)(
-    'Scenario: Repulsión de un tronco y del agua (%s a 40 px: input (−1, 0))',
+  it.each(['trunk', 'water', 'castle'] as const)(
+    'Scenario: Repulsión de un tronco, del agua y del castillo (%s a 40 px: input (−1, 0))',
     (type) => {
       const input = inputWith({ '10,4': type }, { player: { x: 560, y: 270 } });
       expect(directionOf(input)).toEqual({ x: -1, y: 0 });
@@ -197,6 +197,29 @@ describe('Bot de referencia v2 con el mapa', () => {
       false,
     ]);
     expect(directionOf(referenceBot(config, r.value.map).input(snapshot))).toEqual({ x: 0, y: 1 });
+  });
+
+  it('Scenario: Dirección bloqueada por el castillo ((0, −1), +45° y −45° bloqueadas: (1, 0))', () => {
+    const config = withPlayer(aDefaultConfig(), { speed: 200 });
+    const setup: RunSetup = {
+      player: { x: 990, y: 616 },
+      enemies: [{ type: 'goblin-torch', x: 990, y: 626 }],
+    };
+    const r = Run.start(config, new Mulberry32RandomGenerator(1), setup, {
+      kind: 'cells',
+      cells: cellsWith(RULES, castleBlock()),
+    });
+    if (!r.ok) throw new Error(r.error.message);
+    const snapshot = r.value.snapshot();
+    const blocked = (dx: number, dy: number) =>
+      isBlockedMove(snapshot, botWorld(config, r.value.map), dx, dy);
+    expect([blocked(0, -1), blocked(1, -1), blocked(-1, -1), blocked(1, 0)]).toEqual([
+      true,
+      true,
+      true,
+      false,
+    ]);
+    expect(directionOf(referenceBot(config, r.value.map).input(snapshot))).toEqual({ x: 1, y: 0 });
   });
 
   it('todas las direcciones bloqueadas: input (0, 0)', () => {

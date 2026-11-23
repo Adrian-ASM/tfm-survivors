@@ -40,7 +40,7 @@ describe('Mapa de la partida (spec procedural-map)', () => {
 
   it('Scenario: Partida con mapa vacío (semilla 7: 576 celdas grass)', () => {
     const map = start(OPEN_TERRAIN).map;
-    expect(map.counts).toEqual({ grass: 576, trunk: 0, water: 0, bridge: 0 });
+    expect(map.counts).toEqual({ grass: 576, trunk: 0, water: 0, bridge: 0, castle: 0 });
     expect(map.start).toEqual({ x: 960, y: 540, radius: 180 });
   });
 

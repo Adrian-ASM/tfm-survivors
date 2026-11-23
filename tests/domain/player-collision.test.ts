@@ -6,7 +6,7 @@ import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import { TICK_SECONDS } from '../../src/domain/run/Run';
 import { Vector2 } from '../../src/domain/shared/Vector2';
 import { aDefaultConfig } from '../support/builders';
-import { mapRules, mapWith, type Layout } from '../support/mapLayouts';
+import { castleBlock, mapRules, mapWith, type Layout } from '../support/mapLayouts';
 
 // Spec player-movement (0015), "Colisión con el mapa". Rejilla por defecto: celda (c, r) en
 // [60c, 60c + 60] × [60r, 60r + 60]; jugador de radio 16 y 200 px/s salvo que se diga otra cosa.
@@ -100,6 +100,15 @@ describe('Colisión con el mapa (spec player-movement)', () => {
     const end = last(walk(map, [584, 270], PlayerInput.of(1, 1), 30));
     expect(end.x).toBe(584);
     expectWithinSpec(end.y - 270, 70.711);
+  });
+
+  it('Scenario: Deslizar por la fachada del castillo (y en 616, x + 70,711)', () => {
+    const map = mapWith(RULES, castleBlock());
+    const path = walk(map, [990, 616], PlayerInput.of(1, -1), 30);
+    const end = last(path);
+    expect(end.y).toBe(616);
+    expectWithinSpec(end.x - 990, 70.711);
+    expect(overlapsAny(map, path)).toBe(false);
   });
 
   it('Scenario: Rodear la esquina de un tronco', () => {

@@ -5,7 +5,7 @@ import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import { aContactConfig, play, startRun, startSeededRun, ticks } from '../support/runs';
 import { aDefaultConfig } from '../support/builders';
-import { cellsWith, mapRules } from '../support/mapLayouts';
+import { castleBlock, cellsWith, mapRules } from '../support/mapLayouts';
 
 // Spec procedural-map, "Azar del mapa independiente del de la partida", y enemy-behavior, "Los
 // enemigos ignoran el mapa". Semilla 7, input (0, 0) y política de elección fija.
@@ -109,5 +109,22 @@ describe('Los enemigos ignoran el mapa (spec enemy-behavior)', () => {
       240,
     );
     expect(open.map((s) => s.enemies[0]?.x)).toEqual(path.map((s) => s.enemies[0]?.x));
+  });
+
+  it('Scenario: Persecución a través del castillo (cruza la huella entera)', () => {
+    const config = { ...aContactConfig(), arena: CONFIG.arena };
+    const setup = { player: { x: 990, y: 700 }, enemies: [{ type: 'probe', x: 990, y: 300 }] };
+    const r = Run.start(config, new Mulberry32RandomGenerator(42), setup, {
+      kind: 'cells',
+      cells: cellsWith(mapRules(), castleBlock()),
+    });
+    if (!r.ok) throw new Error(r.error.message);
+    const path = ticks(r.value, 330);
+    const at = (n: number) => path[n - 1]?.enemies[0];
+    expect(at(180)?.x).toBe(990);
+    expect(at(180)?.y).toBeCloseTo(480, 3);
+    expect(at(330)?.y).toBeCloseTo(630, 3);
+    const open = ticks(startRun(config, setup), 330);
+    expect(open.map((s) => s.enemies[0]?.y)).toEqual(path.map((s) => s.enemies[0]?.y));
   });
 });
