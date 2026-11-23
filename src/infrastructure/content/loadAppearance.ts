@@ -22,6 +22,51 @@ export function aspectsOf(appearance: Appearance): [string[], Aspect][] {
   ];
 }
 
+export const TILE_SCALE_MISMATCH =
+  'La baldosa a escala debe medir exactamente el tamaño de celda del mapa (ancho y alto).';
+
+/** Error de redondeo admitido al comparar baldosa × escala con la celda (spec, ≤ 0,001). */
+const TILE_SCALE_TOLERANCE = 0.001;
+
+/**
+ * Baldosas del fondo, del agua y de la orilla a la escala de la celda (spec sprite-rendering 0016):
+ * `frameWidth · scale = frameHeight · scale = cellSize` (± 0,001). El error nombra la escala.
+ */
+export function checkTileScales(
+  appearance: Appearance,
+  cellSize: number,
+): Result<true, DomainError> {
+  const tiles = [
+    ['ground.scale', appearance.ground],
+    ['map.water.scale', appearance.map.water],
+    ['map.shore.scale', appearance.map.shore],
+  ] as const;
+  for (const [field, { sheet, scale }] of tiles) {
+    const fits = [sheet.frameWidth, sheet.frameHeight].every(
+      (side) => Math.abs(side * scale - cellSize) <= TILE_SCALE_TOLERANCE,
+    );
+    if (!fits) return err(invalidConfig(field, TILE_SCALE_MISMATCH));
+  }
+  return ok(true);
+}
+
+/** Hojas e imágenes de los aspectos del mapa con su ruta de campo (change 0016). */
+export function mapSheetsOf(appearance: Appearance): [string[], string][] {
+  const { water, shore, foam, trees, bridges, castle } = appearance.map;
+  const sheet = (key: string, file: string): [string[], string] => [
+    ['map', key, 'sheet', 'file'],
+    file,
+  ];
+  return [
+    sheet('water', water.sheet.file),
+    sheet('shore', shore.sheet.file),
+    sheet('foam', foam.sheet.file),
+    sheet('trees', trees.sheet.file),
+    [['map', 'bridges', 'image'], bridges.image],
+    sheet('castle', castle.sheet.file),
+  ];
+}
+
 /**
  * Valida los datos de aspecto (design D9). `registered` son las rutas de `files[].path` de la nota de
  * procedencia: una hoja solo vale si figura ahí. El error nombra el campo con su ruta unida por `.`.
@@ -32,13 +77,16 @@ export function parseAppearance(
 ): Result<Appearance, DomainError> {
   const known = new Set(registered);
   const schema = AppearanceSchema.superRefine((appearance, ctx) => {
-    for (const [path, aspect] of aspectsOf(appearance)) {
-      if (!known.has(ASSET_DIR + aspect.sheet.file))
-        ctx.addIssue({
-          code: 'custom',
-          path: [...path, 'sheet', 'file'],
-          message: SHEET_NOT_REGISTERED,
-        });
+    const sheets: [string[], string][] = [
+      ...aspectsOf(appearance).map(([path, a]): [string[], string] => [
+        [...path, 'sheet', 'file'],
+        a.sheet.file,
+      ]),
+      ...mapSheetsOf(appearance),
+    ];
+    for (const [path, file] of sheets) {
+      if (!known.has(ASSET_DIR + file))
+        ctx.addIssue({ code: 'custom', path, message: SHEET_NOT_REGISTERED });
     }
   });
   const parsed = schema.safeParse(raw);

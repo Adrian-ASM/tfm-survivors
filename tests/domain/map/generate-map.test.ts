@@ -4,9 +4,12 @@ import type { GameMap } from '../../../src/domain/map/GameMap';
 import { BALANCE_SEEDS } from '../../support/balanceSeeds';
 import { aDefaultConfig } from '../../support/builders';
 import {
+  FOOTPRINT_CELLS,
   blockedInStartZone,
+  castleCells,
   components,
   countOf,
+  inFootprint,
   mapForSeed,
   rivers,
   trunksNextToBridges,
@@ -34,6 +37,14 @@ function compositionFailures(map: GameMap): string[] {
   const walkable = countOf(map, 'grass') + countOf(map, 'bridge');
   if (walkable < 404) failures.push(`caminables: ${String(walkable)}`);
   if (trunksNextToBridges(map) > 0) failures.push('tronco junto a un puente');
+  if (castleCells(map).join() !== FOOTPRINT_CELLS.join()) failures.push('huella del castillo');
+  const wet = typesOf(map).flatMap((t, i) => (t === 'water' || t === 'bridge' ? [i] : []));
+  const touches = wet.filter((i) => {
+    const c = i % map.cols;
+    const r = (i - c) / map.cols;
+    return map.rules.inStartZone(c, r) || inFootprint(map, c, r);
+  });
+  if (touches.length > 0) failures.push('río en la zona de inicio o en la huella');
   return failures;
 }
 
@@ -72,14 +83,28 @@ describe('generateMap · composición (spec procedural-map)', () => {
 describe('generateMap · semillas 1..1000 (zona y conectividad)', () => {
   const maps = SEEDS_1000.map((seed) => ({ seed, map: mapForSeed(CONFIG, seed) }));
 
+  const extra = EXTREME_SEEDS.map((seed) => ({ seed, map: mapForSeed(CONFIG, seed) }));
+
   it('Scenario: Zona libre con todas las semillas (1..1.000, 0 y 2³² − 1)', () => {
-    const extra = EXTREME_SEEDS.map((seed) => ({ seed, map: mapForSeed(CONFIG, seed) }));
-    const dirty = [...maps, ...extra].filter(({ map }) => blockedInStartZone(map) > 0);
+    const dirty = [...maps, ...extra].filter(
+      ({ map }) => blockedInStartZone(map) > 0 || map.overlapsBlocked(990, 630, 16),
+    );
     expect(dirty.map((m) => m.seed)).toEqual([]);
   });
 
-  it('Scenario: Todas las celdas caminables alcanzables (1..1.000)', () => {
-    expect(maps.filter(({ map }) => !isFullyConnected(map)).map((m) => m.seed)).toEqual([]);
+  it('Scenario: Misma huella con todas las semillas (1..1.000, 0 y 2³² − 1)', () => {
+    const wrong = [...maps, ...extra].filter(
+      ({ map }) =>
+        castleCells(map).join() !== FOOTPRINT_CELLS.join() ||
+        map.start.x !== 990 ||
+        map.start.y !== 630,
+    );
+    expect(wrong.map((m) => m.seed)).toEqual([]);
+  });
+
+  it('Scenario: Todas las celdas caminables alcanzables (1..1.000, 0 y 2³² − 1)', () => {
+    const all = [...maps, ...extra];
+    expect(all.filter(({ map }) => !isFullyConnected(map)).map((m) => m.seed)).toEqual([]);
   });
 
   it('composición en 1..1.000 (tolerancia provisional de troncos, punto de control 1)', () => {

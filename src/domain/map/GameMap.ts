@@ -11,6 +11,23 @@ export interface Cell {
   readonly row: number;
 }
 
+/**
+ * Huella del castillo de un mapa generado (primera y última columna y fila), o `null` en el mapa
+ * vacío y en los explícitos, cuyas celdas `castle` son sueltas (spec procedural-map 0016).
+ */
+export interface CastleFootprint {
+  readonly firstCol: number;
+  readonly lastCol: number;
+  readonly firstRow: number;
+  readonly lastRow: number;
+}
+
+/** Punto del mundo. */
+interface Point {
+  readonly x: number;
+  readonly y: number;
+}
+
 /** Rectángulo de mundo de una celda, recortado al borde del mundo. */
 export interface CellRect {
   readonly left: number;
@@ -29,31 +46,47 @@ export class GameMap {
   readonly cellSize: number;
   readonly width: number;
   readonly height: number;
+  /** Punto de salida del jugador y centro de la zona de inicio de este mapa (0016). */
   readonly start: StartZone;
+  readonly castle: CastleFootprint | null;
 
   private constructor(
     readonly rules: MapRules,
     private readonly cells: Uint8Array,
+    start: StartZone,
+    castle: CastleFootprint | null,
   ) {
     this.cols = rules.cols;
     this.rows = rules.rows;
     this.cellSize = rules.cellSize;
     this.width = rules.width;
     this.height = rules.height;
-    this.start = rules.start;
+    this.start = start;
+    this.castle = castle;
     Object.freeze(this);
   }
 
-  /** Mapa vacío: todas las celdas `grass`. */
-  static open(rules: MapRules): GameMap {
-    return new GameMap(rules, new Uint8Array(rules.cellCount).fill(GRASS));
+  /** Salida en el punto dado (sin él, el centro del mundo) con el radio de la zona de inicio. */
+  private static startAt(rules: MapRules, at?: Point): StartZone {
+    const center = rules.centerStart;
+    return at ? Object.freeze({ x: at.x, y: at.y, radius: center.radius }) : center;
+  }
+
+  /** Mapa vacío: todas las celdas `grass`; salida en `start` o, sin ella, en el centro del mundo. */
+  static open(rules: MapRules, start?: Point): GameMap {
+    const cells = new Uint8Array(rules.cellCount).fill(GRASS);
+    return new GameMap(rules, cells, GameMap.startAt(rules, start), null);
   }
 
   /**
    * Mapa dado por su lista de tipos en orden de filas (tests, escenarios). Solo exige las
    * dimensiones de la rejilla; no exige composición, zona de inicio ni conectividad.
    */
-  static fromCells(types: readonly CellType[], rules: MapRules): Result<GameMap, DomainError> {
+  static fromCells(
+    types: readonly CellType[],
+    rules: MapRules,
+    start?: Point,
+  ): Result<GameMap, DomainError> {
     if (types.length !== rules.cellCount) {
       const got = String(types.length);
       const want = `${String(rules.cols)} × ${String(rules.rows)} = ${String(rules.cellCount)}`;
@@ -62,13 +95,18 @@ export class GameMap {
     }
     const cells = new Uint8Array(types.length);
     types.forEach((t, i) => (cells[i] = codeOf(t)));
-    return ok(new GameMap(rules, cells));
+    return ok(new GameMap(rules, cells, GameMap.startAt(rules, start), null));
   }
 
-  /** Adopta una rejilla de códigos ya construida por el generador del dominio (sin copiarla). */
+  /**
+   * Adopta una rejilla de códigos ya construida por el generador del dominio (sin copiarla), con la
+   * huella del castillo de las reglas y la salida ante su puerta.
+   */
   static adopt(cells: Uint8Array, rules: MapRules): GameMap {
     if (cells.length !== rules.cellCount) throw new Error('Invariante rota: rejilla del mapa');
-    return new GameMap(rules, cells);
+    const { firstCol, lastCol, firstRow, lastRow } = rules.castle;
+    const footprint = Object.freeze({ firstCol, lastCol, firstRow, lastRow });
+    return new GameMap(rules, cells, rules.castleStart, footprint);
   }
 
   private inside(col: number, row: number): boolean {

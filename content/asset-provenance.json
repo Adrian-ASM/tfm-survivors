@@ -62,6 +62,41 @@
       "version": "Update 010",
       "sha256": "683b4ebc6dff10d2bf6e2bd34c24d732defdc65abcb0f5b9f509655aff8bec56",
       "bytes": 28783
+    },
+    {
+      "path": "public/assets/tiny-swords/Terrain/Water/Water.png",
+      "source": "Tiny Swords (Update 010)/Terrain/Water/Water.png",
+      "version": "Update 010",
+      "sha256": "5ef30a00bbff22590eabb5acabb8aca6cc415557e7ab5f60db07714f01a4dba1",
+      "bytes": 222
+    },
+    {
+      "path": "public/assets/tiny-swords/Terrain/Water/Foam/Foam.png",
+      "source": "Tiny Swords (Update 010)/Terrain/Water/Foam/Foam.png",
+      "version": "Update 010",
+      "sha256": "eaeaab4c2211ce5babac0da55d3da096eb68ead4137a1fa060cbd93aece995c9",
+      "bytes": 4910
+    },
+    {
+      "path": "public/assets/tiny-swords/Resources/Trees/Tree.png",
+      "source": "Tiny Swords (Update 010)/Resources/Trees/Tree.png",
+      "version": "Update 010",
+      "sha256": "63a1ae03991621528eab44d0840a75a923583a7bbb999311de27799ab21b4d3e",
+      "bytes": 21934
+    },
+    {
+      "path": "public/assets/tiny-swords/Terrain/Bridge/Bridge_All.png",
+      "source": "Tiny Swords (Update 010)/Terrain/Bridge/Bridge_All.png",
+      "version": "Update 010",
+      "sha256": "816de342b39f03eeb97bc5d8837ece9d9fcc1936110207158b3ba01a1db3c95f",
+      "bytes": 6694
+    },
+    {
+      "path": "public/assets/tiny-swords/Factions/Knights/Buildings/Castle/Castle_Blue.png",
+      "source": "Tiny Swords (Update 010)/Factions/Knights/Buildings/Castle/Castle_Blue.png",
+      "version": "Update 010",
+      "sha256": "616cfeec6287ede0b368a14332afc9ac34462dee5bb3f5a8f7595464c8b2ca53",
+      "bytes": 15018
     }
   ]
 }

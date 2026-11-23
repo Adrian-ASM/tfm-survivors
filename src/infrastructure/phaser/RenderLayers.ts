@@ -1,5 +1,5 @@
 import type { RunSnapshot } from '../../domain/run/RunSnapshot';
-import { AnimClock } from './art/animation';
+import { AnimClock, frameAt, type AnimSpec } from './art/animation';
 import type { Looks } from './art/looks';
 import { CorpseLayer } from './CorpseLayer';
 import { EnemyLayer } from './EnemyLayer';
@@ -9,8 +9,8 @@ import { ProjectileLayer } from './ProjectileLayer';
 import { PulseLayer, type RingSprite } from './PulseLayer';
 import type { SpriteCounts } from './renderCounts';
 import type { SpriteKit } from './SpriteLike';
-import type { MapSnapshot } from '../../domain/map/MapSnapshot';
-import { paintTerrain, zeroCells, type TerrainCanvas, type TerrainColors } from './TerrainView';
+import type { MapArtPlan } from './map/planMapArt';
+import { paintMapArt, zeroCells, zeroMapArt, type MapArtCanvas } from './TerrainView';
 
 /** Tamaño de los pools: el de la escena más el tope de cadáveres de los datos de aspecto. */
 export interface LayerCapacity {
@@ -45,6 +45,10 @@ export class RenderLayers {
   private readonly projectiles: ProjectileLayer;
   private readonly player: PlayerView;
   private status: RunSnapshot['status'] = 'running';
+  /** Lienzo y animación de la espuma del mapa pintado (0016), y último frame aplicado. */
+  private foamCanvas: MapArtCanvas | null = null;
+  private foamAnim: AnimSpec | null = null;
+  private foamFrame = -1;
 
   constructor(parts: RenderParts, ground: SpriteCount) {
     const { kit, looks, capacity } = parts;
@@ -64,6 +68,7 @@ export class RenderLayers {
       gems: this.gems.counts,
       enemyPlaceholders: this.enemies.placeholdersByType,
       cells: zeroCells(),
+      mapArt: zeroMapArt(),
     };
   }
 
@@ -84,19 +89,33 @@ export class RenderLayers {
     this.corpses.sync(ms);
     this.projectiles.sync(snapshot.projectiles);
     this.player.render(snapshot, ms);
+    this.animateFoam(ms);
+  }
+
+  /** Espuma del mapa en bucle con el reloj de render: `setFrame` solo cuando cambia (0016). */
+  private animateFoam(ms: number): void {
+    if (!this.foamCanvas || !this.foamAnim) return;
+    const frame = frameAt(this.foamAnim, ms);
+    if (frame === this.foamFrame) return;
+    this.foamFrame = frame;
+    this.foamCanvas.foam(frame);
   }
 
   /**
-   * Pinta el mapa de la partida (al crearla y tras R; change 0015) y guarda las celdas pintadas
-   * por tipo para la sonda. Una vez por partida, no por frame.
+   * Pinta el plan del mapa de la partida (al crearla y tras R; 0015, arte desde 0016) y guarda las
+   * celdas y los elementos pintados para la sonda. Una vez por partida, no por frame.
    */
-  paintMap(
-    canvas: TerrainCanvas,
-    map: MapSnapshot,
-    colors: TerrainColors,
-    world: { readonly width: number; readonly height: number },
-  ): void {
-    Object.assign(this.counts.cells, paintTerrain(canvas, map, colors, world));
+  paintMap(canvas: MapArtCanvas, plan: MapArtPlan): void {
+    const painted = paintMapArt(canvas, plan);
+    Object.assign(this.counts.cells, painted.cells);
+    const { mapArt } = this.counts;
+    for (const key of ['water', 'shore', 'foam', 'tree', 'canopy', 'bridge', 'castle'] as const) {
+      mapArt[key] = { ...painted.mapArt[key] };
+    }
+    mapArt.objects = painted.mapArt.objects;
+    this.foamCanvas = canvas;
+    this.foamAnim = plan.foam ? { frames: plan.foam.frames, fps: plan.foam.fps, loop: true } : null;
+    this.foamFrame = -1;
   }
 
   /** Cambio de partida: vacía las capas sin cadáveres y el jugador no hereda nada. */

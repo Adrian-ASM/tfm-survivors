@@ -9,6 +9,7 @@ import type { RunConfig } from '../../src/domain/run/RunConfig';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import { TICK_MS, aDefaultConfig } from '../support/builders';
 import { randomInputs } from '../support/inputs';
+import { seededRun } from '../../src/composition/seedSource';
 
 const CENTER = { x: 480, y: 270 };
 
@@ -199,5 +200,21 @@ describe('RestartRun · equivalencia y primer frame', () => {
     const half = b.value.tickRun.execute(8.334, PlayerInput.NONE);
 
     expect([full.tick, half.tick]).toEqual([1, 0]);
+  });
+
+  // Spec player-movement (0016), "Posición inicial en el punto de salida del mapa".
+  it('Scenario: Partida nueva tras acabar en una esquina (R con la 123: jugador en (990, 630))', () => {
+    const corner = { x: 16, y: 16 };
+    const s = started(lethal(), {
+      player: corner,
+      enemies: [{ type: 'goblin-torch', ...corner }],
+    });
+    frames(s, 60);
+    const ended = s.tickRun.snapshot();
+    expect([ended.status, ended.player.x, ended.player.y]).toEqual(['over', 16, 16]);
+
+    const r = new RestartRun(aDefaultConfig(), () => seededRun(123)).execute(s.tickRun);
+    const fresh = r.ok ? r.value.tickRun.snapshot() : null;
+    expect([fresh?.tick, fresh?.player.x, fresh?.player.y]).toEqual([0, 990, 630]);
   });
 });

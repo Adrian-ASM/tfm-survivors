@@ -116,11 +116,39 @@ export function blockedInStartZone(map: GameMap): number {
   let n = 0;
   for (let r = 0; r < map.rows; r++) {
     for (let c = 0; c < map.cols; c++) {
-      if (map.rules.inStartZone(c, r) && map.typeAt(c, r) !== 'grass') n++;
+      if (!map.rules.inStartZone(c, r)) continue;
+      const type = map.typeAt(c, r);
+      if (type !== 'grass' && !(type === 'castle' && inFootprint(map, c, r))) n++;
     }
   }
   return n;
 }
+
+/** ¿Está la celda (c, r) en la huella del castillo del mapa? */
+export function inFootprint(map: GameMap, c: number, r: number): boolean {
+  const f = map.castle;
+  return f !== null && c >= f.firstCol && c <= f.lastCol && r >= f.firstRow && r <= f.lastRow;
+}
+
+/** Celdas `castle` del mapa como `'c,r'`, en orden de filas. */
+export function castleCells(map: GameMap): string[] {
+  const out: string[] = [];
+  typesOf(map).forEach((t, i) => {
+    if (t === 'castle') out.push(`${String(i % map.cols)},${String(Math.floor(i / map.cols))}`);
+  });
+  return out;
+}
+
+/** Celdas de un rectángulo de columnas c0..c1 y filas r0..r1 como `'c,r'`, en orden de filas. */
+export function blockCells(c0: number, c1: number, r0: number, r1: number): string[] {
+  const out: string[] = [];
+  for (let r = r0; r <= r1; r++)
+    for (let c = c0; c <= c1; c++) out.push(`${String(c)},${String(r)}`);
+  return out;
+}
+
+/** Huella del castillo del contenido por defecto: columnas 14–18 y filas 6–9 (20 celdas). */
+export const FOOTPRINT_CELLS: readonly string[] = blockCells(14, 18, 6, 9);
 
 /** Celdas `trunk` en la vecindad 3 × 3 de algún puente. */
 export function trunksNextToBridges(map: GameMap): number {

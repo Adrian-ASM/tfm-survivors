@@ -6,12 +6,19 @@ import { mapRules, mapWith } from '../../support/mapLayouts';
 const RULES = mapRules();
 
 describe('Zona de inicio (spec procedural-map)', () => {
-  it('Scenario: Celdas dentro y fuera de la zona ((18, 9) a 120 px sí; (19, 9) a 180 px no)', () => {
-    expect(RULES.inStartZone(18, 9)).toBe(true);
-    expect(RULES.inStartZone(19, 9)).toBe(false);
+  it('Scenario: Celdas dentro y fuera de la zona (salida (990, 630): (19, 10) y (16, 13) sí)', () => {
+    expect(RULES.inStartZone(19, 10)).toBe(true);
+    expect(RULES.inStartZone(20, 10)).toBe(false);
+    expect(RULES.inStartZone(16, 13)).toBe(true);
+    expect(RULES.inStartZone(16, 14)).toBe(false);
   });
 
-  it('con el contenido por defecto la zona es el bloque 13..18 × 6..11 (36 celdas)', () => {
+  it('la zona del generador se centra en la salida del castillo; la del centro no cambia', () => {
+    expect(RULES.castleStart).toEqual({ x: 990, y: 630, radius: 180 });
+    expect(RULES.centerStart).toEqual({ x: 960, y: 540, radius: 180 });
+  });
+
+  it('con el contenido por defecto la zona es el bloque 13..19 × 7..13 sin esquinas (45)', () => {
     const zone: string[] = [];
     for (let r = 0; r < RULES.rows; r++) {
       for (let c = 0; c < RULES.cols; c++)
@@ -20,10 +27,16 @@ describe('Zona de inicio (spec procedural-map)', () => {
     const cols = zone.map((k) => Number(k.split(',')[0]));
     const rows = zone.map((k) => Number(k.split(',')[1]));
     expect([Math.min(...cols), Math.max(...cols), Math.min(...rows), Math.max(...rows)]).toEqual([
-      13, 18, 6, 11,
+      13, 19, 7, 13,
     ]);
-    expect(zone).toHaveLength(36);
-    expect(RULES.inStartZone(12, 6)).toBe(false);
+    expect(zone).toHaveLength(45);
+    const corners = [
+      [13, 7],
+      [19, 7],
+      [13, 13],
+      [19, 13],
+    ] as const;
+    expect(corners.map(([c, r]) => RULES.inStartZone(c, r))).toEqual([false, false, false, false]);
   });
 });
 

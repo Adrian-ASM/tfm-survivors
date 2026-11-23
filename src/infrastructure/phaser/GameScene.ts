@@ -21,8 +21,16 @@ import { createHud, createResultsOverlay, createUpgradeOverlay } from './sceneWi
 import type { UpgradeOverlay } from './UpgradeOverlay';
 import type { Appearance } from '../content/appearanceSchema';
 import { resolveLooks } from './art/looks';
-import { ensurePlaceholderTexture, spriteKit, terrainCanvas, textureFrames } from './phaserArt';
-import type { TerrainCanvas } from './TerrainView';
+import { resolveMapLooks, type MapLooks } from './map/mapLooks';
+import { planMapArt } from './map/planMapArt';
+import {
+  ensurePlaceholderTexture,
+  mapArtLayers,
+  spriteKit,
+  textureFrames,
+  textureHasFrame,
+} from './phaserArt';
+import type { MapArtCanvas } from './TerrainView';
 import type { SpriteCounts } from './renderCounts';
 import { createPlayfield, type GroundFactory } from './GroundView';
 import type { RenderLayers } from './RenderLayers';
@@ -80,6 +88,11 @@ export interface GameSceneDeps {
   readonly world: WorldSize;
   /** Datos de aspecto validados (las hojas las carga `BootScene`). */
   readonly appearance: Appearance;
+  /**
+   * Semilla de decoración de la partida en curso (`deriveSeed(semilla, DECOR_STREAM)`, change 0016):
+   * la variedad de árboles. Se pide al pintar cada mapa nuevo; no toca la simulación.
+   */
+  readonly decorSeed: () => number;
   readonly progress: SceneProgress;
   readonly pause: PauseView;
   readonly onRender?: OnRender;
@@ -103,8 +116,10 @@ export interface ManualFrames {
 
 interface Widgets {
   readonly layers: RenderLayers;
-  /** Textura del mapa: se repinta al cambiar de partida (R), no por frame. */
-  readonly terrain: TerrainCanvas;
+  /** Lienzo del mapa (dos capas): se repinta al cambiar de partida (R), no por frame. */
+  readonly mapArt: MapArtCanvas;
+  /** Aspectos del mapa resueltos contra las texturas cargadas (una vez por entrada). */
+  readonly mapLooks: MapLooks;
   readonly hud: Hud;
   readonly offer: UpgradeOverlay;
   readonly results: ResultsOverlay;
@@ -158,20 +173,27 @@ export class GameScene extends Phaser.Scene {
         this.add.rectangle(0, 0, width, height, color).setOrigin(0, 0);
       },
     };
-    const looks = resolveLooks(this.deps.appearance, textureFrames(this));
-    const map = started.tickRun.map();
-    const { layers, terrain } = createPlayfield(
+    const { appearance } = this.deps;
+    const looks = resolveLooks(appearance, textureFrames(this));
+    const mapLooks = resolveMapLooks(
+      appearance.map,
+      appearance.terrain,
+      textureFrames(this),
+      textureHasFrame(this),
+    );
+    const { layers, mapArt } = createPlayfield(
       { kit: spriteKit(this), ring, looks, capacity: this.deps.capacity },
       ground,
       this.deps.world,
-      () => terrainCanvas(this),
+      mapArtLayers(this),
     );
-    layers.paintMap(terrain, map, this.deps.appearance.terrain, this.deps.world);
+    layers.paintMap(mapArt, this.mapPlan(started, mapLooks));
     // En cada entrada: Volver al menú destruye la cámara de la escena y la recrea (design D2).
     this.rig = new CameraRig(this.cameras.main, this.deps.world);
     const snapshot = started.tickRun.snapshot();
     this.w = {
-      terrain,
+      mapArt,
+      mapLooks,
       layers,
       hud: createHud(this),
       offer: createUpgradeOverlay(this),
@@ -242,13 +264,16 @@ export class GameScene extends Phaser.Scene {
     if (!next.ok) return current;
     this.started = next.value;
     w.layers.clear();
-    w.layers.paintMap(
-      w.terrain,
-      next.value.tickRun.map(),
-      this.deps.appearance.terrain,
-      this.deps.world,
-    );
+    w.layers.paintMap(w.mapArt, this.mapPlan(next.value, w.mapLooks));
     return next.value;
+  }
+
+  /** Plan del pintado del mapa de una partida, con su semilla de decoración. */
+  private mapPlan(run: StartedRun, mapLooks: MapLooks) {
+    return planMapArt(run.tickRun.map(), mapLooks, {
+      decorSeed: this.deps.decorSeed(),
+      world: this.deps.world,
+    });
   }
 
   /** Volver al menú: el motor destruye los objetos de la escena; aquí se sueltan las referencias. */

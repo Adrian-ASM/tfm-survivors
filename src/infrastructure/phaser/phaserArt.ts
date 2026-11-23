@@ -1,7 +1,9 @@
 import Phaser from 'phaser';
 import { PLACEHOLDER_SIZE, PLACEHOLDER_TEXTURE, type FrameCount } from './art/looks';
+import type { MapArtLayers } from './GroundView';
+import type { HasFrame } from './map/mapLooks';
 import type { SpriteKit } from './SpriteLike';
-import type { TerrainCanvas } from './TerrainView';
+import type { MapArtCanvas } from './TerrainView';
 
 /**
  * Disco blanco de reserva generado con la Canvas API del motor (sin ficheros ni `blob:`). Idempotente:
@@ -30,30 +32,117 @@ export function spriteKit(scene: Phaser.Scene): SpriteKit {
   };
 }
 
+/** Marcos con nombre de una textura cargada (marcos del puente, change 0016). */
+export function textureHasFrame(scene: Phaser.Scene): HasFrame {
+  return (key, name) => scene.textures.exists(key) && scene.textures.get(key).has(name);
+}
+
 /**
- * Pintado del mapa (change 0015, incidente de fps del PR #36): un `Layer` creado en este punto del
- * orden de pintado (encima del suelo, debajo del resto) con un `Rectangle` relleno por tramo de
- * celdas no-hierba. Solo se rellena el área de esas celdas; la hierba no añade nada. Los
- * rectángulos se reutilizan entre partidas (R): `clear` los oculta y `rect` coloca el siguiente.
+ * Objetos de un tipo dentro de un `Layer`, reutilizados entre partidas (R): `hide` los oculta y
+ * `next` da el siguiente y lo lleva al final de la capa, de modo que el orden de pintado de lo
+ * visible es el del plan aunque el objeto venga de una partida anterior.
  */
-export function terrainCanvas(scene: Phaser.Scene): TerrainCanvas {
-  const layer = scene.add.layer();
-  const pool: Phaser.GameObjects.Rectangle[] = [];
-  let used = 0;
+class LayerPool<T extends Phaser.GameObjects.GameObject & { setVisible(v: boolean): unknown }> {
+  private readonly items: T[] = [];
+  private used = 0;
+
+  constructor(
+    private readonly layer: Phaser.GameObjects.Layer,
+    private readonly make: () => T,
+  ) {}
+
+  next(): T {
+    let item = this.items[this.used];
+    if (!item) {
+      item = this.make();
+      this.layer.add(item);
+      this.items.push(item);
+    }
+    this.used += 1;
+    this.layer.bringToTop(item);
+    return item;
+  }
+
+  hide(): void {
+    for (const item of this.items) item.setVisible(false);
+    this.used = 0;
+  }
+}
+
+/**
+ * Pintado del mapa con arte (change 0016, design §5.4): un `Layer` bajo las entidades y otro sobre
+ * ellas, creados en dos llamadas para rodear el orden de creación de `RenderLayers`. Solo objetos
+ * del tamaño de lo que pintan (nada a pantalla completa: lección del PR #36), reutilizados entre
+ * partidas. La espuma cambia de frame en tiempo de render y conserva su recorte.
+ */
+export function mapArtLayers(scene: Phaser.Scene): MapArtLayers {
+  let low: Phaser.GameObjects.Layer | null = null;
+  return {
+    low: () => {
+      low = scene.add.layer();
+    },
+    high: () => {
+      const lowLayer = low ?? scene.add.layer();
+      return mapArtCanvas(scene, lowLayer, scene.add.layer());
+    },
+  };
+}
+
+function mapArtCanvas(
+  scene: Phaser.Scene,
+  low: Phaser.GameObjects.Layer,
+  high: Phaser.GameObjects.Layer,
+): MapArtCanvas {
+  const sprite = () => scene.add.sprite(0, 0, PLACEHOLDER_TEXTURE).setVisible(false);
+  const tiles = new LayerPool(low, () =>
+    scene.add.tileSprite(0, 0, 1, 1, PLACEHOLDER_TEXTURE).setOrigin(0, 0).setVisible(false),
+  );
+  const rects = new LayerPool(low, () =>
+    scene.add.rectangle(0, 0, 1, 1, 0).setOrigin(0, 0).setVisible(false),
+  );
+  const sprites = { low: new LayerPool(low, sprite), high: new LayerPool(high, sprite) };
+  const foams: Phaser.GameObjects.Sprite[] = [];
   return {
     clear: () => {
-      for (const r of pool) r.setVisible(false);
-      used = 0;
+      tiles.hide();
+      rects.hide();
+      sprites.low.hide();
+      sprites.high.hide();
+      foams.length = 0;
     },
-    rect: (x, y, width, height, color) => {
-      let r = pool[used];
-      if (!r) {
-        r = scene.add.rectangle(0, 0, 1, 1, color).setOrigin(0, 0);
-        layer.add(r);
-        pool.push(r);
-      }
-      r.setPosition(x, y).setSize(width, height).setFillStyle(color).setVisible(true);
-      used += 1;
+    tiles: (t) => {
+      tiles
+        .next()
+        .setTexture(t.texture, t.frame)
+        .setPosition(t.x, t.y)
+        .setSize(t.width, t.height)
+        .setTileScale(t.scale)
+        .setTilePosition(0, 0)
+        .setVisible(true);
+    },
+    sprite: (layer, s) => {
+      const obj = sprites[layer]
+        .next()
+        .setTexture(s.texture, s.frame)
+        .setPosition(s.x, s.y)
+        .setScale(s.scale)
+        .setOrigin(s.origin.x, s.origin.y)
+        .setFlipX(s.flipX)
+        .setVisible(true);
+      if (s.crop) obj.setCrop(s.crop.x, s.crop.y, s.crop.width, s.crop.height);
+      else obj.setCrop();
+      if (s.role === 'foam') foams.push(obj);
+    },
+    rect: (r) => {
+      rects
+        .next()
+        .setPosition(r.x, r.y)
+        .setSize(r.width, r.height)
+        .setFillStyle(r.color)
+        .setVisible(true);
+    },
+    foam: (frame) => {
+      for (const f of foams) f.setFrame(frame);
     },
   };
 }

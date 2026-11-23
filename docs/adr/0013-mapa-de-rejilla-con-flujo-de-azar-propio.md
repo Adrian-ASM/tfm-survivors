@@ -42,3 +42,28 @@ conectividad 100 % en 1..1000 con rechazo.
 - Cómo revertirla: pasar a la opción 1 es local (`Run.start` genera con su `random`), pero reordena todas las
   semillas y obliga a recalibrar el balance; cambiar la rejilla por otra geometría obliga a rehacer colisión,
   conectividad, sonda y flow-field.
+
+## Addendum · change 0016-map-art (2026-11-23, aceptado)
+Contexto: el usuario pide un castillo **sólido** en la zona de inicio y el arte de Tiny Swords para el mapa.
+
+Decisiones:
+1. **Castillo en el núcleo como celda** `castle` (código 4, no caminable) con huella fija por contenido
+   (`map.json` `castle`), colocada por una regla derivada del centro del mundo y escrita solo por `generateMap`.
+   Alternativa descartada: castillo solo visual (el jugador nacería encima y no bloquearía).
+2. **La salida es propiedad de cada `GameMap`**, no de `MapRules`: puerta del castillo en el generado; centro del
+   mundo en `open` y `cells` salvo que declaren una salida (validada como posición legal del jugador). Así el
+   castillo solo existe con mapa real y la simulación sin mapa no cambia.
+3. **Flujo de decoración `DECOR_STREAM`** (variedad de árboles), en el adaptador: semilla de decoración
+   `deriveSeed(semilla, DECOR_STREAM)` que la composición entrega a la escena (la semilla ya vive allí para la sonda
+   y los récords), con un hash por celda. `StartedRun` y `RestartRun` siguen sin exponer la semilla. No forma parte
+   del contrato de determinismo de la simulación (cambiarlo solo cambia el aspecto).
+4. **Render del mapa con sprites en dos `Layer`** (bajo y sobre las entidades), sin textura del tamaño del mundo.
+   Si el tope de 300 objetos del mapa no se cumple, la palanca es `Blitter` (un objeto por capa y hoja, con `Bob`
+   por elemento) dentro del mismo adaptador, sin cambiar el plan puro.
+
+Consecuencias: cambian todos los mapas generados (bandas del río) y la firma dorada; el balance se re-mide
+(`player.speed` 215). Revertir el castillo es quitar el tipo y la huella; la salida por mapa puede quedarse.
+Los enemigos siguen ignorando el mapa, castillo incluido (deuda para 0018 flow-field).
+
+Resultado en apply: balance 27/50 con 215 (banda 25..35) y 0 quietos vivos; 196 y 245 objetos del mapa con las
+semillas 42 y 123 (máximo 258 en 1..50), sin necesidad del `Blitter`; puerta visual aprobada por el usuario.

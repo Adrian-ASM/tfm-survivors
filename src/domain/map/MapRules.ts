@@ -1,5 +1,6 @@
 import type { Arena } from '../arena/Arena';
 import { err, invalidConfig, ok, type DomainError, type Result } from '../shared/Result';
+import { castleSite, type CastleSite } from './CastleSite';
 
 /** Mensajes de las invariantes del mapa; la validación de contenido (zod) usa los mismos. */
 export const CELL_SIZE_MUST_BE_INTEGER = 'El tamaño de celda debe ser un entero ≥ 1.';
@@ -16,6 +17,8 @@ export const CELL_SIZE_BELOW_PLAYER =
   'El tamaño de celda debe ser al menos el diámetro del jugador (cabe por un pasillo de 1 celda).';
 export const START_RADIUS_TOO_LARGE =
   'El radio de la zona de inicio no puede pasar de la mitad del lado menor del mundo.';
+export const CASTLE_SIZE_MUST_BE_INTEGER = 'La huella del castillo necesita enteros ≥ 1.';
+export { CASTLE_OUT_OF_GRID } from './CastleSite';
 
 /** Límites de los campos de rango (spec procedural-map, "Contenido del mapa validado"). */
 export const MAP_LIMITS = {
@@ -33,6 +36,8 @@ export interface MapConfig {
   readonly trunkPatch: { readonly min: number; readonly max: number };
   readonly rivers: number;
   readonly bridges: { readonly min: number; readonly max: number };
+  /** Huella del castillo en celdas (spec procedural-map, "Castillo en el mapa generado"). */
+  readonly castle: { readonly cols: number; readonly rows: number };
   /** Ajustes de la generación (design 0015 §3.1). */
   readonly tuning: {
     readonly riverVerticalChance: number;
@@ -57,7 +62,8 @@ const isIntRange = (r: { min: number; max: number }, top: number): boolean =>
 
 /** Campo inválido de los rangos del contenido del mapa, o null. */
 function checkRanges(config: MapConfig): DomainError | null {
-  const { cellSize, startRadius, trunkDensity, trunkPatch, rivers, bridges, tuning } = config;
+  const { cellSize, startRadius, trunkDensity, trunkPatch, rivers, bridges, castle, tuning } =
+    config;
   const checks: readonly [boolean, string, string][] = [
     [isInt(cellSize, 1), 'cellSize', CELL_SIZE_MUST_BE_INTEGER],
     [Number.isFinite(startRadius) && startRadius > 0, 'startRadius', START_RADIUS_MUST_BE_POSITIVE],
@@ -69,6 +75,8 @@ function checkRanges(config: MapConfig): DomainError | null {
     [isIntRange(trunkPatch, MAP_LIMITS.trunkPatchMax), 'trunkPatch', TRUNK_PATCH_OUT_OF_RANGE],
     [isInt(rivers, 0, MAP_LIMITS.riversMax), 'rivers', RIVERS_OUT_OF_RANGE],
     [isIntRange(bridges, MAP_LIMITS.bridgesMax), 'bridges', BRIDGES_OUT_OF_RANGE],
+    [isInt(castle.cols, 1), 'castle.cols', CASTLE_SIZE_MUST_BE_INTEGER],
+    [isInt(castle.rows, 1), 'castle.rows', CASTLE_SIZE_MUST_BE_INTEGER],
     [inRange(tuning.riverVerticalChance, 0, 1), 'tuning.riverVerticalChance', CHANCE_OUT_OF_RANGE],
     [inRange(tuning.riverMeander, 0, 1), 'tuning.riverMeander', CHANCE_OUT_OF_RANGE],
     [isInt(tuning.patchAttempts, 1), 'tuning.patchAttempts', PATCH_ATTEMPTS_MUST_BE_INTEGER],
@@ -89,6 +97,8 @@ function checkCross(config: MapConfig, arena: Arena, playerRadius: number): Doma
   return null;
 }
 
+const arenaSize = (arena: Arena) => ({ width: arena.width, height: arena.height });
+
 /**
  * Reglas del mapa (value object): parámetros del contenido y la rejilla que cubre el mundo,
  * ⌈ancho / cellSize⌉ × ⌈alto / cellSize⌉ celdas con la última columna y fila recortadas. Invariante
@@ -100,22 +110,29 @@ export class MapRules {
   readonly rows: number;
   readonly width: number;
   readonly height: number;
-  readonly start: StartZone;
+  /** Salida en el centro del mundo: la del mapa vacío y la de los explícitos sin salida. */
+  readonly centerStart: StartZone;
+  /** Sitio del castillo del mapa generado (huella, puerta y salida). */
+  readonly castle: CastleSite;
+  /** Salida del mapa generado (ante la puerta) y centro de su zona de inicio. */
+  readonly castleStart: StartZone;
 
   private constructor(
     readonly config: MapConfig,
     arena: Arena,
+    /** Radio del jugador con el que se validaron las reglas (salidas declaradas, 0016). */
+    readonly playerRadius: number,
+    castle: CastleSite,
   ) {
     this.cellSize = config.cellSize;
     this.width = arena.width;
     this.height = arena.height;
     this.cols = Math.ceil(arena.width / config.cellSize);
     this.rows = Math.ceil(arena.height / config.cellSize);
-    this.start = Object.freeze({
-      x: arena.width / 2,
-      y: arena.height / 2,
-      radius: config.startRadius,
-    });
+    const radius = config.startRadius;
+    this.centerStart = Object.freeze({ x: arena.width / 2, y: arena.height / 2, radius });
+    this.castle = castle;
+    this.castleStart = Object.freeze({ ...castle.exit, radius });
     Object.freeze(this);
   }
 
@@ -126,7 +143,9 @@ export class MapRules {
   ): Result<MapRules, DomainError> {
     const error = checkRanges(config) ?? checkCross(config, arena, playerRadius);
     if (error) return err(error);
-    return ok(new MapRules(config, arena));
+    const site = castleSite(config.castle, { cellSize: config.cellSize, ...arenaSize(arena) });
+    if (!site.ok) return site;
+    return ok(new MapRules(config, arena, playerRadius, site.value));
   }
 
   get cellCount(): number {
@@ -135,11 +154,12 @@ export class MapRules {
 
   /**
    * ¿Pertenece la celda (c, r) a la zona de inicio? Sí si algún punto de su rectángulo (recortado)
-   * está a distancia estrictamente menor que `startRadius` del centro del mundo.
+   * está a distancia estrictamente menor que `startRadius` de la salida del mapa generado (la
+   * puerta del castillo, 0016). Solo la usa el generador.
    */
   inStartZone(col: number, row: number): boolean {
     const s = this.cellSize;
-    const { x, y, radius } = this.start;
+    const { x, y, radius } = this.castleStart;
     const nx = Math.max(col * s, Math.min(x, Math.min((col + 1) * s, this.width)));
     const ny = Math.max(row * s, Math.min(y, Math.min((row + 1) * s, this.height)));
     const dx = x - nx;

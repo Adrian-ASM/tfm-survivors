@@ -13,13 +13,14 @@ class TrunkDraft {
   readonly frontier: Int32Array;
   readonly seen: Uint8Array;
   readonly queue: Int32Array;
-  readonly start: number;
   walkable = 0;
 
   constructor(
     readonly cells: Uint8Array,
     readonly noTrunk: Uint8Array,
     rules: MapRules,
+    /** Índice de la celda de salida (la puerta del castillo, 0016): origen de la BFS. */
+    readonly start: number,
   ) {
     const n = cells.length;
     this.cols = rules.cols;
@@ -29,8 +30,6 @@ class TrunkDraft {
     this.frontier = new Int32Array(n);
     this.seen = new Uint8Array(n);
     this.queue = new Int32Array(n);
-    this.start = Math.floor(rules.start.y / rules.cellSize) * rules.cols;
-    this.start += Math.floor(rules.start.x / rules.cellSize);
     for (const code of cells) if (isWalkableCode(code)) this.walkable++;
   }
 
@@ -56,7 +55,7 @@ class TrunkDraft {
     this.owner[i] = id;
   }
 
-  /** ¿Siguen alcanzables desde el centro todas las celdas caminables? */
+  /** ¿Siguen alcanzables desde la salida todas las celdas caminables? */
   connected(): boolean {
     this.seen.fill(0);
     const reached = reachableFrom(
@@ -121,17 +120,19 @@ function tryPatch(d: TrunkDraft, rules: MapRules, random: RandomGenerator, id: n
 /**
  * Troncos (design 0015 §3.2 paso 3): manchas de [min, max] celdas que no se fusionan ni tocan las
  * celdas vetadas, hasta alcanzar `round(trunkDensity · N)` o agotar `patchAttempts`. Rechazo por
- * BFS: ninguna mancha deja una celda caminable sin alcanzar. Devuelve los troncos colocados.
+ * BFS desde la celda `start` (la puerta del castillo): ninguna mancha deja una celda caminable sin
+ * alcanzar. Devuelve los troncos colocados.
  */
 export function placeTrunks(
   cells: Uint8Array,
   noTrunk: Uint8Array,
   rules: MapRules,
   random: RandomGenerator,
+  start: number,
 ): number {
   const target = trunkTarget(rules);
   if (target === 0) return 0;
-  const d = new TrunkDraft(cells, noTrunk, rules);
+  const d = new TrunkDraft(cells, noTrunk, rules, start);
   let trunks = 0;
   for (
     let attempt = 1;

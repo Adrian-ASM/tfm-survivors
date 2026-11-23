@@ -31,12 +31,18 @@ describe('GameMap · rejilla de celdas tipadas (spec procedural-map)', () => {
   });
 
   it('Scenario: Caminabilidad por tipo y fuera de la rejilla', () => {
-    const map = mapWith(RULES, { '3,3': 'trunk', '4,3': 'water', '5,3': 'bridge' });
+    const map = mapWith(RULES, {
+      '3,3': 'trunk',
+      '4,3': 'water',
+      '5,3': 'bridge',
+      '6,3': 'castle',
+    });
     const cells: [number, number][] = [
       [3, 3],
       [4, 3],
       [5, 3],
       [6, 3],
+      [7, 3],
       [-1, 0],
       [32, 0],
       [0, 18],
@@ -45,6 +51,7 @@ describe('GameMap · rejilla de celdas tipadas (spec procedural-map)', () => {
       false,
       false,
       true,
+      false,
       true,
       false,
       false,
@@ -53,12 +60,24 @@ describe('GameMap · rejilla de celdas tipadas (spec procedural-map)', () => {
   });
 
   it('typeAt devuelve el tipo de cada celda dada', () => {
-    const map = mapWith(RULES, { '3,3': 'trunk', '4,3': 'water', '5,3': 'bridge' });
-    expect([map.typeAt(3, 3), map.typeAt(4, 3), map.typeAt(5, 3)]).toEqual([
+    const map = mapWith(RULES, {
+      '3,3': 'trunk',
+      '4,3': 'water',
+      '5,3': 'bridge',
+      '6,3': 'castle',
+    });
+    expect([map.typeAt(3, 3), map.typeAt(4, 3), map.typeAt(5, 3), map.typeAt(6, 3)]).toEqual([
       'trunk',
       'water',
       'bridge',
+      'castle',
     ]);
+  });
+
+  it('una celda castle bloquea el círculo como un tronco (tangencia legal)', () => {
+    const map = mapWith(RULES, { '6,3': 'castle' });
+    expect(map.overlapsBlocked(344, 210, 16)).toBe(false);
+    expect(map.overlapsBlocked(345, 210, 16)).toBe(true);
   });
 
   it('Scenario: Mapa de dimensiones incorrectas (30 × 17 con la rejilla de 32 × 18)', () => {

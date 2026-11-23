@@ -61,18 +61,18 @@ describe('Contenido de vida e invulnerabilidad validado', () => {
     expect(r.ok && r.value.player.pickupRadius).toBe(128);
   });
 
-  // 0015, punto de control de balance: el usuario fija 210 (29/50 victorias con el mapa).
-  it('Scenario: Velocidad del jugador por defecto (210 px/s, decidida en el gate de 0015)', () => {
+  // 0016 (gate): el usuario fija 215 con el castillo (28/50 en el prototipo; 24/50 con 210).
+  it('Scenario: Velocidad del jugador por defecto (215 px/s, decidida en el gate de 0016)', () => {
     const r = loadRunConfig();
-    expect(r.ok && r.value.player.speed).toBe(210);
+    expect(r.ok && r.value.player.speed).toBe(215);
   });
 
-  it('Contenido válido: velocidad 210, radio 16, vida máxima 100 y radio de recogida 64', () => {
+  it('Contenido válido: velocidad 215, radio 16, vida máxima 100 y radio de recogida 64', () => {
     const raw = rawContent();
     raw.player.pickupRadius = 64;
     const r = parseRunConfig(raw);
     expect(r.ok && r.value.player).toEqual({
-      speed: 210,
+      speed: 215,
       radius: 16,
       maxHealth: 100,
       invulnerabilityTicks: 30,
@@ -557,6 +557,7 @@ describe('Contenido del mapa validado', () => {
       trunkPatch: { min: 3, max: 8 },
       rivers: 1,
       bridges: { min: 2, max: 3 },
+      castle: { cols: 5, rows: 4 },
       tuning: undefined,
     });
   });
@@ -595,6 +596,11 @@ describe('Contenido del mapa validado', () => {
     ['tuning.riverMeander', (m: RawMap) => (m.tuning.riverMeander = 1.5)],
     ['tuning.riverVerticalChance', (m: RawMap) => (m.tuning.riverVerticalChance = -0.1)],
     ['tuning.patchAttempts', (m: RawMap) => (m.tuning.patchAttempts = 0)],
+    ['castle.cols', (m: RawMap) => (m.castle = { cols: 0, rows: 4 })],
+    ['castle.rows', (m: RawMap) => (m.castle = { cols: 5, rows: 0 })],
+    ['castle.cols', (m: RawMap) => (m.castle = { cols: 5.5, rows: 4 })],
+    ['castle', (m: RawMap) => (m.castle = { cols: 17, rows: 4 })],
+    ['castle', (m: RawMap) => (m.castle = { cols: 5, rows: 10 })],
   ])('Scenario: Valores fuera de rango (%s)', (field, mutate) => {
     const raw = rawContent();
     mutate(raw.map);
@@ -608,6 +614,8 @@ describe('Contenido del mapa validado', () => {
     ['rivers 0', (m: RawMap) => (m.rivers = 0)],
     ['rivers 2', (m: RawMap) => (m.rivers = 2)],
     ['trunkPatch { 1, 1 }', (m: RawMap) => (m.trunkPatch = { min: 1, max: 1 })],
+    ['castle { 1, 1 }', (m: RawMap) => (m.castle = { cols: 1, rows: 1 })],
+    ['castle { 16, 9 }', (m: RawMap) => (m.castle = { cols: 16, rows: 9 })],
   ])('Scenario: Límites válidos (%s)', (_name, mutate) => {
     const raw = rawContent();
     mutate(raw.map);
@@ -617,6 +625,17 @@ describe('Contenido del mapa validado', () => {
   it('Scenario: Campo ausente o desconocido (sin trunkDensity)', () => {
     const raw = without(rawContent(), (r) => r.map, 'trunkDensity');
     expect(failure(raw).field).toBe('map.trunkDensity');
+  });
+
+  it('Scenario: Campo ausente o desconocido (sin castle)', () => {
+    const raw = without(rawContent(), (r) => r.map, 'castle');
+    expect(failure(raw).field).toBe('map.castle');
+  });
+
+  it('castle estricto: campo extra en la huella', () => {
+    const raw = rawContent();
+    Object.assign(raw.map.castle, { depth: 1 });
+    expect(failure(raw).field).toBe('map.castle.depth');
   });
 
   it('Scenario: Campo ausente o desconocido (campo extra lakes: 2)', () => {

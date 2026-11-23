@@ -1,5 +1,5 @@
-/** Tipos de celda del mapa (spec procedural-map), en el orden de sus códigos 0..3. */
-export const CELL_TYPES = ['grass', 'trunk', 'water', 'bridge'] as const;
+/** Tipos de celda del mapa (spec procedural-map), en el orden de sus códigos 0..4. */
+export const CELL_TYPES = ['grass', 'trunk', 'water', 'bridge', 'castle'] as const;
 
 export type CellType = (typeof CELL_TYPES)[number];
 
@@ -8,8 +8,9 @@ export const GRASS = 0;
 export const TRUNK = 1;
 export const WATER = 2;
 export const BRIDGE = 3;
+export const CASTLE = 4;
 
-/** `grass` y `bridge` son caminables; `trunk` y `water`, no. */
+/** `grass` y `bridge` son caminables; `trunk`, `water` y `castle`, no. */
 export const isWalkableCode = (code: number): boolean => code === GRASS || code === BRIDGE;
 
 export const isWalkableType = (type: CellType): boolean => isWalkableCode(codeOf(type));

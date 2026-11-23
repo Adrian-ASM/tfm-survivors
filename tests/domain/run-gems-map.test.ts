@@ -6,7 +6,7 @@ import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
 import type { RandomGenerator } from '../../src/domain/shared/RandomGenerator';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import { DEFAULT_PROGRESSION, TESTS, aDefaultConfig, withWeapons } from '../support/builders';
-import { cellsWith, mapRules, type Layout } from '../support/mapLayouts';
+import { castleBlock, cellsWith, mapRules, type Layout } from '../support/mapLayouts';
 import { CountingRandom } from '../support/random';
 import { aContactConfig, aProbeType, ticks } from '../support/runs';
 import { weaponsOf } from '../support/weapons';
@@ -76,6 +76,14 @@ describe('Recolocación de gemas en celdas no caminables (spec xp-gems)', () => 
       start(river, { player: { x: 960, y: 300 }, enemies: [torch(300, 560)] }),
     );
     expect(at(snap)).toEqual([[270, 450]]);
+  });
+
+  it('Scenario: Baja dentro del castillo (gema en (990, 330), gana a la (16, 10) por fila)', () => {
+    const snap = firstTick(
+      start(castleBlock(), { player: { x: 300, y: 900 }, enemies: [torch(990, 480)] }),
+    );
+    expect(snap.enemies).toEqual([]);
+    expect(at(snap)).toEqual([[990, 330]]);
   });
 
   it('Scenario: Baja en hierba junto a un tronco (la gema conserva su punto)', () => {

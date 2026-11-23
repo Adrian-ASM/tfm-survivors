@@ -6,6 +6,10 @@ import { aDefaultConfig } from '../support/builders';
 import { fakeKit, type FakeSprite } from '../support/FakeSprite';
 import { someLooks } from '../support/looks';
 import { startRun } from '../support/runs';
+import { toMapSnapshot } from '../../src/domain/map/MapSnapshot';
+import type { MapArtCanvas } from '../../src/infrastructure/phaser/TerrainView';
+import { planFor } from '../support/mapArt';
+import { mapForSeed } from '../support/mapStats';
 
 // Spec sprite-rendering: muertes, mundo detenido y sonda (change 0012, design D6/D7 y "Flujo").
 // Fixture: cadáver con `death` de 6 frames a 15 fps (400 ms); jugador con walk [6, 7, 8, 9].
@@ -186,6 +190,64 @@ describe('RenderLayers · mundo detenido', () => {
         expect([...enemies().map((s) => s.frame), player()?.frame], mode).toEqual(first);
       }
     }
+  });
+});
+
+// Spec sprite-rendering (0016), "Pintado del mapa": espuma en bucle en tiempo de render (design §5.4).
+describe('RenderLayers · espuma animada', () => {
+  function withFoam() {
+    const s = setup();
+    const calls: number[] = [];
+    const canvas: MapArtCanvas = {
+      clear: () => undefined,
+      tiles: () => undefined,
+      sprite: () => undefined,
+      rect: () => undefined,
+      foam: (f) => calls.push(f),
+    };
+    const plan = planFor(toMapSnapshot(mapForSeed(aDefaultConfig(), 123)), 123);
+    s.layers.paintMap(canvas, plan);
+    return { ...s, calls, plan };
+  }
+
+  it('Scenario: Pintado del mapa (espuma en bucle: 8 frames por segundo, solo al cambiar)', () => {
+    const { frame, calls, plan } = withFoam();
+    expect(plan.foam?.fps).toBe(8);
+    for (let i = 0; i < 59; i++) frame(snap(i)); // 983 ms: frames 0..7
+    expect(calls).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+    for (let i = 0; i < 8; i++) frame(snap(60 + i));
+    expect(calls.at(-1)).toBe(0);
+  });
+
+  it('congelada en pausa y sin avance del reloj (modo manual sin step)', () => {
+    const { frame, layers, calls } = withFoam();
+    frame(snap(0));
+    for (let i = 0; i < 120; i++) frame(snap(1), true);
+    for (let i = 0; i < 120; i++) {
+      layers.advance(0, false);
+      layers.render(snap(1));
+    }
+    expect(calls).toEqual([0]);
+  });
+
+  it('sin espuma con arte no llama nunca a foam', () => {
+    const s = setup();
+    const calls: number[] = [];
+    const canvas: MapArtCanvas = {
+      clear: () => undefined,
+      tiles: () => undefined,
+      sprite: () => undefined,
+      rect: () => undefined,
+      foam: (f) => calls.push(f),
+    };
+    s.layers.paintMap(
+      canvas,
+      planFor(toMapSnapshot(mapForSeed(aDefaultConfig(), 123)), 123, [
+        'Terrain/Water/Foam/Foam.png',
+      ]),
+    );
+    for (let i = 0; i < 60; i++) s.frame(snap(i));
+    expect(calls).toEqual([]);
   });
 });
 

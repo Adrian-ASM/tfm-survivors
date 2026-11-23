@@ -1,5 +1,5 @@
 import { CELL_TYPES, type CellType } from './CellType';
-import type { GameMap } from './GameMap';
+import type { CastleFootprint, GameMap } from './GameMap';
 import type { StartZone } from './MapRules';
 
 /**
@@ -14,7 +14,10 @@ export interface MapSnapshot {
   /** Tipos de las `cols · rows` celdas en orden de filas. */
   readonly cells: readonly CellType[];
   readonly counts: Readonly<Record<CellType, number>>;
+  /** Punto de salida del jugador y centro de la zona de inicio del mapa. */
   readonly start: StartZone;
+  /** Huella del castillo del mapa generado; `null` en el vacío y en los explícitos. */
+  readonly castle: CastleFootprint | null;
 }
 
 export function toMapSnapshot(map: GameMap): MapSnapshot {
@@ -34,5 +37,6 @@ export function toMapSnapshot(map: GameMap): MapSnapshot {
     cells: Object.freeze(cells),
     counts: Object.freeze(counts),
     start: Object.freeze({ ...map.start }),
+    castle: map.castle ? Object.freeze({ ...map.castle }) : null,
   });
 }

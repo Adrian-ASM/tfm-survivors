@@ -2,6 +2,8 @@ import { Arena } from '../../src/domain/arena/Arena';
 import type { CellType } from '../../src/domain/map/CellType';
 import { GameMap } from '../../src/domain/map/GameMap';
 import { MapRules, type MapConfig } from '../../src/domain/map/MapRules';
+import type { TerrainSource } from '../../src/domain/map/TerrainSource';
+import type { RunConfig } from '../../src/domain/run/RunConfig';
 import { DEFAULT_MAP, aDefaultConfig } from './builders';
 
 /**
@@ -21,6 +23,15 @@ export function mapRules(
   return r.value;
 }
 
+/**
+ * Mapa vacío con la salida del castillo del contenido `config` declarada ((990, 630) por defecto):
+ * la referencia de las comparaciones "con y sin mapa" de 0016 (design §12.1 A3).
+ */
+export function emptyWithExit(config: RunConfig): TerrainSource {
+  const rules = mapRules(config.map, config.arena.width, config.arena.height, config.player.radius);
+  return { kind: 'open', start: { ...rules.castle.exit } };
+}
+
 /** Mapa vacío de la rejilla por defecto sobre una arena dada (escenarios sin mapa declarado). */
 export function openMap(arena: Arena): GameMap {
   return GameMap.open(mapRules(DEFAULT_MAP, arena.width, arena.height));
@@ -28,6 +39,17 @@ export function openMap(arena: Arena): GameMap {
 
 /** Celdas `'c,r'` → tipo sobre hierba (p. ej. `{ '10,4': 'trunk' }`), en orden de filas. */
 export type Layout = Readonly<Record<string, CellType>>;
+
+/**
+ * Celdas `castle` de un rectángulo de columnas `c0..c1` y filas `r0..r1` (por defecto, la huella
+ * del contenido por defecto: columnas 14–18 y filas 6–9, x en [840, 1.140] e y en [360, 600]).
+ */
+export function castleBlock(c0 = 14, c1 = 18, r0 = 6, r1 = 9): Layout {
+  const layout: Record<string, CellType> = {};
+  for (let r = r0; r <= r1; r++)
+    for (let c = c0; c <= c1; c++) layout[`${String(c)},${String(r)}`] = 'castle';
+  return layout;
+}
 
 /** Lista de tipos de la rejilla de `rules`: hierba salvo las celdas de `layout`. */
 export function cellsWith(rules: MapRules, layout: Layout): CellType[] {

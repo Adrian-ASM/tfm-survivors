@@ -7,6 +7,7 @@ import { placeSpawn } from '../../src/domain/wave/placeSpawn';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import { aDefaultConfig } from '../support/builders';
 import { StubRandom } from '../support/random';
+import { startSeededRun } from '../support/runs';
 
 const unwrap = <T>(r: { ok: true; value: T } | { ok: false; error: { message: string } }): T => {
   if (!r.ok) throw new Error(r.error.message);
@@ -63,6 +64,32 @@ describe('placeSpawn', () => {
       expect(ringError).toBeLessThanOrEqual(0.001);
     }
     expect([player.x, player.y]).toEqual([960, 540]);
+  });
+
+  // Spec enemy-spawning (0016): el jugador nace ante la puerta, no en el centro del mundo.
+  it('Scenario: Jugador ante la puerta del castillo (semilla 42, vista (510, 360)–(1.470, 900))', () => {
+    const config = aDefaultConfig();
+    const { arena: world, waves } = config;
+    const defaultRules = unwrap(
+      SpawnRules.create(
+        { maxAlive: waves.maxAlive, maxBudget: waves.maxBudget, ...waves.spawn },
+        unwrap(View.create(world.view.width, world.view.height)),
+      ),
+    );
+    const a = arena(world.width, world.height);
+    const { x, y } = startSeededRun(config, 42).snapshot().player;
+    expect([x, y]).toEqual([990, 630]);
+    const player = Vector2.of(x, y);
+    const random = new Mulberry32RandomGenerator(42);
+    for (let i = 0; i < 200; i++) {
+      const r = RADII[i % 3] ?? 10;
+      const p = placeSpawn(player, r, defaultRules, a, random);
+      if (!p) throw new Error('se esperaba una posición');
+      expect([a.clampX(p.x, r), a.clampY(p.y, r)]).toEqual([p.x, p.y]);
+      expect(p.distanceTo(player)).toBeGreaterThanOrEqual(200);
+      const insideCamera = p.x > 510 && p.x < 1470 && p.y > 360 && p.y < 900;
+      expect(insideCamera).toBe(false);
+    }
   });
 
   it('Arena igual a la vista: dentro, a ≥ 200 y tocando un borde', () => {

@@ -1,5 +1,5 @@
 import type { SpriteCount } from './PlayerView';
-import { zeroCells, type CellCounts } from './TerrainView';
+import { zeroCells, zeroMapArt, type CellCounts, type MapArtProbe } from './TerrainView';
 
 /**
  * Sonda de sprites para E2E (design D7, cierra 0009 · W2): visibles y con aspecto de reserva por
@@ -14,8 +14,10 @@ export interface SpriteCounts {
   readonly pulses: SpriteCount;
   readonly gems: SpriteCount;
   readonly enemyPlaceholders: Record<string, number>;
-  /** Celdas del mapa pintadas por tipo (0015); no cuentan como fondo ni como reserva. */
+  /** Celdas del mapa pintadas por tipo (0015, `castle` desde 0016); no son fondo ni reserva. */
   readonly cells: CellCounts;
+  /** Elementos del mapa pintados, con su reserva, y objetos de escena del mapa (0016). */
+  readonly mapArt: MapArtProbe;
 }
 
 const zero = (): SpriteCount => ({ visible: 0, placeholder: 0 });
@@ -34,5 +36,6 @@ export function emptyCounts(enemyIds: Iterable<string>): SpriteCounts {
     gems: zero(),
     enemyPlaceholders,
     cells: zeroCells(),
+    mapArt: zeroMapArt(),
   };
 }

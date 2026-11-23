@@ -57,6 +57,37 @@ test(
   },
 );
 
+// Spec sprite-rendering (0016), "Coste de render del mapa (a demanda)": objetos de la sonda ≤ 300 y
+// fps con el mapa real (mediana de 3 pasadas) frente a la base de rectángulos de 0015. Informativo.
+const MAP_FPS_BASE: Readonly<Record<number, number>> = { 42: 21.6, 123: 21.9 };
+const MAX_MAP_OBJECTS = 300;
+const PASSES = 3;
+
+test(
+  '[map] Objetos del mapa y fps con el mapa real (semillas 42 y 123)',
+  { tag: '@realtime' },
+  async ({ page, cpuThrottle }) => {
+    test.setTimeout(240_000);
+    for (const seed of [42, 123]) {
+      await page.goto(gameUrl({ seed, map: 'real' }));
+      await focusGame(page);
+      await expect.poll(async () => (await snapshotOf(page))?.tick ?? 0).toBeGreaterThan(0);
+      const objects = (await probe(page))?.sprites?.mapArt.objects ?? Infinity;
+      expect(objects).toBeLessThanOrEqual(MAX_MAP_OBJECTS);
+      const fps: number[] = [];
+      for (let i = 0; i < PASSES; i++) fps.push((await measureFrames(page, FRAMES)).fps);
+      const median = [...fps].sort((a, b) => a - b)[Math.floor(PASSES / 2)] ?? 0;
+      const base = MAP_FPS_BASE[seed] ?? 1;
+      const line =
+        `[map] seed=${String(seed)} throttle=${String(cpuThrottle)} objects=${String(objects)} ` +
+        `fps=${median.toFixed(1)} (${((100 * median) / base).toFixed(0)} % de ${String(base)})`;
+      console.log(line);
+      test.info().annotations.push({ type: 'map-fps', description: line });
+      expect(median).toBeGreaterThan(0);
+    }
+  },
+);
+
 // Spec simulation-loop, "Velocidad válida en modo E2E": resolución en el navegador (el avance a
 // velocidad N se prueba en Node con advanceFrame).
 test(

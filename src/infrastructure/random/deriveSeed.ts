@@ -1,6 +1,12 @@
 /** Flujo de azar del mapa (ADR-0013). Cambiarlo cambia todos los mapas: re-medir el balance. */
 export const MAP_STREAM = 1;
 
+/**
+ * Flujo de la decoración del mapa (variedad de árboles, change 0016): solo presentación, fuera del
+ * contrato de determinismo de la simulación (ADR-0013, addendum).
+ */
+export const DECOR_STREAM = 2;
+
 /** Sal de los flujos (constante áurea de 32 bits, como en las mezclas de hash habituales). */
 const STREAM_SALT = 0x9e3779b9;
 

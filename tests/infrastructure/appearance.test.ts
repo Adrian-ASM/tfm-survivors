@@ -16,17 +16,29 @@ function failure(raw: RawAppearance): { field: string; message: string } {
 }
 
 describe('Colores del mapa en los datos de aspecto', () => {
-  it('Scenario: Colores del repositorio (trunk, water y bridge #RRGGBB y distintos)', () => {
+  it('Scenario: Colores del repositorio (trunk, water, bridge y castle #RRGGBB y distintos)', () => {
     const raw = readJson('content/appearance.json') as { terrain: Record<string, string> };
     const registered = (
       readJson('content/asset-provenance.json') as { files: { path: string }[] }
     ).files.map((f) => f.path);
     const r = parseAppearance(raw, registered);
     if (!r.ok) throw new Error(`${r.error.field}: ${r.error.message}`);
-    expect(Object.keys(raw.terrain)).toEqual(['trunk', 'water', 'bridge']);
+    expect(Object.keys(raw.terrain)).toEqual(['trunk', 'water', 'bridge', 'castle']);
     for (const c of Object.values(raw.terrain)) expect(c).toMatch(/^#[0-9a-fA-F]{6}$/);
-    const { trunk, water, bridge } = r.value.terrain;
-    expect(new Set([trunk, water, bridge]).size).toBe(3);
+    const { trunk, water, bridge, castle } = r.value.terrain;
+    expect(new Set([trunk, water, bridge, castle]).size).toBe(4);
+  });
+
+  it('Scenario: Colores inválidos (sin el color de castle)', () => {
+    const raw = rawAppearance();
+    Reflect.deleteProperty(raw.terrain, 'castle');
+    expect(failure(raw).field).toBe('terrain.castle');
+  });
+
+  it('Scenario: Colores inválidos (castle igual a water)', () => {
+    const raw = rawAppearance();
+    raw.terrain.castle = raw.terrain.water;
+    expect(failure(raw).field).toBe('terrain.castle');
   });
 
   it.each(['#12345', 'blue', '#GGGGGG'])('Scenario: Colores inválidos (water = %j)', (color) => {

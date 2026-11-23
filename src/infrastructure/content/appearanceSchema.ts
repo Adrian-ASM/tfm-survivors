@@ -68,23 +68,110 @@ export const MovingSchema = z.strictObject({ ...BaseShape, idle: AnimSchema, wal
 export const CorpseSchema = z.strictObject({ ...BaseShape, death: DeathSchema });
 
 export const TERRAIN_COLORS_MUST_DIFFER =
-  'Los colores del mapa (trunk, water, bridge) son distintos dos a dos.';
+  'Los colores del mapa (trunk, water, bridge, castle) son distintos dos a dos.';
+
+const TERRAIN_KEYS = ['trunk', 'water', 'bridge', 'castle'] as const;
 
 /**
- * Colores lisos de las celdas del mapa (change 0015): uno por tipo no-hierba, `#RRGGBB`, distintos
- * dos a dos. El error de un color repetido nombra el último de los dos en el orden del fichero.
+ * Colores lisos de las celdas del mapa (changes 0015 y 0016): uno por tipo no-hierba, `#RRGGBB`,
+ * distintos dos a dos. El error de un color repetido nombra el último de los dos en el orden del
+ * fichero.
  */
 const TerrainSchema = z
-  .strictObject({ trunk: Hex, water: Hex, bridge: Hex })
+  .strictObject({ trunk: Hex, water: Hex, bridge: Hex, castle: Hex })
   .superRefine((colors, ctx) => {
     const seen = new Set<number>();
-    for (const key of ['trunk', 'water', 'bridge'] as const) {
+    for (const key of TERRAIN_KEYS) {
       if (seen.has(colors[key])) {
         ctx.addIssue({ code: 'custom', path: [key], message: TERRAIN_COLORS_MUST_DIFFER });
       }
       seen.add(colors[key]);
     }
   });
+
+export const FOAM_MUST_LOOP = 'La animación de la espuma va en bucle.';
+export const MODELS_REQUIRED = 'El árbol necesita al menos un modelo.';
+export const RECT_ORIGIN_MUST_BE_INTEGER = 'El recorte empieza en enteros ≥ 0.';
+
+/**
+ * Casos de orilla (design 0016 §12.2 B2): lados de la celda de tierra que dan a río, con las letras
+ * en orden N-E-S-W. 15 casos: el vacío no es orilla.
+ */
+export const SHORE_CASES = [
+  'N',
+  'E',
+  'S',
+  'W',
+  'NE',
+  'NS',
+  'NW',
+  'ES',
+  'EW',
+  'SW',
+  'NES',
+  'NEW',
+  'NSW',
+  'ESW',
+  'NESW',
+] as const;
+export type ShoreCase = (typeof SHORE_CASES)[number];
+
+const FrameIndex = z
+  .number()
+  .int({ error: FRAME_INDEX_MUST_BE_INTEGER })
+  .min(0, { error: FRAME_INDEX_MUST_BE_INTEGER });
+const RectStart = z
+  .number()
+  .int({ error: RECT_ORIGIN_MUST_BE_INTEGER })
+  .min(0, { error: RECT_ORIGIN_MUST_BE_INTEGER });
+/** Recorte en px de una hoja no regular; el encaje en la imagen se comprueba al cargarla. */
+const RectSchema = z.strictObject({
+  x: RectStart,
+  y: RectStart,
+  width: FrameSize,
+  height: FrameSize,
+});
+
+/** Lo común a cada aspecto del mapa: hoja regular, escala y origen. */
+const MapShape = {
+  sheet: BaseShape.sheet,
+  scale: BaseShape.scale,
+  origin: BaseShape.origin,
+};
+
+/** Aspectos del mapa (change 0016, design §5.1 y §12.2 B2); todo estricto. */
+const MapAppearanceSchema = z.strictObject({
+  water: z.strictObject({ ...MapShape, frame: FrameIndex }),
+  shore: z.strictObject({
+    ...MapShape,
+    cases: z.strictObject(
+      Object.fromEntries(SHORE_CASES.map((k) => [k, FrameIndex])) as Record<
+        ShoreCase,
+        typeof FrameIndex
+      >,
+    ),
+  }),
+  foam: z.strictObject({
+    ...MapShape,
+    idle: z.strictObject({
+      frames: Frames,
+      fps: Fps,
+      loop: z.literal(true, { error: FOAM_MUST_LOOP }),
+    }),
+  }),
+  trees: z.strictObject({
+    ...MapShape,
+    models: z.array(z.strictObject({ frame: FrameIndex })).min(1, { error: MODELS_REQUIRED }),
+    flip: z.boolean(),
+  }),
+  bridges: z.strictObject({
+    image: SheetFile,
+    scale: BaseShape.scale,
+    origin: BaseShape.origin,
+    frames: z.strictObject({ northSouth: RectSchema, eastWest: RectSchema }),
+  }),
+  castle: z.strictObject({ ...MapShape, frame: FrameIndex }),
+});
 
 export const AppearanceSchema = z.strictObject({
   maxCorpses: z
@@ -98,9 +185,13 @@ export const AppearanceSchema = z.strictObject({
   ground: StillSchema,
   corpse: CorpseSchema,
   terrain: TerrainSchema,
+  map: MapAppearanceSchema,
 });
 
 export type Appearance = z.output<typeof AppearanceSchema>;
+export type MapAppearance = z.output<typeof MapAppearanceSchema>;
+/** Recorte en px de una hoja no regular (marcos del puente). */
+export type SheetRect = z.output<typeof RectSchema>;
 export type Anim = z.output<typeof AnimSchema> | z.output<typeof DeathSchema>;
 export type StillAspect = z.output<typeof StillSchema>;
 export type MovingAspect = z.output<typeof MovingSchema>;
