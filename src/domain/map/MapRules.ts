@@ -132,4 +132,18 @@ export class MapRules {
   get cellCount(): number {
     return this.cols * this.rows;
   }
+
+  /**
+   * ¿Pertenece la celda (c, r) a la zona de inicio? Sí si algún punto de su rectángulo (recortado)
+   * está a distancia estrictamente menor que `startRadius` del centro del mundo.
+   */
+  inStartZone(col: number, row: number): boolean {
+    const s = this.cellSize;
+    const { x, y, radius } = this.start;
+    const nx = Math.max(col * s, Math.min(x, Math.min((col + 1) * s, this.width)));
+    const ny = Math.max(row * s, Math.min(y, Math.min((row + 1) * s, this.height)));
+    const dx = x - nx;
+    const dy = y - ny;
+    return dx * dx + dy * dy < radius * radius;
+  }
 }

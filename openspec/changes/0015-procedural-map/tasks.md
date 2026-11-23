@@ -20,7 +20,7 @@
   Escenarios: PM "Contenido por defecto", "Celda en el límite del radio del jugador", "Valores fuera de rango",
   "Límites válidos", "Campo ausente o desconocido"; RO "Contenido de los tests igual al del juego" (parte del mapa).
   Test: `tests/infrastructure/content.test.ts`. E2E afectados: —
-- [ ] 1.3 Zona de inicio y conectividad: celdas de la zona (distancia estricta `<`), `reachableFrom` (BFS 4-vecina
+- [x] 1.3 Zona de inicio y conectividad: celdas de la zona (distancia estricta `<`), `reachableFrom` (BFS 4-vecina
   sin asignar) y `isFullyConnected(map, start)`.
   Escenarios: PM "Celdas dentro y fuera de la zona", "Celda encerrada no es alcanzable".
   Test: `tests/domain/map/connectivity.test.ts`. E2E afectados: —
