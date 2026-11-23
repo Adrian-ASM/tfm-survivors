@@ -119,9 +119,22 @@ export interface SpritesView {
   pulses: SpriteCountView;
   gems: SpriteCountView;
   enemyPlaceholders: Record<string, number>;
-  /** Celdas del mapa pintadas por tipo (change 0015); a 0 en el menú. */
-  cells: { trunk: number; water: number; bridge: number };
+  /** Celdas del mapa pintadas por tipo (change 0015, castle desde 0016); a 0 en el menú. */
+  cells: { trunk: number; water: number; bridge: number; castle: number };
+  /** Elementos del mapa pintados y cuántos con reserva, y objetos del mapa (change 0016). */
+  mapArt: MapArtView;
 }
+
+/** Elementos del mapa pintados (con reserva incluida) y con reserva. */
+export interface ElementCountView {
+  painted: number;
+  fallback: number;
+}
+
+export type MapArtView = Record<
+  'water' | 'shore' | 'foam' | 'tree' | 'canopy' | 'bridge' | 'castle',
+  ElementCountView
+> & { objects: number };
 
 /** Rectángulo visible del último frame pintado, en coordenadas de mundo (change 0013). */
 export interface CameraViewData {
@@ -137,14 +150,19 @@ export interface WorldView {
   height: number;
 }
 
+export type CellTypeView = 'grass' | 'trunk' | 'water' | 'bridge' | 'castle';
+
 /** Sonda del mapa (change 0015): null en el menú. */
 export interface MapView {
   cols: number;
   rows: number;
   cellSize: number;
-  cells: ('grass' | 'trunk' | 'water' | 'bridge')[];
-  counts: Record<'grass' | 'trunk' | 'water' | 'bridge', number>;
+  cells: CellTypeView[];
+  counts: Record<CellTypeView, number>;
+  /** Salida del jugador y centro de la zona de inicio. */
   start: { x: number; y: number; radius: number };
+  /** Huella del castillo (change 0016); null con el mapa vacío. */
+  castle: { firstCol: number; lastCol: number; firstRow: number; lastRow: number } | null;
   emptyForced: boolean;
 }
 
@@ -256,7 +274,10 @@ export async function startSpriteSampler(page: Page, placeholderType?: string): 
         if (!snap) {
           result.menuFrames += 1;
           if (kinds.some((k) => k.visible !== 0)) miss('menú con sprites visibles');
-          if (s.cells.trunk + s.cells.water + s.cells.bridge !== 0) result.cellMisses += 1;
+          if (s.cells.trunk + s.cells.water + s.cells.bridge + s.cells.castle !== 0) {
+            result.cellMisses += 1;
+          }
+          if (s.mapArt.objects !== 0) result.cellMisses += 1;
         } else {
           result.frames += 1;
           const t = snap.tick;
@@ -280,7 +301,8 @@ export async function startSpriteSampler(page: Page, placeholderType?: string): 
             m !== undefined &&
             c.trunk === m.counts.trunk &&
             c.water === m.counts.water &&
-            c.bridge === m.counts.bridge;
+            c.bridge === m.counts.bridge &&
+            c.castle === m.counts.castle;
           if (!sameCells) result.cellMisses += 1;
           const reserve = [s.ground, ...kinds].reduce((n, k) => n + k.placeholder, 0);
           if (reserve > 0) result.placeholderFrames += 1;

@@ -148,13 +148,13 @@ opción (script temporal en el scratchpad) y esperar su decisión.
 
 ## 6. E2E (e2e-lite: 0 tests nuevos en `logic`, 2 ampliados) y realtime
 
-- [ ] 6.1 Ampliar "Mapa real…" (`gameplay.spec.ts`): firma con castillo, huella y salida, jugador en (990, 630),
+- [x] 6.1 Ampliar "Mapa real…" (`gameplay.spec.ts`): firma con castillo, huella y salida, jugador en (990, 630),
   `sprites.cells` con `castle` 20, `mapArt` contra `map.cells` (orilla = espuma = celdas `grass`/`trunk`/`castle`
   con ≥ 1 vecina 4-conexa `water`/`bridge` dentro de la rejilla, calculadas en el test), sin reserva;
   `overlapsBlocked` con `castle`. Ajustar la primera lectura de "Cámara…" a la fórmula (vista (510, 360)). Tipos de la
   sonda en `tests/e2e/probe.ts`. — escenarios: "Recuentos del mapa pintado", "Sonda con castillo y salida", "Sin
   solapes en la build con el mapa real", "Nada fuera del mundo con el mapa real"
-- [ ] 6.2 Ampliar "Sprites…reserva": abortar también las 5 hojas del mapa; tras el primer `step(60)`, reserva de agua,
+- [x] 6.2 Ampliar "Sprites…reserva": abortar también las 5 hojas del mapa; tras el primer `step(60)`, reserva de agua,
   árbol y puente igual a los recuentos, castillo 1 con reserva, espuma y copa 0, tick 60 y sin errores no capturados
   (filtrar los "Failed to load resource" de las 6 hojas); entidades cuya hoja no se bloquea sin reserva (spec ya
   ajustada, §12.6). — escenario:

@@ -66,11 +66,14 @@ test('Cámara: centrada al empezar y sigue al jugador hacia la derecha sin salir
   await openGame(page, gameUrl({ seed: 7, manual: true, map: 'real' }));
   const first = await probe(page);
   expect(first?.world).toEqual(WORLD);
+  // 0016: el jugador nace ante la puerta del castillo; la vista sigue la fórmula de la cámara.
+  const p0 = first?.snapshot?.player ?? { x: 0, y: 0 };
   expect(first?.camera).toEqual({
-    x: (WORLD.width - VIEW.width) / 2,
-    y: (WORLD.height - VIEW.height) / 2,
+    x: clamp(p0.x - VIEW.width / 2, 0, WORLD.width - VIEW.width),
+    y: clamp(p0.y - VIEW.height / 2, 0, WORLD.height - VIEW.height),
     ...VIEW,
   });
+  expect([first?.camera?.x, first?.camera?.y]).toEqual([510, 360]);
 
   const problems: string[] = [];
   for (let i = 0; i < 20; i++) {
@@ -100,23 +103,42 @@ test('Cámara: centrada al empezar y sigue al jugador hacia la derecha sin salir
 // Spec sprite-rendering: sonda de sprites coherente con el snapshot en cada frame pintado y
 // aspecto de reserva solo para el tipo cuya hoja no carga.
 const TORCH_SHEET = '**/Factions/Goblins/Troops/Torch/Red/Torch_Red.png';
+/** Hojas del mapa (0016) que también se bloquean: agua, espuma, árbol, puente y castillo. */
+const MAP_SHEETS = ['Water.png', 'Foam.png', 'Tree.png', 'Bridge_All.png', 'Castle_Blue.png'];
+const BLOCKED = ['Torch_Red.png', ...MAP_SHEETS];
 /** Ticks por step mientras se muestrea: varios frames pintados. */
 const SAMPLED_CHUNK = 10;
 const SAMPLED_TICKS = 600;
 
-test('Sprites: recuentos de la sonda iguales al snapshot y reserva si la hoja de Torch falla', async ({
+test('Sprites: recuentos de la sonda iguales al snapshot y reserva si fallan Torch y las hojas del mapa', async ({
   page,
 }) => {
   const problems: string[] = [];
   page.on('pageerror', (e) => problems.push(`pageerror: ${e.message}`));
   page.on('console', (m) => {
     if (m.type() !== 'error') return;
-    // Solo se ignora el "Failed to load resource" de la hoja abortada.
-    const torch = m.location().url.includes('Torch_Red.png');
-    if (!(torch && m.text().startsWith('Failed to load resource'))) problems.push(m.text());
+    // Solo se ignora el "Failed to load resource" de las hojas abortadas.
+    const blocked = BLOCKED.some((f) => m.location().url.includes(f));
+    if (!(blocked && m.text().startsWith('Failed to load resource'))) problems.push(m.text());
   });
   await page.route(TORCH_SHEET, (route) => route.abort());
+  for (const sheet of MAP_SHEETS) await page.route(`**/${sheet}`, (route) => route.abort());
   await openGame(page, gameUrl({ seed: 42, manual: true, map: 'real' }));
+
+  // Spec sprite-rendering (0016), "Hojas del mapa bloqueadas": reserva por elemento del mapa.
+  expect(await step(page, 60)).toBe(60);
+  const blockedMap = await probe(page);
+  const counts = blockedMap?.map?.counts;
+  const art = blockedMap?.sprites?.mapArt;
+  if (!counts || !art) throw new Error('sin sonda del mapa');
+  expect(blockedMap.snapshot?.tick).toBe(60);
+  expect([art.water, art.tree, art.bridge]).toEqual([
+    { painted: counts.water, fallback: counts.water },
+    { painted: counts.trunk, fallback: counts.trunk },
+    { painted: counts.bridge, fallback: counts.bridge },
+  ]);
+  expect(art.castle).toEqual({ painted: 1, fallback: 1 });
+  expect([art.foam.painted, art.canopy.painted]).toEqual([0, 0]);
 
   await startSpriteSampler(page, 'goblin-torch');
   const reached = await stepUntil(
@@ -136,13 +158,13 @@ test('Sprites: recuentos de la sonda iguales al snapshot y reserva si la hoja de
   expect(problems).toEqual([]);
 });
 
-/** ¿Solapa el círculo (x, y, r) una celda `trunk` o `water`? (tangencia no es solape). */
+/** ¿Solapa el círculo (x, y, r) una celda `trunk`, `water` o `castle`? (tangencia no es solape). */
 function overlapsBlocked(m: MapView, x: number, y: number, r: number): boolean {
   const s = m.cellSize;
   for (let row = 0; row < m.rows; row++) {
     for (let col = 0; col < m.cols; col++) {
       const t = m.cells[row * m.cols + col];
-      if (t !== 'trunk' && t !== 'water') continue;
+      if (t !== 'trunk' && t !== 'water' && t !== 'castle') continue;
       const nx = Math.max(col * s, Math.min(x, (col + 1) * s));
       const ny = Math.max(row * s, Math.min(y, (row + 1) * s));
       if ((x - nx) ** 2 + (y - ny) ** 2 < r * r - 1e-6) return true;
@@ -151,9 +173,25 @@ function overlapsBlocked(m: MapView, x: number, y: number, r: number): boolean {
   return false;
 }
 
+/** Celdas `grass`, `trunk` o `castle` con ≥ 1 vecina 4-conexa `water` o `bridge` en la rejilla. */
+function shoreCount(m: MapView): number {
+  const at = (c: number, r: number) =>
+    c < 0 || r < 0 || c >= m.cols || r >= m.rows ? undefined : m.cells[r * m.cols + c];
+  const wet = (t: string | undefined) => t === 'water' || t === 'bridge';
+  let n = 0;
+  for (let r = 0; r < m.rows; r++) {
+    for (let c = 0; c < m.cols; c++) {
+      const t = at(c, r);
+      if (t !== 'grass' && t !== 'trunk' && t !== 'castle') continue;
+      if (wet(at(c, r - 1)) || wet(at(c + 1, r)) || wet(at(c, r + 1)) || wet(at(c - 1, r))) n++;
+    }
+  }
+  return n;
+}
+
 // Spec procedural-map, "Sonda coherente con el núcleo", y player-movement, "Sin solapes en la
 // build con el mapa real". Los E2E no importan `src/`: la firma dorada se fija en un unitario.
-test('Mapa real: sonda igual a la firma de la semilla 42 y el jugador no atraviesa troncos ni agua', async ({
+test('Mapa real: sonda igual a la firma de la semilla 42, castillo y salida, y sin atravesar troncos, agua ni castillo', async ({
   page,
 }) => {
   await openGame(page, gameUrl({ seed: 42, manual: true, map: 'real' }));
@@ -163,11 +201,32 @@ test('Mapa real: sonda igual a la firma de la semilla 42 y el jugador no atravie
   expect(signatureOf(m.cells)).toBe(MAP_GOLDEN[42]);
   expect(m.emptyForced).toBe(false);
   expect(m.counts.trunk).toBeGreaterThan(0);
+  // 0016, "Sonda con castillo y salida": huella 14–18 × 6–9 y jugador en la salida (990, 630).
+  expect(m.counts.castle).toBe(20);
+  expect(m.castle).toEqual({ firstCol: 14, lastCol: 18, firstRow: 6, lastRow: 9 });
+  expect([m.start.x, m.start.y]).toEqual([990, 630]);
+  expect([first.snapshot?.player.x, first.snapshot?.player.y]).toEqual([990, 630]);
   expect(first.sprites?.cells).toEqual({
     trunk: m.counts.trunk,
     water: m.counts.water,
     bridge: m.counts.bridge,
+    castle: 20,
   });
+  // "Recuentos del mapa pintado": orillas calculadas aquí sobre la lista de celdas de la sonda.
+  const shores = shoreCount(m);
+  const art = first.sprites?.mapArt;
+  const ok = (painted: number) => ({ painted, fallback: 0 });
+  expect(art && { ...art, objects: undefined }).toEqual({
+    water: ok(m.counts.water),
+    shore: ok(shores),
+    foam: ok(shores),
+    tree: ok(m.counts.trunk),
+    canopy: ok(m.counts.trunk),
+    bridge: ok(m.counts.bridge),
+    castle: ok(1),
+    objects: undefined,
+  });
+  expect(shores).toBeGreaterThan(0);
 
   const overlaps: string[] = [];
   for (const key of [
