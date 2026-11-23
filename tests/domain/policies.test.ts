@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
+import type { RunConfig } from '../../src/domain/run/RunConfig';
 import type { OfferSnapshot } from '../../src/domain/run/RunSnapshot';
 import { DEFAULT_UPGRADE_LIST, aDefaultConfig } from '../support/builders';
-import { REFERENCE_UPGRADE_PRIORITY, fleeInput, pickByPriority } from '../support/policies';
+import {
+  REFERENCE_UPGRADE_PRIORITY,
+  fleeInput,
+  pickByPriority,
+  referenceBot,
+} from '../support/policies';
 import { startRun } from '../support/runs';
 
 /** Opción de oferta mínima con el id dado (el resto de campos no influye en la elección). */
@@ -40,35 +46,66 @@ describe('pickByPriority (elección del bot de referencia)', () => {
   });
 });
 
+const directionOf = (input: PlayerInput) => ({ x: input.direction.x, y: input.direction.y });
+
 // Política de movimiento del bot de referencia (medición de ganabilidad de 0006, spec de 0010).
+// Desde 0013 el bot se construye con la configuración de la partida y huye de sus paredes.
 describe('fleeInput (movimiento del bot de referencia)', () => {
   it('Scenario: Huida de un enemigo', () => {
-    const run = startRun(aDefaultConfig(), { enemies: [{ type: 'goblin-torch', x: 580, y: 270 }] });
+    const config = aDefaultConfig();
+    const run = startRun(config, { enemies: [{ type: 'goblin-torch', x: 580, y: 270 }] });
 
-    const input = fleeInput(run.snapshot());
+    const input = referenceBot(config).input(run.snapshot());
 
-    expect(input.direction.x).toBe(-1);
-    expect(input.direction.y).toBe(0);
+    expect(directionOf(input)).toEqual({ x: -1, y: 0 });
   });
 
   it('Scenario: Enemigo fuera de rango', () => {
-    const run = startRun(aDefaultConfig(), { enemies: [{ type: 'goblin-torch', x: 630, y: 270 }] });
+    const config = aDefaultConfig();
+    const run = startRun(config, { enemies: [{ type: 'goblin-torch', x: 630, y: 270 }] });
 
-    expect(fleeInput(run.snapshot())).toBe(PlayerInput.NONE);
+    expect(referenceBot(config).input(run.snapshot())).toBe(PlayerInput.NONE);
   });
 
   it('se aleja de la pared cuando no hay enemigos cerca', () => {
-    const run = startRun(aDefaultConfig(), { player: { x: 20, y: 270 } });
+    const config = aDefaultConfig();
+    const run = startRun(config, { player: { x: 20, y: 270 } });
 
-    const input = fleeInput(run.snapshot());
-
-    expect(input.direction.x).toBe(1);
-    expect(input.direction.y).toBe(0);
+    expect(directionOf(fleeInput(run.snapshot(), config.arena))).toEqual({ x: 1, y: 0 });
   });
 
   it('Scenario: Huida sin amenazas', () => {
-    const run = startRun(aDefaultConfig());
+    const config = aDefaultConfig();
+    const run = startRun(config);
 
-    expect(fleeInput(run.snapshot())).toBe(PlayerInput.NONE);
+    expect(referenceBot(config).input(run.snapshot())).toBe(PlayerInput.NONE);
+  });
+});
+
+// Spec run-outcome (0013), "Una sola fuente del tamaño del mundo en los tests".
+describe('Bot ligado a la configuración de la partida (0013)', () => {
+  const bigWorld = (): RunConfig => ({
+    ...aDefaultConfig(),
+    arena: { width: 4000, height: 4000, view: aDefaultConfig().arena.view },
+  });
+
+  it('Scenario: El bot huye de las paredes del mundo real (pared derecha a 20 px)', () => {
+    const config = bigWorld();
+    const run = startRun(config, { player: { x: 3980, y: 2000 } });
+
+    expect(directionOf(referenceBot(config).input(run.snapshot()))).toEqual({ x: -1, y: 0 });
+  });
+
+  it('Scenario: El bot huye de las paredes del mundo real (lejos de toda pared, quieto)', () => {
+    const config = bigWorld();
+    const run = startRun(config, { player: { x: 1900, y: 2000 } });
+
+    expect(referenceBot(config).input(run.snapshot())).toBe(PlayerInput.NONE);
+  });
+
+  it('el bot elige con la prioridad de referencia', () => {
+    const bot = referenceBot(aDefaultConfig());
+
+    expect(bot.pick(offerOf('watch-mode', 'fast-ci', 'coverage'))).toBe(1);
   });
 });

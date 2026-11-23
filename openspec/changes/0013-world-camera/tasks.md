@@ -6,7 +6,7 @@
      (`npm run test:e2e -- <nombres>`); "—" = ninguna. La suite E2E entera solo en 6.2. -->
 
 ## 0. Punto de control de balance (design D8). Si falla, PARAR y volver al gate humano
-- [ ] 0.1 Bot ligado a la configuración (D6): `referenceBot(config)` en `tests/support/policies.ts`, que toma
+- [x] 0.1 Bot ligado a la configuración (D6): `referenceBot(config)` en `tests/support/policies.ts`, que toma
   `config.arena`; `playReferenceBot(run, bot, maxTicks)` en `runs.ts`; `fleeInput(snapshot, arena)` sin valor por
   defecto y sin `DEFAULT_ARENA`. Rojo primero en `tests/domain/policies.test.ts` con arena explícita 4.000 × 4.000.
   Con el mundo aún en 960 × 540, `balance.test.ts` debe seguir dando 30/50.

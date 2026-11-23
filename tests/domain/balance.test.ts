@@ -14,6 +14,7 @@ import {
   aDefaultConfig,
   withPlayer,
 } from '../support/builders';
+import { referenceBot } from '../support/policies';
 import { play, playReferenceBot, stillSurvivors } from '../support/runs';
 
 // Medición de equilibrio de 0004 (tasks 4.7): primer golpe con semilla 42 en el tick 4100; con
@@ -28,8 +29,12 @@ const TEN_SECONDS = 600;
 // del usuario): primera oferta con semilla 7 en el tick 3332, primer golpe con semilla 42 en el 4122.
 const OFFER_LIMIT = 3600;
 
+/** Contenido por defecto: crea las partidas y el bot de referencia (mismo mundo para ambos). */
+const DEFAULT_CONFIG = aDefaultConfig();
+const BOT = referenceBot(DEFAULT_CONFIG);
+
 function startDefault(seed: number): Run {
-  const r = Run.start(aDefaultConfig(), new Mulberry32RandomGenerator(seed));
+  const r = Run.start(DEFAULT_CONFIG, new Mulberry32RandomGenerator(seed));
   if (!r.ok) throw new Error(r.error.message);
   return r.value;
 }
@@ -122,7 +127,7 @@ describe('Balance con el contenido por defecto (0010)', () => {
   let finals: RunSnapshot[] = [];
 
   beforeAll(() => {
-    finals = BALANCE_SEEDS.map((seed) => playReferenceBot(startDefault(seed), TEN_MINUTES));
+    finals = BALANCE_SEEDS.map((seed) => playReferenceBot(startDefault(seed), BOT, TEN_MINUTES));
   }, BOT_BATCH_TIMEOUT_MS);
 
   it('Scenario: Toda partida del bot termina', () => {
@@ -147,7 +152,7 @@ describe('Balance con el contenido por defecto (0010)', () => {
 describe('Bot de referencia (0010)', () => {
   it('Scenario: Bot reproducible (semilla 7, dos veces)', () => {
     const summary = () => {
-      const s = playReferenceBot(startDefault(7), TEN_MINUTES);
+      const s = playReferenceBot(startDefault(7), BOT, TEN_MINUTES);
       return { status: s.status, outcome: s.outcome, tick: s.tick, kills: s.kills, up: s.upgrades };
     };
 
