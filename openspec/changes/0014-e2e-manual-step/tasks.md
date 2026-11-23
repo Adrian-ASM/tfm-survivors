@@ -84,7 +84,7 @@
   - Escenario: "Step en pausa" (la regla).
   - Hecho: `verify` verde.
 
-- [ ] 1.6 **`ManualStepper`: cola FIFO y resolución en `afterRender`** (design §3.2).
+- [x] 1.6 **`ManualStepper`: cola FIFO y resolución en `afterRender`** (design §3.2).
   - Ficheros: `src/infrastructure/e2e/ManualStepper.ts` y `tests/infrastructure/manual-stepper.test.ts`.
   - Test:
     - `request` no resuelve hasta `afterRender`;
