@@ -75,7 +75,7 @@ opción (script temporal en el scratchpad) y esperar su decisión.
 
 ## 3. Render puro (adaptador, sin motor)
 
-- [ ] 3.1 `phaser/map/shoreTiles.ts`: `riverSides(snapshot, c, r)` (río = `water`/`bridge`; fuera de la rejilla **no**
+- [x] 3.1 `phaser/map/shoreTiles.ts`: `riverSides(snapshot, c, r)` (río = `water`/`bridge`; fuera de la rejilla **no**
   es río), `shoreCase` → clave canónica de lados de río, `isShore` (solo celdas de tierra `grass`/`trunk`/`castle`
   con ≥ 1 lado de río) y `bridgeOrientation` (tierra = no río, fuera de la rejilla = río solo para la orientación,
   B3). — escenarios: "Río recto horizontal" (64 orillas, borde del mundo), "Tierra junto a un puente", "Meandro"
