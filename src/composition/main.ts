@@ -17,6 +17,7 @@ import { emptyCounts, type SpriteCounts } from '../infrastructure/phaser/renderC
 import type { ResultsView } from '../infrastructure/phaser/resultsText';
 import { BootScene } from '../infrastructure/phaser/BootScene';
 import type { CameraView, WorldSize } from '../infrastructure/phaser/CameraRig';
+import { ManualStepper } from '../infrastructure/e2e/ManualStepper';
 import { requestStep } from '../infrastructure/e2e/stepRequest';
 import { assetUrl } from './assetUrl';
 import { bootContent } from './contentBoot';
@@ -113,6 +114,8 @@ function bootstrap(): void {
   // Manual > speed (change 0014): con el modo manual, speed vale 1 y no se valida.
   const advance = resolveAdvance(window.location.search);
   for (const w of advance.warnings) console.warn(w);
+  // Solo con el modo manual: cola de `step(n)` que GameScene atiende frame a frame.
+  const stepper = advance.manual ? new ManualStepper() : undefined;
   // Antes de crear el juego: el panel queda en el DOM y el progreso cargado (nunca lanza).
   const progress = wireProgress(root, () => probe.seed);
   const pause = new PausePanel(document, root);
@@ -126,7 +129,7 @@ function bootstrap(): void {
     speed: advance.speed,
     manual: advance.manual,
     step: (n) =>
-      requestStep(n, undefined, (msg) => {
+      requestStep(n, stepper, (msg) => {
         console.warn(msg);
       }),
     snapshot: null,
@@ -185,6 +188,8 @@ function bootstrap(): void {
     },
     onScreen,
     simSpeed: advance.speed,
+    // Sin modo manual la escena recibe exactamente las deps de antes (tiempo real).
+    ...(stepper ? { manual: stepper } : {}),
   });
   cameraView = () => game.cameraView();
   const menu = new MenuScene(
@@ -206,7 +211,7 @@ function bootstrap(): void {
 
   // El canvas tiene el tamaño de la vista (unidades de mundo): una sola fuente para lo que se ve.
   const { view } = config.value.arena;
-  new Phaser.Game({
+  const phaserGame = new Phaser.Game({
     type: Phaser.AUTO,
     parent: root,
     width: view.width,
@@ -218,6 +223,13 @@ function bootstrap(): void {
     // la partida (arranque de antes, ADR-0011).
     scene: [boot, menu, game],
   });
+  // `step(n)` resuelve con el frame ya pintado: POST_RENDER llega tras pintar todas las escenas,
+  // una vez por frame, haya o no partida (Phaser 4.2.1, Game.step; design 0014 §3.6).
+  if (stepper) {
+    phaserGame.events.on(Phaser.Core.Events.POST_RENDER, () => {
+      stepper.afterRender();
+    });
+  }
 }
 
 bootstrap();

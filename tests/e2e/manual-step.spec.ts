@@ -1,7 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
   collect,
+  expectManual,
   focusGame,
+  gameUrl,
   menuButton,
   playChoosingFirst,
   playerUrl,
@@ -9,6 +11,7 @@ import {
   snapshotOf,
   step,
   ticksPerFrame,
+  waitFrames,
 } from './probe';
 
 // Spec simulation-loop (change 0014): modo de avance manual `?e2e&manual` y `step(n)`. Las
@@ -25,6 +28,16 @@ async function waitForRun(page: Page): Promise<void> {
 
 /** Captura del canvas (sin sonda: la única forma de ver que la partida avanza). */
 const canvasShot = (page: Page): Promise<Buffer> => page.locator('#game canvas').screenshot();
+
+/** Partida en modo manual con la semilla dada, ya creada y con el foco en el canvas. */
+async function manualGame(page: Page, url = gameUrl({ seed: 7, manual: true })): Promise<void> {
+  await page.goto(url);
+  await expectManual(page);
+  await waitForRun(page);
+  await focusGame(page);
+}
+
+const tickOf = async (page: Page): Promise<number | null> => (await snapshotOf(page))?.tick ?? null;
 
 test.describe('Resolución de manual', () => {
   for (const value of ['', '=1', '=true']) {
@@ -118,5 +131,110 @@ test.describe('Sin modo manual', { tag: '@realtime' }, () => {
 
     expect((await probe(page))?.manual).toBe(false);
     expect(mentions(warnings, 'manual')).toHaveLength(1);
+  });
+});
+
+test.describe('Avance manual con step', () => {
+  test('Scenario: Avance exacto y Un solo tick (step(60): 60; step(1): 61)', async ({ page }) => {
+    await manualGame(page);
+
+    const sixty = await step(page, 60);
+    const atSixty = await tickOf(page);
+    const one = await step(page, 1);
+
+    expect([sixty, atSixty, one, await tickOf(page)]).toEqual([60, 60, 1, 61]);
+  });
+
+  test('Scenario: Más de 15 ticks en un step (step(225): 225)', async ({ page }) => {
+    await manualGame(page);
+
+    expect(await step(page, 225)).toBe(225);
+    expect(await tickOf(page)).toBe(225);
+  });
+
+  test('Scenario: Manual gana a speed (120 frames sin step: tick 0; step(10): 10)', async ({
+    page,
+  }) => {
+    await manualGame(page, './?e2e&manual&speed=8&seed=7');
+
+    await waitFrames(page, 120);
+    const idle = await tickOf(page);
+
+    expect([(await probe(page))?.speed, idle]).toEqual([1, 0]);
+    expect(await step(page, 10)).toBe(10);
+    expect(await tickOf(page)).toBe(10);
+  });
+
+  test('Scenario: Manual con speed inválida (?e2e&manual&speed=abc: sin aviso de speed)', async ({
+    page,
+  }) => {
+    const warnings = collect(page, ['warning']);
+    await manualGame(page, './?e2e&manual&speed=abc&seed=7');
+
+    expect(await step(page, 10)).toBe(10);
+    expect((await probe(page))?.speed).toBe(1);
+    expect(mentions(warnings, 'speed')).toEqual([]);
+  });
+
+  test('Scenario: n inválido (7 llamadas: 0 cada una, 7 avisos de step y snapshot igual)', async ({
+    page,
+  }) => {
+    const warnings = collect(page, ['warning']);
+    await manualGame(page);
+    await step(page, 30);
+    const before = await snapshotOf(page);
+
+    const results = await page.evaluate(async () => {
+      const s = (window as unknown as { __sprint: { step: (n?: unknown) => Promise<number> } })
+        .__sprint.step;
+      return Promise.all([s(0), s(-1), s(2.5), s(NaN), s(Infinity), s('10'), s()]);
+    });
+
+    expect(results).toEqual([0, 0, 0, 0, 0, 0, 0]);
+    expect(await snapshotOf(page)).toStrictEqual(before);
+    expect(mentions(warnings, 'step')).toHaveLength(7);
+  });
+
+  test('Scenario: n muy grande (step(MAX_SAFE_INTEGER) hasta el fin, sin avisos de step)', async ({
+    page,
+  }) => {
+    test.setTimeout(60_000);
+    const warnings = collect(page, ['warning']);
+    await manualGame(page);
+    let snap = await snapshotOf(page);
+    let start = 0;
+    let last = 0;
+
+    // Semilla 7: ofertas en 3.332, 4.233 y 4.743 (política de elección fija); fin en 4.769.
+    while (snap && snap.status !== 'over') {
+      if (snap.status === 'choosing') await page.keyboard.press('1');
+      start = snap.tick;
+      last = await step(page, Number.MAX_SAFE_INTEGER);
+      snap = await snapshotOf(page);
+    }
+
+    expect(snap?.status).toBe('over');
+    expect(last).toBeGreaterThan(0);
+    expect(snap?.tick).toBe(start + last);
+    expect(mentions(warnings, 'step')).toEqual([]);
+  });
+});
+
+test.describe('Sin avance por tiempo real', { tag: '@realtime' }, () => {
+  test('Scenario: Sin step no avanza (2 s reales: tick 0)', async ({ page }) => {
+    await manualGame(page);
+
+    await page.waitForTimeout(2_000);
+
+    expect(await tickOf(page)).toBe(0);
+  });
+
+  test('Scenario: Avance exacto (2 s reales tras step(60): sigue en 60)', async ({ page }) => {
+    await manualGame(page);
+    await step(page, 60);
+
+    await page.waitForTimeout(2_000);
+
+    expect(await tickOf(page)).toBe(60);
   });
 });

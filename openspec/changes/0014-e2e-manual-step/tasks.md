@@ -134,7 +134,7 @@
     inválido y varios reinicios".
   - Hecho: `verify` verde y `npm run test:e2e -- manual-step speed` verde.
 
-- [ ] 2.2 **`GameScene` en modo manual + `ManualStepper` + `POST_RENDER`** (design §3.4 y §3.6).
+- [x] 2.2 **`GameScene` en modo manual + `ManualStepper` + `POST_RENDER`** (design §3.4 y §3.6).
   - Ficheros:
     - `src/infrastructure/phaser/GameScene.ts`: `manual?: ManualFrames` en las deps y rama manual en `update`, con
       `layers.advance(ticks × TICK_MS)`;
