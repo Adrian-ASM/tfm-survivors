@@ -107,7 +107,7 @@ opción (script temporal en el scratchpad) y esperar su decisión.
   `objects`; `shore` = `foam` = celdas de orilla en tierra, 0 sin su hoja). — escenarios: "Recuentos del mapa
   pintado" (parte pura, sobre el mapa de 42), "Reserva de cada elemento", "Reserva del castillo", "Celdas de castillo de un mapa
   explícito", "Mapa vacío" (plan vacío)
-- [ ] 3.7 **Punto de control 2 · objetos**: test de `planMapArt` con el contenido y el aspecto del repositorio,
+- [x] 3.7 **Punto de control 2 · objetos**: test de `planMapArt` con el contenido y el aspecto del repositorio,
   `objects ≤ 300` en las semillas 42 y 123; registra el máximo de 1..50 en el diario. Estimación r3 en el límite
   (~275–340, espuma en las dos riberas). Si alguna supera 300: avisar al orquestador con la medición y aplicar la
   palanca (a) de §12.3 (espuma en `Blitter`, 1 objeto; en 4.2 y 4.3) y, solo si no basta, la (b) (árboles). —

@@ -105,6 +105,18 @@ describe('planMapArt · reserva por elemento', () => {
   });
 });
 
+// Spec sprite-rendering (0016), "Coste de render del mapa": tope sin navegador que entra en verify.
+// Medido en el punto de control 2: 196 (42), 245 (123); máximo de 1..50, 258 (semilla 15).
+const MAX_MAP_OBJECTS = 300;
+
+describe('planMapArt · objetos del mapa (punto de control 2)', () => {
+  it.each([42, 123])('Scenario: Objetos del mapa (semilla %i: ≤ 300 sin navegador)', (seed) => {
+    const plan = planFor(toMapSnapshot(mapForSeed(aDefaultConfig(), seed)), seed);
+    expect(plan.objects).toBeLessThanOrEqual(MAX_MAP_OBJECTS);
+    expect(plan.objects).toBe(objectsOf(plan));
+  });
+});
+
 describe('planMapArt · recuentos de la sonda', () => {
   it('Scenario: Recuentos del mapa pintado (semilla 42, parte pura)', () => {
     const map = SEED_42();
