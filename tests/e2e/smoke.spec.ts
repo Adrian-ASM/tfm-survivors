@@ -1,151 +1,166 @@
 import { type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 import {
+  backToMenu,
   collect,
   cspState,
+  expectManual,
+  focusGame,
   gameUrl,
   menuButton,
   menuPanel,
+  pauseOverlay,
+  playToEnd,
   playerUrl,
   probe,
   snapshotOf,
-  startSpriteSampler,
-  stopSpriteSampler,
+  step,
+  waitForRun,
   waitFrames,
   watchCsp,
+  type SnapshotView,
 } from './probe';
 
-interface Probe {
-  __sprint?: { snapshot: { tick: number; player: { x: number; y: number } } | null };
+// Suite de humo (chore e2e-lite): un test por flujo del bucle de partida, en modo manual
+// (`?e2e&manual` y `step(n)`), sin esperas de reloj. Las reglas exactas se prueban en Node.
+
+/** Partida en modo manual con la semilla dada, ya creada y con el foco en el canvas. */
+async function manualGame(page: Page, seed = 42): Promise<void> {
+  await page.goto(gameUrl({ seed, manual: true }));
+  await expectManual(page);
+  await waitForRun(page);
+  await focusGame(page);
 }
 
-const playerX = (page: Page): Promise<number | null> =>
-  page.evaluate(() => (window as unknown as Probe).__sprint?.snapshot?.player.x ?? null);
+const tickOf = async (page: Page): Promise<number | null> => (await snapshotOf(page))?.tick ?? null;
 
-test(
-  'Sin overlay durante la partida: progreso vacío, sin botones y CSP sin violaciones',
-  { tag: '@realtime' },
-  async ({ page }) => {
-    const problems = collect(page, ['error', 'warning']);
-    await watchCsp(page);
-    await page.goto('./?e2e');
-    await expect.poll(async () => (await snapshotOf(page))?.tick ?? 0).toBeGreaterThan(30);
+const mmss = (tick: number): string => {
+  const s = Math.floor(tick / 60);
+  return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+};
 
-    const progress = (await probe(page))?.progress;
+test('Arranque y menú: botones, título y sin errores de consola ni violaciones de CSP', async ({
+  page,
+}) => {
+  const problems = collect(page, ['error', 'warning']);
+  await watchCsp(page);
+  await page.goto(playerUrl());
+  await expect(menuPanel(page)).toBeVisible();
+  // Unos frames con el menú pintado (un número de frames, no un tiempo).
+  await waitFrames(page, 30);
 
-    expect(progress).toMatchObject({
-      records: { bestTimeSeconds: 0, bestLevel: 0, maxKills: 0 },
-      history: [],
-      shown: null,
-    });
-    await expect(page.getByRole('button', { name: 'Exportar' })).toBeHidden();
-    await expect(page.getByRole('button', { name: 'Importar' })).toBeHidden();
-    // Spec progress-persistence, CSP: una sola meta en la página servida y ninguna violación al cargar.
-    expect(await cspState(page)).toEqual({ violations: [], metas: 1 });
-    expect(problems).toEqual([]);
-  },
-);
+  expect(await menuPanel(page).getByRole('button').allTextContents()).toEqual([
+    'Jugar',
+    'Exportar',
+    'Importar',
+    'Borrar datos',
+  ]);
+  expect(await page.title()).toContain('Greentide Vanguard');
+  expect(await cspState(page)).toEqual({ violations: [], metas: 1 });
+  expect(problems).toEqual([]);
+});
 
-test(
-  'el juego carga sin errores y el jugador se mueve con la flecha derecha',
-  { tag: '@realtime' },
-  async ({ page }) => {
-    const errors: string[] = [];
-    page.on('pageerror', (e) => errors.push(e.message));
-    page.on('console', (m) => {
-      if (m.type() === 'error') errors.push(m.text());
-    });
+test('Jugar desde el menú: oculta el menú y empieza una partida nueva en el tick 0', async ({
+  page,
+}) => {
+  const problems = collect(page, ['error', 'warning']);
+  await manualGame(page);
+  await backToMenu(page);
 
-    await page.goto('./?e2e');
-    const canvas = page.locator('#game canvas');
-    await expect(canvas).toBeVisible();
-    await expect.poll(() => playerX(page)).not.toBeNull();
+  await menuButton(page, 'Jugar').click();
 
-    const before = await playerX(page);
-    await canvas.click();
-    await page.keyboard.down('ArrowRight');
-    await page.waitForTimeout(500);
-    await page.keyboard.up('ArrowRight');
-    const after = await playerX(page);
+  await expect(menuPanel(page)).toBeHidden();
+  await expect.poll(async () => (await probe(page))?.runs).toBe(2);
+  await waitForRun(page);
+  expect((await probe(page))?.screen).toBe('playing');
+  // Sin step la partida nueva sigue en su primer frame (modo manual).
+  expect(await tickOf(page)).toBe(0);
+  expect(await step(page, 30)).toBe(30);
+  expect(problems).toEqual([]);
+});
 
-    // 200 px/s durante ~0,5 s ⇒ ~100 px; margen amplio para runners lentos.
-    expect(after).not.toBeNull();
-    expect((after ?? 0) - (before ?? 0)).toBeGreaterThan(40);
-    expect(errors).toEqual([]);
-  },
-);
+// Spec run-results, "Derrota y reinicio en el navegador". Semilla 42 sin input con la política de
+// elección fija: derrota hacia el tick 4.762 (≈ 79 s de juego), dentro de los 120 s del plazo.
+const GAME_TICKS_120_S = 120 * 60;
 
-// Change 0012 (spec sprite-rendering y main-menu): arte con CSP intacta, sin reservas y con el
-// título nuevo, desde el menú y con ?e2e.
-test(
-  'Scenario: Partida con arte (?e2e&seed=42, 600 frames: suelo, 0 reservas, sonda coherente)',
-  { tag: '@realtime' },
-  async ({ page }) => {
-    test.setTimeout(60_000);
-    const problems = collect(page, ['error']);
-    await watchCsp(page);
-    await page.goto(gameUrl({ seed: 42 }));
-    await expect.poll(async () => (await snapshotOf(page))?.tick ?? 0).toBeGreaterThan(0);
-    await startSpriteSampler(page);
-    await waitFrames(page, 600);
-    const sample = await stopSpriteSampler(page);
+test('Derrota y reinicio: ?seed=42 sin input pierde, muestra resultados y R reinicia', async ({
+  page,
+}) => {
+  const problems = collect(page, ['error', 'warning']);
+  await manualGame(page);
 
-    expect(sample.frames).toBeGreaterThanOrEqual(590);
-    expect(sample.mismatches).toEqual([]);
-    expect([sample.groundMisses, sample.placeholderFrames]).toEqual([0, 0]);
-    expect(sample.fullFrames).toBeGreaterThan(0);
-    expect(await cspState(page)).toEqual({ violations: [], metas: 1 });
-    expect(problems).toEqual([]);
-  },
-);
+  const ended = await playToEnd(page, GAME_TICKS_120_S);
 
-test(
-  'Scenario: Desde el menú (Jugar y 300 frames: 0 violaciones de CSP ni errores)',
-  { tag: '@realtime' },
-  async ({ page }) => {
-    const problems = collect(page, ['error']);
-    await watchCsp(page);
-    await page.goto(playerUrl());
-    await menuButton(page, 'Jugar').click();
-    await expect(menuPanel(page)).toBeHidden();
-    await waitFrames(page, 300);
+  expect(ended?.outcome).toBe('lost');
+  expect(ended?.tick).toBeLessThanOrEqual(GAME_TICKS_120_S);
+  expect((await probe(page))?.results).toMatchObject({
+    title: 'Derrota',
+    time: mmss(ended?.tick ?? 0),
+    level: ended?.progression.level,
+    kills: ended?.kills,
+  });
 
-    expect(await cspState(page)).toEqual({ violations: [], metas: 1 });
-    expect(problems).toEqual([]);
-  },
-);
+  await page.keyboard.press('r');
+  await expect.poll(async () => (await probe(page))?.runs).toBe(2);
+  const fresh = await probe(page);
+  expect(fresh?.snapshot).toMatchObject({
+    tick: 0,
+    status: 'running',
+    outcome: null,
+    kills: 0,
+    progression: { level: 1, xp: 0 },
+  });
+  expect(fresh?.results).toBeNull();
+  expect(problems).toEqual([]);
+});
 
-test(
-  'Scenario: Con e2e (semilla 42, en curso, 0 reservas, sin menú y sin violaciones)',
-  { tag: '@realtime' },
-  async ({ page }) => {
-    await watchCsp(page);
-    await page.goto(gameUrl({ seed: 42 }));
-    await expect.poll(async () => (await snapshotOf(page))?.tick ?? 0).toBeGreaterThanOrEqual(15);
-    const p = await probe(page);
-    const sprites = p?.sprites;
-    const reserve = sprites
-      ? [sprites.ground, sprites.player, sprites.enemies, sprites.projectiles, sprites.gems].reduce(
-          (n, k) => n + k.placeholder,
-          0,
-        )
-      : -1;
+/** Ticks antes de pausar: distingue la misma partida de una reiniciada. */
+const MIN_TICK = 120;
 
-    expect([p?.seed, p?.snapshot?.status, reserve]).toEqual([42, 'running', 0]);
-    await expect(menuPanel(page)).toBeHidden();
-    expect(await cspState(page)).toEqual({ violations: [], metas: 1 });
-  },
-);
+async function pause(page: Page): Promise<SnapshotView> {
+  await page.keyboard.press('Escape');
+  await expect(pauseOverlay(page)).toBeVisible();
+  await expect.poll(async () => (await probe(page))?.screen).toBe('paused');
+  return (await snapshotOf(page)) as SnapshotView;
+}
 
-test(
-  'Scenario: Título en el menú y en el documento (Greentide Vanguard, nada de Sprint Survivors)',
-  { tag: '@realtime' },
-  async ({ page }) => {
-    await page.goto(playerUrl());
-    await expect(menuPanel(page)).toBeVisible();
+test('Pausa con Esc: congela la partida, Esc reanuda y Volver al menú muestra el menú', async ({
+  page,
+}) => {
+  const problems = collect(page, ['error', 'warning']);
+  await manualGame(page);
+  expect(await step(page, MIN_TICK)).toBe(MIN_TICK);
 
-    expect(await page.title()).toContain('Greentide Vanguard');
-    expect(await page.locator('body').innerText()).not.toContain('Sprint Survivors');
-    expect(await page.title()).not.toContain('Sprint Survivors');
-  },
-);
+  const paused = await pause(page);
+  expect(await step(page, 60)).toBe(0);
+  expect(await snapshotOf(page)).toStrictEqual(paused);
+  await expect(pauseOverlay(page).getByRole('button', { name: 'Reanudar' })).toBeVisible();
+
+  await page.keyboard.press('Escape');
+  await expect(pauseOverlay(page)).toBeHidden();
+  await expect.poll(async () => (await probe(page))?.screen).toBe('playing');
+  expect(await step(page, 1)).toBe(1);
+  expect(await tickOf(page)).toBe(paused.tick + 1);
+
+  await pause(page);
+  await pauseOverlay(page).getByRole('button', { name: 'Volver al menú' }).click();
+  await expect(menuPanel(page)).toBeVisible();
+  await expect(pauseOverlay(page)).toBeHidden();
+  expect((await probe(page))?.screen).toBe('menu');
+  expect(problems).toEqual([]);
+});
+
+// Spec simulation-loop, "Avance exacto", "Un solo tick" y "Más de 15 ticks en un step".
+test('step(n) avanza exactamente n ticks (60, 1 y 225)', async ({ page }) => {
+  await manualGame(page, 7);
+
+  const sixty = await step(page, 60);
+  const atSixty = await tickOf(page);
+  const one = await step(page, 1);
+  const atSixtyOne = await tickOf(page);
+  const many = await step(page, 225);
+
+  expect([sixty, atSixty, one, atSixtyOne, many, await tickOf(page)]).toEqual([
+    60, 60, 1, 61, 225, 286,
+  ]);
+});

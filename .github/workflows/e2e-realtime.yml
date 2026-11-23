@@ -1,0 +1,29 @@
+# E2E de tiempo real a demanda (chore e2e-lite): calibración de fps y `speed` del proyecto
+# `realtime` de Playwright. Solo se lanza a mano desde Actions: ni push ni PR gastan minutos del plan
+# gratuito, y no es un gate (registra fps, p95 y ticks por frame del runner en las anotaciones).
+name: e2e-realtime
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-realtime
+  cancel-in-progress: true
+
+jobs:
+  realtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: lts/*, cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e:realtime
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: playwright-report-realtime, path: playwright-report, retention-days: 3 }

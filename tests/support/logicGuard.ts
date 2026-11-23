@@ -7,19 +7,9 @@
 
 /** Specs que tienen tests de `logic` y que la guarda vigila. */
 export const LOGIC_GUARDED_SPECS: readonly string[] = [
-  'manual-step.spec.ts',
-  'level-up.spec.ts',
-  'health.spec.ts',
-  'enemies.spec.ts',
-  'weapons.spec.ts',
-  'results.spec.ts',
+  'smoke.spec.ts',
   'progress.spec.ts',
-  'pause.spec.ts',
-  'clear-progress.spec.ts',
-  'menu-progress.spec.ts',
-  'camera.spec.ts',
-  'procedural-map.spec.ts',
-  'sprites.spec.ts',
+  'gameplay.spec.ts',
 ];
 
 export type ClockWaitRule = 'waitForTimeout' | 'playChoosingFirst' | 'poll-tick';

@@ -1,9 +1,18 @@
 import { expect, test } from './fixtures';
-import { E2E_SPEED, expectSpeed, focusGame, gameUrl, measureFrames, snapshotOf } from './probe';
+import {
+  E2E_SPEED,
+  collect,
+  expectSpeed,
+  focusGame,
+  gameUrl,
+  measureFrames,
+  probe,
+  snapshotOf,
+} from './probe';
 
-// Sonda de calibración del frenado de CPU (design 0014 §4.3): mide fps, p95 del intervalo entre
-// frames y ticks por frame con la escena cargada, para comparar el PC local (CI_LIKE y
-// CPU_THROTTLE) con el runner de CI. Solo registra: nunca falla por lento.
+// Proyecto `realtime` (chore e2e-lite): frames y reloj reales, solo a demanda
+// (`npm run test:e2e:realtime` o el workflow `e2e-realtime`), nunca en `test:e2e` ni en el CI.
+// Solo registran o comprueban el cableado: ningún umbral de fps ni de tiempo real.
 
 /** Tick a partir del que la escena tiene enemigos, proyectiles y gemas (20 s de juego). */
 const LOADED_TICK = 1200;
@@ -12,6 +21,8 @@ const FRAMES = 300;
 /** Cada cuánto se mira si hay oferta durante la medida (reloj real; test de tiempo real). */
 const CHOICE_POLL_MS = 50;
 
+// Sonda de calibración (design 0014 §4.3): fps, p95 del intervalo entre frames y ticks por frame
+// con la escena cargada, para comparar el PC local (con CI_LIKE y CPU_THROTTLE) con el runner.
 test(
   '[calibration] fps, p95 y ticks por frame con la escena cargada',
   { tag: '@realtime' },
@@ -43,5 +54,20 @@ test(
     test.info().annotations.push({ type: 'calibration', description: line });
     expect(m.fps).toBeGreaterThan(0);
     expect([m.fps, m.p95, m.ticksPerFrame].every(Number.isFinite)).toBe(true);
+  },
+);
+
+// Spec simulation-loop, "Velocidad válida en modo E2E": resolución en el navegador (el avance a
+// velocidad N se prueba en Node con advanceFrame).
+test(
+  'Scenario: Velocidad válida en modo E2E (?e2e&speed=8: speed 8, avanza y sin avisos)',
+  { tag: '@realtime' },
+  async ({ page }) => {
+    const warnings = collect(page, ['warning']);
+    await page.goto(gameUrl({ speed: E2E_SPEED }));
+    await expect.poll(async () => (await snapshotOf(page))?.tick ?? 0).toBeGreaterThan(0);
+
+    expect((await probe(page))?.speed).toBe(E2E_SPEED);
+    expect(warnings.filter((m) => m.includes('speed'))).toEqual([]);
   },
 );

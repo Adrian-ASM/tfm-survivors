@@ -94,8 +94,8 @@ describe('findClockWaits (design 0014 §5: sin esperas de reloj en logic)', () =
 });
 
 describe('Specs vigiladas', () => {
-  it('la lista empieza con manual-step.spec.ts', () => {
-    expect(LOGIC_GUARDED_SPECS[0]).toBe('manual-step.spec.ts');
+  it('la lista empieza con smoke.spec.ts (suite de humo, chore e2e-lite)', () => {
+    expect(LOGIC_GUARDED_SPECS[0]).toBe('smoke.spec.ts');
   });
 
   it('hasLogicTests distingue un fichero entero de tiempo real de uno con tests de logic', () => {

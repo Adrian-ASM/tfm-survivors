@@ -78,11 +78,14 @@ jobs:
         if: env.FULL == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
         with: { path: dist }
 
+  # Solo la suite de humo (proyecto `logic`, ~12 tests en modo manual; 1 reintento en CI). Los de
+  # tiempo real van a demanda en el workflow `e2e-realtime` (chore e2e-lite). El tope cubre la
+  # instalación de chromium y el build con holgura: la suite en sí ronda el minuto en el runner.
   e2e:
     needs: [setup, quality]
     if: needs.setup.outputs.docs_only != 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 7
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

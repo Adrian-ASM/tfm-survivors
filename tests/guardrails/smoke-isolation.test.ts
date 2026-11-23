@@ -49,7 +49,9 @@ describe('Smoke remoto fuera de test:e2e y verify (spec public-deploy)', () => {
     const viaE2e = { ...scripts, verify: 'npm run lint && npm run test:e2e' };
 
     expect(launchesSmoke(expandScript(mutated, 'verify'))).not.toEqual([]);
-    expect(launchesSmoke(expandScript(viaE2e, 'verify'))).toEqual(['playwright test']);
+    expect(launchesSmoke(expandScript(viaE2e, 'verify'))).toEqual([
+      'playwright test --project=logic',
+    ]);
   });
 
   it('Scenario: test:e2e no incluye el smoke remoto (script y testDir)', () => {

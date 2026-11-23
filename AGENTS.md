@@ -34,9 +34,10 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   Los tests leen el mundo de `content/` (`aDefaultConfig`, bot `referenceBot(config)`); `SCENARIO_ARENA` es solo
   geometría de escenario.
   Avance manual en E2E (change 0014): con `?e2e&manual` la simulación no avanza por reloj y los tests mandan ticks
-  exactos con `window.__sprint.step(n)` (gana a `speed`). Playwright tiene dos proyectos: `logic` (reglas, en
-  manual, sin esperas de reloj; lo vigila `tests/support/logicGuard.ts`) y `realtime` (etiqueta `@realtime`:
-  render, cámara, velocidad), con la CPU frenada por CDP con `CI_LIKE`.
+  exactos con `window.__sprint.step(n)` (gana a `speed`). Playwright tiene dos proyectos: `logic` (suite de
+  humo, ~12 tests, uno por flujo, en manual y sin esperas de reloj; lo vigila `tests/support/logicGuard.ts`; es
+  lo único que corre `test:e2e` y el CI) y `realtime` (etiqueta `@realtime`: calibración de fps y `speed`; solo a
+  demanda, fuera del CI; chore `e2e-lite`).
   Mapa procedural (change 0015, ADR-0013): rejilla de 32 × 18 celdas de 60 px (`content/map.json`) con troncos,
   un río con puentes y zona de inicio libre, generada por semilla con un flujo de azar propio
   (`seededRun`: oleadas con `Mulberry32(seed)`, mapa con `deriveSeed(seed, MAP_STREAM)`). Solo el jugador
@@ -57,11 +58,18 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
 | `npm run dev` | Servidor de desarrollo (`http://localhost:5173/tfm-survivors/`) |
 | `npm run verify` | lint + typecheck + guardarraíl sobre todo el repo + tests unitarios. **Ejecútalo al cerrar cada tarea y antes de cada commit. No cierres una tarea en rojo.** |
 | `npm run verify:fast` | Bucle rojo → verde: lint con caché + typecheck + solo los tests afectados por los cambios sin commitear (`vitest --changed`), sin el test de balance. No sustituye a `verify` |
-| `npm run test:e2e` | Build + `vite preview` + Playwright (chromium). Proyectos `logic` y `realtime` (`--project=logic` para las de reglas). Durante apply, solo las specs afectadas: `npm run test:e2e -- menu-flow.spec results.spec` (filtro por ruta: con `.spec`, porque el nombre del worktree también casa) o `-- --grep "<título>"`; la suite entera al cerrar el change y en CI. Antes de hacer push, si el change toca render o E2E: `CI_LIKE=1 npm run test:e2e -- --project=realtime --repeat-each=3` (sin GPU, 2 workers como CI, CPU frenada por CDP con `CPU_THROTTLE`, 25 por defecto, calibrado frente a CI, y sin reintentos) para reproducir la lentitud del runner. Nunca se itera con pushes a ciegas |
+| `npm run test:e2e` | Build + `vite preview` + Playwright (chromium), solo el proyecto `logic`: la suite de humo (`smoke`, `progress` y `gameplay`.spec), la misma que el CI. Para una sola: `npm run test:e2e -- gameplay.spec` (filtro por ruta: con `.spec`, porque el nombre del worktree también casa) o `-- --grep "<título>"` |
+| `npm run test:e2e:realtime` | Proyecto `realtime` (calibración de fps y `speed`). A demanda: fuera de `test:e2e` y del CI; en Actions, workflow `e2e-realtime` (`workflow_dispatch`). Diagnóstico opcional, nunca obligatorio antes de push: `CI_LIKE=1` (sin GPU, CPU frenada por CDP con `CPU_THROTTLE`, 25 por defecto, sin reintentos) |
 | `npm run smoke:public` | Smoke de Playwright contra la URL pública (o `SMOKE_URL`). A demanda: fuera de `verify` y de CI; en Actions, workflow `smoke-public` (`workflow_dispatch`) |
 | `npm run bench` | Benchmark del núcleo (Vitest bench). Depende de la máquina: no bloquea `verify` ni CI |
 | `npm run build` | Build de producción (`dist/`) |
 | `npm run guard:all` | Reglas de `.claude/hooks/` sobre todos los ficheros versionados (lo que hace el CI) |
+
+**E2E ligeros (regla de proceso, chore `e2e-lite`)**: un escenario de spec se cubre por defecto con un test
+unitario o de aplicación. Un E2E solo si el escenario exige navegador (DOM, render, almacenamiento real), en
+modo manual (`?e2e&manual` + `step(n)`) y como **máximo 1–2 E2E nuevos por change**, preferiblemente ampliando un
+test de la suite de humo. Nada de umbrales de fps ni de tiempo real en el gate. Un escenario vivo que solo cubría
+un E2E retirado en `e2e-lite` se acepta sin test automático (no es hallazgo de verify).
 
 ## 3. Reglas de arquitectura (no negociables)
 
