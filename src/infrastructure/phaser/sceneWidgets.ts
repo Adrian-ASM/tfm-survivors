@@ -4,6 +4,7 @@ import { Hud } from './Hud';
 import { ResultsOverlay, type ShowableText } from './ResultsOverlay';
 import { UpgradeOverlay, type CardBox, type CardParts, type CardText } from './UpgradeOverlay';
 import { XpBar } from './XpBar';
+import { screenFrame } from './ui/screenFrame';
 
 // Fábricas de objetos del motor para el HUD y los overlays (presentación, sin lógica). Se llaman
 // una vez en `GameScene.create()`; la lógica vive en `Hud`, `UpgradeOverlay` y `ResultsOverlay`.
@@ -106,7 +107,7 @@ export function createUpgradeOverlay(scene: Scene): UpgradeOverlay {
     const wrap = CARD_WIDTH - 2 * CARD_TEXT_PADDING;
     return { box, name: text(wrap), description: text(wrap), level: text(wrap) };
   });
-  return new UpgradeOverlay(veil, cards, { width, height });
+  return new UpgradeOverlay(veil, cards, screenFrame(width, height));
 }
 
 /** Overlay de resultados (spec run-results): velo y 5 líneas centradas, por encima de todo. */

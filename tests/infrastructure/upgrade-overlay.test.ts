@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { OfferSnapshot } from '../../src/domain/run/RunSnapshot';
 import { cardLayout } from '../../src/infrastructure/phaser/cardLayout';
+import { screenFrame } from '../../src/infrastructure/phaser/ui/screenFrame';
 import {
   UpgradeOverlay,
   type CardBox,
@@ -51,7 +52,7 @@ class FakeBox extends FakePart implements CardBox {
   }
 }
 
-const VIEW = { width: 960, height: 540 };
+const VIEW = screenFrame(960, 540);
 
 function overlay() {
   const veil = new FakePart();

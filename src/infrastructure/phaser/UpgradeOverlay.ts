@@ -1,5 +1,6 @@
 import type { OfferSnapshot } from '../../domain/run/RunSnapshot';
 import { cardLayout } from './cardLayout';
+import type { ScreenFrame } from './ui/screenFrame';
 
 /**
  * Lo mínimo que el overlay necesita del motor (`Rectangle` y `Text` de Phaser, con un adaptador
@@ -45,7 +46,7 @@ export class UpgradeOverlay {
   constructor(
     private readonly veil: OverlayPart,
     private readonly cards: readonly CardParts[],
-    private readonly view: { readonly width: number; readonly height: number },
+    private readonly view: ScreenFrame,
   ) {
     veil.setVisible(false);
     cards.forEach((card, i) => {

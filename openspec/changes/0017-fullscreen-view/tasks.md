@@ -106,7 +106,7 @@
     nivel 99 y 12.345 bajas) enteras y sin solapes en 960 × 540, 1.280 × 720, 1.920 × 1.080 y 2.560 × 1.440.
   - Escenarios: "Mismo anclaje con dos ventanas", "Esquina opuesta que sigue a la ventana", "HUD entero y sin
     solapes", "Ventana menor que 960 × 540" (hud), "Tamaños proporcionales al factor".
-- [ ] 3.3 `cardLayout(frame, n)` y `veilLayout(frame)` (design D5). Ficheros: `cardLayout.ts` (modificado),
+- [x] 3.3 `cardLayout(frame, n)` y `veilLayout(frame)` (design D5). Ficheros: `cardLayout.ts` (modificado),
   `ui/uiLayout.ts`.
   - Rojo: `tests/infrastructure/card-layout.test.ts`: centro del rectángulo de 3 cartas en (640, 360) con
     1.280 × 720 y la de índice 1 lo contiene; 2 y 1 cartas centradas en (480, 270) con 960 × 540; enteras y sin

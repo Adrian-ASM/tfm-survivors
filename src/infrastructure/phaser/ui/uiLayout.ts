@@ -108,3 +108,16 @@ export function hudBoxes(l: HudLayout, texts: HudTexts): Record<string, Box> {
     kills: textBox(l.kills, texts.kills, l.fontSize),
   };
 }
+
+/** Rectángulo centrado en (x, y) (origen 0,5 de Phaser). */
+export interface CenteredRect {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+/** Velo de la oferta y de los resultados: todo el lienzo, centrado. */
+export function veilLayout(frame: ScreenFrame): CenteredRect {
+  return { x: frame.width / 2, y: frame.height / 2, width: frame.width, height: frame.height };
+}
