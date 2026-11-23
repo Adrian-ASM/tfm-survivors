@@ -7,9 +7,17 @@ import playerJson from '../../content/player.json' with { type: 'json' };
  */
 export const E2E_SPEED = 8;
 
-/** URL del juego en modo E2E con la semilla y la velocidad dadas (`speed` 1 ⇒ sin parámetro). */
-export function gameUrl({ seed, speed = 1 }: { seed?: number; speed?: number } = {}): string {
+/**
+ * URL del juego en modo E2E con la semilla, la velocidad (`speed` 1 ⇒ sin parámetro) y el modo
+ * manual (`?e2e&manual`, change 0014) dados.
+ */
+export function gameUrl({
+  seed,
+  speed = 1,
+  manual = false,
+}: { seed?: number; speed?: number; manual?: boolean } = {}): string {
   const params = ['e2e'];
+  if (manual) params.push('manual');
   if (seed !== undefined) params.push(`seed=${String(seed)}`);
   if (speed !== 1) params.push(`speed=${String(speed)}`);
   return `./?${params.join('&')}`;
@@ -22,6 +30,25 @@ export function gameUrl({ seed, speed = 1 }: { seed?: number; speed?: number } =
 export async function expectSpeed(page: Page, speed: number): Promise<void> {
   await expect.poll(async () => (await probe(page))?.speed ?? null).toBe(speed);
 }
+
+/**
+ * Comprueba que el modo manual está activo: si alguien quita `manual` de la URL, la spec falla en
+ * vez de pasar a tiempo real en silencio (change 0014).
+ */
+export async function expectManual(page: Page): Promise<void> {
+  await expect.poll(async () => (await probe(page))?.manual ?? null).toBe(true);
+}
+
+/**
+ * `window.__sprint.step(n)` (change 0014): avanza n ticks en modo manual y devuelve los ticks
+ * ejecutados. `n` es `unknown` para poder probar los valores inválidos.
+ */
+export const step = (page: Page, n: unknown): Promise<number> =>
+  page.evaluate(async (count) => {
+    const p = (window as unknown as Probe).__sprint;
+    if (!p?.step) throw new Error('La sonda no tiene step');
+    return p.step(count);
+  }, n);
 
 export interface EnemyView {
   id: number;
@@ -122,6 +149,9 @@ interface Probe {
     /** Sonda de cámara (change 0013): null en el menú. */
     camera?: CameraViewData | null;
     world?: WorldView;
+    /** Modo de avance manual (`?e2e&manual`) y su avance exacto de ticks (change 0014). */
+    manual?: boolean;
+    step?: (n: unknown) => Promise<number>;
   };
 }
 
@@ -141,6 +171,7 @@ export const probe = (page: Page) =>
           sprites: p.sprites ?? null,
           camera: p.camera ?? null,
           world: p.world ?? null,
+          manual: p.manual ?? null,
         }
       : null;
   });
@@ -435,6 +466,60 @@ export const snapshotOf = async (page: Page): Promise<SnapshotView | null> =>
   (await probe(page))?.snapshot ?? null;
 
 /**
+ * Espera a que la partida de la carga exista: snapshot no nulo. Es una espera de evento (fin de
+ * la carga), no del tick contra el reloj (change 0014).
+ */
+export async function waitForRun(page: Page): Promise<void> {
+  await expect.poll(async () => (await snapshotOf(page)) !== null).toBe(true);
+}
+
+/** Avance máximo de `stepUntil` por llamada a `step`: el tope por frame del modo manual. */
+const STEP_CHUNK = 600;
+
+/**
+ * POLÍTICA DE ELECCIÓN FIJA en modo manual (change 0014), sin reloj: si `until` se cumple,
+ * devuelve el snapshot; si hay oferta, pulsa 1 (opción 0, se elige antes de avanzar en el mismo
+ * frame); después `step(chunk)`, hasta `maxTicks` ticks en total. Devuelve null si se agotan, si
+ * la partida termina sin cumplir `until` o si un `step` no avanza sin oferta (pausa, menú).
+ */
+export async function stepUntil(
+  page: Page,
+  until: (s: SnapshotView) => boolean,
+  maxTicks: number,
+  chunk = STEP_CHUNK,
+): Promise<SnapshotView | null> {
+  let left = maxTicks;
+  for (;;) {
+    const snap = await snapshotOf(page);
+    if (!snap) return null;
+    if (until(snap)) return snap;
+    if (snap.status === 'over' || left <= 0) return null;
+    const offered = snap.offer.length > 0;
+    if (offered) await page.keyboard.press('1');
+    const ticks = await step(page, Math.min(chunk, left));
+    left -= ticks;
+    if (ticks === 0 && !offered) return null;
+  }
+}
+
+/** Juega hasta el fin con la política de elección fija (`stepUntil`), sin reloj. */
+export const playToEnd = (page: Page, maxTicks = 36_000): Promise<SnapshotView | null> =>
+  stepUntil(page, (s) => s.status === 'over', maxTicks);
+
+/**
+ * Mantiene `key` pulsada durante un `step(ticks)`: el input se lee al empezar el step (orden de la
+ * spec: `keyboard.down → step → keyboard.up`). Devuelve los ticks ejecutados.
+ */
+export async function holdKey(page: Page, key: string, ticks: number): Promise<number> {
+  await page.keyboard.down(key);
+  try {
+    return await step(page, ticks);
+  } finally {
+    await page.keyboard.up(key);
+  }
+}
+
+/**
  * POLÍTICA DE ELECCIÓN FIJA en el navegador (spec simulation-loop): lee el snapshot cada
  * `intervalMs`; si hay oferta, pulsa la tecla 1 (opción 0). Devuelve el primer snapshot que cumple
  * `until` o null si pasa `timeoutMs` de reloj.
@@ -513,6 +598,43 @@ export const ticksPerFrame = (page: Page, frames = 30): Promise<number> =>
     return (read() - start) / n;
   }, frames);
 
+/** Medida de `measureFrames`: ritmo real del navegador y de la simulación. */
+export interface FrameMeasure {
+  /** Frames por segundo de reloj real. */
+  readonly fps: number;
+  /** Percentil 95 del intervalo entre frames (ms). */
+  readonly p95: number;
+  /** Ticks de simulación por frame (media). */
+  readonly ticksPerFrame: number;
+}
+
+/**
+ * Mide `frames` frames de `requestAnimationFrame` en la página (sonda de calibración, design 0014
+ * §4.3): fps y p95 con `performance.now` (código de test, no del núcleo) y ticks por frame.
+ */
+export const measureFrames = (page: Page, frames: number): Promise<FrameMeasure> =>
+  page.evaluate(async (n) => {
+    const read = () => (window as unknown as Probe).__sprint?.snapshot?.tick ?? 0;
+    const nextFrame = () => new Promise<number>((resolve) => requestAnimationFrame(resolve));
+    const intervals: number[] = [];
+    let last = await nextFrame();
+    const start = last;
+    const startTick = read();
+    for (let i = 0; i < n; i += 1) {
+      const now = await nextFrame();
+      intervals.push(now - last);
+      last = now;
+    }
+    const sorted = [...intervals].sort((a, b) => a - b);
+    const p95 = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))] ?? 0;
+    const elapsed = last - start;
+    return {
+      fps: elapsed > 0 ? (n * 1000) / elapsed : 0,
+      p95,
+      ticksPerFrame: (read() - startTick) / n,
+    };
+  }, frames);
+
 /** Espera `n` frames del navegador (`requestAnimationFrame`), no un tiempo de reloj. */
 export const waitFrames = (page: Page, n: number): Promise<void> =>
   page.evaluate(async (count) => {
@@ -570,15 +692,7 @@ export async function walkToCorner(
   world: WorldView,
   timeoutMs: number,
 ): Promise<SnapshotView | null> {
-  const keys = [
-    corner.dx < 0 ? 'ArrowLeft' : 'ArrowRight',
-    corner.dy < 0 ? 'ArrowUp' : 'ArrowDown',
-  ];
-  const reached = (s: SnapshotView, r: number): boolean => {
-    const x = corner.dx < 0 ? s.player.x <= r + CORNER_SLACK : s.player.x >= world.width - r - 1;
-    const y = corner.dy < 0 ? s.player.y <= r + CORNER_SLACK : s.player.y >= world.height - r - 1;
-    return x && y;
-  };
+  const keys = cornerKeys(corner);
   for (const key of keys) await page.keyboard.down(key);
   try {
     const deadline = Date.now() + timeoutMs;
@@ -586,10 +700,53 @@ export async function walkToCorner(
       const snap = await snapshotOf(page);
       if (snap?.status === 'over') return null;
       if (snap && snap.offer.length > 0) await page.keyboard.press('1');
-      else if (snap && reached(snap, PLAYER_RADIUS)) return snap;
+      else if (snap && cornerReached(snap, corner, world)) return snap;
       await page.waitForTimeout(50);
     }
     return null;
+  } finally {
+    for (const key of keys) await page.keyboard.up(key);
+  }
+}
+
+/** Flechas que llevan hacia la esquina. */
+const cornerKeys = (corner: Corner): string[] => [
+  corner.dx < 0 ? 'ArrowLeft' : 'ArrowRight',
+  corner.dy < 0 ? 'ArrowUp' : 'ArrowDown',
+];
+
+/** El jugador está en la esquina: su centro a ≤ 1 px del recorte por su radio. */
+function cornerReached(s: SnapshotView, corner: Corner, world: WorldView): boolean {
+  const r = PLAYER_RADIUS;
+  const x = corner.dx < 0 ? s.player.x <= r + CORNER_SLACK : s.player.x >= world.width - r - 1;
+  const y = corner.dy < 0 ? s.player.y <= r + CORNER_SLACK : s.player.y >= world.height - r - 1;
+  return x && y;
+}
+
+/** Tope de ticks para llegar a una esquina desde el centro del mundo (20 s de juego). */
+const CORNER_MAX_TICKS = 20 * 60;
+/** Ticks por step al andar hacia una esquina: varios frames pintados por el camino. */
+const CORNER_CHUNK = 60;
+
+/**
+ * Como `walkToCorner`, en modo manual (change 0014) y sin reloj: mantiene las flechas y avanza
+ * con `stepUntil` (política de elección fija) hasta llegar a la esquina. null si la partida
+ * termina antes o se agota el tope de ticks.
+ */
+export async function stepToCorner(
+  page: Page,
+  corner: Corner,
+  world: WorldView,
+): Promise<SnapshotView | null> {
+  const keys = cornerKeys(corner);
+  for (const key of keys) await page.keyboard.down(key);
+  try {
+    return await stepUntil(
+      page,
+      (s) => s.status === 'running' && cornerReached(s, corner, world),
+      CORNER_MAX_TICKS,
+      CORNER_CHUNK,
+    );
   } finally {
     for (const key of keys) await page.keyboard.up(key);
   }

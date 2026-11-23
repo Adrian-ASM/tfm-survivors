@@ -2,7 +2,7 @@ import type { TickRun } from '../../application/TickRun';
 import type { PlayerInput } from '../../domain/player/PlayerInput';
 import type { RunSnapshot } from '../../domain/run/RunSnapshot';
 import type { RunStatus } from '../../domain/run/RunStatus';
-import { advanceFrame } from './advanceFrame';
+import { advanceFrame, advanceTicks, type TicksAdvanced } from './advanceFrame';
 
 /** Botón pulsado en el overlay de pausa en este frame. */
 export type PauseAction = 'resume' | 'menu' | null;
@@ -48,5 +48,14 @@ export class PauseGate {
   frame(run: TickRun, elapsedMs: number, input: PlayerInput, speed: number): RunSnapshot {
     if (this.isPaused) return run.snapshot();
     return advanceFrame(run, elapsedMs, input, speed);
+  }
+
+  /**
+   * Un frame del motor en modo manual (spec simulation-loop, "Step en pausa"): en pausa, 0 ticks
+   * sin tocar la partida; sin pausa, `advanceTicks` con los ticks que planifica el stepper.
+   */
+  manualFrame(run: TickRun, ticks: number, input: PlayerInput): TicksAdvanced {
+    if (this.isPaused) return { snapshot: run.snapshot(), ticks: 0 };
+    return advanceTicks(run, ticks, input);
   }
 }

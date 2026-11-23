@@ -219,3 +219,39 @@ describe('PauseGate · la pausa no altera la simulación', () => {
     expect(paused).toStrictEqual(plain);
   });
 });
+
+describe('PauseGate.manualFrame (spec simulation-loop, "Step en pausa")', () => {
+  it('Scenario: Step en pausa (60 ticks en pausa: 0, snapshot igual y sin execute)', () => {
+    const { gate, tickRun } = pausedAt(500);
+    const before = tickRun.snapshot();
+    let executes = 0;
+    const execute = tickRun.execute.bind(tickRun);
+    tickRun.execute = (ms, input) => {
+      executes += 1;
+      return execute(ms, input);
+    };
+
+    const r = gate.manualFrame(tickRun, 60, PlayerInput.of(1, 1));
+
+    expect([r.ticks, executes]).toEqual([0, 0]);
+    expect(r.snapshot).toStrictEqual(before);
+  });
+
+  it('sin pausa delega en advanceTicks (60 ticks exactos)', () => {
+    const { tickRun } = quiet();
+
+    const r = new PauseGate().manualFrame(tickRun, 60, PlayerInput.NONE);
+
+    expect([r.ticks, r.snapshot.tick]).toEqual([60, 60]);
+  });
+
+  it('Scenario: Step en pausa (tras reanudar, 1 tick da n + 1)', () => {
+    const { gate, tickRun } = pausedAt(500);
+    gate.manualFrame(tickRun, 60, PlayerInput.NONE);
+    gate.step(true, null, 'running', tickRun);
+
+    const r = gate.manualFrame(tickRun, 1, PlayerInput.NONE);
+
+    expect([r.ticks, r.snapshot.tick]).toEqual([1, 501]);
+  });
+});

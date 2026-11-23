@@ -17,10 +17,12 @@ import { emptyCounts, type SpriteCounts } from '../infrastructure/phaser/renderC
 import type { ResultsView } from '../infrastructure/phaser/resultsText';
 import { BootScene } from '../infrastructure/phaser/BootScene';
 import type { CameraView, WorldSize } from '../infrastructure/phaser/CameraRig';
+import { ManualStepper } from '../infrastructure/e2e/ManualStepper';
+import { requestStep } from '../infrastructure/e2e/stepRequest';
 import { assetUrl } from './assetUrl';
 import { bootContent } from './contentBoot';
 import { resolveSeed } from '../infrastructure/url/resolveSeed';
-import { resolveSpeed } from '../infrastructure/url/resolveSpeed';
+import { resolveAdvance } from '../infrastructure/url/resolveAdvance';
 import { wireProgress, type ProgressProbe } from './progressWiring';
 import { createRunLauncher } from './runLauncher';
 import { restartRandoms } from './seedSource';
@@ -35,6 +37,10 @@ interface E2EProbe {
   seed: number;
   /** Velocidad de simulación resuelta una vez en la carga (`?e2e&speed`, 1 por defecto). */
   readonly speed: number;
+  /** Modo de avance manual (`?e2e&manual`, change 0014), resuelto una vez en la carga. */
+  readonly manual: boolean;
+  /** Avanza n ticks exactos en modo manual y resuelve con los ejecutados (0 sin modo manual). */
+  step(n: unknown): Promise<number>;
   snapshot: RunSnapshot | null;
   results: ResultsView | null;
   readonly progress: ProgressProbe | null;
@@ -105,8 +111,11 @@ function bootstrap(): void {
   const { seed, warning } = resolveSeed(window.location.search, randomSeed);
   if (warning) console.warn(warning);
   // Una sola vez por carga: los reinicios no releen la URL ni avisan (spec simulation-loop).
-  const speed = resolveSpeed(window.location.search);
-  if (speed.warning) console.warn(speed.warning);
+  // Manual > speed (change 0014): con el modo manual, speed vale 1 y no se valida.
+  const advance = resolveAdvance(window.location.search);
+  for (const w of advance.warnings) console.warn(w);
+  // Solo con el modo manual: cola de `step(n)` que GameScene atiende frame a frame.
+  const stepper = advance.manual ? new ManualStepper() : undefined;
   // Antes de crear el juego: el panel queda en el DOM y el progreso cargado (nunca lanza).
   const progress = wireProgress(root, () => probe.seed);
   const pause = new PausePanel(document, root);
@@ -117,7 +126,12 @@ function bootstrap(): void {
   let cameraView = (): CameraView | null => null;
   const probe: E2EProbe = {
     seed,
-    speed: speed.speed,
+    speed: advance.speed,
+    manual: advance.manual,
+    step: (n) =>
+      requestStep(n, stepper, (msg) => {
+        console.warn(msg);
+      }),
     snapshot: null,
     results: null,
     screen: e2e ? 'playing' : 'menu',
@@ -173,7 +187,9 @@ function bootstrap(): void {
       probe.sprites = sprites;
     },
     onScreen,
-    simSpeed: speed.speed,
+    simSpeed: advance.speed,
+    // Sin modo manual la escena recibe exactamente las deps de antes (tiempo real).
+    ...(stepper ? { manual: stepper } : {}),
   });
   cameraView = () => game.cameraView();
   const menu = new MenuScene(
@@ -195,7 +211,7 @@ function bootstrap(): void {
 
   // El canvas tiene el tamaño de la vista (unidades de mundo): una sola fuente para lo que se ve.
   const { view } = config.value.arena;
-  new Phaser.Game({
+  const phaserGame = new Phaser.Game({
     type: Phaser.AUTO,
     parent: root,
     width: view.width,
@@ -207,6 +223,13 @@ function bootstrap(): void {
     // la partida (arranque de antes, ADR-0011).
     scene: [boot, menu, game],
   });
+  // `step(n)` resuelve con el frame ya pintado: POST_RENDER llega tras pintar todas las escenas,
+  // una vez por frame, haya o no partida (Phaser 4.2.1, Game.step; design 0014 §3.6).
+  if (stepper) {
+    phaserGame.events.on(Phaser.Core.Events.POST_RENDER, () => {
+      stepper.afterRender();
+    });
+  }
 }
 
 bootstrap();

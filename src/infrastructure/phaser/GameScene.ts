@@ -2,7 +2,9 @@ import Phaser from 'phaser';
 import type { RestartRun } from '../../application/RestartRun';
 import type { StartedRun } from '../../application/StartRun';
 import type { TickRun } from '../../application/TickRun';
+import type { PlayerInput } from '../../domain/player/PlayerInput';
 import type { RunSnapshot } from '../../domain/run/RunSnapshot';
+import { TICK_MS } from './advanceFrame';
 import { ChoiceKeys, choiceIndex } from './ChoiceKeys';
 import type { Hud } from './Hud';
 import { KeyboardInput } from './KeyboardInput';
@@ -82,6 +84,19 @@ export interface GameSceneDeps {
   readonly onScreen?: (screen: Screen) => void;
   /** Velocidad de simulación ya resuelta (1 en modo jugador; solo `?e2e&speed` la cambia). */
   readonly simSpeed?: number;
+  /**
+   * Modo de avance manual (`?e2e&manual`, change 0014): si está, la partida solo avanza los ticks
+   * que planifica y nunca por el tiempo del frame. Sin él, tiempo real como siempre.
+   */
+  readonly manual?: ManualFrames;
+}
+
+/** Lo que la escena necesita del modo manual (lo implementa `ManualStepper`, design 0014 §3.2). */
+export interface ManualFrames {
+  /** Ticks de este frame (0 si no hay petición) e input congelado de la petición. */
+  plan(readInput: () => PlayerInput): { readonly ticks: number; readonly input: PlayerInput };
+  /** Ticks ejecutados de verdad y si la petición puede seguir en el siguiente frame. */
+  served(executed: number, canContinue: boolean): void;
 }
 
 interface Widgets {
@@ -177,8 +192,10 @@ export class GameScene extends Phaser.Scene {
       this.scene.start(MENU_SCENE_KEY);
       return;
     }
-    // Reloj de render: una vez por frame, congelado con el mundo detenido.
-    w.layers.advance(deltaMs, this.gate.paused);
+    const manual = this.deps.manual;
+    // Reloj de render: una vez por frame, congelado con el mundo detenido. En modo manual sigue
+    // al tiempo simulado (más abajo), no al del frame.
+    if (!manual) w.layers.advance(deltaMs, this.gate.paused);
     // Partida de este frame: la actual o, si R reinicia, la nueva.
     let current = started;
     if (!this.gate.paused) {
@@ -186,10 +203,26 @@ export class GameScene extends Phaser.Scene {
       const chosen = index >= 0 ? current.chooseUpgrade.execute(index) : undefined;
       if (chosen?.ok) this.render(chosen.value);
     }
-    // `simSpeed` avances por frame con el input leído una vez (0 ticks en pausa); un render.
-    const speed = this.deps.simSpeed ?? 1;
-    this.render(this.gate.frame(current.tickRun, deltaMs, w.move.read(), speed));
+    if (manual) {
+      this.manualFrame(w, manual, current.tickRun);
+    } else {
+      // `simSpeed` avances por frame con el input leído una vez (0 ticks en pausa); un render.
+      const speed = this.deps.simSpeed ?? 1;
+      this.render(this.gate.frame(current.tickRun, deltaMs, w.move.read(), speed));
+    }
     this.showPause(this.gate.paused);
+  }
+
+  /**
+   * Frame en modo manual (design 0014 §3.4): los ticks que planifica el stepper, nunca el tiempo
+   * del frame (0 sin `step`). El reloj de render avanza lo mismo que el tiempo simulado.
+   */
+  private manualFrame(w: Widgets, manual: ManualFrames, run: TickRun): void {
+    const plan = manual.plan(() => w.move.read());
+    const r = this.gate.manualFrame(run, plan.ticks, plan.input);
+    manual.served(r.ticks, !this.gate.paused && run.status === 'running');
+    w.layers.advance(r.ticks * TICK_MS, this.gate.paused);
+    this.render(r.snapshot);
   }
 
   /**

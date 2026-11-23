@@ -33,6 +33,10 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   victorias, en el límite inferior de la banda, y 0 quietos; plazos de primera subida y pulso quieto a 4.800 ticks.
   Los tests leen el mundo de `content/` (`aDefaultConfig`, bot `referenceBot(config)`); `SCENARIO_ARENA` es solo
   geometría de escenario.
+  Avance manual en E2E (change 0014): con `?e2e&manual` la simulación no avanza por reloj y los tests mandan ticks
+  exactos con `window.__sprint.step(n)` (gana a `speed`). Playwright tiene dos proyectos: `logic` (reglas, en
+  manual, sin esperas de reloj; lo vigila `tests/support/logicGuard.ts`) y `realtime` (etiqueta `@realtime`:
+  render, cámara, velocidad), con la CPU frenada por CDP con `CI_LIKE`.
   Fuente de verdad del comportamiento: `openspec/specs/`.
 
 ## 2. Comandos
@@ -44,7 +48,7 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
 | `npm run dev` | Servidor de desarrollo (`http://localhost:5173/tfm-survivors/`) |
 | `npm run verify` | lint + typecheck + guardarraíl sobre todo el repo + tests unitarios. **Ejecútalo al cerrar cada tarea y antes de cada commit. No cierres una tarea en rojo.** |
 | `npm run verify:fast` | Bucle rojo → verde: lint con caché + typecheck + solo los tests afectados por los cambios sin commitear (`vitest --changed`), sin el test de balance. No sustituye a `verify` |
-| `npm run test:e2e` | Build + `vite preview` + Playwright (chromium). Durante apply, solo las specs afectadas: `npm run test:e2e -- menu-flow results` (filtro por nombre de fichero) o `-- --grep "<título>"`; la suite entera al cerrar el change y en CI. Antes de hacer push, si el change toca render o E2E: `CI_LIKE=1` (sin GPU y márgenes de CI) con `--workers=12 --repeat-each=3` para reproducir la lentitud del runner. Nunca se itera con pushes a ciegas |
+| `npm run test:e2e` | Build + `vite preview` + Playwright (chromium). Proyectos `logic` y `realtime` (`--project=logic` para las de reglas). Durante apply, solo las specs afectadas: `npm run test:e2e -- menu-flow.spec results.spec` (filtro por ruta: con `.spec`, porque el nombre del worktree también casa) o `-- --grep "<título>"`; la suite entera al cerrar el change y en CI. Antes de hacer push, si el change toca render o E2E: `CI_LIKE=1 npm run test:e2e -- --project=realtime --repeat-each=3` (sin GPU, 2 workers como CI, CPU frenada por CDP con `CPU_THROTTLE`, 4 por defecto, y sin reintentos) para reproducir la lentitud del runner. Nunca se itera con pushes a ciegas |
 | `npm run smoke:public` | Smoke de Playwright contra la URL pública (o `SMOKE_URL`). A demanda: fuera de `verify` y de CI; en Actions, workflow `smoke-public` (`workflow_dispatch`) |
 | `npm run bench` | Benchmark del núcleo (Vitest bench). Depende de la máquina: no bloquea `verify` ni CI |
 | `npm run build` | Build de producción (`dist/`) |
