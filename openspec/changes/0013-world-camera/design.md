@@ -162,6 +162,10 @@ los únicos recortes caen en `y = radio` o `y = alto − radio`, fuera de (270..
 de `proposal.md`** ("Ningún enemigo aparece dentro del rectángulo de la vista … en el tick de su aparición"): ese
 criterio debe leerse como el de la spec o corregirse en la propuesta antes de verify.
 
+**Cerrado en apply (2026-11-23)**: la propuesta ya se corrigió con aprobación del usuario ("lejos de los bordes
+fuera de la vista; cerca de un borde se acepta dentro de la vista a `minDistance` o más"). El E2E "Fuera de pantalla
+en una partida real" lo comprueba con el jugador quieto en el centro.
+
 ### D10 · Renombrado medieval (solo textos)
 - `content/upgrades.json`: los 9 `name`/`description` de la tabla aprobada en la propuesta. Los ids y el orden no
   cambian.

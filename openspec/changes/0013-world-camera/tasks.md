@@ -143,7 +143,7 @@
   E2E afectados: `camera`, `sprites`, `smoke`, `menu-flow`
 
 ## 6. Documentación y cierre
-- [ ] 6.1 `AGENTS.md` §1 (mundo 1.920 × 1.080, cámara, sonda `camera`/`world`, textos medievales, balance 25/50 en el
+- [x] 6.1 `AGENTS.md` §1 (mundo 1.920 × 1.080, cámara, sonda `camera`/`world`, textos medievales, balance 25/50 en el
   límite), diario de IA con las mediciones de 0.2 y 1.2, y nota en el design si el criterio de éxito de la
   propuesta sobre spawns en la vista se ha corregido (D9). Sin test; `npm run verify` en verde.
 - [ ] 6.2 `npm run verify` y suite E2E completa (también con `CI_LIKE=1`). E2E afectados: todas
