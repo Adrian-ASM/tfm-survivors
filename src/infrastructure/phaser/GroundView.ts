@@ -2,6 +2,7 @@ import type { StillLook } from './art/looks';
 import type { WorldSize } from './CameraRig';
 import type { SpriteCount } from './PlayerView';
 import { RenderLayers, type RenderParts } from './RenderLayers';
+import type { TerrainCanvas } from './TerrainView';
 
 /**
  * Cómo crea la escena el fondo (costura sin motor): un mosaico de un frame de la hoja de suelo o, en
@@ -29,13 +30,16 @@ export function createGround(
 
 /**
  * Área de juego de una partida: el fondo del mundo primero (debajo de todo; se mueve con el mundo,
- * sin `scrollFactor`) y después las capas, en orden de pintado.
+ * sin `scrollFactor`), después la capa del mapa (0015: encima del fondo y debajo del resto) y
+ * después las capas, en orden de pintado.
  */
 export function createPlayfield(
   parts: RenderParts,
   ground: GroundFactory,
   world: WorldSize,
-): { layers: RenderLayers } {
+  terrain: () => TerrainCanvas,
+): { layers: RenderLayers; terrain: TerrainCanvas } {
   const counts = createGround(ground, parts.looks.ground, world);
-  return { layers: new RenderLayers(parts, counts) };
+  const canvas = terrain();
+  return { layers: new RenderLayers(parts, counts), terrain: canvas };
 }

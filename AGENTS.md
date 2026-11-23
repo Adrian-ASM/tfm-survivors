@@ -37,6 +37,15 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   exactos con `window.__sprint.step(n)` (gana a `speed`). Playwright tiene dos proyectos: `logic` (reglas, en
   manual, sin esperas de reloj; lo vigila `tests/support/logicGuard.ts`) y `realtime` (etiqueta `@realtime`:
   render, cámara, velocidad), con la CPU frenada por CDP con `CI_LIKE`.
+  Mapa procedural (change 0015, ADR-0013): rejilla de 32 × 18 celdas de 60 px (`content/map.json`) con troncos,
+  un río con puentes y zona de inicio libre, generada por semilla con un flujo de azar propio
+  (`seededRun`: oleadas con `Mulberry32(seed)`, mapa con `deriveSeed(seed, MAP_STREAM)`). Solo el jugador
+  colisiona (barrido por ejes); las gemas que caen en celdas bloqueadas se recolocan; los enemigos lo ignoran.
+  Se pinta con un rectángulo por tramo de celdas no-hierba, con colores de `appearance.json` (`terrain`); nunca
+  una capa a pantalla completa (partía los fps en CI sin GPU). `player.speed` 210 (gate de balance: 29/50 con el
+  bot v2, que esquiva troncos y agua). E2E: `gameUrl` añade `map=empty` por defecto
+  (`map: 'real'` para los del mapa); sonda `window.__sprint.map` y `sprites.cells`; firma dorada en
+  `tests/support/mapGolden.ts`.
   Fuente de verdad del comportamiento: `openspec/specs/`.
 
 ## 2. Comandos

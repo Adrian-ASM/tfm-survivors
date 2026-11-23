@@ -5,6 +5,7 @@ import type { EnemySnapshot, RunSnapshot } from '../../src/domain/run/RunSnapsho
 import type { RandomGenerator } from '../../src/domain/shared/RandomGenerator';
 import type { EnemyTypeConfig } from '../../src/domain/enemy/EnemyType';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
+import { seededRun, type MapMode } from '../../src/composition/seedSource';
 import { aRunConfig, aSegment, aWavesConfig } from './builders';
 import type { ReferenceBot } from './policies';
 
@@ -49,6 +50,22 @@ export function aContactConfig(
 
 export function startRun(config: RunConfig, setup?: RunSetup, random?: RandomGenerator): Run {
   const r = Run.start(config, random ?? new Mulberry32RandomGenerator(42), setup);
+  if (!r.ok) throw new Error(r.error.message);
+  return r.value;
+}
+
+/**
+ * Partida sembrada como en producción (`seededRun` de la composición, ADR-0013): "contenido por
+ * defecto + semilla" juega con el mapa que genera esa semilla, salvo `mode` 'empty'.
+ */
+export function startSeededRun(
+  config: RunConfig,
+  seed: number,
+  mode: MapMode = 'generated',
+  setup?: RunSetup,
+): Run {
+  const { random, terrain } = seededRun(seed, mode);
+  const r = Run.start(config, random, setup, terrain);
   if (!r.ok) throw new Error(r.error.message);
   return r.value;
 }
@@ -130,9 +147,10 @@ export function stillSurvivors(
   config: RunConfig,
   seeds: readonly number[],
   limitTicks: number,
+  mode: MapMode = 'generated',
 ): number[] {
   return seeds.filter((seed) => {
-    const run = startRun(config, undefined, new Mulberry32RandomGenerator(seed));
+    const run = startSeededRun(config, seed, mode);
     play(run, limitTicks - 1);
     const s = run.snapshot();
     return !(s.status === 'over' && s.outcome === 'lost');

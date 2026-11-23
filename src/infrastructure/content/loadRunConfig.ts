@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import arenaJson from '../../../content/arena.json';
 import enemiesJson from '../../../content/enemies.json';
+import mapJson from '../../../content/map.json';
 import playerJson from '../../../content/player.json';
 import progressionJson from '../../../content/progression.json';
 import runJson from '../../../content/run.json';
@@ -12,6 +13,7 @@ import { err, invalidConfig, ok, type DomainError, type Result } from '../../dom
 import {
   ArenaSchema,
   EnemiesSchema,
+  MapSchema,
   PlayerSchema,
   ProgressionSchema,
   RunSchema,
@@ -33,6 +35,7 @@ const RunConfigSchema = z
     progression: ProgressionSchema,
     upgrades: UpgradesSchema,
     run: RunSchema,
+    map: MapSchema,
   })
   .superRefine((config, ctx) => {
     const rules = buildRunRules(config);
@@ -54,12 +57,15 @@ export function parseRunConfig(raw: {
   progression: unknown;
   upgrades: unknown;
   run: unknown;
+  map: unknown;
 }): Result<RunConfig, DomainError> {
   const parsed = RunConfigSchema.safeParse(raw);
   if (parsed.success) return ok(parsed.data);
   const issue = parsed.error.issues[0];
-  const field = (issue?.path ?? []).map(String).join('.');
-  return err(invalidConfig(field, issue?.message ?? 'Contenido inválido'));
+  const path = (issue?.path ?? []).map(String);
+  // Un campo desconocido se nombra a sí mismo (spec procedural-map: "nombra `lakes`").
+  if (issue?.code === 'unrecognized_keys' && issue.keys[0] !== undefined) path.push(issue.keys[0]);
+  return err(invalidConfig(path.join('.'), issue?.message ?? 'Contenido inválido'));
 }
 
 /** Contenido versionado en content/*.json, empaquetado por Vite. */
@@ -78,5 +84,6 @@ export function repositoryContent(): Parameters<typeof parseRunConfig>[0] {
     progression: progressionJson,
     upgrades: upgradesJson,
     run: runJson,
+    map: mapJson,
   };
 }

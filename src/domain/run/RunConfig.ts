@@ -20,6 +20,7 @@ import { XpCurve, type XpCurveConfig } from '../progression/XpCurve';
 import { UpgradeCatalog } from '../upgrade/UpgradeCatalog';
 import type { UpgradeTypeConfig } from '../upgrade/UpgradeType';
 import { RunDuration } from './RunDuration';
+import { MapRules, type MapConfig } from '../map/MapRules';
 
 export type { WeaponsConfig, PlayerRules };
 export {
@@ -63,6 +64,8 @@ export interface RunConfig {
   readonly upgrades: UpgradesConfig;
   /** Duración objetivo de la partida (content/run.json). */
   readonly run: { readonly durationSeconds: number };
+  /** Parámetros del mapa (content/map.json, spec procedural-map). */
+  readonly map: MapConfig;
 }
 
 /** Forma del contenido de mejoras (content/upgrades.json). */
@@ -88,6 +91,8 @@ export interface RunRules {
   readonly pulseCapacity: number;
   /** Duración objetivo: la partida se gana al completar el tick `duration.ticks`. */
   readonly duration: RunDuration;
+  /** Rejilla del mapa y parámetros de su generación. */
+  readonly map: MapRules;
 }
 
 function checkBudgetCoversCatalog(spawn: SpawnRules, catalog: EnemyCatalog): DomainError | null {
@@ -132,6 +137,8 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
   if (!upgrades.ok) return upgrades;
   const duration = RunDuration.create(config.run.durationSeconds);
   if (!duration.ok) return duration;
+  const map = MapRules.create(config.map, arena.value, config.player.radius);
+  if (!map.ok) return map;
   return ok({
     arena: arena.value,
     view: view.value,
@@ -145,5 +152,6 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
     upgrades: upgrades.value,
     pulseCapacity: upgrades.value.pulseCapacity,
     duration: duration.value,
+    map: map.value,
   });
 }

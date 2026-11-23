@@ -1,4 +1,5 @@
 import { circlesOverlap } from '../collision/contact';
+import type { GameMap } from '../map/GameMap';
 import type { GemRules } from './GemRules';
 import { XpGem } from './XpGem';
 
@@ -11,8 +12,13 @@ export class GemField {
   private readonly active: XpGem[] = [];
   private readonly free: XpGem[] = [];
   private nextGemId = 0;
+  /** Punto de creación tras la recolocación (reutilizado: sin asignar por suelta). */
+  private readonly spot = { x: 0, y: 0 };
 
-  constructor(private readonly rules: GemRules) {
+  constructor(
+    private readonly rules: GemRules,
+    private readonly map: GameMap,
+  ) {
     for (let i = 0; i < rules.maxGems; i++) this.free.push(new XpGem());
   }
 
@@ -26,8 +32,9 @@ export class GemField {
   }
 
   /**
-   * Suelta una gema de `xp` en (x, y). Con el tope lleno no crea ninguna: suma `xp` a la más
-   * antigua del suelo, sin perder XP (spec xp-gems).
+   * Suelta una gema de `xp` en (x, y), o en el centro de la celda caminable más cercana si (x, y)
+   * cae en una no caminable (spec xp-gems). Con el tope lleno no crea ni recoloca ninguna: suma
+   * `xp` a la más antigua del suelo, sin perder XP.
    */
   drop(x: number, y: number, xp: number, attracted = false): void {
     const gem = this.free.pop();
@@ -36,7 +43,8 @@ export class GemField {
       if (oldest) oldest.value += xp;
       return;
     }
-    gem.set(this.nextGemId, x, y, xp, attracted);
+    this.map.nearestWalkable(x, y, this.spot);
+    gem.set(this.nextGemId, this.spot.x, this.spot.y, xp, attracted);
     this.nextGemId += 1;
     this.active.push(gem);
   }

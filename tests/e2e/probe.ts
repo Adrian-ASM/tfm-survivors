@@ -9,14 +9,17 @@ export const E2E_SPEED = 8;
 
 /**
  * URL del juego en modo E2E con la semilla, la velocidad (`speed` 1 ⇒ sin parámetro) y el modo
- * manual (`?e2e&manual`, change 0014) dados.
+ * manual (`?e2e&manual`, change 0014) dados. Mapa (0015): `map=empty` por defecto, porque los E2E
+ * anteriores asumen posiciones libres (spec procedural-map); los del mapa piden `map: 'real'`.
  */
 export function gameUrl({
   seed,
   speed = 1,
   manual = false,
-}: { seed?: number; speed?: number; manual?: boolean } = {}): string {
+  map = 'empty',
+}: { seed?: number; speed?: number; manual?: boolean; map?: 'empty' | 'real' } = {}): string {
   const params = ['e2e'];
+  if (map === 'empty') params.push('map=empty');
   if (manual) params.push('manual');
   if (seed !== undefined) params.push(`seed=${String(seed)}`);
   if (speed !== 1) params.push(`speed=${String(speed)}`);
@@ -117,6 +120,8 @@ export interface SpritesView {
   pulses: SpriteCountView;
   gems: SpriteCountView;
   enemyPlaceholders: Record<string, number>;
+  /** Celdas del mapa pintadas por tipo (change 0015); a 0 en el menú. */
+  cells: { trunk: number; water: number; bridge: number };
 }
 
 /** Rectángulo visible del último frame pintado, en coordenadas de mundo (change 0013). */
@@ -133,8 +138,21 @@ export interface WorldView {
   height: number;
 }
 
+/** Sonda del mapa (change 0015): null en el menú. */
+export interface MapView {
+  cols: number;
+  rows: number;
+  cellSize: number;
+  cells: ('grass' | 'trunk' | 'water' | 'bridge')[];
+  counts: Record<'grass' | 'trunk' | 'water' | 'bridge', number>;
+  start: { x: number; y: number; radius: number };
+  emptyForced: boolean;
+}
+
 interface Probe {
   __sprint?: {
+    /** Mapa de la partida en curso (change 0015). */
+    map?: MapView | null;
     seed: number;
     /** Velocidad de simulación resuelta en la carga (1..15; 1 si falta o es inválida). */
     speed?: number;
@@ -172,6 +190,7 @@ export const probe = (page: Page) =>
           camera: p.camera ?? null,
           world: p.world ?? null,
           manual: p.manual ?? null,
+          map: p.map ?? null,
         }
       : null;
   });
@@ -192,6 +211,8 @@ export interface SpriteSample {
   groundMisses: number;
   /** Frames en que reserva por tipo de enemigo ≠ enemigos de ese tipo en el snapshot (`placeholderType`). */
   typeMismatches: number;
+  /** Frames en que las celdas pintadas ≠ recuentos del mapa de la sonda (o ≠ 0 en el menú). */
+  cellMisses: number;
 }
 
 interface SamplerWindow {
@@ -217,6 +238,7 @@ export async function startSpriteSampler(page: Page, placeholderType?: string): 
       fullFrames: 0,
       groundMisses: 0,
       typeMismatches: 0,
+      cellMisses: 0,
     };
     const state = { stop: false, result };
     w.__spriteSampler = state;
@@ -235,6 +257,7 @@ export async function startSpriteSampler(page: Page, placeholderType?: string): 
         if (!snap) {
           result.menuFrames += 1;
           if (kinds.some((k) => k.visible !== 0)) miss('menú con sprites visibles');
+          if (s.cells.trunk + s.cells.water + s.cells.bridge !== 0) result.cellMisses += 1;
         } else {
           result.frames += 1;
           const t = snap.tick;
@@ -251,6 +274,15 @@ export async function startSpriteSampler(page: Page, placeholderType?: string): 
             snap.status === 'over' || !snap.player.invulnerable || Math.floor(t / 4) % 2 === 0;
           if (s.player.visible !== (blinkVisible ? 1 : 0)) miss(`tick ${String(t)}: jugador`);
           if (s.ground.visible !== 1) result.groundMisses += 1;
+          const m = p.map;
+          const c = s.cells;
+          const sameCells =
+            m !== null &&
+            m !== undefined &&
+            c.trunk === m.counts.trunk &&
+            c.water === m.counts.water &&
+            c.bridge === m.counts.bridge;
+          if (!sameCells) result.cellMisses += 1;
           const reserve = [s.ground, ...kinds].reduce((n, k) => n + k.placeholder, 0);
           if (reserve > 0) result.placeholderFrames += 1;
           if (s.enemies.visible > 0 && s.projectiles.visible > 0 && s.gems.visible > 0) {

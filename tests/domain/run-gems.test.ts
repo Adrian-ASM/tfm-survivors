@@ -31,7 +31,7 @@ const run = (c: RunConfig, setup: RunSetup) =>
   startRun(c, { player: { x: 480, y: 270 }, ...setup });
 
 describe('Suelta de gema por baja', () => {
-  it('Scenario: Un bug abatido suelta una gema (en su posición, con radio 5)', () => {
+  it('Scenario: Un goblin-torch abatido suelta una gema (en su posición, con radio 5)', () => {
     const r = run(config([LINTER]), {
       enemies: [{ type: 'goblin-torch', x: 780, y: 270, health: 4 }],
     });

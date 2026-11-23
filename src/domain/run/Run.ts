@@ -2,6 +2,9 @@ import type { Arena } from '../arena/Arena';
 import { contactDamage } from '../collision/contact';
 import type { Enemy } from '../enemy/Enemy';
 import { Horde } from '../enemy/Horde';
+import type { GameMap } from '../map/GameMap';
+import { toMapSnapshot, type MapSnapshot } from '../map/MapSnapshot';
+import { OPEN_TERRAIN, resolveTerrain, type TerrainSource } from '../map/TerrainSource';
 import type { Player } from '../player/Player';
 import type { PlayerInput } from '../player/PlayerInput';
 import type { RandomGenerator } from '../shared/RandomGenerator';
@@ -60,8 +63,9 @@ export {
  * simulación. Contrato de determinismo: el orden del tick (jugador → persecución → armas, con un
  * único removeDead() si hay bajas que suelta sus gemas → contacto con los vivos → victoria en el
  * tick de la duración objetivo → gemas y XP → director → apertura de oferta) y el consumo de azar
- * son fijos (armas, gemas, XP y fin de partida no consumen azar; la oferta sí); cambiarlos cambia
- * las partidas de una semilla.
+ * son fijos (colisión con el mapa, armas, gemas, XP y fin de partida no consumen azar; la oferta
+ * sí); cambiarlos cambia las partidas de una semilla. El mapa es parte del estado inicial y sale de
+ * un flujo de azar propio (ADR-0013); no cambia durante la partida.
  */
 export class Run {
   private tickCount = 0;
@@ -74,13 +78,16 @@ export class Run {
   private readonly gems: GemField;
   private readonly experience: Experience;
   private readonly board: UpgradeBoard;
+  private readonly mapView: MapSnapshot;
 
   private constructor(
     private readonly rules: RunRules,
     private readonly random: RandomGenerator,
+    private readonly terrain: GameMap,
     initial: InitialState,
   ) {
     this.arena = rules.arena;
+    this.mapView = toMapSnapshot(terrain);
     this.player = initial.player;
     this.horde = new Horde(initial.enemies, rules.arena, initial.kills);
     this.gems = initial.gems;
@@ -93,16 +100,29 @@ export class Run {
     this.player = this.player.withRules(this.effectivePlayer(), bonus);
   }
 
+  /**
+   * Crea una partida. `random` es el azar de la partida (oleadas y ofertas); el mapa sale de
+   * `terrain`, que si se genera trae su propio generador (ADR-0013): generar el mapa no consume
+   * `random`. Sin `terrain`, el mapa vacío (escenarios sin mapa declarado).
+   */
   static start(
     config: RunConfig,
     random: RandomGenerator,
     setup: RunSetup = {},
+    terrain: TerrainSource = OPEN_TERRAIN,
   ): Result<Run, DomainError> {
     const rules = buildRunRules(config);
     if (!rules.ok) return rules;
-    const initial = initialState(rules.value, setup);
+    const map = resolveTerrain(terrain, rules.value.map);
+    if (!map.ok) return map;
+    const initial = initialState(rules.value, setup, map.value);
     if (!initial.ok) return initial;
-    return ok(new Run(rules.value, random, initial.value));
+    return ok(new Run(rules.value, random, map.value, initial.value));
+  }
+
+  /** Mapa de la partida (spec procedural-map): la misma vista congelada durante toda la partida. */
+  get map(): MapSnapshot {
+    return this.mapView;
   }
 
   /** Estado de la partida (lectura barata, sin snapshot). */
@@ -166,7 +186,7 @@ export class Run {
   tick(input: PlayerInput): void {
     if (this.phase.status !== 'running') return;
     const n = this.tickCount + 1;
-    this.player = this.player.move(input, TICK_SECONDS, this.arena);
+    this.player = this.player.move(input, TICK_SECONDS, this.arena, this.terrain);
     const { x, y } = this.player.position;
     this.horde.chase(x, y, TICK_SECONDS);
     if (this.arsenal.step(n, x, y, this.horde.alive) > 0) this.horde.removeDead(this.dropGem);

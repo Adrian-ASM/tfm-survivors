@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { RecordRun } from '../../src/application/RecordRun';
 import { RestartRun } from '../../src/application/RestartRun';
+import { OPEN_TERRAIN } from '../../src/domain/map/TerrainSource';
 import type { ProgressSession } from '../../src/application/ProgressSession';
 import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
 import { EMPTY_PROGRESS, type Progress } from '../../src/domain/progress/Progress';
@@ -80,7 +81,7 @@ describe('RecordRun (spec progress-persistence, "Registro" y "Guardado automáti
     const { repo, clock, record } = recorder();
     const restart = new RestartRun(
       lethalConfig(),
-      () => new Mulberry32RandomGenerator(7),
+      () => ({ random: new Mulberry32RandomGenerator(7), terrain: OPEN_TERRAIN }),
       new DoomedStartRun(),
     );
     let current: ReturnType<RestartRun['execute']> = new DoomedStartRun().execute(

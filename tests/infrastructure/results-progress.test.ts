@@ -1,3 +1,4 @@
+import { OPEN_TERRAIN } from '../../src/domain/map/TerrainSource';
 import { describe, expect, it } from 'vitest';
 import { ImportProgress } from '../../src/application/ImportProgress';
 import type { ProgressSession } from '../../src/application/ProgressSession';
@@ -78,7 +79,7 @@ describe('ResultsProgress (spec run-results y progress-persistence)', () => {
     const { results, repo } = presenter();
     const restart = new RestartRun(
       lethalConfig(),
-      () => new Mulberry32RandomGenerator(7),
+      () => ({ random: new Mulberry32RandomGenerator(7), terrain: OPEN_TERRAIN }),
       new DoomedStartRun(),
     );
     const first = new DoomedStartRun().execute(lethalConfig(), new Mulberry32RandomGenerator(42));

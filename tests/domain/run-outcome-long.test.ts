@@ -1,12 +1,12 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
-import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import { LONG_RUN_HEALTH, aDefaultConfig, withPlayer } from '../support/builders';
-import { chooseFirstWhileOpen, startRun } from '../support/runs';
+import { chooseFirstWhileOpen, startSeededRun } from '../support/runs';
 
 // Escenarios de 36.000 ticks de run-outcome y simulation-loop (tarea 1.15). Cada simulación se
-// hace una vez en `beforeAll` y la comparten varios escenarios.
+// hace una vez en `beforeAll` y la comparten varios escenarios. Desde 0015 juegan con el mapa que
+// genera su semilla (`startSeededRun`, como la composición).
 const TEN_MINUTES = 36_000;
 
 interface Played {
@@ -19,7 +19,7 @@ interface Played {
 function playOut(maxHealth: number | null, seed: number): Played {
   const base = aDefaultConfig();
   const config = maxHealth === null ? base : withPlayer(base, { maxHealth });
-  const run = startRun(config, {}, new Mulberry32RandomGenerator(seed));
+  const run = startSeededRun(config, seed);
   const snaps: RunSnapshot[] = [];
   for (let t = 0; t < TEN_MINUTES && run.status !== 'over'; t++) {
     chooseFirstWhileOpen(run);

@@ -1,4 +1,6 @@
 import arenaJson from '../../content/arena.json';
+import mapJson from '../../content/map.json';
+import playerJson from '../../content/player.json';
 import type { RunConfig, UpgradesConfig } from '../../src/domain/run/RunConfig';
 import type { WeaponsConfig } from '../../src/domain/weapon/WeaponLoadout';
 import type { WeaponTypeConfig } from '../../src/domain/weapon/WeaponType';
@@ -202,6 +204,13 @@ export const SCENARIO_ARENA: RunConfig['arena'] = {
   view: { width: 960, height: 540 },
 };
 
+/**
+ * Parámetros del mapa del contenido por defecto, leídos de content/map.json (una sola fuente,
+ * spec run-outcome "Contenido de los tests igual al del juego"). También en `aRunConfig`: los
+ * escenarios sin mapa declarado juegan con el mapa vacío, que solo necesita la rejilla.
+ */
+export const DEFAULT_MAP: RunConfig['map'] = structuredClone(mapJson);
+
 /** Mundo y vista del contenido por defecto, leídos de content/arena.json (una sola fuente). */
 const CONTENT_ARENA: RunConfig['arena'] = {
   width: arenaJson.width,
@@ -230,6 +239,7 @@ export const aRunConfig = (overrides: Partial<PlayerConfig> = {}): RunConfig => 
   progression: DEFAULT_PROGRESSION,
   upgrades: NO_UPGRADES,
   run: DEFAULT_RUN,
+  map: DEFAULT_MAP,
 });
 
 /** El mismo contenido con otra duración objetivo en segundos (p. ej. 2 ⇒ 120 ticks). */
@@ -250,11 +260,17 @@ export const withUpgrades = (config: RunConfig, upgrades: UpgradesConfig): RunCo
   upgrades,
 });
 
-/** Contenido por defecto completo: armas y mejoras de content/ (lo que carga el juego). */
+/**
+ * Contenido por defecto completo: armas y mejoras de content/ (lo que carga el juego). La velocidad
+ * del jugador se lee de content/player.json (210 desde el gate de balance de 0015).
+ */
 export const aDefaultConfig = (): RunConfig =>
   withUpgrades(
     withWeapons(
-      { ...aRunConfig({ pickupRadius: DEFAULT_PICKUP_RADIUS }), arena: CONTENT_ARENA },
+      {
+        ...aRunConfig({ pickupRadius: DEFAULT_PICKUP_RADIUS, speed: playerJson.speed }),
+        arena: CONTENT_ARENA,
+      },
       DEFAULT_WEAPONS,
     ),
     DEFAULT_UPGRADES,
@@ -356,6 +372,15 @@ export interface RawContent {
   };
   upgrades: { upgrades: [MutableUpgrade, MutableUpgrade, ...MutableUpgrade[]] };
   run: { durationSeconds: number };
+  map: {
+    cellSize: number;
+    startRadius: number;
+    trunkDensity: number;
+    trunkPatch: { min: number; max: number };
+    rivers: number;
+    bridges: { min: number; max: number };
+    tuning: { riverVerticalChance: number; riverMeander: number; patchAttempts: number };
+  };
 }
 
 /** Copia nueva del contenido por defecto en forma de ficheros (cada llamada es independiente). */

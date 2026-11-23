@@ -1,3 +1,4 @@
+import { seededRun } from '../../src/composition/seedSource';
 import { describe, expect, it } from 'vitest';
 import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
 import { ResultsOverlay } from '../../src/infrastructure/phaser/ResultsOverlay';
@@ -123,9 +124,7 @@ function endedRun(outcome: 'won' | 'lost'): StartedRun {
 }
 
 const restartFrom = (ended: StartedRun): StartedRun => {
-  const next = new RestartRun(aDefaultConfig(), () => new Mulberry32RandomGenerator(7)).execute(
-    ended.tickRun,
-  );
+  const next = new RestartRun(aDefaultConfig(), () => seededRun(7)).execute(ended.tickRun);
   if (!next.ok) throw new Error(next.error.code);
   return next.value;
 };

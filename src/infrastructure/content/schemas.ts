@@ -2,6 +2,17 @@ import { z } from 'zod';
 import { VIEW_SIZE_MUST_BE_POSITIVE } from '../../domain/arena/View';
 import { RUN_DURATION_MUST_BE_INTEGER } from '../../domain/run/RunDuration';
 import {
+  BRIDGES_OUT_OF_RANGE,
+  CELL_SIZE_MUST_BE_INTEGER,
+  CHANCE_OUT_OF_RANGE,
+  MAP_LIMITS,
+  PATCH_ATTEMPTS_MUST_BE_INTEGER,
+  RIVERS_OUT_OF_RANGE,
+  START_RADIUS_MUST_BE_POSITIVE,
+  TRUNK_DENSITY_OUT_OF_RANGE,
+  TRUNK_PATCH_OUT_OF_RANGE,
+} from '../../domain/map/MapRules';
+import {
   ENEMY_COST_MUST_BE_POSITIVE,
   ENEMY_DAMAGE_MUST_BE_POSITIVE,
   ENEMY_HEALTH_MUST_BE_POSITIVE,
@@ -234,6 +245,42 @@ export const WavesSchema = z.strictObject({
       }),
     )
     .min(1, { error: WAVES_NEED_SEGMENTS }),
+});
+
+const IntRange = (top: number, error: string) =>
+  z
+    .strictObject({
+      min: z.number().int({ error }).min(1, { error }).max(top, { error }),
+      max: z.number().int({ error }).min(1, { error }).max(top, { error }),
+    })
+    .refine(({ min, max }) => min <= max, { error });
+
+const Chance = z.number().min(0, { error: CHANCE_OUT_OF_RANGE }).max(1, {
+  error: CHANCE_OUT_OF_RANGE,
+});
+
+// Parámetros del mapa (content/map.json, spec procedural-map). Las cruzadas con el mundo y el radio
+// del jugador (cellSize ≥ 2r, startRadius ≤ lado menor / 2) las aplica `MapRules` desde
+// `buildRunRules`, en el superRefine del loader.
+export const MapSchema = z.strictObject({
+  cellSize: Count(CELL_SIZE_MUST_BE_INTEGER),
+  startRadius: Positive(START_RADIUS_MUST_BE_POSITIVE),
+  trunkDensity: z
+    .number()
+    .min(0, { error: TRUNK_DENSITY_OUT_OF_RANGE })
+    .max(MAP_LIMITS.trunkDensityMax, { error: TRUNK_DENSITY_OUT_OF_RANGE }),
+  trunkPatch: IntRange(MAP_LIMITS.trunkPatchMax, TRUNK_PATCH_OUT_OF_RANGE),
+  rivers: z
+    .number()
+    .int({ error: RIVERS_OUT_OF_RANGE })
+    .min(0, { error: RIVERS_OUT_OF_RANGE })
+    .max(MAP_LIMITS.riversMax, { error: RIVERS_OUT_OF_RANGE }),
+  bridges: IntRange(MAP_LIMITS.bridgesMax, BRIDGES_OUT_OF_RANGE),
+  tuning: z.strictObject({
+    riverVerticalChance: Chance,
+    riverMeander: Chance,
+    patchAttempts: Count(PATCH_ATTEMPTS_MUST_BE_INTEGER),
+  }),
 });
 
 // Duración objetivo de la partida (content/run.json, spec run-outcome). `RunDuration` repite la

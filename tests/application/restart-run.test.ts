@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { RestartRun } from '../../src/application/RestartRun';
-import { StartRun, type StartedRun } from '../../src/application/StartRun';
+import { StartRun, type RunSeeding, type StartedRun } from '../../src/application/StartRun';
+import { OPEN_TERRAIN } from '../../src/domain/map/TerrainSource';
 import type { TickRun } from '../../src/application/TickRun';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import type { RunSetup } from '../../src/domain/run/Run';
 import type { RunConfig } from '../../src/domain/run/RunConfig';
-import type { RandomGenerator } from '../../src/domain/shared/RandomGenerator';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import { TICK_MS, aDefaultConfig } from '../support/builders';
 import { randomInputs } from '../support/inputs';
@@ -16,9 +16,9 @@ const CENTER = { x: 480, y: 270 };
 function nextRandomSpy(seed = 123) {
   const spy = {
     calls: 0,
-    next: (): RandomGenerator => {
+    next: (): RunSeeding => {
       spy.calls += 1;
-      return new Mulberry32RandomGenerator(seed);
+      return { random: new Mulberry32RandomGenerator(seed), terrain: OPEN_TERRAIN };
     },
   };
   return spy;

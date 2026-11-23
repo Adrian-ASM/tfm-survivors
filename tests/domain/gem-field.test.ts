@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { GemField } from '../../src/domain/progression/GemField';
 import { GemRules } from '../../src/domain/progression/GemRules';
+import { GameMap } from '../../src/domain/map/GameMap';
+import { mapRules } from '../support/mapLayouts';
 
 function field(maxGems = 300): GemField {
   const r = GemRules.create({ gemRadius: 5, magnetSpeed: 360, maxGems });
   if (!r.ok) throw new Error(r.error.message);
-  return new GemField(r.value);
+  return new GemField(r.value, GameMap.open(mapRules()));
 }
 
 const ids = (f: GemField) => f.gems.map((g) => g.id);

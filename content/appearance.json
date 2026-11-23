@@ -97,5 +97,6 @@
       "fps": 12,
       "loop": false
     }
-  }
+  },
+  "terrain": { "trunk": "#5b3a1e", "water": "#2f7fc1", "bridge": "#c19a5b" }
 }

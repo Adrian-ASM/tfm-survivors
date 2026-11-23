@@ -11,12 +11,16 @@ import {
   withPlayer,
 } from '../support/builders';
 import { randomInputs } from '../support/inputs';
-import { chooseFirstWhileOpen, play, startRun } from '../support/runs';
+import { chooseFirstWhileOpen, play, startRun, startSeededRun } from '../support/runs';
 
 // Determinismo con el contenido por defecto de 0005 (armas y mejoras) y la POLÍTICA DE ELECCIÓN
-// FIJA (opción 0 en cada oferta) salvo donde el escenario elige otra cosa.
+// FIJA (opción 0 en cada oferta) salvo donde el escenario elige otra cosa. Desde 0015, "contenido
+// por defecto + semilla" juega con el mapa generado de esa semilla; con posiciones explícitas
+// (`setup`), con el mapa vacío (convención de la spec procedural-map).
 const run = (seed: number, config: RunConfig = aDefaultConfig(), setup?: RunSetup): Run =>
-  startRun(config, setup, new Mulberry32RandomGenerator(seed));
+  setup
+    ? startRun(config, setup, new Mulberry32RandomGenerator(seed))
+    : startSeededRun(config, seed);
 
 /** Snapshots tras cada tick con los inputs dados y la política fija. */
 function snapshots(r: Run, inputs: readonly PlayerInput[]): RunSnapshot[] {
@@ -35,11 +39,22 @@ const still = (n: number) => Array.from({ length: n }, () => PlayerInput.NONE);
 describe('Determinismo con progresión y elecciones', () => {
   it('Scenario: Dos partidas idénticas (semilla 42, 600 inputs, política fija)', () => {
     const inputs = randomInputs(600, 2026);
-    const a = snapshots(run(42), inputs);
-    const b = snapshots(run(42), inputs);
+    const [ra, rb] = [run(42), run(42)];
+    const a = snapshots(ra, inputs);
+    const b = snapshots(rb, inputs);
     expect(Object.keys(a.at(-1) ?? {})).toEqual(expect.arrayContaining(['outcome', 'kills']));
     expect(a.at(-1)?.kills).toBeGreaterThan(0);
     for (let i = 0; i < inputs.length; i++) expect(a[i]).toStrictEqual(b[i]);
+    expect(ra.map.counts.trunk).toBeGreaterThan(0);
+    expect(rb.map.cells).toEqual(ra.map.cells);
+  });
+
+  it('Scenario: Semillas distintas (1 y 2: aparición y mapa distintos)', () => {
+    const inputs = randomInputs(600, 2026);
+    const [r1, r2] = [run(1), run(2)];
+    const spawns = (r: Run) => snapshots(r, inputs).flatMap((s) => s.enemies.map((e) => e.x));
+    expect(spawns(r1)).not.toEqual(spawns(r2));
+    expect(r1.map.cells).not.toEqual(r2.map.cells);
   });
 
   // 0013: plazo de 4.800 (mundo 1.920 × 1.080, primera oferta en el tick 4.346).

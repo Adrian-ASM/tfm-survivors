@@ -127,10 +127,10 @@ describe('Datos de aspecto validados · animaciones obligatorias y campos descon
     expect(failure(raw)).toBe(`${key}.idle`);
   });
 
-  it('campo desconocido en la raíz', () => {
+  it('campo desconocido en la raíz (el error lo nombra, desde 0015)', () => {
     const raw = rawAppearance();
     raw.sheets = {};
-    expect(failure(raw)).toBe('');
+    expect(failure(raw)).toBe('sheets');
   });
 
   it('el aspecto del jugador ausente se nombra', () => {

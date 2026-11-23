@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createRunLauncher } from '../../src/composition/runLauncher';
+import { mapModeOf } from '../../src/composition/seedSource';
+import { resolveMapMode } from '../../src/infrastructure/url/resolveMapMode';
 import type { RunConfig } from '../../src/domain/run/RunConfig';
 import type { DomainError } from '../../src/domain/shared/Result';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
@@ -9,6 +11,7 @@ import { resolveSeed } from '../../src/infrastructure/url/resolveSeed';
 import { resolveSpeed } from '../../src/infrastructure/url/resolveSpeed';
 import { TICK_MS, aDefaultConfig, aRunConfig } from '../support/builders';
 import { startDefault } from '../support/frameDriver';
+import { mapForSeed, typesOf } from '../support/mapStats';
 
 const FRAME_60HZ = 16.667;
 const FRAME_120HZ = 8.334;
@@ -38,7 +41,10 @@ function launcher(options: { urlSeed: number; draws?: number[]; config?: RunConf
 }
 
 /** Snapshot tras 120 ticks de 1/60 s sin input (para comparar semillas). */
-const after120 = (tickRun: { execute(ms: number, input: PlayerInput): unknown; snapshot(): unknown }) => {
+const after120 = (tickRun: {
+  execute(ms: number, input: PlayerInput): unknown;
+  snapshot(): unknown;
+}) => {
   for (let i = 0; i < 120; i++) tickRun.execute(TICK_MS, PlayerInput.NONE);
   return tickRun.snapshot();
 };
@@ -123,6 +129,35 @@ describe('createRunLauncher (spec simulation-loop, "Semilla de la partida")', ()
       pulses: [],
       gems: [],
     });
+  });
+
+  // Spec procedural-map (0015): la composición juega siempre con el mapa de la semilla (ADR-0013).
+  it('cada partida juega con el mapa que genera el núcleo para su semilla (42 y luego 123)', () => {
+    const { launch } = launcher({ urlSeed: 42, draws: [123] });
+    const config = defaultConfig();
+
+    const first = launch.launch()?.tickRun.map().cells;
+    const second = launch.launch()?.tickRun.map().cells;
+
+    expect(first).toEqual(typesOf(mapForSeed(config, 42)));
+    expect(second).toEqual(typesOf(mapForSeed(config, 123)));
+  });
+
+  it('Scenario: Se mantiene en todas las partidas de la carga (map=empty: todas vacías)', () => {
+    const launch = createRunLauncher({
+      config: defaultConfig(),
+      urlSeed: 42,
+      randomSeed: () => 7,
+      onStart: () => undefined,
+      onContentError: () => undefined,
+      mapMode: mapModeOf(resolveMapMode('?e2e&map=empty&manual')),
+    });
+
+    const counts = [launch.launch(), launch.launch(), launch.launch()].map(
+      (s) => s?.tickRun.map().counts.grass,
+    );
+
+    expect(counts).toEqual([576, 576, 576]);
   });
 
   it('usa el contenido recibido (aDefaultConfig también arranca)', () => {

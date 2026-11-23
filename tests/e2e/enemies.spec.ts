@@ -48,7 +48,7 @@ test('?seed=42: semilla 42, aparecen enemigos dentro de la arena y sin errores n
 
 test('?seed=abc: exactamente 1 aviso que menciona seed y la partida avanza', async ({ page }) => {
   const warnings = collect(page, ['warning']);
-  await page.goto('./?e2e&manual&seed=abc');
+  await page.goto('./?e2e&map=empty&manual&seed=abc');
   await expectManual(page);
   await waitForRun(page);
 

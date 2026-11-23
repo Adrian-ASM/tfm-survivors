@@ -1,4 +1,5 @@
 import type { SpriteCount } from './PlayerView';
+import { zeroCells, type CellCounts } from './TerrainView';
 
 /**
  * Sonda de sprites para E2E (design D7, cierra 0009 · W2): visibles y con aspecto de reserva por
@@ -13,6 +14,8 @@ export interface SpriteCounts {
   readonly pulses: SpriteCount;
   readonly gems: SpriteCount;
   readonly enemyPlaceholders: Record<string, number>;
+  /** Celdas del mapa pintadas por tipo (0015); no cuentan como fondo ni como reserva. */
+  readonly cells: CellCounts;
 }
 
 const zero = (): SpriteCount => ({ visible: 0, placeholder: 0 });
@@ -30,5 +33,6 @@ export function emptyCounts(enemyIds: Iterable<string>): SpriteCounts {
     pulses: zero(),
     gems: zero(),
     enemyPlaceholders,
+    cells: zeroCells(),
   };
 }

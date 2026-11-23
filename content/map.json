@@ -1,0 +1,9 @@
+{
+  "cellSize": 60,
+  "startRadius": 180,
+  "trunkDensity": 0.12,
+  "trunkPatch": { "min": 3, "max": 8 },
+  "rivers": 1,
+  "bridges": { "min": 2, "max": 3 },
+  "tuning": { "riverVerticalChance": 0.5, "riverMeander": 0.25, "patchAttempts": 4000 }
+}

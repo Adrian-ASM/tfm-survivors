@@ -8,6 +8,7 @@ import {
   expectManual,
   focusGame,
   gameUrl,
+  holdKey,
   menuButton,
   menuPanel,
   pauseOverlay,
@@ -43,7 +44,7 @@ test(
   { tag: '@realtime' },
   async ({ page }) => {
     const problems = collect(page, ['error', 'warning']);
-    await page.goto(gameUrl({ seed: 42 }));
+    await page.goto(gameUrl({ seed: 42, map: 'real' }));
     await waitForRun(page);
 
     const first = await probe(page);
@@ -252,4 +253,37 @@ test('Scenario: Jugador junto a una esquina ((16, 1.064) → pantalla (16, 524))
 
   expect([at.player.x, at.player.y]).toEqual([16, WORLD.height - 16]);
   expect(toScreen(at.player, camera)).toEqual({ x: 16, y: VIEW.height - 16 });
+});
+
+// Spec world-camera (0015), "Nada fuera del mundo con el mapa real": semilla 7 con su mapa,
+// flecha derecha y 20 × step(60) eligiendo la opción 0 si se abre una oferta.
+test('Scenario: Nada fuera del mundo con el mapa real (?e2e&manual&seed=7)', async ({ page }) => {
+  await page.goto(gameUrl({ seed: 7, manual: true, map: 'real' }));
+  await expectManual(page);
+  await waitForRun(page);
+  await focusGame(page);
+  const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+  const problems: string[] = [];
+  for (let i = 0; i < 20; i++) {
+    if ((await snapshotOf(page))?.offer.length) await page.keyboard.press('1');
+    await holdKey(page, 'ArrowRight', 60);
+    const p = await probe(page);
+    const cam = p?.camera;
+    const s = p?.snapshot;
+    if (!cam || !s) {
+      problems.push(`lectura ${String(i)} sin cámara`);
+      continue;
+    }
+    const inside =
+      cam.x >= 0 &&
+      cam.y >= 0 &&
+      cam.x + cam.width <= WORLD.width &&
+      cam.y + cam.height <= WORLD.height;
+    const ex = clamp(s.player.x - VIEW.width / 2, 0, WORLD.width - VIEW.width);
+    const ey = clamp(s.player.y - VIEW.height / 2, 0, WORLD.height - VIEW.height);
+    if (!inside || Math.abs(cam.x - ex) > 1 || Math.abs(cam.y - ey) > 1) {
+      problems.push(`tick ${String(s.tick)}: (${String(cam.x)}, ${String(cam.y)})`);
+    }
+  }
+  expect(problems).toEqual([]);
 });

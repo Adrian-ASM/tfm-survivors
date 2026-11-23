@@ -1,3 +1,4 @@
+import { seededRun } from '../../src/composition/seedSource';
 import { describe, expect, it } from 'vitest';
 import { FixedStepLoop } from '../../src/application/FixedStepLoop';
 import { RestartRun } from '../../src/application/RestartRun';
@@ -163,8 +164,7 @@ function doomed(): StartedRun {
 }
 
 /** RestartRun con el contenido por defecto y la semilla 42 en cada partida nueva. */
-const restartRun = (): RestartRun =>
-  new RestartRun(aDefaultConfig(), () => new Mulberry32RandomGenerator(42));
+const restartRun = (): RestartRun => new RestartRun(aDefaultConfig(), () => seededRun(42));
 
 describe('advanceFrame · reinicio', () => {
   it('Scenario: La velocidad se mantiene al reiniciar (R y 1 frame a velocidad 8: tick 8)', () => {
