@@ -7,7 +7,8 @@ import { someLooks } from '../support/looks';
 import { aDefaultConfig } from '../support/builders';
 import { startRun } from '../support/runs';
 
-// Spec sprite-rendering, "Fondo de hierba" (change 0012): cubre (0, 0)–(960, 540), primero en
+// Spec sprite-rendering, "Fondo de hierba en el mundo entero" (0012, 0013): cubre el mundo
+// (0, 0)–(1.920, 1.080), no la vista de 960 × 540, primero en
 // profundidad (orden de creación) y en una posición fija.
 interface Made {
   kind: 'tiles' | 'rect' | 'sprite' | 'ring';
@@ -71,21 +72,21 @@ function setup(missing: string[] = []) {
       },
     },
     ground,
-    { width: 960, height: 540 },
+    aDefaultConfig().arena,
   );
   return { log, playfield };
 }
 
 describe('Fondo de hierba', () => {
-  it('Scenario: Fondo de hierba (cubre 960 × 540 desde (0, 0), primero, posición fija)', () => {
+  it('Scenario: Fondo de hierba en el mundo entero (1.920 × 1.080 desde (0, 0), primero, fijo)', () => {
     const { log, playfield } = setup();
     const [first] = log;
     expect(first).toMatchObject({
       kind: 'tiles',
       x: 0,
       y: 0,
-      width: 960,
-      height: 540,
+      width: 1920,
+      height: 1080,
       originX: 0,
       originY: 0,
       texture: GROUND_FILE,
@@ -104,9 +105,9 @@ describe('Fondo de hierba', () => {
     expect(playfield.layers.counts.ground).toEqual({ visible: 1, placeholder: 0 });
   });
 
-  it('sin la hoja del suelo: relleno liso del área de juego con su color (reserva)', () => {
+  it('Scenario: Fondo de reserva en el mundo entero (relleno liso (0, 0)–(1.920, 1.080))', () => {
     const { log, playfield } = setup([GROUND_FILE]);
-    expect(log[0]).toMatchObject({ kind: 'rect', width: 960, height: 540, color: 0x2f6b3a });
+    expect(log[0]).toMatchObject({ kind: 'rect', width: 1920, height: 1080, color: 0x2f6b3a });
     expect(playfield.layers.counts.ground).toEqual({ visible: 1, placeholder: 1 });
   });
 });

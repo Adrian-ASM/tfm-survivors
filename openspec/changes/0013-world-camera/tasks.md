@@ -75,7 +75,7 @@
   Escenarios: world-camera "Jugador en el centro del mundo", "Las cuatro esquinas", "Límite exacto del recorte",
   "Recorte en un solo eje", "Seguimiento sin retraso", "Mundo igual a la vista", "Misma partida con y sin pintar".
   Test: `tests/infrastructure/camera-rig.test.ts` (nuevo). E2E afectados: —
-- [ ] 2.4 Suelo del tamaño del mundo (D3): `GroundView` recibe `WorldSize`; `tiles`/`rect` de reserva con el mundo,
+- [x] 2.4 Suelo del tamaño del mundo (D3): `GroundView` recibe `WorldSize`; `tiles`/`rect` de reserva con el mundo,
   no con la vista. Rojo: `ground-view.test.ts` con mundo 1.920 × 1.080 y vista 960 × 540 espera 1.920 × 1.080 y recibe
   960 × 540.
   Escenarios: sprite-rendering "Fondo de hierba en el mundo entero", "Fondo de reserva en el mundo entero" (parte
