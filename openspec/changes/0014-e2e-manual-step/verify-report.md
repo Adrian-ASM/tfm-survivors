@@ -83,3 +83,38 @@ Ninguno.
 - Tareas: todas marcadas salvo 5.2 y 6.2 (W4), cada una con commit.
 
 C: 0 · W: 6 · S: 3
+
+## Re-verify (2026-11-23)
+
+Alcance: W1, W2 y W3 y `git diff 0c5ba26..HEAD` (23a1fdc, de36dce, b7109ec). Resultados:
+`npm run verify` en verde (136 ficheros, 1.550 tests); `npm run test:e2e -- manual-step.spec` 36 passed en 1,6 min
+(3 tests de "Manual ignorado fuera de E2E" tardan 30,6 s, 32,6 s y 1,1 min).
+
+| Hallazgo | Estado | Comentario |
+|---|---|---|
+| W1 | Resuelto | Spec delta con `k < 4.800` y `step(4800)`; la tarea 2.3 lo anota. |
+| W2 | Resuelto | `game-scene-manual.test.ts` ejecuta `GameScene.update` real con frames de 16,667 ms y de 5.000 ms. Comprueba snapshot idéntico, reloj de render a 0, `step(1)` = 1 e igualdad con frames de 1 ms frente a 5.000 ms. Incluye un control sin manual que sí avanza con `delta`. Si `manualFrame` usara `deltaMs`, fallarían las tres aserciones, así que la mutación del autor es creíble. |
+| W3 | Resuelto en cumplimiento, Warning en coste (W7) | Comprueba récord, historial (1 entrada) y la igualdad con una partida sin `manual` de la misma semilla. |
+
+### Nuevos hallazgos
+- **W7. Coste y encaje con el design de W3.** Cada partida quieta completa con `page.clock` tarda 30 s o más
+  (la de semilla 42 hace dos, 1,1 min) y lleva `setTimeout(300_000)`. Eso son unos 2,7 min de CPU en `realtime`
+  (2 workers), justo el proyecto que se frena en `CI_LIKE`. Va contra el objetivo del change de acortar y
+  estabilizar los E2E. Además, design §4 pide `realtime` solo para lo que depende del reloj real. Aquí `page.clock`
+  hace el reloj determinista, pero el coste lo marca la CPU, no el reloj. El design §5 declara de forma expresa
+  que esta cláusula AND "no se juega entera" y se cubre por estructura (`resolveAdvance` unitario y mismas deps de
+  `GameScene`). El test contradice ese texto sin que el design se haya actualizado.
+  Alternativa más barata: (a) un test Node con `frameDriver` o `TickRun` sin `manual` que juegue la semilla 42 quieta
+  hasta el fin con el `SaveProgress`/repositorio en memoria reales y compare récord e historial con la misma
+  partida construida con `resolveAdvance` de `?manual` fuera de E2E (milisegundos); (b) en E2E, dejar solo
+  `?manual=1&seed=42`, sin referencia en paralelo, o bajar la comprobación del guardado al test unitario y
+  mantener el E2E con sonda, avisos y canvas (~1 s). Si se conserva el E2E, hay que actualizar design §5 y
+  `tasks.md` con la decisión y el coste.
+- **S4.** `startPlayerRun` y `playIdleToSave` meten un sondeo con `expect.poll` sobre el reloj simulado y
+  `press('1')` ciego cada 5 s; es correcto, pero es lógica de partida repetida en el spec que la alternativa (a)
+  eliminaría.
+
+### Recuento tras re-verify
+W1 y W2 y W3 cerrados; W4, W5 y W6 siguen abiertos (fuera de alcance de este re-verify) y W7 es nuevo.
+
+C: 0 · W: 4 · S: 4
