@@ -201,7 +201,7 @@
     archive.
   - Diario de IA (`docs/ai-log/`): contraste spec ↔ design (anillo estricto, balance monótono, overlays DOM, sonda
     `viewport`) y resultado de la calibración.
-- [ ] 5.2 Cierre: `npm run verify` y `npm run test:e2e` en verde; `npm run bench` (mapa) a título informativo.
+- [x] 5.2 Cierre: `npm run verify` y `npm run test:e2e` en verde; `npm run bench` (mapa) a título informativo.
   - Revisión manual para verify (escenarios sin E2E por `e2e-lite`): ventana 3.840 × 2.160 (bandas sin mundo, vista
     2.560 × 1.440, HUD ×2), 2.561 × 1.441, 3.000 × 800, 800 × 450 y 320 × 180; DPR 2 (zoom del navegador 200 %);
     minimizar y restaurar; menú, diálogo, pausa y resultados centrados en 960 × 540, 1.280 × 720 y 1.920 × 1.080;
