@@ -131,7 +131,8 @@ test(
 
 test('Esc mientras se elige mejora: no pausa y la tecla 1 elige', async ({ page }) => {
   await startPlaying(page, 7);
-  const offered = await stepUntil(page, (s) => s.status === 'choosing', 60 * 60);
+  // Semilla 7: primera oferta en el tick 4.346 con el mundo 2x de 0013 (plazo de level-up, 80 s).
+  const offered = await stepUntil(page, (s) => s.status === 'choosing', 80 * 60);
   expect(offered).not.toBeNull();
 
   await page.keyboard.press('Escape');

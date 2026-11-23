@@ -1,4 +1,5 @@
 import { type Page } from '@playwright/test';
+import arena from '../../content/arena.json' with { type: 'json' };
 import { expect, test } from './fixtures';
 import { cardLayout } from '../../src/infrastructure/phaser/cardLayout';
 import {
@@ -42,12 +43,23 @@ async function manualGame(page: Page, url = gameUrl({ seed: 7, manual: true })):
 
 const tickOf = async (page: Page): Promise<number | null> => (await snapshotOf(page))?.tick ?? null;
 
-/** Semilla 7 sin input, política de elección fija (medido en Node): primera oferta y fin. */
-const SEED7_FIRST_OFFER = 3332;
-const SEED7_END = 4769;
-/** Paso del jugador por tick a 200 px/s y su posición inicial (centro de la arena). */
+/**
+ * Semilla 7 sin input, política de elección fija, mundo 2x de 0013 (medido en Node): ofertas en
+ * los ticks 4.346 y 4.688 y derrota en el 4.885.
+ */
+const SEED7_FIRST_OFFER = 4346;
+const SEED7_LAST_OFFER = 4688;
+const SEED7_END = 4885;
+/**
+ * `step` de "Oferta a mitad de step": mayor que k. La spec dice 3.600, que era mayor que la
+ * primera oferta antes del mundo 2x (3.332); con 0013 se usa el plazo de level-up (80 s).
+ */
+const OFFER_STEP = 80 * 60;
+/** Tick desde el que "Oferta en el último tick del step" pide justo los que faltan. */
+const BEFORE_OFFER = 4000;
+/** Paso del jugador por tick a 200 px/s y su posición inicial (centro del mundo, arena.json). */
 const STEP_PX = 200 / 60;
-const START_X = 480;
+const START_X = arena.width / 2;
 
 /** Clic en la carta de índice `i` del overlay (posición de `cardLayout`, escalada al canvas). */
 async function clickCard(page: Page, i: number, count: number): Promise<void> {
@@ -238,7 +250,7 @@ test.describe('Avance manual con step', () => {
     let start = 0;
     let last = 0;
 
-    // Semilla 7: ofertas en 3.332, 4.233 y 4.743 (política de elección fija); fin en 4.769.
+    // Semilla 7: ofertas en 4.346 y 4.688 (política de elección fija); fin en 4.885.
     while (snap && snap.status !== 'over') {
       if (snap.status === 'choosing') await page.keyboard.press('1');
       start = snap.tick;
@@ -254,12 +266,12 @@ test.describe('Avance manual con step', () => {
 });
 
 test.describe('Estados de la partida en modo manual', () => {
-  test('Scenario: Oferta a mitad de step (step(3600): k con oferta; 0 sin elegir; 10 tras elegir)', async ({
+  test('Scenario: Oferta a mitad de step (step(4800): k con oferta; 0 sin elegir; 10 tras elegir)', async ({
     page,
   }) => {
     await manualGame(page);
 
-    const k = await step(page, 3600);
+    const k = await step(page, OFFER_STEP);
     const offered = await snapshotOf(page);
     const blocked = await step(page, 10);
     const still = await tickOf(page);
@@ -267,21 +279,26 @@ test.describe('Estados de la partida en modo manual', () => {
     const after = await step(page, 10);
 
     expect(k).toBe(SEED7_FIRST_OFFER);
+    expect(k).toBeLessThan(OFFER_STEP);
     expect([offered?.tick, offered?.status, offered?.offer.length]).toEqual([k, 'choosing', 3]);
     expect([blocked, still]).toEqual([0, k]);
     expect([after, await tickOf(page)]).toEqual([10, k + 10]);
   });
 
-  test('Scenario: Oferta en el último tick del step (desde 3.000, step(332): 332 eligiendo)', async ({
+  test('Scenario: Oferta en el último tick del step (desde 4.000, step(346): 346 eligiendo)', async ({
     page,
   }) => {
     await manualGame(page);
-    await step(page, 3000);
+    await step(page, BEFORE_OFFER);
 
-    const r = await step(page, SEED7_FIRST_OFFER - 3000);
+    const r = await step(page, SEED7_FIRST_OFFER - BEFORE_OFFER);
     const snap = await snapshotOf(page);
 
-    expect([r, snap?.tick, snap?.status]).toEqual([332, SEED7_FIRST_OFFER, 'choosing']);
+    expect([r, snap?.tick, snap?.status]).toEqual([
+      SEED7_FIRST_OFFER - BEFORE_OFFER,
+      SEED7_FIRST_OFFER,
+      'choosing',
+    ]);
   });
 
   test('Scenario: Fin de partida a mitad de step (resultados e historial al resolver; luego 0)', async ({
@@ -289,7 +306,11 @@ test.describe('Estados de la partida en modo manual', () => {
   }) => {
     await manualGame(page);
     // Hasta la última oferta antes del fin; después se elige y un solo step cruza el fin.
-    const lastOffer = await stepUntil(page, (s) => s.tick >= 4743 && s.status === 'choosing', 5000);
+    const lastOffer = await stepUntil(
+      page,
+      (s) => s.tick >= SEED7_LAST_OFFER && s.status === 'choosing',
+      SEED7_END,
+    );
     await page.keyboard.press('1');
 
     const m = await step(page, SEED7_END - (lastOffer?.tick ?? 0) + 1000);
@@ -345,7 +366,7 @@ test.describe('Estados de la partida en modo manual', () => {
     page,
   }) => {
     await manualGame(page);
-    const offered = await stepUntil(page, (s) => s.status === 'choosing', 3600);
+    const offered = await stepUntil(page, (s) => s.status === 'choosing', OFFER_STEP);
     const id = offered?.offer[0]?.id;
 
     await clickCard(page, 0, offered?.offer.length ?? 0);
