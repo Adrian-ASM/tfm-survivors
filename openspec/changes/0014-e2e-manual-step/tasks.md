@@ -234,7 +234,7 @@
   - Escenario: el criterio de éxito de la proposal ("Las specs del proyecto `logic` no contienen…").
   - Hecho: `verify` verde.
 
-- [ ] 4.1 **`level-up.spec.ts`**.
+- [x] 4.1 **`level-up.spec.ts`**.
   - Cambio: con `?e2e&manual&seed=7`, `stepUntil(offer)`, overlay visible, `press('1')`, `step(1)` y sin oferta.
     Fuera `waitForTimeout(100/500)`.
   - Escenarios de la spec viva de level-up/upgrades que cubre hoy, sin cambiar su intención.

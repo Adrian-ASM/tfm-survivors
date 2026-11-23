@@ -1,65 +1,50 @@
 import { expect, test } from './fixtures';
 import {
-  E2E_SPEED,
   collect,
-  expectSpeed,
+  expectManual,
   focusGame,
   gameUrl,
   snapshotOf,
-  type SnapshotView,
+  step,
+  stepUntil,
+  waitForRun,
 } from './probe';
 
 // Recorrido matar → recoger → subir → elegir → seguir (spec upgrades, "Recorrido en el navegador").
 // Núcleo, semilla 7 sin input: primera oferta en el tick 4.346 con el mundo 2x (0013; plazo 4.800,
-// ≈ 72 s de juego). El nivel que pinta
-// la barra es el del snapshot (XpBar, probada en Node) y el overlay se ve si y solo si hay oferta.
+// ≈ 72 s de juego). El nivel que pinta la barra es el del snapshot (XpBar, probada en Node) y el
+// overlay se ve si y solo si hay oferta. En modo manual (change 0014) la partida avanza solo con
+// step: el snapshot que cierra la oferta es el de `step(1)`, sin carrera con la segunda oferta.
 const FIRST_OFFER_LIMIT = 80 * 60;
-/** Margen de reloj (no es la aserción): a ?speed=8 la oferta llega en unos 9 s. */
-const OFFER_TIMEOUT_MS = 40_000;
+/** Antes de cualquier oferta posible de la semilla 7 (para leer el nivel 1). */
+const BEFORE_OFFER = 3000;
 
 test('Recorrido en el navegador: con ?seed=7 sin input aparece el overlay, se pulsa 1 y se sigue', async ({
   page,
 }) => {
-  test.setTimeout(60_000);
   const problems = collect(page, ['error', 'warning']);
-  await page.goto(gameUrl({ seed: 7, speed: E2E_SPEED }));
-  await expectSpeed(page, E2E_SPEED);
-  await expect.poll(async () => (await snapshotOf(page))?.tick ?? null).not.toBeNull();
+  await page.goto(gameUrl({ seed: 7, manual: true }));
+  await expectManual(page);
+  await waitForRun(page);
   await focusGame(page);
 
-  let before: SnapshotView | null = null;
-  let offered: SnapshotView | null = null;
-  const deadline = Date.now() + OFFER_TIMEOUT_MS;
-  while (!offered && Date.now() < deadline) {
-    const snap = await snapshotOf(page);
-    if (snap && snap.offer.length > 0) offered = snap;
-    else if (snap) before = snap;
-    await page.waitForTimeout(100);
-  }
+  const before = await stepUntil(page, (s) => s.tick >= BEFORE_OFFER, FIRST_OFFER_LIMIT);
+  const offered = await stepUntil(page, (s) => s.offer.length > 0, FIRST_OFFER_LIMIT);
 
   expect(before?.progression.level).toBe(1);
   expect(offered?.status).toBe('choosing');
   expect(offered?.offer).toHaveLength(3);
   expect(offered?.tick).toBeLessThanOrEqual(FIRST_OFFER_LIMIT);
-  await page.waitForTimeout(500);
+  // Con la oferta abierta la partida no avanza aunque se pida.
+  expect(await step(page, 30)).toBe(0);
   expect((await snapshotOf(page))?.tick).toBe(offered?.tick);
 
   await page.keyboard.press('1');
-  // Se comprueba el MISMO snapshot en el que la oferta ya se ha cerrado. La segunda oferta (nivel 3)
-  // llega 342 ticks después de elegir (semilla 7, quieto, mundo 2x); en un runner lento y con
-  // ?speed=8 esos ticks pasan entre dos lecturas y la segunda ya ve el nivel 3 (CI de main de 0013).
-  let after = null as SnapshotView | null;
-  await expect
-    .poll(async () => {
-      const snap = await snapshotOf(page);
-      if (snap && snap.offer.length === 0) after = snap;
-      return after !== null;
-    })
-    .toBe(true);
+  expect(await step(page, 1)).toBe(1);
+  const after = await snapshotOf(page);
+  expect(after?.offer).toHaveLength(0);
   expect(after?.progression.level).toBe(2);
   expect(after?.upgrades).toEqual([{ id: offered?.offer[0]?.id, level: 1 }]);
-  await expect
-    .poll(async () => (await snapshotOf(page))?.tick ?? 0)
-    .toBeGreaterThan((offered?.tick ?? 0) + 30);
+  expect(after?.tick).toBe((offered?.tick ?? 0) + 1);
   expect(problems).toEqual([]);
 });
