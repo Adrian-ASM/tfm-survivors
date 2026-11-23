@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-/** Longitud máxima del valor crudo que se repite en el aviso (entrada externa, solo para consola). */
+/** Longitud máxima del valor que se repite en el aviso (entrada externa, solo para consola). */
 const MAX_ECHO = 32;
 
 /** `?e2e&manual`, `?e2e&manual=`, `?e2e&manual=1` y `?e2e&manual=true` activan el modo manual. */
@@ -8,7 +8,7 @@ const ManualSchema = z.enum(['', '1', 'true']);
 
 export interface ResolvedManual {
   readonly manual: boolean;
-  /** Presente solo si `?e2e&manual` venía con un valor no admitido. Para consola, nunca para HTML. */
+  /** Solo si `?e2e&manual` venía con un valor no admitido. Para consola, nunca para HTML. */
   readonly warning?: string;
 }
 

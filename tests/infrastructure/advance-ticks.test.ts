@@ -102,7 +102,7 @@ describe('advanceTicks · troceo en llamadas de ≤ 15 ticks (design 0014 §3.3)
     expect([r.ticks, r.snapshot.tick, r.snapshot.status]).toEqual([1, 60, 'over']);
   });
 
-  it('Scenario: Victoria al llegar a la duración objetivo (120 ticks, tick 100, step 50: 20)', () => {
+  it('Scenario: Victoria al llegar a la duración objetivo (120, desde 100, 50: 20)', () => {
     const tickRun = lastingAt(2, 100);
 
     const r = advanceTicks(tickRun, 50, PlayerInput.NONE);

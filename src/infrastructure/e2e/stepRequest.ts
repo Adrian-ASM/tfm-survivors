@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
-/** Ticks admitidos por `window.__sprint.step(n)` (spec simulation-loop, "Avance manual con step"). */
+/** Ticks admitidos por `window.__sprint.step(n)` (spec simulation-loop, "Avance manual"). */
 export const StepCountSchema = z.number().int().min(1).max(Number.MAX_SAFE_INTEGER);
 
-/** Longitud máxima del valor crudo que se repite en el aviso (entrada externa, solo para consola). */
+/** Longitud máxima del valor que se repite en el aviso (entrada externa, solo para consola). */
 const MAX_ECHO = 32;
 
 /** Lo que `requestStep` necesita del `ManualStepper`: encolar n ticks ya validados. */

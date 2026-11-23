@@ -97,7 +97,7 @@
   - Escenarios: "Llamadas simultáneas", "Llamada simultánea que encuentra la oferta" y "Step en el menú" (la regla).
   - Hecho: `verify` verde.
 
-- [ ] 1.7 **`ManualStepper`: varios frames, input congelado y parada** (design §3.2).
+- [x] 1.7 **`ManualStepper`: varios frames, input congelado y parada** (design §3.2).
   - Ficheros: los mismos que en 1.6.
   - Test:
     - `request(1500)` se reparte en 600 + 600 + 300, con un `afterRender` por frame, y resuelve 1.500 tras el

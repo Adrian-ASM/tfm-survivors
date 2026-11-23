@@ -28,7 +28,7 @@ const INVALID: readonly unknown[] = [
 ];
 
 describe('requestStep (spec simulation-loop, "Avance manual con step")', () => {
-  it('Scenario: n inválido (7 valores: 0 al momento, sin request y 1 aviso de step cada uno)', async () => {
+  it('Scenario: n inválido (7 valores: 0 al momento, sin request, 1 aviso de step)', async () => {
     const stepper = aStepper();
     const warn = vi.fn<(msg: string) => void>();
 
