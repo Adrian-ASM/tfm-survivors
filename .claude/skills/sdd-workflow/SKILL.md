@@ -39,6 +39,9 @@ Tras cada fase, resume al usuario en ≤ 5 líneas: qué se produjo, decisiones 
 - Nunca saltes un gate humano, aunque el usuario esté ausente: deja el trabajo preparado y para.
 - El `sdd-verifier` no puede ser el mismo agente que implementó. Lánzalo siempre como subagente nuevo.
 - Si en apply aparece un requisito nuevo, vuelve a spec (no lo cueles en el código).
+- **E2E ligeros** (AGENTS.md §2, chore `e2e-lite`): pide al `sdd-architect` que en `tasks.md` cubra cada escenario
+  con test unitario o de aplicación y reserve el E2E para lo que exige navegador (DOM, render, almacenamiento
+  real): máximo 1–2 E2E nuevos por change, en modo manual y sin umbrales de fps ni de tiempo real en el gate.
 - En apply, al cerrar cada sección de `tasks.md`, haz `git fetch` y mira si `origin/main` avanzó; si avanzó,
   rebasa antes de seguir (0014).
 - Fases pequeñas pueden fusionarse (`spec+design+tasks` en un paso) si el usuario lo pide: anótalo en la retrospectiva.

@@ -20,6 +20,11 @@ description: Escribe tests siguiendo la pirámide de Clean Architecture del curs
 - **Contratos**: una suite parametrizada por fábrica que ejecutan todas las implementaciones del puerto.
 - **Determinismo**: test que ejecuta N ticks dos veces con la misma seed e inputs y compara snapshots.
 - E2E con `?seed=42` y sin errores de consola. Los *test hooks* solo existen en builds de test.
+- **E2E ligeros** (AGENTS.md §2, chore `e2e-lite`): un escenario se cubre por defecto con test unitario o de
+  aplicación. E2E solo si exige navegador (DOM, render, almacenamiento real), en `?e2e&manual` con `step(n)` y
+  sin esperas de reloj; máximo 1–2 E2E nuevos por change, mejor ampliando un test de la suite de humo
+  (`smoke`, `progress`, `gameplay`.spec). Sin umbrales de fps ni de tiempo real: eso va al proyecto `realtime`,
+  a demanda y fuera del gate.
 
 ## Antipatrones
 - Tests que pasan sin la implementación (comprueba siempre el rojo).

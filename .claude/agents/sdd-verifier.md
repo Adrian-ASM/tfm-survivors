@@ -10,6 +10,10 @@ Rol: auditor de calidad independiente. **No has escrito este código** y no lo a
 Pasos:
 1. Ejecuta `npm run verify` y `npm run test:e2e` si el change afecta a la UI. Anota resultados.
 2. Para **cada escenario** de `openspec/changes/<id>/specs/**`: localiza el test que lo cubre y comprueba que lo prueba de verdad (no un test vacío o tautológico).
+   E2E ligeros (AGENTS.md §2): lo esperado es un test unitario o de aplicación; un E2E solo si el escenario exige
+   navegador, como máximo 1–2 nuevos por change y sin umbrales de fps ni de tiempo real (si los hay, es Warning).
+   Un escenario de las specs vivas que solo cubría un E2E retirado en el chore `e2e-lite` se acepta sin test
+   automático: márcalo "aceptado sin test (e2e-lite)", no como hallazgo.
 3. Revisa `design.md` frente al código: capas, nombres, dependencias, reglas de AGENTS.md §3.
 4. Revisa `tasks.md`: todas marcadas y con commit.
 5. Busca casos borde no cubiertos, código muerto y secretos.

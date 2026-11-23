@@ -25,12 +25,14 @@ export default defineConfig<ThrottleOptions>({
   // Design 0008: tests independientes (contexto y localStorage propios); 2 workers en local y CI.
   fullyParallel: true,
   workers: 2,
-  // Con CI_LIKE se quieren ver los flakes: sin reintentos. En CI real, 1 (se revisan en el HTML).
+  // En CI, 1 reintento (los flakes se revisan en el HTML). Con CI_LIKE (diagnóstico opcional) se
+  // quieren ver: sin reintentos.
   retries: CI_LIKE ? 0 : process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['html', { open: 'never' }], ['list']] : 'list',
   use: { baseURL: BASE_URL, trace: 'retain-on-failure' },
   // Change 0014: `logic` (reglas, en modo manual, sin reloj) y `realtime` (frames y tiempo reales,
-  // etiqueta @realtime). Un test sin etiqueta cae en `logic`.
+  // etiqueta @realtime). Un test sin etiqueta cae en `logic`. Chore e2e-lite: `test:e2e` y el CI
+  // corren solo `logic` (suite de humo); `realtime` va a demanda (`test:e2e:realtime`).
   projects: [
     { name: 'logic', grepInvert: /@realtime/, use: { ...chrome } },
     { name: 'realtime', grep: /@realtime/, use: { ...chrome, cpuThrottle } },
