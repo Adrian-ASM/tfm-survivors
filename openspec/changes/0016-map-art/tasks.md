@@ -139,7 +139,7 @@ opción (script temporal en el scratchpad) y esperar su decisión.
 
 ## 5. Puerta visual (gate humano)
 
-- [ ] 5.1 Capturas con un script temporal de Playwright en el scratchpad (nada versionado): `?e2e&manual&seed=N` con
+- [x] 5.1 (aprobada por el usuario el 2026-11-23 tal como está) Capturas con un script temporal de Playwright en el scratchpad (nada versionado): `?e2e&manual&seed=N` con
   las semillas 42, 123, una con río vertical y otra con río horizontal (elegidas con `map.cells`), varias posiciones
   de cámara con `step(n)` e input. Cerrar con ellas los valores provisionales (`shore.cases`, `trees.origin.y`,
   rectángulos del puente; R1 ya cerrado: orilla en tierra) y revisar que la espuma recortada no asome sobre la hierba
