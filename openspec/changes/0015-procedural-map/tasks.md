@@ -8,7 +8,7 @@
      run-outcome (RO), sprite-rendering (SR), world-camera (WC), simulation-loop (SL), enemy-behavior (EB). -->
 
 ## 1. Rejilla, contenido y generador (dominio)
-- [ ] 1.1 `CellType`, `MapRules` y `GameMap` sin generador (design §3.1, §3.3): `GameMap.open`, `fromCells`
+- [x] 1.1 `CellType`, `MapRules` y `GameMap` sin generador (design §3.1, §3.3): `GameMap.open`, `fromCells`
   (error que menciona "dimensiones"), `typeAt`, `isWalkable` (fuera → false), `cellAt` (x = W → última columna),
   `cellRect` recortado. Cruzadas `cellSize ≥ 2r`, `startRadius ≤ min(W, H)/2`, resto 0 o ≥ 2r.
   Escenarios: PM "Rejilla por defecto", "Mundo no múltiplo de la celda", "Celda de un punto", "Caminabilidad por
