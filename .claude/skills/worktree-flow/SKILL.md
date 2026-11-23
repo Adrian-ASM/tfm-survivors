@@ -27,6 +27,8 @@ Comprueba que los hooks de commit están activos: `git config --get core.hooksPa
 exista **en este worktree** (`.husky/_`). Un worktree creado por la app puede heredar una ruta absoluta del checkout
 principal que no existe, y entonces el pre-commit no se ejecuta (0011). Arréglalo con
 `git config --worktree --unset core.hooksPath`.
+Repítelo **cada vez que reutilices un worktree**: también puede apuntar a `.husky/_` de **otro** worktree, que
+desaparece al borrarlo (0014).
 
 ## Trabajar
 - Abre una sesión nueva de Claude Code dentro de la carpeta del worktree.
