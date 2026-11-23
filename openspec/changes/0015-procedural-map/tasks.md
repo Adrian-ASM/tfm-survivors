@@ -142,12 +142,12 @@ cambiar colores es solo contenido.
   Escenarios: PM "Mapa vacío en modo E2E" (regla de migración); WC "Nada fuera del mundo en una partida real";
   SR "Fondo de reserva en el mundo entero", "Fondo en las cuatro esquinas"; RO "Derrota E2E con una semilla del
   conjunto". E2E afectados: los que fallen + `camera.spec`, `sprite-rendering.spec`, `results.spec`
-- [ ] 6.2 Barrido `logicGuard` y `realtime` con CPU frenada: `CI_LIKE=1 npm run test:e2e -- --project=realtime
+- [x] 6.2 Barrido `logicGuard` y `realtime` con CPU frenada: `CI_LIKE=1 npm run test:e2e -- --project=realtime
   --repeat-each=3` en verde; si un `realtime` es inestable por el pintado del mapa, corregir el adaptador (no los
   tiempos). Test: E2E. E2E afectados: proyecto `realtime`
 
 ## 7. Bench y cierre
-- [ ] 7.1 Bench: caso "generar mapa" (spec < 20 ms) y tope de enemigos con mapa; `npm run bench` una vez y anotar
+- [x] 7.1 Bench: caso "generar mapa" (spec < 20 ms) y tope de enemigos con mapa; `npm run bench` una vez y anotar
   ms/tick y ms/mapa en `docs/ai-log/`. Docs: estado de AGENTS.md §1 (mapa, `?e2e&map=empty`, sonda `map`), ADR-0013
   a "aceptada" si verify no tiene Critical.
   Escenarios: PM "Generación determinista por semilla" (coste). Test: `tests/bench/map.bench.ts`. E2E afectados: —
