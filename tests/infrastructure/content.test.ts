@@ -20,13 +20,26 @@ import {
 } from '../../src/domain/wave/SpawnRules';
 import { RUN_DURATION_MUST_BE_INTEGER } from '../../src/domain/run/RunDuration';
 import { loadRunConfig, parseRunConfig } from '../../src/infrastructure/content/loadRunConfig';
-import { aDefaultConfig, aRunConfig, rawContent, type RawContent } from '../support/builders';
+import {
+  SCENARIO_ARENA,
+  aDefaultConfig,
+  aRunConfig,
+  rawContent,
+  type RawContent,
+} from '../support/builders';
 import { StubRandom } from '../support/random';
 
 function failure(raw: RawContent): { field: string; message: string } {
   const r = parseRunConfig(raw);
   if (r.ok) throw new Error('se esperaba un error de contenido');
   return r.error;
+}
+
+/** Contenido crudo con la arena explícita de escenario 960 × 540 (casos de radio de las specs). */
+function inScenarioArena(): RawContent {
+  const raw = rawContent();
+  raw.arena = structuredClone(SCENARIO_ARENA);
+  return raw;
 }
 
 /** Quita un campo del contenido crudo (para los casos "ausente"). */
@@ -220,7 +233,7 @@ describe('Contenido del jugador validado', () => {
   });
 
   it('Radio que no cabe en la arena (jugador)', () => {
-    const raw = rawContent();
+    const raw = inScenarioArena();
     raw.player.radius = 300;
     expect(failure(raw).field).toBe('player.radius');
   });
@@ -324,13 +337,13 @@ describe('Contenido de enemigos y oleadas validado · reglas cruzadas (dominio d
   });
 
   it('Radio que no cabe en la arena', () => {
-    const raw = rawContent();
+    const raw = inScenarioArena();
     raw.enemies.types[0].radius = 300;
     expect(failure(raw).field).toBe('enemies.types.0.radius');
   });
 
   it('Radio en el límite exacto', () => {
-    const raw = rawContent();
+    const raw = inScenarioArena();
     raw.enemies.types[0].radius = 270;
     expect(parseRunConfig(raw).ok).toBe(true);
   });

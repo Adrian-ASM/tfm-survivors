@@ -27,6 +27,9 @@ function snapshots(r: Run, inputs: readonly PlayerInput[]): RunSnapshot[] {
   });
 }
 
+/** Ventana para buscar la primera oferta con la semilla 7 (mundo 2x: tick 4.346). */
+const FIRST_OFFER_WINDOW = 4800;
+
 const still = (n: number) => Array.from({ length: n }, () => PlayerInput.NONE);
 
 describe('Determinismo con progresión y elecciones', () => {
@@ -39,9 +42,10 @@ describe('Determinismo con progresión y elecciones', () => {
     for (let i = 0; i < inputs.length; i++) expect(a[i]).toStrictEqual(b[i]);
   });
 
-  it('Scenario: Partida con progresión reproducible (semilla 7, quieto, 3.600: gema y oferta)', () => {
-    const a = snapshots(run(7), still(3600));
-    const b = snapshots(run(7), still(3600));
+  // 0013: plazo de 4.800 (mundo 1.920 × 1.080, primera oferta en el tick 4.346).
+  it('Scenario: Partida con progresión reproducible (semilla 7, quieto, 4.800: gema y oferta)', () => {
+    const a = snapshots(run(7), still(4800));
+    const b = snapshots(run(7), still(4800));
     expect(a.some((s) => s.progression.xp > 0 || s.progression.level > 1)).toBe(true);
     expect(a.some((s) => s.offer.length > 0)).toBe(true);
     expect(a.at(-1)?.upgrades.length).toBeGreaterThan(0);
@@ -62,14 +66,15 @@ describe('Determinismo con progresión y elecciones', () => {
     const a = snapshots(run(7), still(3600));
     const b = snapshots(run(7), still(3600));
     expect(a.some((s) => s.gems.length > 0 || s.progression.xp > 0)).toBe(true);
-    expect(a.some((s) => s.pulses.length > 0 && s.enemies.some((e) => e.damaged))).toBe(true);
+    // 0013: con el mundo 2x el primer pulso llega en el tick 4.161; en 3.600 actúan los proyectiles.
+    expect(a.some((s) => s.projectiles.length > 0 && s.enemies.some((e) => e.damaged))).toBe(true);
     expect(a.at(-1)?.kills).toBeGreaterThanOrEqual(1);
     for (let i = 0; i < a.length; i++) expect(a[i]).toStrictEqual(b[i]);
   });
 
   it('Scenario: Elecciones distintas divergen (índice 0 frente a 1 en la misma primera oferta)', () => {
     const first = (r: Run): RunSnapshot => {
-      play(r, 3600, (_t, x) => x.status === 'choosing');
+      play(r, FIRST_OFFER_WINDOW, (_t, x) => x.status === 'choosing');
       return r.snapshot();
     };
     const a = run(7);

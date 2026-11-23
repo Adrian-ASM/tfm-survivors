@@ -28,7 +28,7 @@
   Test: los citados + `tests/domain/balance.test.ts`. E2E afectados: —
 
 ## 1. Dominio (solo números de escenario; el código de `src/domain` no cambia)
-- [ ] 1.1 Ajustar los tests con `aDefaultConfig()` que asumían 960 × 540 (R7): ejecutar la suite, corregir solo
+- [x] 1.1 Ajustar los tests con `aDefaultConfig()` que asumían 960 × 540 (R7): ejecutar la suite, corregir solo
   números de escenario (posiciones, ticks de los ejemplos) en `finishedRuns`, `run-outcome-long`,
   `exits-equal-kills`, `run-state` y los que fallen. Actualizar los escenarios con arena explícita 1.920 × 1.080 y
   las partidas largas de 36.000 ticks, que leen `config.arena` (`long-run.test.ts` `inside()`). Rojo: las partidas
