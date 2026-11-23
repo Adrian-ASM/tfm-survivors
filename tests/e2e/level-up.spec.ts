@@ -45,8 +45,17 @@ test('Recorrido en el navegador: con ?seed=7 sin input aparece el overlay, se pu
   expect((await snapshotOf(page))?.tick).toBe(offered?.tick);
 
   await page.keyboard.press('1');
-  await expect.poll(async () => (await snapshotOf(page))?.offer.length).toBe(0);
-  const after = await snapshotOf(page);
+  // Se comprueba el MISMO snapshot en el que la oferta ya se ha cerrado. La segunda oferta (nivel 3)
+  // llega 342 ticks después de elegir (semilla 7, quieto, mundo 2x); en un runner lento y con
+  // ?speed=8 esos ticks pasan entre dos lecturas y la segunda ya ve el nivel 3 (CI de main de 0013).
+  let after = null as SnapshotView | null;
+  await expect
+    .poll(async () => {
+      const snap = await snapshotOf(page);
+      if (snap && snap.offer.length === 0) after = snap;
+      return after !== null;
+    })
+    .toBe(true);
   expect(after?.progression.level).toBe(2);
   expect(after?.upgrades).toEqual([{ id: offered?.offer[0]?.id, level: 1 }]);
   await expect
