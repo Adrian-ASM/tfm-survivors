@@ -18,3 +18,4 @@
   recorta por objeto fuera de `TilemapLayer`.
 - Gate humano pendiente: si va como change propio o dentro del flow-field, si se retira `test.slow()`, si basta
   con mejorar, y si el margen es fijo o proporcional.
+- Gate (usuario, 2026-11-23): **change propio**; flow-field → 0019. Preguntas 2–4 siguen abiertas.

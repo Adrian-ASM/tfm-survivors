@@ -1,6 +1,7 @@
 # Proposal · 0018-map-culling
 
-- **Estado**: pendiente de aprobación
+- **Estado**: alcance aprobado por el usuario el 2026-11-23 como change propio (el flow-field pasa a 0019);
+  preguntas 2–4 abiertas
 - **Issue**: (opcional)
 - **Rama / worktree**: `change/0018-map-culling`
 
@@ -72,8 +73,8 @@ jugador. Resultado observable:
   parte del frame es CPU de lote frente a relleno; el diseño puede medirlo sin navegador antes de comprometerse.
 
 ## Preguntas abiertas para el gate humano
-1. **Decisión pendiente: ¿change propio o dentro del flow-field?** Recomendación de la exploración: change propio,
-   previo; solo toca infraestructura, se mide por separado y el flow-field pasaría a ser el 0019.
+1. **Decidido (usuario, 2026-11-23): change propio**, previo al flow-field, que pasa a ser el 0019. Solo toca
+   infraestructura y se mide por separado.
 2. ¿Se retira `test.slow()` de `slowMapRealOnCi` si la duración en CI lo permite tras este change, o se mantiene
    hasta ver varias ejecuciones en CI?
 3. ¿Basta con **mejorar** respecto a 0017, sin exigir volver a las cifras de 0016 (dado el relleno de píxeles de
