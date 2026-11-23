@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
+import type Phaser from 'phaser';
 import { Hud } from '../../src/infrastructure/phaser/Hud';
+import {
+  createHud,
+  createResultsOverlay,
+  createUpgradeOverlay,
+} from '../../src/infrastructure/phaser/sceneWidgets';
 import { XpBar } from '../../src/infrastructure/phaser/XpBar';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
@@ -187,5 +193,71 @@ describe('El HUD solo lee el snapshot', () => {
     expect(last?.kills).toBeGreaterThan(0);
     expect(pairs.some(([s]) => s.player.health < s.player.maxHealth)).toBe(true);
     expect(pairs.every(([a, b]) => JSON.stringify(a) === JSON.stringify(b))).toBe(true);
+  });
+});
+
+/** Objeto del motor falso: guarda posición y scrollFactor; cualquier otro método encadena. */
+interface Made {
+  kind: string;
+  x: number;
+  y: number;
+  scrollFactor: number | null;
+}
+
+/** Escena falsa con `scale` (la vista) y `add.rectangle`/`add.text` que registran lo creado. */
+function fakeScene(view: { width: number; height: number }) {
+  const made: Made[] = [];
+  const make = (kind: string, x: number, y: number): unknown => {
+    const state: Made = { kind, x, y, scrollFactor: null };
+    made.push(state);
+    const proxy: unknown = new Proxy(state, {
+      get(target, prop) {
+        if (prop === 'setScrollFactor') {
+          return (v: number) => ((target.scrollFactor = v), proxy);
+        }
+        if (prop === 'setPosition') {
+          return (px: number, py: number) => ((target.x = px), (target.y = py), proxy);
+        }
+        if (prop in target) return target[prop as keyof Made];
+        return () => proxy;
+      },
+    });
+    return proxy;
+  };
+  const scene = {
+    scale: view,
+    add: {
+      rectangle: (x: number, y: number) => make('rectangle', x, y),
+      text: (x: number, y: number) => make('text', x, y),
+    },
+  };
+  return { scene: scene as unknown as Phaser.Scene, made };
+}
+
+// Spec world-camera (0013), "HUD con la cámara movida" (parte unitaria): todos los widgets fijos a
+// la cámara (scrollFactor 0) y en coordenadas de la vista, sea cual sea el rectángulo visible.
+describe('Widgets fijos en pantalla (0013)', () => {
+  it('Scenario: HUD con la cámara movida (HUD, velo, cartas y resultados con scrollFactor 0)', () => {
+    const view = { width: 960, height: 540 };
+    const { scene, made } = fakeScene(view);
+
+    createHud(scene);
+    const offer = createUpgradeOverlay(scene);
+    const results = createResultsOverlay(scene);
+    offer.sync(
+      ['strict-rules', 'guardrail', 'shortcuts'].map((id) => ({
+        id,
+        name: id,
+        description: id,
+        level: 0,
+        nextLevel: 1,
+      })),
+    );
+    results.sync(snap({ over: true }));
+
+    expect(made.length).toBeGreaterThan(10);
+    expect(made.filter((m) => m.scrollFactor !== 0)).toEqual([]);
+    const outside = made.filter((m) => m.x < 0 || m.x > view.width || m.y < 0 || m.y > view.height);
+    expect(outside).toEqual([]);
   });
 });

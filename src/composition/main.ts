@@ -16,6 +16,7 @@ import { MenuScene } from '../infrastructure/phaser/MenuScene';
 import { emptyCounts, type SpriteCounts } from '../infrastructure/phaser/renderCounts';
 import type { ResultsView } from '../infrastructure/phaser/resultsText';
 import { BootScene } from '../infrastructure/phaser/BootScene';
+import type { CameraView, WorldSize } from '../infrastructure/phaser/CameraRig';
 import { assetUrl } from './assetUrl';
 import { bootContent } from './contentBoot';
 import { resolveSeed } from '../infrastructure/url/resolveSeed';
@@ -42,6 +43,10 @@ interface E2EProbe {
   runs: number;
   /** Sprites visibles y de reserva del último frame pintado (design 0012 D7); a 0 en el menú. */
   sprites: SpriteCounts;
+  /** Rectángulo visible del último frame pintado, en mundo (0013); null en el menú. */
+  readonly camera: CameraView | null;
+  /** Tamaño del mundo, constante desde la carga. */
+  readonly world: WorldSize;
 }
 
 /** Nombre visible del juego (change 0012): una sola fuente para el menú y el documento. */
@@ -106,6 +111,10 @@ function bootstrap(): void {
   const progress = wireProgress(root, () => probe.seed);
   const pause = new PausePanel(document, root);
   const e2e = new URLSearchParams(window.location.search).has('e2e');
+  // El mundo es la arena del contenido; el lienzo, la vista (0013).
+  const world: WorldSize = { width: config.value.arena.width, height: config.value.arena.height };
+  // Se conecta a la escena al crearla; leerlo antes da null (sin partida).
+  let cameraView = (): CameraView | null => null;
   const probe: E2EProbe = {
     seed,
     speed: speed.speed,
@@ -117,6 +126,11 @@ function bootstrap(): void {
     get progress() {
       return progress.probe();
     },
+    // Getter y no copia en onRender: onRender corre antes del preRender de la cámara (design D5).
+    get camera() {
+      return cameraView();
+    },
+    world,
   };
   const started = (s: number): void => {
     probe.seed = s;
@@ -148,6 +162,7 @@ function bootstrap(): void {
     launcher,
     restartRun: new RestartRun(config.value, nextRandom),
     capacity: sceneCapacity(config.value, appearance.maxCorpses),
+    world,
     appearance,
     progress: progress.scene,
     pause,
@@ -160,6 +175,7 @@ function bootstrap(): void {
     onScreen,
     simSpeed: speed.speed,
   });
+  cameraView = () => game.cameraView();
   const menu = new MenuScene(
     {
       ...progress.menu,

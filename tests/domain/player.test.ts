@@ -4,6 +4,8 @@ import { Player } from '../../src/domain/player/Player';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import { TICK_SECONDS } from '../../src/domain/run/Run';
 import { Vector2 } from '../../src/domain/shared/Vector2';
+import { aDefaultConfig } from '../support/builders';
+import { startRun, ticks } from '../support/runs';
 
 const EPS = 3; // toBeCloseTo(…, 3) ⇒ error < 0,0005 px (la spec pide ≤ 0,001)
 
@@ -23,15 +25,23 @@ function expectWithinSpec(actual: number, expected: number): void {
   ).toBeLessThanOrEqual(0.001);
 }
 
-function arena(): Arena {
-  const r = Arena.create(960, 540);
+function arena(width = 960, height = 540): Arena {
+  const r = Arena.create(width, height);
   if (!r.ok) throw new Error('arena de test inválida');
   return r.value;
 }
 
-function simulate(start: [number, number], input: PlayerInput, ticks: number): Player {
+/** Mundo explícito de los escenarios de límites de 0013 (1.920 × 1.080). */
+const WORLD = arena(1920, 1080);
+
+function simulate(
+  start: [number, number],
+  input: PlayerInput,
+  ticks: number,
+  bounds: Arena = arena(),
+): Player {
   let p = Player.spawn(Vector2.of(...start), RULES);
-  for (let i = 0; i < ticks; i++) p = p.move(input, TICK_SECONDS, arena());
+  for (let i = 0; i < ticks; i++) p = p.move(input, TICK_SECONDS, bounds);
   return p;
 }
 
@@ -80,20 +90,35 @@ describe('Player · movimiento', () => {
 });
 
 describe('Arena · límites', () => {
-  it('Choque con el borde derecho', () => {
-    const p = simulate([940, 270], PlayerInput.of(1, 0), 60);
-    expect([p.position.x, p.position.y]).toEqual([944, 270]);
+  it('Scenario: Choque con el borde derecho (mundo 1.920 × 1.080)', () => {
+    const p = simulate([1900, 540], PlayerInput.of(1, 0), 60, WORLD);
+    expect([p.position.x, p.position.y]).toEqual([1904, 540]);
   });
 
-  it('Esquina superior izquierda', () => {
-    const p = simulate([20, 20], PlayerInput.of(-1, -1), 60);
+  it('Scenario: Choque con el borde inferior (mundo 1.920 × 1.080)', () => {
+    const p = simulate([960, 1060], PlayerInput.of(0, 1), 60, WORLD);
+    expect([p.position.x, p.position.y]).toEqual([960, 1064]);
+  });
+
+  it('Scenario: Esquina superior izquierda', () => {
+    const p = simulate([20, 20], PlayerInput.of(-1, -1), 60, WORLD);
     expect([p.position.x, p.position.y]).toEqual([16, 16]);
   });
 
-  it('Deslizar por la pared', () => {
-    const p = simulate([944, 270], PlayerInput.of(1, 1), 30);
-    expect(p.position.x).toBe(944);
-    expectWithinSpec(p.position.y - 270, 70.711);
+  it('Scenario: Esquina inferior derecha (mundo 1.920 × 1.080)', () => {
+    const p = simulate([1900, 1060], PlayerInput.of(1, 1), 60, WORLD);
+    expect([p.position.x, p.position.y]).toEqual([1904, 1064]);
+  });
+
+  it('Scenario: Deslizar por la pared (mundo 1.920 × 1.080)', () => {
+    const p = simulate([1904, 540], PlayerInput.of(1, 1), 30, WORLD);
+    expect(p.position.x).toBe(1904);
+    expectWithinSpec(p.position.y - 540, 70.711);
+  });
+
+  it('choque con el borde derecho de una arena de escenario de 960 × 540', () => {
+    const p = simulate([940, 270], PlayerInput.of(1, 0), 60);
+    expect([p.position.x, p.position.y]).toEqual([944, 270]);
   });
 
   it('rechaza dimensiones no positivas', () => {
@@ -158,5 +183,25 @@ describe('Player.withRules', () => {
   it('expone el radio de recogida efectivo', () => {
     const p = Player.spawn(Vector2.of(0, 0), RULES).withRules({ ...RULES, pickupRadius: 96 }, 0);
     expect(p.pickupRadius).toBe(96);
+  });
+});
+
+// Spec player-movement (0013): el mundo por defecto (1.920 × 1.080) es mayor que la vista.
+describe('Player · mundo por defecto (0013)', () => {
+  it('Scenario: Partida nueva con el mundo por defecto (jugador en (960, 540))', () => {
+    const run = startRun(aDefaultConfig());
+
+    const { x, y } = run.snapshot().player;
+
+    expect([x, y]).toEqual([960, 540]);
+  });
+
+  it('Scenario: El borde de la vista no es una pared ((940, 270) → (1.140, 270))', () => {
+    const run = startRun(aDefaultConfig(), { player: { x: 940, y: 270 } });
+
+    const last = ticks(run, 60, PlayerInput.of(1, 0)).at(-1)?.player;
+
+    expectWithinSpec(last?.x ?? 0, 1140);
+    expect(last?.y).toBe(270);
   });
 });

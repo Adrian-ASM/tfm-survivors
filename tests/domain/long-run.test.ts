@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import { Run } from '../../src/domain/run/Run';
 import type { RunConfig } from '../../src/domain/run/RunConfig';
-import type { EnemySnapshot, RunSnapshot } from '../../src/domain/run/RunSnapshot';
+import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import {
   LONG_RUN_HEALTH,
@@ -20,18 +20,27 @@ import { randomInputs } from '../support/inputs';
 const TEN_MINUTES = 36_000;
 const SEED = 7;
 const INPUT_SEED = 2026;
-/** La auditoría prueba el spawn, no el daño: con vida inalcanzable siguen naciendo los 200. */
-const SPAWN_AUDIT = aRunConfig({ maxHealth: LONG_RUN_HEALTH });
+/**
+ * La auditoría prueba el spawn y los límites, no el daño: el contenido por defecto (mundo de
+ * content/arena.json) con vida inalcanzable (specs enemy-spawning, enemy-behavior y player-movement).
+ */
+const SPAWN_AUDIT = withPlayer(aDefaultConfig(), { maxHealth: LONG_RUN_HEALTH });
+/** Sin armas ni bajas nacen exactamente maxAlive enemigos (geometría de escenario). */
+const NO_KILLS_AUDIT = aRunConfig({ maxHealth: LONG_RUN_HEALTH });
 
 interface Violations {
   outside: number;
+  playerOutside: number;
   tooClose: number;
   births: number;
   maxAlive: number;
 }
 
-const inside = ({ x, y, radius }: EnemySnapshot): boolean =>
-  x >= radius && x <= 960 - radius && y >= radius && y <= 540 - radius;
+type Bounds = RunConfig['arena'];
+
+/** Centro del círculo dentro de [radio, ancho − radio] × [radio, alto − radio] de `arena`. */
+const inside = (arena: Bounds, { x, y }: { x: number; y: number }, radius: number): boolean =>
+  x >= radius && x <= arena.width - radius && y >= radius && y <= arena.height - radius;
 
 function start(config: RunConfig, seed: number): Run {
   const r = Run.start(config, new Mulberry32RandomGenerator(seed));
@@ -39,17 +48,25 @@ function start(config: RunConfig, seed: number): Run {
   return r.value;
 }
 
-/** Recorre la partida comprobando cada tick: enemigos dentro y nacimientos a ≥ 200 del jugador. */
-function audit(inputs: readonly PlayerInput[]): { final: RunSnapshot; v: Violations } {
-  const run = start(SPAWN_AUDIT, SEED);
-  const v: Violations = { outside: 0, tooClose: 0, births: 0, maxAlive: 0 };
+/**
+ * Recorre la partida (política de elección fija) comprobando cada tick: enemigos y jugador dentro
+ * del mundo de `config` y nacimientos a ≥ 200 del jugador.
+ */
+function audit(
+  config: RunConfig,
+  inputs: readonly PlayerInput[],
+): { final: RunSnapshot; v: Violations } {
+  const run = start(config, SEED);
+  const v: Violations = { outside: 0, playerOutside: 0, tooClose: 0, births: 0, maxAlive: 0 };
   let nextId = 0;
   for (const input of inputs) {
+    chooseFirstWhileOpen(run);
     run.tick(input);
     const { enemies, player } = run.snapshot();
     v.maxAlive = Math.max(v.maxAlive, enemies.length);
+    if (!inside(config.arena, player, config.player.radius)) v.playerOutside += 1;
     for (const e of enemies) {
-      if (!inside(e)) v.outside += 1;
+      if (!inside(config.arena, e, e.radius)) v.outside += 1;
       if (e.id < nextId) continue;
       v.births += 1;
       nextId = e.id + 1;
@@ -61,27 +78,42 @@ function audit(inputs: readonly PlayerInput[]): { final: RunSnapshot; v: Violati
 
 function finalSnapshot(config: RunConfig, seed: number, inputs: readonly PlayerInput[]) {
   const run = start(config, seed);
-  for (const input of inputs) run.tick(input);
+  for (const input of inputs) {
+    chooseFirstWhileOpen(run);
+    run.tick(input);
+  }
   return run.snapshot();
 }
 
 describe('Partidas largas (10 min)', () => {
   const inputs = randomInputs(TEN_MINUTES, INPUT_SEED);
   let audited: { final: RunSnapshot; v: Violations };
+  let noKills: { final: RunSnapshot; v: Violations };
 
   beforeAll(() => {
-    audited = audit(inputs);
+    audited = audit(SPAWN_AUDIT, inputs);
+    noKills = audit(NO_KILLS_AUDIT, inputs);
   });
 
-  it('Partida larga sin spawns ilegales', () => {
-    // Sin bajas ni muerte del jugador nacen exactamente maxAlive enemigos.
-    expect(audited.v.births).toBe(200);
+  it('Scenario: Partida larga sin spawns ilegales (mundo por defecto)', () => {
+    expect(audited.v.births).toBeGreaterThan(0);
     expect(audited.v.tooClose).toBe(0);
+    expect(audited.v.outside).toBe(0);
   });
 
-  it('Partida larga (enemigos dentro de la arena en todos los ticks)', () => {
+  it('Scenario: Partida larga (enemigos dentro del mundo en todos los ticks)', () => {
+    expect(SPAWN_AUDIT.arena).toMatchObject({ width: 1920, height: 1080 });
     expect(audited.v.outside).toBe(0);
-    expect(audited.v.maxAlive).toBe(200);
+    expect(audited.v.maxAlive).toBeLessThanOrEqual(200);
+  });
+
+  it('Scenario: Partida larga dentro del mundo (jugador en [16, 1.904] × [16, 1.064])', () => {
+    expect(audited.v.playerOutside).toBe(0);
+  });
+
+  it('sin bajas nacen exactamente maxAlive enemigos, todos legales (arena de escenario)', () => {
+    expect(noKills.v.births).toBe(200);
+    expect([noKills.v.tooClose, noKills.v.outside, noKills.v.maxAlive]).toEqual([0, 0, 200]);
   });
 
   it('Partida larga reproducible', () => {

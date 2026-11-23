@@ -5,7 +5,13 @@ import type { RunConfig } from '../../src/domain/run/RunConfig';
 import type { EnemySnapshot, RunSnapshot } from '../../src/domain/run/RunSnapshot';
 import type { RandomGenerator } from '../../src/domain/shared/RandomGenerator';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
-import { LONG_RUN_HEALTH, aSegment, aWavesConfig, withPlayer } from '../support/builders';
+import {
+  LONG_RUN_HEALTH,
+  SCENARIO_ARENA,
+  aSegment,
+  aWavesConfig,
+  withPlayer,
+} from '../support/builders';
 import { StubRandom } from '../support/random';
 
 interface Birth {
@@ -52,8 +58,16 @@ class CountingRandom implements RandomGenerator {
   }
 }
 
-const insideArena = ({ x, y, radius }: EnemySnapshot): boolean =>
-  x >= radius && x <= 960 - radius && y >= radius && y <= 540 - radius;
+/** Centro del enemigo en [radio, ancho − radio] × [radio, alto − radio] de la arena dada. */
+const insideArena = (
+  { x, y, radius }: EnemySnapshot,
+  arena: RunConfig['arena'] = SCENARIO_ARENA,
+): boolean =>
+  x >= radius && x <= arena.width - radius && y >= radius && y <= arena.height - radius;
+
+/** Mundo explícito de los escenarios de 0013: 1.920 × 1.080 con la vista de 960 × 540. */
+const WORLD: RunConfig['arena'] = { width: 1920, height: 1080, view: { width: 960, height: 540 } };
+const inWorld = (config: RunConfig): RunConfig => ({ ...config, arena: WORLD });
 const distance = (a: { x: number; y: number }, b: { x: number; y: number }): number =>
   Math.hypot(a.x - b.x, a.y - b.y);
 
@@ -90,6 +104,46 @@ describe('Run · posición de aparición', () => {
       expect(insideArena(b.enemy)).toBe(true);
       expect(distance(b.enemy, b.player)).toBeGreaterThanOrEqual(200);
     }
+  });
+
+  it.each([
+    ['Jugador en una esquina', 16, 16],
+    ['Jugador en la esquina opuesta', 1904, 1064],
+  ])('Scenario: %s del mundo de 1.920 × 1.080 ((%s, %s), 3.600 ticks)', (_name, x, y) => {
+    const config = withPlayer(
+      inWorld(aWavesConfig({ segments: [aSegment(['goblin-torch', 'goblin-tnt'], 5)] })),
+      { maxHealth: LONG_RUN_HEALTH },
+    );
+    const { births } = simulate(config, 3600, { setup: { player: { x, y } } });
+    expect(births.length).toBeGreaterThan(0);
+    for (const b of births) {
+      expect(b.player).toMatchObject({ x, y });
+      expect(insideArena(b.enemy, WORLD)).toBe(true);
+      expect(distance(b.enemy, b.player)).toBeGreaterThanOrEqual(200);
+    }
+  });
+
+  it('Scenario: Ninguna posición válida en el mundo de 1.920 × 1.080 (minDistance 2.500)', () => {
+    const config = inWorld(
+      aWavesConfig({
+        segments: [aSegment(['goblin-torch'], 5)],
+        spawn: { minDistance: 2500, maxAttempts: 8 },
+      }),
+    );
+    const random = new CountingRandom(new Mulberry32RandomGenerator(42));
+    const perTick: number[] = [];
+    let last = 0;
+    const { run } = simulate(config, 600, {
+      random,
+      beforeTick: () => {
+        perTick.push(random.calls - last);
+        last = random.calls;
+      },
+    });
+    perTick.push(random.calls - last);
+    expect(run.snapshot().tick).toBe(600);
+    expect(run.snapshot().enemies).toHaveLength(0);
+    expect(Math.max(...perTick)).toBeLessThanOrEqual(8);
   });
 
   it('Ninguna posición válida', () => {

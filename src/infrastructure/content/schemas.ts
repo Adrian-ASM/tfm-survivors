@@ -75,14 +75,30 @@ export const PlayerSchema = z.strictObject({
   pickupRadius: z.number().positive({ error: PICKUP_RADIUS_MUST_BE_POSITIVE }),
 });
 
-export const ArenaSchema = z.strictObject({
-  width: z.number().int().positive(),
-  height: z.number().int().positive(),
-  view: z.strictObject({
-    width: z.number().positive({ error: VIEW_SIZE_MUST_BE_POSITIVE }),
-    height: z.number().positive({ error: VIEW_SIZE_MUST_BE_POSITIVE }),
-  }),
-});
+export const WORLD_NARROWER_THAN_VIEW = 'El ancho del mundo debe ser al menos el de la vista.';
+export const WORLD_LOWER_THAN_VIEW = 'El alto del mundo debe ser al menos el de la vista.';
+
+/**
+ * Mundo (`width` × `height`) y vista del lienzo. El mundo es al menos tan grande como la vista
+ * (0013, D1b): con unos límites menores que la vista, la cámara mostraría zonas fuera del mundo.
+ */
+export const ArenaSchema = z
+  .strictObject({
+    width: z.number().int().positive(),
+    height: z.number().int().positive(),
+    view: z.strictObject({
+      width: z.number().positive({ error: VIEW_SIZE_MUST_BE_POSITIVE }),
+      height: z.number().positive({ error: VIEW_SIZE_MUST_BE_POSITIVE }),
+    }),
+  })
+  .superRefine(({ width, height, view }, ctx) => {
+    if (width < view.width) {
+      ctx.addIssue({ code: 'custom', path: ['width'], message: WORLD_NARROWER_THAN_VIEW });
+    }
+    if (height < view.height) {
+      ctx.addIssue({ code: 'custom', path: ['height'], message: WORLD_LOWER_THAN_VIEW });
+    }
+  });
 
 export const EnemiesSchema = z.strictObject({
   types: z.array(

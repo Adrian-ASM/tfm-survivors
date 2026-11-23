@@ -4,11 +4,15 @@ import { Enemy } from '../../src/domain/enemy/Enemy';
 import { EnemyType } from '../../src/domain/enemy/EnemyType';
 import { TICK_SECONDS } from '../../src/domain/shared/Tick';
 
-const ARENA = ((): Arena => {
-  const r = Arena.create(960, 540);
+const arenaOf = (width: number, height: number): Arena => {
+  const r = Arena.create(width, height);
   if (!r.ok) throw new Error(r.error.message);
   return r.value;
-})();
+};
+/** Arena de escenario 960 × 540 (geometría de los escenarios de 0001–0004). */
+const ARENA = arenaOf(960, 540);
+/** Mundo explícito de los escenarios de 0013 (1.920 × 1.080). */
+const WORLD = arenaOf(1920, 1080);
 
 function enemy(
   speed: number,
@@ -17,14 +21,15 @@ function enemy(
   radius = 10,
   id = 'goblin-torch',
   health = 10,
+  arena: Arena = ARENA,
 ): Enemy {
   const type = EnemyType.create(
     { id, speed, radius, cost: 1, damage: 7, health, xp: 1 },
-    ARENA,
+    arena,
     'enemies.types.0',
   );
   if (!type.ok) throw new Error(type.error.message);
-  return Enemy.spawn(0, type.value, x, y, ARENA);
+  return Enemy.spawn(0, type.value, x, y, arena);
 }
 
 describe('Enemy · vida y baja', () => {
@@ -99,9 +104,13 @@ describe('Enemy · indicación de daño reciente', () => {
   });
 });
 
-function chaseFor(e: Enemy, ticks: number, tx: number, ty: number): void {
-  for (let i = 0; i < ticks; i++) e.chase(tx, ty, TICK_SECONDS, ARENA);
+function chaseFor(e: Enemy, ticks: number, tx: number, ty: number, arena = ARENA): void {
+  for (let i = 0; i < ticks; i++) e.chase(tx, ty, TICK_SECONDS, arena);
 }
+
+/** Enemigo de tipo 'goblin-torch' en el mundo de 1.920 × 1.080. */
+const inWorld = (speed: number, x: number, y: number, radius = 10): Enemy =>
+  enemy(speed, x, y, radius, 'goblin-torch', 10, WORLD);
 
 describe('Enemy · persecución en línea recta', () => {
   it('Persecución horizontal durante un segundo', () => {
@@ -141,7 +150,26 @@ describe('Enemy · persecución en línea recta', () => {
     expect(Math.hypot(leak.x - 100, leak.y - 440)).toBeCloseTo(45, 3);
   });
 
-  it('Enemigo más grande que el jugador junto a un borde', () => {
+  it('Scenario: Enemigo más grande que el jugador junto a un borde (mundo 1.920 × 1.080)', () => {
+    const e = inWorld(120, 1860, 540, 22);
+    chaseFor(e, 60, 1904, 540, WORLD);
+    expect([e.x, e.y]).toEqual([1898, 540]);
+  });
+
+  it('Scenario: Enemigo junto al borde inferior (mundo 1.920 × 1.080)', () => {
+    const e = inWorld(120, 960, 1020, 22);
+    chaseFor(e, 60, 960, 1064, WORLD);
+    expect([e.x, e.y]).toEqual([960, 1058]);
+  });
+
+  it('Scenario: Persecución más allá del borde de la vista ((900, 270) → (1.020, 270))', () => {
+    const e = inWorld(60, 900, 270);
+    chaseFor(e, 120, 1500, 270, WORLD);
+    expect(Math.abs(e.x - 1020)).toBeLessThanOrEqual(0.001);
+    expect(e.y).toBe(270);
+  });
+
+  it('enemigo grande junto al borde de una arena de escenario de 960 × 540', () => {
     const e = enemy(120, 900, 270, 22);
     chaseFor(e, 60, 944, 270);
     expect([e.x, e.y]).toEqual([938, 270]);

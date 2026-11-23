@@ -13,7 +13,7 @@ function started(random = new CountingRandom(new StubRandom(0.5))) {
     waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 0)] }).waves,
   };
   const r = new StartRun().execute(config, random, {
-    gems: [{ x: 500, y: 270, value: 1 }],
+    gems: [{ x: base.arena.width / 2 + 20, y: base.arena.height / 2, value: 1 }],
     experience: { level: 1, xp: 4 },
   });
   if (!r.ok) throw new Error(r.error.message);

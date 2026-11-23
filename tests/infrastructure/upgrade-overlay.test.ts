@@ -7,6 +7,7 @@ import {
   type CardText,
   type OverlayPart,
 } from '../../src/infrastructure/phaser/UpgradeOverlay';
+import { DEFAULT_UPGRADE_LIST } from '../support/builders';
 
 class FakePart implements OverlayPart {
   visible = false;
@@ -103,6 +104,23 @@ describe('UpgradeOverlay', () => {
     ]);
     const xs = cards.map((c) => c.box.x);
     expect(xs).toEqual(cardLayout(VIEW, 3).map((c) => c.x));
+  });
+
+  // Spec upgrades (0013): los textos salen del contenido por defecto.
+  it('Scenario: La carta muestra el texto nuevo (strict-rules, guardrail, shortcuts)', () => {
+    const { cards, o } = overlay();
+    const fromContent = (id: string): OfferSnapshot => {
+      const u = DEFAULT_UPGRADE_LIST.find((x) => x.id === id);
+      return { id, name: u?.name ?? '', description: u?.description ?? '', level: 0, nextLevel: 1 };
+    };
+
+    o.sync(['strict-rules', 'guardrail', 'shortcuts'].map(fromContent));
+
+    expect(cards.map((c) => [c.name.text, c.description.text, c.level.text])).toEqual([
+      ['[1] Puntas de acero', 'Las flechas del arco hacen más daño.', 'Nv 0 → 1'],
+      ['[2] Cota de malla', 'Más vida máxima (y la misma cantidad de vida actual).', 'Nv 0 → 1'],
+      ['[3] Botas de viajero', 'Te mueves más rápido.', 'Nv 0 → 1'],
+    ]);
   });
 
   it('Scenario: Menos cartas (2 opciones: la tercera oculta)', () => {

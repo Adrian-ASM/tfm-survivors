@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test';
+import arena from '../../content/arena.json' with { type: 'json' };
 import {
   backToMenu,
+  cornerTour,
   focusGame,
   gameUrl,
   menuButton,
@@ -78,4 +80,44 @@ test('Scenario: Sin sonda fuera de E2E (?seed=42 y Jugar)', async ({ page }) => 
   expect(await page.evaluate(() => typeof (window as { __sprint?: unknown }).__sprint)).toBe(
     'undefined',
   );
+});
+
+// Spec sprite-rendering (0013): el fondo cubre el mundo entero, (0, 0)–(W, H), también en reserva.
+// El rectángulo del fondo es el del mundo (ground-view.test.ts), así que "dentro del fondo" es
+// "dentro del mundo" en la sonda de cámara.
+const VIEW = arena.view;
+const WORLD = { width: arena.width, height: arena.height };
+const GROUND_SHEET = '**/Terrain/Ground/Tilemap_Flat.png';
+
+test('Scenario: Fondo en las cuatro esquinas (?e2e&seed=7)', async ({ page }) => {
+  test.setTimeout(90_000);
+
+  const { walked, sample } = await cornerTour(page, VIEW, WORLD);
+
+  expect(walked).toEqual(['tl', 'tr', 'br', 'bl']);
+  expect(sample.frames).toBeGreaterThan(0);
+  expect([sample.outsideWorld, sample.groundMisses, sample.groundPlaceholderFrames]).toEqual([
+    0, 0, 0,
+  ]);
+});
+
+test('Scenario: Fondo de reserva en el mundo entero (hoja del suelo abortada)', async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  const problems: string[] = [];
+  page.on('pageerror', (e) => problems.push(`pageerror: ${e.message}`));
+  page.on('console', (m) => {
+    if (m.type() !== 'error') return;
+    const ground = m.location().url.includes('Tilemap_Flat.png');
+    if (!(ground && m.text().startsWith('Failed to load resource'))) problems.push(m.text());
+  });
+  await page.route(GROUND_SHEET, (route) => route.abort());
+
+  const { walked, sample } = await cornerTour(page, VIEW, WORLD);
+
+  expect(walked).toEqual(['tl', 'tr', 'br', 'bl']);
+  expect(sample.groundPlaceholderFrames).toBe(sample.frames);
+  expect([sample.outsideWorld, sample.groundMisses]).toEqual([0, 0]);
+  expect(problems).toEqual([]);
 });

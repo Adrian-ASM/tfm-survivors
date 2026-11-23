@@ -20,13 +20,30 @@ import {
 } from '../../src/domain/wave/SpawnRules';
 import { RUN_DURATION_MUST_BE_INTEGER } from '../../src/domain/run/RunDuration';
 import { loadRunConfig, parseRunConfig } from '../../src/infrastructure/content/loadRunConfig';
-import { aDefaultConfig, aRunConfig, rawContent, type RawContent } from '../support/builders';
+import {
+  WORLD_LOWER_THAN_VIEW,
+  WORLD_NARROWER_THAN_VIEW,
+} from '../../src/infrastructure/content/schemas';
+import {
+  SCENARIO_ARENA,
+  aDefaultConfig,
+  aRunConfig,
+  rawContent,
+  type RawContent,
+} from '../support/builders';
 import { StubRandom } from '../support/random';
 
 function failure(raw: RawContent): { field: string; message: string } {
   const r = parseRunConfig(raw);
   if (r.ok) throw new Error('se esperaba un error de contenido');
   return r.error;
+}
+
+/** Contenido crudo con la arena explícita de escenario 960 × 540 (casos de radio de las specs). */
+function inScenarioArena(): RawContent {
+  const raw = rawContent();
+  raw.arena = structuredClone(SCENARIO_ARENA);
+  return raw;
 }
 
 /** Quita un campo del contenido crudo (para los casos "ausente"). */
@@ -220,7 +237,7 @@ describe('Contenido del jugador validado', () => {
   });
 
   it('Radio que no cabe en la arena (jugador)', () => {
-    const raw = rawContent();
+    const raw = inScenarioArena();
     raw.player.radius = 300;
     expect(failure(raw).field).toBe('player.radius');
   });
@@ -278,6 +295,36 @@ describe('Contenido de enemigos y oleadas validado · forma y rangos (zod)', () 
     expect(failure(raw).field).toBe(field);
   });
 
+  // Spec world-camera (0013), "Mundo y vista en el contenido": el mundo es al menos la vista.
+  it('Scenario: Mundo más estrecho que la vista (959 × 1.080)', () => {
+    const raw = rawContent();
+    raw.arena.width = 959;
+    expect(failure(raw)).toMatchObject({ field: 'arena.width', message: WORLD_NARROWER_THAN_VIEW });
+  });
+
+  it('Scenario: Mundo más bajo que la vista (1.920 × 539)', () => {
+    const raw = rawContent();
+    raw.arena.height = 539;
+    expect(failure(raw)).toMatchObject({ field: 'arena.height', message: WORLD_LOWER_THAN_VIEW });
+  });
+
+  it('Scenario: Mundo igual a la vista (960 × 540)', () => {
+    const raw = rawContent();
+    raw.arena.width = 960;
+    raw.arena.height = 540;
+    expect(parseRunConfig(raw).ok).toBe(true);
+  });
+
+  it.each([
+    ['arena.width', (r: RawContent) => (r.arena.width = 0)],
+    ['arena.height', (r: RawContent) => (r.arena.height = -1)],
+    ['arena.view.width', (r: RawContent) => (r.arena.view.width = 0)],
+  ])('Scenario: Dimensiones no positivas (%s)', (field, mutate) => {
+    const raw = rawContent();
+    mutate(raw);
+    expect(failure(raw).field).toBe(field);
+  });
+
   it('rechaza un tramo vacío de la tabla', () => {
     const raw = rawContent();
     (raw.waves as { segments: unknown[] }).segments = [];
@@ -324,13 +371,13 @@ describe('Contenido de enemigos y oleadas validado · reglas cruzadas (dominio d
   });
 
   it('Radio que no cabe en la arena', () => {
-    const raw = rawContent();
+    const raw = inScenarioArena();
     raw.enemies.types[0].radius = 300;
     expect(failure(raw).field).toBe('enemies.types.0.radius');
   });
 
   it('Radio en el límite exacto', () => {
-    const raw = rawContent();
+    const raw = inScenarioArena();
     raw.enemies.types[0].radius = 270;
     expect(parseRunConfig(raw).ok).toBe(true);
   });
@@ -420,6 +467,11 @@ describe('Contenido por defecto del repositorio', () => {
     for (const t of types) {
       expect(Math.min(t.speed, t.radius, t.cost, t.health, t.damage)).toBeGreaterThan(0);
     }
+  });
+
+  // Spec world-camera (0013): el mundo y la vista son medidas distintas del contenido.
+  it('Scenario: Contenido por defecto (mundo 1.920 × 1.080 y vista 960 × 540)', () => {
+    expect(config?.arena).toEqual({ width: 1920, height: 1080, view: { width: 960, height: 540 } });
   });
 
   it('Scenario: Catálogo de tipos de enemigo (ids goblin con los stats heredados, mismo orden)', () => {

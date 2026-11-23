@@ -1,4 +1,5 @@
 import { expect, type Page } from '@playwright/test';
+import playerJson from '../../content/player.json' with { type: 'json' };
 
 /**
  * Velocidad de simulación de los E2E que juegan hasta un evento lejano (design 0008): 8 avances
@@ -36,7 +37,7 @@ export interface SnapshotView {
   outcome: 'won' | 'lost' | null;
   kills: number;
   durationTicks: number;
-  player: { health: number; maxHealth: number; invulnerable: boolean };
+  player: { x: number; y: number; health: number; maxHealth: number; invulnerable: boolean };
   enemies: EnemyView[];
   projectiles: { id: number; x: number; y: number }[];
   pulses: { weapon: string; firedAt: number }[];
@@ -91,6 +92,20 @@ export interface SpritesView {
   enemyPlaceholders: Record<string, number>;
 }
 
+/** Rectángulo visible del último frame pintado, en coordenadas de mundo (change 0013). */
+export interface CameraViewData {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** Tamaño del mundo (la `arena` del contenido). */
+export interface WorldView {
+  width: number;
+  height: number;
+}
+
 interface Probe {
   __sprint?: {
     seed: number;
@@ -104,6 +119,9 @@ interface Probe {
     runs?: number;
     /** Sonda de sprites (change 0012). */
     sprites?: SpritesView;
+    /** Sonda de cámara (change 0013): null en el menú. */
+    camera?: CameraViewData | null;
+    world?: WorldView;
   };
 }
 
@@ -121,6 +139,8 @@ export const probe = (page: Page) =>
           screen: p.screen ?? null,
           runs: p.runs ?? null,
           sprites: p.sprites ?? null,
+          camera: p.camera ?? null,
+          world: p.world ?? null,
         }
       : null;
   });
@@ -235,6 +255,107 @@ export const stopSpriteSampler = (page: Page): Promise<SpriteSample> =>
     return state.result;
   });
 
+/** Resumen del muestreador de cámara (ver `startCameraSampler`). */
+export interface CameraSample {
+  /** Frames muestreados con partida (snapshot y cámara no nulos). */
+  frames: number;
+  /** Primeras discrepancias con la fórmula de seguimiento (error > 1 px) o con el tamaño. */
+  mismatches: string[];
+  /** Frames con el rectángulo visible fuera de (0, 0)–(W, H). */
+  outsideWorld: number;
+  /** Frames en que el suelo no era exactamente 1 sprite visible. */
+  groundMisses: number;
+  /** Frames con algún fondo de reserva. */
+  groundPlaceholderFrames: number;
+  /** Primera posición de cada id de enemigo y el rectángulo visible de ese frame. */
+  firstSeen: { id: number; x: number; y: number; camera: CameraViewData }[];
+  /** Esquinas del mundo tocadas por el jugador (a ≤ 1 px del recorte): tl, tr, bl, br. */
+  corners: string[];
+}
+
+interface CameraSamplerWindow {
+  __cameraSampler?: { stop: boolean; result: CameraSample };
+}
+
+/**
+ * Instala un muestreador con `requestAnimationFrame` (design D5) que, en cada frame con partida,
+ * comprueba la sonda de cámara contra el jugador del snapshot del mismo frame: tamaño de la vista,
+ * esquina = (clamp(x − V_w / 2, 0, W − V_w), clamp(y − V_h / 2, 0, H − V_h)) con error ≤ 1 px,
+ * rectángulo dentro del mundo y fondo visible. Guarda la primera posición de cada enemigo.
+ */
+export async function startCameraSampler(page: Page, view: WorldView): Promise<void> {
+  await page.evaluate((v) => {
+    const w = window as unknown as Probe & CameraSamplerWindow;
+    const result: CameraSample = {
+      frames: 0,
+      mismatches: [],
+      outsideWorld: 0,
+      groundMisses: 0,
+      groundPlaceholderFrames: 0,
+      firstSeen: [],
+      corners: [],
+    };
+    const state = { stop: false, result };
+    w.__cameraSampler = state;
+    const seen = new Set<number>();
+    const miss = (text: string) => {
+      if (result.mismatches.length < 10) result.mismatches.push(text);
+    };
+    const clamp = (x: number, min: number, max: number) => Math.min(Math.max(x, min), max);
+    const tick = () => {
+      if (state.stop) return;
+      const p = w.__sprint;
+      const snap = p?.snapshot;
+      const cam = p?.camera;
+      const world = p?.world;
+      if (snap && cam && world) {
+        result.frames += 1;
+        const { x, y } = snap.player;
+        const ex = clamp(x - v.width / 2, 0, world.width - v.width);
+        const ey = clamp(y - v.height / 2, 0, world.height - v.height);
+        const t = String(snap.tick);
+        if (cam.width !== v.width || cam.height !== v.height) miss(`tick ${t}: tamaño`);
+        if (Math.abs(cam.x - ex) > 1 || Math.abs(cam.y - ey) > 1) {
+          miss(`tick ${t}: (${String(cam.x)}, ${String(cam.y)}) ≠ (${String(ex)}, ${String(ey)})`);
+        }
+        if (
+          cam.x < 0 ||
+          cam.y < 0 ||
+          cam.x + cam.width > world.width ||
+          cam.y + cam.height > world.height
+        ) {
+          result.outsideWorld += 1;
+        }
+        const ground = p.sprites?.ground;
+        if (ground?.visible !== 1) result.groundMisses += 1;
+        if ((ground?.placeholder ?? 0) > 0) result.groundPlaceholderFrames += 1;
+        for (const e of snap.enemies) {
+          if (seen.has(e.id)) continue;
+          seen.add(e.id);
+          result.firstSeen.push({ id: e.id, x: e.x, y: e.y, camera: { ...cam } });
+        }
+        const left = cam.x <= 1;
+        const top = cam.y <= 1;
+        const right = cam.x >= world.width - v.width - 1;
+        const bottom = cam.y >= world.height - v.height - 1;
+        const corner = (top ? 't' : bottom ? 'b' : '') + (left ? 'l' : right ? 'r' : '');
+        if (corner.length === 2 && !result.corners.includes(corner)) result.corners.push(corner);
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, view);
+}
+
+/** Para el muestreador de cámara y devuelve su resumen. */
+export const stopCameraSampler = (page: Page): Promise<CameraSample> =>
+  page.evaluate(() => {
+    const state = (window as unknown as CameraSamplerWindow).__cameraSampler;
+    if (!state) throw new Error('No hay muestreador de cámara instalado');
+    state.stop = true;
+    return state.result;
+  });
+
 /** Lo que la sonda tenía en el primer frame pintado de una partida nueva. */
 export interface FirstFrameView {
   runs: number;
@@ -242,6 +363,7 @@ export interface FirstFrameView {
   snapshot: SnapshotView | null;
   results: ResultsViewData | null;
   sprites: SpritesView | null;
+  camera: CameraViewData | null;
 }
 
 interface FirstFrameWindow {
@@ -275,6 +397,7 @@ export async function watchNextRun(page: Page): Promise<void> {
             snapshot: p.snapshot,
             results: p.results,
             sprites: p.sprites ?? null,
+            camera: p.camera ?? null,
           }),
         ) as FirstFrameView;
         return;
@@ -414,3 +537,101 @@ export async function backToMenu(page: Page): Promise<void> {
   await pauseOverlay(page).getByRole('button', { name: 'Volver al menú' }).click();
   await expect(menuPanel(page)).toBeVisible();
 }
+
+/** Esquina del mundo: signo de cada eje (−1 hacia 0, +1 hacia el borde lejano). */
+export interface Corner {
+  name: string;
+  dx: -1 | 1;
+  dy: -1 | 1;
+}
+
+/** Las cuatro esquinas en el orden del recorrido: tl, tr, br, bl (un solo eje cambia cada vez). */
+export const CORNERS: readonly Corner[] = [
+  { name: 'tl', dx: -1, dy: -1 },
+  { name: 'tr', dx: 1, dy: -1 },
+  { name: 'br', dx: 1, dy: 1 },
+  { name: 'bl', dx: -1, dy: 1 },
+];
+
+/** Radio del jugador del contenido por defecto (content/player.json). */
+const PLAYER_RADIUS = playerJson.radius;
+
+/** Margen de llegada a una esquina: el centro del jugador a ≤ 1 px de su recorte. */
+const CORNER_SLACK = 1;
+
+/**
+ * Lleva al jugador con el teclado (flechas) a la esquina dada del mundo y devuelve el snapshot de
+ * llegada, o null si pasa `timeoutMs` de reloj o la partida termina. Elige la opción 1 en cada
+ * oferta (política de elección fija). Suelta las teclas al terminar.
+ */
+export async function walkToCorner(
+  page: Page,
+  corner: Corner,
+  world: WorldView,
+  timeoutMs: number,
+): Promise<SnapshotView | null> {
+  const keys = [
+    corner.dx < 0 ? 'ArrowLeft' : 'ArrowRight',
+    corner.dy < 0 ? 'ArrowUp' : 'ArrowDown',
+  ];
+  const reached = (s: SnapshotView, r: number): boolean => {
+    const x = corner.dx < 0 ? s.player.x <= r + CORNER_SLACK : s.player.x >= world.width - r - 1;
+    const y = corner.dy < 0 ? s.player.y <= r + CORNER_SLACK : s.player.y >= world.height - r - 1;
+    return x && y;
+  };
+  for (const key of keys) await page.keyboard.down(key);
+  try {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      const snap = await snapshotOf(page);
+      if (snap?.status === 'over') return null;
+      if (snap && snap.offer.length > 0) await page.keyboard.press('1');
+      else if (snap && reached(snap, PLAYER_RADIUS)) return snap;
+      await page.waitForTimeout(50);
+    }
+    return null;
+  } finally {
+    for (const key of keys) await page.keyboard.up(key);
+  }
+}
+
+/**
+ * Recorre las cuatro esquinas del mundo con el teclado (tl, tr, br, bl) y devuelve los nombres de
+ * las esquinas alcanzadas, en orden. Para en la primera que no alcanza.
+ */
+export async function walkToCorners(
+  page: Page,
+  world: WorldView,
+  timeoutMs = 20_000,
+): Promise<string[]> {
+  const done: string[] = [];
+  for (const corner of CORNERS) {
+    if (!(await walkToCorner(page, corner, world, timeoutMs))) break;
+    done.push(corner.name);
+  }
+  return done;
+}
+
+/**
+ * Recorrido de las cuatro esquinas con el muestreador de cámara activo en todos los frames
+ * (`?e2e&seed=7` a `E2E_SPEED`): devuelve las esquinas alcanzadas y el resumen del muestreo.
+ */
+export async function cornerTour(
+  page: Page,
+  view: WorldView,
+  world: WorldView,
+): Promise<{ walked: string[]; sample: CameraSample }> {
+  await page.goto(gameUrl({ seed: 7, speed: E2E_SPEED }));
+  await expectSpeed(page, E2E_SPEED);
+  await expect.poll(async () => (await snapshotOf(page))?.tick ?? null).not.toBeNull();
+  await focusGame(page);
+  await startCameraSampler(page, view);
+  const walked = await walkToCorners(page, world);
+  return { walked, sample: await stopCameraSampler(page) };
+}
+
+/** Posición en pantalla de un punto del mundo con la cámara dada: (x − izquierda, y − arriba). */
+export const toScreen = (
+  point: { x: number; y: number },
+  camera: CameraViewData,
+): { x: number; y: number } => ({ x: point.x - camera.x, y: point.y - camera.y });

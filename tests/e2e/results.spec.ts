@@ -16,7 +16,8 @@ import {
 
 // Bucle jugar → perder → resultados → reiniciar (spec run-results, "Derrota y reinicio en el
 // navegador"). Núcleo, semilla 42 sin input con la política de elección fija: derrota en el tick
-// 4682 (≈ 78 s de juego; medición de la tarea 0.2 de 0006). Plazo de la spec: 120 s de juego.
+// 4.762 con el mundo 2x (≈ 79 s de juego; 4.682 en 0006). Plazo de este test: 120 s de juego,
+// dentro del de la spec run-outcome ("Derrota E2E con una semilla del conjunto", ≤ 180 s).
 // Se juega a ?speed=8 (design 0008): mismo resultado, unas 8 veces menos de tiempo real.
 const GAME_TICKS_120_S = 120 * 60;
 /**

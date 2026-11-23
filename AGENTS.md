@@ -26,6 +26,13 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   `content/appearance.json` y aspecto de reserva si una hoja no carga. Guardarraíl de procedencia
   (`.claude/hooks/guard-assets.mjs` sobre `git ls-files`, nota en `content/asset-provenance.json`): ningún asset
   gráfico sin entrada ni nada del Free Pack. Sonda E2E `window.__sprint.sprites` con recuentos por tipo.
+  Mundo de 1.920 × 1.080 con vista de 960 × 540 (change 0013, `content/arena.json`; zod exige mundo ≥ vista):
+  cámara que sigue al jugador sin suavizado y recortada al mundo (`CameraRig`), suelo del tamaño del mundo, HUD y
+  overlays fijos (`scrollFactor` 0). Sonda E2E con `camera` (rectángulo visible en mundo, null en el menú) y `world`.
+  Textos medievales de las mejoras (solo `name`/`description`; ids sin cambios). Balance con el mundo 2x: **25/50**
+  victorias, en el límite inferior de la banda, y 0 quietos; plazos de primera subida y pulso quieto a 4.800 ticks.
+  Los tests leen el mundo de `content/` (`aDefaultConfig`, bot `referenceBot(config)`); `SCENARIO_ARENA` es solo
+  geometría de escenario.
   Fuente de verdad del comportamiento: `openspec/specs/`.
 
 ## 2. Comandos
