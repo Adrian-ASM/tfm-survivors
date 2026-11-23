@@ -10,10 +10,11 @@ import {
 } from './probe';
 
 // Recorrido matar → recoger → subir → elegir → seguir (spec upgrades, "Recorrido en el navegador").
-// Núcleo, semilla 7 sin input: primera oferta en el tick 3332 (≈ 56 s de juego). El nivel que pinta
+// Núcleo, semilla 7 sin input: primera oferta en el tick 4.346 con el mundo 2x (0013; plazo 4.800,
+// ≈ 72 s de juego). El nivel que pinta
 // la barra es el del snapshot (XpBar, probada en Node) y el overlay se ve si y solo si hay oferta.
-const FIRST_OFFER_LIMIT = 60 * 60;
-/** Margen de reloj (no es la aserción): a ?speed=8 la oferta llega en unos 7 s. */
+const FIRST_OFFER_LIMIT = 80 * 60;
+/** Margen de reloj (no es la aserción): a ?speed=8 la oferta llega en unos 9 s. */
 const OFFER_TIMEOUT_MS = 40_000;
 
 test('Recorrido en el navegador: con ?seed=7 sin input aparece el overlay, se pulsa 1 y se sigue', async ({

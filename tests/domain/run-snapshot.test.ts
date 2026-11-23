@@ -101,7 +101,7 @@ describe('Snapshot ampliado', () => {
     expect(first?.offer).toEqual([
       {
         id: 'guardrail',
-        name: 'Guardrail',
+        name: 'Cota de malla',
         description: 'Más vida máxima (y la misma cantidad de vida actual).',
         level: 2,
         nextLevel: 3,

@@ -58,7 +58,7 @@
   vista", "Dimensiones no positivas" (los tres casos).
   Test: `tests/infrastructure/content.test.ts`, `tests/composition/content-boot.test.ts` (sin menú ni partida con
   el contenido inválido). E2E afectados: —
-- [ ] 2.2 Textos medievales (D10): test con la tabla de 9 pares id → `name`/`description` y con la lista de palabras
+- [x] 2.2 Textos medievales (D10): test con la tabla de 9 pares id → `name`/`description` y con la lista de palabras
   del tema anterior (rojo), una copia congelada en el test de ids, objetivo, `stat`, `perLevel` y `maxLevel` de
   `main` (debe seguir verde) y una partida con semilla 42 con los textos viejos y con los nuevos (snapshots iguales
   salvo `name`/`description` de la oferta). Después, `content/upgrades.json`, `DEFAULT_UPGRADES` de `builders.ts` y

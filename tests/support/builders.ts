@@ -26,8 +26,8 @@ export const TESTS: WeaponTypeConfig = {
 export const DEFAULT_UPGRADE_LIST: readonly UpgradeTypeConfig[] = [
   {
     id: 'strict-rules',
-    name: 'Skill: reglas estrictas',
-    description: 'El Linter hace más daño.',
+    name: 'Puntas de acero',
+    description: 'Las flechas del arco hacen más daño.',
     target: { kind: 'weapon', weapon: 'linter' },
     stat: 'damage',
     perLevel: 3,
@@ -35,8 +35,8 @@ export const DEFAULT_UPGRADE_LIST: readonly UpgradeTypeConfig[] = [
   },
   {
     id: 'fast-ci',
-    name: 'Skill: CI rápido',
-    description: 'El Linter dispara más a menudo.',
+    name: 'Tensado rápido',
+    description: 'El arco dispara más a menudo.',
     target: { kind: 'weapon', weapon: 'linter' },
     stat: 'cooldownTicks',
     perLevel: -4,
@@ -44,8 +44,8 @@ export const DEFAULT_UPGRADE_LIST: readonly UpgradeTypeConfig[] = [
   },
   {
     id: 'wide-analysis',
-    name: 'Skill: análisis amplio',
-    description: 'El Linter alcanza objetivos más lejanos.',
+    name: 'Ojo de halcón',
+    description: 'El arco alcanza objetivos más lejanos.',
     target: { kind: 'weapon', weapon: 'linter' },
     stat: 'range',
     perLevel: 60,
@@ -53,8 +53,8 @@ export const DEFAULT_UPGRADE_LIST: readonly UpgradeTypeConfig[] = [
   },
   {
     id: 'hard-asserts',
-    name: 'Skill: asserts estrictos',
-    description: 'Los Tests hacen más daño.',
+    name: 'Filo templado',
+    description: 'El tajo hace más daño.',
     target: { kind: 'weapon', weapon: 'tests' },
     stat: 'damage',
     perLevel: 2,
@@ -62,8 +62,8 @@ export const DEFAULT_UPGRADE_LIST: readonly UpgradeTypeConfig[] = [
   },
   {
     id: 'watch-mode',
-    name: 'Skill: modo watch',
-    description: 'Los Tests se lanzan más a menudo.',
+    name: 'Brazo incansable',
+    description: 'El tajo se lanza más a menudo.',
     target: { kind: 'weapon', weapon: 'tests' },
     stat: 'cooldownTicks',
     perLevel: -12,
@@ -71,8 +71,8 @@ export const DEFAULT_UPGRADE_LIST: readonly UpgradeTypeConfig[] = [
   },
   {
     id: 'coverage',
-    name: 'Skill: más cobertura',
-    description: 'El pulso de los Tests llega más lejos.',
+    name: 'Barrido amplio',
+    description: 'El tajo llega más lejos a tu alrededor.',
     target: { kind: 'weapon', weapon: 'tests' },
     stat: 'radius',
     perLevel: 15,
@@ -80,7 +80,7 @@ export const DEFAULT_UPGRADE_LIST: readonly UpgradeTypeConfig[] = [
   },
   {
     id: 'guardrail',
-    name: 'Guardrail',
+    name: 'Cota de malla',
     description: 'Más vida máxima (y la misma cantidad de vida actual).',
     target: { kind: 'player' },
     stat: 'maxHealth',
@@ -89,7 +89,7 @@ export const DEFAULT_UPGRADE_LIST: readonly UpgradeTypeConfig[] = [
   },
   {
     id: 'shortcuts',
-    name: 'Atajos de teclado',
+    name: 'Botas de viajero',
     description: 'Te mueves más rápido.',
     target: { kind: 'player' },
     stat: 'speed',
@@ -98,7 +98,7 @@ export const DEFAULT_UPGRADE_LIST: readonly UpgradeTypeConfig[] = [
   },
   {
     id: 'context-window',
-    name: 'Ventana de contexto',
+    name: 'Amuleto del saqueador',
     description: 'Atraes las gemas desde más lejos.',
     target: { kind: 'player' },
     stat: 'pickupRadius',
