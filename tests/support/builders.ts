@@ -1,5 +1,6 @@
 import arenaJson from '../../content/arena.json';
 import mapJson from '../../content/map.json';
+import playerJson from '../../content/player.json';
 import type { RunConfig, UpgradesConfig } from '../../src/domain/run/RunConfig';
 import type { WeaponsConfig } from '../../src/domain/weapon/WeaponLoadout';
 import type { WeaponTypeConfig } from '../../src/domain/weapon/WeaponType';
@@ -259,11 +260,17 @@ export const withUpgrades = (config: RunConfig, upgrades: UpgradesConfig): RunCo
   upgrades,
 });
 
-/** Contenido por defecto completo: armas y mejoras de content/ (lo que carga el juego). */
+/**
+ * Contenido por defecto completo: armas y mejoras de content/ (lo que carga el juego). La velocidad
+ * del jugador se lee de content/player.json (210 desde el gate de balance de 0015).
+ */
 export const aDefaultConfig = (): RunConfig =>
   withUpgrades(
     withWeapons(
-      { ...aRunConfig({ pickupRadius: DEFAULT_PICKUP_RADIUS }), arena: CONTENT_ARENA },
+      {
+        ...aRunConfig({ pickupRadius: DEFAULT_PICKUP_RADIUS, speed: playerJson.speed }),
+        arena: CONTENT_ARENA,
+      },
       DEFAULT_WEAPONS,
     ),
     DEFAULT_UPGRADES,

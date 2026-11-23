@@ -4,7 +4,7 @@ import { Player } from '../../src/domain/player/Player';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import { TICK_SECONDS } from '../../src/domain/run/Run';
 import { Vector2 } from '../../src/domain/shared/Vector2';
-import { aDefaultConfig } from '../support/builders';
+import { aDefaultConfig, withPlayer } from '../support/builders';
 import { startRun, ticks } from '../support/runs';
 import { openMap } from '../support/mapLayouts';
 
@@ -200,7 +200,8 @@ describe('Player · mundo por defecto (0013)', () => {
   });
 
   it('Scenario: El borde de la vista no es una pared ((940, 270) → (1.140, 270))', () => {
-    const run = startRun(aDefaultConfig(), { player: { x: 940, y: 270 } });
+    const config = withPlayer(aDefaultConfig(), { speed: 200 }); // velocidad de la spec
+    const run = startRun(config, { player: { x: 940, y: 270 } });
 
     const last = ticks(run, 60, PlayerInput.of(1, 0)).at(-1)?.player;
 

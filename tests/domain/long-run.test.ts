@@ -38,7 +38,7 @@ interface Violations {
   maxAlive: number;
   /** Ticks en que el círculo del jugador solapa una celda no caminable de su mapa. */
   overlaps: number;
-  /** Gemas en reposo (no atraídas: en su punto de creación) sobre una celda no caminable. */
+  /** Gemas en reposo (misma posición en dos ticks seguidos) sobre una celda no caminable. */
   restingOnBlocked: number;
 }
 
@@ -84,7 +84,9 @@ function audit(
     restingOnBlocked: 0,
   };
   let nextId = 0;
-  const createdAt = new Map<number, string>();
+  // Una gema no atraída no se mueve: en reposo = misma posición en dos snapshots seguidos (la
+  // primera lectura de una gema atraída en su tick de creación ya está movida).
+  const lastSeen = new Map<number, string>();
   for (const input of inputs) {
     chooseFirstWhileOpen(run);
     run.tick(input);
@@ -94,9 +96,10 @@ function audit(
     if (map.value.overlapsBlocked(player.x, player.y, player.radius)) v.overlaps += 1;
     for (const g of gems) {
       const here = `${String(g.x)},${String(g.y)}`;
-      if (!createdAt.has(g.id)) createdAt.set(g.id, here);
+      const before = lastSeen.get(g.id);
+      lastSeen.set(g.id, here);
       const { col, row } = map.value.cellAt(g.x, g.y);
-      if (createdAt.get(g.id) === here && !map.value.isWalkable(col, row)) v.restingOnBlocked += 1;
+      if (before === here && !map.value.isWalkable(col, row)) v.restingOnBlocked += 1;
     }
     for (const e of enemies) {
       if (!inside(config.arena, e, e.radius)) v.outside += 1;

@@ -94,7 +94,7 @@ provisional en la spec).
   Escenarios: RO "Tasa de victoria del bot de referencia", "Toda partida del bot termina", "Jugador quieto pierde con
   todas las semillas", "Jugador quieto pierde también con el mapa vacío", "Bot reproducible".
   Test: `tests/domain/balance.test.ts`. E2E afectados: —
-- [ ] 3.3 Fijar el valor decidido por el usuario en `content/player.json` (rojo: `content.test.ts` con el valor
+- [x] 3.3 Fijar el valor decidido por el usuario en `content/player.json` (rojo: `content.test.ts` con el valor
   nuevo) y ajustar los números de escenario que dependan de él y los plazos revalidados en 2.4.
   Escenarios: RO banda 25..35 (objetivo ~28) y "Muerte quieta en el límite de 180 s"; SL plazos de 4.800 ticks.
   Test: `content.test.ts`, `balance.test.ts`, `determinism*.test.ts`. E2E afectados: —

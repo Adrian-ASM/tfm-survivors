@@ -61,12 +61,18 @@ describe('Contenido de vida e invulnerabilidad validado', () => {
     expect(r.ok && r.value.player.pickupRadius).toBe(128);
   });
 
-  it('Contenido válido: velocidad 200, radio 16, vida máxima 100 y radio de recogida 64', () => {
+  // 0015, punto de control de balance: el usuario fija 210 (29/50 victorias con el mapa).
+  it('Scenario: Velocidad del jugador por defecto (210 px/s, decidida en el gate de 0015)', () => {
+    const r = loadRunConfig();
+    expect(r.ok && r.value.player.speed).toBe(210);
+  });
+
+  it('Contenido válido: velocidad 210, radio 16, vida máxima 100 y radio de recogida 64', () => {
     const raw = rawContent();
     raw.player.pickupRadius = 64;
     const r = parseRunConfig(raw);
     expect(r.ok && r.value.player).toEqual({
-      speed: 200,
+      speed: 210,
       radius: 16,
       maxHealth: 100,
       invulnerabilityTicks: 30,

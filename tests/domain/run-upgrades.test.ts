@@ -12,6 +12,7 @@ import {
   aDefaultConfig,
   aSegment,
   aWavesConfig,
+  withPlayer,
 } from '../support/builders';
 import { aProbeType, advance, enemyById, startRun, ticks } from '../support/runs';
 import { weaponsOf } from '../support/weapons';
@@ -182,7 +183,8 @@ describe('Efectos de las mejoras del jugador', () => {
   const right = PlayerInput.of(1, 0);
   const only = (id: string) => DEFAULT_UPGRADE_LIST.filter((u) => u.id === id);
   const xpRun = (setup: RunSetup, list: readonly UpgradeTypeConfig[], extra = STILL) => {
-    const base = aDefaultConfig();
+    // Velocidad base de los escenarios de la spec (200 px/s), no la del contenido (210 desde 0015).
+    const base = withPlayer(aDefaultConfig(), { speed: 200 });
     const types = [...STILL, ...extra.filter((t) => !STILL.includes(t))];
     const config: RunConfig = {
       ...base,

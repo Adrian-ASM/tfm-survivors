@@ -18,6 +18,8 @@ const WORLD = (() => {
 })();
 const RULES = mapRules();
 const TRUNK_10_4: Layout = { '10,4': 'trunk' };
+/** Velocidad de los escenarios de la spec (200 px/s), no la del contenido (210 desde 0015). */
+const SCENARIO_SPEED = 200;
 
 function expectWithinSpec(actual: number, expected: number): void {
   expect(Math.abs(actual - expected), `${String(actual)} vs ${String(expected)}`).toBeLessThan(
@@ -31,7 +33,7 @@ function walk(
   start: [number, number],
   input: PlayerInput,
   n: number,
-  speed = CONTENT.player.speed,
+  speed = SCENARIO_SPEED,
 ): Vector2[] {
   let p = Player.spawn(Vector2.of(...start), { ...CONTENT.player, speed });
   const path: Vector2[] = [];
