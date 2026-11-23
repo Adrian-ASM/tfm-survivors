@@ -396,6 +396,13 @@ Los tres están ya aplicados en `specs/sprite-rendering/spec.md` (r3): "Hojas de
 bloquea…), tope ≤ 300 también con test sin navegador en `verify`, y orilla en tierra con sus recuentos en "Recuentos
 del mapa pintado".
 
+### 12.7 Desviaciones del apply (registradas tras verify, W1)
+Coherentes con las specs; detalle en `docs/ai-log/2026-11-23-0016-apply.md`:
+- La regla baldosa × escala = `cellSize` la comprueba `checkTileScales`, llamada desde `bootContent`;
+  `loadAppearance` no recibe `{ enemyIds, cellSize }`.
+- El aspecto de reserva de cada elemento se pinta en su propio hueco de la capa baja, no todo al final (§5.2).
+- Los tests de comparación con y sin mapa usan el helper `startEmptyWithExit` (mapa vacío con salida (990, 630)).
+
 ## 13. ADRs
 - Addendum a `docs/adr/0013-mapa-de-rejilla-con-flujo-de-azar-propio.md` (castillo en dominio, salida por mapa y
   declarable, `DECOR_STREAM` con la semilla de la partida fuera del contrato de la simulación, render por sprites en
