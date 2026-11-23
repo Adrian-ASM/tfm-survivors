@@ -20,6 +20,7 @@ import { BootScene } from '../infrastructure/phaser/BootScene';
 import type { CameraView, WorldSize } from '../infrastructure/phaser/CameraRig';
 import { ManualStepper } from '../infrastructure/e2e/ManualStepper';
 import { requestStep } from '../infrastructure/e2e/stepRequest';
+import { viewportProbe, type ViewportView } from '../infrastructure/e2e/viewportProbe';
 import { applyUiScale } from '../infrastructure/dom/applyUiScale';
 import { screenFrame } from '../infrastructure/phaser/ui/screenFrame';
 import { assetUrl } from './assetUrl';
@@ -62,6 +63,8 @@ interface E2EProbe {
   readonly map: (MapSnapshot & { readonly emptyForced: boolean }) | null;
   /** Tamaño del mundo, constante desde la carga. */
   readonly world: WorldSize;
+  /** Ventana y escala de UI del último frame (0017); también en el menú. */
+  readonly viewport: ViewportView | null;
 }
 
 /** Nombre visible del juego (change 0012): una sola fuente para el menú y el documento. */
@@ -138,6 +141,7 @@ function bootstrap(): void {
   // Se conecta a la escena al crearla; leerlo antes da null (sin partida).
   let cameraView = (): CameraView | null => null;
   let mapView = (): MapSnapshot | null => null;
+  let viewportView = (): ViewportView | null => null;
   const probe: E2EProbe = {
     seed,
     speed: advance.speed,
@@ -164,6 +168,9 @@ function bootstrap(): void {
       return map ? { ...map, emptyForced: mapMode === 'empty' } : null;
     },
     world,
+    get viewport() {
+      return viewportView();
+    },
   };
   const started = (s: number): void => {
     probe.seed = s;
@@ -251,6 +258,7 @@ function bootstrap(): void {
     applyUiScale(root.style, screenFrame(size.width, size.height));
   };
   onCanvas(phaserGame.scale.gameSize);
+  viewportView = () => viewportProbe(phaserGame.scale.parentSize, phaserGame.scale.gameSize);
   phaserGame.scale.on(Phaser.Scale.Events.RESIZE, onCanvas);
   // `step(n)` resuelve con el frame ya pintado: POST_RENDER llega tras pintar todas las escenas,
   // una vez por frame, haya o no partida (Phaser 4.2.1, Game.step; design 0014 §3.6).

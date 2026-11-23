@@ -167,7 +167,7 @@
   - `main.ts`: `scale: scaleConfig(booted.maxView)`; escucha única de `phaserGame.scale` RESIZE → `applyUiScale`.
   - Escenarios: "Ventana de las pruebas", "Ventana igual al tope", "Ventana mayor que el tope", "… en un solo eje",
     "Ventana pequeña", "Densidad de píxeles 2" (zoom 1, sin reescalado: manual en 6.2).
-- [ ] 4.2 Sonda `viewport` (design D10). Ficheros: `src/infrastructure/e2e/viewportProbe.ts` (puro), `main.ts`.
+- [x] 4.2 Sonda `viewport` (design D10). Ficheros: `src/infrastructure/e2e/viewportProbe.ts` (puro), `main.ts`.
   - Rojo: `tests/infrastructure/viewport-probe.test.ts`: `viewportProbe(parentSize, gameSize)` da ancho y alto de
     ventana redondeados hacia abajo y el `uiScale` del lienzo (3.840 × 2.160 → ventana 3.840 × 2.160, ×2).
   - `main.ts`: `probe.viewport` (getter), también en el menú. `screen` (`'menu' | 'playing'`) no cambia.
