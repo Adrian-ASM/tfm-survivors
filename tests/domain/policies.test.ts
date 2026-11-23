@@ -258,13 +258,14 @@ describe('Bot de referencia v2 con el mapa', () => {
     expect(isBlockedMove(slow.snapshot(), botWorld(config, slow.map), 1, 0)).toBe(false);
   });
 
-  it('Scenario: Huida sin amenazas con el mapa generado (semillas 1..50, tick 0: (0, 0))', () => {
+  it('Scenario: Salida ante la puerta con el mapa generado (semillas 1..50, tick 0: (0, 1))', () => {
     const config = aDefaultConfig();
-    const moving = BALANCE_SEEDS.filter((seed) => {
+    const others = BALANCE_SEEDS.filter((seed) => {
       const run = startSeededRun(config, seed);
-      return referenceBot(config, run.map).input(run.snapshot()) !== PlayerInput.NONE;
+      const input = directionOf(referenceBot(config, run.map).input(run.snapshot()));
+      return input.x !== 0 || input.y !== 1;
     });
-    expect(moving).toEqual([]);
+    expect(others).toEqual([]);
   });
 
   /** Partida con el tronco (10, 4) y el estado dado. */

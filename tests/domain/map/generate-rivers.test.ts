@@ -3,7 +3,15 @@ import type { MapConfig } from '../../../src/domain/map/MapRules';
 import type { RunConfig } from '../../../src/domain/run/RunConfig';
 import { BALANCE_SEEDS } from '../../support/balanceSeeds';
 import { aDefaultConfig } from '../../support/builders';
-import { blockedInStartZone, countOf, mapForSeed, rivers, typesOf } from '../../support/mapStats';
+import {
+  FOOTPRINT_CELLS,
+  blockedInStartZone,
+  castleCells,
+  countOf,
+  mapForSeed,
+  rivers,
+  typesOf,
+} from '../../support/mapStats';
 
 /** Contenido por defecto con el mapa cambiado (p. ej. solo ríos: `trunkDensity` 0). */
 function withMap(patch: Partial<MapConfig>): RunConfig {
@@ -50,9 +58,10 @@ describe('generateMap · ríos (spec procedural-map, "Composición del mapa")', 
     }
   });
 
-  it('Scenario: Sin río ni troncos (semilla 7: 576 celdas grass)', () => {
+  it('Scenario: Sin río ni troncos (semilla 7: 20 castle en 14–18 × 6–9 y 556 grass)', () => {
     const map = mapForSeed(withMap({ rivers: 0, trunkDensity: 0 }), 7);
-    expect(countOf(map, 'grass')).toBe(576);
+    expect(countOf(map, 'grass')).toBe(556);
+    expect(castleCells(map)).toEqual(FOOTPRINT_CELLS);
   });
 
   it('Scenario: Misma semilla, mismo mapa (nivel generador, semilla 42)', () => {

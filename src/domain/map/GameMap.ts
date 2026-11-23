@@ -68,7 +68,8 @@ export class GameMap {
 
   /** Salida en el punto dado (sin él, el centro del mundo) con el radio de la zona de inicio. */
   private static startAt(rules: MapRules, at?: Point): StartZone {
-    return at ? Object.freeze({ x: at.x, y: at.y, radius: rules.start.radius }) : rules.start;
+    const center = rules.centerStart;
+    return at ? Object.freeze({ x: at.x, y: at.y, radius: center.radius }) : center;
   }
 
   /** Mapa vacío: todas las celdas `grass`; salida en `start` o, sin ella, en el centro del mundo. */
@@ -97,10 +98,15 @@ export class GameMap {
     return ok(new GameMap(rules, cells, GameMap.startAt(rules, start), null));
   }
 
-  /** Adopta una rejilla de códigos ya construida por el generador del dominio (sin copiarla). */
+  /**
+   * Adopta una rejilla de códigos ya construida por el generador del dominio (sin copiarla), con la
+   * huella del castillo de las reglas y la salida ante su puerta.
+   */
   static adopt(cells: Uint8Array, rules: MapRules): GameMap {
     if (cells.length !== rules.cellCount) throw new Error('Invariante rota: rejilla del mapa');
-    return new GameMap(rules, cells, rules.start, null);
+    const { firstCol, lastCol, firstRow, lastRow } = rules.castle;
+    const footprint = Object.freeze({ firstCol, lastCol, firstRow, lastRow });
+    return new GameMap(rules, cells, rules.castleStart, footprint);
   }
 
   private inside(col: number, row: number): boolean {

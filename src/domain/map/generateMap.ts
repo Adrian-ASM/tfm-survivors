@@ -1,5 +1,5 @@
 import type { RandomGenerator } from '../shared/RandomGenerator';
-import { BRIDGE, WATER } from './CellType';
+import { BRIDGE, CASTLE, WATER } from './CellType';
 import { GameMap } from './GameMap';
 import type { MapRules } from './MapRules';
 import { isFullyConnected } from './connectivity';
@@ -14,7 +14,10 @@ interface Span {
   readonly max: number;
 }
 
-/** Rejilla en construcción: tipos, celdas vetadas a los troncos y extensión de la zona de inicio. */
+/**
+ * Rejilla en construcción: tipos, celdas vetadas a los troncos y extensión de la zona de inicio
+ * unida a la huella del castillo (las bandas del río la esquivan con 1 celda de margen, 0016 §3.4).
+ */
 class Draft {
   readonly cols: number;
   readonly rows: number;
@@ -28,16 +31,26 @@ class Draft {
     this.rows = rules.rows;
     this.cells = new Uint8Array(rules.cellCount);
     this.noTrunk = new Uint8Array(rules.cellCount);
-    let [c0, c1, r0, r1] = [rules.cols, -1, rules.rows, -1];
+    const site = rules.castle;
+    let [c0, c1, r0, r1] = [site.firstCol, site.lastCol, site.firstRow, site.lastRow];
     for (let r = 0; r < this.rows; r++) {
       for (let c = 0; c < this.cols; c++) {
-        if (!rules.inStartZone(c, r)) continue;
+        const inCastle =
+          c >= site.firstCol && c <= site.lastCol && r >= site.firstRow && r <= site.lastRow;
+        if (inCastle) this.cells[r * this.cols + c] = CASTLE;
+        if (!inCastle && !rules.inStartZone(c, r)) continue;
         this.noTrunk[r * this.cols + c] = 1;
         [c0, c1, r0, r1] = [Math.min(c0, c), Math.max(c1, c), Math.min(r0, r), Math.max(r1, r)];
       }
     }
     this.zoneCols = { min: c0, max: c1 };
     this.zoneRows = { min: r0, max: r1 };
+  }
+
+  /** Índice de la celda de la puerta del castillo (origen de la conectividad). */
+  get doorIndex(): number {
+    const { door } = this.rules.castle;
+    return door.row * this.cols + door.col;
   }
 
   /** Veta los troncos en la vecindad 3 × 3 de la celda (c, r). */
@@ -150,7 +163,7 @@ function carveRivers(draft: Draft, random: RandomGenerator): void {
 export function generateMap(rules: MapRules, random: RandomGenerator): GameMap {
   const draft = new Draft(rules);
   carveRivers(draft, random);
-  const trunks = placeTrunks(draft.cells, draft.noTrunk, rules, random);
+  const trunks = placeTrunks(draft.cells, draft.noTrunk, rules, random, draft.doorIndex);
   const map = GameMap.adopt(draft.cells, rules);
   checkPostcondition(map, rules, trunks);
   return map;

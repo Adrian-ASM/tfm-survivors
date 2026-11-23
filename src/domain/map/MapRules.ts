@@ -110,9 +110,12 @@ export class MapRules {
   readonly rows: number;
   readonly width: number;
   readonly height: number;
-  readonly start: StartZone;
+  /** Salida en el centro del mundo: la del mapa vacío y la de los explícitos sin salida. */
+  readonly centerStart: StartZone;
   /** Sitio del castillo del mapa generado (huella, puerta y salida). */
   readonly castle: CastleSite;
+  /** Salida del mapa generado (ante la puerta) y centro de su zona de inicio. */
+  readonly castleStart: StartZone;
 
   private constructor(
     readonly config: MapConfig,
@@ -121,17 +124,15 @@ export class MapRules {
     readonly playerRadius: number,
     castle: CastleSite,
   ) {
-    this.castle = castle;
     this.cellSize = config.cellSize;
     this.width = arena.width;
     this.height = arena.height;
     this.cols = Math.ceil(arena.width / config.cellSize);
     this.rows = Math.ceil(arena.height / config.cellSize);
-    this.start = Object.freeze({
-      x: arena.width / 2,
-      y: arena.height / 2,
-      radius: config.startRadius,
-    });
+    const radius = config.startRadius;
+    this.centerStart = Object.freeze({ x: arena.width / 2, y: arena.height / 2, radius });
+    this.castle = castle;
+    this.castleStart = Object.freeze({ ...castle.exit, radius });
     Object.freeze(this);
   }
 
@@ -153,11 +154,12 @@ export class MapRules {
 
   /**
    * ¿Pertenece la celda (c, r) a la zona de inicio? Sí si algún punto de su rectángulo (recortado)
-   * está a distancia estrictamente menor que `startRadius` del centro del mundo.
+   * está a distancia estrictamente menor que `startRadius` de la salida del mapa generado (la
+   * puerta del castillo, 0016). Solo la usa el generador.
    */
   inStartZone(col: number, row: number): boolean {
     const s = this.cellSize;
-    const { x, y, radius } = this.start;
+    const { x, y, radius } = this.castleStart;
     const nx = Math.max(col * s, Math.min(x, Math.min((col + 1) * s, this.width)));
     const ny = Math.max(row * s, Math.min(y, Math.min((row + 1) * s, this.height)));
     const dx = x - nx;

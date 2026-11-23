@@ -31,7 +31,7 @@ describe('MapRules · rejilla del contenido (spec procedural-map)', () => {
 
   it('zona de inicio en el centro del mundo con el radio del contenido', () => {
     const r = create({});
-    expect(r.ok && r.value.start).toEqual({ x: 960, y: 540, radius: 180 });
+    expect(r.ok && r.value.centerStart).toEqual({ x: 960, y: 540, radius: 180 });
   });
 });
 

@@ -7,6 +7,7 @@ import type { EnemyTypeConfig } from '../../src/domain/enemy/EnemyType';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import { seededRun, type MapMode } from '../../src/composition/seedSource';
 import { aRunConfig, aSegment, aWavesConfig } from './builders';
+import { emptyWithExit } from './mapLayouts';
 import type { ReferenceBot } from './policies';
 
 /** Tipo de enemigo de prueba: radio 10, velocidad 60 (1 unidad por tick), daño 10, vida 5, XP 1. */
@@ -66,6 +67,17 @@ export function startSeededRun(
 ): Run {
   const { random, terrain } = seededRun(seed, mode);
   const r = Run.start(config, random, setup, terrain);
+  if (!r.ok) throw new Error(r.error.message);
+  return r.value;
+}
+
+/**
+ * Partida con el azar de la semilla y el **mapa vacío con la salida del castillo** declarada
+ * ((990, 630) por defecto): la referencia "sin mapa" de las comparaciones de 0016 (design §12.1 A3).
+ */
+export function startEmptyWithExit(config: RunConfig, seed: number, setup?: RunSetup): Run {
+  const { random } = seededRun(seed, 'empty');
+  const r = Run.start(config, random, setup, emptyWithExit(config));
   if (!r.ok) throw new Error(r.error.message);
   return r.value;
 }

@@ -3,7 +3,14 @@ import type { CellType } from '../../src/domain/map/CellType';
 import { Run } from '../../src/domain/run/Run';
 import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
-import { aContactConfig, play, startRun, startSeededRun, ticks } from '../support/runs';
+import {
+  aContactConfig,
+  play,
+  startEmptyWithExit,
+  startRun,
+  startSeededRun,
+  ticks,
+} from '../support/runs';
 import { aDefaultConfig } from '../support/builders';
 import { castleBlock, cellsWith, mapRules } from '../support/mapLayouts';
 
@@ -40,7 +47,7 @@ describe('Mapa generado frente a mapa vacío (semilla 7, quieto)', () => {
   let empty: RunSnapshot[];
   beforeAll(() => {
     generated = snaps(startSeededRun(CONFIG, 7), TICKS);
-    empty = snaps(startSeededRun(CONFIG, 7, 'empty'), TICKS);
+    empty = snaps(startEmptyWithExit(CONFIG, 7), TICKS);
   });
 
   it('el mapa generado no es el vacío (la comparación tiene sentido)', () => {
@@ -73,7 +80,7 @@ describe('Primera oferta con y sin mapa (semilla 7, quieto)', () => {
 
   it('Scenario: Primera oferta igual con y sin mapa (mismo tick, mismas opciones y orden)', () => {
     const generated = firstOffer(startSeededRun(CONFIG, 7));
-    const empty = firstOffer(startSeededRun(CONFIG, 7, 'empty'));
+    const empty = firstOffer(startEmptyWithExit(CONFIG, 7));
     expect(generated.options).toHaveLength(3);
     expect(generated.tick).toBe(empty.tick);
     expect(generated.options).toEqual(empty.options);

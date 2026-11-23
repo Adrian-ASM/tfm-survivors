@@ -53,7 +53,7 @@ describe('Mapa de la partida (spec procedural-map)', () => {
   it('el mapa generado de la partida es el de generateMap con la semilla derivada', () => {
     const map = start(generated(42)).map;
     expect(map.cells).toEqual(typesOf(mapForSeed(CONFIG, 42)));
-    const total = map.counts.grass + map.counts.trunk + map.counts.water + map.counts.bridge;
+    const total = Object.values(map.counts).reduce((a, b) => a + b, 0);
     expect(total).toBe(576);
     expect(map.counts.trunk).toBe(map.cells.filter((t) => t === 'trunk').length);
   });

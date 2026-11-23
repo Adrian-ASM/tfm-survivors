@@ -31,7 +31,7 @@
   `emptyWithExit(config)` en `tests/support`. — escenarios: "Partida con mapa vacío", "Mapa explícito con salida
   declarada", "Salida declarada ilegal", "Mapa explícito con celdas de castillo", "Partida nueva con el mapa vacío",
   "Mapa explícito con y sin salida declarada"
-- [ ] 1.5 (~45 min, cambio atómico del mapa generado) `generateMap`: `Draft` escribe la huella antes de los ríos;
+- [x] 1.5 (~45 min, cambio atómico del mapa generado) `generateMap`: `Draft` escribe la huella antes de los ríos;
   `inStartZone` centrada en `castleStart`; bandas del río y `noTrunk` = zona ∪ huella; `placeTrunks` parte del índice
   de la puerta; `adopt` → `castleStart` + huella. `content/player.json` `speed` 215. Firma dorada de 42 y 123
   regenerada y **revisada a mano** (20 `C` en 14–18 × 6–9, ningún `~`/`=` en filas 6..13 × columnas 13..19,
