@@ -266,7 +266,9 @@ El sistema SHALL colocar cada enemigo nuevo así:
 
 Si la posición no se acepta, se repite el proceso hasta un total de `maxAttempts` intentos por enemigo. Si ningún
 intento es válido, ese enemigo no aparece en este tick, el presupuesto no se gasta y el tipo pendiente se
-mantiene. El sistema MUST NOT colocar nunca un enemigo a menos de `minDistance` del jugador ni fuera del mundo.
+mantiene. El sistema MUST NOT colocar nunca un enemigo a menos de `minDistance` del jugador ni fuera del mundo. La
+posición de aparición no tiene en cuenta el mapa: un enemigo puede aparecer sobre cualquier tipo de celda, también
+`castle`.
 
 Un punto del anillo que no necesita recorte queda siempre fuera del rectángulo de la vista centrado en el jugador.
 Cuando el recorte actúa (jugador a menos del radio del anillo de algún borde del mundo), el enemigo puede aparecer
@@ -284,6 +286,13 @@ dentro del rectángulo visible de la cámara; esto se acepta y solo se garantiza
 - **THEN** el centro de cada uno queda en [radio, 1.920 − radio] × [radio, 1.080 − radio]
 - **AND** ninguno tiene el centro dentro del rectángulo visible de la cámara, (480, 270)–(1.440, 810)
 - **AND** los que no tocan el borde superior ni el inferior del mundo están a 582,727 ± 0,001 unidades del jugador
+
+#### Scenario: Jugador ante la puerta del castillo
+- **GIVEN** el contenido por defecto, la semilla 42 y el jugador quieto en su salida (990, 630), con rectángulo
+  visible de la cámara (510, 360)–(1.470, 900)
+- **WHEN** aparecen 200 enemigos
+- **THEN** el centro de cada uno queda en [radio, 1.920 − radio] × [radio, 1.080 − radio], a ≥ 200 unidades del
+  jugador y fuera de (510, 360)–(1.470, 900)
 
 #### Scenario: Arena igual a la vista
 - **GIVEN** una arena explícita de 960 × 540 (no la del contenido por defecto), el jugador en (480, 270) y el
@@ -327,8 +336,8 @@ dentro del rectángulo visible de la cámara; esto se acepta y solo se garantiza
   unidades del jugador
 
 #### Scenario: Fuera de pantalla en una partida real
-- **GIVEN** la build de producción con `?e2e&seed=42` y sin input de movimiento (el jugador queda en (960, 540) y el
-  rectángulo visible de la sonda en (480, 270)–(1.440, 810))
+- **GIVEN** la build de producción con `?e2e&seed=42` (mapa real) y sin input de movimiento (el jugador queda en su
+  salida (990, 630) y el rectángulo visible de la sonda en (510, 360)–(1.470, 900))
 - **WHEN** se pintan 600 frames y se leen las posiciones de aparición de los enemigos nuevos
 - **THEN** ninguna posición de aparición queda dentro del rectángulo visible
 
@@ -402,3 +411,4 @@ de contenido más mejoras, ver `upgrades`). El contacto con el jugador no les qu
 <!-- historial: 0005-xp-and-level-up (2026-11-19) -->
 <!-- historial: 0012-sprite-rendering (2026-11-22) -->
 <!-- historial: 0013-world-camera (2026-11-23) -->
+<!-- historial: 0016-map-art (2026-11-23) -->
