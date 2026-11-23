@@ -12,6 +12,7 @@ import { aDefaultConfig } from '../support/builders';
 import { cellsWith, mapRules } from '../support/mapLayouts';
 import { mapForSeed, typesOf } from '../support/mapStats';
 import { advance, play, ticks } from '../support/runs';
+import { CountingRandom } from '../support/random';
 
 const CONFIG = aDefaultConfig();
 const RULES = mapRules();
@@ -29,19 +30,6 @@ function start(
   const r = Run.start(CONFIG, random, setup, terrain);
   if (!r.ok) throw new Error(r.error.message);
   return r.value;
-}
-
-/** Generador que cuenta cuántos valores entrega (su estado depende solo de ese número). */
-class CountingRandom implements RandomGenerator {
-  calls = 0;
-  private readonly inner: RandomGenerator;
-  constructor(seed: number) {
-    this.inner = new Mulberry32RandomGenerator(seed);
-  }
-  next(): number {
-    this.calls++;
-    return this.inner.next();
-  }
 }
 
 describe('Mapa de la partida (spec procedural-map)', () => {
@@ -130,8 +118,8 @@ describe('Mapa de la partida (spec procedural-map)', () => {
 
 describe('Determinismo con el mapa (spec simulation-loop)', () => {
   it('Scenario: La colisión no consume azar (tangente a un tronco frente a hierba libre)', () => {
-    const blockedRandom = new CountingRandom(7);
-    const freeRandom = new CountingRandom(7);
+    const blockedRandom = new CountingRandom(new Mulberry32RandomGenerator(7));
+    const freeRandom = new CountingRandom(new Mulberry32RandomGenerator(7));
     const blocked = start(
       { kind: 'cells', cells: cellsWith(RULES, { '10,4': 'trunk' }) },
       blockedRandom,
@@ -150,7 +138,7 @@ describe('Determinismo con el mapa (spec simulation-loop)', () => {
   });
 
   it('generar el mapa no consume el azar de la partida', () => {
-    const random = new CountingRandom(7);
+    const random = new CountingRandom(new Mulberry32RandomGenerator(7));
     start(generated(7), random);
     expect(random.calls).toBe(0);
   });

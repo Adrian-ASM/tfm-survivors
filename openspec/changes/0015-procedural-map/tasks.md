@@ -58,7 +58,7 @@ provisional en la spec).
   Escenarios: PM "Partida con mapa vacío", "Mapa de dimensiones incorrectas" (nivel partida), "Mapa constante",
   "Lectura no mutable"; SL "La colisión no consume azar".
   Test: `tests/domain/run-map.test.ts`. E2E afectados: —
-- [ ] 2.3 Recolocación de gemas (design §3.3 `nearestWalkable`, §4.3): `GemField(rules, map)`, distancia euclídea a
+- [x] 2.3 Recolocación de gemas (design §3.3 `nearestWalkable`, §4.3): `GemField(rules, map)`, distancia euclídea a
   centros recortados, empate fila → columna, sin recolocar con el tope lleno; vale también para gemas de `RunSetup`.
   Escenarios: GEM "Baja sobre un tronco", "Empate entre celdas", "Baja en un río ancho", "Baja en hierba junto a un
   tronco", "Recolocar no consume azar", "Gema recolocada recogida en el mismo tick", "Varias bajas en el mismo tick,

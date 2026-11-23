@@ -146,6 +146,32 @@ export class GameMap {
     return this.sweep(y0, y1, x, r, false);
   }
 
+  /**
+   * Punto donde crear algo que aparece en (x, y) (spec xp-gems, "Recolocación de gemas"): el mismo
+   * si su celda es caminable; si no, el centro (del rectángulo recortado) de la celda caminable de
+   * menor distancia euclídea a (x, y), con empate a la fila menor y luego a la columna menor. Sin
+   * azar ni asignaciones: escribe en `out`. O(celdas), solo en bajas sobre celdas bloqueadas.
+   */
+  nearestWalkable(x: number, y: number, out: { x: number; y: number }): void {
+    out.x = x;
+    out.y = y;
+    if (this.isWalkable(this.colAt(x), this.rowAt(y))) return;
+    let best = Infinity;
+    for (let row = 0; row < this.rows; row++) {
+      const cy = (row * this.cellSize + this.edge(row + 1, this.height)) / 2;
+      for (let col = 0; col < this.cols; col++) {
+        if (!this.isWalkable(col, row)) continue;
+        const cx = (col * this.cellSize + this.edge(col + 1, this.width)) / 2;
+        const d = (cx - x) * (cx - x) + (cy - y) * (cy - y);
+        if (d < best) {
+          best = d;
+          out.x = cx;
+          out.y = cy;
+        }
+      }
+    }
+  }
+
   /** Columna (eje x) o fila (eje y) de una coordenada de mundo. */
   private indexAt(v: number, alongX: boolean): number {
     return alongX ? this.colAt(v) : this.rowAt(v);

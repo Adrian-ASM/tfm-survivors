@@ -92,12 +92,16 @@ export function initialEnemies(
   return ok(enemies);
 }
 
-export function initialGems(rules: RunRules, setup: RunSetup): Result<GemField, DomainError> {
+export function initialGems(
+  rules: RunRules,
+  setup: RunSetup,
+  map: GameMap,
+): Result<GemField, DomainError> {
   const entries = setup.gems ?? [];
   if (entries.length > rules.gems.maxGems) {
     return err(invalidConfig('setup.gems', SETUP_TOO_MANY_GEMS));
   }
-  const field = new GemField(rules.gems);
+  const field = new GemField(rules.gems, map);
   for (const [i, g] of entries.entries()) {
     const path = `setup.gems.${String(i)}`;
     if (!isFinitePoint(g)) return err(invalidConfig(path, SETUP_POSITION_MUST_BE_FINITE));
@@ -165,7 +169,7 @@ export function initialState(
   if (!player.ok) return player;
   const enemies = initialEnemies(setup, rules.catalog, rules.arena);
   if (!enemies.ok) return enemies;
-  const gems = initialGems(rules, setup);
+  const gems = initialGems(rules, setup, map);
   if (!gems.ok) return gems;
   const experience = initialExperience(rules, setup);
   if (!experience.ok) return experience;
