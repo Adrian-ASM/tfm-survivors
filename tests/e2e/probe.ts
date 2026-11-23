@@ -692,15 +692,7 @@ export async function walkToCorner(
   world: WorldView,
   timeoutMs: number,
 ): Promise<SnapshotView | null> {
-  const keys = [
-    corner.dx < 0 ? 'ArrowLeft' : 'ArrowRight',
-    corner.dy < 0 ? 'ArrowUp' : 'ArrowDown',
-  ];
-  const reached = (s: SnapshotView, r: number): boolean => {
-    const x = corner.dx < 0 ? s.player.x <= r + CORNER_SLACK : s.player.x >= world.width - r - 1;
-    const y = corner.dy < 0 ? s.player.y <= r + CORNER_SLACK : s.player.y >= world.height - r - 1;
-    return x && y;
-  };
+  const keys = cornerKeys(corner);
   for (const key of keys) await page.keyboard.down(key);
   try {
     const deadline = Date.now() + timeoutMs;
@@ -708,10 +700,53 @@ export async function walkToCorner(
       const snap = await snapshotOf(page);
       if (snap?.status === 'over') return null;
       if (snap && snap.offer.length > 0) await page.keyboard.press('1');
-      else if (snap && reached(snap, PLAYER_RADIUS)) return snap;
+      else if (snap && cornerReached(snap, corner, world)) return snap;
       await page.waitForTimeout(50);
     }
     return null;
+  } finally {
+    for (const key of keys) await page.keyboard.up(key);
+  }
+}
+
+/** Flechas que llevan hacia la esquina. */
+const cornerKeys = (corner: Corner): string[] => [
+  corner.dx < 0 ? 'ArrowLeft' : 'ArrowRight',
+  corner.dy < 0 ? 'ArrowUp' : 'ArrowDown',
+];
+
+/** El jugador está en la esquina: su centro a ≤ 1 px del recorte por su radio. */
+function cornerReached(s: SnapshotView, corner: Corner, world: WorldView): boolean {
+  const r = PLAYER_RADIUS;
+  const x = corner.dx < 0 ? s.player.x <= r + CORNER_SLACK : s.player.x >= world.width - r - 1;
+  const y = corner.dy < 0 ? s.player.y <= r + CORNER_SLACK : s.player.y >= world.height - r - 1;
+  return x && y;
+}
+
+/** Tope de ticks para llegar a una esquina desde el centro del mundo (20 s de juego). */
+const CORNER_MAX_TICKS = 20 * 60;
+/** Ticks por step al andar hacia una esquina: varios frames pintados por el camino. */
+const CORNER_CHUNK = 60;
+
+/**
+ * Como `walkToCorner`, en modo manual (change 0014) y sin reloj: mantiene las flechas y avanza
+ * con `stepUntil` (política de elección fija) hasta llegar a la esquina. null si la partida
+ * termina antes o se agota el tope de ticks.
+ */
+export async function stepToCorner(
+  page: Page,
+  corner: Corner,
+  world: WorldView,
+): Promise<SnapshotView | null> {
+  const keys = cornerKeys(corner);
+  for (const key of keys) await page.keyboard.down(key);
+  try {
+    return await stepUntil(
+      page,
+      (s) => s.status === 'running' && cornerReached(s, corner, world),
+      CORNER_MAX_TICKS,
+      CORNER_CHUNK,
+    );
   } finally {
     for (const key of keys) await page.keyboard.up(key);
   }

@@ -17,6 +17,7 @@ export const LOGIC_GUARDED_SPECS: readonly string[] = [
   'pause.spec.ts',
   'clear-progress.spec.ts',
   'menu-progress.spec.ts',
+  'camera.spec.ts',
 ];
 
 export type ClockWaitRule = 'waitForTimeout' | 'playChoosingFirst' | 'poll-tick';
