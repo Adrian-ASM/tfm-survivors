@@ -6,6 +6,7 @@ import appearanceJson from '../../content/appearance.json';
 import provenanceJson from '../../content/asset-provenance.json';
 import { RestartRun } from '../application/RestartRun';
 import { buildRunRules, type RunConfig } from '../domain/run/RunConfig';
+import type { MapSnapshot } from '../domain/map/MapSnapshot';
 import type { RunSnapshot } from '../domain/run/RunSnapshot';
 import type { DomainError } from '../domain/shared/Result';
 import { repositoryContent } from '../infrastructure/content/loadRunConfig';
@@ -52,6 +53,10 @@ interface E2EProbe {
   sprites: SpriteCounts;
   /** Rectángulo visible del último frame pintado, en mundo (0013); null en el menú. */
   readonly camera: CameraView | null;
+  /**
+   * Mapa de la partida en curso y si `?e2e&map=empty` lo fuerza vacío (0015); null en el menú.
+   */
+  readonly map: (MapSnapshot & { readonly emptyForced: boolean }) | null;
   /** Tamaño del mundo, constante desde la carga. */
   readonly world: WorldSize;
 }
@@ -129,6 +134,7 @@ function bootstrap(): void {
   const world: WorldSize = { width: config.value.arena.width, height: config.value.arena.height };
   // Se conecta a la escena al crearla; leerlo antes da null (sin partida).
   let cameraView = (): CameraView | null => null;
+  let mapView = (): MapSnapshot | null => null;
   const probe: E2EProbe = {
     seed,
     speed: advance.speed,
@@ -148,6 +154,11 @@ function bootstrap(): void {
     // Getter y no copia en onRender: onRender corre antes del preRender de la cámara (design D5).
     get camera() {
       return cameraView();
+    },
+    // Getter: el mapa de la partida en curso (cambia con R y con Jugar), null en el menú.
+    get map() {
+      const map = mapView();
+      return map ? { ...map, emptyForced: mapMode === 'empty' } : null;
     },
     world,
   };
@@ -198,6 +209,7 @@ function bootstrap(): void {
     ...(stepper ? { manual: stepper } : {}),
   });
   cameraView = () => game.cameraView();
+  mapView = () => game.mapView();
   const menu = new MenuScene(
     {
       ...progress.menu,

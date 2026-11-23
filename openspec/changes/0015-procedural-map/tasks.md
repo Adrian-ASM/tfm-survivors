@@ -105,7 +105,7 @@ provisional en la spec).
   Escenarios: PM "Mapa vacío en modo E2E" (reglas), "Valor inválido", "Ignorado fuera de E2E", "Se mantiene en
   todas las partidas de la carga" (unitario).
   Test: `tests/infrastructure/resolve-map-mode.test.ts`, `tests/composition/seed-source.test.ts`. E2E afectados: —
-- [ ] 4.2 Sonda `window.__sprint.map` (`{ ...MapSnapshot, emptyForced }`, null en el menú) y firma dorada
+- [x] 4.2 Sonda `window.__sprint.map` (`{ ...MapSnapshot, emptyForced }`, null en el menú) y firma dorada
   `tests/support/mapGolden.ts` (semillas 42 y 123, sin imports; la fija un test unitario con `mapForSeed`). E2E
   nuevo `procedural-map.spec.ts` (proyecto `logic`, `manual`). Rojo: la sonda no tiene `map`.
   Escenarios: PM "Sonda coherente con el núcleo", "Sonda en el menú", "Sin sonda fuera de E2E", "Mapa vacío forzado",

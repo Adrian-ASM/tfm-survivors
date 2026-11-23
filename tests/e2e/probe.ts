@@ -9,14 +9,17 @@ export const E2E_SPEED = 8;
 
 /**
  * URL del juego en modo E2E con la semilla, la velocidad (`speed` 1 ⇒ sin parámetro) y el modo
- * manual (`?e2e&manual`, change 0014) dados.
+ * manual (`?e2e&manual`, change 0014) dados. `emptyMap` añade `map=empty` (0015): los E2E que
+ * asumen posiciones libres juegan con el mapa vacío.
  */
 export function gameUrl({
   seed,
   speed = 1,
   manual = false,
-}: { seed?: number; speed?: number; manual?: boolean } = {}): string {
+  emptyMap = false,
+}: { seed?: number; speed?: number; manual?: boolean; emptyMap?: boolean } = {}): string {
   const params = ['e2e'];
+  if (emptyMap) params.push('map=empty');
   if (manual) params.push('manual');
   if (seed !== undefined) params.push(`seed=${String(seed)}`);
   if (speed !== 1) params.push(`speed=${String(speed)}`);
@@ -133,8 +136,21 @@ export interface WorldView {
   height: number;
 }
 
+/** Sonda del mapa (change 0015): null en el menú. */
+export interface MapView {
+  cols: number;
+  rows: number;
+  cellSize: number;
+  cells: ('grass' | 'trunk' | 'water' | 'bridge')[];
+  counts: Record<'grass' | 'trunk' | 'water' | 'bridge', number>;
+  start: { x: number; y: number; radius: number };
+  emptyForced: boolean;
+}
+
 interface Probe {
   __sprint?: {
+    /** Mapa de la partida en curso (change 0015). */
+    map?: MapView | null;
     seed: number;
     /** Velocidad de simulación resuelta en la carga (1..15; 1 si falta o es inválida). */
     speed?: number;
@@ -172,6 +188,7 @@ export const probe = (page: Page) =>
           camera: p.camera ?? null,
           world: p.world ?? null,
           manual: p.manual ?? null,
+          map: p.map ?? null,
         }
       : null;
   });

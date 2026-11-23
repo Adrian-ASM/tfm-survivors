@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { RestartRun } from '../../application/RestartRun';
 import type { StartedRun } from '../../application/StartRun';
 import type { TickRun } from '../../application/TickRun';
+import type { MapSnapshot } from '../../domain/map/MapSnapshot';
 import type { PlayerInput } from '../../domain/player/PlayerInput';
 import type { RunSnapshot } from '../../domain/run/RunSnapshot';
 import { TICK_MS } from './advanceFrame';
@@ -246,6 +247,11 @@ export class GameScene extends Phaser.Scene {
     this.last = undefined;
     this.started = undefined;
     this.gate = new PauseGate();
+  }
+
+  /** Mapa de la partida en curso (null sin partida, p. ej. en el menú), para la sonda E2E. */
+  mapView(): MapSnapshot | null {
+    return this.started?.tickRun.map() ?? null;
   }
 
   /** Rectángulo visible del último frame pintado (null sin partida), para la sonda E2E. */
