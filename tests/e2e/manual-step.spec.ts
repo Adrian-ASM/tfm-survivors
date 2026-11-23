@@ -1,10 +1,7 @@
-import { type Browser, type Page } from '@playwright/test';
+import { type Page } from '@playwright/test';
 import arena from '../../content/arena.json' with { type: 'json' };
 import { expect, test } from './fixtures';
 import { cardLayout } from '../../src/infrastructure/phaser/cardLayout';
-import type { Progress } from '../../src/domain/progress/Progress';
-import { PROGRESS_STORAGE_KEY } from '../../src/infrastructure/progress/LocalStorageProgressRepository';
-import { decodeProgress } from '../../src/infrastructure/progress/progressCodec';
 import {
   backToMenu,
   collect,
@@ -32,63 +29,6 @@ import {
 
 const mentions = (messages: string[], word: string): string[] =>
   messages.filter((m) => m.includes(word));
-
-// Reloj simulado de Playwright (`page.clock`) para "Manual ignorado fuera de E2E": sin `?e2e` no
-// hay sonda ni `speed`, y una partida quieta dura minutos reales. Con el reloj falso, cada
-// `runFor` dispara los frames del motor (requestAnimationFrame cada 16 ms simulados) lo más
-// rápido que da la CPU, y la partida termina sin esperar al reloj de pared.
-const CLOCK_START = new Date('2026-11-20T10:00:00Z');
-const MENU_MS = 500;
-const PLAY_CHUNK_MS = 5000;
-/** Tope de tiempo simulado de una partida quieta (pierde antes de 180 s: change 0010). */
-const IDLE_RUN_LIMIT_MS = 300_000;
-
-const runClock = (page: Page, ms: number): Promise<void> => page.clock.runFor(ms);
-
-const playButton = (page: Page): Promise<boolean> => menuButton(page, 'Jugar').isVisible();
-
-const savedProgress = async (page: Page): Promise<Progress | null> => {
-  const text = await page.evaluate((key) => window.localStorage.getItem(key), PROGRESS_STORAGE_KEY);
-  if (text === null) return null;
-  const decoded = decodeProgress(text);
-  return decoded.ok ? decoded.value : null;
-};
-
-/**
- * Juega quieto con el reloj simulado, eligiendo la opción 1 si se abre una oferta, hasta que el
- * progreso guardado tenga `entries` entradas de historial. Null si no llega en el tope.
- */
-async function playIdleToSave(page: Page, entries = 1): Promise<Progress | null> {
-  await focusGame(page);
-  for (let ms = 0; ms < IDLE_RUN_LIMIT_MS; ms += PLAY_CHUNK_MS) {
-    await runClock(page, PLAY_CHUNK_MS);
-    const saved = await savedProgress(page);
-    if (saved !== null && saved.history.length >= entries) return saved;
-    await page.keyboard.press('1');
-  }
-  return null;
-}
-
-/** Carga sin `?e2e` con el reloj simulado, pulsa Jugar y deja correr unos frames. */
-async function startPlayerRun(page: Page, search: string): Promise<void> {
-  await page.clock.install({ time: CLOCK_START });
-  await page.goto(playerUrl(search));
-  await expect.poll(() => runClock(page, MENU_MS).then(() => playButton(page))).toBe(true);
-  await menuButton(page, 'Jugar').click();
-  await runClock(page, MENU_MS);
-}
-
-/** Progreso guardado tras una partida quieta con `search`, en un contexto propio. */
-async function referenceRun(browser: Browser, search: string): Promise<Progress | null> {
-  const context = await browser.newContext();
-  try {
-    const page = await context.newPage();
-    await startPlayerRun(page, search);
-    return await playIdleToSave(page);
-  } finally {
-    await context.close();
-  }
-}
 
 /** Captura del canvas (sin sonda: la única forma de ver que la partida avanza). */
 const canvasShot = (page: Page): Promise<Buffer> => page.locator('#game canvas').screenshot();
@@ -205,39 +145,18 @@ test.describe('Sin modo manual', { tag: '@realtime' }, () => {
   });
 
   for (const search of ['?manual', '?manual=1&seed=42', '?manual=abc']) {
-    test(`Scenario: Manual ignorado fuera de E2E (${search})`, async ({ page, browser }) => {
-      test.setTimeout(300_000);
-      // Con semilla, la misma partida sin `manual` (otro contexto, en paralelo) es la referencia.
-      const reference = search.includes('seed=42')
-        ? referenceRun(browser, '?seed=42')
-        : Promise.resolve(null);
+    test(`Scenario: Manual ignorado fuera de E2E (${search})`, async ({ page }) => {
       const warnings = collect(page, ['warning']);
-      await startPlayerRun(page, search);
+      await page.goto(playerUrl(search));
+      await menuButton(page, 'Jugar').click();
       const first = await canvasShot(page);
-      await runClock(page, MENU_MS);
 
       // Sin sonda: la partida avanza si el canvas cambia (animaciones, oleadas).
-      expect((await canvasShot(page)).equals(first)).toBe(false);
+      await expect.poll(async () => (await canvasShot(page)).equals(first)).toBe(false);
       expect(await page.evaluate(() => '__sprint' in window)).toBe(false);
       expect(mentions(warnings, 'manual')).toEqual([]);
-      // AND: al terminar se guardan récord e historial como en una partida sin `manual`.
-      const saved = await playIdleToSave(page);
-      expect(saved?.history).toHaveLength(1);
-      const [entry] = saved?.history ?? [];
-      expect(saved?.records).toStrictEqual({
-        bestTimeSeconds: entry?.timeSeconds,
-        bestLevel: entry?.level,
-        maxKills: entry?.kills,
-      });
-      const expected = await reference;
-      if (expected !== null) {
-        expect(entry?.seed).toBe(42);
-        // `playedAt` sigue al reloj simulado, que aquí corre más por las capturas del canvas.
-        const unstamped = (p: Progress | null) =>
-          p && { ...p, history: p.history.map((h) => ({ ...h, playedAt: 0 })) };
-        expect(expected.history).toHaveLength(1);
-        expect(unstamped(saved)).toStrictEqual(unstamped(expected));
-      }
+      // El guardado al terminar se prueba en Node (tests/composition/manual-outside-e2e.test.ts):
+      // jugarla aquí entera sin sonda ni speed cuesta minutos de CPU (W7).
     });
   }
 
