@@ -82,7 +82,7 @@ opción (script temporal en el scratchpad) y esperar su decisión.
   (7 orillas), "Tronco y castillo cuentan como tierra", "Bloque de agua y borde del mundo" (12 orillas, hierba
   entera sin orillas), "Puente en un río horizontal", "Puente en un río vertical", "Puente en un recodo", "Puentes
   del mapa generado"
-- [ ] 3.2 `mergeTileRuns(cells, key, axis)` y `bestRuns` (por filas o por columnas, el de menos tramos) para agua
+- [x] 3.2 `mergeTileRuns(cells, key, axis)` y `bestRuns` (por filas o por columnas, el de menos tramos) para agua
   (`water` ∪ `bridge` ∪ orillas; solo `water` ∪ `bridge` si la orilla va a reserva, B6) y orillas (misma clave de
   caso). Test: río vertical por columnas, cobertura exacta sin solapes, ningún tramo de agua sobre tierra no-orilla.
   — escenarios: "Elementos en su sitio" (rectángulos del agua), "Pintado del mapa" (agua bajo orillas, no bajo
