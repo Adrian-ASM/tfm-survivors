@@ -57,11 +57,11 @@ opción (script temporal en el scratchpad) y esperar su decisión.
 
 ## 2. Contenido y datos de aspecto
 
-- [ ] 2.1 Assets: copiar `Water.png`, `Foam.png`, `Tree.png`, `Bridge_All.png` y `Castle_Blue.png` (rutas del pack,
+- [x] 2.1 Assets: copiar `Water.png`, `Foam.png`, `Tree.png`, `Bridge_All.png` y `Castle_Blue.png` (rutas del pack,
   ADR-0012) a `public/assets/tiny-swords/` con su entrada en `content/asset-provenance.json` (`sha256`, `bytes`, ruta
   de Update 010). Test de contenido en rojo primero; `npm run guard:all`. — escenarios: "Hoja de cada elemento",
   "Solo las hojas usadas"
-- [ ] 2.2 Sección `map` de `appearanceSchema` (estricta, design §12.2 B2: `shore.cases` de 15 claves, `foam.idle` en
+- [x] 2.2 Sección `map` de `appearanceSchema` (estricta, design §12.2 B2: `shore.cases` de 15 claves, `foam.idle` en
   bucle, `trees.models [{ frame }]` + `flip`, `bridges.frames { northSouth, eastWest }`, `castle.sheet` 320 × 256 +
   `frame`, `origin` en todos) y `terrain.castle` (4 colores distintos dos a dos); hojas del mapa en la nota de
   procedencia; `appearance.json` y `tests/support/appearance.ts` con valores provisionales (claves de `shore.cases` =

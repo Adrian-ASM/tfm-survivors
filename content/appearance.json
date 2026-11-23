@@ -98,5 +98,74 @@
       "loop": false
     }
   },
-  "terrain": { "trunk": "#5b3a1e", "water": "#2f7fc1", "bridge": "#c19a5b" }
+  "terrain": { "trunk": "#5b3a1e", "water": "#2f7fc1", "bridge": "#c19a5b", "castle": "#6e7f99" },
+  "map": {
+    "water": {
+      "sheet": { "file": "Terrain/Water/Water.png", "frameWidth": 64, "frameHeight": 64 },
+      "scale": 0.9375,
+      "origin": { "x": 0, "y": 0 },
+      "frame": 0
+    },
+    "shore": {
+      "sheet": { "file": "Terrain/Ground/Tilemap_Flat.png", "frameWidth": 64, "frameHeight": 64 },
+      "scale": 0.9375,
+      "origin": { "x": 0, "y": 0 },
+      "cases": {
+        "N": 1,
+        "E": 12,
+        "S": 21,
+        "W": 10,
+        "NE": 2,
+        "NS": 31,
+        "NW": 0,
+        "ES": 22,
+        "EW": 13,
+        "SW": 20,
+        "NES": 32,
+        "NEW": 3,
+        "NSW": 30,
+        "ESW": 23,
+        "NESW": 33
+      }
+    },
+    "foam": {
+      "sheet": { "file": "Terrain/Water/Foam/Foam.png", "frameWidth": 192, "frameHeight": 192 },
+      "scale": 0.9375,
+      "origin": { "x": 0.5, "y": 0.5 },
+      "idle": { "frames": [0, 1, 2, 3, 4, 5, 6, 7], "fps": 8, "loop": true }
+    },
+    "trees": {
+      "sheet": { "file": "Resources/Trees/Tree.png", "frameWidth": 192, "frameHeight": 192 },
+      "scale": 0.9375,
+      "origin": { "x": 0.5, "y": 0.92 },
+      "models": [
+        { "frame": 0 },
+        { "frame": 1 },
+        { "frame": 2 },
+        { "frame": 3 },
+        { "frame": 4 },
+        { "frame": 5 }
+      ],
+      "flip": true
+    },
+    "bridges": {
+      "image": "Terrain/Bridge/Bridge_All.png",
+      "scale": 0.9375,
+      "origin": { "x": 0.5, "y": 0.5 },
+      "frames": {
+        "northSouth": { "x": 0, "y": 80, "width": 68, "height": 160 },
+        "eastWest": { "x": 16, "y": 0, "width": 160, "height": 64 }
+      }
+    },
+    "castle": {
+      "sheet": {
+        "file": "Factions/Knights/Buildings/Castle/Castle_Blue.png",
+        "frameWidth": 320,
+        "frameHeight": 256
+      },
+      "scale": 0.9375,
+      "origin": { "x": 0.5, "y": 1 },
+      "frame": 0
+    }
+  }
 }
