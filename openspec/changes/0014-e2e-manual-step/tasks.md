@@ -53,7 +53,7 @@
   - Escenarios: "n inválido", "n muy grande" (la validez) y "Step sin modo manual" (el aviso).
   - Hecho: `verify` verde.
 
-- [ ] 1.4 **`advanceTicks` en trozos de ≤ 15 ticks y equivalencia** (design §3.3 y §6).
+- [x] 1.4 **`advanceTicks` en trozos de ≤ 15 ticks y equivalencia** (design §3.3 y §6).
   - Ficheros: `src/infrastructure/phaser/advanceFrame.ts`, `tests/infrastructure/advance-ticks.test.ts` y
     `tests/infrastructure/manual-equivalence.test.ts`.
   - Test:
