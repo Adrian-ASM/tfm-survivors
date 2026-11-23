@@ -2,6 +2,8 @@ import { Arena } from '../../src/domain/arena/Arena';
 import type { CellType } from '../../src/domain/map/CellType';
 import { GameMap } from '../../src/domain/map/GameMap';
 import { MapRules, type MapConfig } from '../../src/domain/map/MapRules';
+import type { TerrainSource } from '../../src/domain/map/TerrainSource';
+import type { RunConfig } from '../../src/domain/run/RunConfig';
 import { DEFAULT_MAP, aDefaultConfig } from './builders';
 
 /**
@@ -19,6 +21,15 @@ export function mapRules(
   const r = MapRules.create(config, arena.value, playerRadius);
   if (!r.ok) throw new Error(r.error.message);
   return r.value;
+}
+
+/**
+ * Mapa vacío con la salida del castillo del contenido `config` declarada ((990, 630) por defecto):
+ * la referencia de las comparaciones "con y sin mapa" de 0016 (design §12.1 A3).
+ */
+export function emptyWithExit(config: RunConfig): TerrainSource {
+  const rules = mapRules(config.map, config.arena.width, config.arena.height, config.player.radius);
+  return { kind: 'open', start: { ...rules.castle.exit } };
 }
 
 /** Mapa vacío de la rejilla por defecto sobre una arena dada (escenarios sin mapa declarado). */

@@ -65,7 +65,11 @@ export function initialPlayer(
   if (at && !isFinitePoint(at)) {
     return err(invalidConfig('setup.player', SETUP_POSITION_MUST_BE_FINITE));
   }
-  const position = at ? arena.clampCircle(Vector2.of(at.x, at.y), player.radius) : arena.center;
+  // Sin posición dada, el jugador nace en la salida del mapa (spec player-movement 0016): el
+  // centro del mundo en el mapa vacío y en los explícitos sin salida declarada.
+  const position = at
+    ? arena.clampCircle(Vector2.of(at.x, at.y), player.radius)
+    : Vector2.of(map.start.x, map.start.y);
   if (map.overlapsBlocked(position.x, position.y, player.radius)) {
     return err(invalidConfig('setup.player', SETUP_PLAYER_ON_BLOCKED_CELL));
   }

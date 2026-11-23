@@ -24,7 +24,7 @@
   congelado) y `MapRules.castle`; **sin** mover aún la zona de inicio ni el generador (la firma no cambia). Test en
   `map-rules.test.ts`. — escenarios: "Huella y salida por defecto" (parte de reglas: 14–18 × 6–9, salida (990, 630)),
   "Huella en un mundo mayor" (31–35 × 30–33, salida (2.010, 2.070))
-- [ ] 1.4 Salida por mapa: `GameMap` con `start` y `castle` (huella o `null`) en el constructor; `TerrainSource`
+- [x] 1.4 Salida por mapa: `GameMap` con `start` y `castle` (huella o `null`) en el constructor; `TerrainSource`
   `open`/`cells` con `start?` validado en `resolveTerrain` (`MAP_START_ILLEGAL`, campo `map.start`; tangencia legal);
   `MapSnapshot.castle { firstCol, lastCol, firstRow, lastRow } | null`, `counts.castle`, `start` = salida + radio;
   `RunSetup.initialPlayer` nace en `map.start`. `adopt` sigue con el centro hasta 1.5. Helper
