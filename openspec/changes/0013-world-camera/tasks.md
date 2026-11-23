@@ -67,7 +67,7 @@
   cambios", "La carta muestra el texto nuevo", "Misma partida con los textos nuevos".
   Test: `tests/infrastructure/upgrades-text.test.ts` (nuevo), `tests/infrastructure/upgrade-overlay.test.ts`,
   `tests/domain/upgrades-rename-determinism.test.ts` (nuevo). E2E afectados: `level-up`
-- [ ] 2.3 `CameraRig` + `FollowCamera` (D2) con cámara falsa: `setBounds(0, 0, W, H)` una vez, `startFollow` con
+- [x] 2.3 `CameraRig` + `FollowCamera` (D2) con cámara falsa: `setBounds(0, 0, W, H)` una vez, `startFollow` con
   `roundPixels` false y lerp 1, `track(player)` copia x/y al objetivo propio, `view()` devuelve `worldView`. La
   cámara falsa aplica la fórmula de `startFollow` + bounds para fijar el contrato. Rojo: la clase no existe. Incluye
   un test con semilla 7 y 3.600 ticks, con y sin `track` en cada snapshot, que compara snapshots tick a tick y
