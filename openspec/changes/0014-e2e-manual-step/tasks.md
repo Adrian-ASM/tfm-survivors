@@ -334,7 +334,10 @@
     segundo rebasa y deja **una sola** receta, esta. Hay que comprobar `main` antes de abrir o actualizar el PR.
   - Test: no hay test automático (es documentación). Hecho: `verify` verde, con `guard:all` incluido.
 
-- [ ] 6.2 **Suite completa y comprobaciones del change**.
+- [ ] 6.2 **Suite completa y comprobaciones del change**. *Local hecho (2026-11-23), pendiente del CI
+  del PR*: `logic` 67 pasan en 27,5 s; `realtime` 45 pasan y 1 saltado en 1,6 min (suite completa
+  112 + 1 saltado, 2,0 min); `git diff origin/main -- src/domain src/application` vacío;
+  `package.json` sin cambios; la guarda vigila las 11 specs con tests de `logic`.
   - Ejecutar `npm run test:e2e` (`logic` + `realtime`) en local y anotar la duración de cada proyecto.
   - `git diff --stat main -- src/domain src/application` vacío.
   - `package.json` sin dependencias nuevas.
