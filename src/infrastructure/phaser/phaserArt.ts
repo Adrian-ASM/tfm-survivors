@@ -67,6 +67,9 @@ export function terrainCanvas(
     },
     refresh: () => {
       texture.refresh();
+      // En 4.2.1 `refresh` vuelve a subir el canvas con el filtro del renderer (LINEAR con
+      // antialias: WebGLRenderer.canvasToTexture), así que NEAREST se reaplica tras cada subida.
+      texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
     },
   };
 }
