@@ -2,7 +2,7 @@ import type { StillLook } from './art/looks';
 import type { WorldSize } from './CameraRig';
 import type { SpriteCount } from './PlayerView';
 import { RenderLayers, type RenderParts } from './RenderLayers';
-import type { TerrainCanvas } from './TerrainView';
+import type { MapArtCanvas } from './TerrainView';
 
 /**
  * Cómo crea la escena el fondo (costura sin motor): un mosaico de un frame de la hoja de suelo o, en
@@ -29,17 +29,28 @@ export function createGround(
 }
 
 /**
- * Área de juego de una partida: el fondo del mundo primero (debajo de todo; se mueve con el mundo,
- * sin `scrollFactor`), después la capa del mapa (0015: encima del fondo y debajo del resto) y
- * después las capas, en orden de pintado.
+ * Cómo crea la escena las dos capas del mapa (costura sin motor, design 0016 §5.4): la baja en una
+ * llamada y la alta en otra, para que su orden de creación rodee al de las entidades. La alta
+ * devuelve el lienzo de las dos.
+ */
+export interface MapArtLayers {
+  low(): void;
+  high(): MapArtCanvas;
+}
+
+/**
+ * Área de juego de una partida, en orden de pintado: el fondo del mundo (debajo de todo; se mueve
+ * con el mundo, sin `scrollFactor`), la capa baja del mapa (agua, orillas, puentes, troncos y
+ * fachada), las entidades y la capa alta del mapa (copas y tejado). HUD y overlays, después.
  */
 export function createPlayfield(
   parts: RenderParts,
   ground: GroundFactory,
   world: WorldSize,
-  terrain: () => TerrainCanvas,
-): { layers: RenderLayers; terrain: TerrainCanvas } {
+  mapArt: MapArtLayers,
+): { layers: RenderLayers; mapArt: MapArtCanvas } {
   const counts = createGround(ground, parts.looks.ground, world);
-  const canvas = terrain();
-  return { layers: new RenderLayers(parts, counts), terrain: canvas };
+  mapArt.low();
+  const layers = new RenderLayers(parts, counts);
+  return { layers, mapArt: mapArt.high() };
 }

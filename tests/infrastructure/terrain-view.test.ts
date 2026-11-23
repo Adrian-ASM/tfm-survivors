@@ -1,150 +1,128 @@
 import { describe, expect, it } from 'vitest';
-import { createPlayfield, type GroundFactory } from '../../src/infrastructure/phaser/GroundView';
+import { toMapSnapshot } from '../../src/domain/map/MapSnapshot';
+import {
+  createPlayfield,
+  type GroundFactory,
+  type MapArtLayers,
+} from '../../src/infrastructure/phaser/GroundView';
 import type { RingSprite } from '../../src/infrastructure/phaser/PulseLayer';
 import { emptyCounts } from '../../src/infrastructure/phaser/renderCounts';
-import {
-  paintTerrain,
-  terrainFills,
-  type TerrainCanvas,
-} from '../../src/infrastructure/phaser/TerrainView';
+import type { MapArtCanvas } from '../../src/infrastructure/phaser/TerrainView';
 import { aDefaultConfig } from '../support/builders';
 import { fakeKit } from '../support/FakeSprite';
 import { someLooks } from '../support/looks';
+import { planFor } from '../support/mapArt';
 import { mapRules, mapWith } from '../support/mapLayouts';
-import { toMapSnapshot } from '../../src/domain/map/MapSnapshot';
-import { GameMap } from '../../src/domain/map/GameMap';
+import { mapForSeed } from '../support/mapStats';
 
-// Spec sprite-rendering (0015), "Pintado del mapa".
+// Spec sprite-rendering (0016), "Capas del mapa y de las entidades" y "Sonda de render para E2E".
 const WORLD = aDefaultConfig().arena;
-const COLORS = { trunk: 0x5b3a1e, water: 0x2f7fc1, bridge: 0xc19a5b };
 
-/** Lienzo falso: registra lo pintado. */
-function fakeCanvas(log: string[] = []): TerrainCanvas & { log: string[] } {
-  return {
-    log,
-    clear: () => log.push('clear'),
-    rect: (x, y, w, h, color) =>
-      log.push(`rect ${String(x)},${String(y)} ${String(w)}x${String(h)} ${color.toString(16)}`),
-  };
-}
-
-describe('terrainFills y paintTerrain', () => {
-  it('Scenario: Celda pintada en su sitio y en su capa (sitio: (600, 240)–(660, 300), trunk)', () => {
-    const map = toMapSnapshot(mapWith(mapRules(), { '10,4': 'trunk' }));
-    const { fills, counts } = terrainFills(map, COLORS, WORLD);
-    expect(fills).toEqual([
-      { col: 10, row: 4, color: COLORS.trunk, x: 600, y: 240, width: 60, height: 60 },
-    ]);
-    expect(counts).toEqual({ trunk: 1, water: 0, bridge: 0 });
-  });
-
-  it('una celda de la última columna de un mundo no múltiplo se recorta al mundo', () => {
-    const map = toMapSnapshot(mapWith(mapRules(undefined, 4000, 4000), { '66,0': 'water' }));
-    const [fill] = terrainFills(map, COLORS, { width: 4000, height: 4000 }).fills;
-    expect([fill?.x, fill?.width]).toEqual([3960, 40]);
-  });
-
-  // Incidente de fps en CI (PR #36): nada de una capa del tamaño del mundo; solo rectángulos de las
-  // celdas no-hierba, con las celdas contiguas del mismo tipo de una fila unidas en uno.
-  it('paintTerrain borra y pinta solo las celdas no-hierba, uniendo tramos de una fila', () => {
-    const map = toMapSnapshot(
-      mapWith(mapRules(), {
-        '0,0': 'trunk',
-        '1,0': 'trunk',
-        '2,0': 'water',
-        '4,0': 'water',
-        '1,1': 'trunk',
-        '2,3': 'bridge',
-      }),
-    );
-    const canvas = fakeCanvas();
-    const counts = paintTerrain(canvas, map, COLORS, WORLD);
-    const hex = (c: number) => c.toString(16);
-    expect(canvas.log).toEqual([
-      'clear',
-      `rect 0,0 120x60 ${hex(COLORS.trunk)}`,
-      `rect 120,0 60x60 ${hex(COLORS.water)}`,
-      `rect 240,0 60x60 ${hex(COLORS.water)}`,
-      `rect 60,60 60x60 ${hex(COLORS.trunk)}`,
-      `rect 120,180 60x60 ${hex(COLORS.bridge)}`,
-    ]);
-    expect(counts).toEqual({ trunk: 3, water: 2, bridge: 1 });
-  });
-
-  it('Scenario: Mapa vacío (ningún rectángulo: sin coste de relleno)', () => {
-    const canvas = fakeCanvas();
-    paintTerrain(canvas, toMapSnapshot(GameMap.open(mapRules())), COLORS, WORLD);
-    expect(canvas.log).toEqual(['clear']);
-  });
-
-  it('Scenario: Mapa vacío (0 celdas pintadas de cada tipo)', () => {
-    const map = toMapSnapshot(GameMap.open(mapRules()));
-    expect(paintTerrain(fakeCanvas(), map, COLORS, WORLD)).toEqual({
-      trunk: 0,
-      water: 0,
-      bridge: 0,
-    });
-  });
+/** Lienzo del mapa falso: no pinta nada. */
+const quietCanvas = (): MapArtCanvas => ({
+  clear: () => undefined,
+  tiles: () => undefined,
+  sprite: () => undefined,
+  rect: () => undefined,
+  foam: () => undefined,
 });
 
-describe('Capa del mapa en el área de juego', () => {
-  function playfield() {
-    const log: string[] = [];
-    const kit = fakeKit();
-    const create = kit.create.bind(kit);
-    const ground: GroundFactory = {
-      tiles: () => log.push('ground'),
-      rect: () => log.push('ground'),
-    };
-    const ring = (): RingSprite => {
-      log.push('ring');
-      return { setPosition: () => 0, setRadius: () => 0, setAlpha: () => 0, setVisible: () => 0 };
-    };
-    const made = createPlayfield(
-      {
-        kit: {
-          tint: kit.tint,
-          create: () => {
-            log.push('sprite');
-            return create();
-          },
-        },
-        ring,
-        looks: someLooks(() => undefined),
-        capacity: {
-          enemies: 1,
-          projectiles: 1,
-          pulses: 1,
-          gems: 1,
-          corpses: 1,
-          visualTicks: new Map(),
+/** Área de juego con fábricas falsas que registran el orden de creación (= orden de pintado). */
+function playfield() {
+  const log: string[] = [];
+  const kit = fakeKit();
+  const create = kit.create.bind(kit);
+  const ground: GroundFactory = {
+    tiles: () => log.push('ground'),
+    rect: () => log.push('ground'),
+  };
+  const ring = (): RingSprite => {
+    log.push('ring');
+    return { setPosition: () => 0, setRadius: () => 0, setAlpha: () => 0, setVisible: () => 0 };
+  };
+  const mapArt: MapArtLayers = {
+    low: () => log.push('map-low'),
+    high: () => {
+      log.push('map-high');
+      return quietCanvas();
+    },
+  };
+  const made = createPlayfield(
+    {
+      kit: {
+        tint: kit.tint,
+        create: () => {
+          log.push('sprite');
+          return create();
         },
       },
-      ground,
-      WORLD,
-      () => {
-        log.push('terrain');
-        return fakeCanvas();
+      ring,
+      looks: someLooks(() => undefined),
+      capacity: {
+        enemies: 1,
+        projectiles: 1,
+        pulses: 1,
+        gems: 1,
+        corpses: 1,
+        visualTicks: new Map(),
       },
-    );
-    return { log, ...made };
-  }
+    },
+    ground,
+    WORLD,
+    mapArt,
+  );
+  return { log, ...made };
+}
 
-  it('Scenario: Celda pintada en su sitio y en su capa (capa: tras el fondo, antes del resto)', () => {
+describe('Capas del mapa en el área de juego', () => {
+  it('Scenario: Tronco y copa (capa baja tras el fondo y antes de las entidades; alta después)', () => {
     const { log } = playfield();
-    expect(log.slice(0, 2)).toEqual(['ground', 'terrain']);
-    expect(log.slice(2).every((m) => m === 'ring' || m === 'sprite')).toBe(true);
+    expect(log.slice(0, 2)).toEqual(['ground', 'map-low']);
+    expect(log.at(-1)).toBe('map-high');
+    const entities = log.slice(2, -1);
+    expect(entities.length).toBeGreaterThan(0);
+    expect(entities.every((m) => m === 'ring' || m === 'sprite')).toBe(true);
   });
 
-  it('la sonda cuenta las celdas pintadas y no las cuenta como fondo ni reserva', () => {
-    const { layers, terrain } = playfield();
-    const map = toMapSnapshot(mapWith(mapRules(), { '10,4': 'trunk', '3,3': 'water' }));
-    layers.paintMap(terrain, map, COLORS, WORLD);
-    expect(layers.counts.cells).toEqual({ trunk: 1, water: 1, bridge: 0 });
+  it('Scenario: Proyectiles y gemas bajo las copas (todas las entidades entre las dos capas)', () => {
+    const { log } = playfield();
+    const high = log.indexOf('map-high');
+    expect(log.lastIndexOf('sprite')).toBeLessThan(high);
+    expect(log.lastIndexOf('ring')).toBeLessThan(high);
+    expect(log.indexOf('map-low')).toBeLessThan(log.indexOf('sprite'));
+  });
+
+  it('la sonda cuenta las celdas y los elementos del mapa, no como fondo ni reserva', () => {
+    const { layers, mapArt } = playfield();
+    const plan = planFor(toMapSnapshot(mapForSeed(aDefaultConfig(), 42)));
+    layers.paintMap(mapArt, plan);
+    expect(layers.counts.cells).toEqual(plan.cells);
+    expect(layers.counts.mapArt).toEqual({ ...plan.counts, objects: plan.objects });
     expect(layers.counts.ground).toEqual({ visible: 1, placeholder: 0 });
   });
 
-  it('Scenario: Sonda en el menú (celdas a 0)', () => {
-    expect(emptyCounts(['goblin-torch']).cells).toEqual({ trunk: 0, water: 0, bridge: 0 });
+  it('repintar con otro mapa sustituye los recuentos', () => {
+    const { layers, mapArt } = playfield();
+    layers.paintMap(mapArt, planFor(toMapSnapshot(mapForSeed(aDefaultConfig(), 42))));
+    const empty = planFor(toMapSnapshot(mapWith(mapRules(), {})));
+    layers.paintMap(mapArt, empty);
+    expect(layers.counts.cells).toEqual({ trunk: 0, water: 0, bridge: 0, castle: 0 });
+    expect(layers.counts.mapArt.objects).toBe(0);
+  });
+
+  it('Scenario: Sonda en el menú (celdas, elementos y objetos del mapa a 0)', () => {
+    const counts = emptyCounts(['goblin-torch']);
+    expect(counts.cells).toEqual({ trunk: 0, water: 0, bridge: 0, castle: 0 });
+    const none = { painted: 0, fallback: 0 };
+    expect(counts.mapArt).toEqual({
+      water: none,
+      shore: none,
+      foam: none,
+      tree: none,
+      canopy: none,
+      bridge: none,
+      castle: none,
+      objects: 0,
+    });
   });
 });

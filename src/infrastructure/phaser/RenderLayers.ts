@@ -9,8 +9,8 @@ import { ProjectileLayer } from './ProjectileLayer';
 import { PulseLayer, type RingSprite } from './PulseLayer';
 import type { SpriteCounts } from './renderCounts';
 import type { SpriteKit } from './SpriteLike';
-import type { MapSnapshot } from '../../domain/map/MapSnapshot';
-import { paintTerrain, zeroCells, type TerrainCanvas, type TerrainColors } from './TerrainView';
+import type { MapArtPlan } from './map/planMapArt';
+import { paintMapArt, zeroCells, zeroMapArt, type MapArtCanvas } from './TerrainView';
 
 /** Tamaño de los pools: el de la escena más el tope de cadáveres de los datos de aspecto. */
 export interface LayerCapacity {
@@ -64,6 +64,7 @@ export class RenderLayers {
       gems: this.gems.counts,
       enemyPlaceholders: this.enemies.placeholdersByType,
       cells: zeroCells(),
+      mapArt: zeroMapArt(),
     };
   }
 
@@ -87,16 +88,17 @@ export class RenderLayers {
   }
 
   /**
-   * Pinta el mapa de la partida (al crearla y tras R; change 0015) y guarda las celdas pintadas
-   * por tipo para la sonda. Una vez por partida, no por frame.
+   * Pinta el plan del mapa de la partida (al crearla y tras R; 0015, arte desde 0016) y guarda las
+   * celdas y los elementos pintados para la sonda. Una vez por partida, no por frame.
    */
-  paintMap(
-    canvas: TerrainCanvas,
-    map: MapSnapshot,
-    colors: TerrainColors,
-    world: { readonly width: number; readonly height: number },
-  ): void {
-    Object.assign(this.counts.cells, paintTerrain(canvas, map, colors, world));
+  paintMap(canvas: MapArtCanvas, plan: MapArtPlan): void {
+    const painted = paintMapArt(canvas, plan);
+    Object.assign(this.counts.cells, painted.cells);
+    const { mapArt } = this.counts;
+    for (const key of ['water', 'shore', 'foam', 'tree', 'canopy', 'bridge', 'castle'] as const) {
+      mapArt[key] = { ...painted.mapArt[key] };
+    }
+    mapArt.objects = painted.mapArt.objects;
   }
 
   /** Cambio de partida: vacía las capas sin cadáveres y el jugador no hereda nada. */

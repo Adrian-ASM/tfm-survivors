@@ -119,7 +119,7 @@ opción (script temporal en el scratchpad) y esperar su decisión.
   `TerrainCanvas`; test con canvas doble: un objeto por entrada del plan (`objects` igual al del plan), `clear` antes
   de repintar, nada visible del mapa anterior ni en el menú. — escenarios: "Partida nueva con otro mapa" (unitario),
   "Mapa vacío"
-- [ ] 4.2 `phaserArt.mapArtCanvas(scene)`: `Layer` baja y alta con pools de `TileSprite`, `Sprite` y `Rectangle`
+- [x] 4.2 `phaserArt.mapArtCanvas(scene)`: `Layer` baja y alta con pools de `TileSprite`, `Sprite` y `Rectangle`
   reutilizados (o `Blitter` si lo pidió 3.7); `createPlayfield`: suelo → baja → `RenderLayers` → alta, HUD y
   overlays después. Test con fábricas falsas del orden de creación. — escenarios: "Tronco y copa", "Jugador ante la
   puerta", "Proyectiles y gemas bajo las copas"
