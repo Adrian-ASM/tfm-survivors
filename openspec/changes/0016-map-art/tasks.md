@@ -87,7 +87,7 @@ opción (script temporal en el scratchpad) y esperar su decisión.
   caso). Test: río vertical por columnas, cobertura exacta sin solapes, ningún tramo de agua sobre tierra no-orilla.
   — escenarios: "Elementos en su sitio" (rectángulos del agua), "Pintado del mapa" (agua bajo orillas, no bajo
   tierra)
-- [ ] 3.3 `phaser/map/treeChoices.ts`: `treeModel(decorSeed, cellIndex, models, flip)` con hash por celda
+- [x] 3.3 `phaser/map/treeChoices.ts`: `treeModel(decorSeed, cellIndex, models, flip)` con hash por celda
   (`deriveSeed`); `DECOR_STREAM = 2` en `deriveSeed.ts`. — escenarios: "Mismos modelos con la misma semilla" (parte
   pura), "Variedad dentro de un mapa", "Otra semilla, otros modelos", "La variedad no toca la simulación"
   (regresión)
