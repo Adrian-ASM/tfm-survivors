@@ -85,7 +85,8 @@ ofertas de mejora sí lo consume.
 #### Scenario: Partida con armas reproducible
 - **GIVEN** dos partidas con el contenido por defecto y la semilla 7, con input (0, 0) en todos los ticks y la
   política de elección fija
-- **WHEN** ambas ejecutan 3.600 ticks y en ese tiempo ≥ 1 enemigo queda dado de baja por armas
+- **WHEN** ambas ejecutan 4.800 ticks y en ese tiempo ≥ 1 enemigo queda dado de baja por armas y se emite ≥ 1
+  pulso (0013: en el mundo 2x el primer pulso llega en el tick 4.161, medido; antes 3.600)
 - **THEN** sus snapshots son iguales campo a campo en cada tick, incluidos proyectiles, pulsos, vida de los enemigos,
   indicación de daño reciente y bajas
 

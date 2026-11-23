@@ -62,12 +62,13 @@ describe('Determinismo con progresión y elecciones', () => {
     for (let i = 0; i < a.length; i++) expect(a[i]).toStrictEqual(b[i]);
   });
 
-  it('Scenario: Partida con armas reproducible (semilla 7, quieto, 3.600 ticks, ≥ 1 baja)', () => {
-    const a = snapshots(run(7), still(3600));
-    const b = snapshots(run(7), still(3600));
+  it('Scenario: Partida con armas reproducible (semilla 7, quieto, 4.800 ticks, ≥ 1 baja)', () => {
+    // 0013: con el mundo 2x el primer pulso llega en el tick 4.161; plazo 4.800 (verify W2).
+    const a = snapshots(run(7), still(4800));
+    const b = snapshots(run(7), still(4800));
     expect(a.some((s) => s.gems.length > 0 || s.progression.xp > 0)).toBe(true);
-    // 0013: con el mundo 2x el primer pulso llega en el tick 4.161; en 3.600 actúan los proyectiles.
     expect(a.some((s) => s.projectiles.length > 0 && s.enemies.some((e) => e.damaged))).toBe(true);
+    expect(a.some((s) => s.pulses.length > 0)).toBe(true);
     expect(a.at(-1)?.kills).toBeGreaterThanOrEqual(1);
     for (let i = 0; i < a.length; i++) expect(a[i]).toStrictEqual(b[i]);
   });

@@ -95,7 +95,7 @@ de la partida anterior.
 
 #### Scenario: Partida nueva tras acabar en una esquina
 - **GIVEN** una partida terminada ya pintada con el jugador en (1.904, 1.064)
-- **WHEN** se pulsa R y se pinta el tick 0 de la partida nueva
+- **WHEN** se pulsa R y se pinta el primer frame de la partida nueva (tick ≤ 60, sin input; como en `run-results`)
 - **THEN** el rectángulo visible de ese primer frame es (480, 270)–(1.440, 810)
 
 ### Requirement: Elementos de la partida en coordenadas de mundo
