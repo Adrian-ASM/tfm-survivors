@@ -120,6 +120,8 @@ export interface SpritesView {
   pulses: SpriteCountView;
   gems: SpriteCountView;
   enemyPlaceholders: Record<string, number>;
+  /** Celdas del mapa pintadas por tipo (change 0015); a 0 en el menú. */
+  cells: { trunk: number; water: number; bridge: number };
 }
 
 /** Rectángulo visible del último frame pintado, en coordenadas de mundo (change 0013). */
@@ -209,6 +211,8 @@ export interface SpriteSample {
   groundMisses: number;
   /** Frames en que reserva por tipo de enemigo ≠ enemigos de ese tipo en el snapshot (`placeholderType`). */
   typeMismatches: number;
+  /** Frames en que las celdas pintadas ≠ recuentos del mapa de la sonda (o ≠ 0 en el menú). */
+  cellMisses: number;
 }
 
 interface SamplerWindow {
@@ -234,6 +238,7 @@ export async function startSpriteSampler(page: Page, placeholderType?: string): 
       fullFrames: 0,
       groundMisses: 0,
       typeMismatches: 0,
+      cellMisses: 0,
     };
     const state = { stop: false, result };
     w.__spriteSampler = state;
@@ -252,6 +257,7 @@ export async function startSpriteSampler(page: Page, placeholderType?: string): 
         if (!snap) {
           result.menuFrames += 1;
           if (kinds.some((k) => k.visible !== 0)) miss('menú con sprites visibles');
+          if (s.cells.trunk + s.cells.water + s.cells.bridge !== 0) result.cellMisses += 1;
         } else {
           result.frames += 1;
           const t = snap.tick;
@@ -268,6 +274,15 @@ export async function startSpriteSampler(page: Page, placeholderType?: string): 
             snap.status === 'over' || !snap.player.invulnerable || Math.floor(t / 4) % 2 === 0;
           if (s.player.visible !== (blinkVisible ? 1 : 0)) miss(`tick ${String(t)}: jugador`);
           if (s.ground.visible !== 1) result.groundMisses += 1;
+          const m = p.map;
+          const c = s.cells;
+          const sameCells =
+            m !== null &&
+            m !== undefined &&
+            c.trunk === m.counts.trunk &&
+            c.water === m.counts.water &&
+            c.bridge === m.counts.bridge;
+          if (!sameCells) result.cellMisses += 1;
           const reserve = [s.ground, ...kinds].reduce((n, k) => n + k.placeholder, 0);
           if (reserve > 0) result.placeholderFrames += 1;
           if (s.enemies.visible > 0 && s.projectiles.visible > 0 && s.gems.visible > 0) {

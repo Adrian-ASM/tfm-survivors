@@ -21,7 +21,8 @@ import { createHud, createResultsOverlay, createUpgradeOverlay } from './sceneWi
 import type { UpgradeOverlay } from './UpgradeOverlay';
 import type { Appearance } from '../content/appearanceSchema';
 import { resolveLooks } from './art/looks';
-import { ensurePlaceholderTexture, spriteKit, textureFrames } from './phaserArt';
+import { ensurePlaceholderTexture, spriteKit, terrainCanvas, textureFrames } from './phaserArt';
+import type { TerrainCanvas } from './TerrainView';
 import type { SpriteCounts } from './renderCounts';
 import { createPlayfield, type GroundFactory } from './GroundView';
 import type { RenderLayers } from './RenderLayers';
@@ -102,6 +103,8 @@ export interface ManualFrames {
 
 interface Widgets {
   readonly layers: RenderLayers;
+  /** Textura del mapa: se repinta al cambiar de partida (R), no por frame. */
+  readonly terrain: TerrainCanvas;
   readonly hud: Hud;
   readonly offer: UpgradeOverlay;
   readonly results: ResultsOverlay;
@@ -139,7 +142,7 @@ export class GameScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.leave();
     });
-    // Orden de creación = orden de pintado: suelo, anillos, gemas, cadáveres, enemigos,
+    // Orden de creación = orden de pintado: suelo, mapa (0015), anillos, gemas, cadáveres, enemigos,
     // proyectiles, jugador, HUD y overlays encima de todo (design 0012).
     ensurePlaceholderTexture(this);
     const ring = (): RingSprite =>
@@ -156,15 +159,19 @@ export class GameScene extends Phaser.Scene {
       },
     };
     const looks = resolveLooks(this.deps.appearance, textureFrames(this));
-    const { layers } = createPlayfield(
+    const map = started.tickRun.map();
+    const { layers, terrain } = createPlayfield(
       { kit: spriteKit(this), ring, looks, capacity: this.deps.capacity },
       ground,
       this.deps.world,
+      () => terrainCanvas(this, map.cols, map.rows, map.cellSize),
     );
+    layers.paintMap(terrain, map, this.deps.appearance.terrain, this.deps.world);
     // En cada entrada: Volver al menú destruye la cámara de la escena y la recrea (design D2).
     this.rig = new CameraRig(this.cameras.main, this.deps.world);
     const snapshot = started.tickRun.snapshot();
     this.w = {
+      terrain,
       layers,
       hud: createHud(this),
       offer: createUpgradeOverlay(this),
@@ -235,6 +242,12 @@ export class GameScene extends Phaser.Scene {
     if (!next.ok) return current;
     this.started = next.value;
     w.layers.clear();
+    w.layers.paintMap(
+      w.terrain,
+      next.value.tickRun.map(),
+      this.deps.appearance.terrain,
+      this.deps.world,
+    );
     return next.value;
   }
 

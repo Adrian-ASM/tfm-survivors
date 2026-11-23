@@ -1,4 +1,5 @@
 import arena from '../../content/arena.json' with { type: 'json' };
+import type { Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 import {
   backToMenu,
@@ -6,11 +7,13 @@ import {
   focusGame,
   gameUrl,
   menuButton,
+  playToEnd,
   playerUrl,
   probe,
   snapshotOf,
   startSpriteSampler,
   stopSpriteSampler,
+  waitForRun,
   waitFrames,
 } from './probe';
 
@@ -59,6 +62,8 @@ test(
 
     expect(sample.mismatches).toEqual([]);
     expect(sample.maxCorpses).toBeLessThanOrEqual(64);
+    // 0015: celdas pintadas constantes e iguales a los recuentos del mapa de la sonda.
+    expect(sample.cellMisses).toBe(0);
     expect(sample.frames).toBeGreaterThanOrEqual(590);
   },
 );
@@ -79,6 +84,7 @@ test(
         (k) => k?.visible,
       ),
     ).toEqual([0, 0, 0, 0, 0, 0]);
+    expect(s?.cells).toEqual({ trunk: 0, water: 0, bridge: 0 });
   },
 );
 
@@ -141,3 +147,66 @@ test(
     expect(problems).toEqual([]);
   },
 );
+
+// Spec sprite-rendering (0015), "Pintado del mapa": celdas pintadas frente al mapa de la sonda.
+// Proyecto `logic` (modo manual): el primer frame pintado basta.
+const cellsAndMap = async (page: Page) => {
+  const p = await probe(page);
+  return {
+    cells: p?.sprites?.cells ?? null,
+    counts: p?.map?.counts ?? null,
+    ground: p?.sprites?.ground,
+  };
+};
+const paintedOf = (counts: { trunk: number; water: number; bridge: number } | null) =>
+  counts && { trunk: counts.trunk, water: counts.water, bridge: counts.bridge };
+
+test('Scenario: Celdas pintadas iguales al mapa (?e2e&manual&seed=42)', async ({ page }) => {
+  await page.goto(gameUrl({ seed: 42, manual: true }));
+  await waitForRun(page);
+  const { cells, counts } = await cellsAndMap(page);
+  expect(cells).toEqual(paintedOf(counts));
+  expect(cells?.trunk ?? 0).toBeGreaterThan(0);
+});
+
+test('Scenario: Mapa vacío (?e2e&map=empty&seed=42: 0 celdas y 1 fondo)', async ({ page }) => {
+  await page.goto(gameUrl({ seed: 42, manual: true, emptyMap: true }));
+  await waitForRun(page);
+  const { cells, ground } = await cellsAndMap(page);
+  expect(cells).toEqual({ trunk: 0, water: 0, bridge: 0 });
+  expect(ground?.visible).toBe(1);
+});
+
+test('Scenario: Partida nueva con otro mapa (R tras la 42)', async ({ page }) => {
+  await page.goto(gameUrl({ seed: 42, manual: true }));
+  await waitForRun(page);
+  await focusGame(page);
+  const before = await cellsAndMap(page);
+  expect((await playToEnd(page))?.status).toBe('over');
+  await page.keyboard.press('r');
+  await expect.poll(async () => (await probe(page))?.runs).toBe(2);
+  // Primer frame de la partida nueva: el mapa de la sonda ya es el nuevo (evento, no reloj).
+  await expect
+    .poll(async () => JSON.stringify((await cellsAndMap(page)).counts))
+    .not.toBe(JSON.stringify(before.counts));
+  const after = await cellsAndMap(page);
+  expect(after.cells).toEqual(paintedOf(after.counts));
+  expect(after.counts).not.toEqual(before.counts);
+});
+
+test('Scenario: Mapa sobre el fondo de reserva (hoja del suelo abortada)', async ({ page }) => {
+  const problems: string[] = [];
+  page.on('pageerror', (e) => problems.push(`pageerror: ${e.message}`));
+  page.on('console', (m) => {
+    if (m.type() !== 'error') return;
+    const ground = m.location().url.includes('Tilemap_Flat.png');
+    if (!(ground && m.text().startsWith('Failed to load resource'))) problems.push(m.text());
+  });
+  await page.route(GROUND_SHEET, (route) => route.abort());
+  await page.goto(gameUrl({ seed: 42, manual: true }));
+  await waitForRun(page);
+  const { cells, counts, ground } = await cellsAndMap(page);
+  expect(ground).toEqual({ visible: 1, placeholder: 1 });
+  expect(cells).toEqual(paintedOf(counts));
+  expect(problems).toEqual([]);
+});

@@ -9,6 +9,8 @@ import { ProjectileLayer } from './ProjectileLayer';
 import { PulseLayer, type RingSprite } from './PulseLayer';
 import type { SpriteCounts } from './renderCounts';
 import type { SpriteKit } from './SpriteLike';
+import type { MapSnapshot } from '../../domain/map/MapSnapshot';
+import { paintTerrain, zeroCells, type TerrainCanvas, type TerrainColors } from './TerrainView';
 
 /** Tamaño de los pools: el de la escena más el tope de cadáveres de los datos de aspecto. */
 export interface LayerCapacity {
@@ -61,6 +63,7 @@ export class RenderLayers {
       pulses: this.pulses.counts,
       gems: this.gems.counts,
       enemyPlaceholders: this.enemies.placeholdersByType,
+      cells: zeroCells(),
     };
   }
 
@@ -81,6 +84,19 @@ export class RenderLayers {
     this.corpses.sync(ms);
     this.projectiles.sync(snapshot.projectiles);
     this.player.render(snapshot, ms);
+  }
+
+  /**
+   * Pinta el mapa de la partida (al crearla y tras R; change 0015) y guarda las celdas pintadas
+   * por tipo para la sonda. Una vez por partida, no por frame.
+   */
+  paintMap(
+    canvas: TerrainCanvas,
+    map: MapSnapshot,
+    colors: TerrainColors,
+    world: { readonly width: number; readonly height: number },
+  ): void {
+    Object.assign(this.counts.cells, paintTerrain(canvas, map, colors, world));
   }
 
   /** Cambio de partida: vacía las capas sin cadáveres y el jugador no hereda nada. */

@@ -73,6 +73,7 @@ function setup(missing: string[] = []) {
     },
     ground,
     aDefaultConfig().arena,
+    () => ({ clear: () => undefined, fill: () => undefined, refresh: () => undefined }),
   );
   return { log, playfield };
 }

@@ -119,13 +119,13 @@ provisional en la spec).
   a dos (error con el campo repetido), en `appearance.json`.
   Escenarios: SR "Colores del repositorio", "Colores inválidos".
   Test: `tests/infrastructure/appearance.test.ts`. E2E afectados: —
-- [ ] 5.2 `TerrainView`: `terrainFills` (rectángulos de mundo recortados y recuento por tipo), `paintTerrain` sobre
+- [x] 5.2 `TerrainView`: `terrainFills` (rectángulos de mundo recortados y recuento por tipo), `paintTerrain` sobre
   la costura `TerrainCanvas`, `SpriteCounts.cells` (0 en el menú, no cuenta como fondo ni reserva) y orden de creación
   tras el suelo y antes del resto de capas.
   Escenarios: SR "Celda pintada en su sitio y en su capa", "Fondo de hierba en el mundo entero" (orden), "Sonda en el
   menú" (cells a 0).
   Test: `tests/infrastructure/terrain-view.test.ts`, `ground-view.test.ts`. E2E afectados: —
-- [ ] 5.3 `GameScene` con CanvasTexture (design §5): crear una vez, repintar en create y en R, `Image` escalado ×
+- [x] 5.3 `GameScene` con CanvasTexture (design §5): crear una vez, repintar en create y en R, `Image` escalado ×
   `cellSize`, NEAREST. E2E nuevo en `sprite-rendering.spec.ts` (`realtime` solo si hace falta pintar; si no, `logic`).
   Escenarios: SR "Celdas pintadas iguales al mapa", "Mapa vacío", "Partida nueva con otro mapa", "Mapa sobre el fondo
   de reserva", "Recuento coherente con el snapshot" (celdas constantes en 600 frames).
