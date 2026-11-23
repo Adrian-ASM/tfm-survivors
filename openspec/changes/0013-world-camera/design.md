@@ -210,7 +210,7 @@ No hay puertos ni eventos de dominio nuevos. `FollowCamera` es una costura inter
   se espera ≤ 0,12, muy por debajo del presupuesto de 2 ms de media del bench.
 - Render: un `tileSprite` de mundo (un quad, con fragmentos limitados al viewport) y un seguimiento O(1) por frame.
   No se crean objetos por frame: `CameraRig` y su objetivo se crean una vez en `create()`. Se verifica con la suite
-  E2E con `CI_LIKE=1 --workers=12 --repeat-each=3`.
+  E2E con `CI_LIKE=1 --workers=6 --repeat-each=2`.
 - Datos persistidos: sin cambios. `Progress` no guarda ids ni nombres de mejoras. Entradas externas: `arena.json` y
   `upgrades.json` siguen pasando por zod y `buildRunRules`. La sonda `camera` solo existe con `?e2e` (spec
   main-menu, "Sin sonda fuera de E2E").

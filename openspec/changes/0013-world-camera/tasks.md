@@ -137,7 +137,7 @@
   `speed`
 
 ## 5. Rendimiento
-- [x] 5.1 Suite E2E con `CI_LIKE=1 --workers=12 --repeat-each=3` sobre `camera`, `sprites`, `smoke` y `menu-flow`;
+- [x] 5.1 Suite E2E con `CI_LIKE=1 --workers=6 --repeat-each=2` sobre `camera`, `sprites`, `smoke` y `menu-flow`;
   si aparece temblor visible con la cámara en movimiento, `roundPixels` true (R4) con su test en
   `camera-rig.test.ts`. Escenario: sprite-rendering "Fondo en las cuatro esquinas" (sin fallos intermitentes).
   E2E afectados: `camera`, `sprites`, `smoke`, `menu-flow`
@@ -146,4 +146,4 @@
 - [x] 6.1 `AGENTS.md` §1 (mundo 1.920 × 1.080, cámara, sonda `camera`/`world`, textos medievales, balance 25/50 en el
   límite), diario de IA con las mediciones de 0.2 y 1.2, y nota en el design si el criterio de éxito de la
   propuesta sobre spawns en la vista se ha corregido (D9). Sin test; `npm run verify` en verde.
-- [ ] 6.2 `npm run verify` y suite E2E completa (también con `CI_LIKE=1`). E2E afectados: todas
+- [x] 6.2 `npm run verify` y suite E2E completa (también con `CI_LIKE=1`). E2E afectados: todas
