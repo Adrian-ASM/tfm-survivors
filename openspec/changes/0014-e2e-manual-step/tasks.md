@@ -318,7 +318,7 @@
   - Bloqueo: depende de que el PR exista; hasta entonces vale el valor provisional de 3.2.
   - Hecho: `verify` verde.
 
-- [ ] 5.3 **Pasada pesada final**.
+- [x] 5.3 **Pasada pesada final**.
   - Comando: `CI_LIKE=1 npm run test:e2e -- --project=realtime --workers=2 --repeat-each=3`, con el frenado medido.
   - Hecho: **0 fallos** en 3 pasadas consecutivas, sin reintentos, y el PC usable durante la pasada. Si hay
     fallos, se corrige el test o la clasificación; no se suben márgenes ni reintentos.
