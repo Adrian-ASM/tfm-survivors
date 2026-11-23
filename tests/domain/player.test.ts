@@ -4,6 +4,8 @@ import { Player } from '../../src/domain/player/Player';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import { TICK_SECONDS } from '../../src/domain/run/Run';
 import { Vector2 } from '../../src/domain/shared/Vector2';
+import { aDefaultConfig } from '../support/builders';
+import { startRun, ticks } from '../support/runs';
 
 const EPS = 3; // toBeCloseTo(…, 3) ⇒ error < 0,0005 px (la spec pide ≤ 0,001)
 
@@ -158,5 +160,25 @@ describe('Player.withRules', () => {
   it('expone el radio de recogida efectivo', () => {
     const p = Player.spawn(Vector2.of(0, 0), RULES).withRules({ ...RULES, pickupRadius: 96 }, 0);
     expect(p.pickupRadius).toBe(96);
+  });
+});
+
+// Spec player-movement (0013): el mundo por defecto (1.920 × 1.080) es mayor que la vista.
+describe('Player · mundo por defecto (0013)', () => {
+  it('Scenario: Partida nueva con el mundo por defecto (jugador en (960, 540))', () => {
+    const run = startRun(aDefaultConfig());
+
+    const { x, y } = run.snapshot().player;
+
+    expect([x, y]).toEqual([960, 540]);
+  });
+
+  it('Scenario: El borde de la vista no es una pared ((940, 270) → (1.140, 270))', () => {
+    const run = startRun(aDefaultConfig(), { player: { x: 940, y: 270 } });
+
+    const last = ticks(run, 60, PlayerInput.of(1, 0)).at(-1)?.player;
+
+    expectWithinSpec(last?.x ?? 0, 1140);
+    expect(last?.y).toBe(270);
   });
 });

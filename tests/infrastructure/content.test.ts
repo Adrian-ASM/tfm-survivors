@@ -422,6 +422,11 @@ describe('Contenido por defecto del repositorio', () => {
     }
   });
 
+  // Spec world-camera (0013): el mundo y la vista son medidas distintas del contenido.
+  it('Scenario: Contenido por defecto (mundo 1.920 × 1.080 y vista 960 × 540)', () => {
+    expect(config?.arena).toEqual({ width: 1920, height: 1080, view: { width: 960, height: 540 } });
+  });
+
   it('Scenario: Catálogo de tipos de enemigo (ids goblin con los stats heredados, mismo orden)', () => {
     const stats = (config?.enemies.types ?? []).map((t) => [
       t.id,

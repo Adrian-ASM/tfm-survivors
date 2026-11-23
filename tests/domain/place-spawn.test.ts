@@ -5,6 +5,7 @@ import { Vector2 } from '../../src/domain/shared/Vector2';
 import { SpawnRules, type SpawnConfig } from '../../src/domain/wave/SpawnRules';
 import { placeSpawn } from '../../src/domain/wave/placeSpawn';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
+import { aDefaultConfig } from '../support/builders';
 import { StubRandom } from '../support/random';
 
 const unwrap = <T>(r: { ok: true; value: T } | { ok: false; error: { message: string } }): T => {
@@ -37,6 +38,31 @@ describe('placeSpawn', () => {
       const insideView = Math.abs(p.x - 2000) <= 480 && Math.abs(p.y - 2000) <= 270;
       expect(insideView).toBe(false);
     }
+  });
+
+  it('Scenario: Jugador en el centro del mundo por defecto (fuera de la cámara)', () => {
+    const { arena: world, waves } = aDefaultConfig();
+    const defaultRules = unwrap(
+      SpawnRules.create(
+        { maxAlive: waves.maxAlive, maxBudget: waves.maxBudget, ...waves.spawn },
+        unwrap(View.create(world.view.width, world.view.height)),
+      ),
+    );
+    const a = arena(world.width, world.height);
+    const player = Vector2.of(world.width / 2, world.height / 2);
+    const random = new Mulberry32RandomGenerator(13);
+    for (let i = 0; i < 200; i++) {
+      const r = RADII[i % 3] ?? 10;
+      const p = placeSpawn(player, r, defaultRules, a, random);
+      if (!p) throw new Error('se esperaba una posición');
+      expect([a.clampX(p.x, r), a.clampY(p.y, r)]).toEqual([p.x, p.y]);
+      const insideCamera = p.x > 480 && p.x < 1440 && p.y > 270 && p.y < 810;
+      expect(insideCamera).toBe(false);
+      const touchesTopOrBottom = p.y === r || p.y === world.height - r;
+      const ringError = touchesTopOrBottom ? 0 : Math.abs(p.distanceTo(player) - 582.727);
+      expect(ringError).toBeLessThanOrEqual(0.001);
+    }
+    expect([player.x, player.y]).toEqual([960, 540]);
   });
 
   it('Arena igual a la vista: dentro, a ≥ 200 y tocando un borde', () => {

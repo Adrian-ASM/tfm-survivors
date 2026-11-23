@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
+import type { RunSetup } from '../../src/domain/run/Run';
 import type { RunConfig } from '../../src/domain/run/RunConfig';
 import type { OfferSnapshot } from '../../src/domain/run/RunSnapshot';
 import { DEFAULT_UPGRADE_LIST, aDefaultConfig } from '../support/builders';
@@ -50,35 +51,56 @@ const directionOf = (input: PlayerInput) => ({ x: input.direction.x, y: input.di
 
 // Política de movimiento del bot de referencia (medición de ganabilidad de 0006, spec de 0010).
 // Desde 0013 el bot se construye con la configuración de la partida y huye de sus paredes.
-describe('fleeInput (movimiento del bot de referencia)', () => {
-  it('Scenario: Huida de un enemigo', () => {
+describe('fleeInput (movimiento del bot de referencia, mundo 1.920 × 1.080)', () => {
+  /** Input del bot por defecto con el jugador en `player` (o en el centro) y los enemigos dados. */
+  const botInput = (setup: RunSetup = {}): PlayerInput => {
     const config = aDefaultConfig();
-    const run = startRun(config, { enemies: [{ type: 'goblin-torch', x: 580, y: 270 }] });
-
-    const input = referenceBot(config).input(run.snapshot());
-
-    expect(directionOf(input)).toEqual({ x: -1, y: 0 });
+    return referenceBot(config).input(startRun(config, setup).snapshot());
+  };
+  const torchAt = (x: number, y: number): RunSetup => ({
+    enemies: [{ type: 'goblin-torch', x, y }],
   });
 
-  it('Scenario: Enemigo fuera de rango', () => {
+  it('Scenario: Huida sin amenazas (jugador en (960, 540))', () => {
     const config = aDefaultConfig();
-    const run = startRun(config, { enemies: [{ type: 'goblin-torch', x: 630, y: 270 }] });
+    const snapshot = startRun(config).snapshot();
 
-    expect(referenceBot(config).input(run.snapshot())).toBe(PlayerInput.NONE);
+    expect([snapshot.player.x, snapshot.player.y]).toEqual([960, 540]);
+    expect(referenceBot(config).input(snapshot)).toBe(PlayerInput.NONE);
   });
 
-  it('se aleja de la pared cuando no hay enemigos cerca', () => {
+  it('Scenario: Huida de un enemigo (a 100 px a la derecha)', () => {
+    expect(directionOf(botInput(torchAt(1060, 540)))).toEqual({ x: -1, y: 0 });
+  });
+
+  it('Scenario: Enemigo fuera de rango (a 150 px exactos)', () => {
+    expect(botInput(torchAt(1110, 540))).toBe(PlayerInput.NONE);
+  });
+
+  it('Scenario: Repulsión de la pared derecha del mundo (a 20 px)', () => {
+    expect(directionOf(botInput({ player: { x: 1900, y: 540 } }))).toEqual({ x: -1, y: 0 });
+  });
+
+  it('Scenario: El borde de la vista no es una pared ((940, 270))', () => {
+    expect(botInput({ player: { x: 940, y: 270 } })).toBe(PlayerInput.NONE);
+  });
+
+  it('Scenario: Pared a exactamente 64 px', () => {
+    expect(botInput({ player: { x: 64, y: 540 } })).toBe(PlayerInput.NONE);
+  });
+
+  it('Scenario: Esquina del mundo ((1.904, 1.064), diagonal hacia −x y −y)', () => {
+    const { x, y } = directionOf(botInput({ player: { x: 1904, y: 1064 } }));
+
+    expect(x).toBeLessThan(0);
+    expect(y).toBe(x);
+  });
+
+  it('se aleja de la pared izquierda cuando no hay enemigos cerca', () => {
     const config = aDefaultConfig();
-    const run = startRun(config, { player: { x: 20, y: 270 } });
+    const run = startRun(config, { player: { x: 20, y: 540 } });
 
     expect(directionOf(fleeInput(run.snapshot(), config.arena))).toEqual({ x: 1, y: 0 });
-  });
-
-  it('Scenario: Huida sin amenazas', () => {
-    const config = aDefaultConfig();
-    const run = startRun(config);
-
-    expect(referenceBot(config).input(run.snapshot())).toBe(PlayerInput.NONE);
   });
 });
 

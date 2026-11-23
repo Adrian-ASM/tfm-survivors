@@ -1,3 +1,4 @@
+import arenaJson from '../../content/arena.json';
 import type { RunConfig, UpgradesConfig } from '../../src/domain/run/RunConfig';
 import type { WeaponsConfig } from '../../src/domain/weapon/WeaponLoadout';
 import type { WeaponTypeConfig } from '../../src/domain/weapon/WeaponType';
@@ -191,13 +192,31 @@ type PlayerConfig = RunConfig['player'];
 export const DEFAULT_PICKUP_RADIUS = 128;
 
 /**
- * Contenido de partida de la spec (arena 960 × 540, radio 16, velocidad 200 px/s, vida 100,
+ * Geometría de los escenarios unitarios (arena 960 × 540 igual a la vista), NO el mundo del juego:
+ * los escenarios de `aRunConfig` (posiciones 480, 270, 944…) están escritos sobre ella. El mundo
+ * del contenido por defecto vive en content/arena.json y lo toma `aDefaultConfig` (0013, D6).
+ */
+export const SCENARIO_ARENA: RunConfig['arena'] = {
+  width: 960,
+  height: 540,
+  view: { width: 960, height: 540 },
+};
+
+/** Mundo y vista del contenido por defecto, leídos de content/arena.json (una sola fuente). */
+const CONTENT_ARENA: RunConfig['arena'] = {
+  width: arenaJson.width,
+  height: arenaJson.height,
+  view: { width: arenaJson.view.width, height: arenaJson.view.height },
+};
+
+/**
+ * Contenido de partida de la spec (arena de escenario 960 × 540, radio 16, velocidad 200 px/s, vida 100,
  * invulnerabilidad de 30 ticks y radio de recogida 64). El 64 es la geometría fija con la que están
  * escritos los escenarios del imán (p. ej. "Límite exacto del radio", "Más radio de recogida" = 96),
  * no el valor del contenido: el contenido por defecto usa `DEFAULT_PICKUP_RADIUS` (ver `aDefaultConfig`).
  */
 export const aRunConfig = (overrides: Partial<PlayerConfig> = {}): RunConfig => ({
-  arena: { width: 960, height: 540, view: { width: 960, height: 540 } },
+  arena: SCENARIO_ARENA,
   player: {
     speed: overrides.speed ?? 200,
     radius: overrides.radius ?? 16,
@@ -234,7 +253,10 @@ export const withUpgrades = (config: RunConfig, upgrades: UpgradesConfig): RunCo
 /** Contenido por defecto completo: armas y mejoras de content/ (lo que carga el juego). */
 export const aDefaultConfig = (): RunConfig =>
   withUpgrades(
-    withWeapons(aRunConfig({ pickupRadius: DEFAULT_PICKUP_RADIUS }), DEFAULT_WEAPONS),
+    withWeapons(
+      { ...aRunConfig({ pickupRadius: DEFAULT_PICKUP_RADIUS }), arena: CONTENT_ARENA },
+      DEFAULT_WEAPONS,
+    ),
     DEFAULT_UPGRADES,
   );
 
