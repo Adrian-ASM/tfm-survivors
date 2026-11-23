@@ -1,5 +1,23 @@
+import type { RunSeeding } from '../application/StartRun';
+import { OPEN_TERRAIN } from '../domain/map/TerrainSource';
 import type { RandomGenerator } from '../domain/shared/RandomGenerator';
 import { Mulberry32RandomGenerator } from '../infrastructure/random/Mulberry32RandomGenerator';
+import { MAP_STREAM, deriveSeed } from '../infrastructure/random/deriveSeed';
+
+/** Mapa de las partidas de una carga: el generado por la semilla o el vacío (`?e2e&map=empty`). */
+export type MapMode = 'generated' | 'empty';
+
+/**
+ * Siembra de una partida (ADR-0013), única ruta de la composición: oleadas y ofertas con
+ * `Mulberry32(seed)` y el mapa con su propio flujo, `Mulberry32(deriveSeed(seed, MAP_STREAM))`, o
+ * el mapa vacío si se fuerza.
+ */
+export function seededRun(seed: number, mode: MapMode = 'generated'): RunSeeding {
+  const random = new Mulberry32RandomGenerator(seed);
+  if (mode === 'empty') return { random, terrain: OPEN_TERRAIN };
+  const mapRandom = new Mulberry32RandomGenerator(deriveSeed(seed, MAP_STREAM));
+  return { random, terrain: { kind: 'generated', random: mapRandom } };
+}
 
 /**
  * Fábrica de generadores para `RestartRun` (spec simulation-loop, "Semilla de la partida"): cada

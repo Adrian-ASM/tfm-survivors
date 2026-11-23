@@ -64,7 +64,7 @@ provisional en la spec).
   tronco", "Recolocar no consume azar", "Gema recolocada recogida en el mismo tick", "Varias bajas en el mismo tick,
   una sobre agua"; los vivos de "Suelta de gema por baja" siguen verdes.
   Test: `tests/domain/run-gems-map.test.ts`. E2E afectados: —
-- [ ] 2.4 Partida sembrada como en producción: `RunSeeding` y `seededRun(seed, mode)` en `src/composition/seedSource.ts`;
+- [x] 2.4 Partida sembrada como en producción: `RunSeeding` y `seededRun(seed, mode)` en `src/composition/seedSource.ts`;
   `startSeededRun(config, seed, mode?)` en `tests/support/runs.ts`; los tests de determinismo, `stillSurvivors` y
   partidas largas con "contenido por defecto + semilla" pasan a `startSeededRun`. Revalidar los plazos de 4.800 ticks
   (anotar tick de primer golpe, primer pulso y primera oferta con el mapa).
