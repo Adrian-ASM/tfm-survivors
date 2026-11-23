@@ -81,7 +81,7 @@
   Escenarios: sprite-rendering "Fondo de hierba en el mundo entero", "Fondo de reserva en el mundo entero" (parte
   unitaria: relleno liso (0, 0)–(W, H)).
   Test: `tests/infrastructure/ground-view.test.ts`. E2E afectados: —
-- [ ] 2.5 HUD y overlay de elección con `scrollFactor` 0 (D4): test con escena falsa que comprueba que todos los
+- [x] 2.5 HUD y overlay de elección con `scrollFactor` 0 (D4): test con escena falsa que comprueba que todos los
   widgets de `sceneWidgets.ts` (HUD, velo, cartas y resultados) se crean con `setScrollFactor(0)` y en coordenadas
   de la vista. Rojo: quitar temporalmente el `setScrollFactor` de un widget y ver que el test lo detecta (anotar en
   el commit); no hay código de producción nuevo.
