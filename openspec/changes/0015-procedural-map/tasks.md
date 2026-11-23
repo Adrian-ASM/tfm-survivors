@@ -136,7 +136,7 @@ provisional en la spec).
 cambiar colores es solo contenido.
 
 ## 6. E2E existentes
-- [ ] 6.1 Migrar a `map=empty` todos los E2E `logic` y los `realtime` que recorren posiciones fijas (esquinas,
+- [x] 6.1 Migrar a `map=empty` todos los E2E `logic` y los `realtime` que recorren posiciones fijas (esquinas,
   derrota quieta con 42), sin cambiar sus aserciones. Rojo: desde 2.5 el lanzador juega con el mapa real, así que fallan
   `camera.spec`, `sprite-rendering` (esquinas) y los que asumen posiciones libres.
   Escenarios: PM "Mapa vacío en modo E2E" (regla de migración); WC "Nada fuera del mundo en una partida real";

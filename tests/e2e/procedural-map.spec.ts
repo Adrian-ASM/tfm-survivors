@@ -79,7 +79,7 @@ function expectGeneratedMap(m: MapView): void {
 }
 
 test('Scenario: Sonda coherente con el núcleo (?e2e&manual&seed=42)', async ({ page }) => {
-  await openGame(page, gameUrl({ seed: 42, manual: true }));
+  await openGame(page, gameUrl({ seed: 42, manual: true, map: 'real' }));
   await expectManual(page);
   const m = await mapOf(page);
   expect([m?.cols, m?.rows, m?.cellSize]).toEqual([32, 18, 60]);
@@ -96,7 +96,7 @@ test('Scenario: Sonda coherente con el núcleo (?e2e&manual&seed=42)', async ({ 
 });
 
 test('Scenario: Sonda en el menú (null tras Volver al menú; Jugar la repone)', async ({ page }) => {
-  await openGame(page, gameUrl({ seed: 42, manual: true }));
+  await openGame(page, gameUrl({ seed: 42, manual: true, map: 'real' }));
   await backToMenu(page);
   await expect.poll(() => mapOf(page)).toBeNull();
   await menuButton(page, 'Jugar').click();
@@ -114,7 +114,7 @@ test('Scenario: Sin sonda fuera de E2E (?seed=42 y Jugar)', async ({ page }) => 
 
 test('Scenario: Mapa vacío forzado (?e2e&map=empty&seed=42)', async ({ page }) => {
   const warnings = collect(page, ['warning']);
-  await openGame(page, gameUrl({ seed: 42, manual: true, emptyMap: true }));
+  await openGame(page, gameUrl({ seed: 42, manual: true }));
   const m = await mapOf(page);
   expect(m?.emptyForced).toBe(true);
   expect(m?.counts.grass).toBe(576);
@@ -123,7 +123,7 @@ test('Scenario: Mapa vacío forzado (?e2e&map=empty&seed=42)', async ({ page }) 
 
 test('Scenario: Mapa real por defecto en E2E (?e2e&seed=42)', async ({ page }) => {
   const warnings = collect(page, ['warning']);
-  await openGame(page, gameUrl({ seed: 42, manual: true }));
+  await openGame(page, gameUrl({ seed: 42, manual: true, map: 'real' }));
   const m = await mapOf(page);
   expect(m?.emptyForced).toBe(false);
   expect(signatureOf(m?.cells ?? [])).toBe(MAP_GOLDEN[42]);
@@ -159,7 +159,7 @@ test('Scenario: Se mantiene en todas las partidas de la carga (map=empty: fin, R
   page,
 }) => {
   const warnings = collect(page, ['warning']);
-  await openGame(page, gameUrl({ manual: true, emptyMap: true }));
+  await openGame(page, gameUrl({ manual: true }));
   const grass = async () => (await mapOf(page))?.counts.grass ?? 0;
   expect(await grass()).toBe(576);
   expect((await playToEnd(page))?.status).toBe('over');
@@ -178,7 +178,7 @@ test('Scenario: Se mantiene en todas las partidas de la carga (map=empty: fin, R
 test('Scenario: Reinicio con otra semilla (R tras la 42: mapa nuevo, generado y válido)', async ({
   page,
 }) => {
-  await openGame(page, gameUrl({ seed: 42, manual: true }));
+  await openGame(page, gameUrl({ seed: 42, manual: true, map: 'real' }));
   expect((await playToEnd(page))?.status).toBe('over');
   await page.keyboard.press('r');
   await expect.poll(async () => (await probe(page))?.runs).toBe(2);
@@ -190,7 +190,7 @@ test('Scenario: Reinicio con otra semilla (R tras la 42: mapa nuevo, generado y 
 test('Scenario: Sin solapes en la build con el mapa real (derecha y abajo, 20 × step(60))', async ({
   page,
 }) => {
-  await openGame(page, gameUrl({ seed: 42, manual: true }));
+  await openGame(page, gameUrl({ seed: 42, manual: true, map: 'real' }));
   const m = await mapOf(page);
   if (!m) throw new Error('sin mapa');
   const world = (await probe(page))?.world;

@@ -1,5 +1,6 @@
 import { type Page } from '@playwright/test';
 import arena from '../../content/arena.json' with { type: 'json' };
+import player from '../../content/player.json' with { type: 'json' };
 import { expect, test } from './fixtures';
 import { cardLayout } from '../../src/infrastructure/phaser/cardLayout';
 import {
@@ -57,8 +58,8 @@ const SEED7_END = 4885;
 const OFFER_STEP = 80 * 60;
 /** Tick desde el que "Oferta en el último tick del step" pide justo los que faltan. */
 const BEFORE_OFFER = 4000;
-/** Paso del jugador por tick a 200 px/s y su posición inicial (centro del mundo, arena.json). */
-const STEP_PX = 200 / 60;
+/** Paso del jugador por tick a la velocidad del contenido (player.json, 210 px/s desde 0015). */
+const STEP_PX = player.speed / 60;
 const START_X = arena.width / 2;
 
 /** Clic en la carta de índice `i` del overlay (posición de `cardLayout`, escalada al canvas). */
@@ -88,7 +89,7 @@ test.describe('Resolución de manual', () => {
   for (const value of ['', '=1', '=true']) {
     test(`Scenario: Modo manual activo (?e2e&manual${value}&seed=7)`, async ({ page }) => {
       const warnings = collect(page, ['warning']);
-      await page.goto(`./?e2e&manual${value}&seed=7`);
+      await page.goto(`./?e2e&map=empty&manual${value}&seed=7`);
       await waitForRun(page);
 
       const p = await probe(page);
@@ -100,7 +101,7 @@ test.describe('Resolución de manual', () => {
   for (const raw of ['0', 'false', 'abc', '2']) {
     test(`Scenario: Valor de manual inválido en modo E2E (manual=${raw})`, async ({ page }) => {
       const warnings = collect(page, ['warning']);
-      await page.goto(`./?e2e&manual=${raw}&seed=7`);
+      await page.goto(`./?e2e&map=empty&manual=${raw}&seed=7`);
       await waitForRun(page);
 
       expect((await probe(page))?.manual).toBe(false);
@@ -110,7 +111,7 @@ test.describe('Resolución de manual', () => {
 
   test('Scenario: Avisos independientes de seed, speed y manual (1 de cada)', async ({ page }) => {
     const warnings = collect(page, ['warning']);
-    await page.goto('./?e2e&seed=abc&manual=abc&speed=abc');
+    await page.goto('./?e2e&map=empty&seed=abc&manual=abc&speed=abc');
     await waitForRun(page);
 
     expect((await probe(page))?.manual).toBe(false);
@@ -125,7 +126,7 @@ test.describe('Sin modo manual', { tag: '@realtime' }, () => {
     page,
   }) => {
     const warnings = collect(page, ['warning']);
-    await page.goto('./?e2e&seed=7');
+    await page.goto('./?e2e&map=empty&seed=7');
     await waitForRun(page);
 
     expect(await step(page, 60)).toBe(0);
@@ -137,7 +138,7 @@ test.describe('Sin modo manual', { tag: '@realtime' }, () => {
   });
 
   test('Scenario: Manual inválido no anula speed (?e2e&manual=abc&speed=8)', async ({ page }) => {
-    await page.goto('./?e2e&manual=abc&speed=8&seed=7');
+    await page.goto('./?e2e&map=empty&manual=abc&speed=8&seed=7');
     await waitForRun(page);
 
     expect((await probe(page))?.speed).toBe(8);
@@ -165,7 +166,7 @@ test.describe('Sin modo manual', { tag: '@realtime' }, () => {
   }) => {
     test.setTimeout(180_000);
     const warnings = collect(page, ['warning']);
-    await page.goto('./?e2e&manual=abc&speed=15&seed=42');
+    await page.goto('./?e2e&map=empty&manual=abc&speed=15&seed=42');
     await waitForRun(page);
     await focusGame(page);
 
@@ -202,7 +203,7 @@ test.describe('Avance manual con step', () => {
   test('Scenario: Manual gana a speed (120 frames sin step: tick 0; step(10): 10)', async ({
     page,
   }) => {
-    await manualGame(page, './?e2e&manual&speed=8&seed=7');
+    await manualGame(page, './?e2e&map=empty&manual&speed=8&seed=7');
 
     await waitFrames(page, 120);
     const idle = await tickOf(page);
@@ -216,7 +217,7 @@ test.describe('Avance manual con step', () => {
     page,
   }) => {
     const warnings = collect(page, ['warning']);
-    await manualGame(page, './?e2e&manual&speed=abc&seed=7');
+    await manualGame(page, './?e2e&map=empty&manual&speed=abc&seed=7');
 
     expect(await step(page, 10)).toBe(10);
     expect((await probe(page))?.speed).toBe(1);

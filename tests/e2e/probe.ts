@@ -9,17 +9,17 @@ export const E2E_SPEED = 8;
 
 /**
  * URL del juego en modo E2E con la semilla, la velocidad (`speed` 1 ⇒ sin parámetro) y el modo
- * manual (`?e2e&manual`, change 0014) dados. `emptyMap` añade `map=empty` (0015): los E2E que
- * asumen posiciones libres juegan con el mapa vacío.
+ * manual (`?e2e&manual`, change 0014) dados. Mapa (0015): `map=empty` por defecto, porque los E2E
+ * anteriores asumen posiciones libres (spec procedural-map); los del mapa piden `map: 'real'`.
  */
 export function gameUrl({
   seed,
   speed = 1,
   manual = false,
-  emptyMap = false,
-}: { seed?: number; speed?: number; manual?: boolean; emptyMap?: boolean } = {}): string {
+  map = 'empty',
+}: { seed?: number; speed?: number; manual?: boolean; map?: 'empty' | 'real' } = {}): string {
   const params = ['e2e'];
-  if (emptyMap) params.push('map=empty');
+  if (map === 'empty') params.push('map=empty');
   if (manual) params.push('manual');
   if (seed !== undefined) params.push(`seed=${String(seed)}`);
   if (speed !== 1) params.push(`speed=${String(speed)}`);

@@ -34,7 +34,7 @@ test(
       if (!(torch && m.text().startsWith('Failed to load resource'))) problems.push(m.text());
     });
     await page.route(TORCH_SHEET, (route) => route.abort());
-    await page.goto(gameUrl({ seed: 42 }));
+    await page.goto(gameUrl({ seed: 42, map: 'real' }));
     await expect.poll(async () => (await snapshotOf(page))?.tick ?? 0).toBeGreaterThan(0);
     await startSpriteSampler(page, 'goblin-torch');
     await waitFrames(page, 600);
@@ -54,7 +54,7 @@ test(
   { tag: '@realtime' },
   async ({ page }) => {
     test.setTimeout(60_000);
-    await page.goto(gameUrl({ seed: 42 }));
+    await page.goto(gameUrl({ seed: 42, map: 'real' }));
     await expect.poll(async () => (await snapshotOf(page))?.tick ?? 0).toBeGreaterThan(0);
     await startSpriteSampler(page);
     await waitFrames(page, 600);
@@ -72,7 +72,7 @@ test(
   'Scenario: Sonda en el menú (tras Volver al menú, todo a 0)',
   { tag: '@realtime' },
   async ({ page }) => {
-    await page.goto(gameUrl({ seed: 42 }));
+    await page.goto(gameUrl({ seed: 42, map: 'real' }));
     await expect.poll(async () => (await snapshotOf(page))?.tick ?? 0).toBeGreaterThan(30);
     await focusGame(page);
     await backToMenu(page);
@@ -162,7 +162,7 @@ const paintedOf = (counts: { trunk: number; water: number; bridge: number } | nu
   counts && { trunk: counts.trunk, water: counts.water, bridge: counts.bridge };
 
 test('Scenario: Celdas pintadas iguales al mapa (?e2e&manual&seed=42)', async ({ page }) => {
-  await page.goto(gameUrl({ seed: 42, manual: true }));
+  await page.goto(gameUrl({ seed: 42, manual: true, map: 'real' }));
   await waitForRun(page);
   const { cells, counts } = await cellsAndMap(page);
   expect(cells).toEqual(paintedOf(counts));
@@ -170,7 +170,7 @@ test('Scenario: Celdas pintadas iguales al mapa (?e2e&manual&seed=42)', async ({
 });
 
 test('Scenario: Mapa vacío (?e2e&map=empty&seed=42: 0 celdas y 1 fondo)', async ({ page }) => {
-  await page.goto(gameUrl({ seed: 42, manual: true, emptyMap: true }));
+  await page.goto(gameUrl({ seed: 42, manual: true }));
   await waitForRun(page);
   const { cells, ground } = await cellsAndMap(page);
   expect(cells).toEqual({ trunk: 0, water: 0, bridge: 0 });
@@ -178,7 +178,7 @@ test('Scenario: Mapa vacío (?e2e&map=empty&seed=42: 0 celdas y 1 fondo)', async
 });
 
 test('Scenario: Partida nueva con otro mapa (R tras la 42)', async ({ page }) => {
-  await page.goto(gameUrl({ seed: 42, manual: true }));
+  await page.goto(gameUrl({ seed: 42, manual: true, map: 'real' }));
   await waitForRun(page);
   await focusGame(page);
   const before = await cellsAndMap(page);
@@ -203,7 +203,7 @@ test('Scenario: Mapa sobre el fondo de reserva (hoja del suelo abortada)', async
     if (!(ground && m.text().startsWith('Failed to load resource'))) problems.push(m.text());
   });
   await page.route(GROUND_SHEET, (route) => route.abort());
-  await page.goto(gameUrl({ seed: 42, manual: true }));
+  await page.goto(gameUrl({ seed: 42, manual: true, map: 'real' }));
   await waitForRun(page);
   const { cells, counts, ground } = await cellsAndMap(page);
   expect(ground).toEqual({ visible: 1, placeholder: 1 });
