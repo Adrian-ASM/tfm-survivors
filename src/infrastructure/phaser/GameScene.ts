@@ -22,6 +22,7 @@ import { ensurePlaceholderTexture, spriteKit, textureFrames } from './phaserArt'
 import type { SpriteCounts } from './renderCounts';
 import { createPlayfield, type GroundFactory } from './GroundView';
 import type { RenderLayers } from './RenderLayers';
+import { CameraRig, type CameraView, type WorldSize } from './CameraRig';
 
 const PULSE_COLOR = 0x7ce2fe;
 const PULSE_LINE_WIDTH = 2;
@@ -71,6 +72,8 @@ export interface GameSceneDeps {
   readonly launcher: RunLauncher;
   readonly restartRun: RestartRun;
   readonly capacity: SceneCapacity;
+  /** Tamaño del mundo (la `arena` del contenido): límites de la cámara y del suelo (0013). */
+  readonly world: WorldSize;
   /** Datos de aspecto validados (las hojas las carga `BootScene`). */
   readonly appearance: Appearance;
   readonly progress: SceneProgress;
@@ -102,6 +105,7 @@ interface Widgets {
 export class GameScene extends Phaser.Scene {
   private started: StartedRun | undefined;
   private w: Widgets | undefined;
+  private rig: CameraRig | undefined;
   private last: RunSnapshot | undefined;
   private gate = new PauseGate();
 
@@ -136,12 +140,13 @@ export class GameScene extends Phaser.Scene {
       },
     };
     const looks = resolveLooks(this.deps.appearance, textureFrames(this));
-    const { width, height } = this.scale;
     const { layers } = createPlayfield(
       { kit: spriteKit(this), ring, looks, capacity: this.deps.capacity },
       ground,
-      { width, height },
+      this.deps.world,
     );
+    // En cada entrada: Volver al menú destruye la cámara de la escena y la recrea (design D2).
+    this.rig = new CameraRig(this.cameras.main, this.deps.world);
     const snapshot = started.tickRun.snapshot();
     this.w = {
       layers,
@@ -204,9 +209,15 @@ export class GameScene extends Phaser.Scene {
     this.deps.pause.setVisible(false);
     this.deps.progress.leave();
     this.w = undefined;
+    this.rig = undefined;
     this.last = undefined;
     this.started = undefined;
     this.gate = new PauseGate();
+  }
+
+  /** Rectángulo visible del último frame pintado (null sin partida), para la sonda E2E. */
+  cameraView(): CameraView | null {
+    return this.rig?.view() ?? null;
   }
 
   private showPause(paused: boolean): void {
@@ -220,6 +231,8 @@ export class GameScene extends Phaser.Scene {
     if (!w || !started) return;
     this.last = snapshot;
     w.layers.render(snapshot);
+    // El motor centra y recorta la cámara en su preRender, en este mismo frame (design D2).
+    this.rig?.track(snapshot.player);
     w.hud.sync(snapshot);
     w.offer.sync(snapshot.offer);
     w.results.sync(snapshot);

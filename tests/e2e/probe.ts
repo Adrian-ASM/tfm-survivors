@@ -36,7 +36,7 @@ export interface SnapshotView {
   outcome: 'won' | 'lost' | null;
   kills: number;
   durationTicks: number;
-  player: { health: number; maxHealth: number; invulnerable: boolean };
+  player: { x: number; y: number; health: number; maxHealth: number; invulnerable: boolean };
   enemies: EnemyView[];
   projectiles: { id: number; x: number; y: number }[];
   pulses: { weapon: string; firedAt: number }[];
@@ -91,6 +91,20 @@ export interface SpritesView {
   enemyPlaceholders: Record<string, number>;
 }
 
+/** Rectángulo visible del último frame pintado, en coordenadas de mundo (change 0013). */
+export interface CameraViewData {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** Tamaño del mundo (la `arena` del contenido). */
+export interface WorldView {
+  width: number;
+  height: number;
+}
+
 interface Probe {
   __sprint?: {
     seed: number;
@@ -104,6 +118,9 @@ interface Probe {
     runs?: number;
     /** Sonda de sprites (change 0012). */
     sprites?: SpritesView;
+    /** Sonda de cámara (change 0013): null en el menú. */
+    camera?: CameraViewData | null;
+    world?: WorldView;
   };
 }
 
@@ -121,6 +138,8 @@ export const probe = (page: Page) =>
           screen: p.screen ?? null,
           runs: p.runs ?? null,
           sprites: p.sprites ?? null,
+          camera: p.camera ?? null,
+          world: p.world ?? null,
         }
       : null;
   });
@@ -235,6 +254,107 @@ export const stopSpriteSampler = (page: Page): Promise<SpriteSample> =>
     return state.result;
   });
 
+/** Resumen del muestreador de cámara (ver `startCameraSampler`). */
+export interface CameraSample {
+  /** Frames muestreados con partida (snapshot y cámara no nulos). */
+  frames: number;
+  /** Primeras discrepancias con la fórmula de seguimiento (error > 1 px) o con el tamaño. */
+  mismatches: string[];
+  /** Frames con el rectángulo visible fuera de (0, 0)–(W, H). */
+  outsideWorld: number;
+  /** Frames en que el suelo no era exactamente 1 sprite visible. */
+  groundMisses: number;
+  /** Frames con algún fondo de reserva. */
+  groundPlaceholderFrames: number;
+  /** Primera posición de cada id de enemigo y el rectángulo visible de ese frame. */
+  firstSeen: { id: number; x: number; y: number; camera: CameraViewData }[];
+  /** Esquinas del mundo tocadas por el jugador (a ≤ 1 px del recorte): tl, tr, bl, br. */
+  corners: string[];
+}
+
+interface CameraSamplerWindow {
+  __cameraSampler?: { stop: boolean; result: CameraSample };
+}
+
+/**
+ * Instala un muestreador con `requestAnimationFrame` (design D5) que, en cada frame con partida,
+ * comprueba la sonda de cámara contra el jugador del snapshot del mismo frame: tamaño de la vista,
+ * esquina = (clamp(x − V_w / 2, 0, W − V_w), clamp(y − V_h / 2, 0, H − V_h)) con error ≤ 1 px,
+ * rectángulo dentro del mundo y fondo visible. Guarda la primera posición de cada enemigo.
+ */
+export async function startCameraSampler(page: Page, view: WorldView): Promise<void> {
+  await page.evaluate((v) => {
+    const w = window as unknown as Probe & CameraSamplerWindow;
+    const result: CameraSample = {
+      frames: 0,
+      mismatches: [],
+      outsideWorld: 0,
+      groundMisses: 0,
+      groundPlaceholderFrames: 0,
+      firstSeen: [],
+      corners: [],
+    };
+    const state = { stop: false, result };
+    w.__cameraSampler = state;
+    const seen = new Set<number>();
+    const miss = (text: string) => {
+      if (result.mismatches.length < 10) result.mismatches.push(text);
+    };
+    const clamp = (x: number, min: number, max: number) => Math.min(Math.max(x, min), max);
+    const tick = () => {
+      if (state.stop) return;
+      const p = w.__sprint;
+      const snap = p?.snapshot;
+      const cam = p?.camera;
+      const world = p?.world;
+      if (snap && cam && world) {
+        result.frames += 1;
+        const { x, y } = snap.player;
+        const ex = clamp(x - v.width / 2, 0, world.width - v.width);
+        const ey = clamp(y - v.height / 2, 0, world.height - v.height);
+        const t = String(snap.tick);
+        if (cam.width !== v.width || cam.height !== v.height) miss(`tick ${t}: tamaño`);
+        if (Math.abs(cam.x - ex) > 1 || Math.abs(cam.y - ey) > 1) {
+          miss(`tick ${t}: (${String(cam.x)}, ${String(cam.y)}) ≠ (${String(ex)}, ${String(ey)})`);
+        }
+        if (
+          cam.x < 0 ||
+          cam.y < 0 ||
+          cam.x + cam.width > world.width ||
+          cam.y + cam.height > world.height
+        ) {
+          result.outsideWorld += 1;
+        }
+        const ground = p.sprites?.ground;
+        if (ground?.visible !== 1) result.groundMisses += 1;
+        if ((ground?.placeholder ?? 0) > 0) result.groundPlaceholderFrames += 1;
+        for (const e of snap.enemies) {
+          if (seen.has(e.id)) continue;
+          seen.add(e.id);
+          result.firstSeen.push({ id: e.id, x: e.x, y: e.y, camera: { ...cam } });
+        }
+        const left = cam.x <= 1;
+        const top = cam.y <= 1;
+        const right = cam.x >= world.width - v.width - 1;
+        const bottom = cam.y >= world.height - v.height - 1;
+        const corner = (top ? 't' : bottom ? 'b' : '') + (left ? 'l' : right ? 'r' : '');
+        if (corner.length === 2 && !result.corners.includes(corner)) result.corners.push(corner);
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, view);
+}
+
+/** Para el muestreador de cámara y devuelve su resumen. */
+export const stopCameraSampler = (page: Page): Promise<CameraSample> =>
+  page.evaluate(() => {
+    const state = (window as unknown as CameraSamplerWindow).__cameraSampler;
+    if (!state) throw new Error('No hay muestreador de cámara instalado');
+    state.stop = true;
+    return state.result;
+  });
+
 /** Lo que la sonda tenía en el primer frame pintado de una partida nueva. */
 export interface FirstFrameView {
   runs: number;
@@ -242,6 +362,7 @@ export interface FirstFrameView {
   snapshot: SnapshotView | null;
   results: ResultsViewData | null;
   sprites: SpritesView | null;
+  camera: CameraViewData | null;
 }
 
 interface FirstFrameWindow {
@@ -275,6 +396,7 @@ export async function watchNextRun(page: Page): Promise<void> {
             snapshot: p.snapshot,
             results: p.results,
             sprites: p.sprites ?? null,
+            camera: p.camera ?? null,
           }),
         ) as FirstFrameView;
         return;

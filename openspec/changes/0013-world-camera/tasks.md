@@ -89,7 +89,7 @@
   Test: `tests/infrastructure/hud.test.ts`. E2E afectados: —
 
 ## 3. Composición y adaptador Phaser
-- [ ] 3.1 `GameSceneDeps.world`, `CameraRig` sobre `this.cameras.main` en cada `create()`, `rig.track` en `render`
+- [x] 3.1 `GameSceneDeps.world`, `CameraRig` sobre `this.cameras.main` en cada `create()`, `rig.track` en `render`
   antes de `onRender`, `GameScene.cameraView()`, y en `main.ts` el `world` desde `config.value.arena` y la sonda con
   getter `camera` (null en el menú) y `world`. `tests/e2e/probe.ts`: `player.x/y`, `camera`, `world`,
   `startCameraSampler` y `watchNextRun` con `camera` (D5). Rojo: E2E nuevo `camera.spec.ts` "Rectángulo coherente con
