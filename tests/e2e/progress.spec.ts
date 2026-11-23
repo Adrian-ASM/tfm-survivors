@@ -5,12 +5,16 @@ import {
   E2E_SPEED,
   collect,
   cspState,
+  expectManual,
   expectSpeed,
   focusGame,
   gameUrl,
   playChoosingFirst,
+  playToEnd,
   probe,
   snapshotOf,
+  step,
+  waitForRun,
   watchCsp,
 } from './probe';
 import { F, P0, progressText, seedProgress } from './progressFixtures';
@@ -35,14 +39,11 @@ const DAMAGED = '{"schemaVersion":1,"records":';
 const stored = (page: Page): Promise<string | null> =>
   page.evaluate((key) => window.localStorage.getItem(key), KEY);
 
-const waitTicks = (page: Page, ticks: number) =>
-  expect
-    .poll(async () => (await snapshotOf(page))?.tick ?? 0, { timeout: 10_000 })
-    .toBeGreaterThan(ticks);
-
 /** Margen de reloj (no es la aserción): una derrota a ?speed=8 tarda unos 10 s. */
 const PLAY_TIMEOUT_MS = 45_000;
 const TEST_TIMEOUT_MS = 60_000;
+/** Ticks jugados antes de recargar a mitad de partida (5 s de juego, sin oferta ni fin). */
+const MID_RUN_TICKS = 300;
 const MAX_IMPORT_BYTES = 65_536;
 
 type Records = { bestTimeSeconds: number; bestLevel: number; maxKills: number };
@@ -63,15 +64,6 @@ const maxOf = (...all: Records[]): Records => ({
   bestLevel: Math.max(...all.map((r) => r.bestLevel)),
   maxKills: Math.max(...all.map((r) => r.maxKills)),
 });
-
-/** Juega sin input con la política de elección fija hasta la derrota. */
-async function playToDefeat(page: Page) {
-  await expect.poll(async () => (await snapshotOf(page))?.tick ?? null).not.toBeNull();
-  await focusGame(page);
-  const ended = await playChoosingFirst(page, (s) => s.status === 'over', PLAY_TIMEOUT_MS);
-  expect(ended?.outcome).toBe('lost');
-  return ended;
-}
 
 /** Pulsa Exportar y devuelve el nombre sugerido y el contenido del fichero descargado. */
 async function exportFile(page: Page): Promise<{ name: string; text: string }> {
@@ -123,8 +115,12 @@ test(
     await expectSpeed(page, E2E_SPEED);
     expect(await progressOf(page)).toMatchObject({ records: P0.records, history: P0.history });
 
-    // La única partida: derrota acelerada; panel con máx(P0, partida) y 2 entradas.
-    const ended = await playToDefeat(page);
+    // La única partida: derrota acelerada (tiempo real a speed=8, con la política de elección
+    // fija); panel con máx(P0, partida) y 2 entradas.
+    await waitForRun(page);
+    await focusGame(page);
+    const ended = await playChoosingFirst(page, (s) => s.status === 'over', PLAY_TIMEOUT_MS);
+    expect(ended?.outcome).toBe('lost');
     const played = {
       bestTimeSeconds: Math.floor((ended?.tick ?? 0) / 60),
       bestLevel: ended?.progression.level ?? 0,
@@ -196,7 +192,7 @@ test(
 
     // Recarga (la siembra es de un solo uso): el progreso cargado es el fusionado, 3 entradas.
     await page.reload();
-    await expect.poll(async () => (await snapshotOf(page))?.tick ?? null).not.toBeNull();
+    await waitForRun(page);
     const reloaded = await progressOf(page);
     expect(reloaded?.records).toEqual(merged);
     expect(reloaded?.history).toHaveLength(3);
@@ -215,7 +211,6 @@ test(
 test('Almacenamiento bloqueado: se juega, el overlay avisa de que no se guarda y R reinicia', async ({
   page,
 }) => {
-  test.setTimeout(TEST_TIMEOUT_MS);
   const problems = collect(page, ['error', 'warning']);
   await page.addInitScript(() => {
     Object.defineProperty(window, 'localStorage', {
@@ -225,12 +220,15 @@ test('Almacenamiento bloqueado: se juega, el overlay avisa de que no se guarda y
       },
     });
   });
-  await page.goto(gameUrl({ seed: STILL_DEFEAT_SEED, speed: E2E_SPEED }));
-  await expectSpeed(page, E2E_SPEED);
+  await page.goto(gameUrl({ seed: STILL_DEFEAT_SEED, manual: true }));
+  await expectManual(page);
+  await waitForRun(page);
+  await focusGame(page);
 
-  const ended = await playToDefeat(page);
+  const ended = await playToEnd(page);
   const progress = await progressOf(page);
 
+  expect(ended?.outcome).toBe('lost');
   expect(ended?.tick).toBeLessThanOrEqual(STILL_LIMIT_TICKS);
   expect(progress?.notices.some((n) => n.includes('no se guarda'))).toBe(true);
   expect(progress?.shown).toEqual(
@@ -250,12 +248,33 @@ test('Almacenamiento bloqueado: se juega, el overlay avisa de que no se guarda y
   expect(problems).toEqual([]);
 });
 
+test('Partida sin terminar: recargar a mitad de partida no guarda nada', async ({ page }) => {
+  const problems = collect(page, ['error', 'warning']);
+  await page.goto(gameUrl({ manual: true }));
+  await expectManual(page);
+  await waitForRun(page);
+  expect(await step(page, MID_RUN_TICKS)).toBe(MID_RUN_TICKS);
+
+  await page.reload();
+  await waitForRun(page);
+  expect(await step(page, 30)).toBe(30);
+
+  expect(await stored(page)).toBeNull();
+  expect(problems).toEqual([]);
+});
+
 test.describe(
   'Carga del progreso guardado (sin jugar hasta el final)',
   {
     tag: '@realtime',
   },
   () => {
+    // Su escenario pide 2 s reales de partida en curso.
+    const waitTicks = (page: Page, ticks: number) =>
+      expect
+        .poll(async () => (await snapshotOf(page))?.tick ?? 0, { timeout: 10_000 })
+        .toBeGreaterThan(ticks);
+
     for (const [name, value] of [
       ['Datos guardados dañados', DAMAGED],
       ['Versión futura guardada', FUTURE_VERSION],
@@ -274,17 +293,5 @@ test.describe(
         expect(await stored(page)).toBe(value);
       });
     }
-
-    test('Partida sin terminar: recargar a mitad de partida no guarda nada', async ({ page }) => {
-      const problems = collect(page, ['error', 'warning']);
-      await page.goto(gameUrl());
-      await waitTicks(page, TWO_SECONDS_TICKS);
-
-      await page.reload();
-      await waitTicks(page, 30);
-
-      expect(await stored(page)).toBeNull();
-      expect(problems).toEqual([]);
-    });
   },
 );

@@ -256,7 +256,7 @@
     `watchNextRun`; la sexta con `stepUntil(tick ≥ 600)`.
   - Hecho: la guarda incluye el fichero, `verify` verde y `npm run test:e2e -- results` verde.
 
-- [ ] 4.5 **`progress.spec.ts`**, solo los tests de reglas.
+- [x] 4.5 **`progress.spec.ts`**, solo los tests de reglas.
   - Cambios: guardado al terminar con `playToEnd`; almacenamiento bloqueado + R; recarga a mitad tras `step(300)`.
     Se quedan `@realtime` "Sin violaciones en el bucle completo" (la partida completa a `speed=8`) y "Carga del
     progreso guardado".
