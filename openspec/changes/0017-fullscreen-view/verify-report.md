@@ -44,6 +44,7 @@ Ninguno.
 - W1 · Balance en el límite inferior de la banda: **25/50** victorias (banda 25–35). Cualquier cambio futuro en `maxBudget`, la tabla o el bot rompe el gate. Registrado en design D9; la fragilidad es conocida y la tabla se obtuvo en la 2.ª ronda de calibración.
 - W2 · `tests/e2e/realtime.spec.ts:63` mantiene `MAX_MAP_OBJECTS = 300`, mientras el tope del change es 1.000 (`plan-map-fallback.test.ts`). El proyecto `realtime` es a demanda y no corre en `verify` ni CI, pero fallará o quedará incoherente con el mundo de 3.840 x 2.160. Actualizar o registrar como deuda.
   - **Resuelto** por el orquestador tras el gate (corrección trivial pedida por el usuario): `MAX_MAP_OBJECTS = 1000`. W1 y S1–S2 quedan registrados como deuda.
+- Deuda (CI tras el PR): el render del mapa 64 × 36 sin GPU es ~2,5x más lento por frame que en 0016; los E2E del mapa real llevan `test.slow()`. Pendiente: no pintar objetos del mapa fuera de la cámara.
 
 ### Suggestion
 - S1 · `generateMap` tarda 4,15 ms frente a los <= 2,3 ms estimados (informativo; sigue siendo una sola vez por partida).

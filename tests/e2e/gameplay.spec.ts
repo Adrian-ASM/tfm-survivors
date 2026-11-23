@@ -92,9 +92,19 @@ test('Redimensionado con la oferta abierta: vista 1.000 × 600, mismo tick y cli
 
 // Spec world-camera, "Nada fuera del mundo con el mapa real": la cámara sigue al jugador sin
 // suavizado y recortada al mundo.
+/**
+ * 0017: con el mapa real de 64 × 36 (~700 objetos) a 1.280 × 720, el runner de CI sin GPU pinta
+ * cada frame ~2,5 veces más lento que en 0016 y estos bucles esperan un frame por step. Triple de
+ * plazo con `test.slow()`; sin umbrales de fps ni de tiempo (regla e2e-lite).
+ */
+function slowMapRealOnCi(): void {
+  test.slow();
+}
+
 test('Cámara: centrada al empezar y sigue al jugador hacia la derecha sin salir del mundo', async ({
   page,
 }) => {
+  slowMapRealOnCi();
   await openGame(page, gameUrl({ seed: 7, manual: true, map: 'real' }));
   const first = await probe(page);
   expect(first?.world).toEqual(WORLD);
@@ -146,6 +156,7 @@ const SAMPLED_TICKS = 600;
 test('Sprites: recuentos de la sonda iguales al snapshot y reserva si fallan Torch y las hojas del mapa', async ({
   page,
 }) => {
+  slowMapRealOnCi();
   const problems: string[] = [];
   page.on('pageerror', (e) => problems.push(`pageerror: ${e.message}`));
   page.on('console', (m) => {
@@ -227,6 +238,7 @@ function shoreCount(m: MapView): number {
 test('Mapa real: sonda igual a la firma de la semilla 42, castillo y salida, y sin atravesar troncos, agua ni castillo', async ({
   page,
 }) => {
+  slowMapRealOnCi();
   await openGame(page, gameUrl({ seed: 42, manual: true, map: 'real' }));
   const first = await probe(page);
   const m = first?.map;
