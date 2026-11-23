@@ -17,7 +17,7 @@
 
 ## 1. Infraestructura pura (Node, sin motor)
 
-- [ ] 1.1 **`resolveManual`** (design §2).
+- [x] 1.1 **`resolveManual`** (design §2).
   - Ficheros: `src/infrastructure/url/resolveManual.ts` y `tests/infrastructure/resolve-manual.test.ts`.
   - Test:
     - `''`, `1` y `true` con `e2e` dan `manual: true` sin aviso;
