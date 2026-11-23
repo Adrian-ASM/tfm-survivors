@@ -1,6 +1,6 @@
 # Proposal · 0014-e2e-manual-step
 
-- **Estado**: pendiente de aprobación
+- **Estado**: aprobada (2026-11-23)
 - **Issue**: sin issue de GitHub
 - **Rama / worktree**: `change/0014-e2e-manual-step`
 
