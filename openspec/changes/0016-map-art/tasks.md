@@ -20,7 +20,7 @@
   de test con huella pequeña si su arena es diminuta (riesgo §14). — escenarios: "Contenido por defecto", "Valores
   fuera de rango" (casos `castle`), "Límites válidos" (`{1, 1}`, `{16, 9}`), "Campo ausente o desconocido" (sin
   `castle`)
-- [ ] 1.3 VO `CastleSite` (`castleSite(config, grid)`: columnas, filas, puerta, salida = centro de la puerta,
+- [x] 1.3 VO `CastleSite` (`castleSite(config, grid)`: columnas, filas, puerta, salida = centro de la puerta,
   congelado) y `MapRules.castle`; **sin** mover aún la zona de inicio ni el generador (la firma no cambia). Test en
   `map-rules.test.ts`. — escenarios: "Huella y salida por defecto" (parte de reglas: 14–18 × 6–9, salida (990, 630)),
   "Huella en un mundo mayor" (31–35 × 30–33, salida (2.010, 2.070))

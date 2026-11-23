@@ -7,6 +7,7 @@ import {
   START_RADIUS_TOO_LARGE,
   type MapConfig,
 } from '../../../src/domain/map/MapRules';
+import { castleSite } from '../../../src/domain/map/CastleSite';
 import { DEFAULT_MAP } from '../../support/builders';
 
 function create(patch: Partial<MapConfig>, width = 1920, height = 1080) {
@@ -107,6 +108,41 @@ describe('MapRules · invariantes cruzadas con arena y jugador', () => {
   it('huella y puerta deben caber también en una rejilla impar (3 × 3: castle { 1, 1 })', () => {
     // 180 × 180 ⇒ 3 × 3 celdas, centro (1, 1): huella (1, 1) y puerta (1, 2).
     expect(create({ castle: { cols: 1, rows: 1 }, startRadius: 60 }, 180, 180).ok).toBe(true);
+  });
+
+  it('Scenario: Huella y salida por defecto (reglas: columnas 14–18, filas 6–9, salida (990, 630))', () => {
+    const r = create({});
+    const site = r.ok ? r.value.castle : null;
+    expect(site).toEqual({
+      firstCol: 14,
+      lastCol: 18,
+      firstRow: 6,
+      lastRow: 9,
+      door: { col: 16, row: 10 },
+      exit: { x: 990, y: 630 },
+    });
+    expect(Object.isFrozen(site)).toBe(true);
+    expect(site && Object.isFrozen(site.exit)).toBe(true);
+  });
+
+  it('Scenario: Huella en un mundo mayor (4.000 × 4.000: 31–35 × 30–33, salida (2.010, 2.070))', () => {
+    const r = create({}, 4000, 4000);
+    const site = r.ok ? r.value.castle : null;
+    expect(site && [site.firstCol, site.lastCol, site.firstRow, site.lastRow]).toEqual([
+      31, 35, 30, 33,
+    ]);
+    expect(site?.exit).toEqual({ x: 2010, y: 2070 });
+  });
+
+  it('castleSite: la salida es el centro del rectángulo recortado de la puerta', () => {
+    // 1.000 × 150: 17 × 3 celdas, la última fila de 30 px (120..150); centro (8, 1), puerta (8, 2).
+    const site = castleSite({ cols: 1, rows: 1 }, { cellSize: 60, width: 1000, height: 150 });
+    expect(site.ok && site.value.exit).toEqual({ x: 510, y: 135 });
+  });
+
+  it('castleSite falla con map.castle si no cabe', () => {
+    const r = castleSite({ cols: 17, rows: 4 }, { cellSize: 60, width: 1920, height: 1080 });
+    expect(!r.ok && r.error.field).toBe('map.castle');
   });
 
   it('guarda el radio del jugador con el que se validó', () => {

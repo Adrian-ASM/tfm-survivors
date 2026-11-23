@@ -1,5 +1,6 @@
 import type { Arena } from '../arena/Arena';
 import { err, invalidConfig, ok, type DomainError, type Result } from '../shared/Result';
+import { castleSite, type CastleSite } from './CastleSite';
 
 /** Mensajes de las invariantes del mapa; la validación de contenido (zod) usa los mismos. */
 export const CELL_SIZE_MUST_BE_INTEGER = 'El tamaño de celda debe ser un entero ≥ 1.';
@@ -17,8 +18,7 @@ export const CELL_SIZE_BELOW_PLAYER =
 export const START_RADIUS_TOO_LARGE =
   'El radio de la zona de inicio no puede pasar de la mitad del lado menor del mundo.';
 export const CASTLE_SIZE_MUST_BE_INTEGER = 'La huella del castillo necesita enteros ≥ 1.';
-export const CASTLE_OUT_OF_GRID =
-  'La huella del castillo y su puerta deben caber en la rejilla (como mucho la mitad de columnas y filas).';
+export { CASTLE_OUT_OF_GRID } from './CastleSite';
 
 /** Límites de los campos de rango (spec procedural-map, "Contenido del mapa validado"). */
 export const MAP_LIMITS = {
@@ -94,47 +94,10 @@ function checkCross(config: MapConfig, arena: Arena, playerRadius: number): Doma
   if (startRadius > Math.min(arena.width, arena.height) / 2) {
     return invalidConfig('map.startRadius', START_RADIUS_TOO_LARGE);
   }
-  if (!castleFits(config, arena)) return invalidConfig('map.castle', CASTLE_OUT_OF_GRID);
   return null;
 }
 
-/**
- * ¿Caben la huella del castillo y su puerta en la rejilla? (design 0016 §12.1 A1): como mucho
- * ⌊columnas / 2⌋ × ⌊filas / 2⌋, centrada en la columna del centro, con la fila inferior en la del
- * centro y la puerta justo debajo.
- */
-function castleFits(config: MapConfig, arena: Arena): boolean {
-  const { cellSize, castle } = config;
-  const grid = gridOf(arena, cellSize);
-  const { col, row } = centerCell(arena, cellSize, grid);
-  const c0 = col - Math.floor(castle.cols / 2);
-  const r0 = row - castle.rows + 1;
-  return (
-    castle.cols <= Math.floor(grid.cols / 2) &&
-    castle.rows <= Math.floor(grid.rows / 2) &&
-    c0 >= 0 &&
-    c0 + castle.cols <= grid.cols &&
-    r0 >= 0 &&
-    row + 1 < grid.rows
-  );
-}
-
-/** Columnas y filas de la rejilla que cubre el mundo. */
-function gridOf(arena: Arena, cellSize: number): { cols: number; rows: number } {
-  return { cols: Math.ceil(arena.width / cellSize), rows: Math.ceil(arena.height / cellSize) };
-}
-
-/** Celda que contiene el centro del mundo (recortada a la rejilla). */
-export function centerCell(
-  arena: { readonly width: number; readonly height: number },
-  cellSize: number,
-  grid: { readonly cols: number; readonly rows: number },
-): { col: number; row: number } {
-  return {
-    col: Math.min(Math.floor(arena.width / 2 / cellSize), grid.cols - 1),
-    row: Math.min(Math.floor(arena.height / 2 / cellSize), grid.rows - 1),
-  };
-}
+const arenaSize = (arena: Arena) => ({ width: arena.width, height: arena.height });
 
 /**
  * Reglas del mapa (value object): parámetros del contenido y la rejilla que cubre el mundo,
@@ -148,13 +111,17 @@ export class MapRules {
   readonly width: number;
   readonly height: number;
   readonly start: StartZone;
+  /** Sitio del castillo del mapa generado (huella, puerta y salida). */
+  readonly castle: CastleSite;
 
   private constructor(
     readonly config: MapConfig,
     arena: Arena,
     /** Radio del jugador con el que se validaron las reglas (salidas declaradas, 0016). */
     readonly playerRadius: number,
+    castle: CastleSite,
   ) {
+    this.castle = castle;
     this.cellSize = config.cellSize;
     this.width = arena.width;
     this.height = arena.height;
@@ -175,7 +142,9 @@ export class MapRules {
   ): Result<MapRules, DomainError> {
     const error = checkRanges(config) ?? checkCross(config, arena, playerRadius);
     if (error) return err(error);
-    return ok(new MapRules(config, arena, playerRadius));
+    const site = castleSite(config.castle, { cellSize: config.cellSize, ...arenaSize(arena) });
+    if (!site.ok) return site;
+    return ok(new MapRules(config, arena, playerRadius, site.value));
   }
 
   get cellCount(): number {
