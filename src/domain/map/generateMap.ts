@@ -2,6 +2,8 @@ import type { RandomGenerator } from '../shared/RandomGenerator';
 import { BRIDGE, WATER } from './CellType';
 import { GameMap } from './GameMap';
 import type { MapRules } from './MapRules';
+import { isFullyConnected } from './connectivity';
+import { placeTrunks, trunkTarget } from './placeTrunks';
 
 /** Entero uniforme en [lo, hi] (un valor del generador). */
 const pickInt = (random: RandomGenerator, lo: number, hi: number): number =>
@@ -148,5 +150,26 @@ function carveRivers(draft: Draft, random: RandomGenerator): void {
 export function generateMap(rules: MapRules, random: RandomGenerator): GameMap {
   const draft = new Draft(rules);
   carveRivers(draft, random);
-  return GameMap.adopt(draft.cells, rules);
+  const trunks = placeTrunks(draft.cells, draft.noTrunk, rules, random);
+  const map = GameMap.adopt(draft.cells, rules);
+  checkPostcondition(map, rules, trunks);
+  return map;
+}
+
+/** Tolerancia de troncos sobre el objetivo, en fracción de celdas (spec, provisional). */
+const TRUNK_TOLERANCE = 0.02;
+
+/**
+ * Postcondición (design 0015 §3.2 paso 4): conectividad completa y troncos en el objetivo ±
+ * tolerancia. No se espera que falle con contenido válido; los tests de 1..1000 la ejercitan.
+ */
+function checkPostcondition(map: GameMap, rules: MapRules, trunks: number): void {
+  const slack = TRUNK_TOLERANCE * rules.cellCount;
+  const target = trunkTarget(rules);
+  if (Math.abs(trunks - target) > slack) {
+    throw new Error(
+      `Invariante rota: ${String(trunks)} troncos para un objetivo de ${String(target)}`,
+    );
+  }
+  if (!isFullyConnected(map)) throw new Error('Invariante rota: mapa sin conectividad completa');
 }

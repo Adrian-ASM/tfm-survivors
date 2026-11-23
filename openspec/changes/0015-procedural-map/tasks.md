@@ -32,7 +32,7 @@
   Escenarios: PM "Composición con las semillas del conjunto" (parte río), "Sin río ni troncos", "Misma semilla,
   mismo mapa" (nivel generador).
   Test: `tests/domain/map/generate-rivers.test.ts`, `tests/infrastructure/derive-seed.test.ts`. E2E afectados: —
-- [ ] 1.5 Troncos y postcondición (design §3.2 pasos 3–4): manchas por frontera que no se fusionan, respeto de
+- [x] 1.5 Troncos y postcondición (design §3.2 pasos 3–4): manchas por frontera que no se fusionan, respeto de
   `noTrunk`, rechazo por BFS, parada en `≥ T`, invariante final.
   Escenarios: PM "Composición con las semillas del conjunto" (troncos 58–80, manchas 3–8, ≥ 404 caminables), "Zona
   libre con todas las semillas" (1..1000, 0, 2³²−1), "Todas las celdas caminables alcanzables", "Semillas extremas",
