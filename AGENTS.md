@@ -47,6 +47,15 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   bot v2, que esquiva troncos y agua). E2E: `gameUrl` añade `map=empty` por defecto
   (`map: 'real'` para los del mapa); sonda `window.__sprint.map` y `sprites.cells`; firma dorada en
   `tests/support/mapGolden.ts`.
+  Arte del mapa y castillo (change 0016): celda `castle` (código 4, no caminable) con huella fija por contenido
+  (`map.json` `castle` 5 × 4, columnas 14–18 × filas 6–9) solo en el mapa generado; la **salida es de cada mapa**
+  (puerta del castillo, (990, 630); centro del mundo en `open`/`cells` salvo salida declarada) y la zona de inicio
+  se centra en ella. Arte de Update 010 (agua, espuma animada, orillas por autotile de 4 vecinos sobre
+  `Tilemap_Flat`, árboles con variedad por `DECOR_STREAM`, puentes orientados, `Castle_Blue`) planificado sin
+  motor (`src/infrastructure/phaser/map/planMapArt.ts`) y pintado en dos `Layer`: la baja bajo las entidades y la
+  alta (copas y tejado) sobre ellas y bajo el HUD; reserva de colores por elemento. Sonda `sprites.mapArt`
+  (`painted`/`fallback` por elemento y `objects`), `sprites.cells.castle` y `map.castle`. `player.speed` 215:
+  **27/50** victorias y 0 quietos; ≤ 300 objetos del mapa en 42 y 123 (test sin navegador en `verify`).
   Fuente de verdad del comportamiento: `openspec/specs/`.
 
 ## 2. Comandos

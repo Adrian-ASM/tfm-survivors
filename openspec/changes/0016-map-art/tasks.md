@@ -165,7 +165,7 @@ opción (script temporal en el scratchpad) y esperar su decisión.
 
 ## 7. Documentación
 
-- [ ] 7.1 Specs del change con los valores definitivos si cambió la huella o la velocidad (requisito "Castillo en el
+- [x] 7.1 Specs del change con los valores definitivos si cambió la huella o la velocidad (requisito "Castillo en el
   mapa generado"), `AGENTS.md` (estado: castillo sólido, salida por mapa, arte del mapa en dos capas, sonda
   `mapArt`, `speed` 215 y balance medido) y addendum de ADR-0013 de "propuesto" a "aceptado". `npm run verify`.
 - [ ] 7.2 Diario de IA (`docs/ai-log/`): mediciones de los puntos de control 1 y 2, decisión de la puerta visual, cierre de R1 (orilla en tierra) y palanca de espuma si se usó,

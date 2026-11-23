@@ -43,7 +43,7 @@ conectividad 100 % en 1..1000 con rechazo.
   semillas y obliga a recalibrar el balance; cambiar la rejilla por otra geometría obliga a rehacer colisión,
   conectividad, sonda y flow-field.
 
-## Addendum · change 0016-map-art (2026-11-23, propuesto en design)
+## Addendum · change 0016-map-art (2026-11-23, aceptado)
 Contexto: el usuario pide un castillo **sólido** en la zona de inicio y el arte de Tiny Swords para el mapa.
 
 Decisiones:
@@ -64,3 +64,6 @@ Decisiones:
 Consecuencias: cambian todos los mapas generados (bandas del río) y la firma dorada; el balance se re-mide
 (`player.speed` 215). Revertir el castillo es quitar el tipo y la huella; la salida por mapa puede quedarse.
 Los enemigos siguen ignorando el mapa, castillo incluido (deuda para 0018 flow-field).
+
+Resultado en apply: balance 27/50 con 215 (banda 25..35) y 0 quietos vivos; 196 y 245 objetos del mapa con las
+semillas 42 y 123 (máximo 258 en 1..50), sin necesidad del `Blitter`; puerta visual aprobada por el usuario.
