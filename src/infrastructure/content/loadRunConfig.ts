@@ -79,8 +79,8 @@ export interface ParsedContent {
 export function parseContent(raw: RawContentFiles): Result<ParsedContent, DomainError> {
   const parsed = RunConfigSchema.safeParse(raw);
   if (parsed.success) {
-    const { view, ...world } = parsed.data.arena;
-    return ok({ config: { ...parsed.data, arena: world }, maxView: view });
+    const { maxView, ...world } = parsed.data.arena;
+    return ok({ config: { ...parsed.data, arena: world }, maxView });
   }
   const issue = parsed.error.issues[0];
   const path = (issue?.path ?? []).map(String);

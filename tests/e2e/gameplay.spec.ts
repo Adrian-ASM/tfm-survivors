@@ -21,7 +21,7 @@ import {
 
 // Suite de humo (chore e2e-lite): lo que solo se ve en el navegador durante la partida (overlay de
 // mejoras, cámara, sprites y mapa pintado), en modo manual y sin esperas de reloj.
-const VIEW = arena.view;
+const VIEW = arena.maxView;
 const WORLD = { width: arena.width, height: arena.height };
 
 async function openGame(page: Page, url: string): Promise<void> {

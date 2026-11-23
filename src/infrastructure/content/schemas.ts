@@ -87,28 +87,33 @@ export const PlayerSchema = z.strictObject({
   pickupRadius: z.number().positive({ error: PICKUP_RADIUS_MUST_BE_POSITIVE }),
 });
 
-export const VIEW_SIZE_MUST_BE_POSITIVE = 'El tamaño de la vista debe ser positivo.';
-export const WORLD_NARROWER_THAN_VIEW = 'El ancho del mundo debe ser al menos el de la vista.';
-export const WORLD_LOWER_THAN_VIEW = 'El alto del mundo debe ser al menos el de la vista.';
+export const MAX_VIEW_MUST_BE_POSITIVE_INTEGER =
+  'El tope de vista debe tener un ancho y un alto enteros y positivos.';
+export const WORLD_NARROWER_THAN_VIEW =
+  'El ancho del mundo debe ser al menos el del tope de vista.';
+export const WORLD_LOWER_THAN_VIEW = 'El alto del mundo debe ser al menos el del tope de vista.';
+
+const MaxViewSide = z
+  .number({ error: MAX_VIEW_MUST_BE_POSITIVE_INTEGER })
+  .int({ error: MAX_VIEW_MUST_BE_POSITIVE_INTEGER })
+  .positive({ error: MAX_VIEW_MUST_BE_POSITIVE_INTEGER });
 
 /**
- * Mundo (`width` × `height`) y vista del lienzo. El mundo es al menos tan grande como la vista
- * (0013, D1b): con unos límites menores que la vista, la cámara mostraría zonas fuera del mundo.
+ * Mundo (`width` × `height`) y tope de vista del lienzo (`maxView`, 0017, ADR-0014). El mundo es al
+ * menos tan grande como el tope: con unos límites menores que la vista, la cámara mostraría zonas
+ * fuera del mundo. Sin `view`: la vista sale de la ventana, no del contenido.
  */
 export const ArenaSchema = z
   .strictObject({
     width: z.number().int().positive(),
     height: z.number().int().positive(),
-    view: z.strictObject({
-      width: z.number().positive({ error: VIEW_SIZE_MUST_BE_POSITIVE }),
-      height: z.number().positive({ error: VIEW_SIZE_MUST_BE_POSITIVE }),
-    }),
+    maxView: z.strictObject({ width: MaxViewSide, height: MaxViewSide }),
   })
-  .superRefine(({ width, height, view }, ctx) => {
-    if (width < view.width) {
+  .superRefine(({ width, height, maxView }, ctx) => {
+    if (width < maxView.width) {
       ctx.addIssue({ code: 'custom', path: ['width'], message: WORLD_NARROWER_THAN_VIEW });
     }
-    if (height < view.height) {
+    if (height < maxView.height) {
       ctx.addIssue({ code: 'custom', path: ['height'], message: WORLD_LOWER_THAN_VIEW });
     }
   });

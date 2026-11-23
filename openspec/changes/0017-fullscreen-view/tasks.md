@@ -43,7 +43,7 @@
     victorias `25/50` · quietos vivos `0/0` · primera oferta (s7) tick `1.527`. Mediciones en el diario de IA.
   - Escenarios: "Tasa de victoria del bot de referencia", "Jugador quieto pierde con todas las semillas", "… también
     con el mapa vacío", "Oleadas que crecen con el contenido por defecto" (vivo).
-- [ ] 2.2 `ArenaSchema` con `maxView` y fuera `view` (design D2).
+- [x] 2.2 `ArenaSchema` con `maxView` y fuera `view` (design D2).
   - Rojo: `tests/infrastructure/content.test.ts` con arenas explícitas: 2.559 × 2.160 con tope 2.560 × 1.440 → error
     en `width`; 3.840 × 1.439 → `height`; 2.560 × 1.440 igual al tope → éxito; `width` 0, `height` −1,
     `maxView.width` 0 → error con el campo; `view` extra → "clave desconocida" en `arena.view`.

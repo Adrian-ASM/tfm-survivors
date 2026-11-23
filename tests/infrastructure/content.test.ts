@@ -45,7 +45,14 @@ function failure(raw: RawContent): { field: string; message: string } {
 /** Contenido crudo con la arena explícita de escenario 960 × 540 (casos de radio de las specs). */
 function inScenarioArena(): RawContent {
   const raw = rawContent();
-  raw.arena = { ...structuredClone(SCENARIO_ARENA), view: { width: 960, height: 540 } };
+  raw.arena = { ...structuredClone(SCENARIO_ARENA), maxView: { width: 960, height: 540 } };
+  return raw;
+}
+
+/** Contenido crudo con un mundo explícito y el tope de vista 2.560 × 1.440 explícito (0017). */
+function withArena(width: number, height: number): RawContent {
+  const raw = rawContent();
+  raw.arena = { width, height, maxView: { width: 2560, height: 1440 } };
   return raw;
 }
 
@@ -287,8 +294,8 @@ describe('Contenido de enemigos y oleadas validado · forma y rangos (zod)', () 
   it.each([
     ['enemies.types.0.radius', (r: RawContent) => (r.enemies.types[0].radius = 0)],
     ['enemies.types.0.cost', (r: RawContent) => (r.enemies.types[0].cost = -1)],
-    ['arena.view.width', (r: RawContent) => (r.arena.view.width = 0)],
-    ['arena.view.height', (r: RawContent) => (r.arena.view.height = -2)],
+    ['arena.maxView.width', (r: RawContent) => (r.arena.maxView.width = 0)],
+    ['arena.maxView.height', (r: RawContent) => (r.arena.maxView.height = -2)],
     ['waves.spawn.ringRadius', (r: RawContent) => (r.waves.spawn.ringRadius = 0)],
     ['waves.spawn.minDistance', (r: RawContent) => (r.waves.spawn.minDistance = -1)],
     ['waves.spawn.maxAttempts', (r: RawContent) => (r.waves.spawn.maxAttempts = 1.5)],
@@ -304,34 +311,39 @@ describe('Contenido de enemigos y oleadas validado · forma y rangos (zod)', () 
     expect(failure(raw).field).toBe(field);
   });
 
-  // Spec world-camera (0013), "Mundo y vista en el contenido": el mundo es al menos la vista.
-  it('Scenario: Mundo más estrecho que la vista (959 × 1.080)', () => {
-    const raw = rawContent();
-    raw.arena.width = 959;
-    expect(failure(raw)).toMatchObject({ field: 'arena.width', message: WORLD_NARROWER_THAN_VIEW });
+  // Spec world-camera (0017), "Tamaño del mundo y de la vista validados": tope de vista explícito.
+  it('Scenario: Mundo más estrecho que el tope (2.559 × 2.160, tope 2.560 × 1.440)', () => {
+    expect(failure(withArena(2559, 2160))).toMatchObject({
+      field: 'arena.width',
+      message: WORLD_NARROWER_THAN_VIEW,
+    });
   });
 
-  it('Scenario: Mundo más bajo que la vista (1.920 × 539)', () => {
-    const raw = rawContent();
-    raw.arena.height = 539;
-    expect(failure(raw)).toMatchObject({ field: 'arena.height', message: WORLD_LOWER_THAN_VIEW });
+  it('Scenario: Mundo más bajo que el tope (3.840 × 1.439, tope 2.560 × 1.440)', () => {
+    expect(failure(withArena(3840, 1439))).toMatchObject({
+      field: 'arena.height',
+      message: WORLD_LOWER_THAN_VIEW,
+    });
   });
 
-  it('Scenario: Mundo igual a la vista (960 × 540)', () => {
-    const raw = rawContent();
-    raw.arena.width = 960;
-    raw.arena.height = 540;
-    expect(parseRunConfig(raw).ok).toBe(true);
+  it('Scenario: Mundo igual al tope (2.560 × 1.440)', () => {
+    expect(parseRunConfig(withArena(2560, 1440)).ok).toBe(true);
   });
 
   it.each([
     ['arena.width', (r: RawContent) => (r.arena.width = 0)],
     ['arena.height', (r: RawContent) => (r.arena.height = -1)],
-    ['arena.view.width', (r: RawContent) => (r.arena.view.width = 0)],
+    ['arena.maxView.width', (r: RawContent) => (r.arena.maxView.width = 0)],
   ])('Scenario: Dimensiones no positivas (%s)', (field, mutate) => {
-    const raw = rawContent();
+    const raw = withArena(3840, 2160);
     mutate(raw);
     expect(failure(raw).field).toBe(field);
+  });
+
+  it('Scenario: Vista fija heredada (view extra → clave desconocida en arena.view)', () => {
+    const raw = rawContent();
+    Object.assign(raw.arena, { view: { width: 960, height: 540 } });
+    expect(failure(raw).field).toBe('arena.view');
   });
 
   it('rechaza un tramo vacío de la tabla', () => {
@@ -340,13 +352,13 @@ describe('Contenido de enemigos y oleadas validado · forma y rangos (zod)', () 
     expect(failure(raw).field).toBe('waves.segments');
   });
 
-  it('rechaza campos desconocidos en enemigos, oleadas y vista', () => {
+  it('rechaza campos desconocidos en enemigos, oleadas y tope de vista', () => {
     const inType = rawContent();
     Object.assign(inType.enemies.types[0], { hp: 3 });
     const inSpawn = rawContent();
     Object.assign(inSpawn.waves.spawn, { jitter: 1 });
     const inView = rawContent();
-    Object.assign(inView.arena.view, { zoom: 2 });
+    Object.assign(inView.arena.maxView, { zoom: 2 });
     expect([
       parseRunConfig(inType).ok,
       parseRunConfig(inSpawn).ok,

@@ -333,7 +333,7 @@ export interface RawContent {
     invulnerabilityTicks: number;
     pickupRadius: number;
   };
-  arena: { width: number; height: number; view: { width: number; height: number } };
+  arena: { width: number; height: number; maxView: { width: number; height: number } };
   enemies: { types: [MutableType, MutableType, MutableType] };
   waves: {
     maxAlive: number;
