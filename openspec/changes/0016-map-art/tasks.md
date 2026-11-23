@@ -91,7 +91,7 @@ opción (script temporal en el scratchpad) y esperar su decisión.
   (`deriveSeed`); `DECOR_STREAM = 2` en `deriveSeed.ts`. — escenarios: "Mismos modelos con la misma semilla" (parte
   pura), "Variedad dentro de un mapa", "Otra semilla, otros modelos", "La variedad no toca la simulación"
   (regresión)
-- [ ] 3.4 `phaser/map/mapLooks.ts`: `resolveMapLooks(appearance.map, terrain, frameCount, hasFrame)` arte o reserva
+- [x] 3.4 `phaser/map/mapLooks.ts`: `resolveMapLooks(appearance.map, terrain, frameCount, hasFrame)` arte o reserva
   **por elemento** (B6): agua, orilla (falla también si falla la hoja del fondo), espuma, árbol, puente (marco con
   nombre ausente) y castillo. — escenarios: "Reserva de cada elemento" (decisión por elemento), "Recorte del puente
   fuera de la hoja" (parte pura)
