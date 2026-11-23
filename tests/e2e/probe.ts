@@ -145,6 +145,13 @@ export interface CameraViewData {
 }
 
 /** Tamaño del mundo (la `arena` del contenido). */
+/** Ventana usada en el frame y escala de UI del lienzo (sonda `viewport`, change 0017). */
+export interface ViewportViewData {
+  width: number;
+  height: number;
+  uiScale: number;
+}
+
 export interface WorldView {
   width: number;
   height: number;
@@ -184,6 +191,8 @@ interface Probe {
     /** Sonda de cámara (change 0013): null en el menú. */
     camera?: CameraViewData | null;
     world?: WorldView;
+    /** Ventana y escala de UI (change 0017); también en el menú. */
+    viewport?: ViewportViewData | null;
     /** Modo de avance manual (`?e2e&manual`) y su avance exacto de ticks (change 0014). */
     manual?: boolean;
     step?: (n: unknown) => Promise<number>;
@@ -206,6 +215,7 @@ export const probe = (page: Page) =>
           sprites: p.sprites ?? null,
           camera: p.camera ?? null,
           world: p.world ?? null,
+          viewport: p.viewport ?? null,
           manual: p.manual ?? null,
           map: p.map ?? null,
         }

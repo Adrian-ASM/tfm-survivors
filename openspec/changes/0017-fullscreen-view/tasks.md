@@ -172,7 +172,7 @@
     ventana redondeados hacia abajo y el `uiScale` del lienzo (3.840 × 2.160 → ventana 3.840 × 2.160, ×2).
   - `main.ts`: `probe.viewport` (getter), también en el menú. `screen` (`'menu' | 'playing'`) no cambia.
   - Escenarios: "Sonda en el menú" (world-camera), "Sin sonda fuera de E2E" (sigue en verde).
-- [ ] 4.3 Cableado del redimensionado + E2E nuevo (design D6, D11; regla `e2e-lite`: 1 E2E nuevo).
+- [x] 4.3 Cableado del redimensionado + E2E nuevo (design D6, D11; regla `e2e-lite`: 1 E2E nuevo).
   - Rojo: nuevo test en `tests/e2e/gameplay.spec.ts`, "Redimensionado con la oferta abierta"
     (`?e2e&manual&seed=7`, 1.280 × 720): `step(60)` hasta la oferta en el tick n; `page.setViewportSize(1000, 600)`;
     esperar `camera.width === 1000`; `viewport` 1.000 × 600; esquina con la fórmula y el jugador del snapshot

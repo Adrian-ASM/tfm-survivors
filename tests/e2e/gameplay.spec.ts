@@ -58,6 +58,37 @@ test('Subida de nivel: con ?seed=7 aparece la oferta de 3, se pulsa 1 y la parti
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
+// Spec world-camera (0017), "Redimensionado con la oferta abierta [E2E]": vista nueva desde el primer
+// frame, sin ticks, y el clic en el centro de la ventana elige la carta central (índice 1).
+test('Redimensionado con la oferta abierta: vista 1.000 × 600, mismo tick y clic central → offer[1]', async ({
+  page,
+}) => {
+  const problems = collect(page, ['error']);
+  await openGame(page, gameUrl({ seed: 7, manual: true }));
+  const offered = await stepUntil(page, (s) => s.offer.length > 0, FIRST_OFFER_LIMIT);
+  if (!offered) throw new Error('sin oferta');
+
+  await page.setViewportSize({ width: 1000, height: 600 });
+  await expect.poll(async () => (await probe(page))?.camera?.width ?? null).toBe(1000);
+
+  const p = await probe(page);
+  const s = p?.snapshot;
+  const cam = p?.camera;
+  if (!s || !cam) throw new Error('sin sonda');
+  expect(p.viewport).toEqual({ width: 1000, height: 600, uiScale: 1 });
+  expect([cam.width, cam.height]).toEqual([1000, 600]);
+  expect(Math.abs(cam.x - clamp(s.player.x - 500, 0, WORLD.width - 1000))).toBeLessThanOrEqual(1);
+  expect(Math.abs(cam.y - clamp(s.player.y - 300, 0, WORLD.height - 600))).toBeLessThanOrEqual(1);
+  expect(s.tick).toBe(offered.tick);
+  expect(s.offer.map((o) => o.id)).toEqual(offered.offer.map((o) => o.id));
+
+  await page.mouse.click(500, 300);
+  expect(await step(page, 1)).toBe(1);
+  const after = await snapshotOf(page);
+  expect(after?.upgrades).toEqual([{ id: offered.offer[1]?.id, level: 1 }]);
+  expect(problems).toEqual([]);
+});
+
 // Spec world-camera, "Nada fuera del mundo con el mapa real": la cámara sigue al jugador sin
 // suavizado y recortada al mundo.
 test('Cámara: centrada al empezar y sigue al jugador hacia la derecha sin salir del mundo', async ({

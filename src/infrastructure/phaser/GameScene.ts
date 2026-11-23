@@ -18,7 +18,9 @@ import type { ResultsOverlay, ResultsTexts } from './ResultsOverlay';
 import type { ResultsView } from './resultsText';
 import type { RunLauncher } from './RunLauncher';
 import { createHud, createResultsOverlay, createUpgradeOverlay } from './sceneWidgets';
-import { screenFrame } from './ui/screenFrame';
+import { screenFrame, type ScreenFrame } from './ui/screenFrame';
+import { hudLayout, veilLayout } from './ui/uiLayout';
+import { watchScreen } from './ui/watchScreen';
 import type { UpgradeOverlay } from './UpgradeOverlay';
 import type { Appearance } from '../content/appearanceSchema';
 import { resolveLooks } from './art/looks';
@@ -214,8 +216,27 @@ export class GameScene extends Phaser.Scene {
       restart: new RestartKey(keyboard),
       esc: new PauseKey(keyboard),
     };
+    // Al entrar y en cada RESIZE (0017, design D6); la escucha se quita en SHUTDOWN.
+    watchScreen(this.scale, this.events, (f) => {
+      this.relayout(f);
+    });
     this.render(snapshot);
     this.showPause(false);
+  }
+
+  /**
+   * Recoloca la presentación al tamaño nuevo del lienzo: cámara, HUD, cartas y velo. No toca la
+   * partida, la pausa ni el mapa (redimensionar no ejecuta ni salta ticks; spec world-camera).
+   */
+  private relayout(frame: ScreenFrame): void {
+    const w = this.w;
+    if (!w) return;
+    this.rig?.resize(frame);
+    w.hud.relayout(hudLayout(frame));
+    w.offer.relayout(frame);
+    const v = veilLayout(frame);
+    w.resultsVeil.setPosition(v.x, v.y);
+    w.resultsVeil.setSize(v.width, v.height);
   }
 
   override update(_time: number, deltaMs: number): void {

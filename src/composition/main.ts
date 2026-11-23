@@ -10,7 +10,6 @@ import type { MapSnapshot } from '../domain/map/MapSnapshot';
 import type { RunSnapshot } from '../domain/run/RunSnapshot';
 import type { DomainError } from '../domain/shared/Result';
 import { repositoryContent } from '../infrastructure/content/loadRunConfig';
-import { MENU_LABELS } from '../infrastructure/dom/menuText';
 import { PausePanel } from '../infrastructure/dom/PausePanel';
 import { GameScene, type SceneCapacity, type Screen } from '../infrastructure/phaser/GameScene';
 import { MenuScene } from '../infrastructure/phaser/MenuScene';
@@ -66,9 +65,6 @@ interface E2EProbe {
   /** Ventana y escala de UI del último frame (0017); también en el menú. */
   readonly viewport: ViewportView | null;
 }
-
-/** Nombre visible del juego (change 0012): una sola fuente para el menú y el documento. */
-const TITLE = MENU_LABELS.title;
 
 function showContentError(root: HTMLElement, error: DomainError): void {
   const box = document.createElement('div');
@@ -223,16 +219,13 @@ function bootstrap(): void {
   });
   cameraView = () => game.cameraView();
   mapView = () => game.mapView();
-  const menu = new MenuScene(
-    {
-      ...progress.menu,
-      show: () => {
-        progress.menu.show();
-        onScreen('menu');
-      },
+  const menu = new MenuScene({
+    ...progress.menu,
+    show: () => {
+      progress.menu.show();
+      onScreen('menu');
     },
-    TITLE,
-  );
+  });
 
   const boot = new BootScene({
     appearance,
