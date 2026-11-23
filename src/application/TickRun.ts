@@ -1,3 +1,4 @@
+import type { MapSnapshot } from '../domain/map/MapSnapshot';
 import type { PlayerInput } from '../domain/player/PlayerInput';
 import type { Run } from '../domain/run/Run';
 import type { RunSnapshot } from '../domain/run/RunSnapshot';
@@ -43,5 +44,10 @@ export class TickRun {
 
   snapshot(): RunSnapshot {
     return this.run.snapshot();
+  }
+
+  /** Mapa de la partida (estático: la misma vista congelada en toda la partida). */
+  map(): MapSnapshot {
+    return this.run.map;
   }
 }

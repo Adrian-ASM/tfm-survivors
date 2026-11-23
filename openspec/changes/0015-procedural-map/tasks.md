@@ -52,7 +52,7 @@ provisional en la spec).
   puente", "El agua frena fuera del puente", "Sin movimiento contra un obstáculo"; los de "Movimiento del jugador por
   input" siguen verdes con el mapa vacío.
   Test: `tests/domain/player-collision.test.ts`. E2E afectados: —
-- [ ] 2.2 `TerrainSource` y lectura del mapa: `Run.start(config, random, setup, terrain)`, `StartRun.execute(…,
+- [x] 2.2 `TerrainSource` y lectura del mapa: `Run.start(config, random, setup, terrain)`, `StartRun.execute(…,
   terrain?)`, `MapSnapshot` congelado (576 tipos, recuentos, zona), `Run.map`, `TickRun.map()`, `initialPlayer` falla
   si solapa una celda no caminable.
   Escenarios: PM "Partida con mapa vacío", "Mapa de dimensiones incorrectas" (nivel partida), "Mapa constante",
