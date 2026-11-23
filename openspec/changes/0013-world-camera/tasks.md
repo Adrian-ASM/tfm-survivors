@@ -130,7 +130,7 @@
   jugador", "Jugador junto a una esquina"; run-outcome "Sin arena por defecto duplicada".
   Test: `tests/e2e/enemies.spec.ts`, `tests/e2e/camera.spec.ts`,
   `tests/infrastructure/single-arena-source.test.ts` (nuevo). E2E afectados: `enemies`, `camera`
-- [ ] 4.5 Esperas de ritmo con el mundo 2x (R3): ejecutar `health`, `level-up`, `weapons`, `results` y `speed`;
+- [x] 4.5 Esperas de ritmo con el mundo 2x (R3): ejecutar `health`, `level-up`, `weapons`, `results` y `speed`;
   ajustar solo esperas y timeouts de reloj, nunca umbrales de spec. Comprobar la derrota con `?e2e&seed=42` ≤ 180 s.
   Escenarios: run-outcome "Derrota E2E con una semilla del conjunto".
   Test: `tests/e2e/results.spec.ts` y los citados. E2E afectados: `health`, `level-up`, `weapons`, `results`,
