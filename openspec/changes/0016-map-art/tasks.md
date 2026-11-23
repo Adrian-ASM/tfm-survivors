@@ -159,7 +159,7 @@ opción (script temporal en el scratchpad) y esperar su decisión.
   (filtrar los "Failed to load resource" de las 6 hojas); entidades cuya hoja no se bloquea sin reserva (spec ya
   ajustada, §12.6). — escenario:
   "Hojas del mapa bloqueadas"
-- [ ] 6.3 Test `@realtime` en `realtime.spec.ts` (mapa real, 42 y 123): objetos de la sonda ≤ 300 y fps con su % sobre
+- [x] 6.3 Test `@realtime` en `realtime.spec.ts` (mapa real, 42 y 123): objetos de la sonda ≤ 300 y fps con su % sobre
   21,6/21,9; ejecutarlo una vez a demanda con `CI_LIKE=1` y anotar el resultado (informativo). — escenarios:
   "Objetos del mapa", "Fps con el mapa real"
 
