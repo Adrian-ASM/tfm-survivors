@@ -125,7 +125,7 @@
     las cartas (`setPosition`/`setSize`) sin cerrar ni cambiar la oferta, y el `pointerdown` de la tercera da índice 2;
     el velo no elige nada; posiciones iguales con dos rectángulos de cámara distintos.
   - Escenarios: "Clic tras redimensionar", "Overlay de elección con la cámara movida".
-- [ ] 3.6 `CameraRig.resize(frame)` y misma partida con ventanas distintas (design D4). Ficheros: `CameraRig.ts`
+- [x] 3.6 `CameraRig.resize(frame)` y misma partida con ventanas distintas (design D4). Ficheros: `CameraRig.ts`
   (`FollowCamera.setSize`), `tests/infrastructure/camera-rig.test.ts`.
   - Rojo: `FakeCamera` de tamaño parametrizable con `setSize`; esquinas, límites exactos, recorte en un eje y
     seguimiento sin retraso con 1.280 × 720 en el mundo por defecto; vista 2.560 × 1.440 (ventana 3.840 × 2.160) en
