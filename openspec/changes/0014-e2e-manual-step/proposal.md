@@ -1,6 +1,9 @@
 # Proposal · 0014-e2e-manual-step
 
 - **Estado**: aprobada (2026-11-23)
+- **Ampliación aprobada 2026-11-23**: frenado de CPU con CDP
+- **Numeración**: el id 0014 se mantiene aunque el GDD lo reserve para `procedural-map`; al archivar este change
+  se renumera el GDD (`procedural-map` pasa a 0015 y los siguientes se desplazan uno).
 - **Issue**: sin issue de GitHub
 - **Rama / worktree**: `change/0014-e2e-manual-step`
 
@@ -17,8 +20,9 @@ fallos.
 Los E2E de reglas avanzan la simulación **a mano**, un número exacto de ticks, sin depender del reloj ni de la CPU:
 con `?e2e&manual` el mundo no avanza solo y el test llama a `window.__sprint.step(n)` para ejecutar n ticks y pintar
 el resultado. Los E2E que sí deben probar el reloj real (velocidad, carga, render, navegación, una partida completa)
-siguen en tiempo real y son los únicos que se someten a la pasada pesada `CI_LIKE`, con un número de workers
-equivalente al del runner.
+siguen en tiempo real y son los únicos que se someten a la pasada pesada `CI_LIKE`. Esa pasada reproduce la
+lentitud del runner frenando la CPU de cada página (no saturando el PC con workers): usa 2 workers, como CI, y el PC
+sigue siendo usable mientras corre.
 
 ## Alcance
 - **Dentro**:
@@ -39,8 +43,12 @@ equivalente al del runner.
     sprites, menu, menu-flow, la pausa con velocidad 8 y `ticksPerFrame`, y al menos una partida completa con
     `speed=8`.
   - Playwright con dos proyectos, `logic` (avance manual) y `realtime` (tiempo real). La pasada `CI_LIKE=1
-    --repeat-each=3` pasa a ejecutarse solo sobre `realtime` y con `--workers=8`. `retries` sigue en 0 con
+    --repeat-each=3` pasa a ejecutarse solo sobre `realtime` y con 2 workers (como CI). `retries` sigue en 0 con
     `CI_LIKE` y en 1 solo con `CI`.
+  - Frenado de CPU con CDP: con `CI_LIKE`, un fixture común a todas las specs frena la CPU de cada página con
+    `Emulation.setCPUThrottlingRate` (solo chromium; en otros navegadores no se aplica). El rate se mide contra el
+    runner de Actions (p. ej., comparando `ticksPerFrame` o frames/s de la misma spec) y se fija como constante
+    documentada. Sustituye a subir los workers para simular carga (12 workers cuelgan el PC).
   - Actualizar la tabla de comandos de AGENTS.md con la nueva forma de lanzar la pasada pesada.
   - Delta de la spec viva `simulation-loop`.
 - **Fuera**:
@@ -70,8 +78,12 @@ equivalente al del runner.
   ante un valor inválido, sin avanzar la partida). Lo decide la spec.
 - **Dos estilos de test** que mantener (manual y tiempo real); la clasificación de la exploración es orientativa y
   puede ajustarse en apply si una spec mezcla regla y reloj.
-- **Workers = 8** se apoya en la cuenta de hilos (16/8 ≈ 2, como el runner), pero la CPU del runner es más lenta
-  por núcleo; si la pasada sigue siendo más blanda que CI habrá que recalibrar. Sin medición previa todavía.
+- **Rate de frenado**: `setCPUThrottlingRate` frena el hilo principal de la página, pero puede no reflejar el
+  coste del render por software (swiftshader, GPU del proceso) ni la CPU más lenta por núcleo del runner. Hay que
+  medir antes de fijarlo (misma spec en CI y en local con el rate candidato) y recalibrar si la pasada local sale
+  más blanda o más dura que CI. Sin medición previa todavía.
+- **Solo chromium**: el frenado depende de CDP; si algún día se añaden otros navegadores, su pasada `CI_LIKE` no
+  irá frenada.
 
 ## Criterio de éxito
 - Con `?e2e&manual&seed=7`, sin llamar a `step`, el tick sigue en 0 tras 2 s reales; tras `step(60)` en una partida
@@ -82,8 +94,10 @@ equivalente al del runner.
   partida no avanza sin `step`.
 - Las specs del proyecto `logic` no contienen `waitForTimeout` ni esperas que sondeen el tick contra el reloj
   (`expect.poll` sobre el tick, `playChoosingFirst` de 100 ms).
-- `CI_LIKE=1 npm run test:e2e -- --project=realtime --workers=8 --repeat-each=3`: **0 fallos** en 3 pasadas
-  consecutivas, sin reintentos.
+- `CI_LIKE=1 npm run test:e2e -- --project=realtime --workers=2 --repeat-each=3`, con el frenado de CPU activo:
+  **0 fallos** en 3 pasadas consecutivas, sin reintentos, y el PC sigue usable mientras corre (sin cuelgues).
+- El rate de frenado elegido queda registrado en el verify-report con la medición que lo justifica (local frente al
+  runner de Actions).
 - Suite E2E completa (`logic` + `realtime`) en verde en local y en CI; duración registrada en el verify-report, sin
   umbral.
 - `npm run verify` verde; ningún fichero de `src/domain` ni `src/application` modificado; sin dependencias nuevas.
