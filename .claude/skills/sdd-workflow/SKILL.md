@@ -45,7 +45,8 @@ Tras cada fase, resume al usuario en ≤ 5 líneas: qué se produjo, decisiones 
   de balance no entra en la propuesta sin datos (0006: el design previó ajustes que no servían).
 - **Contraste final del design**: spec y design van en paralelo, así que al pedir *tasks* indica al
   `sdd-architect` las specs delta que no existían cuando escribió el design y que las contraste antes de
-  descomponer (0006: dos specs llegaron tarde y obligaron a reabrir el design).
+  descomponer (0006: dos specs llegaron tarde y obligaron a reabrir el design). Pide también que contraste los
+  criterios de éxito de `proposal.md` con las specs (0013: uno contradecía la spec de spawn).
 
 ## 3.1 Coste (créditos)
 

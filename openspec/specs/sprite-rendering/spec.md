@@ -132,10 +132,11 @@ hoja sin cargar. Con `?e2e`, la carga del arte MUST conservar el comportamiento 
 ### Requirement: Aspecto de reserva ante un fallo de carga
 El sistema SHALL, si la hoja de un aspecto falla al cargar o no contiene algún frame referenciado por sus animaciones,
 pintar los elementos de ese aspecto con su aspecto de reserva: una forma rellena centrada en la posición del elemento
-y de diámetro 2 × el radio del elemento en el snapshot, sin volteo ni rotación (en el fondo, un relleno liso del área
-de juego). El fallo MUST NOT romper la partida ni producir errores no capturados, y los aspectos cuya hoja carga bien
-siguen con su arte. El aspecto de reserva conserva el resto del comportamiento de esta spec (duración del cadáver,
-parpadeo e indicación de daño) y MUST NOT depender de ficheros ni de recursos `blob:`.
+y de diámetro 2 × el radio del elemento en el snapshot, sin volteo ni rotación (en el fondo, un relleno liso del mundo
+entero, (0, 0)–(ancho, alto) en coordenadas de mundo). El fallo MUST NOT romper la partida ni producir errores no
+capturados, y los aspectos cuya hoja carga bien siguen con su arte. El aspecto de reserva conserva el resto del
+comportamiento de esta spec (duración del cadáver, parpadeo e indicación de daño) y MUST NOT depender de ficheros ni
+de recursos `blob:`.
 
 #### Scenario: Hoja que no carga
 - **GIVEN** la build de producción con `?e2e&seed=42` y una prueba que hace fallar la petición de la hoja de
@@ -155,6 +156,14 @@ parpadeo e indicación de daño) y MUST NOT depender de ficheros ni de recursos 
 - **GIVEN** la hoja de `goblin-torch` sin cargar y un `goblin-torch` de radio 10 en (300, 200)
 - **WHEN** se pinta el snapshot
 - **THEN** su sprite es una forma de 20 px de diámetro centrada en (300, 200) (error ≤ 0,001)
+
+#### Scenario: Fondo de reserva en el mundo entero
+- **GIVEN** la build de producción con `?e2e&seed=7`, una prueba que hace fallar la petición de la hoja del fondo y
+  un input que lleva al jugador a las cuatro esquinas del mundo
+- **WHEN** se pintan los frames hasta que el jugador ha tocado las cuatro esquinas
+- **THEN** la sonda informa de que el fondo usa aspecto de reserva y en cada frame el rectángulo visible de la cámara
+  está entero dentro del rectángulo de mundo que cubre ese relleno, (0, 0)–(1.920, 1.080)
+- **AND** no hay errores no capturados
 
 ### Requirement: Escala y origen
 El sistema SHALL pintar cada sprite con arte con un tamaño en pantalla de ancho de frame × escala por alto de frame
@@ -359,9 +368,11 @@ MUST NOT dejar animaciones en curso ni errores no capturados.
 ### Requirement: Proyectiles, gemas, pulso y fondo
 El sistema SHALL pintar un sprite de flecha por cada proyectil del snapshot y un sprite de gema por cada gema, en su
 posición (error ≤ 0,001) y con el aspecto del repositorio, ambos en `idle`. El pulso de Tests no usa datos de
-aspecto: conserva su anillo (ver `auto-weapons`). Mientras existe una partida, el fondo de hierba MUST cubrir todo el
-área de juego visible (0, 0)–(960, 540), quedar por debajo de todos los demás elementos y no moverse; no hay mundo
-mayor que la pantalla ni cámara que siga al jugador. Esta spec no fija si el fondo se ve en modo menú.
+aspecto: conserva su anillo (ver `auto-weapons`). Mientras existe una partida, el fondo de hierba MUST cubrir el mundo
+entero, (0, 0)–(ancho, alto) en coordenadas de mundo ((0, 0)–(1.920, 1.080) con el contenido por defecto), quedar por
+debajo de todos los demás elementos y estar fijo en el mundo: su posición de mundo no cambia entre snapshots y su
+posición en pantalla solo cambia con el rectángulo visible de la cámara (ver `world-camera`). En ningún frame de una
+partida MUST verse dentro del rectángulo visible una zona sin fondo. Esta spec no fija si el fondo se ve en modo menú.
 
 #### Scenario: Flechas y gemas
 - **GIVEN** un snapshot con 3 proyectiles y 4 gemas
@@ -374,11 +385,17 @@ mayor que la pantalla ni cámara que siga al jugador. Esta spec no fija si el fo
 - **WHEN** se pinta el snapshot
 - **THEN** hay 1 anillo de radio 90 centrado en (480, 270) y ningún sprite de hoja para el pulso
 
-#### Scenario: Fondo de hierba
-- **GIVEN** una partida en curso con el jugador en (480, 270) y, después, en (100, 100)
+#### Scenario: Fondo de hierba en el mundo entero
+- **GIVEN** el mundo por defecto y una partida en curso con el jugador en (960, 540) y, después, en (100, 100)
 - **WHEN** se pinta cada snapshot
-- **THEN** en ambos el fondo cubre el rectángulo (0, 0)–(960, 540), está por debajo del jugador, los enemigos, los
-  cadáveres, los proyectiles, los pulsos y las gemas, y su posición en pantalla es la misma
+- **THEN** en ambos el fondo cubre el rectángulo de mundo (0, 0)–(1.920, 1.080), está por debajo del jugador, los
+  enemigos, los cadáveres, los proyectiles, los pulsos y las gemas, y su posición de mundo es la misma
+
+#### Scenario: Fondo en las cuatro esquinas
+- **GIVEN** la build de producción con `?e2e&seed=7` y un input que lleva al jugador a las cuatro esquinas del mundo
+- **WHEN** se pintan los frames hasta que el jugador ha tocado las cuatro esquinas
+- **THEN** en cada frame el rectángulo visible de la cámara está entero dentro del rectángulo que cubre el fondo y
+  la sonda informa de fondo visible
 
 ### Requirement: Sonda de render para E2E
 El sistema SHALL exponer, solo con `?e2e` y como parte de la sonda `window.__sprint`, el recuento de sprites visibles
@@ -406,3 +423,4 @@ existir. Leer la sonda MUST NOT cambiar la simulación ni lo que se pinta.
 - **THEN** `window.__sprint` es `undefined`
 
 <!-- historial: 0012-sprite-rendering (2026-11-22) -->
+<!-- historial: 0013-world-camera (2026-11-23) -->
