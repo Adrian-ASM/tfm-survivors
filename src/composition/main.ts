@@ -23,9 +23,10 @@ import { assetUrl } from './assetUrl';
 import { bootContent } from './contentBoot';
 import { resolveSeed } from '../infrastructure/url/resolveSeed';
 import { resolveAdvance } from '../infrastructure/url/resolveAdvance';
+import { resolveMapMode } from '../infrastructure/url/resolveMapMode';
 import { wireProgress, type ProgressProbe } from './progressWiring';
 import { createRunLauncher } from './runLauncher';
-import { restartRandoms } from './seedSource';
+import { mapModeOf, restartRandoms } from './seedSource';
 
 const BACKGROUND = '#14141e';
 
@@ -114,6 +115,10 @@ function bootstrap(): void {
   // Manual > speed (change 0014): con el modo manual, speed vale 1 y no se valida.
   const advance = resolveAdvance(window.location.search);
   for (const w of advance.warnings) console.warn(w);
+  // Mapa de todas las partidas de la carga (`?e2e&map=empty`, spec procedural-map): 1 aviso máx.
+  const mapResolved = resolveMapMode(window.location.search);
+  if (mapResolved.warning) console.warn(mapResolved.warning);
+  const mapMode = mapModeOf(mapResolved);
   // Solo con el modo manual: cola de `step(n)` que GameScene atiende frame a frame.
   const stepper = advance.manual ? new ManualStepper() : undefined;
   // Antes de crear el juego: el panel queda en el DOM y el progreso cargado (nunca lanza).
@@ -151,13 +156,14 @@ function bootstrap(): void {
     probe.runs += 1;
   };
   // Cada reinicio usa una semilla nueva (también con ?seed=), sin releer la URL ni avisar.
-  const nextSeeding = restartRandoms(randomSeed, started);
+  const nextSeeding = restartRandoms(randomSeed, started, mapMode);
   // La partida se crea al entrar en GameScene: la 1.ª de la carga con la semilla de la URL.
   const launcher = createRunLauncher({
     config: config.value,
     urlSeed: seed,
     randomSeed,
     onStart: started,
+    mapMode,
     onContentError: (error) => {
       showContentError(root, error);
     },

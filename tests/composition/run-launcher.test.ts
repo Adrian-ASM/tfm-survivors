@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createRunLauncher } from '../../src/composition/runLauncher';
+import { mapModeOf } from '../../src/composition/seedSource';
+import { resolveMapMode } from '../../src/infrastructure/url/resolveMapMode';
 import type { RunConfig } from '../../src/domain/run/RunConfig';
 import type { DomainError } from '../../src/domain/shared/Result';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
@@ -139,6 +141,23 @@ describe('createRunLauncher (spec simulation-loop, "Semilla de la partida")', ()
 
     expect(first).toEqual(typesOf(mapForSeed(config, 42)));
     expect(second).toEqual(typesOf(mapForSeed(config, 123)));
+  });
+
+  it('Scenario: Se mantiene en todas las partidas de la carga (map=empty: todas vacías)', () => {
+    const launch = createRunLauncher({
+      config: defaultConfig(),
+      urlSeed: 42,
+      randomSeed: () => 7,
+      onStart: () => undefined,
+      onContentError: () => undefined,
+      mapMode: mapModeOf(resolveMapMode('?e2e&map=empty&manual')),
+    });
+
+    const counts = [launch.launch(), launch.launch(), launch.launch()].map(
+      (s) => s?.tickRun.map().counts.grass,
+    );
+
+    expect(counts).toEqual([576, 576, 576]);
   });
 
   it('usa el contenido recibido (aDefaultConfig también arranca)', () => {

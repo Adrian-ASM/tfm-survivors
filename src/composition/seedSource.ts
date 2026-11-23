@@ -6,6 +6,10 @@ import { MAP_STREAM, deriveSeed } from '../infrastructure/random/deriveSeed';
 /** Mapa de las partidas de una carga: el generado por la semilla o el vacío (`?e2e&map=empty`). */
 export type MapMode = 'generated' | 'empty';
 
+/** Modo de mapa de la carga a partir de lo resuelto en la URL (`resolveMapMode`). */
+export const mapModeOf = (resolved: { readonly emptyForced: boolean }): MapMode =>
+  resolved.emptyForced ? 'empty' : 'generated';
+
 /**
  * Siembra de una partida (ADR-0013), única ruta de la composición: oleadas y ofertas con
  * `Mulberry32(seed)` y el mapa con su propio flujo, `Mulberry32(deriveSeed(seed, MAP_STREAM))`, o

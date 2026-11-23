@@ -100,7 +100,7 @@ provisional en la spec).
   Test: `content.test.ts`, `balance.test.ts`, `determinism*.test.ts`. E2E afectados: —
 
 ## 4. URL y sonda del mapa (composición)
-- [ ] 4.1 `resolveMapMode(search)` en `src/infrastructure/url/` (zod, solo con `?e2e`, aviso con valor truncado) y
+- [x] 4.1 `resolveMapMode(search)` en `src/infrastructure/url/` (zod, solo con `?e2e`, aviso con valor truncado) y
   composición: una vez por carga, `seededRun(seed, mode)` en lanzador y reinicios, 1 aviso en toda la carga.
   Escenarios: PM "Mapa vacío en modo E2E" (reglas), "Valor inválido", "Ignorado fuera de E2E", "Se mantiene en
   todas las partidas de la carga" (unitario).
