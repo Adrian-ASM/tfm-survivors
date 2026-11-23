@@ -148,7 +148,15 @@ nueva.**
 **0016 · Como jugador quiero ver agua, orillas, árboles y puentes con el arte del pack para que el mapa se lea de
 un vistazo.**
 - Given el repo, When se hace `git ls-files`, Then los tiles nuevos tienen su entrada CC0 en la nota de procedencia.
-- Given un mapa generado, When se renderiza, Then las orillas usan autotile y el núcleo no cambia.
+- Given un mapa generado, When se renderiza, Then las orillas usan autotile y el agua tiene espuma animada.
+- Given el mapa real, When empieza la partida, Then hay un castillo Blue sólido (huella de ~5 × 4 celdas) que el
+  jugador no atraviesa y el jugador nace ante su puerta; con `map=empty` no hay castillo y nace en el centro.
+- Given un árbol o el tejado del castillo, When una entidad pasa por detrás, Then la copa y el tejado se pintan por
+  encima de jugador, enemigos y proyectiles; el tronco bloquea y la copa no.
+- Given las semillas 1..50 con el castillo, When se mide con el bot de referencia, Then el balance sigue en banda
+  (`player.speed` 215) y el mapa es idéntico celda a celda por semilla.
+- Nota: el castillo cambia el núcleo (dominio, generador, firma dorada, bot de referencia y punto de salida). Los
+  enemigos lo atraviesan hasta 0018 (deuda aceptada).
 
 **0017 · Como jugador quiero que el juego ocupe todo el monitor para ver más mapa a mi alrededor.**
 - Given cualquier tamaño de ventana, When se juega, Then la vista ocupa la ventana completa y la cámara sigue al
@@ -185,7 +193,7 @@ Pendientes:
 | Change | Contenido | Prioridad | Spike previo |
 |---|---|---|---|
 | 0015 procedural-map | **Hecho (PR #36)**: mapa por semilla (hierba, troncos, río con puentes) puro y determinista, colisión del jugador, gemas recolocadas, colores de reserva, bot de referencia que esquiva y balance recalibrado; reserva la zona de inicio (ADR-0013) | Must | Sustituido por mediciones previas en explore |
-| 0016 map-art | Arte del mapa: agua, orillas con autotile, árboles (copa), puente y castillo sólido, con su procedencia CC0 | Must | Autotiling de orillas y si el mapa se ve bien (puerta visual al inicio del apply) |
+| 0016 map-art | Arte del mapa: agua con espuma, orillas con autotile, árboles (copa), puente y castillo sólido (núcleo, generador, firma dorada, bot, punto de salida; `player.speed` 215), con su procedencia CC0 | Must | Autotiling de orillas y si el mapa se ve bien (puerta visual al inicio del apply) |
 | 0017 fullscreen-view | La vista ocupa toda la ventana; aparición de enemigos desacoplada del tamaño de pantalla; mundo mayor que cualquier monitor razonable; HUD reubicable; recalibrar balance | Must | |
 | 0018 flow-field | Navegación por campo de flujo | Must | Con cientos de enemigos |
 | 0019 enemy-behaviors | Comportamientos, casas goblin y campamentos | Should | |
