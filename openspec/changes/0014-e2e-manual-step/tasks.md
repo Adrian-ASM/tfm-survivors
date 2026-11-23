@@ -251,7 +251,7 @@
     `waitForTimeout(50)`.
   - Hecho: la guarda incluye el fichero, `verify` verde y `npm run test:e2e -- weapons` verde.
 
-- [ ] 4.4 **`results.spec.ts`** (derrota + R y cinco reinicios).
+- [x] 4.4 **`results.spec.ts`** (derrota + R y cinco reinicios).
   - Cambios: `playToEnd`, R y espera de `runs`; la partida nueva está en el tick 0 y con 0 cadáveres, sin
     `watchNextRun`; la sexta con `stepUntil(tick ≥ 600)`.
   - Hecho: la guarda incluye el fichero, `verify` verde y `npm run test:e2e -- results` verde.
