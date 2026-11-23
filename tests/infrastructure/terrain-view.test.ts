@@ -29,7 +29,7 @@ function fakeCanvas(log: string[] = []): TerrainCanvas & { log: string[] } {
 }
 
 describe('terrainFills y paintTerrain', () => {
-  it('Scenario: Celda pintada en su sitio (tronco (10, 4): (600, 240)–(660, 300), color trunk)', () => {
+  it('Scenario: Celda pintada en su sitio y en su capa (sitio: (600, 240)–(660, 300), trunk)', () => {
     const map = toMapSnapshot(mapWith(mapRules(), { '10,4': 'trunk' }));
     const { fills, counts } = terrainFills(map, COLORS, WORLD);
     expect(fills).toEqual([
@@ -113,7 +113,7 @@ describe('Capa del mapa en el área de juego', () => {
     return { log, ...made };
   }
 
-  it('Scenario: Celda pintada en su capa (tras el fondo y antes de anillos y sprites)', () => {
+  it('Scenario: Celda pintada en su sitio y en su capa (capa: tras el fondo, antes del resto)', () => {
     const { log } = playfield();
     expect(log.slice(0, 2)).toEqual(['ground', 'terrain']);
     expect(log.slice(2).every((m) => m === 'ring' || m === 'sprite')).toBe(true);

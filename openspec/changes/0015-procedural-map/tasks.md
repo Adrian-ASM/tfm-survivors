@@ -151,5 +151,5 @@ cambiar colores es solo contenido.
   ms/tick y ms/mapa en `docs/ai-log/`. Docs: estado de AGENTS.md §1 (mapa, `?e2e&map=empty`, sonda `map`), ADR-0013
   a "aceptada" si verify no tiene Critical.
   Escenarios: PM "Generación determinista por semilla" (coste). Test: `tests/bench/map.bench.ts`. E2E afectados: —
-- [ ] 7.2 Cierre: `npm run verify` y `npm run test:e2e` completos en verde; repasar que ningún escenario de las 8
+- [x] 7.2 Cierre: `npm run verify` y `npm run test:e2e` completos en verde; repasar que ningún escenario de las 8
   specs delta queda sin test (tabla escenario → test en `docs/ai-log/`). E2E afectados: suite completa
