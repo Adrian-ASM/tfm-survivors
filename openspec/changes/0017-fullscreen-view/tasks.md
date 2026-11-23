@@ -94,7 +94,7 @@
     tests igual al del juego".
 
 ## 3. Infraestructura de presentación (pura o con dobles)
-- [ ] 3.1 `screenFrame(width, height)` (design D5). Fichero: `src/infrastructure/phaser/ui/screenFrame.ts`.
+- [x] 3.1 `screenFrame(width, height)` (design D5). Fichero: `src/infrastructure/phaser/ui/screenFrame.ts`.
   - Rojo: tabla en `tests/infrastructure/screen-frame.test.ts`: 320 × 180, 640 × 360, 959 × 539, 960 × 540,
     1.280 × 720 → ×1; 1.919 × 1.080 → ×1; 1.920 × 1.080, 2.560 × 1.440 → ×2; 1.280,5 → 1.280; 0 × 0 y `NaN` → 1 × 1,
     ×1; secuencia 960 × 540 … 3.840 × 2.160 (recortada al tope) no decreciente.
