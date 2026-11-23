@@ -1,10 +1,11 @@
 import type Phaser from 'phaser';
 import { CARD_WIDTH } from './cardLayout';
-import { Hud } from './Hud';
+import { Hud, type HudPlacement } from './Hud';
 import { ResultsOverlay, type ShowableText } from './ResultsOverlay';
 import { UpgradeOverlay, type CardBox, type CardParts, type CardText } from './UpgradeOverlay';
 import { XpBar } from './XpBar';
-import { screenFrame } from './ui/screenFrame';
+import { screenFrame, type ScreenFrame } from './ui/screenFrame';
+import { hudLayout, type BarAnchor, type HudLayout, type TextAnchor } from './ui/uiLayout';
 
 // Fábricas de objetos del motor para el HUD y los overlays (presentación, sin lógica). Se llaman
 // una vez en `GameScene.create()`; la lógica vive en `Hud`, `UpgradeOverlay` y `ResultsOverlay`.
@@ -13,12 +14,6 @@ import { screenFrame } from './ui/screenFrame';
 const HUD_DEPTH = 100;
 const OVERLAY_DEPTH = 200;
 const RESULTS_DEPTH = 300;
-const MARGIN = 16;
-const BAR_WIDTH = 240;
-const BAR_HEIGHT = 10;
-const HEALTH_Y = 16;
-const XP_Y = 34;
-const LABEL_GAP = 8;
 const BAR_BACK = 0x2a2a3a;
 const HEALTH_FILL = 0xe05561;
 const XP_FILL = 0x4fd1c5;
@@ -36,43 +31,85 @@ const RESULTS_LINES_DY = [-90, -20, 15, 50, 110] as const;
 
 type Scene = Phaser.Scene;
 
+type Rect = Phaser.GameObjects.Rectangle;
+type Txt = Phaser.GameObjects.Text;
+
 /** Barra (fondo + relleno con origen a la izquierda) en la capa del HUD. */
-function bar(scene: Scene, y: number, color: number): Phaser.GameObjects.Rectangle {
-  scene.add
-    .rectangle(MARGIN, y, BAR_WIDTH, BAR_HEIGHT, BAR_BACK)
-    .setOrigin(0, 0.5)
-    .setScrollFactor(0)
-    .setDepth(HUD_DEPTH);
+function bar(scene: Scene, l: HudLayout, at: BarAnchor, color: number): { back: Rect; fill: Rect } {
+  const make = (w: number, c: number): Rect =>
+    scene.add
+      .rectangle(at.x, at.y, w, l.barHeight, c)
+      .setOrigin(0, 0.5)
+      .setScrollFactor(0)
+      .setDepth(HUD_DEPTH);
+  return { back: make(l.barWidth, BAR_BACK), fill: make(0, color) };
+}
+
+function hudText(scene: Scene, l: HudLayout, at: TextAnchor): Txt {
   return scene.add
-    .rectangle(MARGIN, y, 0, BAR_HEIGHT, color)
-    .setOrigin(0, 0.5)
+    .text(at.x, at.y, '', { ...TEXT_STYLE, fontSize: l.fontSize })
+    .setOrigin(at.originX, 0.5)
     .setScrollFactor(0)
     .setDepth(HUD_DEPTH);
 }
 
-function hudText(scene: Scene, x: number, y: number, originX: number): Phaser.GameObjects.Text {
-  return scene.add
-    .text(x, y, '', TEXT_STYLE)
-    .setOrigin(originX, 0.5)
-    .setScrollFactor(0)
-    .setDepth(HUD_DEPTH);
+/** Objetos del motor del HUD, recolocados por `HudPlacement` en cada RESIZE (0017). */
+interface HudObjects {
+  readonly health: { back: Rect; fill: Rect };
+  readonly xp: { back: Rect; fill: Rect };
+  readonly healthLabel: Txt;
+  readonly level: Txt;
+  readonly clock: Txt;
+  readonly kills: Txt;
+}
+
+function placement(o: HudObjects): HudPlacement {
+  const placeBar = (b: { back: Rect; fill: Rect }, at: BarAnchor, l: HudLayout): void => {
+    b.back.setPosition(at.x, at.y).setSize(l.barWidth, l.barHeight);
+    b.fill.setPosition(at.x, at.y);
+  };
+  const texts: [Txt, (l: HudLayout) => TextAnchor][] = [
+    [o.healthLabel, (l) => l.health.label],
+    [o.level, (l) => l.xp.label],
+    [o.clock, (l) => l.clock],
+    [o.kills, (l) => l.kills],
+  ];
+  return {
+    place(l, rescale) {
+      placeBar(o.health, l.health.bar, l);
+      placeBar(o.xp, l.xp.bar, l);
+      for (const [t, at] of texts) {
+        const a = at(l);
+        t.setPosition(a.x, a.y);
+        if (rescale) t.setFontSize(l.fontSize);
+      }
+    },
+  };
 }
 
 /** HUD (spec hud): vida y XP arriba a la izquierda, tiempo arriba en el centro y bajas a la derecha. */
-export function createHud(scene: Scene): Hud {
-  const { width } = scene.scale;
-  const labelX = MARGIN + BAR_WIDTH + LABEL_GAP;
-  const healthFill = bar(scene, HEALTH_Y, HEALTH_FILL);
-  const healthLabel = hudText(scene, labelX, HEALTH_Y, 0);
-  const xpBar = new XpBar(
-    bar(scene, XP_Y, XP_FILL),
-    hudText(scene, labelX, XP_Y, 0),
-    BAR_WIDTH,
-    BAR_HEIGHT,
-  );
-  const clock = hudText(scene, width / 2, HEALTH_Y, 0.5);
-  const kills = hudText(scene, width - MARGIN, HEALTH_Y, 1);
-  return new Hud({ xpBar, healthFill, healthLabel, clock, kills }, BAR_WIDTH, BAR_HEIGHT);
+export function createHud(scene: Scene, frame: ScreenFrame): Hud {
+  const l = hudLayout(frame);
+  const o: HudObjects = {
+    health: bar(scene, l, l.health.bar, HEALTH_FILL),
+    healthLabel: hudText(scene, l, l.health.label),
+    xp: bar(scene, l, l.xp.bar, XP_FILL),
+    level: hudText(scene, l, l.xp.label),
+    clock: hudText(scene, l, l.clock),
+    kills: hudText(scene, l, l.kills),
+  };
+  const xpBar = new XpBar(o.xp.fill, o.level, l.barWidth, l.barHeight);
+  const parts = {
+    xpBar,
+    healthFill: o.health.fill,
+    healthLabel: o.healthLabel,
+    clock: o.clock,
+    kills: o.kills,
+    placement: placement(o),
+  };
+  const hud = new Hud(parts, l.barWidth, l.barHeight);
+  hud.relayout(l);
+  return hud;
 }
 
 /** Overlay de elección (spec upgrades): velo y 3 cartas preasignadas. */

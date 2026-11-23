@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
 import type Phaser from 'phaser';
-import { Hud } from '../../src/infrastructure/phaser/Hud';
+import { Hud, type HudPlacement } from '../../src/infrastructure/phaser/Hud';
+import { screenFrame } from '../../src/infrastructure/phaser/ui/screenFrame';
+import { hudLayout, type HudLayout } from '../../src/infrastructure/phaser/ui/uiLayout';
 import {
   createHud,
   createResultsOverlay,
@@ -202,18 +204,22 @@ interface Made {
   x: number;
   y: number;
   scrollFactor: number | null;
+  fontSize: number | null;
 }
 
 /** Escena falsa con `scale` (la vista) y `add.rectangle`/`add.text` que registran lo creado. */
 function fakeScene(view: { width: number; height: number }) {
   const made: Made[] = [];
   const make = (kind: string, x: number, y: number): unknown => {
-    const state: Made = { kind, x, y, scrollFactor: null };
+    const state: Made = { kind, x, y, scrollFactor: null, fontSize: null };
     made.push(state);
     const proxy: unknown = new Proxy(state, {
       get(target, prop) {
         if (prop === 'setScrollFactor') {
           return (v: number) => ((target.scrollFactor = v), proxy);
+        }
+        if (prop === 'setFontSize') {
+          return (v: number) => ((target.fontSize = v), proxy);
         }
         if (prop === 'setPosition') {
           return (px: number, py: number) => ((target.x = px), (target.y = py), proxy);
@@ -241,7 +247,7 @@ describe('Widgets fijos en pantalla (0013)', () => {
     const view = { width: 960, height: 540 };
     const { scene, made } = fakeScene(view);
 
-    createHud(scene);
+    createHud(scene, screenFrame(view.width, view.height));
     const offer = createUpgradeOverlay(scene);
     const results = createResultsOverlay(scene);
     offer.sync(
@@ -259,5 +265,87 @@ describe('Widgets fijos en pantalla (0013)', () => {
     expect(made.filter((m) => m.scrollFactor !== 0)).toEqual([]);
     const outside = made.filter((m) => m.x < 0 || m.x > view.width || m.y < 0 || m.y > view.height);
     expect(outside).toEqual([]);
+  });
+});
+
+/** Colocación falsa: cuenta las llamadas y guarda el último layout. */
+class FakePlacement implements HudPlacement {
+  calls: { layout: HudLayout; rescale: boolean }[] = [];
+  place(layout: HudLayout, rescale: boolean): void {
+    this.calls.push({ layout, rescale });
+  }
+}
+
+function placedHud(frame = screenFrame(960, 540)) {
+  const placement = new FakePlacement();
+  const fill = new FakeBar();
+  const xpFill = new FakeBar();
+  const layout = hudLayout(frame);
+  const xpBar = new XpBar(xpFill, new FakeLabel(), layout.barWidth, layout.barHeight);
+  const view = new Hud(
+    {
+      xpBar,
+      healthFill: fill,
+      healthLabel: new FakeLabel(),
+      clock: new FakeLabel(),
+      kills: new FakeLabel(),
+      placement,
+    },
+    layout.barWidth,
+    layout.barHeight,
+  );
+  return { view, placement, fill, xpFill };
+}
+
+// Spec world-camera (0017), "Redimensionado de la ventana"; hud, "Cambio de escalón al redimensionar".
+describe('Hud.relayout (0017)', () => {
+  it('tras relayout con otro ancho de barra el relleno se recalcula (caché invalidada)', () => {
+    const h = placedHud();
+    h.view.sync(snap({ health: 50, level: 2, xp: 5, xpToNext: 10 }));
+    expect([h.fill.width, h.xpFill.width]).toEqual([120, 120]);
+
+    h.view.relayout(hudLayout(screenFrame(1920, 1080)));
+
+    expect([h.fill.width, h.fill.height]).toEqual([240, 20]);
+    expect([h.xpFill.width, h.xpFill.height]).toEqual([240, 20]);
+  });
+
+  it('Scenario: Mismo tamaño (relayout con el mismo frame no recoloca nada)', () => {
+    const h = placedHud();
+    h.view.relayout(hudLayout(screenFrame(960, 540)));
+    const resizes = h.fill.resizes;
+
+    h.view.relayout(hudLayout(screenFrame(960, 540)));
+
+    expect(h.placement.calls).toHaveLength(1);
+    expect(h.fill.resizes).toBe(resizes);
+  });
+
+  it('Scenario: Cambio de escalón al redimensionar (×1 → ×2 vuelve a pintar el texto)', () => {
+    const h = placedHud();
+    h.view.relayout(hudLayout(screenFrame(1280, 720)));
+    h.view.relayout(hudLayout(screenFrame(1000, 600)));
+    h.view.relayout(hudLayout(screenFrame(2560, 1440)));
+
+    expect(h.placement.calls.map((c) => c.rescale)).toEqual([false, false, true]);
+  });
+});
+
+describe('createHud con relayout (0017)', () => {
+  it('Scenario: Muchos cambios seguidos (50 relayouts: ningún objeto nuevo, último frame)', () => {
+    const { scene, made } = fakeScene({ width: 1280, height: 720 });
+    const h = createHud(scene, screenFrame(1280, 720));
+    const created = made.length;
+    const frames = [screenFrame(1280, 720), screenFrame(1000, 600), screenFrame(2560, 1440)];
+
+    for (let i = 0; i < 50; i++) h.relayout(hudLayout(frames[i % 3] ?? screenFrame(1, 1)));
+    const last = hudLayout(frames[49 % 3] ?? screenFrame(1, 1));
+
+    expect(made.length).toBe(created);
+    const kills = made.filter((m) => m.kind === 'text').map((m) => m.x);
+    expect(kills).toContain(last.kills.x);
+    expect(made.filter((m) => m.kind === 'text').every((m) => m.fontSize === last.fontSize)).toBe(
+      true,
+    );
   });
 });

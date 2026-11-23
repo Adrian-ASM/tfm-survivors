@@ -18,6 +18,7 @@ import type { ResultsOverlay } from './ResultsOverlay';
 import type { ResultsView } from './resultsText';
 import type { RunLauncher } from './RunLauncher';
 import { createHud, createResultsOverlay, createUpgradeOverlay } from './sceneWidgets';
+import { screenFrame } from './ui/screenFrame';
 import type { UpgradeOverlay } from './UpgradeOverlay';
 import type { Appearance } from '../content/appearanceSchema';
 import { resolveLooks } from './art/looks';
@@ -195,7 +196,7 @@ export class GameScene extends Phaser.Scene {
       mapArt,
       mapLooks,
       layers,
-      hud: createHud(this),
+      hud: createHud(this, screenFrame(this.scale.width, this.scale.height)),
       offer: createUpgradeOverlay(this),
       results: createResultsOverlay(this),
       move: new KeyboardInput(keyboard),

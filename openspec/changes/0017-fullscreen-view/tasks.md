@@ -114,7 +114,7 @@
     `width × height` centrado.
   - Escenarios: "Tres cartas centradas", "Dos cartas y una carta", "Ventana mínima con cartas enteras", "Ventana
     menor que 960 × 540" (upgrades, parte geométrica).
-- [ ] 3.4 `Hud.relayout` y `XpBar.relayout` (design D6). Ficheros: `Hud.ts`, `XpBar.ts`, `sceneWidgets.ts`.
+- [x] 3.4 `Hud.relayout` y `XpBar.relayout` (design D6). Ficheros: `Hud.ts`, `XpBar.ts`, `sceneWidgets.ts`.
   - Rojo: `tests/infrastructure/hud.test.ts`: tras `relayout` con otro ancho de barra el relleno se recalcula (caché
     invalidada); 50 `relayout` alternos no crean elementos (exactamente 1 de cada uno) y acaban en el último frame;
     `relayout` con el mismo frame no cambia posiciones ni tamaños; cambiar de ×1 a ×2 vuelve a pintar el texto
