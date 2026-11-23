@@ -99,7 +99,7 @@
     1.280 × 720 → ×1; 1.919 × 1.080 → ×1; 1.920 × 1.080, 2.560 × 1.440 → ×2; 1.280,5 → 1.280; 0 × 0 y `NaN` → 1 × 1,
     ×1; secuencia 960 × 540 … 3.840 × 2.160 (recortada al tope) no decreciente.
   - Escenarios: "Escala mínima", "Escala en pantallas grandes", "Monotonía", "Ventana minimizada" (saneado).
-- [ ] 3.2 `hudLayout(frame)` (design D5). Fichero: `ui/uiLayout.ts`; constantes de `sceneWidgets` se mueven aquí.
+- [x] 3.2 `hudLayout(frame)` (design D5). Fichero: `ui/uiLayout.ts`; constantes de `sceneWidgets` se mueven aquí.
   - Rojo: `tests/infrastructure/ui-layout.test.ts`: vida/XP a la izquierda, reloj en `width / 2`, bajas a
     `width − margin`; distancias al anclaje iguales en 960 × 540 y 1.280 × 720; tras 1.280 → 1.000 el borde derecho
     se mueve 280 px; con ×2 medidas y distancias dobles; cajas reservadas (con el ancho máximo de `120/120`, `10:00`,
