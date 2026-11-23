@@ -24,7 +24,7 @@
   sin asignar) y `isFullyConnected(map, start)`.
   Escenarios: PM "Celdas dentro y fuera de la zona", "Celda encerrada no es alcanzable".
   Test: `tests/domain/map/connectivity.test.ts`. E2E afectados: —
-- [ ] 1.4 Ríos (design §3.2 paso 2) y semilla del mapa: `deriveSeed(seed, stream)` en
+- [x] 1.4 Ríos (design §3.2 paso 2) y semilla del mapa: `deriveSeed(seed, stream)` en
   `src/infrastructure/random/` (uint32; 0 y 4.294.967.295 válidas) y helper `mapForSeed(config, seed)` en
   `tests/support/` que usa `Mulberry32(deriveSeed(seed, MAP_STREAM))`. `generateMap` con solo ríos: 4-conexo, de borde
   a borde, sin bloque 2 × 2, fuera de la zona, `bridges.min..max` puentes en celdas rectas, 2 ríos en lados opuestos,
