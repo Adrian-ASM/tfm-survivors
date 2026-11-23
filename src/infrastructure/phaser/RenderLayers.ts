@@ -1,5 +1,5 @@
 import type { RunSnapshot } from '../../domain/run/RunSnapshot';
-import { AnimClock } from './art/animation';
+import { AnimClock, frameAt, type AnimSpec } from './art/animation';
 import type { Looks } from './art/looks';
 import { CorpseLayer } from './CorpseLayer';
 import { EnemyLayer } from './EnemyLayer';
@@ -45,6 +45,10 @@ export class RenderLayers {
   private readonly projectiles: ProjectileLayer;
   private readonly player: PlayerView;
   private status: RunSnapshot['status'] = 'running';
+  /** Lienzo y animación de la espuma del mapa pintado (0016), y último frame aplicado. */
+  private foamCanvas: MapArtCanvas | null = null;
+  private foamAnim: AnimSpec | null = null;
+  private foamFrame = -1;
 
   constructor(parts: RenderParts, ground: SpriteCount) {
     const { kit, looks, capacity } = parts;
@@ -85,6 +89,16 @@ export class RenderLayers {
     this.corpses.sync(ms);
     this.projectiles.sync(snapshot.projectiles);
     this.player.render(snapshot, ms);
+    this.animateFoam(ms);
+  }
+
+  /** Espuma del mapa en bucle con el reloj de render: `setFrame` solo cuando cambia (0016). */
+  private animateFoam(ms: number): void {
+    if (!this.foamCanvas || !this.foamAnim) return;
+    const frame = frameAt(this.foamAnim, ms);
+    if (frame === this.foamFrame) return;
+    this.foamFrame = frame;
+    this.foamCanvas.foam(frame);
   }
 
   /**
@@ -99,6 +113,9 @@ export class RenderLayers {
       mapArt[key] = { ...painted.mapArt[key] };
     }
     mapArt.objects = painted.mapArt.objects;
+    this.foamCanvas = canvas;
+    this.foamAnim = plan.foam ? { frames: plan.foam.frames, fps: plan.foam.fps, loop: true } : null;
+    this.foamFrame = -1;
   }
 
   /** Cambio de partida: vacía las capas sin cadáveres y el jugador no hereda nada. */

@@ -128,7 +128,7 @@ opción (script temporal en el scratchpad) y esperar su decisión.
   espuma recortada por caso y, si hizo falta, los de tronco/copa).
   Test con doble de texturas. — escenarios: "Recorte del puente fuera de la hoja", "Hojas del mapa bloqueadas"
   (reserva sin errores, parte unitaria)
-- [ ] 4.4 Espuma animada: `RenderLayers.render` calcula el frame de `foam.idle` con su `AnimClock` y llama a
+- [x] 4.4 Espuma animada: `RenderLayers.render` calcula el frame de `foam.idle` con su `AnimClock` y llama a
   `canvas.foam(f)` solo al cambiar; congelada en pausa y en manual sin `step`. — escenario: "Pintado del mapa"
   (espuma en bucle en tiempo de render)
 - [ ] 4.5 Sonda y cableado: `renderCounts` (`cells.castle`, `mapArt`), menú a 0; `GameScene` pinta con `planMapArt`
