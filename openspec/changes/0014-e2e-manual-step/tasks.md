@@ -279,7 +279,9 @@
     `playToEnd`); `waitForTimeout(300)` pasa a `waitFrames(20)`.
   - Hecho: la guarda incluye el fichero, `verify` verde y `npm run test:e2e -- menu-progress` verde.
 
-- [ ] 4.9 **(Opcional, decide el orquestador)** `menu-flow`: "Volver al menú desde la pausa (tick ≥ 3.000)" a
+- [x] ~~4.9~~ **Descartada (usuario, 2026-11-23)**: "Volver al menú desde la pausa" se queda en `realtime`, como
+  fija la proposal. No se implementa.
+- (texto original) 4.9 `menu-flow`: "Volver al menú desde la pausa (tick ≥ 3.000)" a
   `logic`.
   - Cambio: `stepUntil(busy || over)` en lugar de `playChoosingFirst` a 60 s; se le quita `@realtime`. El resto de
     menu-flow sigue `@realtime`.

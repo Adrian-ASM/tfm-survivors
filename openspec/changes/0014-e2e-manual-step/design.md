@@ -463,4 +463,5 @@ regla y reloj:
   sigue esa versión.
 - `menu-flow` "Volver al menú desde la pausa" pasa a `logic` (§5). La proposal deja menu-flow en tiempo real, pero
   también dice que la clasificación es orientativa. Es la tarea 4.9 de `tasks.md` y es **opcional**: si el
-  orquestador no la acepta, se queda en `realtime`.
+  orquestador no la acepta, se queda en `realtime`. **Decisión del usuario (2026-11-23): se queda en `realtime`;
+  la 4.9 queda descartada.** Donde §5 lo ponga en `logic`, manda esta nota.
