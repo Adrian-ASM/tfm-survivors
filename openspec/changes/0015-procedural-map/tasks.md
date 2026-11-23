@@ -115,7 +115,7 @@ provisional en la spec).
   Test: `tests/support/map-golden.test.ts`. E2E afectados: `procedural-map.spec`
 
 ## 5. Render del mapa (infraestructura)
-- [ ] 5.1 Colores del mapa en datos de aspecto: `terrain: { trunk, water, bridge }` estricto, `#RRGGBB`, distintos dos
+- [x] 5.1 Colores del mapa en datos de aspecto: `terrain: { trunk, water, bridge }` estricto, `#RRGGBB`, distintos dos
   a dos (error con el campo repetido), en `appearance.json`.
   Escenarios: SR "Colores del repositorio", "Colores inválidos".
   Test: `tests/infrastructure/appearance.test.ts`. E2E afectados: —

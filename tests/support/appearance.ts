@@ -58,6 +58,7 @@ export interface RawAppearance {
   gem: Json;
   ground: Json;
   corpse: Json;
+  terrain: Record<string, unknown>;
   [extra: string]: unknown;
 }
 
@@ -75,5 +76,6 @@ export function rawAppearance(): RawAppearance {
     gem: still(GEM_FILE, 128, '#3e9bff'),
     ground: still(GROUND_FILE, 64, '#2f6b3a'),
     corpse: { ...base(DEAD_FILE, 128, '#b0b4ba'), death: anim([1, 2, 3, 4, 5, 6], 15, false) },
+    terrain: { trunk: '#5b3a1e', water: '#2b6cb0', bridge: '#a47148' },
   };
 }

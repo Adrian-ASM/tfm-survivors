@@ -67,6 +67,25 @@ export const StillSchema = z.strictObject({ ...BaseShape, idle: AnimSchema });
 export const MovingSchema = z.strictObject({ ...BaseShape, idle: AnimSchema, walk: AnimSchema });
 export const CorpseSchema = z.strictObject({ ...BaseShape, death: DeathSchema });
 
+export const TERRAIN_COLORS_MUST_DIFFER =
+  'Los colores del mapa (trunk, water, bridge) son distintos dos a dos.';
+
+/**
+ * Colores lisos de las celdas del mapa (change 0015): uno por tipo no-hierba, `#RRGGBB`, distintos
+ * dos a dos. El error de un color repetido nombra el último de los dos en el orden del fichero.
+ */
+const TerrainSchema = z
+  .strictObject({ trunk: Hex, water: Hex, bridge: Hex })
+  .superRefine((colors, ctx) => {
+    const seen = new Set<number>();
+    for (const key of ['trunk', 'water', 'bridge'] as const) {
+      if (seen.has(colors[key])) {
+        ctx.addIssue({ code: 'custom', path: [key], message: TERRAIN_COLORS_MUST_DIFFER });
+      }
+      seen.add(colors[key]);
+    }
+  });
+
 export const AppearanceSchema = z.strictObject({
   maxCorpses: z
     .number()
@@ -78,6 +97,7 @@ export const AppearanceSchema = z.strictObject({
   gem: StillSchema,
   ground: StillSchema,
   corpse: CorpseSchema,
+  terrain: TerrainSchema,
 });
 
 export type Appearance = z.output<typeof AppearanceSchema>;

@@ -44,6 +44,9 @@ export function parseAppearance(
   const parsed = schema.safeParse(raw);
   if (parsed.success) return ok(parsed.data);
   const issue = parsed.error.issues[0];
-  const field = (issue?.path ?? []).map(String).join('.');
+  const path = (issue?.path ?? []).map(String);
+  // Un campo desconocido se nombra a sí mismo (spec sprite-rendering: "nombra `lava`").
+  if (issue?.code === 'unrecognized_keys' && issue.keys[0] !== undefined) path.push(issue.keys[0]);
+  const field = path.join('.');
   return err(invalidConfig(field, issue?.message ?? 'Datos de aspecto inválidos'));
 }
