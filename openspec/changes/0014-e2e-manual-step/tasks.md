@@ -223,7 +223,7 @@
 > mientras queden esperas de reloj, y después se migra. Además, quitar `manual` de `gameUrl` hace fallar
 > `expectManual`. Las specs migradas dejan de importar `E2E_SPEED` y `playChoosingFirst`.
 
-- [ ] 4.0 **Guarda de esperas de reloj en `logic`**.
+- [x] 4.0 **Guarda de esperas de reloj en `logic`**.
   - Ficheros: `tests/support/logicGuard.ts` y `tests/infrastructure/logic-guard.test.ts`.
   - Qué hace: parte cada spec en bloques `test(…)`. Un bloque sin `@realtime`, o el preámbulo de un fichero que no
     es entero de tiempo real, no puede contener `waitForTimeout`, `playChoosingFirst` ni
