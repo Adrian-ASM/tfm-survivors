@@ -1,6 +1,5 @@
 import type { RunSeeding } from '../application/StartRun';
 import { OPEN_TERRAIN } from '../domain/map/TerrainSource';
-import type { RandomGenerator } from '../domain/shared/RandomGenerator';
 import { Mulberry32RandomGenerator } from '../infrastructure/random/Mulberry32RandomGenerator';
 import { MAP_STREAM, deriveSeed } from '../infrastructure/random/deriveSeed';
 
@@ -20,17 +19,18 @@ export function seededRun(seed: number, mode: MapMode = 'generated'): RunSeeding
 }
 
 /**
- * Fábrica de generadores para `RestartRun` (spec simulation-loop, "Semilla de la partida"): cada
- * reinicio sortea una semilla nueva con `randomSeed`, sin leer la URL ni emitir avisos, y la
- * comunica con `onSeed` (el probe de E2E).
+ * Fábrica de siembras para `RestartRun` (spec simulation-loop, "Semilla de la partida"): cada
+ * reinicio sortea una semilla nueva con `randomSeed`, sin leer la URL ni emitir avisos, la
+ * comunica con `onSeed` (el probe de E2E) y siembra con `seededRun` en el modo de mapa de la carga.
  */
 export function restartRandoms(
   randomSeed: () => number,
   onSeed: (seed: number) => void,
-): () => RandomGenerator {
+  mode: MapMode = 'generated',
+): () => RunSeeding {
   return () => {
     const seed = randomSeed();
     onSeed(seed);
-    return new Mulberry32RandomGenerator(seed);
+    return seededRun(seed, mode);
   };
 }

@@ -4,16 +4,20 @@ import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
 import { loadRunConfig } from '../../src/infrastructure/content/loadRunConfig';
 import { advanceFrame } from '../../src/infrastructure/phaser/advanceFrame';
-import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
+import { seededRun } from '../../src/composition/seedSource';
 
 /** Tope de las partidas de equivalencia: 10 min (36.000 ticks), la duración del contenido. */
 export const MAX_DRIVE_TICKS = 36_000;
 
-/** Partida con el contenido por defecto (content/*.json, lo que carga el juego) y la semilla dada. */
+/**
+ * Partida con el contenido por defecto (content/*.json, lo que carga el juego) y la semilla dada,
+ * sembrada como en producción (`seededRun`: mapa generado por la semilla).
+ */
 export function startDefault(seed: number): StartedRun {
   const config = loadRunConfig();
   if (!config.ok) throw new Error(config.error.message);
-  const started = new StartRun().execute(config.value, new Mulberry32RandomGenerator(seed));
+  const { random, terrain } = seededRun(seed);
+  const started = new StartRun().execute(config.value, random, undefined, terrain);
   if (!started.ok) throw new Error(started.error.message);
   return started.value;
 }

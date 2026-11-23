@@ -2,7 +2,7 @@ import { StartRun } from '../application/StartRun';
 import type { RunConfig } from '../domain/run/RunConfig';
 import type { DomainError } from '../domain/shared/Result';
 import type { RunLauncher } from '../infrastructure/phaser/RunLauncher';
-import { Mulberry32RandomGenerator } from '../infrastructure/random/Mulberry32RandomGenerator';
+import { seededRun, type MapMode } from './seedSource';
 
 export interface RunLauncherOptions {
   readonly config: RunConfig;
@@ -13,6 +13,8 @@ export interface RunLauncherOptions {
   /** Cada partida creada, con su semilla (la sonda de E2E: `seed` y `runs`). */
   readonly onStart: (seed: number) => void;
   readonly onContentError: (error: DomainError) => void;
+  /** Mapa de las partidas de la carga (por defecto, el generado por cada semilla; ADR-0013). */
+  readonly mapMode?: MapMode;
 }
 
 /**
@@ -27,7 +29,8 @@ export function createRunLauncher(options: RunLauncherOptions): RunLauncher {
     launch: () => {
       const seed = first ? options.urlSeed : options.randomSeed();
       first = false;
-      const started = start.execute(options.config, new Mulberry32RandomGenerator(seed));
+      const { random, terrain } = seededRun(seed, options.mapMode ?? 'generated');
+      const started = start.execute(options.config, random, undefined, terrain);
       if (!started.ok) {
         options.onContentError(started.error);
         return null;

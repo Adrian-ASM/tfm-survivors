@@ -14,6 +14,8 @@ import {
 } from '../support/builders';
 import { chooseFirstWhileOpen, startSeededRun } from '../support/runs';
 import { randomInputs } from '../support/inputs';
+import { GameMap } from '../../src/domain/map/GameMap';
+import { mapRules } from '../support/mapLayouts';
 
 // Partidas de 10 min (36.000 ticks). Una sola simulación con el contenido por defecto se reutiliza para
 // los escenarios de legalidad; sirve además de alarma gruesa de rendimiento dentro de `verify`.
@@ -34,6 +36,10 @@ interface Violations {
   tooClose: number;
   births: number;
   maxAlive: number;
+  /** Ticks en que el círculo del jugador solapa una celda no caminable de su mapa. */
+  overlaps: number;
+  /** Gemas en reposo (no atraídas: en su punto de creación) sobre una celda no caminable. */
+  restingOnBlocked: number;
 }
 
 type Bounds = RunConfig['arena'];
@@ -42,7 +48,12 @@ type Bounds = RunConfig['arena'];
 const inside = (arena: Bounds, { x, y }: { x: number; y: number }, radius: number): boolean =>
   x >= radius && x <= arena.width - radius && y >= radius && y <= arena.height - radius;
 
+/**
+ * "Contenido por defecto + semilla" juega con el mapa generado (como la composición); la arena de
+ * escenario, con el mapa vacío (posiciones del escenario sin mapa declarado).
+ */
 function start(config: RunConfig, seed: number): Run {
+  if (config === SPAWN_AUDIT) return startSeededRun(config, seed);
   const r = Run.start(config, new Mulberry32RandomGenerator(seed));
   if (!r.ok) throw new Error(r.error.message);
   return r.value;
@@ -50,21 +61,43 @@ function start(config: RunConfig, seed: number): Run {
 
 /**
  * Recorre la partida (política de elección fija) comprobando cada tick: enemigos y jugador dentro
- * del mundo de `config` y nacimientos a ≥ 200 del jugador.
+ * del mundo de `config`, nacimientos a ≥ 200 del jugador, jugador sin solapar el mapa y ninguna
+ * gema en reposo en una celda no caminable.
  */
 function audit(
   config: RunConfig,
   inputs: readonly PlayerInput[],
 ): { final: RunSnapshot; v: Violations } {
   const run = start(config, SEED);
-  const v: Violations = { outside: 0, playerOutside: 0, tooClose: 0, births: 0, maxAlive: 0 };
+  const map = GameMap.fromCells(
+    run.map.cells,
+    mapRules(config.map, config.arena.width, config.arena.height),
+  );
+  if (!map.ok) throw new Error(map.error.message);
+  const v: Violations = {
+    outside: 0,
+    playerOutside: 0,
+    tooClose: 0,
+    births: 0,
+    maxAlive: 0,
+    overlaps: 0,
+    restingOnBlocked: 0,
+  };
   let nextId = 0;
+  const createdAt = new Map<number, string>();
   for (const input of inputs) {
     chooseFirstWhileOpen(run);
     run.tick(input);
-    const { enemies, player } = run.snapshot();
+    const { enemies, player, gems } = run.snapshot();
     v.maxAlive = Math.max(v.maxAlive, enemies.length);
     if (!inside(config.arena, player, config.player.radius)) v.playerOutside += 1;
+    if (map.value.overlapsBlocked(player.x, player.y, player.radius)) v.overlaps += 1;
+    for (const g of gems) {
+      const here = `${String(g.x)},${String(g.y)}`;
+      if (!createdAt.has(g.id)) createdAt.set(g.id, here);
+      const { col, row } = map.value.cellAt(g.x, g.y);
+      if (createdAt.get(g.id) === here && !map.value.isWalkable(col, row)) v.restingOnBlocked += 1;
+    }
     for (const e of enemies) {
       if (!inside(config.arena, e, e.radius)) v.outside += 1;
       if (e.id < nextId) continue;
@@ -109,6 +142,18 @@ describe('Partidas largas (10 min)', () => {
 
   it('Scenario: Partida larga dentro del mundo (jugador en [16, 1.904] × [16, 1.064])', () => {
     expect(audited.v.playerOutside).toBe(0);
+  });
+
+  // Spec player-movement y xp-gems (0015): semilla 7 con el mapa generado e input aleatorio.
+  it('Scenario: Partida larga sin solapes (el jugador nunca solapa una celda no caminable)', () => {
+    expect(startSeededRun(SPAWN_AUDIT, SEED).map.counts.trunk).toBeGreaterThan(0);
+    expect(audited.v.overlaps).toBe(0);
+    expect(audited.v.playerOutside).toBe(0);
+  });
+
+  it('Scenario: Ninguna gema en reposo en celda no caminable', () => {
+    expect(audited.final.kills).toBeGreaterThan(0);
+    expect(audited.v.restingOnBlocked).toBe(0);
   });
 
   it('sin bajas nacen exactamente maxAlive enemigos, todos legales (arena de escenario)', () => {

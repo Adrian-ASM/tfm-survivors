@@ -73,7 +73,7 @@ provisional en la spec).
   contactos reproducible", "Partida con armas reproducible", "Partida con progresión reproducible", "Partida larga
   reproducible", "Resultado reproducible", "Victoria reproducible".
   Test: `tests/domain/map-independence.test.ts`, `determinism*.test.ts`. E2E afectados: —
-- [ ] 2.5 Reinicio y lanzador con mapa: `RestartRun(config, nextSeeding)`, `restartRandoms` y `createRunLauncher` con
+- [x] 2.5 Reinicio y lanzador con mapa: `RestartRun(config, nextSeeding)`, `restartRandoms` y `createRunLauncher` con
   `seededRun`; partidas largas con mapa real. Rojo: test de `run-launcher` que compara `map()` con `mapForSeed`.
   Escenarios: PM "Reinicio con otra semilla" (unitario); MOV "Partida larga sin solapes"; GEM "Ninguna gema en reposo
   en celda no caminable".

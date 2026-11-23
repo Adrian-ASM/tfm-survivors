@@ -151,7 +151,7 @@ function bootstrap(): void {
     probe.runs += 1;
   };
   // Cada reinicio usa una semilla nueva (también con ?seed=), sin releer la URL ni avisar.
-  const nextRandom = restartRandoms(randomSeed, started);
+  const nextSeeding = restartRandoms(randomSeed, started);
   // La partida se crea al entrar en GameScene: la 1.ª de la carga con la semilla de la URL.
   const launcher = createRunLauncher({
     config: config.value,
@@ -174,7 +174,7 @@ function bootstrap(): void {
 
   const game = new GameScene({
     launcher,
-    restartRun: new RestartRun(config.value, nextRandom),
+    restartRun: new RestartRun(config.value, nextSeeding),
     capacity: sceneCapacity(config.value, appearance.maxCorpses),
     world,
     appearance,
