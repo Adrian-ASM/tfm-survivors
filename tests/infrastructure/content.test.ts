@@ -21,6 +21,10 @@ import {
 import { RUN_DURATION_MUST_BE_INTEGER } from '../../src/domain/run/RunDuration';
 import { loadRunConfig, parseRunConfig } from '../../src/infrastructure/content/loadRunConfig';
 import {
+  WORLD_LOWER_THAN_VIEW,
+  WORLD_NARROWER_THAN_VIEW,
+} from '../../src/infrastructure/content/schemas';
+import {
   SCENARIO_ARENA,
   aDefaultConfig,
   aRunConfig,
@@ -286,6 +290,36 @@ describe('Contenido de enemigos y oleadas validado · forma y rangos (zod)', () 
     ['waves.segments.0.types', (r: RawContent) => (r.waves.segments[0].types = [])],
     ['enemies.types.0.id', (r: RawContent) => (r.enemies.types[0].id = 'Bug 1')],
   ])('rechaza un valor fuera de rango en %s', (field, mutate) => {
+    const raw = rawContent();
+    mutate(raw);
+    expect(failure(raw).field).toBe(field);
+  });
+
+  // Spec world-camera (0013), "Mundo y vista en el contenido": el mundo es al menos la vista.
+  it('Scenario: Mundo más estrecho que la vista (959 × 1.080)', () => {
+    const raw = rawContent();
+    raw.arena.width = 959;
+    expect(failure(raw)).toMatchObject({ field: 'arena.width', message: WORLD_NARROWER_THAN_VIEW });
+  });
+
+  it('Scenario: Mundo más bajo que la vista (1.920 × 539)', () => {
+    const raw = rawContent();
+    raw.arena.height = 539;
+    expect(failure(raw)).toMatchObject({ field: 'arena.height', message: WORLD_LOWER_THAN_VIEW });
+  });
+
+  it('Scenario: Mundo igual a la vista (960 × 540)', () => {
+    const raw = rawContent();
+    raw.arena.width = 960;
+    raw.arena.height = 540;
+    expect(parseRunConfig(raw).ok).toBe(true);
+  });
+
+  it.each([
+    ['arena.width', (r: RawContent) => (r.arena.width = 0)],
+    ['arena.height', (r: RawContent) => (r.arena.height = -1)],
+    ['arena.view.width', (r: RawContent) => (r.arena.view.width = 0)],
+  ])('Scenario: Dimensiones no positivas (%s)', (field, mutate) => {
     const raw = rawContent();
     mutate(raw);
     expect(failure(raw).field).toBe(field);

@@ -52,7 +52,7 @@
   Test: `tests/domain/piled-contact.test.ts` (nuevo), `tests/bench/run.bench.ts`. E2E afectados: —
 
 ## 2. Contenido e infraestructura sin motor
-- [ ] 2.1 Mundo ≥ vista en zod (D1b): `superRefine` en `ArenaSchema` con issues en `width` y `height` y mensajes
+- [x] 2.1 Mundo ≥ vista en zod (D1b): `superRefine` en `ArenaSchema` con issues en `width` y `height` y mensajes
   como constantes. Rojo: 959 × 1.080 y 1.920 × 539 cargan hoy sin error.
   Escenarios: world-camera "Mundo más estrecho que la vista", "Mundo más bajo que la vista", "Mundo igual a la
   vista", "Dimensiones no positivas" (los tres casos).

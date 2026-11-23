@@ -69,6 +69,14 @@ describe('bootContent', () => {
     expect([booted, errors[0]?.field]).toEqual([null, 'player.maxHealth']);
   });
 
+  // Spec world-camera (0013), "Mundo más estrecho que la vista": sin menú ni partida.
+  it('Scenario: Mundo más estrecho que la vista (959 × 1.080: arranque bloqueado)', () => {
+    const r = raw();
+    r.content.arena.width = 959;
+    const { booted, errors } = boot(r);
+    expect([booted, errors.map((e) => e.field)]).toEqual([null, ['arena.width']]);
+  });
+
   it('checkAppearanceRefs acepta el contenido del repositorio', () => {
     const { booted } = boot(raw());
     if (!booted) throw new Error('arranque inválido');
