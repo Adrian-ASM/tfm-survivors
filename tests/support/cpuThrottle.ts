@@ -3,8 +3,7 @@
  * `CI_LIKE=1` (design 0014 §4.2): imita al runner de Actions sin depender de saturar el PC con
  * workers. `CPU_THROTTLE` lo cambia; 1 = sin frenar.
  *
- * PROVISIONAL (2026-11-23, tarea 3.2): la tarea 5.2 lo fija con la sonda `calibration.spec.ts`
- * frente al log del job `e2e` de CI (paso 3, pendiente: aún no hay PR).
+ * Calibrado (2026-11-23, tarea 5.2) con la sonda `calibration.spec.ts` frente al job `e2e` de CI.
  *
  * Medidas locales (2026-11-23, tarea 5.2 pasos 1 y 2), `CI_LIKE=1 CPU_THROTTLE=<r> npx playwright
  * test --project=realtime --repeat-each=3`, 2 workers, tras el rebase sobre 0013. Mediana de las 3
@@ -18,11 +17,25 @@
  *     4  | 60,0 |   16,8   | 8,00 | 138 ok, 0 fallos, 5,5 min
  *     6  | 60,0 |   16,8   | 8,00 | 138 ok, 0 fallos, 5,9 min
  *
- * En este PC la sonda no distingue los rates hasta 6: el frame sigue cabiendo en 16,7 ms. Si en CI
- * sale fps < 60 o p95 > 16,8, ningún rate de la tabla lo iguala y habrá que probar rates mayores
- * (design §4.3, paso 4). Hasta entonces se mantiene 4.
+ * En este PC la sonda no distingue los rates hasta 6: el frame sigue cabiendo en 16,7 ms.
+ *
+ * CI (paso 3): job `e2e` del PR #33 (run 45175086531), `fps=11.2 p95=116.7 tpf=11.05`.
+ * Rates mayores, solo la sonda (`--workers=1`, una muestra por rate):
+ *
+ *   rate | fps  | p95 (ms) | tpf
+ *   -----+------+----------+------
+ *    10  | 59,8 |   16,8   | 8,03
+ *    20  | 30,7 |   50,0   | 11,53
+ *    25  | 16,4 |  116,7   | 10,40
+ *    30  | 11,3 |  166,7   | 11,26
+ *    40  |  8,1 |  233,4   | 9,33
+ *
+ * Elección (paso 4): 25, el de p95 igual al de CI. Se probó antes 30 (fps y tpf más parecidos),
+ * pero frena más el JS que el runner, cuya lentitud viene sobre todo del render sin GPU: con 30,
+ * "Sin violaciones en el bucle completo" pasaba de 60 s (CI: 43,4 s) y "Cinco ciclos menú-partida"
+ * tardaba 1,2 min (CI: 50,4 s). Con 25, `--workers=1`: 35,7 s y 38,1 s, ambos en verde.
  */
-export const DEFAULT_CPU_THROTTLE = 4;
+export const DEFAULT_CPU_THROTTLE = 25;
 
 /**
  * Lee `CPU_THROTTLE`: sin valor, `DEFAULT_CPU_THROTTLE`; si no, un número finito ≥ 1. Un valor

@@ -8,6 +8,11 @@ describe('parseThrottle', () => {
     expect(parseThrottle(undefined)).toBe(DEFAULT_CPU_THROTTLE);
   });
 
+  // Tarea 5.2, paso 4: el rate local cuya sonda `[calibration]` más se parece al job `e2e` de CI.
+  it('sin valor frena 25 veces (calibrado frente a CI, 2026-11-23)', () => {
+    expect(parseThrottle(undefined)).toBe(25);
+  });
+
   it('el valor por defecto es válido para parseThrottle', () => {
     expect(parseThrottle(String(DEFAULT_CPU_THROTTLE))).toBe(DEFAULT_CPU_THROTTLE);
   });

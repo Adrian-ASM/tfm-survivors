@@ -298,8 +298,9 @@
   - Test: solo exige `fps > 0` y los 3 campos finitos (rojo: `measureFrames` no existe). Nunca falla por lento.
   - Hecho: `verify` verde y `npm run test:e2e -- calibration` verde, con la línea `[calibration]` en la salida.
 
-- [ ] 5.2 **Medir y fijar `DEFAULT_CPU_THROTTLE`**. *Pendiente del paso 3 (CI)*: pasos 1 y 2 hechos
-  en local (2026-11-23, tabla en `tests/support/cpuThrottle.ts`); el valor sigue en 4, provisional.
+- [x] 5.2 **Medir y fijar `DEFAULT_CPU_THROTTLE`**. Hecho (2026-11-23): CI (PR #33, run 45175086531) da
+  `fps=11.2 p95=116.7 tpf=11.05`; se fija **25** (p95 igual a CI). 30 frenaba más que CI el JS y
+  hacía fallar por tiempo "Sin violaciones en el bucle completo". Tabla en `tests/support/cpuThrottle.ts`.
   - Pasos:
     1. **Línea base**: `CI_LIKE=1 CPU_THROTTLE=1 npm run test:e2e -- --project=realtime --repeat-each=3` con 2
        workers. Se anotan fallos y duración.
@@ -334,8 +335,8 @@
     segundo rebasa y deja **una sola** receta, esta. Hay que comprobar `main` antes de abrir o actualizar el PR.
   - Test: no hay test automático (es documentación). Hecho: `verify` verde, con `guard:all` incluido.
 
-- [ ] 6.2 **Suite completa y comprobaciones del change**. *Local hecho (2026-11-23), pendiente del CI
-  del PR*: `logic` 67 pasan en 27,5 s; `realtime` 45 pasan y 1 saltado en 1,6 min (suite completa
+- [x] 6.2 **Suite completa y comprobaciones del change**. CI del PR #33 en verde (112 + 1 saltado, 8,0 min). Local (2026-11-23):
+  `logic` 67 pasan en 27,5 s; `realtime` 45 pasan y 1 saltado en 1,6 min (suite completa
   112 + 1 saltado, 2,0 min); `git diff origin/main -- src/domain src/application` vacío;
   `package.json` sin cambios; la guarda vigila las 11 specs con tests de `logic`.
   - Ejecutar `npm run test:e2e` (`logic` + `realtime`) en local y anotar la duración de cada proyecto.
