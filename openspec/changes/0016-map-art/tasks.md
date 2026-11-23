@@ -115,7 +115,7 @@ opción (script temporal en el scratchpad) y esperar su decisión.
 
 ## 4. Motor y composición
 
-- [ ] 4.1 `MapArtCanvas` (costura sin motor) y `paintMapArt(canvas, plan)` en `TerrainView.ts`, que absorbe
+- [x] 4.1 `MapArtCanvas` (costura sin motor) y `paintMapArt(canvas, plan)` en `TerrainView.ts`, que absorbe
   `TerrainCanvas`; test con canvas doble: un objeto por entrada del plan (`objects` igual al del plan), `clear` antes
   de repintar, nada visible del mapa anterior ni en el menú. — escenarios: "Partida nueva con otro mapa" (unitario),
   "Mapa vacío"

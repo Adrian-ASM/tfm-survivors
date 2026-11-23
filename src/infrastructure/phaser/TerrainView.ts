@@ -1,5 +1,47 @@
 import type { CellType } from '../../domain/map/CellType';
 import type { MapSnapshot } from '../../domain/map/MapSnapshot';
+import type {
+  MapArtCounts,
+  MapArtPlan,
+  MapCellCounts,
+  RectDraw,
+  SpriteDraw,
+  TileDraw,
+} from './map/planMapArt';
+
+/**
+ * Costura sin motor del pintado del mapa con arte (change 0016, design §5.4): dos capas, la baja
+ * bajo las entidades y la alta sobre ellas y bajo el HUD. Pools reutilizados entre partidas.
+ */
+export interface MapArtCanvas {
+  /** Oculta todo lo del mapa anterior (R, partida nueva). */
+  clear(): void;
+  /** Tramo de baldosas en la capa baja. */
+  tiles(t: TileDraw): void;
+  sprite(layer: 'low' | 'high', s: SpriteDraw): void;
+  /** Rectángulo de reserva en la capa baja. */
+  rect(r: RectDraw): void;
+  /** Pone el frame dado a todas las espumas visibles (animación en tiempo de render). */
+  foam(frame: number): void;
+}
+
+/** Recuentos del mapa pintado para la sonda de render (`sprites.cells` y `sprites.mapArt`). */
+export interface PaintedMap {
+  readonly cells: MapCellCounts;
+  readonly mapArt: MapArtCounts & { readonly objects: number };
+}
+
+/** Pinta el plan del mapa de una partida (borra antes el anterior); un objeto por entrada. */
+export function paintMapArt(canvas: MapArtCanvas, plan: MapArtPlan): PaintedMap {
+  canvas.clear();
+  for (const d of plan.low) {
+    if (d.kind === 'tiles') canvas.tiles(d);
+    else if (d.kind === 'sprite') canvas.sprite('low', d);
+    else canvas.rect(d);
+  }
+  for (const s of plan.high) canvas.sprite('high', s);
+  return { cells: plan.cells, mapArt: { ...plan.counts, objects: plan.objects } };
+}
 
 /**
  * Tipos de celda que se pintan: la hierba no (se ve el fondo). El castillo (0016) aún no tiene
