@@ -6,12 +6,12 @@ import {
   START_RADIUS_TOO_LARGE,
   type MapConfig,
 } from '../../../src/domain/map/MapRules';
-import { DEFAULT_MAP_LITERAL } from '../../support/mapLayouts';
+import { DEFAULT_MAP } from '../../support/builders';
 
 function create(patch: Partial<MapConfig>, width = 1920, height = 1080) {
   const arena = Arena.create(width, height);
   if (!arena.ok) throw new Error(arena.error.message);
-  return MapRules.create({ ...DEFAULT_MAP_LITERAL, ...patch }, arena.value, 16);
+  return MapRules.create({ ...DEFAULT_MAP, ...patch }, arena.value, 16);
 }
 
 describe('MapRules · rejilla del contenido (spec procedural-map)', () => {

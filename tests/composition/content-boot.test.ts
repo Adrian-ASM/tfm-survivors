@@ -77,6 +77,14 @@ describe('bootContent', () => {
     expect([booted, errors.map((e) => e.field)]).toEqual([null, ['arena.width']]);
   });
 
+  // Spec procedural-map (0015), "Valores fuera de rango": no se muestra el menú ni hay partida.
+  it('Scenario: Valores fuera de rango del mapa (rivers 3: arranque bloqueado)', () => {
+    const r = raw();
+    r.content.map.rivers = 3;
+    const { booted, errors } = boot(r);
+    expect([booted, errors.map((e) => e.field)]).toEqual([null, ['map.rivers']]);
+  });
+
   it('checkAppearanceRefs acepta el contenido del repositorio', () => {
     const { booted } = boot(raw());
     if (!booted) throw new Error('arranque inválido');

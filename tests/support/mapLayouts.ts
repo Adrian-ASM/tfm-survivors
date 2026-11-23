@@ -2,27 +2,17 @@ import { Arena } from '../../src/domain/arena/Arena';
 import type { CellType } from '../../src/domain/map/CellType';
 import { GameMap } from '../../src/domain/map/GameMap';
 import { MapRules, type MapConfig } from '../../src/domain/map/MapRules';
+import { DEFAULT_MAP, aDefaultConfig } from './builders';
 
-/** Parámetros del mapa por defecto (design 0015 §3.1; content/map.json desde la tarea 1.2). */
-export const DEFAULT_MAP_LITERAL: MapConfig = {
-  cellSize: 60,
-  startRadius: 180,
-  trunkDensity: 0.12,
-  trunkPatch: { min: 3, max: 8 },
-  rivers: 1,
-  bridges: { min: 2, max: 3 },
-  tuning: { riverVerticalChance: 0.5, riverMeander: 0.25, patchAttempts: 4000 },
-};
-
-/** Radio del jugador del contenido por defecto (content/player.json). */
-const PLAYER_RADIUS = 16;
-
-/** `MapRules` válidas o excepción (para preparar escenarios). */
+/**
+ * `MapRules` válidas o excepción (para preparar escenarios). Por defecto, el mapa, el mundo y el
+ * radio del jugador del contenido por defecto.
+ */
 export function mapRules(
-  config: MapConfig = DEFAULT_MAP_LITERAL,
-  width = 1920,
-  height = 1080,
-  playerRadius = PLAYER_RADIUS,
+  config: MapConfig = DEFAULT_MAP,
+  width = aDefaultConfig().arena.width,
+  height = aDefaultConfig().arena.height,
+  playerRadius = aDefaultConfig().player.radius,
 ): MapRules {
   const arena = Arena.create(width, height);
   if (!arena.ok) throw new Error(arena.error.message);

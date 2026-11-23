@@ -19,6 +19,7 @@ import {
   MAX_BUDGET_MUST_BE_POSITIVE,
 } from '../../src/domain/wave/SpawnRules';
 import { RUN_DURATION_MUST_BE_INTEGER } from '../../src/domain/run/RunDuration';
+import { CELL_SIZE_BELOW_PLAYER } from '../../src/domain/map/MapRules';
 import { loadRunConfig, parseRunConfig } from '../../src/infrastructure/content/loadRunConfig';
 import {
   WORLD_LOWER_THAN_VIEW,
@@ -31,6 +32,8 @@ import {
   rawContent,
   type RawContent,
 } from '../support/builders';
+
+type RawMap = RawContent['map'];
 import { StubRandom } from '../support/random';
 
 function failure(raw: RawContent): { field: string; message: string } {
@@ -532,5 +535,95 @@ describe('Contenido por defecto del repositorio', () => {
 
   it('Scenario: Contenido de los tests igual al del juego (loadRunConfig = aDefaultConfig)', () => {
     expect(config).toEqual(aDefaultConfig());
+  });
+});
+
+// Spec procedural-map (0015), "Contenido del mapa validado".
+describe('Contenido del mapa validado', () => {
+  const loaded = loadRunConfig();
+
+  it('Scenario: Contenido por defecto (cellSize 60, startRadius 180, troncos 0,12, 1 río)', () => {
+    const map = loaded.ok ? loaded.value.map : null;
+    expect(map && { ...map, tuning: undefined }).toEqual({
+      cellSize: 60,
+      startRadius: 180,
+      trunkDensity: 0.12,
+      trunkPatch: { min: 3, max: 8 },
+      rivers: 1,
+      bridges: { min: 2, max: 3 },
+      tuning: undefined,
+    });
+  });
+
+  it('el dominio recibe las reglas del mapa: rejilla de 32 × 18', () => {
+    const rules = loaded.ok ? buildRunRules(loaded.value) : null;
+    expect(rules?.ok && [rules.value.map.cols, rules.value.map.rows]).toEqual([32, 18]);
+  });
+
+  it('Scenario: Celda en el límite del radio del jugador (32 carga, 31 falla con cellSize)', () => {
+    const at32 = rawContent();
+    at32.map.cellSize = 32;
+    expect(parseRunConfig(at32).ok).toBe(true);
+    const at31 = rawContent();
+    at31.map.cellSize = 31;
+    expect(failure(at31)).toEqual({
+      code: 'invalid-config',
+      field: 'map.cellSize',
+      message: CELL_SIZE_BELOW_PLAYER,
+    });
+  });
+
+  it.each([
+    ['cellSize', (m: RawMap) => (m.cellSize = 0)],
+    ['cellSize', (m: RawMap) => (m.cellSize = 60.5)],
+    ['startRadius', (m: RawMap) => (m.startRadius = 0)],
+    ['startRadius', (m: RawMap) => (m.startRadius = 541)],
+    ['trunkDensity', (m: RawMap) => (m.trunkDensity = -0.01)],
+    ['trunkDensity', (m: RawMap) => (m.trunkDensity = 0.31)],
+    ['trunkPatch', (m: RawMap) => (m.trunkPatch = { min: 4, max: 3 })],
+    ['trunkPatch', (m: RawMap) => (m.trunkPatch = { min: 0, max: 3 })],
+    ['rivers', (m: RawMap) => (m.rivers = 3)],
+    ['rivers', (m: RawMap) => (m.rivers = 1.5)],
+    ['bridges', (m: RawMap) => (m.bridges = { min: 0, max: 2 })],
+    ['bridges', (m: RawMap) => (m.bridges = { min: 3, max: 2 })],
+    ['tuning.riverMeander', (m: RawMap) => (m.tuning.riverMeander = 1.5)],
+    ['tuning.riverVerticalChance', (m: RawMap) => (m.tuning.riverVerticalChance = -0.1)],
+    ['tuning.patchAttempts', (m: RawMap) => (m.tuning.patchAttempts = 0)],
+  ])('Scenario: Valores fuera de rango (%s)', (field, mutate) => {
+    const raw = rawContent();
+    mutate(raw.map);
+    expect(failure(raw).field).toContain(`map.${field}`);
+  });
+
+  it.each([
+    ['startRadius 540', (m: RawMap) => (m.startRadius = 540)],
+    ['trunkDensity 0', (m: RawMap) => (m.trunkDensity = 0)],
+    ['trunkDensity 0,3', (m: RawMap) => (m.trunkDensity = 0.3)],
+    ['rivers 0', (m: RawMap) => (m.rivers = 0)],
+    ['rivers 2', (m: RawMap) => (m.rivers = 2)],
+    ['trunkPatch { 1, 1 }', (m: RawMap) => (m.trunkPatch = { min: 1, max: 1 })],
+  ])('Scenario: Límites válidos (%s)', (_name, mutate) => {
+    const raw = rawContent();
+    mutate(raw.map);
+    expect(parseRunConfig(raw).ok).toBe(true);
+  });
+
+  it('Scenario: Campo ausente o desconocido (sin trunkDensity)', () => {
+    const raw = without(rawContent(), (r) => r.map, 'trunkDensity');
+    expect(failure(raw).field).toBe('map.trunkDensity');
+  });
+
+  it('Scenario: Campo ausente o desconocido (campo extra lakes: 2)', () => {
+    const raw = rawContent();
+    Object.assign(raw.map, { lakes: 2 });
+    expect(failure(raw).field).toBe('map.lakes');
+  });
+
+  it('campo de ajuste ausente o desconocido (tuning)', () => {
+    const missing = without(rawContent(), (r) => r.map.tuning, 'patchAttempts');
+    expect(failure(missing).field).toBe('map.tuning.patchAttempts');
+    const extra = rawContent();
+    Object.assign(extra.map.tuning, { lakes: 1 });
+    expect(failure(extra).field).toBe('map.tuning.lakes');
   });
 });

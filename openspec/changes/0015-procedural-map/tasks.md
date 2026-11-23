@@ -14,7 +14,7 @@
   Escenarios: PM "Rejilla por defecto", "Mundo no múltiplo de la celda", "Celda de un punto", "Caminabilidad por
   tipo y fuera de la rejilla", "Mapa de dimensiones incorrectas" (nivel `fromCells`).
   Test: `tests/domain/map/game-map.test.ts`, `tests/domain/map/map-rules.test.ts`. E2E afectados: —
-- [ ] 1.2 Contenido del mapa: `content/map.json`, `MapSchema` estricto (incluido `tuning`), `RunConfig.map`,
+- [x] 1.2 Contenido del mapa: `content/map.json`, `MapSchema` estricto (incluido `tuning`), `RunConfig.map`,
   `RunRules.map`, `loadRunConfig`/`repositoryContent` y `aDefaultConfig()` leyendo `map.json`. Rojo: `content.test.ts`
   con los casos de la spec (campo nombrado en el error, menú no mostrado vía `bootContent`).
   Escenarios: PM "Contenido por defecto", "Celda en el límite del radio del jugador", "Valores fuera de rango",
