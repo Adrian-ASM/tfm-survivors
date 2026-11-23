@@ -1,6 +1,12 @@
 import Phaser from 'phaser';
 import type { Appearance } from '../content/appearanceSchema';
-import { nextSceneKey, sheetsToLoad } from './bootPlan';
+import {
+  addBridgeFrames,
+  imagesToLoad,
+  nextSceneKey,
+  sheetsToLoad,
+  type TextureBook,
+} from './bootPlan';
 import { ensurePlaceholderTexture } from './phaserArt';
 import { BOOT_SCENE_KEY } from './sceneKeys';
 
@@ -34,10 +40,30 @@ export class BootScene extends Phaser.Scene {
         frameHeight: sheet.frameHeight,
       });
     }
+    for (const image of imagesToLoad(this.deps.appearance)) {
+      this.load.image(image.key, this.deps.assetUrl(image.file));
+    }
   }
 
   create(): void {
     ensurePlaceholderTexture(this);
+    // Marcos con nombre del puente (0016): una vez, en la textura global, si caben en la imagen.
+    addBridgeFrames(textureBook(this), this.deps.appearance);
     this.scene.start(nextSceneKey(this.deps.e2e));
   }
+}
+
+/** Las texturas del motor como `TextureBook` (`Texture.add` devuelve null si el nombre existe). */
+function textureBook(scene: Phaser.Scene): TextureBook {
+  const textures = scene.textures;
+  return {
+    size: (key) => {
+      if (!textures.exists(key)) return null;
+      const source = textures.get(key).source[0];
+      return source ? { width: source.width, height: source.height } : null;
+    },
+    add: (key, name, r) => {
+      textures.get(key).add(name, 0, r.x, r.y, r.width, r.height);
+    },
+  };
 }

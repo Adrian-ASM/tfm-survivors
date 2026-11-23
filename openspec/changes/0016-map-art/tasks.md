@@ -123,7 +123,7 @@ opción (script temporal en el scratchpad) y esperar su decisión.
   reutilizados (o `Blitter` si lo pidió 3.7); `createPlayfield`: suelo → baja → `RenderLayers` → alta, HUD y
   overlays después. Test con fábricas falsas del orden de creación. — escenarios: "Tronco y copa", "Jugador ante la
   puerta", "Proyectiles y gemas bajo las copas"
-- [ ] 4.3 `BootScene`/`bootPlan`: carga hojas (`spritesheet`) e imágenes (`image`) del mapa; en `create`,
+- [x] 4.3 `BootScene`/`bootPlan`: carga hojas (`spritesheet`) e imágenes (`image`) del mapa; en `create`,
   `Texture.add` de los marcos del puente solo si caben en la fuente (y, con la palanca de 3.7, los 8 × 15 marcos de
   espuma recortada por caso y, si hizo falta, los de tronco/copa).
   Test con doble de texturas. — escenarios: "Recorte del puente fuera de la hoja", "Hojas del mapa bloqueadas"
