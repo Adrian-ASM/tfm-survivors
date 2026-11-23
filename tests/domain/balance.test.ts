@@ -21,13 +21,15 @@ import { play, playReferenceBot, stillSurvivors } from '../support/runs';
 // semilla 7, primer pulso en el tick 950. Plazos de la spec tras el gate: 4.800 y 1.800. Desde 0005
 // (tarea 1.27) se comprueban con el contenido por defecto completo y la política de elección fija.
 const FIRST_HIT_LIMIT = 4800;
-const PULSE_LIMIT = 1800;
+// 0013 (mundo 1.920 × 1.080): pulso a 4.800 por decisión del usuario; medido en el tick 4.161.
+const PULSE_LIMIT = 4800;
 const TEN_SECONDS = 600;
 
 // Tarea 0.2: aceptación de plazos con el contenido por defecto de 0005 (armas y mejoras), input
 // (0, 0) y la política de elección fija. Medido en el punto de control 0.3 con pickupRadius 128 (decisión
 // del usuario): primera oferta con semilla 7 en el tick 3332, primer golpe con semilla 42 en el 4122.
-const OFFER_LIMIT = 3600;
+// 0013 (mundo 1.920 × 1.080): primera oferta a 4.800 por decisión del usuario; medida en el 4.346.
+const OFFER_LIMIT = 4800;
 
 /** Contenido por defecto: crea las partidas y el bot de referencia (mismo mundo para ambos). */
 const DEFAULT_CONFIG = aDefaultConfig();
@@ -40,7 +42,7 @@ function startDefault(seed: number): Run {
 }
 
 describe('Plazos con progresión (0005, medidos en el punto de control 0.3)', () => {
-  it('Scenario: Primera subida en el núcleo (semilla 7: oferta en algún tick ≤ 3.600)', () => {
+  it('Scenario: Primera subida en el núcleo (semilla 7: oferta en algún tick ≤ 4.800)', () => {
     const run = startDefault(7);
     let firstOffer = 0;
     play(run, OFFER_LIMIT, (t, r) => {
@@ -68,7 +70,7 @@ describe('Plazos con progresión (0005, medidos en el punto de control 0.3)', ()
     expect(DEFAULT_ENEMY_TYPES.map((t) => prev - t.damage)).toContain(health);
   });
 
-  it('Scenario: Jugador quieto con el contenido por defecto (semilla 7: baja ≤ 600, pulso ≤ 1.800)', () => {
+  it('Scenario: Jugador quieto con el contenido por defecto (semilla 7: baja ≤ 600, pulso ≤ 4.800)', () => {
     const run = startDefault(7);
     let previous = new Set<number>();
     let kills = 0;
@@ -85,7 +87,7 @@ describe('Plazos con progresión (0005, medidos en el punto de control 0.3)', ()
     expect(firstPulse).toBeGreaterThan(0);
   });
 
-  it('Scenario: Partida con progresión reproducible (semilla 7: ≥ 1 gema y ≥ 1 oferta en 3.600)', () => {
+  it('Scenario: Partida con progresión reproducible (semilla 7: ≥ 1 gema y ≥ 1 oferta en 4.800)', () => {
     const run = startDefault(7);
     let gem = false;
     let offer = false;

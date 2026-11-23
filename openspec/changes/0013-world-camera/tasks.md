@@ -12,7 +12,7 @@
   Con el mundo aún en 960 × 540, `balance.test.ts` debe seguir dando 30/50.
   Escenarios: run-outcome "El bot huye de las paredes del mundo real", "Sin arena por defecto duplicada".
   Test: `tests/domain/policies.test.ts`, `tests/domain/balance.test.ts`. E2E afectados: —
-- [ ] 0.2 Mundo 1.920 × 1.080 y medición. Rojo primero: `content.test.ts` (mundo 1.920 × 1.080, vista 960 × 540),
+- [x] 0.2 Mundo 1.920 × 1.080 y medición. Rojo primero: `content.test.ts` (mundo 1.920 × 1.080, vista 960 × 540),
   `player.test.ts` (posición inicial (960, 540) con el contenido por defecto, "El borde de la vista no es una pared"
   (940, 270) → (1.140, 270)), `policies.test.ts` (paredes a 1.900, 940/270, 64, esquina (1.904, 1.064)) y
   `place-spawn.test.ts` ("Jugador en el centro del mundo por defecto"). Después: `content/arena.json` a 1.920 × 1.080,
