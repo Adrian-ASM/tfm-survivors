@@ -57,10 +57,11 @@ test(
   },
 );
 
-// Spec sprite-rendering (0016), "Coste de render del mapa (a demanda)": objetos de la sonda ≤ 300 y
-// fps con el mapa real (mediana de 3 pasadas) frente a la base de rectángulos de 0015. Informativo.
+// Spec sprite-rendering (0016, tope 1.000 en 0017), "Coste de render del mapa (a demanda)": objetos
+// de la sonda ≤ 1.000 y fps con el mapa real (mediana de 3 pasadas) frente a la base de rectángulos
+// de 0015. Informativo.
 const MAP_FPS_BASE: Readonly<Record<number, number>> = { 42: 21.6, 123: 21.9 };
-const MAX_MAP_OBJECTS = 300;
+const MAX_MAP_OBJECTS = 1000;
 const PASSES = 3;
 
 test(
