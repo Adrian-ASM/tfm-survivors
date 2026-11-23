@@ -30,46 +30,30 @@ export function spriteKit(scene: Phaser.Scene): SpriteKit {
   };
 }
 
-/** Clave de la textura del mapa (una sola en el TextureManager global, change 0015). */
-export const TERRAIN_TEXTURE = '__terrain';
-
 /**
- * Textura del mapa (design 0015 §5): una CanvasTexture de `cols × rows` px (una celda = un píxel)
- * con filtro NEAREST, creada una vez en el TextureManager y reutilizada en cada entrada, y un
- * `Image` en (0, 0) escalado × `cellSize`, creado en este punto del orden de pintado. El motor
- * no la repinta por frame: solo `refresh()` sube los cambios, una vez por partida.
+ * Pintado del mapa (change 0015, incidente de fps del PR #36): un `Layer` creado en este punto del
+ * orden de pintado (encima del suelo, debajo del resto) con un `Rectangle` relleno por tramo de
+ * celdas no-hierba. Solo se rellena el área de esas celdas; la hierba no añade nada. Los
+ * rectángulos se reutilizan entre partidas (R): `clear` los oculta y `rect` coloca el siguiente.
  */
-export function terrainCanvas(
-  scene: Phaser.Scene,
-  cols: number,
-  rows: number,
-  cellSize: number,
-): TerrainCanvas {
-  const existing = scene.textures.exists(TERRAIN_TEXTURE)
-    ? scene.textures.get(TERRAIN_TEXTURE)
-    : null;
-  const texture =
-    existing instanceof Phaser.Textures.CanvasTexture
-      ? existing
-      : scene.textures.createCanvas(TERRAIN_TEXTURE, cols, rows);
-  if (!texture) throw new Error('No se pudo crear la textura del mapa.');
-  if (texture.width !== cols || texture.height !== rows) texture.setSize(cols, rows);
-  texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
-  scene.add.image(0, 0, TERRAIN_TEXTURE).setOrigin(0, 0).setScale(cellSize);
-  const ctx = texture.context;
+export function terrainCanvas(scene: Phaser.Scene): TerrainCanvas {
+  const layer = scene.add.layer();
+  const pool: Phaser.GameObjects.Rectangle[] = [];
+  let used = 0;
   return {
     clear: () => {
-      ctx.clearRect(0, 0, cols, rows);
+      for (const r of pool) r.setVisible(false);
+      used = 0;
     },
-    fill: (col, row, color) => {
-      ctx.fillStyle = `#${color.toString(16).padStart(6, '0')}`;
-      ctx.fillRect(col, row, 1, 1);
-    },
-    refresh: () => {
-      texture.refresh();
-      // En 4.2.1 `refresh` vuelve a subir el canvas con el filtro del renderer (LINEAR con
-      // antialias: WebGLRenderer.canvasToTexture), así que NEAREST se reaplica tras cada subida.
-      texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+    rect: (x, y, width, height, color) => {
+      let r = pool[used];
+      if (!r) {
+        r = scene.add.rectangle(0, 0, 1, 1, color).setOrigin(0, 0);
+        layer.add(r);
+        pool.push(r);
+      }
+      r.setPosition(x, y).setSize(width, height).setFillStyle(color).setVisible(true);
+      used += 1;
     },
   };
 }

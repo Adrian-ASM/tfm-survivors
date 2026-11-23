@@ -41,8 +41,9 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   un río con puentes y zona de inicio libre, generada por semilla con un flujo de azar propio
   (`seededRun`: oleadas con `Mulberry32(seed)`, mapa con `deriveSeed(seed, MAP_STREAM)`). Solo el jugador
   colisiona (barrido por ejes); las gemas que caen en celdas bloqueadas se recolocan; los enemigos lo ignoran.
-  Se pinta en una CanvasTexture escalada con colores de `appearance.json` (`terrain`). `player.speed` 210 (gate
-  de balance: 29/50 con el bot v2, que esquiva troncos y agua). E2E: `gameUrl` añade `map=empty` por defecto
+  Se pinta con un rectángulo por tramo de celdas no-hierba, con colores de `appearance.json` (`terrain`); nunca
+  una capa a pantalla completa (partía los fps en CI sin GPU). `player.speed` 210 (gate de balance: 29/50 con el
+  bot v2, que esquiva troncos y agua). E2E: `gameUrl` añade `map=empty` por defecto
   (`map: 'real'` para los del mapa); sonda `window.__sprint.map` y `sprites.cells`; firma dorada en
   `tests/support/mapGolden.ts`.
   Fuente de verdad del comportamiento: `openspec/specs/`.

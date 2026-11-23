@@ -30,7 +30,7 @@ export function createGround(
 
 /**
  * Área de juego de una partida: el fondo del mundo primero (debajo de todo; se mueve con el mundo,
- * sin `scrollFactor`), después la textura del mapa (0015: encima del fondo y debajo del resto) y
+ * sin `scrollFactor`), después la capa del mapa (0015: encima del fondo y debajo del resto) y
  * después las capas, en orden de pintado.
  */
 export function createPlayfield(

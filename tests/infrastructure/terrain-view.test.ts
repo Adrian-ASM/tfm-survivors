@@ -23,8 +23,8 @@ function fakeCanvas(log: string[] = []): TerrainCanvas & { log: string[] } {
   return {
     log,
     clear: () => log.push('clear'),
-    fill: (c, r, color) => log.push(`fill ${String(c)},${String(r)} ${color.toString(16)}`),
-    refresh: () => log.push('refresh'),
+    rect: (x, y, w, h, color) =>
+      log.push(`rect ${String(x)},${String(y)} ${String(w)}x${String(h)} ${color.toString(16)}`),
   };
 }
 
@@ -44,20 +44,37 @@ describe('terrainFills y paintTerrain', () => {
     expect([fill?.x, fill?.width]).toEqual([3960, 40]);
   });
 
-  it('paintTerrain borra, pinta cada celda no-hierba y sube la textura una vez', () => {
+  // Incidente de fps en CI (PR #36): nada de una capa del tamaño del mundo; solo rectángulos de las
+  // celdas no-hierba, con las celdas contiguas del mismo tipo de una fila unidas en uno.
+  it('paintTerrain borra y pinta solo las celdas no-hierba, uniendo tramos de una fila', () => {
     const map = toMapSnapshot(
-      mapWith(mapRules(), { '0,0': 'water', '1,0': 'bridge', '2,3': 'trunk' }),
+      mapWith(mapRules(), {
+        '0,0': 'trunk',
+        '1,0': 'trunk',
+        '2,0': 'water',
+        '4,0': 'water',
+        '1,1': 'trunk',
+        '2,3': 'bridge',
+      }),
     );
     const canvas = fakeCanvas();
     const counts = paintTerrain(canvas, map, COLORS, WORLD);
+    const hex = (c: number) => c.toString(16);
     expect(canvas.log).toEqual([
       'clear',
-      `fill 0,0 ${COLORS.water.toString(16)}`,
-      `fill 1,0 ${COLORS.bridge.toString(16)}`,
-      `fill 2,3 ${COLORS.trunk.toString(16)}`,
-      'refresh',
+      `rect 0,0 120x60 ${hex(COLORS.trunk)}`,
+      `rect 120,0 60x60 ${hex(COLORS.water)}`,
+      `rect 240,0 60x60 ${hex(COLORS.water)}`,
+      `rect 60,60 60x60 ${hex(COLORS.trunk)}`,
+      `rect 120,180 60x60 ${hex(COLORS.bridge)}`,
     ]);
-    expect(counts).toEqual({ trunk: 1, water: 1, bridge: 1 });
+    expect(counts).toEqual({ trunk: 3, water: 2, bridge: 1 });
+  });
+
+  it('Scenario: Mapa vacío (ningún rectángulo: sin coste de relleno)', () => {
+    const canvas = fakeCanvas();
+    paintTerrain(canvas, toMapSnapshot(GameMap.open(mapRules())), COLORS, WORLD);
+    expect(canvas.log).toEqual(['clear']);
   });
 
   it('Scenario: Mapa vacío (0 celdas pintadas de cada tipo)', () => {

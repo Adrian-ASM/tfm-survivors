@@ -164,7 +164,7 @@ export class GameScene extends Phaser.Scene {
       { kit: spriteKit(this), ring, looks, capacity: this.deps.capacity },
       ground,
       this.deps.world,
-      () => terrainCanvas(this, map.cols, map.rows, map.cellSize),
+      () => terrainCanvas(this),
     );
     layers.paintMap(terrain, map, this.deps.appearance.terrain, this.deps.world);
     // En cada entrada: Volver al menú destruye la cámara de la escena y la recrea (design D2).

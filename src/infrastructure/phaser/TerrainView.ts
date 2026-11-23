@@ -24,14 +24,15 @@ export interface CellFill {
 }
 
 /**
- * Costura sin motor de la textura del mapa (design 0015 §5): una celda = un píxel de una textura
- * de `cols × rows` que la escena escala × `cellSize`. Se repinta entera una vez por partida.
+ * Costura sin motor del pintado del mapa: rectángulos de mundo con color liso, solo de las celdas
+ * no-hierba. Sustituye a la textura del tamaño del mundo del design 0015 §5, que añadía una capa
+ * a pantalla completa (transparente en la hierba) y en CI sin GPU partía los fps a la mitad (PR #36).
+ * Se repinta una vez por partida, no por frame.
  */
 export interface TerrainCanvas {
+  /** Quita los rectángulos de la partida anterior. */
   clear(): void;
-  fill(col: number, row: number, color: number): void;
-  /** Sube los cambios a la GPU (una vez por partida). */
-  refresh(): void;
+  rect(x: number, y: number, width: number, height: number, color: number): void;
 }
 
 const isPainted = (t: CellType): t is PaintedCell => t !== 'grass';
@@ -63,8 +64,25 @@ export function terrainFills(
 }
 
 /**
- * Pinta el mapa de una partida en la textura (borra el anterior) y devuelve las celdas pintadas por
- * tipo. Un `refresh` por llamada.
+ * Une las celdas contiguas de una fila con el mismo color en un solo rectángulo (menos objetos y el
+ * mismo área pintada). Entrada en orden de filas, como la da `terrainFills`.
+ */
+export function mergeRuns(fills: readonly CellFill[]): CellFill[] {
+  const runs: CellFill[] = [];
+  for (const f of fills) {
+    const last = runs[runs.length - 1];
+    if (last?.row === f.row && last.color === f.color && last.x + last.width === f.x) {
+      runs[runs.length - 1] = { ...last, width: last.width + f.width };
+    } else {
+      runs.push(f);
+    }
+  }
+  return runs;
+}
+
+/**
+ * Pinta el mapa de una partida (borra el anterior) y devuelve las celdas pintadas por tipo: un
+ * rectángulo por tramo de celdas no-hierba; la hierba no se pinta ni se cubre.
  */
 export function paintTerrain(
   canvas: TerrainCanvas,
@@ -74,7 +92,6 @@ export function paintTerrain(
 ): CellCounts {
   const { fills, counts } = terrainFills(map, colors, world);
   canvas.clear();
-  for (const f of fills) canvas.fill(f.col, f.row, f.color);
-  canvas.refresh();
+  for (const r of mergeRuns(fills)) canvas.rect(r.x, r.y, r.width, r.height, r.color);
   return counts;
 }
