@@ -28,7 +28,7 @@
     defecto" de `world-camera` (parte "el núcleo no recibe el tope").
 
 ## 2. Contenido y balance
-- [ ] 2.1 **Calibración de la tabla de oleadas** (design D9). Tarea de medición: no toca `content/`.
+- [x] 2.1 **Calibración de la tabla de oleadas** (design D9). Tarea de medición: no toca `content/`.
   - Con `aDefaultConfig` sobreescrito (arena 3.840 × 2.160, `ringRadius` 1.500, mapa generado y mapa vacío) y el bot
     `referenceBot(config)`, mide para cada candidata, en orden: A 1,2/2,2/2,2/3,2/4,48 · B 1,2/2,0/2,0/3,2/4,48 ·
     C 1,2/2,2/2,2/3,0/4,2 · D 1,1/2,0/2,0/3,4/4,6, y como mucho 2 interpolaciones entre las dos mejores (≤ 6).
@@ -39,7 +39,8 @@
     orquestador (se vuelve a spec). Prohibido relajar la monotonía, la banda o el quieto, o tocar `player.speed`,
     `maxBudget`, `maxAlive` o `types`.
   - Herramienta: helper de medición en `tests/support/` reutilizable por `balance.test` (o script local que no se
-    commitea). Tabla elegida: `____` · victorias `__/50` · quietos vivos `0/0` · primera oferta (s7) tick `____`.
+    commitea). Tabla elegida: `1,2 / 2,4 / 2,4 / 3,0 / 4,2` (E1, 2.ª ronda autorizada por el usuario: tramo de 60 s en 2,4) ·
+    victorias `25/50` · quietos vivos `0/0` · primera oferta (s7) tick `1.527`. Mediciones en el diario de IA.
   - Escenarios: "Tasa de victoria del bot de referencia", "Jugador quieto pierde con todas las semillas", "… también
     con el mapa vacío", "Oleadas que crecen con el contenido por defecto" (vivo).
 - [ ] 2.2 `ArenaSchema` con `maxView` y fuera `view` (design D2).
