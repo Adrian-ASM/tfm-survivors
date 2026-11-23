@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import arena from '../../content/arena.json' with { type: 'json' };
 import {
   collect,
+  cornerTour,
   gameUrl,
   probe,
   snapshotOf,
@@ -34,6 +35,21 @@ test('Scenario: Rectángulo coherente con el jugador (?e2e&seed=42, 600 frames)'
   const sample = await stopCameraSampler(page);
 
   expect(sample.frames).toBeGreaterThanOrEqual(MIN_SAMPLED);
+  expect(sample.mismatches).toEqual([]);
+  expect(sample.outsideWorld).toBe(0);
+  expect(problems).toEqual([]);
+});
+
+test('Scenario: Nada fuera del mundo en una partida real (?e2e&seed=7, cuatro esquinas)', async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  const problems = collect(page, ['error', 'warning']);
+
+  const { walked, sample } = await cornerTour(page, VIEW, WORLD);
+
+  expect(walked).toEqual(['tl', 'tr', 'br', 'bl']);
+  expect([...sample.corners].sort()).toEqual(['bl', 'br', 'tl', 'tr']);
   expect(sample.mismatches).toEqual([]);
   expect(sample.outsideWorld).toBe(0);
   expect(problems).toEqual([]);

@@ -100,7 +100,7 @@
   E2E afectados: `camera`, `smoke`, `sprites`, `menu-flow`
 
 ## 4. E2E
-- [ ] 4.1 Cuatro esquinas: helper `walkToCorners(page)` (teclado, `?e2e&seed=7`, `E2E_SPEED`) y muestreo de cámara y
+- [x] 4.1 Cuatro esquinas: helper `walkToCorners(page)` (teclado, `?e2e&seed=7`, `E2E_SPEED`) y muestreo de cámara y
   sprites en todos los frames del recorrido: rectángulo dentro de (0, 0)–(1.920, 1.080), dentro del rectángulo del
   fondo y `ground.visible` 1; y lo mismo con la hoja del suelo abortada (fondo en reserva). Rojo: falla hasta que el
   suelo cubre el mundo en el navegador (si 2.4 y 3.1 ya lo dejan verde, se junta con 3.1).

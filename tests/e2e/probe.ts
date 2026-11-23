@@ -1,4 +1,5 @@
 import { expect, type Page } from '@playwright/test';
+import playerJson from '../../content/player.json' with { type: 'json' };
 
 /**
  * Velocidad de simulación de los E2E que juegan hasta un evento lejano (design 0008): 8 avances
@@ -535,4 +536,96 @@ export async function backToMenu(page: Page): Promise<void> {
   await page.keyboard.press('Escape');
   await pauseOverlay(page).getByRole('button', { name: 'Volver al menú' }).click();
   await expect(menuPanel(page)).toBeVisible();
+}
+
+/** Esquina del mundo: signo de cada eje (−1 hacia 0, +1 hacia el borde lejano). */
+export interface Corner {
+  name: string;
+  dx: -1 | 1;
+  dy: -1 | 1;
+}
+
+/** Las cuatro esquinas en el orden del recorrido: tl, tr, br, bl (un solo eje cambia cada vez). */
+export const CORNERS: readonly Corner[] = [
+  { name: 'tl', dx: -1, dy: -1 },
+  { name: 'tr', dx: 1, dy: -1 },
+  { name: 'br', dx: 1, dy: 1 },
+  { name: 'bl', dx: -1, dy: 1 },
+];
+
+/** Radio del jugador del contenido por defecto (content/player.json). */
+const PLAYER_RADIUS = playerJson.radius;
+
+/** Margen de llegada a una esquina: el centro del jugador a ≤ 1 px de su recorte. */
+const CORNER_SLACK = 1;
+
+/**
+ * Lleva al jugador con el teclado (flechas) a la esquina dada del mundo y devuelve el snapshot de
+ * llegada, o null si pasa `timeoutMs` de reloj o la partida termina. Elige la opción 1 en cada
+ * oferta (política de elección fija). Suelta las teclas al terminar.
+ */
+export async function walkToCorner(
+  page: Page,
+  corner: Corner,
+  world: WorldView,
+  timeoutMs: number,
+): Promise<SnapshotView | null> {
+  const keys = [
+    corner.dx < 0 ? 'ArrowLeft' : 'ArrowRight',
+    corner.dy < 0 ? 'ArrowUp' : 'ArrowDown',
+  ];
+  const reached = (s: SnapshotView, r: number): boolean => {
+    const x = corner.dx < 0 ? s.player.x <= r + CORNER_SLACK : s.player.x >= world.width - r - 1;
+    const y = corner.dy < 0 ? s.player.y <= r + CORNER_SLACK : s.player.y >= world.height - r - 1;
+    return x && y;
+  };
+  for (const key of keys) await page.keyboard.down(key);
+  try {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      const snap = await snapshotOf(page);
+      if (snap?.status === 'over') return null;
+      if (snap && snap.offer.length > 0) await page.keyboard.press('1');
+      else if (snap && reached(snap, PLAYER_RADIUS)) return snap;
+      await page.waitForTimeout(50);
+    }
+    return null;
+  } finally {
+    for (const key of keys) await page.keyboard.up(key);
+  }
+}
+
+/**
+ * Recorre las cuatro esquinas del mundo con el teclado (tl, tr, br, bl) y devuelve los nombres de
+ * las esquinas alcanzadas, en orden. Para en la primera que no alcanza.
+ */
+export async function walkToCorners(
+  page: Page,
+  world: WorldView,
+  timeoutMs = 20_000,
+): Promise<string[]> {
+  const done: string[] = [];
+  for (const corner of CORNERS) {
+    if (!(await walkToCorner(page, corner, world, timeoutMs))) break;
+    done.push(corner.name);
+  }
+  return done;
+}
+
+/**
+ * Recorrido de las cuatro esquinas con el muestreador de cámara activo en todos los frames
+ * (`?e2e&seed=7` a `E2E_SPEED`): devuelve las esquinas alcanzadas y el resumen del muestreo.
+ */
+export async function cornerTour(
+  page: Page,
+  view: WorldView,
+  world: WorldView,
+): Promise<{ walked: string[]; sample: CameraSample }> {
+  await page.goto(gameUrl({ seed: 7, speed: E2E_SPEED }));
+  await expectSpeed(page, E2E_SPEED);
+  await expect.poll(async () => (await snapshotOf(page))?.tick ?? null).not.toBeNull();
+  await focusGame(page);
+  await startCameraSampler(page, view);
+  const walked = await walkToCorners(page, world);
+  return { walked, sample: await stopCameraSampler(page) };
 }
