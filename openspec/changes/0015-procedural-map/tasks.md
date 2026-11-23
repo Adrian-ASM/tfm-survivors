@@ -81,7 +81,7 @@ provisional en la spec).
   `tests/domain/long-run.test.ts`. E2E afectados: —
 
 ## 3. Bot v2 y PUNTO DE CONTROL DE BALANCE (gate del usuario: PARAR hasta su decisión)
-- [ ] 3.1 Bot de referencia v2 (design §7.1): `referenceBot(config, map)`, repulsión de celdas `trunk`/`water`
+- [x] 3.1 Bot de referencia v2 (design §7.1): `referenceBot(config, map)`, repulsión de celdas `trunk`/`water`
   < 64 px, bloqueo con 1 tick a velocidad efectiva, giros +45, −45, +90, −90, +135, −135 y (0, 0) si todo bloquea.
   Escenarios: RO "Repulsión de un tronco y del agua", "Celda a exactamente 64 px", "Puente sin repulsión", "Dirección
   bloqueada por un tronco", "Huida sin amenazas con el mapa generado", "El bot huye de las paredes del mundo real" y

@@ -33,7 +33,9 @@ const OFFER_LIMIT = 4800;
 
 /** Contenido por defecto: crea las partidas y el bot de referencia (mismo mundo para ambos). */
 const DEFAULT_CONFIG = aDefaultConfig();
-const BOT = referenceBot(DEFAULT_CONFIG);
+/** Bot de referencia de una partida: ligado a su contenido y a su mapa (0015). */
+const botFor = (run: Run) => referenceBot(DEFAULT_CONFIG, run.map);
+const playBot = (run: Run, maxTicks: number) => playReferenceBot(run, botFor(run), maxTicks);
 
 function startDefault(seed: number): Run {
   const r = Run.start(DEFAULT_CONFIG, new Mulberry32RandomGenerator(seed));
@@ -129,7 +131,7 @@ describe('Balance con el contenido por defecto (0010)', () => {
   let finals: RunSnapshot[] = [];
 
   beforeAll(() => {
-    finals = BALANCE_SEEDS.map((seed) => playReferenceBot(startDefault(seed), BOT, TEN_MINUTES));
+    finals = BALANCE_SEEDS.map((seed) => playBot(startDefault(seed), TEN_MINUTES));
   }, BOT_BATCH_TIMEOUT_MS);
 
   it('Scenario: Toda partida del bot termina', () => {
@@ -154,7 +156,7 @@ describe('Balance con el contenido por defecto (0010)', () => {
 describe('Bot de referencia (0010)', () => {
   it('Scenario: Bot reproducible (semilla 7, dos veces)', () => {
     const summary = () => {
-      const s = playReferenceBot(startDefault(7), BOT, TEN_MINUTES);
+      const s = playBot(startDefault(7), TEN_MINUTES);
       return { status: s.status, outcome: s.outcome, tick: s.tick, kills: s.kills, up: s.upgrades };
     };
 
