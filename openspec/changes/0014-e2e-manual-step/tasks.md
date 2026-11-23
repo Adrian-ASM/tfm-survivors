@@ -42,7 +42,7 @@
     MODIFIED de velocidad sin manual.
   - Hecho: `verify` verde; `resolveSpeed` sin cambios.
 
-- [ ] 1.3 **`StepCountSchema` y `requestStep`** (design §3.1).
+- [x] 1.3 **`StepCountSchema` y `requestStep`** (design §3.1).
   - Ficheros: `src/infrastructure/e2e/stepRequest.ts` y `tests/infrastructure/step-request.test.ts`.
   - Test, con un doble de `Pick<ManualStepper, 'request'>` y un `warn` espía:
     - `0`, `-1`, `2.5`, `NaN`, `Infinity`, `"10"` y `undefined` resuelven 0 al momento, sin llamar a `request`,
