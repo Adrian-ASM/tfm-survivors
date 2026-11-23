@@ -191,6 +191,13 @@ Vía: MCP `phaser-docs` (documenta la v4.1.0) y, como manda la 4.2.1 instalada, 
   `tasks.md` y en este design. Si ninguna de las 6 cumple 1–4 a la vez, el implementer **se detiene y reporta** las
   mediciones al orquestador (se vuelve a spec); no relaja la monotonía, la banda ni el invariante del quieto, ni
   toca `player.speed` u otros campos sin un change de spec.
+- **Resultado (apply)**: A–D y dos interpolaciones dejaron vivo al quieto con la semilla 15 en el mapa generado
+  (el tramo de 60 s en 2,2 no basta; el quieto solo depende de los dos primeros tramos). El usuario autorizó una
+  segunda ronda con el tramo de 60 s en 2,4 y los siguientes ≥ 2,4. Tabla fijada **E1: 1,2 / 2,4 / 2,4 / 3,0 / 4,2**
+  → **25/50** victorias, 0/0 quietos vivos (generado y vacío), primera oferta del quieto (semilla 7) en el tick
+  **1.527**. Detalle en `docs/ai-log/2026-11-23-0017-apply.md`. Efectos en specs vivas resueltos por el usuario:
+  primera baja del quieto ≤ 900 ticks (`auto-weapons`, medida en el 656) y "Primera oferta en plazo con y sin mapa"
+  (`procedural-map`).
 
 ### D10 · Sonda E2E y Playwright
 - La spec ("Sonda de cámara para E2E") pide el tamaño de ventana usado en el frame. `window.__sprint.screen` ya

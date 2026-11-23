@@ -55,7 +55,7 @@ recoger gemas → subir de nivel → elegir mejora → seguir jugando.
 - **GIVEN** el contenido por defecto (mundo de 3.840 × 2.160 y anillo de aparición de contenido), semilla 7 e input
   (0, 0) en todos los ticks
 - **WHEN** se ejecutan ticks hasta el 4.800 (80 s), eligiendo la opción 0 en cada oferta
-- **THEN** se abre ≥ 1 oferta en algún tick ≤ 4.800 (el tick medido se anota en apply de 0017)
+- **THEN** se abre ≥ 1 oferta en algún tick ≤ 4.800 (medido en apply de 0017: tick 1.527)
 
 #### Scenario: Recorrido en el navegador
 - **GIVEN** la build de producción servida con `?seed=7`

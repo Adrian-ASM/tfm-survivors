@@ -95,7 +95,7 @@ MUST ser > 0. Un contenido inválido MUST impedir que la partida arranque con un
 - **GIVEN** el contenido por defecto del repositorio
 - **WHEN** se carga el contenido
 - **THEN** el radio de recogida base vale 128 (con el mundo de 3.840 × 2.160 de 0017, la primera oferta del jugador
-  quieto llega en un tick ≤ 4.800; el tick medido se anota en apply)
+  quieto llega en un tick ≤ 4.800; medido en apply: tick 1.527 con la semilla 7)
 
 ### Requirement: Posición inicial en el punto de salida del mapa
 El sistema SHALL crear cada partida nueva con el jugador en el punto de salida de su mapa (ver `procedural-map`),

@@ -159,7 +159,7 @@ El sistema SHALL generar, con el contenido por defecto y con cada semilla de 1 a
   celdas es todo del río. Cada río tiene entre `bridges.min` y `bridges.max` celdas `bridge`. Fuera de los ríos no
   hay celdas `water` ni `bridge`. Ninguna celda del río está en la zona de inicio ni en la huella del castillo.
 - **Troncos**: la fracción de celdas `trunk` está en [`trunkDensity` − 0,02, `trunkDensity` + 0,02] (con el contenido
-  por defecto, de 231 a 322 de 2.304; tolerancia provisional, a confirmar en apply) y cada componente 4-conexa de
+  por defecto, de 231 a 322 de 2.304; confirmada en apply: 276 a 283 en las semillas 1..1.000) y cada componente 4-conexa de
   celdas `trunk` tiene entre `trunkPatch.min` y `trunkPatch.max` celdas.
 - **Castillo**: exactamente las celdas de la huella son `castle` (ver "Castillo en el mapa generado").
 - **Caminable**: al menos el 70 % de las celdas son caminables.

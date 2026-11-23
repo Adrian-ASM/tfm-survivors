@@ -192,7 +192,7 @@
     "Recuentos del mapa pintado [E2E]" (recuentos con la rejilla nueva), "Nada fuera del mundo con el mapa real".
 
 ## 5. Documentación y cierre
-- [ ] 5.1 Documentación.
+- [x] 5.1 Documentación.
   - `AGENTS.md` §1 (lienzo RESIZE con tope 2.560 × 1.440, mundo 3.840 × 2.160 y rejilla 64 × 36, castillo 30–34 ×
     15–18 y salida (1.950, 1.170), `ringRadius` 1.500, tabla y victorias de 2.1, sonda `viewport`, overlays DOM con
     `--ui-scale`).
