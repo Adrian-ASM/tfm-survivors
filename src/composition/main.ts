@@ -27,8 +27,7 @@ import { resolveAdvance } from '../infrastructure/url/resolveAdvance';
 import { resolveMapMode } from '../infrastructure/url/resolveMapMode';
 import { wireProgress, type ProgressProbe } from './progressWiring';
 import { createRunLauncher } from './runLauncher';
-import { mapModeOf, restartRandoms } from './seedSource';
-import { DECOR_STREAM, deriveSeed } from '../infrastructure/random/deriveSeed';
+import { decorSeedOf, mapModeOf, restartRandoms } from './seedSource';
 
 const BACKGROUND = '#14141e';
 
@@ -197,7 +196,7 @@ function bootstrap(): void {
     world,
     appearance,
     // Variedad de árboles de la partida en curso (0016): `probe.seed` ya es la de esa partida.
-    decorSeed: () => deriveSeed(probe.seed, DECOR_STREAM),
+    decorSeed: () => decorSeedOf(probe.seed),
     progress: progress.scene,
     pause,
     // Snapshot y sprites en la misma llamada: cualquier lectura ve un par coherente (design D7).

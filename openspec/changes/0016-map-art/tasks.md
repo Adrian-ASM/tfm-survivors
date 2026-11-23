@@ -131,7 +131,7 @@ opción (script temporal en el scratchpad) y esperar su decisión.
 - [x] 4.4 Espuma animada: `RenderLayers.render` calcula el frame de `foam.idle` con su `AnimClock` y llama a
   `canvas.foam(f)` solo al cambiar; congelada en pausa y en manual sin `step`. — escenario: "Pintado del mapa"
   (espuma en bucle en tiempo de render)
-- [ ] 4.5 Sonda y cableado: `renderCounts` (`cells.castle`, `mapArt`), menú a 0; `GameScene` pinta con `planMapArt`
+- [x] 4.5 Sonda y cableado: `renderCounts` (`cells.castle`, `mapArt`), menú a 0; `GameScene` pinta con `planMapArt`
   al crear y tras R; `GameSceneDeps.decorSeed()` desde `main.ts` (`deriveSeed(semilla actual, DECOR_STREAM)`); sonda
   `map` con `castle` y `start`. — escenarios: "Recuento coherente con el snapshot" (celdas por tipo constantes),
   "Sonda en el menú" (render y mapa), "Mismos modelos con la misma semilla" (tras R con la misma semilla), "Sonda

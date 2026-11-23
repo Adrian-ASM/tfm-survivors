@@ -1,7 +1,7 @@
 import type { RunSeeding } from '../application/StartRun';
 import { OPEN_TERRAIN } from '../domain/map/TerrainSource';
 import { Mulberry32RandomGenerator } from '../infrastructure/random/Mulberry32RandomGenerator';
-import { MAP_STREAM, deriveSeed } from '../infrastructure/random/deriveSeed';
+import { DECOR_STREAM, MAP_STREAM, deriveSeed } from '../infrastructure/random/deriveSeed';
 
 /** Mapa de las partidas de una carga: el generado por la semilla o el vacío (`?e2e&map=empty`). */
 export type MapMode = 'generated' | 'empty';
@@ -21,6 +21,12 @@ export function seededRun(seed: number, mode: MapMode = 'generated'): RunSeeding
   const mapRandom = new Mulberry32RandomGenerator(deriveSeed(seed, MAP_STREAM));
   return { random, terrain: { kind: 'generated', random: mapRandom } };
 }
+
+/**
+ * Semilla de decoración de una partida (variedad de árboles, change 0016): su propio flujo de la
+ * semilla de la partida, solo presentación (ADR-0013, addendum).
+ */
+export const decorSeedOf = (seed: number): number => deriveSeed(seed, DECOR_STREAM);
 
 /**
  * Fábrica de siembras para `RestartRun` (spec simulation-loop, "Semilla de la partida"): cada
