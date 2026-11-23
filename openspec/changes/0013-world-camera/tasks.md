@@ -41,7 +41,7 @@
   presupuesto no se pierde al aplazar", "Partida larga sin spawns ilegales"; run-outcome "Bot reproducible".
   Test: `tests/domain/player.test.ts`, `enemy.test.ts`, `place-spawn.test.ts`, `long-run.test.ts`,
   `determinism-progression.test.ts`. E2E afectados: —
-- [ ] 1.2 Contacto con cualquier tamaño de mundo (D7): helper `pileOnPlayer(config)` en `tests/support/runs.ts`
+- [x] 1.2 Contacto con cualquier tamaño de mundo (D7): helper `pileOnPlayer(config)` en `tests/support/runs.ts`
   (enemigos en `arena.center`) y test determinista de 600 ticks con el mundo por defecto y con 4.000 × 4.000, que
   comprueba en cada tick ≥ 1 enemigo a ≤ `r_jugador + r_enemigo` y la partida en curso. Rojo: con el punto fijo
   actual, la arena 4.000 × 4.000 no tiene contacto. Después, `run.bench.ts` usa el helper y deriva de `arena` las

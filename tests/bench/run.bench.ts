@@ -5,6 +5,7 @@ import type { RunConfig } from '../../src/domain/run/RunConfig';
 import { loadRunConfig } from '../../src/infrastructure/content/loadRunConfig';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import type { WeaponsConfig } from '../../src/domain/weapon/WeaponLoadout';
+import { pileOnPlayer } from '../support/runs';
 import { aLinter, aPulse, weaponsOf } from '../support/weapons';
 
 // Benchmark del núcleo sin motor ni render (spec simulation-loop: "Rendimiento con el tope de
@@ -67,11 +68,27 @@ const BENCH_TYPE = {
   xp: 1,
 };
 
+/** Mundo del contenido por defecto (content/arena.json): todas las posiciones se derivan de él. */
+const { arena: WORLD } = benchConfig();
+/** Mayor que la diagonal del mundo: el alcance cubre toda la arena. */
+const REACH = Math.ceil(Math.hypot(WORLD.width, WORLD.height));
+
 /** Armas de bench: proyectil cada tick con alcance mayor que la diagonal y pulso a toda la arena. */
 const BENCH_WEAPONS = weaponsOf([
-  aLinter({ cooldownTicks: 1, targeting: { mode: 'nearest-in-range', range: 2000 } }),
-  aPulse({ cooldownTicks: 1, targeting: { mode: 'any-in-radius', radius: 2000 } }),
+  aLinter({ cooldownTicks: 1, targeting: { mode: 'nearest-in-range', range: REACH } }),
+  aPulse({ cooldownTicks: 1, targeting: { mode: 'any-in-radius', radius: REACH } }),
 ]);
+
+/**
+ * 200 `bench` en los bordes izquierdo (x = 10) y derecho (x = ancho − 10), con la y repartida
+ * sobre el alto del mundo.
+ */
+const edgeEnemies = () =>
+  Array.from({ length: CAP }, (_, i) => ({
+    type: 'bench',
+    x: i % 2 === 0 ? 10 : WORLD.width - 10,
+    y: 10 + (Math.floor(i / 2) % 100) * ((WORLD.height - 20) / 100),
+  }));
 
 function start(setup?: RunSetup, weapons?: WeaponsConfig): Run {
   const config = benchConfig(weapons);
@@ -81,16 +98,12 @@ function start(setup?: RunSetup, weapons?: WeaponsConfig): Run {
 }
 
 /**
- * 200 `bench` en los bordes izquierdo y derecho (a ≥ 470 px del jugador): cada proyectil vuela
- * ≥ 57 ticks, así que con un disparo por tick el tope de 32 está lleno en todos los ticks medidos.
+ * 200 `bench` en los bordes izquierdo y derecho (a ≥ ancho / 2 − 10 px del jugador): cada
+ * proyectil vuela más de 32 ticks, así que con un disparo por tick el tope de 32 está lleno en
+ * todos los ticks medidos.
  */
 function runWorstCase(): Run {
-  const enemies = Array.from({ length: CAP }, (_, i) => ({
-    type: 'bench',
-    x: i % 2 === 0 ? 10 : 950,
-    y: 10 + (Math.floor(i / 2) % 100) * 5.2,
-  }));
-  const run = start({ enemies }, BENCH_WEAPONS);
+  const run = start({ enemies: edgeEnemies() }, BENCH_WEAPONS);
   for (let n = 0; n < 40; n++) step(run);
   return run;
 }
@@ -106,30 +119,26 @@ function step(run: Run, input: PlayerInput = PlayerInput.NONE): void {
 
 /**
  * Peor caso con gemas: el de proyectiles más `maxGems` (300) gemas atraídas en las esquinas
- * inferiores, a ≥ 650 px del jugador en (480, 16): ni los 40 ticks de calentamiento ni los 60
- * medidos (6 px por tick) llegan a recogerlas. Con el jugador en el centro no caben (máx. 551 px).
+ * inferiores (5, alto − 5) y (ancho − 5, alto − 5), lejos del jugador en (ancho / 2, 16): ni los 40
+ * ticks de calentamiento ni los 60 medidos (6 px por tick) llegan a recogerlas.
  */
 function runWorstCaseWithGems(): Run {
-  const enemies = Array.from({ length: CAP }, (_, i) => ({
-    type: 'bench',
-    x: i % 2 === 0 ? 10 : 950,
-    y: 10 + (Math.floor(i / 2) % 100) * 5.2,
-  }));
   const corners = [
-    [5, 535],
-    [955, 535],
+    [5, WORLD.height - 5],
+    [WORLD.width - 5, WORLD.height - 5],
   ] as const;
   const gems = Array.from({ length: GEMS }, (_, i) => {
-    const [cx, cy] = corners[i % 2] ?? [5, 535];
+    const [cx, cy] = corners[i % 2] ?? corners[0];
     const k = Math.floor(i / 2);
     return {
-      x: cx + (cx < 480 ? 1 : -1) * (k % 10) * 4,
+      x: cx + (cx < WORLD.width / 2 ? 1 : -1) * (k % 10) * 4,
       y: cy - Math.floor(k / 10) * 2,
       value: 1,
       attracted: true,
     };
   });
-  const run = start({ player: { x: 480, y: 16 }, enemies, gems }, BENCH_WEAPONS);
+  const player = { x: WORLD.width / 2, y: 16 };
+  const run = start({ player, enemies: edgeEnemies(), gems }, BENCH_WEAPONS);
   for (let n = 0; n < 40; n++) step(run);
   return run;
 }
@@ -149,10 +158,12 @@ function runAtCap(): Run {
   return run;
 }
 
-/** 200 `goblin-torch` (vida BENCH_HEALTH) en el centro del jugador desde el tick 0 (contacto continuo). */
+/**
+ * 200 `goblin-torch` (vida BENCH_HEALTH) en el centro del mundo, donde nace el jugador, desde el
+ * tick 0 (contacto continuo con cualquier tamaño de mundo; ver piled-contact.test.ts).
+ */
 function runPiledOnPlayer(): Run {
-  const enemies = Array.from({ length: CAP }, () => ({ type: 'goblin-torch', x: 480, y: 270 }));
-  return start({ enemies });
+  return start(pileOnPlayer(benchConfig(), CAP));
 }
 
 const report = (name: string, latency: { mean: number; p99: number }): void => {
