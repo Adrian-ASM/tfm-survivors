@@ -85,7 +85,7 @@
     `player-movement` (todos los de "Límites de la arena", "Posición inicial…", fachada del castillo); `run-outcome`
     (banda, quietos, bot); `upgrades` "Primera subida en el núcleo"; `sprite-rendering` "Objetos del mapa"
     (test sin navegador, ≤ 1.000).
-- [ ] 2.5 Guardarraíl de una sola fuente (design § Migración).
+- [x] 2.5 Guardarraíl de una sola fuente (design § Migración).
   - Rojo: `tests/infrastructure/single-arena-source.test.ts`: `LITERAL_SIZE` pasa a `\b(3840|2160|2560|1440)\b`
     (mundo y tope) en E2E, bench, `policies` y `runs`; nuevo caso sin `582.7` ni `582.727` en `tests/`; contenido de
     los tests igual campo a campo al JSON (incluidos `maxView` y `ringRadius`). Rojo si queda algún `WORLD`/tope

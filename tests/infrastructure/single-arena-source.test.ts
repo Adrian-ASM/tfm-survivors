@@ -1,6 +1,8 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { parseContent, repositoryContent } from '../../src/infrastructure/content/loadRunConfig';
+import { DEFAULT_MAX_VIEW, aDefaultConfig } from '../support/builders';
 
 // Spec run-outcome (0013), "Una sola fuente del tamaño del mundo en los tests" (design D6): el mundo
 // y la vista salen de content/arena.json. `builders.ts` queda fuera por `SCENARIO_ARENA` (geometría
@@ -9,14 +11,19 @@ const ROOT = join(import.meta.dirname, '..', '..');
 const SELF = relative(ROOT, import.meta.filename)
   .split(sep)
   .join('/');
-/** Ficheros donde una dimensión 960 o 540 escrita a mano sería el mundo o la vista del juego. */
+/**
+ * Ficheros donde una dimensión del mundo (3.840 × 2.160) o del tope de vista (2.560 × 1.440) escrita
+ * a mano duplicaría content/arena.json (0017).
+ */
 const NO_LITERAL_SIZE = [
   'tests/e2e',
   'tests/bench',
   'tests/support/policies.ts',
   'tests/support/runs.ts',
 ];
-const LITERAL_SIZE = /\b(960|540)\b/;
+const LITERAL_SIZE = /\b(3840|2160|2560|1440)\b/;
+/** Radio del anillo derivado de la vista de 960 × 540 (anterior a 0017, ADR-0015). */
+const DERIVED_RING = /582\.7/;
 
 function filesUnder(path: string): string[] {
   const full = join(ROOT, path);
@@ -37,7 +44,7 @@ describe('Una sola fuente del tamaño del mundo en los tests (0013)', () => {
     expect(hits).toEqual([]);
   });
 
-  it('sin literales 960/540 en los E2E, el bench, el bot ni los helpers de partida', () => {
+  it('sin literales del mundo ni del tope en los E2E, el bench, el bot ni los helpers', () => {
     const hits = NO_LITERAL_SIZE.flatMap(filesUnder).flatMap((file) =>
       read(file)
         .split('\n')
@@ -47,5 +54,22 @@ describe('Una sola fuente del tamaño del mundo en los tests (0013)', () => {
     );
 
     expect(hits).toEqual([]);
+  });
+
+  it('Scenario: Sin radio del anillo derivado de la vista (ningún 582.7 ni 582.727 en tests/)', () => {
+    const hits = filesUnder('tests')
+      .filter((file) => file !== SELF)
+      .filter((file) => DERIVED_RING.test(read(file)));
+
+    expect(hits).toEqual([]);
+  });
+
+  it('Scenario: Contenido de los tests igual al del juego (mundo, tope de vista y ringRadius)', () => {
+    const loaded = parseContent(repositoryContent());
+
+    expect(loaded.ok && loaded.value).toEqual({
+      config: aDefaultConfig(),
+      maxView: DEFAULT_MAX_VIEW,
+    });
   });
 });

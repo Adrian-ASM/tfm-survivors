@@ -198,6 +198,9 @@ export const SCENARIO_ARENA: RunConfig['arena'] = {
  */
 export const DEFAULT_MAP: RunConfig['map'] = structuredClone(mapJson);
 
+/** Tope de vista del contenido por defecto (presentación, no llega al núcleo; 0017). */
+export const DEFAULT_MAX_VIEW = { ...arenaJson.maxView } as const;
+
 /** Mundo del contenido por defecto, leído de content/arena.json (una sola fuente). */
 const CONTENT_ARENA: RunConfig['arena'] = { width: arenaJson.width, height: arenaJson.height };
 
