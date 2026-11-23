@@ -7,9 +7,17 @@ import playerJson from '../../content/player.json' with { type: 'json' };
  */
 export const E2E_SPEED = 8;
 
-/** URL del juego en modo E2E con la semilla y la velocidad dadas (`speed` 1 ⇒ sin parámetro). */
-export function gameUrl({ seed, speed = 1 }: { seed?: number; speed?: number } = {}): string {
+/**
+ * URL del juego en modo E2E con la semilla, la velocidad (`speed` 1 ⇒ sin parámetro) y el modo
+ * manual (`?e2e&manual`, change 0014) dados.
+ */
+export function gameUrl({
+  seed,
+  speed = 1,
+  manual = false,
+}: { seed?: number; speed?: number; manual?: boolean } = {}): string {
   const params = ['e2e'];
+  if (manual) params.push('manual');
   if (seed !== undefined) params.push(`seed=${String(seed)}`);
   if (speed !== 1) params.push(`speed=${String(speed)}`);
   return `./?${params.join('&')}`;
@@ -22,6 +30,25 @@ export function gameUrl({ seed, speed = 1 }: { seed?: number; speed?: number } =
 export async function expectSpeed(page: Page, speed: number): Promise<void> {
   await expect.poll(async () => (await probe(page))?.speed ?? null).toBe(speed);
 }
+
+/**
+ * Comprueba que el modo manual está activo: si alguien quita `manual` de la URL, la spec falla en
+ * vez de pasar a tiempo real en silencio (change 0014).
+ */
+export async function expectManual(page: Page): Promise<void> {
+  await expect.poll(async () => (await probe(page))?.manual ?? null).toBe(true);
+}
+
+/**
+ * `window.__sprint.step(n)` (change 0014): avanza n ticks en modo manual y devuelve los ticks
+ * ejecutados. `n` es `unknown` para poder probar los valores inválidos.
+ */
+export const step = (page: Page, n: unknown): Promise<number> =>
+  page.evaluate(async (count) => {
+    const p = (window as unknown as Probe).__sprint;
+    if (!p?.step) throw new Error('La sonda no tiene step');
+    return p.step(count);
+  }, n);
 
 export interface EnemyView {
   id: number;
@@ -122,6 +149,9 @@ interface Probe {
     /** Sonda de cámara (change 0013): null en el menú. */
     camera?: CameraViewData | null;
     world?: WorldView;
+    /** Modo de avance manual (`?e2e&manual`) y su avance exacto de ticks (change 0014). */
+    manual?: boolean;
+    step?: (n: unknown) => Promise<number>;
   };
 }
 
@@ -141,6 +171,7 @@ export const probe = (page: Page) =>
           sprites: p.sprites ?? null,
           camera: p.camera ?? null,
           world: p.world ?? null,
+          manual: p.manual ?? null,
         }
       : null;
   });

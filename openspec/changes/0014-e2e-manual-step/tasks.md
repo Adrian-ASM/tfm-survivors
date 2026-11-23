@@ -112,7 +112,7 @@
 
 ## 2. Escena y composición
 
-- [ ] 2.1 **Composición: `resolveAdvance`, `probe.manual` y `probe.step` sin stepper** (design §2 y §3.6).
+- [x] 2.1 **Composición: `resolveAdvance`, `probe.manual` y `probe.step` sin stepper** (design §2 y §3.6).
   - Ficheros:
     - `src/composition/main.ts`: `resolveAdvance` en lugar de `resolveSpeed`, `manual` en la sonda y
       `step = requestStep(n, undefined, console.warn)` todavía sin stepper;

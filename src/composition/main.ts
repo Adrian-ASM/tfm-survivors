@@ -17,10 +17,11 @@ import { emptyCounts, type SpriteCounts } from '../infrastructure/phaser/renderC
 import type { ResultsView } from '../infrastructure/phaser/resultsText';
 import { BootScene } from '../infrastructure/phaser/BootScene';
 import type { CameraView, WorldSize } from '../infrastructure/phaser/CameraRig';
+import { requestStep } from '../infrastructure/e2e/stepRequest';
 import { assetUrl } from './assetUrl';
 import { bootContent } from './contentBoot';
 import { resolveSeed } from '../infrastructure/url/resolveSeed';
-import { resolveSpeed } from '../infrastructure/url/resolveSpeed';
+import { resolveAdvance } from '../infrastructure/url/resolveAdvance';
 import { wireProgress, type ProgressProbe } from './progressWiring';
 import { createRunLauncher } from './runLauncher';
 import { restartRandoms } from './seedSource';
@@ -35,6 +36,10 @@ interface E2EProbe {
   seed: number;
   /** Velocidad de simulación resuelta una vez en la carga (`?e2e&speed`, 1 por defecto). */
   readonly speed: number;
+  /** Modo de avance manual (`?e2e&manual`, change 0014), resuelto una vez en la carga. */
+  readonly manual: boolean;
+  /** Avanza n ticks exactos en modo manual y resuelve con los ejecutados (0 sin modo manual). */
+  step(n: unknown): Promise<number>;
   snapshot: RunSnapshot | null;
   results: ResultsView | null;
   readonly progress: ProgressProbe | null;
@@ -105,8 +110,9 @@ function bootstrap(): void {
   const { seed, warning } = resolveSeed(window.location.search, randomSeed);
   if (warning) console.warn(warning);
   // Una sola vez por carga: los reinicios no releen la URL ni avisan (spec simulation-loop).
-  const speed = resolveSpeed(window.location.search);
-  if (speed.warning) console.warn(speed.warning);
+  // Manual > speed (change 0014): con el modo manual, speed vale 1 y no se valida.
+  const advance = resolveAdvance(window.location.search);
+  for (const w of advance.warnings) console.warn(w);
   // Antes de crear el juego: el panel queda en el DOM y el progreso cargado (nunca lanza).
   const progress = wireProgress(root, () => probe.seed);
   const pause = new PausePanel(document, root);
@@ -117,7 +123,12 @@ function bootstrap(): void {
   let cameraView = (): CameraView | null => null;
   const probe: E2EProbe = {
     seed,
-    speed: speed.speed,
+    speed: advance.speed,
+    manual: advance.manual,
+    step: (n) =>
+      requestStep(n, undefined, (msg) => {
+        console.warn(msg);
+      }),
     snapshot: null,
     results: null,
     screen: e2e ? 'playing' : 'menu',
@@ -173,7 +184,7 @@ function bootstrap(): void {
       probe.sprites = sprites;
     },
     onScreen,
-    simSpeed: speed.speed,
+    simSpeed: advance.speed,
   });
   cameraView = () => game.cameraView();
   const menu = new MenuScene(
