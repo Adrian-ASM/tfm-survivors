@@ -266,7 +266,9 @@ test('Borrar datos dañados y jugar: sin aviso de dañados y 1 entrada con esa p
   // Un rechazo en el menú (no cambia el progreso): ni él ni el de borrado pasan al overlay.
   const chooser = page.waitForEvent('filechooser');
   await menuButton(page, 'Importar').click();
-  await (await chooser).setFiles({ name: 'x.json', mimeType: 'text/plain', buffer: Buffer.from('hola') });
+  await (
+    await chooser
+  ).setFiles({ name: 'x.json', mimeType: 'text/plain', buffer: Buffer.from('hola') });
   await expect(menuMessage(page)).toContainText('no válido');
   await menuButton(page, 'Jugar').click();
   await expect.poll(async () => (await probe(page))?.screen).toBe('playing');

@@ -94,21 +94,25 @@ test('Teclas sin efecto en pausa: R, 1, 2, 3 y el movimiento no cambian nada', a
   expect(after?.kills).toBeGreaterThanOrEqual(paused.kills);
 });
 
-test('Modo E2E con velocidad: tras reanudar a ?speed=8 el tick avanza de 8 en 8', async ({
-  page,
-}) => {
-  await startPlaying(page, gameUrl({ seed: 42, speed: E2E_SPEED }));
-  await expectSpeed(page, E2E_SPEED);
-  const paused = await pause(page);
-  await page.waitForTimeout(500);
-  expect((await snapshotOf(page))?.tick).toBe(paused.tick);
+test(
+  'Modo E2E con velocidad: tras reanudar a ?speed=8 el tick avanza de 8 en 8',
+  {
+    tag: '@realtime',
+  },
+  async ({ page }) => {
+    await startPlaying(page, gameUrl({ seed: 42, speed: E2E_SPEED }));
+    await expectSpeed(page, E2E_SPEED);
+    const paused = await pause(page);
+    await page.waitForTimeout(500);
+    expect((await snapshotOf(page))?.tick).toBe(paused.tick);
 
-  await page.keyboard.press('Escape');
-  await expect.poll(async () => (await snapshotOf(page))?.tick ?? 0).toBeGreaterThan(paused.tick);
-  // Ritmo acelerado tras reanudar, medido por frame del navegador (no por reloj de pared): los
-  // ticks exactos, n + 8 y n + 16, se prueban en Node. Velocidad 1 daría ~1 tick por frame.
-  expect(await ticksPerFrame(page)).toBeGreaterThan(2);
-});
+    await page.keyboard.press('Escape');
+    await expect.poll(async () => (await snapshotOf(page))?.tick ?? 0).toBeGreaterThan(paused.tick);
+    // Ritmo acelerado tras reanudar, medido por frame del navegador (no por reloj de pared): los
+    // ticks exactos, n + 8 y n + 16, se prueban en Node. Velocidad 1 daría ~1 tick por frame.
+    expect(await ticksPerFrame(page)).toBeGreaterThan(2);
+  },
+);
 
 test('Esc mientras se elige mejora: no pausa y la tecla 1 elige', async ({ page }) => {
   test.setTimeout(60_000);

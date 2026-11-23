@@ -182,7 +182,7 @@
 
 ## 3. Playwright: proyectos, fixture y ESLint
 
-- [ ] 3.1 **Proyectos `logic` y `realtime`, `retries` y etiquetas** (design §4.1).
+- [x] 3.1 **Proyectos `logic` y `realtime`, `retries` y etiquetas** (design §4.1).
   - Ficheros:
     - `playwright.config.ts`: `logic` con `grepInvert: /@realtime/` y `realtime` con `grep: /@realtime/`;
       `retries: CI_LIKE ? 0 : CI ? 1 : 0`;
