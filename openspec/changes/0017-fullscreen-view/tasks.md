@@ -53,7 +53,7 @@
     el tamaño fijo del lienzo de `maxView` (RESIZE llega en 4.1).
   - Escenarios: "Mundo más estrecho que el tope", "Mundo más bajo que el tope", "Mundo igual al tope", "Dimensiones
     no positivas", "Vista fija heredada".
-- [ ] 2.3 Regla cruzada del anillo frente al tope (design D2).
+- [x] 2.3 Regla cruzada del anillo frente al tope (design D2).
   - Rojo: `content.test.ts` con tope 2.560 × 1.440 explícito: `ringRadius` 0, −1, 1.468 y 1.468,6 y ausente →
     error que menciona `ringRadius`; 1.468,61 → éxito; `"margin": 32` en `spawn` → error que menciona `margin`.
   - Código: `superRefine` de `RunConfigSchema` con `ringRadius > hypot(maxView) / 2` (estricto) y

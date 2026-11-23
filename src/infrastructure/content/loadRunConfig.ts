@@ -12,6 +12,7 @@ import { buildRunRules, type RunConfig } from '../../domain/run/RunConfig';
 import { err, invalidConfig, ok, type DomainError, type Result } from '../../domain/shared/Result';
 import {
   ArenaSchema,
+  SPAWN_RING_INSIDE_MAX_VIEW,
   EnemiesSchema,
   MapSchema,
   PlayerSchema,
@@ -38,6 +39,16 @@ const RunConfigSchema = z
     map: MapSchema,
   })
   .superRefine((config, ctx) => {
+    // Estricto: un punto del anillo sin recorte nunca cae en una vista centrada en el jugador.
+    const { maxView } = config.arena;
+    if (!(config.waves.spawn.ringRadius > Math.hypot(maxView.width, maxView.height) / 2)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['waves', 'spawn', 'ringRadius'],
+        message: SPAWN_RING_INSIDE_MAX_VIEW,
+      });
+      return;
+    }
     const rules = buildRunRules(config);
     if (!rules.ok) {
       ctx.addIssue({

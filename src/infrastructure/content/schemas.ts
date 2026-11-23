@@ -93,6 +93,10 @@ export const WORLD_NARROWER_THAN_VIEW =
   'El ancho del mundo debe ser al menos el del tope de vista.';
 export const WORLD_LOWER_THAN_VIEW = 'El alto del mundo debe ser al menos el del tope de vista.';
 
+/** Regla cruzada de infraestructura (ADR-0015): el anillo de aparición queda fuera del tope. */
+export const SPAWN_RING_INSIDE_MAX_VIEW =
+  'El radio del anillo de aparición debe ser mayor que la media diagonal del tope de vista.';
+
 const MaxViewSide = z
   .number({ error: MAX_VIEW_MUST_BE_POSITIVE_INTEGER })
   .int({ error: MAX_VIEW_MUST_BE_POSITIVE_INTEGER })

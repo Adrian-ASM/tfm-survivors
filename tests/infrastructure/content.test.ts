@@ -22,6 +22,7 @@ import { RUN_DURATION_MUST_BE_INTEGER } from '../../src/domain/run/RunDuration';
 import { CELL_SIZE_BELOW_PLAYER } from '../../src/domain/map/MapRules';
 import { loadRunConfig, parseRunConfig } from '../../src/infrastructure/content/loadRunConfig';
 import {
+  SPAWN_RING_INSIDE_MAX_VIEW,
   WORLD_LOWER_THAN_VIEW,
   WORLD_NARROWER_THAN_VIEW,
 } from '../../src/infrastructure/content/schemas';
@@ -49,10 +50,11 @@ function inScenarioArena(): RawContent {
   return raw;
 }
 
-/** Contenido crudo con un mundo explícito y el tope de vista 2.560 × 1.440 explícito (0017). */
+/** Contenido crudo con un mundo explícito, tope 2.560 × 1.440 y anillo 1.500 explícitos (0017). */
 function withArena(width: number, height: number): RawContent {
   const raw = rawContent();
   raw.arena = { width, height, maxView: { width: 2560, height: 1440 } };
+  raw.waves.spawn.ringRadius = 1500;
   return raw;
 }
 
@@ -344,6 +346,39 @@ describe('Contenido de enemigos y oleadas validado · forma y rangos (zod)', () 
     const raw = rawContent();
     Object.assign(raw.arena, { view: { width: 960, height: 540 } });
     expect(failure(raw).field).toBe('arena.view');
+  });
+
+  // Spec enemy-spawning (0017): el anillo queda fuera de cualquier vista (> media diagonal del tope).
+  it.each([0, -1, 1468, 1468.6])(
+    'Scenario: Radio del anillo fuera de rango (ringRadius %s, tope 2.560 × 1.440)',
+    (ringRadius) => {
+      const raw = withArena(3840, 2160);
+      raw.waves.spawn.ringRadius = ringRadius;
+      expect(failure(raw).field).toBe('waves.spawn.ringRadius');
+    },
+  );
+
+  it('Scenario: Radio del anillo fuera de rango (sin ringRadius)', () => {
+    const raw = without(withArena(3840, 2160), (r) => r.waves.spawn, 'ringRadius');
+    expect(failure(raw).field).toBe('waves.spawn.ringRadius');
+  });
+
+  it('el anillo dentro del tope da SPAWN_RING_INSIDE_MAX_VIEW', () => {
+    const raw = withArena(3840, 2160);
+    raw.waves.spawn.ringRadius = 1468.6;
+    expect(failure(raw).message).toBe(SPAWN_RING_INSIDE_MAX_VIEW);
+  });
+
+  it('Scenario: Radio del anillo en el límite (1.468,61)', () => {
+    const raw = withArena(3840, 2160);
+    raw.waves.spawn.ringRadius = 1468.61;
+    expect(parseRunConfig(raw).ok).toBe(true);
+  });
+
+  it('Scenario: Margen heredado ("margin": 32 en spawn)', () => {
+    const raw = withArena(3840, 2160);
+    Object.assign(raw.waves.spawn, { margin: 32 });
+    expect(failure(raw).field).toBe('waves.spawn.margin');
   });
 
   it('rechaza un tramo vacío de la tabla', () => {
