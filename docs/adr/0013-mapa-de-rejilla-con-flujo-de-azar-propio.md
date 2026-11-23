@@ -1,6 +1,6 @@
 # ADR-0013 · Mapa de rejilla en el núcleo, con un flujo de azar propio derivado de la semilla
 
-- **Estado**: propuesta (change 0015-procedural-map)
+- **Estado**: aceptada (change 0015-procedural-map, archivado 2026-11-23)
 - **Fecha**: 2026-11-23
 
 ## Contexto
