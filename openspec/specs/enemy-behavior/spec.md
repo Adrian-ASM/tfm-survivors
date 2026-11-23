@@ -66,20 +66,33 @@ distinta velocidad recorren distancias distintas en el mismo número de ticks.
 - **THEN** el `goblin-torch` ha recorrido 90 unidades y el `goblin-tnt` 45, ambos con un error ≤ 0,001
 
 ### Requirement: Enemigos dentro de la arena
-El sistema SHALL mantener el círculo de cada enemigo entero dentro de la arena en todo momento: su centro MUST
-quedar en [radio, ancho − radio] × [radio, alto − radio], usando el radio del enemigo. Aplica la misma regla que
-al jugador.
+El sistema SHALL mantener el círculo de cada enemigo entero dentro de la arena (el mundo, ver `world-camera`) en todo
+momento: su centro MUST quedar en [radio, ancho − radio] × [radio, alto − radio], usando el radio del enemigo. Aplica
+la misma regla que al jugador. El tamaño de la vista MUST NOT limitar a los enemigos.
 
 #### Scenario: Enemigo más grande que el jugador junto a un borde
-- **GIVEN** un jugador quieto en (944, 270) con radio 16 y un enemigo con radio 22 y velocidad 120 en (900, 270)
+- **GIVEN** una arena de 1.920 × 1.080, un jugador quieto en (1.904, 540) con radio 16 y un enemigo con radio 22 y
+  velocidad 120 en (1.860, 540)
 - **WHEN** se ejecutan 60 ticks
-- **THEN** el enemigo está en (938, 270)
+- **THEN** el enemigo está en (1.898, 540)
+
+#### Scenario: Enemigo junto al borde inferior
+- **GIVEN** una arena de 1.920 × 1.080, un jugador quieto en (960, 1.064) con radio 16 y un enemigo con radio 22 y
+  velocidad 120 en (960, 1.020)
+- **WHEN** se ejecutan 60 ticks
+- **THEN** el enemigo está en (960, 1.058)
+
+#### Scenario: Persecución más allá del borde de la vista
+- **GIVEN** una arena de 1.920 × 1.080, un jugador quieto en (1.500, 270) y un enemigo con velocidad 60 en
+  (900, 270)
+- **WHEN** se ejecutan 120 ticks
+- **THEN** el enemigo está en (1.020, 270) con un error ≤ 0,001
 
 #### Scenario: Partida larga
 - **GIVEN** el contenido por defecto salvo una vida máxima del jugador suficiente para no llegar a 0 en
   36.000 ticks, semilla 7 y un input aleatorio generado por una semilla fija
 - **WHEN** se ejecutan 36.000 ticks
-- **THEN** en ningún tick hay un enemigo cuyo centro quede fuera de [radio, 960 − radio] × [radio, 540 − radio]
+- **THEN** en ningún tick hay un enemigo cuyo centro quede fuera de [radio, 1.920 − radio] × [radio, 1.080 − radio]
 
 ### Requirement: Sin separación entre enemigos
 El sistema SHALL permitir que los enemigos se solapen entre sí y con el jugador. No hay separación, empuje,
@@ -128,3 +141,4 @@ dirección hacia el jugador MUST ser las mismas que si no hubiera recibido daño
 <!-- historial: 0003-collisions-and-damage (2026-11-19) -->
 <!-- historial: 0004-auto-weapons (2026-11-19) -->
 <!-- historial: 0012-sprite-rendering (2026-11-22) -->
+<!-- historial: 0013-world-camera (2026-11-23) -->

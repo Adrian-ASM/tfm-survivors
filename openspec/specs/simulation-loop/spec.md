@@ -84,14 +84,16 @@ ofertas de mejora sí lo consume.
 #### Scenario: Partida con armas reproducible
 - **GIVEN** dos partidas con el contenido por defecto y la semilla 7, con input (0, 0) en todos los ticks y la
   política de elección fija
-- **WHEN** ambas ejecutan 3.600 ticks y en ese tiempo ≥ 1 enemigo queda dado de baja por armas
+- **WHEN** ambas ejecutan 4.800 ticks y en ese tiempo ≥ 1 enemigo queda dado de baja por armas y se emite ≥ 1
+  pulso (0013: en el mundo 2x el primer pulso llega en el tick 4.161, medido; antes 3.600)
 - **THEN** sus snapshots son iguales campo a campo en cada tick, incluidos proyectiles, pulsos, vida de los enemigos,
   indicación de daño reciente y bajas
 
 #### Scenario: Partida con progresión reproducible
-- **GIVEN** dos partidas con el contenido por defecto y la semilla 7, con input (0, 0) y la política de elección fija
-- **WHEN** ambas ejecutan 3.600 ticks y en ese tiempo se recoge ≥ 1 gema y se abre ≥ 1 oferta (plazo provisional,
-  a medir en apply)
+- **GIVEN** dos partidas con el contenido por defecto (mundo de 1.920 × 1.080) y la semilla 7, con input (0, 0) y la
+  política de elección fija
+- **WHEN** ambas ejecutan 4.800 ticks y en ese tiempo se recoge ≥ 1 gema y se abre ≥ 1 oferta (mismo plazo que
+  "Primera subida en el núcleo"; medido en apply de 0013: primera oferta en el tick 4.346)
 - **THEN** sus snapshots son iguales campo a campo en cada tick, incluidas gemas, XP, nivel, ofertas y mejoras
   adquiridas
 
@@ -127,6 +129,7 @@ ofertas de mejora sí lo consume.
   gemas, la XP, el nivel y las opciones de la oferta
 - **THEN** el siguiente tick (o la siguiente elección, o el siguiente snapshot leído) parte del estado interno, no
   del objeto modificado
+
 ### Requirement: Snapshot para el motor
 El sistema SHALL exponer tras cada frame un `RunSnapshot` con lo único que el adaptador de render necesita para
 pintar:
@@ -324,7 +327,8 @@ activas y las gemas activas en ≤ 2 ms de media, medido con un benchmark de Vit
 render. La partida medida MUST estar en curso en todos los ticks medidos, de modo que se midan los pasos completos
 del tick: si se abre una oferta, el benchmark elige la opción 0 antes del siguiente tick y esa elección cuenta en
 el tiempo medido. El camino caliente del tick MUST NOT crear objetos nuevos por tick para gemas (reserva de
-`maxGems`).
+`maxGems`). Los escenarios que piden enemigos "en contacto" MUST colocarlos respecto a la posición del jugador, de
+modo que el contacto se mantenga sea cual sea el tamaño del mundo.
 
 #### Scenario: Tope de vivos alcanzado
 - **GIVEN** una partida con el contenido por defecto, semilla fija, exactamente 200 enemigos vivos y una
@@ -337,6 +341,13 @@ el tiempo medido. El camino caliente del tick MUST NOT crear objetos nuevos por 
   suficiente para no llegar a 0 en 600 ticks
 - **WHEN** el benchmark mide 600 ticks consecutivos
 - **THEN** la media es ≤ 2 ms por tick y la partida sigue en curso al terminar la medición
+- **AND** en cada tick medido hay ≥ 1 enemigo en contacto con el jugador
+
+#### Scenario: Contacto con cualquier tamaño de mundo
+- **GIVEN** la preparación del escenario "200 enemigos encima del jugador", una vez con el mundo por defecto
+  (1.920 × 1.080) y otra con una arena explícita de 4.000 × 4.000
+- **WHEN** se ejecutan 600 ticks en cada una
+- **THEN** en ambas, en cada tick, hay ≥ 1 enemigo en contacto con el jugador
 
 #### Scenario: Peor caso con proyectiles
 - **GIVEN** una partida con semilla fija, 200 enemigos vivos, `maxProjectiles` (32) proyectiles vivos en todos los
@@ -758,3 +769,4 @@ al pulsar `Jugar` tras `Volver al menú`. Ninguna de ellas vuelve a leer la URL 
 <!-- historial: 0009-main-menu (2026-11-20) -->
 <!-- historial: 0010-balance-pass (2026-11-20) -->
 <!-- historial: 0012-sprite-rendering (2026-11-22) -->
+<!-- historial: 0013-world-camera (2026-11-23) -->
