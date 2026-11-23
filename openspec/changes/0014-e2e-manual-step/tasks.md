@@ -29,7 +29,7 @@
     ignorado fuera de E2E" (la parte de resolución).
   - Hecho: `verify` verde.
 
-- [ ] 1.2 **`resolveAdvance`, precedencia manual > speed** (design §2).
+- [x] 1.2 **`resolveAdvance`, precedencia manual > speed** (design §2).
   - Ficheros: `src/infrastructure/url/resolveAdvance.ts` y `tests/infrastructure/resolve-advance.test.ts`.
   - Test:
     - `?e2e&manual&speed=8` da `{ manual: true, speed: 1 }` sin avisos;
