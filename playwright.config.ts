@@ -15,6 +15,10 @@ const chrome = {
   ...(CI_LIKE ? { launchOptions: { args: ['--disable-gpu', '--use-angle=swiftshader'] } } : {}),
 };
 
+// Ventana de las pruebas (spec world-camera 0017, "Ventana de las pruebas"): explícita en ambos
+// proyectos; el lienzo RESIZE la toma entera (por debajo del tope de vista).
+const WINDOW = { width: 1280, height: 720 };
+
 // Smoke E2E contra el build de producción (vite preview), solo chromium (plan gratuito de GitHub Actions).
 export default defineConfig<ThrottleOptions>({
   testDir: 'tests/e2e',
@@ -34,8 +38,8 @@ export default defineConfig<ThrottleOptions>({
   // etiqueta @realtime). Un test sin etiqueta cae en `logic`. Chore e2e-lite: `test:e2e` y el CI
   // corren solo `logic` (suite de humo); `realtime` va a demanda (`test:e2e:realtime`).
   projects: [
-    { name: 'logic', grepInvert: /@realtime/, use: { ...chrome } },
-    { name: 'realtime', grep: /@realtime/, use: { ...chrome, cpuThrottle } },
+    { name: 'logic', grepInvert: /@realtime/, use: { ...chrome, viewport: WINDOW } },
+    { name: 'realtime', grep: /@realtime/, use: { ...chrome, viewport: WINDOW, cpuThrottle } },
   ],
   webServer: {
     command: 'npm run build && npm run preview',

@@ -21,8 +21,9 @@ import {
 
 // Suite de humo (chore e2e-lite): lo que solo se ve en el navegador durante la partida (overlay de
 // mejoras, cámara, sprites y mapa pintado), en modo manual y sin esperas de reloj.
-const VIEW = arena.maxView;
 const WORLD = { width: arena.width, height: arena.height };
+/** Ventana de `playwright.config.ts`: por debajo del tope, la vista mide lo mismo (0017). */
+const VIEW = { width: 1280, height: 720 };
 
 async function openGame(page: Page, url: string): Promise<void> {
   await page.goto(url);
@@ -31,8 +32,8 @@ async function openGame(page: Page, url: string): Promise<void> {
   await focusGame(page);
 }
 
-// Spec upgrades, "Recorrido en el navegador". Semilla 7 sin input: primera oferta en el tick 4.346
-// con el mundo 2x (plazo de 80 s de juego).
+// Spec upgrades, "Recorrido en el navegador". Semilla 7 sin input: primera oferta en el tick 1.527
+// con el mundo de 0017 (plazo de 80 s de juego).
 const FIRST_OFFER_LIMIT = 80 * 60;
 
 test('Subida de nivel: con ?seed=7 aparece la oferta de 3, se pulsa 1 y la partida sigue', async ({
@@ -97,14 +98,15 @@ test('Cámara: centrada al empezar y sigue al jugador hacia la derecha sin salir
   await openGame(page, gameUrl({ seed: 7, manual: true, map: 'real' }));
   const first = await probe(page);
   expect(first?.world).toEqual(WORLD);
-  // 0016: el jugador nace ante la puerta del castillo; la vista sigue la fórmula de la cámara.
+  // 0017: ventana 1.280 × 720 a ×1; la vista mide lo mismo y sigue la fórmula de la cámara.
+  expect(first?.viewport).toEqual({ ...VIEW, uiScale: 1 });
   const p0 = first?.snapshot?.player ?? { x: 0, y: 0 };
   expect(first?.camera).toEqual({
     x: clamp(p0.x - VIEW.width / 2, 0, WORLD.width - VIEW.width),
     y: clamp(p0.y - VIEW.height / 2, 0, WORLD.height - VIEW.height),
     ...VIEW,
   });
-  expect([first?.camera?.x, first?.camera?.y]).toEqual([510, 360]);
+  expect([first?.camera?.x, first?.camera?.y]).toEqual([1310, 810]);
 
   const problems: string[] = [];
   for (let i = 0; i < 20; i++) {
@@ -232,11 +234,12 @@ test('Mapa real: sonda igual a la firma de la semilla 42, castillo y salida, y s
   expect(signatureOf(m.cells)).toBe(MAP_GOLDEN[42]);
   expect(m.emptyForced).toBe(false);
   expect(m.counts.trunk).toBeGreaterThan(0);
-  // 0016, "Sonda con castillo y salida": huella 14–18 × 6–9 y jugador en la salida (990, 630).
+  // 0017, "Sonda con castillo y salida": 64 × 36, huella 30–34 × 15–18 y salida (1.950, 1.170).
+  expect([m.cols, m.rows]).toEqual([64, 36]);
   expect(m.counts.castle).toBe(20);
-  expect(m.castle).toEqual({ firstCol: 14, lastCol: 18, firstRow: 6, lastRow: 9 });
-  expect([m.start.x, m.start.y]).toEqual([990, 630]);
-  expect([first.snapshot?.player.x, first.snapshot?.player.y]).toEqual([990, 630]);
+  expect(m.castle).toEqual({ firstCol: 30, lastCol: 34, firstRow: 15, lastRow: 18 });
+  expect([m.start.x, m.start.y]).toEqual([1950, 1170]);
+  expect([first.snapshot?.player.x, first.snapshot?.player.y]).toEqual([1950, 1170]);
   expect(first.sprites?.cells).toEqual({
     trunk: m.counts.trunk,
     water: m.counts.water,

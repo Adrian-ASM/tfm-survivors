@@ -56,6 +56,8 @@ test('Arranque y menú: botones, título y sin errores de consola ni violaciones
     'Borrar datos',
   ]);
   expect(await page.title()).toContain('Greentide Vanguard');
+  // 0017 (D11): el título es el h1 del panel del menú (un único bloque centrado).
+  await expect(menuPanel(page).getByRole('heading', { level: 1 })).toHaveText('Greentide Vanguard');
   expect(await cspState(page)).toEqual({ violations: [], metas: 1 });
   expect(problems).toEqual([]);
 });
@@ -66,6 +68,12 @@ test('Jugar desde el menú: oculta el menú y empieza una partida nueva en el ti
   const problems = collect(page, ['error', 'warning']);
   await manualGame(page);
   await backToMenu(page);
+  // Spec world-camera (0017), "Sonda en el menú": ventana y escala sin partida; cámara null.
+  const inMenu = await probe(page);
+  expect([inMenu?.viewport, inMenu?.camera]).toEqual([
+    { width: 1280, height: 720, uiScale: 1 },
+    null,
+  ]);
 
   await menuButton(page, 'Jugar').click();
 

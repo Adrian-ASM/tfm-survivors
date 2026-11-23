@@ -182,7 +182,7 @@
     y `MenuScene` sin texto ni título; `main.ts` pasa las líneas y el título.
   - Escenarios: "Redimensionado con la oferta abierta [E2E]", "Redimensionado en pausa", "Jugar tras redimensionar el
     menú", "Capas tras redimensionar", "Mapa intacto al redimensionar" (lógica: `relayout` no toca el mapa).
-- [ ] 4.4 E2E ampliados (sin tests nuevos).
+- [x] 4.4 E2E ampliados (sin tests nuevos).
   - Rojo: `playwright.config.ts` con `viewport: { width: 1280, height: 720 }` en `logic` y `realtime`;
     `gameplay.spec` "Cámara" (`?e2e&manual&seed=42`): `viewport` 1.280 × 720 y `uiScale` 1, mundo de
     `content/arena.json` (3.840 × 2.160), rectángulo 1.280 × 720 con la fórmula y primera esquina (1.310, 810);
