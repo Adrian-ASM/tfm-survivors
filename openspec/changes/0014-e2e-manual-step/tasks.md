@@ -298,7 +298,8 @@
   - Test: solo exige `fps > 0` y los 3 campos finitos (rojo: `measureFrames` no existe). Nunca falla por lento.
   - Hecho: `verify` verde y `npm run test:e2e -- calibration` verde, con la línea `[calibration]` en la salida.
 
-- [ ] 5.2 **Medir y fijar `DEFAULT_CPU_THROTTLE`**.
+- [ ] 5.2 **Medir y fijar `DEFAULT_CPU_THROTTLE`**. *Pendiente del paso 3 (CI)*: pasos 1 y 2 hechos
+  en local (2026-11-23, tabla en `tests/support/cpuThrottle.ts`); el valor sigue en 4, provisional.
   - Pasos:
     1. **Línea base**: `CI_LIKE=1 CPU_THROTTLE=1 npm run test:e2e -- --project=realtime --repeat-each=3` con 2
        workers. Se anotan fallos y duración.
