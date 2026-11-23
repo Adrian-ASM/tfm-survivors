@@ -95,7 +95,7 @@ opción (script temporal en el scratchpad) y esperar su decisión.
   **por elemento** (B6): agua, orilla (falla también si falla la hoja del fondo), espuma, árbol, puente (marco con
   nombre ausente) y castillo. — escenarios: "Reserva de cada elemento" (decisión por elemento), "Recorte del puente
   fuera de la hoja" (parte pura)
-- [ ] 3.5 `phaser/map/planMapArt.ts` con arte: listas por capa (agua, espuma, orillas, puentes, troncos, fachada en la
+- [x] 3.5 `phaser/map/planMapArt.ts` con arte: listas por capa (agua, espuma, orillas, puentes, troncos, fachada en la
   baja; copas y tejado en la alta), posiciones (árbol en el punto medio del borde inferior de su celda, puente
   centrado, castillo con origen en el borde inferior de la huella) y cortes derivados; 1 espuma por celda de orilla
   con `foamCrop(sides)` (celda + extensión solo en sus lados de río, B11) y todas las espumas antes que todas las
