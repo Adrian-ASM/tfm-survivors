@@ -204,16 +204,18 @@ crear sprites durante la partida más allá de una reserva de `maxGems`. El tama
 
 ### Requirement: Recolocación de gemas en celdas no caminables
 El sistema SHALL, cuando una gema se crea en un punto cuya celda (ver "Rejilla de celdas tipadas" en
-`procedural-map`) es no caminable, crearla en el centro de la celda caminable más cercana en vez de en ese punto. La
-más cercana es la de menor distancia euclídea entre el punto de la baja y el centro de la celda (en una celda recortada
-del borde, el centro de su rectángulo recortado); a igual distancia gana la de fila menor y, a igual fila, la de
-columna menor. Una gema creada en una celda caminable conserva exactamente su punto. Recolocar MUST NOT consumir azar
-y no cambia el valor, el radio, el identificador ni el orden de creación de la gema; la gema recolocada participa en
-el paso de gemas de ese mismo tick como cualquier otra.
+`procedural-map`) es no caminable (`trunk`, `water` o `castle`), crearla en el centro de la celda caminable más
+cercana en vez de en ese punto. La más cercana es la de menor distancia euclídea entre el punto de la baja y el centro
+de la celda (en una celda recortada del borde, el centro de su rectángulo recortado); a igual distancia gana la de
+fila menor y, a igual fila, la de columna menor. Una gema creada en una celda caminable conserva exactamente su punto.
+Recolocar MUST NOT consumir azar y no cambia el valor, el radio, el identificador ni el orden de creación de la gema;
+la gema recolocada participa en el paso de gemas de ese mismo tick como cualquier otra.
 
 Una gema no atraída MUST NOT estar en ningún tick en una celda no caminable. Una gema atraída sigue la regla de "Imán
-de gemas" en línea recta hacia el jugador y puede cruzar celdas no caminables. Si la XP de la baja se suma a la gema
-más antigua por el tope (ver "Tope de gemas en el suelo"), no se crea ni se recoloca ninguna gema.
+de gemas" en línea recta hacia el jugador y puede cruzar celdas no caminables, también las del castillo. Si la XP de
+la baja se suma a la gema más antigua por el tope (ver "Tope de gemas en el suelo"), no se crea ni se recoloca
+ninguna gema. Como los enemigos atraviesan el castillo (ver `enemy-behavior`), una baja puede producirse dentro de su
+huella; su gema se recoloca con esta misma regla.
 
 #### Scenario: Baja sobre un tronco
 - **GIVEN** un mapa de hierba con un tronco en (10, 4) (x en [600, 660], y en [240, 300]), un jugador quieto en
@@ -235,6 +237,14 @@ más antigua por el tope (ver "Tope de gemas en el suelo"), no se crea ni se rec
 - **THEN** la gema nueva está en (270, 450), centro de la celda (4, 7) (a 114,018 px, la más cercana con la fila
   menor)
 
+#### Scenario: Baja dentro del castillo
+- **GIVEN** un mapa de hierba con las celdas de columnas 14–18 y filas 6–9 `castle` (x en [840, 1.140], y en
+  [360, 600]), un jugador quieto en (300, 900) y un `goblin-torch` con vida 4 que muere por armas en (990, 480), en la
+  celda (16, 8)
+- **WHEN** se ejecuta ese tick
+- **THEN** la gema nueva está en (990, 330), centro de la celda (16, 5): empata a 150 px con el de la (16, 10),
+  (990, 630), y gana por tener la fila menor
+
 #### Scenario: Baja en hierba junto a un tronco
 - **GIVEN** un mapa de hierba con un tronco en (10, 4) y un `goblin-torch` con vida 4 que muere por armas en
   (590, 270), en la celda caminable (9, 4)
@@ -255,10 +265,11 @@ más antigua por el tope (ver "Tope de gemas en el suelo"), no se crea ni se rec
 
 #### Scenario: Ninguna gema en reposo en celda no caminable
 - **GIVEN** el contenido por defecto salvo una vida máxima suficiente para no llegar a 0 en 36.000 ticks, semilla 7,
-  el mapa generado para esa semilla y un input aleatorio generado por una semilla fija
+  el mapa generado para esa semilla (castillo incluido) y un input aleatorio generado por una semilla fija
 - **WHEN** se ejecutan 36.000 ticks
-- **THEN** en ningún snapshot hay una gema no atraída cuya celda sea `trunk` o `water`
+- **THEN** en ningún snapshot hay una gema no atraída cuya celda sea `trunk`, `water` o `castle`
 
 <!-- historial: 0005-xp-and-level-up (2026-11-19) -->
 <!-- historial: 0012-sprite-rendering (2026-11-22) -->
 <!-- historial: 0015-procedural-map (2026-11-23) -->
+<!-- historial: 0016-map-art (2026-11-23) -->

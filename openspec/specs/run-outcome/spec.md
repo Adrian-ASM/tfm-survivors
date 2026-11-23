@@ -183,7 +183,8 @@ MUST tener exactamente uno, que no cambia nunca.
 ### Requirement: Partida ganable y perdible con el contenido por defecto
 El sistema SHALL permitir, con el contenido por defecto, tanto ganar como perder una partida sin motor, con una
 dificultad medida sobre el conjunto de semillas 1..50 (ver "Semillas de los tests de balance"), cada partida con el
-mapa que genera su semilla (ver `procedural-map`):
+mapa que genera su semilla, castillo incluido, y el jugador en su punto de salida (ver `procedural-map` y
+"Posición inicial en el punto de salida del mapa" en `player-movement`):
 - **Ganable**: el bot de referencia (ver "Bot de referencia para el balance") MUST llegar vivo al tick 36.000
   (resultado victoria) con **al menos 25 y como mucho 35** de las 50 semillas (del 50 % al 70 %, ambos incluidos).
   Una semilla cuenta como victoria solo si la partida termina con resultado victoria en el tick 36.000; cualquier
@@ -193,14 +194,14 @@ mapa que genera su semilla (ver `procedural-map`):
   semillas, tanto con el mapa generado como con el mapa vacío. Un jugador quieto MUST NOT ganar con ninguna semilla
   del conjunto.
 
-Los números de contenido que producen esta dificultad viven en `content/*.json` y no se fijan en esta spec. La
-calibración de este change apunta a unas 28 victorias para dejar margen sobre el límite inferior; el test solo exige
-la banda.
+Los números de contenido que producen esta dificultad viven en `content/*.json` y no se fijan en esta spec. La banda
+manda sobre cualquier valor concreto: si la huella definitiva del castillo o la velocidad del jugador cambian en apply,
+el balance MUST volver a medirse con el contenido final antes de verify.
 
 #### Scenario: Tasa de victoria del bot de referencia
 - **GIVEN** el contenido por defecto y el bot de referencia
-- **WHEN** se juega una partida con cada semilla de 1 a 50, con su mapa generado, cada una hasta que termina o hasta
-  el tick 36.000
+- **WHEN** se juega una partida con cada semilla de 1 a 50, con su mapa generado (castillo incluido) y el jugador en
+  su salida, cada una hasta que termina o hasta el tick 36.000
 - **THEN** el número de partidas terminadas con resultado victoria en el tick 36.000 es ≥ 25 y ≤ 35
 
 #### Scenario: Toda partida del bot termina
@@ -210,12 +211,13 @@ la banda.
 
 #### Scenario: Jugador quieto pierde con todas las semillas
 - **GIVEN** el contenido por defecto, input (0, 0) en todos los ticks y la política de elección fija
-- **WHEN** se juega una partida con cada semilla de 1 a 50, con su mapa generado, cada una hasta que termina o hasta
-  el tick 10.800
+- **WHEN** se juega una partida con cada semilla de 1 a 50, con su mapa generado y el jugador quieto en (990, 630),
+  cada una hasta que termina o hasta el tick 10.800
 - **THEN** las 50 partidas están terminadas con resultado derrota, cada una en un tick < 10.800
 
 #### Scenario: Jugador quieto pierde también con el mapa vacío
-- **GIVEN** el contenido por defecto, el mapa vacío, input (0, 0) en todos los ticks y la política de elección fija
+- **GIVEN** el contenido por defecto, el mapa vacío (jugador en (960, 540)), input (0, 0) en todos los ticks y la
+  política de elección fija
 - **WHEN** se juega una partida con cada semilla de 1 a 50, cada una hasta que termina o hasta el tick 10.800
 - **THEN** las 50 partidas están terminadas con resultado derrota, cada una en un tick < 10.800
 
@@ -231,11 +233,11 @@ determinista, que es la única referencia de dificultad de los tests de balance.
 - **Movimiento**: en cada tick, el input es el de la política de huida `fleeInput` aplicada al snapshot anterior y al
   mapa de la partida:
   1. suma una repulsión 1/d² de cada enemigo vivo a menos de 150 px, de cada pared del mundo a menos de 64 px y de
-     cada celda no caminable (`trunk` o `water`) a menos de 64 px. La distancia a una pared se mide desde el centro
-     del jugador; la distancia a una celda, desde el centro del jugador hasta el punto más cercano del rectángulo
-     cerrado de la celda, y su repulsión apunta de ese punto al centro del jugador. Las paredes son los bordes del
-     mundo del contenido con el que se juega la partida (1.920 × 1.080 por defecto) y las celdas, las del mapa de esa
-     partida, nunca un tamaño ni un mapa fijos del bot;
+     cada celda no caminable (`trunk`, `water` o `castle`) a menos de 64 px. La distancia a una pared se mide desde el
+     centro del jugador; la distancia a una celda, desde el centro del jugador hasta el punto más cercano del
+     rectángulo cerrado de la celda, y su repulsión apunta de ese punto al centro del jugador. Las paredes son los
+     bordes del mundo del contenido con el que se juega la partida (1.920 × 1.080 por defecto) y las celdas, las del
+     mapa de esa partida, nunca un tamaño ni un mapa fijos del bot;
   2. cuantiza la suma a una de las 8 direcciones; si la suma es el vector nulo, el input es (0, 0);
   3. si la dirección elegida está bloqueada, prueba en este orden la dirección girada +45°, −45°, +90°, −90°, +135° y
      −135° (ángulo positivo = sentido horario en pantalla, de +x hacia +y) y usa la primera no bloqueada; si todas lo
@@ -246,10 +248,11 @@ determinista, que es la única referencia de dificultad de los tests de balance.
   la lista de prioridad `guardrail` > `strict-rules` > `fast-ci` > `hard-asserts` > `watch-mode`, sea cual sea su
   posición en la oferta; si la oferta no contiene ninguno de esos ids, elige la opción de índice 0.
 
-El bot de referencia es un concepto aparte de la "política de elección fija" de `simulation-loop`, que sigue
-valiendo para los escenarios que no dicen nada de elecciones. Cualquier cambio de su movimiento o de su lista de
-prioridad MUST hacerse con un change que revise los requisitos de balance de esta spec. Los escenarios de este
-requisito con posiciones explícitas y sin mapa declarado usan el mapa vacío.
+El castillo no añade lógica al bot: sus celdas cuentan como cualquier otra celda no caminable. El bot de referencia
+es un concepto aparte de la "política de elección fija" de `simulation-loop`, que sigue valiendo para los escenarios
+que no dicen nada de elecciones. Cualquier cambio de su movimiento o de su lista de prioridad MUST hacerse con un
+change que revise los requisitos de balance de esta spec. Los escenarios de este requisito con posiciones explícitas
+y sin mapa declarado usan el mapa vacío.
 
 #### Scenario: Elige por prioridad, no por posición
 - **GIVEN** una oferta abierta con las opciones `watch-mode`, `fast-ci` y una tercera que no está en la lista de
@@ -278,11 +281,13 @@ requisito con posiciones explícitas y sin mapa declarado usan el mapa vacío.
 - **WHEN** el bot de referencia calcula el input
 - **THEN** el input es (0, 0)
 
-#### Scenario: Huida sin amenazas con el mapa generado
+#### Scenario: Salida ante la puerta con el mapa generado
 - **GIVEN** el contenido por defecto y, para cada semilla de 1 a 50, su mapa generado y el snapshot del tick 0
-  (jugador en (960, 540), centro de la zona de inicio de radio 180, sin enemigos)
+  (jugador en la salida (990, 630), a 30 px de la celda `castle` (16, 9) y a 42,426 px de las esquinas de la (15, 9)
+  y la (17, 9); sin enemigos)
 - **WHEN** el bot de referencia calcula el input
-- **THEN** el input es (0, 0) con las 50 semillas
+- **THEN** el input es (0, 1) con las 50 semillas: la repulsión de la fachada apunta hacia +y y sus componentes x se
+  anulan
 
 #### Scenario: Huida de un enemigo
 - **GIVEN** un snapshot con el jugador en (960, 540) en el mundo de 1.920 × 1.080 y un único enemigo vivo en
@@ -318,11 +323,11 @@ requisito con posiciones explícitas y sin mapa declarado usan el mapa vacío.
 - **WHEN** el bot de referencia calcula el input
 - **THEN** el input apunta en la diagonal hacia −x y −y (componentes negativas y del mismo módulo)
 
-#### Scenario: Repulsión de un tronco y del agua
+#### Scenario: Repulsión de un tronco, del agua y del castillo
 - **GIVEN** un mapa de hierba con un tronco en (10, 4) (x en [600, 660], y en [240, 300]), un snapshot con el jugador
-  en (560, 270) (a 40 px del tronco) y ningún enemigo vivo; y en otro caso la misma celda de `water`
+  en (560, 270) (a 40 px del tronco) y ningún enemigo vivo; y en otros casos la misma celda de `water` o de `castle`
 - **WHEN** el bot de referencia calcula el input
-- **THEN** en ambos casos el input es (−1, 0)
+- **THEN** en los tres casos el input es (−1, 0)
 
 #### Scenario: Celda a exactamente 64 px
 - **GIVEN** el mapa del escenario anterior con el tronco y un snapshot con el jugador en (536, 270) y ningún enemigo
@@ -342,6 +347,14 @@ requisito con posiciones explícitas y sin mapa declarado usan el mapa vacío.
   tronco hacia −x)
 - **WHEN** el bot de referencia calcula el input
 - **THEN** la dirección cuantizada (1, 0) está bloqueada, también la girada +45° y −45°, y el input es (0, 1) (+90°)
+
+#### Scenario: Dirección bloqueada por el castillo
+- **GIVEN** un mapa de hierba con las celdas de columnas 14–18 y filas 6–9 `castle`, velocidad 200 px/s y un snapshot
+  con el jugador en (990, 616), tangente a la fachada, y un único enemigo vivo en (990, 626) (repulsión 1/100 hacia −y
+  frente a 1/256 de la celda (16, 9) hacia +y)
+- **WHEN** el bot de referencia calcula el input
+- **THEN** la dirección cuantizada (0, −1) está bloqueada, también la girada +45° y −45°, y el input es (1, 0)
+  (+90° en sentido horario desde (0, −1))
 
 #### Scenario: Bot reproducible
 - **GIVEN** dos partidas con el contenido por defecto y la semilla 7, con su mapa generado, ambas jugadas por el bot
@@ -400,3 +413,4 @@ como arena o mapa explícitos.
 <!-- historial: 0012-sprite-rendering (2026-11-22) -->
 <!-- historial: 0013-world-camera (2026-11-23) -->
 <!-- historial: 0015-procedural-map (2026-11-23) -->
+<!-- historial: 0016-map-art (2026-11-23) -->
