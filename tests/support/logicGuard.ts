@@ -11,6 +11,7 @@ export const LOGIC_GUARDED_SPECS: readonly string[] = [
   'level-up.spec.ts',
   'health.spec.ts',
   'enemies.spec.ts',
+  'weapons.spec.ts',
 ];
 
 export type ClockWaitRule = 'waitForTimeout' | 'playChoosingFirst' | 'poll-tick';

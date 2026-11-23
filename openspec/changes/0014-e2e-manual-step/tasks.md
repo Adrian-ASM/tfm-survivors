@@ -246,7 +246,7 @@
     - enemies: `step(30)` con enemigos dentro de la arena; `?seed=abc` con 1 aviso y `step(31)` devuelve 31.
   - Hecho: la guarda incluye los dos ficheros, `verify` verde y `npm run test:e2e -- health enemies` verde.
 
-- [ ] 4.3 **`weapons.spec.ts`**.
+- [x] 4.3 **`weapons.spec.ts`**.
   - Cambio: `stepUntil` con `chunk = 10` y tope de 15 × 60, registrando los proyectiles vistos y las bajas. Fuera
     `waitForTimeout(50)`.
   - Hecho: la guarda incluye el fichero, `verify` verde y `npm run test:e2e -- weapons` verde.
