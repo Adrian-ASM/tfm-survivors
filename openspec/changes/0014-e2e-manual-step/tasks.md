@@ -155,7 +155,7 @@
   - Hecho: `verify` verde, `npm run test:e2e -- manual-step` verde y el resto de E2E en tiempo real sin cambios
     (`-- speed pause`).
 
-- [ ] 2.3 **Helpers `waitForRun`, `stepUntil`, `playToEnd` y `holdKey` y E2E de estados** (design §5).
+- [x] 2.3 **Helpers `waitForRun`, `stepUntil`, `playToEnd` y `holdKey` y E2E de estados** (design §5).
   - Ficheros: `tests/e2e/probe.ts` y `tests/e2e/manual-step.spec.ts`.
   - Test E2E con manual:
     - semilla 7: `step(3600)` devuelve k con la oferta visible; `step(10)` devuelve 0; se pulsa 1 y `step(10)`

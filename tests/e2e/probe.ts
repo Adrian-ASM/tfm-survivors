@@ -466,6 +466,60 @@ export const snapshotOf = async (page: Page): Promise<SnapshotView | null> =>
   (await probe(page))?.snapshot ?? null;
 
 /**
+ * Espera a que la partida de la carga exista: snapshot no nulo. Es una espera de evento (fin de
+ * la carga), no del tick contra el reloj (change 0014).
+ */
+export async function waitForRun(page: Page): Promise<void> {
+  await expect.poll(async () => (await snapshotOf(page)) !== null).toBe(true);
+}
+
+/** Avance máximo de `stepUntil` por llamada a `step`: el tope por frame del modo manual. */
+const STEP_CHUNK = 600;
+
+/**
+ * POLÍTICA DE ELECCIÓN FIJA en modo manual (change 0014), sin reloj: si `until` se cumple,
+ * devuelve el snapshot; si hay oferta, pulsa 1 (opción 0, se elige antes de avanzar en el mismo
+ * frame); después `step(chunk)`, hasta `maxTicks` ticks en total. Devuelve null si se agotan, si
+ * la partida termina sin cumplir `until` o si un `step` no avanza sin oferta (pausa, menú).
+ */
+export async function stepUntil(
+  page: Page,
+  until: (s: SnapshotView) => boolean,
+  maxTicks: number,
+  chunk = STEP_CHUNK,
+): Promise<SnapshotView | null> {
+  let left = maxTicks;
+  for (;;) {
+    const snap = await snapshotOf(page);
+    if (!snap) return null;
+    if (until(snap)) return snap;
+    if (snap.status === 'over' || left <= 0) return null;
+    const offered = snap.offer.length > 0;
+    if (offered) await page.keyboard.press('1');
+    const ticks = await step(page, Math.min(chunk, left));
+    left -= ticks;
+    if (ticks === 0 && !offered) return null;
+  }
+}
+
+/** Juega hasta el fin con la política de elección fija (`stepUntil`), sin reloj. */
+export const playToEnd = (page: Page, maxTicks = 36_000): Promise<SnapshotView | null> =>
+  stepUntil(page, (s) => s.status === 'over', maxTicks);
+
+/**
+ * Mantiene `key` pulsada durante un `step(ticks)`: el input se lee al empezar el step (orden de la
+ * spec: `keyboard.down → step → keyboard.up`). Devuelve los ticks ejecutados.
+ */
+export async function holdKey(page: Page, key: string, ticks: number): Promise<number> {
+  await page.keyboard.down(key);
+  try {
+    return await step(page, ticks);
+  } finally {
+    await page.keyboard.up(key);
+  }
+}
+
+/**
  * POLÍTICA DE ELECCIÓN FIJA en el navegador (spec simulation-loop): lee el snapshot cada
  * `intervalMs`; si hay oferta, pulsa la tecla 1 (opción 0). Devuelve el primer snapshot que cumple
  * `until` o null si pasa `timeoutMs` de reloj.
