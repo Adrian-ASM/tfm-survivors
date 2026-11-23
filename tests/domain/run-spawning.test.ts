@@ -62,11 +62,10 @@ class CountingRandom implements RandomGenerator {
 const insideArena = (
   { x, y, radius }: EnemySnapshot,
   arena: RunConfig['arena'] = SCENARIO_ARENA,
-): boolean =>
-  x >= radius && x <= arena.width - radius && y >= radius && y <= arena.height - radius;
+): boolean => x >= radius && x <= arena.width - radius && y >= radius && y <= arena.height - radius;
 
-/** Mundo explícito de los escenarios de 0013: 1.920 × 1.080 con la vista de 960 × 540. */
-const WORLD: RunConfig['arena'] = { width: 1920, height: 1080, view: { width: 960, height: 540 } };
+/** Mundo explícito de los escenarios de 0017: 3.840 × 2.160. */
+const WORLD: RunConfig['arena'] = { width: 3840, height: 2160 };
 const inWorld = (config: RunConfig): RunConfig => ({ ...config, arena: WORLD });
 const distance = (a: { x: number; y: number }, b: { x: number; y: number }): number =>
   Math.hypot(a.x - b.x, a.y - b.y);
@@ -108,8 +107,8 @@ describe('Run · posición de aparición', () => {
 
   it.each([
     ['Jugador en una esquina', 16, 16],
-    ['Jugador en la esquina opuesta', 1904, 1064],
-  ])('Scenario: %s del mundo de 1.920 × 1.080 ((%s, %s), 3.600 ticks)', (_name, x, y) => {
+    ['Jugador en la esquina opuesta', 3824, 2144],
+  ])('Scenario: %s del mundo de 3.840 × 2.160 ((%s, %s), 3.600 ticks)', (_name, x, y) => {
     const config = withPlayer(
       inWorld(aWavesConfig({ segments: [aSegment(['goblin-torch', 'goblin-tnt'], 5)] })),
       { maxHealth: LONG_RUN_HEALTH },
@@ -123,11 +122,11 @@ describe('Run · posición de aparición', () => {
     }
   });
 
-  it('Scenario: Ninguna posición válida en el mundo de 1.920 × 1.080 (minDistance 2.500)', () => {
+  it('Scenario: Ninguna posición válida en el mundo de 3.840 × 2.160 (minDistance 4.500)', () => {
     const config = inWorld(
       aWavesConfig({
         segments: [aSegment(['goblin-torch'], 5)],
-        spawn: { minDistance: 2500, maxAttempts: 8 },
+        spawn: { minDistance: 4500, maxAttempts: 8 },
       }),
     );
     const random = new CountingRandom(new Mulberry32RandomGenerator(42));

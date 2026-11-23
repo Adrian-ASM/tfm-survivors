@@ -1,4 +1,6 @@
-/** Tamaño del mundo en px (la `arena` del contenido: 1.920 × 1.080 por defecto). */
+import type { ScreenFrame } from './ui/screenFrame';
+
+/** Tamaño del mundo en px (la `arena` del contenido: 3.840 × 2.160 por defecto). */
 export interface WorldSize {
   readonly width: number;
   readonly height: number;
@@ -14,10 +16,11 @@ export interface CameraView {
 
 /**
  * Lo que `CameraRig` usa de la cámara de Phaser 4.2.1 (costura sin motor, como `GroundFactory`):
- * `setBounds`, `startFollow(target, roundPixels, lerpX, lerpY)` y `worldView`.
+ * `setBounds`, `setSize` (BaseCamera), `startFollow(target, roundPixels, lerpX, lerpY)` y `worldView`.
  */
 export interface FollowCamera {
   setBounds(x: number, y: number, width: number, height: number): unknown;
+  setSize(width: number, height: number): unknown;
   startFollow(target: object, roundPixels: boolean, lerpX: number, lerpY: number): unknown;
   readonly worldView: CameraView;
 }
@@ -34,6 +37,7 @@ const DIRECT_FOLLOW = 1;
  */
 export class CameraRig {
   private readonly target = { x: 0, y: 0 };
+  private size = '';
 
   constructor(
     private readonly camera: FollowCamera,
@@ -41,6 +45,17 @@ export class CameraRig {
   ) {
     camera.setBounds(0, 0, world.width, world.height);
     camera.startFollow(this.target, ROUND_PIXELS, DIRECT_FOLLOW, DIRECT_FOLLOW);
+  }
+
+  /**
+   * Vista del tamaño del lienzo (0017, design D4): explícito, sin depender de la heurística de
+   * `CameraManager.onResize`. Con el mismo tamaño no hace nada.
+   */
+  resize(frame: ScreenFrame): void {
+    const size = `${String(frame.width)}x${String(frame.height)}`;
+    if (size === this.size) return;
+    this.size = size;
+    this.camera.setSize(frame.width, frame.height);
   }
 
   /** Lleva el objetivo a la posición del jugador del snapshot que se va a pintar. */

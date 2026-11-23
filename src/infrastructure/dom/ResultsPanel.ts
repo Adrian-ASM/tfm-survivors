@@ -1,4 +1,5 @@
 import { button, setPanelHidden } from './button';
+import { DomResultsLines } from './DomResultsLines';
 import { pickedFile } from './pickedFile';
 import type { ResultsPanelView } from './resultsPanelText';
 
@@ -19,6 +20,8 @@ export class ResultsPanel {
   private readonly notices: HTMLElement;
   private readonly message: HTMLElement;
   private shown: ResultsPanelView | null = null;
+  /** Las 5 líneas del resultado (título, tiempo, nivel, bajas, R), en la cabecera (0017, D11). */
+  readonly lines: DomResultsLines;
 
   constructor(doc: Document, parent: HTMLElement, actions: ResultsPanelActions) {
     const el = <K extends keyof HTMLElementTagNameMap>(tag: K, className: string) => {
@@ -33,6 +36,20 @@ export class ResultsPanel {
     this.notices = el('div', 'results-panel__notices');
     this.message = el('p', 'results-panel__message');
     this.message.setAttribute('role', 'status');
+    const header = el('header', 'results-panel__header');
+    const line = (tag: 'h2' | 'p', className: string): HTMLElement => {
+      const node = el(tag, className);
+      node.hidden = true;
+      header.append(node);
+      return node;
+    };
+    this.lines = new DomResultsLines({
+      title: line('h2', 'results-panel__title'),
+      time: line('p', 'results-panel__line'),
+      level: line('p', 'results-panel__line'),
+      kills: line('p', 'results-panel__line'),
+      hint: line('p', 'results-panel__hint'),
+    });
 
     const file = el('input', 'results-panel__file');
     file.type = 'file';
@@ -52,7 +69,7 @@ export class ResultsPanel {
 
     const buttons = el('div', 'results-panel__actions');
     buttons.append(exportButton, importButton, file);
-    this.root.append(this.records, this.notices, this.message, buttons);
+    this.root.append(header, this.records, this.notices, this.message, buttons);
     parent.append(this.root);
   }
 

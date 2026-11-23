@@ -102,12 +102,12 @@ describe('Colisión con el mapa (spec player-movement)', () => {
     expectWithinSpec(end.y - 270, 70.711);
   });
 
-  it('Scenario: Deslizar por la fachada del castillo (y en 616, x + 70,711)', () => {
+  it('Scenario: Deslizar por la fachada del castillo (y en 1.156, x + 70,711)', () => {
     const map = mapWith(RULES, castleBlock());
-    const path = walk(map, [990, 616], PlayerInput.of(1, -1), 30);
+    const path = walk(map, [1950, 1156], PlayerInput.of(1, -1), 30);
     const end = last(path);
-    expect(end.y).toBe(616);
-    expectWithinSpec(end.x - 990, 70.711);
+    expect(end.y).toBe(1156);
+    expectWithinSpec(end.x - 1950, 70.711);
     expect(overlapsAny(map, path)).toBe(false);
   });
 

@@ -58,9 +58,9 @@ describe('generateMap · ríos (spec procedural-map, "Composición del mapa")', 
     }
   });
 
-  it('Scenario: Sin río ni troncos (semilla 7: 20 castle en 14–18 × 6–9 y 556 grass)', () => {
+  it('Scenario: Sin río ni troncos (semilla 7: 20 castle en 30–34 × 15–18 y 2.284 grass)', () => {
     const map = mapForSeed(withMap({ rivers: 0, trunkDensity: 0 }), 7);
-    expect(countOf(map, 'grass')).toBe(556);
+    expect(countOf(map, 'grass')).toBe(2284);
     expect(castleCells(map)).toEqual(FOOTPRINT_CELLS);
   });
 

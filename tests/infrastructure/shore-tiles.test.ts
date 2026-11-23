@@ -14,7 +14,9 @@ import { mapRules, mapWith, type Layout } from '../support/mapLayouts';
 import { mapForSeed } from '../support/mapStats';
 
 // Spec sprite-rendering (0016), "Orillas por autotile de 4 vecinos" y "Orientación de los puentes".
-const RULES = mapRules();
+// Rejilla explícita de 32 × 18 (mundo de 1.920 × 1.080): la geometría con la que están escritos los
+// escenarios de mapa explícito (columna 31 en el borde, 64 orillas en el río recto).
+const RULES = mapRules(undefined, 1920, 1080);
 const snap = (layout: Layout): MapSnapshot => toMapSnapshot(mapWith(RULES, layout));
 const caseAt = (s: MapSnapshot, c: number, r: number) => shoreCase(riverSides(s, c, r));
 const key = (c: number, r: number) => `${String(c)},${String(r)}`;

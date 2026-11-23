@@ -25,11 +25,11 @@ function withMap(patch: Partial<RunConfig['map']>, arena = CONFIG.arena): RunCon
 }
 
 describe('generateMap · castillo (spec procedural-map 0016)', () => {
-  it('Scenario: Huella y salida por defecto (semilla 42: 14–18 × 6–9, salida (990, 630))', () => {
+  it('Scenario: Huella y salida por defecto (semilla 42: 30–34 × 15–18, salida (1.950, 1.170))', () => {
     const map = mapForSeed(CONFIG, 42);
     expect(castleCells(map)).toEqual(FOOTPRINT_CELLS);
-    expect(map.castle).toEqual({ firstCol: 14, lastCol: 18, firstRow: 6, lastRow: 9 });
-    expect([map.start.x, map.start.y]).toEqual([990, 630]);
+    expect(map.castle).toEqual({ firstCol: 30, lastCol: 34, firstRow: 15, lastRow: 18 });
+    expect([map.start.x, map.start.y]).toEqual([1950, 1170]);
   });
 
   it('Scenario: Huella en un mundo mayor (4.000 × 4.000, semilla 7: 31–35 × 30–33)', () => {
@@ -38,13 +38,13 @@ describe('generateMap · castillo (spec procedural-map 0016)', () => {
     expect([map.start.x, map.start.y]).toEqual([2010, 2070]);
   });
 
-  it('Scenario: Celdas tras el castillo alcanzables (solo castillo: 556 grass desde (990, 630))', () => {
+  it('Scenario: Celdas tras el castillo alcanzables (solo castillo: 2.284 grass desde (1.950, 1.170))', () => {
     const map = mapForSeed(withMap({ rivers: 0, trunkDensity: 0 }), 7);
     const seen = reachableCells(map);
     const grass = typesOf(map).flatMap((t, i) => (t === 'grass' ? [i] : []));
-    expect(grass).toHaveLength(556);
+    expect(grass).toHaveLength(2284);
     expect(grass.every((i) => seen[i] === 1)).toBe(true);
-    expect(seen[5 * 32 + 16]).toBe(1);
+    expect(seen[14 * 64 + 32]).toBe(1);
     expect(countOf(map, 'castle')).toBe(20);
   });
 });
@@ -61,7 +61,7 @@ describe('checkCastle · postcondición del castillo', () => {
   });
 
   it('falta una celda de la huella', () => {
-    expect(check({ ...castleBlock(), '16,8': 'grass' })).toThrow(/Invariante rota/);
+    expect(check({ ...castleBlock(), '32,17': 'grass' })).toThrow(/Invariante rota/);
   });
 
   it('una celda castle fuera de la huella', () => {
@@ -69,7 +69,7 @@ describe('checkCastle · postcondición del castillo', () => {
   });
 
   it('puerta no caminable', () => {
-    expect(check({ ...castleBlock(), '16,10': 'trunk' })).toThrow(/Invariante rota/);
+    expect(check({ ...castleBlock(), '32,19': 'trunk' })).toThrow(/Invariante rota/);
   });
 
   it('celda caminable sin alcanzar desde la puerta', () => {
@@ -79,10 +79,10 @@ describe('checkCastle · postcondición del castillo', () => {
 });
 
 describe('Salida ante la puerta del castillo (spec player-movement 0016)', () => {
-  it('Scenario: Partida nueva con el mapa generado (1..50: jugador en (990, 630))', () => {
+  it('Scenario: Partida nueva con el mapa generado (1..50: jugador en (1.950, 1.170))', () => {
     const elsewhere = BALANCE_SEEDS.filter((seed) => {
       const { x, y } = startSeededRun(CONFIG, seed).snapshot().player;
-      return x !== 990 || y !== 630;
+      return x !== 1950 || y !== 1170;
     });
     expect(elsewhere).toEqual([]);
   });
@@ -91,8 +91,8 @@ describe('Salida ante la puerta del castillo (spec player-movement 0016)', () =>
     const map = mapForSeed(CONFIG, 42);
     const path = ticks(startSeededRun(CONFIG, 42), 60, PlayerInput.of(0, -1));
     const end = path[path.length - 1]?.player;
-    expect(end?.x).toBe(990);
-    expect(Math.abs((end?.y ?? 0) - 616)).toBeLessThan(0.001);
+    expect(end?.x).toBe(1950);
+    expect(Math.abs((end?.y ?? 0) - 1156)).toBeLessThan(0.001);
     expect(path.some((s) => map.overlapsBlocked(s.player.x, s.player.y, 16))).toBe(false);
   });
 });

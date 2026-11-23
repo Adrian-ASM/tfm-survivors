@@ -57,20 +57,20 @@ describe('Run · persecución', () => {
   });
 
   it('Primer tick de vida', () => {
-    // Arena grande para que el anillo no se recorte; vista 960 × 540 y margin 32 (contenido base).
+    // Arena grande para que el anillo (radio del contenido base) no se recorte.
     const base = aWavesConfig({
       types: [{ id: 'probe', speed: 90, radius: 10, cost: 1, damage: 5, health: 10, xp: 1 }],
       segments: [aSegment(['probe'], 1)],
     });
     const config: RunConfig = {
       ...base,
-      arena: { width: 4000, height: 4000, view: { width: 960, height: 540 } },
+      arena: { width: 4000, height: 4000 },
     };
     // StubRandom(0): tipo 0 del tramo y ángulo 0 → P = jugador + (radio del anillo, 0).
     const r = Run.start(config, new StubRandom(0));
     if (!r.ok) throw new Error(r.error.message);
     const run = r.value;
-    const ring = Math.hypot(960, 540) / 2 + 32;
+    const ring = config.waves.spawn.ringRadius;
     const p = { x: 2000 + ring, y: 2000 };
 
     ticks(run, 59);

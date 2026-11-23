@@ -10,6 +10,12 @@ body {
     sans-serif;
 }
 
+/* Lienzo a ventana completa (0017): sin barras de desplazamiento, que cambiarían el tamaño del padre
+   y provocarían un bucle de RESIZE. */
+body {
+  overflow: hidden;
+}
+
 /* El canvas de Phaser y el panel de progreso ocupan la misma celda: el panel queda encima. */
 #game {
   display: grid;
@@ -22,6 +28,10 @@ body {
   grid-area: 1 / 1;
 }
 
+#game > canvas {
+  display: block;
+}
+
 .content-error {
   max-width: 640px;
   padding: 16px;
@@ -29,18 +39,40 @@ body {
   border-radius: 8px;
 }
 
-/* Panel de progreso del overlay de resultados (change 0007), bajo los textos de Phaser. */
+/* Overlay de resultados (0007; 0017 D11): las 5 líneas y el panel de progreso en un único bloque
+   centrado en la ventana, a la escala de UI (--ui-scale, la del HUD). */
 .results-panel {
   position: relative;
   z-index: 1;
-  align-self: end;
-  margin-bottom: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  font: 14px monospace;
+  gap: 0.43em;
+  font: calc(14px * var(--ui-scale, 1)) monospace;
   color: #fff;
+}
+
+.results-panel__header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6em;
+  margin-bottom: 0.6em;
+}
+
+.results-panel__title {
+  margin: 0 0 0.3em;
+  font-size: 2.86em;
+  font-weight: normal;
+}
+
+.results-panel__line,
+.results-panel__hint {
+  font-size: 1.43em;
+}
+
+.results-panel__hint {
+  margin-top: 0.6em;
 }
 
 .results-panel[hidden],
@@ -54,7 +86,7 @@ body {
 
 .results-panel__records {
   display: flex;
-  gap: 24px;
+  gap: 1.7em;
 }
 
 .results-panel__notices {
@@ -68,11 +100,11 @@ body {
 
 .results-panel__actions {
   display: flex;
-  gap: 12px;
+  gap: 0.86em;
 }
 
 .results-panel button {
-  padding: 4px 14px;
+  padding: 0.29em 1em;
   font: inherit;
   color: #fff;
   background: #23233a;
@@ -95,9 +127,9 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 20px 28px;
-  font: 16px monospace;
+  gap: 0.75em;
+  padding: 1.25em 1.75em;
+  font: calc(16px * var(--ui-scale, 1)) monospace;
   color: #fff;
   background: rgb(20 20 30 / 92%);
   border: 1px solid #7ce2fe;
@@ -126,8 +158,8 @@ body {
 .confirm-dialog__actions {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  min-width: 200px;
+  gap: 0.5em;
+  min-width: 12.5em;
 }
 
 .pause-panel__actions,
@@ -143,7 +175,7 @@ body {
 .menu-panel button,
 .pause-panel button,
 .confirm-dialog button {
-  padding: 6px 16px;
+  padding: 0.375em 1em;
   font: inherit;
   color: #fff;
   background: #23233a;

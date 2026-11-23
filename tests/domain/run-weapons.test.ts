@@ -67,15 +67,12 @@ describe('Run · paso de armas en el tick', () => {
   });
 
   it('Scenario: Un enemigo recién aparecido no es objetivo en su tick de aparición', () => {
-    // Vista pequeña, margin 0 y minDistance 0: aparece a ~71 px, dentro de alcance y del pulso.
+    // Anillo de 71 px y minDistance 0: aparece dentro de alcance y del pulso.
     const base = aWavesConfig({
       segments: [aSegment(['goblin-torch'], 60)],
-      spawn: { margin: 0, minDistance: 0 },
+      spawn: { ringRadius: 71, minDistance: 0 },
     });
-    const config: RunConfig = withWeapons(
-      { ...base, arena: { ...base.arena, view: { width: 100, height: 100 } } },
-      DEFAULT_WEAPONS,
-    );
+    const config: RunConfig = withWeapons(base, DEFAULT_WEAPONS);
     const [s1, s2] = ticks(startRun(config), 2);
     expect(s1?.enemies.map((e) => e.health)).toEqual([10]);
     expect([s1?.projectiles.length, s1?.pulses.length]).toEqual([0, 0]);

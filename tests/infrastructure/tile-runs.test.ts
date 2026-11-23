@@ -88,8 +88,8 @@ describe('mergeTileRuns y bestRuns', () => {
     for (let c = 0; c < RULES.cols; c++) river[key(c, 9)] = 'water';
     const runs = bestRuns(shoreTileCells(snap(river)));
     expect(runs).toEqual([
-      { col: 0, row: 8, cols: 32, rows: 1, key: 'S' },
-      { col: 0, row: 10, cols: 32, rows: 1, key: 'N' },
+      { col: 0, row: 8, cols: RULES.cols, rows: 1, key: 'S' },
+      { col: 0, row: 10, cols: RULES.cols, rows: 1, key: 'N' },
     ]);
   });
 });

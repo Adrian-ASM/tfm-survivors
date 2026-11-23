@@ -138,12 +138,12 @@ describe('Partidas largas (10 min)', () => {
   });
 
   it('Scenario: Partida larga (enemigos dentro del mundo en todos los ticks)', () => {
-    expect(SPAWN_AUDIT.arena).toMatchObject({ width: 1920, height: 1080 });
+    expect(SPAWN_AUDIT.arena).toMatchObject({ width: 3840, height: 2160 });
     expect(audited.v.outside).toBe(0);
     expect(audited.v.maxAlive).toBeLessThanOrEqual(200);
   });
 
-  it('Scenario: Partida larga dentro del mundo (jugador en [16, 1.904] × [16, 1.064])', () => {
+  it('Scenario: Partida larga dentro del mundo (jugador en [16, 3.824] × [16, 2.144])', () => {
     expect(audited.v.playerOutside).toBe(0);
   });
 

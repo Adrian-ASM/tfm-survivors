@@ -23,15 +23,26 @@ export const levelLabel = (level: number): string => `Nv ${String(level)}`;
 export class XpBar {
   private fillWidth = -1;
   private level = -1;
+  private last: ProgressionSnapshot | null = null;
 
   constructor(
     private readonly fill: BarSprite,
     private readonly label: LabelSprite,
-    private readonly width: number,
-    private readonly height: number,
+    private width: number,
+    private height: number,
   ) {}
 
+  /** Nuevo tamaño de barra (0017, RESIZE): invalida la caché del relleno y lo vuelve a pintar. */
+  resize(width: number, height: number): void {
+    if (width === this.width && height === this.height) return;
+    this.width = width;
+    this.height = height;
+    this.fillWidth = -1;
+    if (this.last) this.sync(this.last);
+  }
+
   sync(p: ProgressionSnapshot): void {
+    this.last = p;
     const w = this.width * xpBarFill(p.xp, p.xpToNext);
     if (w !== this.fillWidth) {
       this.fillWidth = w;

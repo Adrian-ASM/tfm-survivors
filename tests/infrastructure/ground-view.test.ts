@@ -88,15 +88,15 @@ function setup(missing: string[] = []) {
 }
 
 describe('Fondo de hierba', () => {
-  it('Scenario: Fondo de hierba en el mundo entero (1.920 × 1.080 desde (0, 0), primero, fijo)', () => {
+  it('Scenario: Fondo de hierba en el mundo entero (3.840 × 2.160 desde (0, 0), primero, fijo)', () => {
     const { log, playfield } = setup();
     const [first] = log;
     expect(first).toMatchObject({
       kind: 'tiles',
       x: 0,
       y: 0,
-      width: 1920,
-      height: 1080,
+      width: 3840,
+      height: 2160,
       originX: 0,
       originY: 0,
       texture: GROUND_FILE,
@@ -115,9 +115,9 @@ describe('Fondo de hierba', () => {
     expect(playfield.layers.counts.ground).toEqual({ visible: 1, placeholder: 0 });
   });
 
-  it('Scenario: Fondo de reserva en el mundo entero (relleno liso (0, 0)–(1.920, 1.080))', () => {
+  it('Scenario: Fondo de reserva en el mundo entero (relleno liso (0, 0)–(3.840, 2.160))', () => {
     const { log, playfield } = setup([GROUND_FILE]);
-    expect(log[0]).toMatchObject({ kind: 'rect', width: 1920, height: 1080, color: 0x2f6b3a });
+    expect(log[0]).toMatchObject({ kind: 'rect', width: 3840, height: 2160, color: 0x2f6b3a });
     expect(playfield.layers.counts.ground).toEqual({ visible: 1, placeholder: 1 });
   });
 });

@@ -49,22 +49,22 @@ describe('Semilla de decoración de la composición', () => {
 });
 
 describe('Sonda del mapa (snapshot del núcleo)', () => {
-  it('Scenario: Sonda coherente con el núcleo (semilla 42: tipos, recuentos y zona (990, 630))', () => {
+  it('Scenario: Sonda coherente con el núcleo (semilla 42: tipos, recuentos y zona (1.950, 1.170))', () => {
     const map = startSeededRun(CONFIG, 42).map;
-    expect([map.cols, map.rows, map.cellSize]).toEqual([32, 18, 60]);
+    expect([map.cols, map.rows, map.cellSize]).toEqual([64, 36, 60]);
     expect(map.cells).toEqual(typesOf(mapForSeed(CONFIG, 42)));
     const sum = Object.values(map.counts).reduce((a, b) => a + b, 0);
-    expect(sum).toBe(576);
+    expect(sum).toBe(2304);
     for (const [type, n] of Object.entries(map.counts)) {
       expect(map.cells.filter((t) => t === type)).toHaveLength(n);
     }
-    expect(map.start).toEqual({ x: 990, y: 630, radius: 180 });
-    expect(map.castle).toEqual({ firstCol: 14, lastCol: 18, firstRow: 6, lastRow: 9 });
+    expect(map.start).toEqual({ x: 1950, y: 1170, radius: 180 });
+    expect(map.castle).toEqual({ firstCol: 30, lastCol: 34, firstRow: 15, lastRow: 18 });
   });
 
-  it('Scenario: Sonda con el mapa vacío (576 grass, 0 castle, huella null, salida (960, 540))', () => {
+  it('Scenario: Sonda con el mapa vacío (2.304 grass, 0 castle, huella null, salida (1.920, 1.080))', () => {
     const map = startSeededRun(CONFIG, 42, 'empty').map;
-    expect([map.counts.grass, map.counts.castle, map.castle]).toEqual([576, 0, null]);
-    expect(map.start).toEqual({ x: 960, y: 540, radius: 180 });
+    expect([map.counts.grass, map.counts.castle, map.castle]).toEqual([2304, 0, null]);
+    expect(map.start).toEqual({ x: 1920, y: 1080, radius: 180 });
   });
 });

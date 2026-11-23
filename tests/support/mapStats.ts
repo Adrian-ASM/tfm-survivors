@@ -147,8 +147,8 @@ export function blockCells(c0: number, c1: number, r0: number, r1: number): stri
   return out;
 }
 
-/** Huella del castillo del contenido por defecto: columnas 14–18 y filas 6–9 (20 celdas). */
-export const FOOTPRINT_CELLS: readonly string[] = blockCells(14, 18, 6, 9);
+/** Huella del castillo del contenido por defecto: columnas 30–34 y filas 15–18 (20 celdas). */
+export const FOOTPRINT_CELLS: readonly string[] = blockCells(30, 34, 15, 18);
 
 /** Celdas `trunk` en la vecindad 3 × 3 de algún puente. */
 export function trunksNextToBridges(map: GameMap): number {

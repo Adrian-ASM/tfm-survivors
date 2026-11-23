@@ -80,7 +80,7 @@ describe('Recolocación de gemas en celdas no caminables (spec xp-gems)', () => 
 
   it('Scenario: Baja dentro del castillo (gema en (990, 330), gana a la (16, 10) por fila)', () => {
     const snap = firstTick(
-      start(castleBlock(), { player: { x: 300, y: 900 }, enemies: [torch(990, 480)] }),
+      start(castleBlock(14, 18, 6, 9), { player: { x: 300, y: 900 }, enemies: [torch(990, 480)] }),
     );
     expect(snap.enemies).toEqual([]);
     expect(at(snap)).toEqual([[990, 330]]);

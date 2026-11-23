@@ -1,5 +1,4 @@
 import { Arena } from '../arena/Arena';
-import { View } from '../arena/View';
 import { EnemyCatalog } from '../enemy/EnemyCatalog';
 import type { EnemyTypeConfig } from '../enemy/EnemyType';
 import { err, invalidConfig, ok, type DomainError, type Result } from '../shared/Result';
@@ -44,7 +43,6 @@ export interface RunConfig {
   readonly arena: {
     readonly width: number;
     readonly height: number;
-    readonly view: { readonly width: number; readonly height: number };
   };
   readonly player: PlayerRules;
   readonly enemies: { readonly types: readonly EnemyTypeConfig[] };
@@ -52,7 +50,7 @@ export interface RunConfig {
     readonly maxAlive: number;
     readonly maxBudget: number;
     readonly spawn: {
-      readonly margin: number;
+      readonly ringRadius: number;
       readonly minDistance: number;
       readonly maxAttempts: number;
     };
@@ -76,7 +74,6 @@ export interface UpgradesConfig {
 /** Reglas de la partida ya construidas como value objects del dominio. */
 export interface RunRules {
   readonly arena: Arena;
-  readonly view: View;
   readonly player: PlayerRules;
   readonly catalog: EnemyCatalog;
   readonly table: WaveTable;
@@ -109,8 +106,6 @@ function checkBudgetCoversCatalog(spawn: SpawnRules, catalog: EnemyCatalog): Dom
 export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> {
   const arena = Arena.create(config.arena.width, config.arena.height);
   if (!arena.ok) return arena;
-  const view = View.create(config.arena.view.width, config.arena.view.height);
-  if (!view.ok) return view;
   const playerError = checkPlayer(config.player, arena.value);
   if (playerError) return err(playerError);
   const catalog = EnemyCatalog.create(config.enemies.types, arena.value);
@@ -118,7 +113,7 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
   const table = WaveTable.create(config.waves.segments, catalog.value);
   if (!table.ok) return table;
   const { maxAlive, maxBudget } = config.waves;
-  const spawn = SpawnRules.create({ maxAlive, maxBudget, ...config.waves.spawn }, view.value);
+  const spawn = SpawnRules.create({ maxAlive, maxBudget, ...config.waves.spawn });
   if (!spawn.ok) return spawn;
   const budgetError = checkBudgetCoversCatalog(spawn.value, catalog.value);
   if (budgetError) return err(budgetError);
@@ -141,7 +136,6 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
   if (!map.ok) return map;
   return ok({
     arena: arena.value,
-    view: view.value,
     player: config.player,
     catalog: catalog.value,
     table: table.value,

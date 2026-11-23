@@ -10,7 +10,6 @@ import type { MapSnapshot } from '../domain/map/MapSnapshot';
 import type { RunSnapshot } from '../domain/run/RunSnapshot';
 import type { DomainError } from '../domain/shared/Result';
 import { repositoryContent } from '../infrastructure/content/loadRunConfig';
-import { MENU_LABELS } from '../infrastructure/dom/menuText';
 import { PausePanel } from '../infrastructure/dom/PausePanel';
 import { GameScene, type SceneCapacity, type Screen } from '../infrastructure/phaser/GameScene';
 import { MenuScene } from '../infrastructure/phaser/MenuScene';
@@ -20,7 +19,11 @@ import { BootScene } from '../infrastructure/phaser/BootScene';
 import type { CameraView, WorldSize } from '../infrastructure/phaser/CameraRig';
 import { ManualStepper } from '../infrastructure/e2e/ManualStepper';
 import { requestStep } from '../infrastructure/e2e/stepRequest';
+import { viewportProbe, type ViewportView } from '../infrastructure/e2e/viewportProbe';
+import { applyUiScale } from '../infrastructure/dom/applyUiScale';
+import { screenFrame } from '../infrastructure/phaser/ui/screenFrame';
 import { assetUrl } from './assetUrl';
+import { scaleConfig } from './scaleConfig';
 import { bootContent } from './contentBoot';
 import { resolveSeed } from '../infrastructure/url/resolveSeed';
 import { resolveAdvance } from '../infrastructure/url/resolveAdvance';
@@ -59,10 +62,9 @@ interface E2EProbe {
   readonly map: (MapSnapshot & { readonly emptyForced: boolean }) | null;
   /** Tamaño del mundo, constante desde la carga. */
   readonly world: WorldSize;
+  /** Ventana y escala de UI del último frame (0017); también en el menú. */
+  readonly viewport: ViewportView | null;
 }
-
-/** Nombre visible del juego (change 0012): una sola fuente para el menú y el documento. */
-const TITLE = MENU_LABELS.title;
 
 function showContentError(root: HTMLElement, error: DomainError): void {
   const box = document.createElement('div');
@@ -135,6 +137,7 @@ function bootstrap(): void {
   // Se conecta a la escena al crearla; leerlo antes da null (sin partida).
   let cameraView = (): CameraView | null => null;
   let mapView = (): MapSnapshot | null => null;
+  let viewportView = (): ViewportView | null => null;
   const probe: E2EProbe = {
     seed,
     speed: advance.speed,
@@ -161,6 +164,9 @@ function bootstrap(): void {
       return map ? { ...map, emptyForced: mapMode === 'empty' } : null;
     },
     world,
+    get viewport() {
+      return viewportView();
+    },
   };
   const started = (s: number): void => {
     probe.seed = s;
@@ -198,6 +204,7 @@ function bootstrap(): void {
     // Variedad de árboles de la partida en curso (0016): `probe.seed` ya es la de esa partida.
     decorSeed: () => decorSeedOf(probe.seed),
     progress: progress.scene,
+    resultsLines: progress.resultsLines,
     pause,
     // Snapshot y sprites en la misma llamada: cualquier lectura ve un par coherente (design D7).
     onRender: (snapshot, results, sprites) => {
@@ -212,16 +219,13 @@ function bootstrap(): void {
   });
   cameraView = () => game.cameraView();
   mapView = () => game.mapView();
-  const menu = new MenuScene(
-    {
-      ...progress.menu,
-      show: () => {
-        progress.menu.show();
-        onScreen('menu');
-      },
+  const menu = new MenuScene({
+    ...progress.menu,
+    show: () => {
+      progress.menu.show();
+      onScreen('menu');
     },
-    TITLE,
-  );
+  });
 
   const boot = new BootScene({
     appearance,
@@ -229,13 +233,12 @@ function bootstrap(): void {
     e2e,
   });
 
-  // El canvas tiene el tamaño de la vista (unidades de mundo): una sola fuente para lo que se ve.
-  const { view } = config.value.arena;
+  // Lienzo a ventana completa con tope (0017, ADR-0014): RESIZE recortado a `maxView`, que no
+  // llega al núcleo. La vista mide lo que mide el lienzo (zoom 1).
   const phaserGame = new Phaser.Game({
     type: Phaser.AUTO,
     parent: root,
-    width: view.width,
-    height: view.height,
+    scale: { ...scaleConfig(booted.maxView), parent: root },
     backgroundColor: BACKGROUND,
     // Imágenes con <img> (sin XHR ni blob:): la CSP de index.html no cambia (design D2).
     loader: { imageLoadType: 'HTMLImageElement' },
@@ -243,6 +246,13 @@ function bootstrap(): void {
     // la partida (arranque de antes, ADR-0011).
     scene: [boot, menu, game],
   });
+  // Una sola escucha, que vive lo que el juego: escala de UI de los paneles DOM (design D6).
+  const onCanvas = (size: { width: number; height: number }): void => {
+    applyUiScale(root.style, screenFrame(size.width, size.height));
+  };
+  onCanvas(phaserGame.scale.gameSize);
+  viewportView = () => viewportProbe(phaserGame.scale.parentSize, phaserGame.scale.gameSize);
+  phaserGame.scale.on(Phaser.Scale.Events.RESIZE, onCanvas);
   // `step(n)` resuelve con el frame ya pintado: POST_RENDER llega tras pintar todas las escenas,
   // una vez por frame, haya o no partida (Phaser 4.2.1, Game.step; design 0014 §3.6).
   if (stepper) {

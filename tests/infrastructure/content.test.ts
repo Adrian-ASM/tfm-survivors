@@ -22,16 +22,11 @@ import { RUN_DURATION_MUST_BE_INTEGER } from '../../src/domain/run/RunDuration';
 import { CELL_SIZE_BELOW_PLAYER } from '../../src/domain/map/MapRules';
 import { loadRunConfig, parseRunConfig } from '../../src/infrastructure/content/loadRunConfig';
 import {
+  SPAWN_RING_INSIDE_MAX_VIEW,
   WORLD_LOWER_THAN_VIEW,
   WORLD_NARROWER_THAN_VIEW,
 } from '../../src/infrastructure/content/schemas';
-import {
-  SCENARIO_ARENA,
-  aDefaultConfig,
-  aRunConfig,
-  rawContent,
-  type RawContent,
-} from '../support/builders';
+import { aDefaultConfig, aRunConfig, rawContent, type RawContent } from '../support/builders';
 
 type RawMap = RawContent['map'];
 import { StubRandom } from '../support/random';
@@ -42,10 +37,11 @@ function failure(raw: RawContent): { field: string; message: string } {
   return r.error;
 }
 
-/** Contenido crudo con la arena explícita de escenario 960 × 540 (casos de radio de las specs). */
-function inScenarioArena(): RawContent {
+/** Contenido crudo con un mundo explícito, tope 2.560 × 1.440 y anillo 1.500 explícitos (0017). */
+function withArena(width: number, height: number): RawContent {
   const raw = rawContent();
-  raw.arena = structuredClone(SCENARIO_ARENA);
+  raw.arena = { width, height, maxView: { width: 2560, height: 1440 } };
+  raw.waves.spawn.ringRadius = 1500;
   return raw;
 }
 
@@ -245,9 +241,9 @@ describe('Contenido del jugador validado', () => {
     expect(failure(raw).message).toBe(SPEED_MUST_BE_POSITIVE);
   });
 
-  it('Radio que no cabe en la arena (jugador)', () => {
-    const raw = inScenarioArena();
-    raw.player.radius = 300;
+  it('Scenario: Radio que no cabe en la arena (jugador, 1.081 en 3.840 × 2.160)', () => {
+    const raw = rawContent();
+    raw.player.radius = 1081;
     expect(failure(raw).field).toBe('player.radius');
   });
 
@@ -287,9 +283,9 @@ describe('Contenido de enemigos y oleadas validado · forma y rangos (zod)', () 
   it.each([
     ['enemies.types.0.radius', (r: RawContent) => (r.enemies.types[0].radius = 0)],
     ['enemies.types.0.cost', (r: RawContent) => (r.enemies.types[0].cost = -1)],
-    ['arena.view.width', (r: RawContent) => (r.arena.view.width = 0)],
-    ['arena.view.height', (r: RawContent) => (r.arena.view.height = -2)],
-    ['waves.spawn.margin', (r: RawContent) => (r.waves.spawn.margin = -1)],
+    ['arena.maxView.width', (r: RawContent) => (r.arena.maxView.width = 0)],
+    ['arena.maxView.height', (r: RawContent) => (r.arena.maxView.height = -2)],
+    ['waves.spawn.ringRadius', (r: RawContent) => (r.waves.spawn.ringRadius = 0)],
     ['waves.spawn.minDistance', (r: RawContent) => (r.waves.spawn.minDistance = -1)],
     ['waves.spawn.maxAttempts', (r: RawContent) => (r.waves.spawn.maxAttempts = 1.5)],
     [
@@ -304,34 +300,72 @@ describe('Contenido de enemigos y oleadas validado · forma y rangos (zod)', () 
     expect(failure(raw).field).toBe(field);
   });
 
-  // Spec world-camera (0013), "Mundo y vista en el contenido": el mundo es al menos la vista.
-  it('Scenario: Mundo más estrecho que la vista (959 × 1.080)', () => {
-    const raw = rawContent();
-    raw.arena.width = 959;
-    expect(failure(raw)).toMatchObject({ field: 'arena.width', message: WORLD_NARROWER_THAN_VIEW });
+  // Spec world-camera (0017), "Tamaño del mundo y de la vista validados": tope de vista explícito.
+  it('Scenario: Mundo más estrecho que el tope (2.559 × 2.160, tope 2.560 × 1.440)', () => {
+    expect(failure(withArena(2559, 2160))).toMatchObject({
+      field: 'arena.width',
+      message: WORLD_NARROWER_THAN_VIEW,
+    });
   });
 
-  it('Scenario: Mundo más bajo que la vista (1.920 × 539)', () => {
-    const raw = rawContent();
-    raw.arena.height = 539;
-    expect(failure(raw)).toMatchObject({ field: 'arena.height', message: WORLD_LOWER_THAN_VIEW });
+  it('Scenario: Mundo más bajo que el tope (3.840 × 1.439, tope 2.560 × 1.440)', () => {
+    expect(failure(withArena(3840, 1439))).toMatchObject({
+      field: 'arena.height',
+      message: WORLD_LOWER_THAN_VIEW,
+    });
   });
 
-  it('Scenario: Mundo igual a la vista (960 × 540)', () => {
-    const raw = rawContent();
-    raw.arena.width = 960;
-    raw.arena.height = 540;
-    expect(parseRunConfig(raw).ok).toBe(true);
+  it('Scenario: Mundo igual al tope (2.560 × 1.440)', () => {
+    expect(parseRunConfig(withArena(2560, 1440)).ok).toBe(true);
   });
 
   it.each([
     ['arena.width', (r: RawContent) => (r.arena.width = 0)],
     ['arena.height', (r: RawContent) => (r.arena.height = -1)],
-    ['arena.view.width', (r: RawContent) => (r.arena.view.width = 0)],
+    ['arena.maxView.width', (r: RawContent) => (r.arena.maxView.width = 0)],
   ])('Scenario: Dimensiones no positivas (%s)', (field, mutate) => {
-    const raw = rawContent();
+    const raw = withArena(3840, 2160);
     mutate(raw);
     expect(failure(raw).field).toBe(field);
+  });
+
+  it('Scenario: Vista fija heredada (view extra → clave desconocida en arena.view)', () => {
+    const raw = rawContent();
+    Object.assign(raw.arena, { view: { width: 960, height: 540 } });
+    expect(failure(raw).field).toBe('arena.view');
+  });
+
+  // Spec enemy-spawning (0017): el anillo queda fuera de cualquier vista (> media diagonal del tope).
+  it.each([0, -1, 1468, 1468.6])(
+    'Scenario: Radio del anillo fuera de rango (ringRadius %s, tope 2.560 × 1.440)',
+    (ringRadius) => {
+      const raw = withArena(3840, 2160);
+      raw.waves.spawn.ringRadius = ringRadius;
+      expect(failure(raw).field).toBe('waves.spawn.ringRadius');
+    },
+  );
+
+  it('Scenario: Radio del anillo fuera de rango (sin ringRadius)', () => {
+    const raw = without(withArena(3840, 2160), (r) => r.waves.spawn, 'ringRadius');
+    expect(failure(raw).field).toBe('waves.spawn.ringRadius');
+  });
+
+  it('el anillo dentro del tope da SPAWN_RING_INSIDE_MAX_VIEW', () => {
+    const raw = withArena(3840, 2160);
+    raw.waves.spawn.ringRadius = 1468.6;
+    expect(failure(raw).message).toBe(SPAWN_RING_INSIDE_MAX_VIEW);
+  });
+
+  it('Scenario: Radio del anillo en el límite (1.468,61)', () => {
+    const raw = withArena(3840, 2160);
+    raw.waves.spawn.ringRadius = 1468.61;
+    expect(parseRunConfig(raw).ok).toBe(true);
+  });
+
+  it('Scenario: Margen heredado ("margin": 32 en spawn)', () => {
+    const raw = withArena(3840, 2160);
+    Object.assign(raw.waves.spawn, { margin: 32 });
+    expect(failure(raw).field).toBe('waves.spawn.margin');
   });
 
   it('rechaza un tramo vacío de la tabla', () => {
@@ -340,13 +374,13 @@ describe('Contenido de enemigos y oleadas validado · forma y rangos (zod)', () 
     expect(failure(raw).field).toBe('waves.segments');
   });
 
-  it('rechaza campos desconocidos en enemigos, oleadas y vista', () => {
+  it('rechaza campos desconocidos en enemigos, oleadas y tope de vista', () => {
     const inType = rawContent();
     Object.assign(inType.enemies.types[0], { hp: 3 });
     const inSpawn = rawContent();
     Object.assign(inSpawn.waves.spawn, { jitter: 1 });
     const inView = rawContent();
-    Object.assign(inView.arena.view, { zoom: 2 });
+    Object.assign(inView.arena.maxView, { zoom: 2 });
     expect([
       parseRunConfig(inType).ok,
       parseRunConfig(inSpawn).ok,
@@ -379,15 +413,15 @@ describe('Contenido de enemigos y oleadas validado · reglas cruzadas (dominio d
     expect(e.message).toContain(legacy);
   });
 
-  it('Radio que no cabe en la arena', () => {
-    const raw = inScenarioArena();
-    raw.enemies.types[0].radius = 300;
+  it('Scenario: Radio que no cabe en la arena (1.081 en 3.840 × 2.160)', () => {
+    const raw = rawContent();
+    raw.enemies.types[0].radius = 1081;
     expect(failure(raw).field).toBe('enemies.types.0.radius');
   });
 
-  it('Radio en el límite exacto', () => {
-    const raw = inScenarioArena();
-    raw.enemies.types[0].radius = 270;
+  it('Scenario: Radio en el límite exacto (1.080 en 3.840 × 2.160)', () => {
+    const raw = rawContent();
+    raw.enemies.types[0].radius = 1080;
     expect(parseRunConfig(raw).ok).toBe(true);
   });
 
@@ -478,9 +512,21 @@ describe('Contenido por defecto del repositorio', () => {
     }
   });
 
-  // Spec world-camera (0013): el mundo y la vista son medidas distintas del contenido.
-  it('Scenario: Contenido por defecto (mundo 1.920 × 1.080 y vista 960 × 540)', () => {
-    expect(config?.arena).toEqual({ width: 1920, height: 1080, view: { width: 960, height: 540 } });
+  // Spec world-camera (0017): el núcleo recibe el mundo, pero no el tope de vista ni la ventana.
+  it('Scenario: Contenido por defecto (el núcleo recibe el mundo de 3.840 × 2.160, sin vista)', () => {
+    expect(config?.arena).toEqual({ width: 3840, height: 2160 });
+    expect(config?.waves.spawn.ringRadius).toBe(1500);
+  });
+
+  // Spec enemy-spawning (0017): "Radio del anillo por defecto", sin tamaño de vista ni de ventana.
+  it('Scenario: Radio del anillo por defecto (spawn sin tamaño de vista; reglas sin view)', () => {
+    expect(Object.keys(config?.waves.spawn ?? {}).sort()).toEqual([
+      'maxAttempts',
+      'minDistance',
+      'ringRadius',
+    ]);
+    const rules = config ? buildRunRules(config) : null;
+    expect(rules?.ok && 'view' in rules.value).toBe(false);
   });
 
   it('Scenario: Catálogo de tipos de enemigo (ids goblin con los stats heredados, mismo orden)', () => {
@@ -562,9 +608,9 @@ describe('Contenido del mapa validado', () => {
     });
   });
 
-  it('el dominio recibe las reglas del mapa: rejilla de 32 × 18', () => {
+  it('el dominio recibe las reglas del mapa: rejilla de 64 × 36', () => {
     const rules = loaded.ok ? buildRunRules(loaded.value) : null;
-    expect(rules?.ok && [rules.value.map.cols, rules.value.map.rows]).toEqual([32, 18]);
+    expect(rules?.ok && [rules.value.map.cols, rules.value.map.rows]).toEqual([64, 36]);
   });
 
   it('Scenario: Celda en el límite del radio del jugador (32 carga, 31 falla con cellSize)', () => {
@@ -584,7 +630,7 @@ describe('Contenido del mapa validado', () => {
     ['cellSize', (m: RawMap) => (m.cellSize = 0)],
     ['cellSize', (m: RawMap) => (m.cellSize = 60.5)],
     ['startRadius', (m: RawMap) => (m.startRadius = 0)],
-    ['startRadius', (m: RawMap) => (m.startRadius = 541)],
+    ['startRadius', (m: RawMap) => (m.startRadius = 1081)],
     ['trunkDensity', (m: RawMap) => (m.trunkDensity = -0.01)],
     ['trunkDensity', (m: RawMap) => (m.trunkDensity = 0.31)],
     ['trunkPatch', (m: RawMap) => (m.trunkPatch = { min: 4, max: 3 })],
@@ -599,8 +645,8 @@ describe('Contenido del mapa validado', () => {
     ['castle.cols', (m: RawMap) => (m.castle = { cols: 0, rows: 4 })],
     ['castle.rows', (m: RawMap) => (m.castle = { cols: 5, rows: 0 })],
     ['castle.cols', (m: RawMap) => (m.castle = { cols: 5.5, rows: 4 })],
-    ['castle', (m: RawMap) => (m.castle = { cols: 17, rows: 4 })],
-    ['castle', (m: RawMap) => (m.castle = { cols: 5, rows: 10 })],
+    ['castle', (m: RawMap) => (m.castle = { cols: 33, rows: 4 })],
+    ['castle', (m: RawMap) => (m.castle = { cols: 5, rows: 19 })],
   ])('Scenario: Valores fuera de rango (%s)', (field, mutate) => {
     const raw = rawContent();
     mutate(raw.map);
@@ -608,14 +654,14 @@ describe('Contenido del mapa validado', () => {
   });
 
   it.each([
-    ['startRadius 540', (m: RawMap) => (m.startRadius = 540)],
+    ['startRadius 1.080', (m: RawMap) => (m.startRadius = 1080)],
     ['trunkDensity 0', (m: RawMap) => (m.trunkDensity = 0)],
     ['trunkDensity 0,3', (m: RawMap) => (m.trunkDensity = 0.3)],
     ['rivers 0', (m: RawMap) => (m.rivers = 0)],
     ['rivers 2', (m: RawMap) => (m.rivers = 2)],
     ['trunkPatch { 1, 1 }', (m: RawMap) => (m.trunkPatch = { min: 1, max: 1 })],
     ['castle { 1, 1 }', (m: RawMap) => (m.castle = { cols: 1, rows: 1 })],
-    ['castle { 16, 9 }', (m: RawMap) => (m.castle = { cols: 16, rows: 9 })],
+    ['castle { 32, 18 }', (m: RawMap) => (m.castle = { cols: 32, rows: 18 })],
   ])('Scenario: Límites válidos (%s)', (_name, mutate) => {
     const raw = rawContent();
     mutate(raw.map);

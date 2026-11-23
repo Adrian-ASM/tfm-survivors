@@ -56,6 +56,15 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   alta (copas y tejado) sobre ellas y bajo el HUD; reserva de colores por elemento. Sonda `sprites.mapArt`
   (`painted`/`fallback` por elemento y `objects`), `sprites.cells.castle` y `map.castle`. `player.speed` 215:
   **27/50** victorias y 0 quietos; ≤ 300 objetos del mapa en 42 y 123 (test sin navegador en `verify`).
+  Vista a ventana completa (change 0017, ADR-0014/0015/0016): lienzo `Scale.RESIZE` en `#game` con tope
+  `arena.maxView` 2.560 × 1.440 (`scaleConfig`, `min`/`snap` 1 × 1, centrado por CSS) y zoom 1; el tope no llega
+  al núcleo (`parseContent` → `{ config, maxView }`, `View` borrada). Mundo **3.840 × 2.160** (rejilla 64 × 36,
+  castillo 30–34 × 15–18, salida (1.950, 1.170)). Anillo de aparición de contenido `waves.spawn.ringRadius` 1.500
+  (zod exige > media diagonal del tope). Tabla de oleadas 1,2/2,4/2,4/3,0/4,2: **25/50** victorias, 0 quietos,
+  primera oferta (s7) en el tick 1.527; ≤ 1.000 objetos del mapa. HUD y cartas con layout puro
+  (`ScreenFrame`, escala de UI ×1/×2, `hudLayout`/`cardLayout`) recolocados por `watchScreen` en cada RESIZE;
+  menú (título en `h1`), pausa, diálogo y resultados (5 líneas DOM) centrados y escalados con `--ui-scale`.
+  Sonda E2E `window.__sprint.viewport` (ventana y `uiScale`, también en el menú); Playwright a 1.280 × 720.
   Fuente de verdad del comportamiento: `openspec/specs/`.
 
 ## 2. Comandos

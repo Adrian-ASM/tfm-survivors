@@ -15,6 +15,7 @@ import { LocalStorageProgressRepository } from '../infrastructure/progress/Local
 import { MenuProgress } from '../infrastructure/progress/MenuProgress';
 import { ResultsProgress } from '../infrastructure/progress/ResultsProgress';
 import { SystemClock } from '../infrastructure/time/SystemClock';
+import type { ResultsTexts } from '../infrastructure/phaser/ResultsOverlay';
 
 /** Progreso en uso y lo que muestra el panel (probe de E2E; `shown` null si está oculto). */
 export interface ProgressProbe {
@@ -27,6 +28,8 @@ export interface ProgressProbe {
 
 export interface ProgressWiring {
   readonly scene: SceneProgress;
+  /** Líneas de resultados del panel DOM (design 0017 D11). */
+  readonly resultsLines: ResultsTexts;
   readonly menu: MenuView;
   probe(): ProgressProbe;
 }
@@ -96,6 +99,7 @@ export function wireProgress(root: HTMLElement, seedOf: () => number): ProgressW
   });
 
   return {
+    resultsLines: panel.lines.texts,
     menu: {
       show: () => {
         menuProgress.reset();

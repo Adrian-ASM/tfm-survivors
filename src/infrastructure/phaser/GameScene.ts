@@ -14,10 +14,13 @@ import { PauseKey } from './PauseKey';
 import type { RingSprite } from './PulseLayer';
 import { RestartKey } from './RestartKey';
 import { GAME_SCENE_KEY, MENU_SCENE_KEY } from './sceneKeys';
-import type { ResultsOverlay } from './ResultsOverlay';
+import type { ResultsOverlay, ResultsTexts } from './ResultsOverlay';
 import type { ResultsView } from './resultsText';
 import type { RunLauncher } from './RunLauncher';
 import { createHud, createResultsOverlay, createUpgradeOverlay } from './sceneWidgets';
+import { screenFrame, type ScreenFrame } from './ui/screenFrame';
+import { hudLayout, veilLayout } from './ui/uiLayout';
+import { watchScreen } from './ui/watchScreen';
 import type { UpgradeOverlay } from './UpgradeOverlay';
 import type { Appearance } from '../content/appearanceSchema';
 import { resolveLooks } from './art/looks';
@@ -94,6 +97,8 @@ export interface GameSceneDeps {
    */
   readonly decorSeed: () => number;
   readonly progress: SceneProgress;
+  /** Las 5 líneas de resultados, en el DOM con el panel (design 0017 D11). */
+  readonly resultsLines: ResultsTexts;
   readonly pause: PauseView;
   readonly onRender?: OnRender;
   readonly onScreen?: (screen: Screen) => void;
@@ -123,6 +128,11 @@ interface Widgets {
   readonly hud: Hud;
   readonly offer: UpgradeOverlay;
   readonly results: ResultsOverlay;
+  /** Velo de resultados (Phaser): se recoloca al redimensionar. */
+  readonly resultsVeil: {
+    setPosition(x: number, y: number): unknown;
+    setSize(w: number, h: number): unknown;
+  };
   readonly move: KeyboardInput;
   readonly choice: ChoiceKeys;
   readonly restart: RestartKey;
@@ -191,20 +201,42 @@ export class GameScene extends Phaser.Scene {
     // En cada entrada: Volver al menú destruye la cámara de la escena y la recrea (design D2).
     this.rig = new CameraRig(this.cameras.main, this.deps.world);
     const snapshot = started.tickRun.snapshot();
+    const frame = screenFrame(this.scale.width, this.scale.height);
+    const results = createResultsOverlay(this, frame, this.deps.resultsLines);
     this.w = {
       mapArt,
       mapLooks,
       layers,
-      hud: createHud(this),
-      offer: createUpgradeOverlay(this),
-      results: createResultsOverlay(this),
+      hud: createHud(this, frame),
+      offer: createUpgradeOverlay(this, frame),
+      results: results.overlay,
+      resultsVeil: results.veil,
       move: new KeyboardInput(keyboard),
       choice: new ChoiceKeys(keyboard),
       restart: new RestartKey(keyboard),
       esc: new PauseKey(keyboard),
     };
+    // Al entrar y en cada RESIZE (0017, design D6); la escucha se quita en SHUTDOWN.
+    watchScreen(this.scale, this.events, (f) => {
+      this.relayout(f);
+    });
     this.render(snapshot);
     this.showPause(false);
+  }
+
+  /**
+   * Recoloca la presentación al tamaño nuevo del lienzo: cámara, HUD, cartas y velo. No toca la
+   * partida, la pausa ni el mapa (redimensionar no ejecuta ni salta ticks; spec world-camera).
+   */
+  private relayout(frame: ScreenFrame): void {
+    const w = this.w;
+    if (!w) return;
+    this.rig?.resize(frame);
+    w.hud.relayout(hudLayout(frame));
+    w.offer.relayout(frame);
+    const v = veilLayout(frame);
+    w.resultsVeil.setPosition(v.x, v.y);
+    w.resultsVeil.setSize(v.width, v.height);
   }
 
   override update(_time: number, deltaMs: number): void {

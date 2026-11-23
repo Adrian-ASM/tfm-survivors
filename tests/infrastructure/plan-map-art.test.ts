@@ -57,17 +57,17 @@ describe('planMapArt · arte en su sitio', () => {
     expect(bridge?.origin).toEqual({ x: 0.5, y: 0.5 });
   });
 
-  it('Scenario: Castillo sobre su huella (semilla 42: origen (990, 600), (840, 360)–(1.140, 600))', () => {
+  it('Scenario: Castillo sobre su huella (semilla 42: origen (1.950, 1.140), (1.800, 900)–(2.100, 1.140))', () => {
     const plan = planFor(toMapSnapshot(mapForSeed(aDefaultConfig(), 42)));
     const [facade] = spritesOf(plan, 'castle');
     if (!facade) throw new Error('sin castillo');
-    near(facade.x, 990);
-    near(facade.y, 600);
+    near(facade.x, 1950);
+    near(facade.y, 1140);
     const { frameWidth, frameHeight } = APPEARANCE.map.castle.sheet;
-    near(facade.x - facade.origin.x * frameWidth * facade.scale, 840);
-    near(facade.x + (1 - facade.origin.x) * frameWidth * facade.scale, 1140);
-    near(worldY(facade, frameHeight, 0), 360);
-    near(worldY(facade, frameHeight, frameHeight), 600);
+    near(facade.x - facade.origin.x * frameWidth * facade.scale, 1800);
+    near(facade.x + (1 - facade.origin.x) * frameWidth * facade.scale, 2100);
+    near(worldY(facade, frameHeight, 0), 900);
+    near(worldY(facade, frameHeight, frameHeight), 1140);
     expect(spritesOf(planFor(snap({})), 'castle')).toEqual([]);
   });
 
@@ -90,13 +90,13 @@ describe('planMapArt · arte en su sitio', () => {
     ]);
   });
 
-  it('Scenario: Jugador ante la puerta (fachada desde y = 540 abajo, tejado arriba)', () => {
+  it('Scenario: Jugador ante la puerta (fachada desde y = 1.080 abajo, tejado arriba)', () => {
     const plan = planFor(toMapSnapshot(mapForSeed(aDefaultConfig(), 42)));
     const [facade] = spritesOf(plan, 'castle');
     const [roof] = spritesOf(plan, 'roof');
     if (!facade?.crop || !roof?.crop) throw new Error('sin recortes');
-    near(worldY(facade, CASTLE_H, facade.crop.y), 540);
-    near(worldY(roof, CASTLE_H, roof.crop.height), 540);
+    near(worldY(facade, CASTLE_H, facade.crop.y), 1080);
+    near(worldY(roof, CASTLE_H, roof.crop.height), 1080);
     expect(plan.low).toContain(facade);
     expect(plan.high).toEqual(expect.arrayContaining([roof]));
   });
@@ -106,7 +106,7 @@ describe('planMapArt · arte en su sitio', () => {
     for (let c = 0; c < RULES.cols; c++) river[`${String(c)},9`] = 'water';
     const plan = planFor(snap({ ...river, '5,8': 'trunk' }));
     const foam = spritesOf(plan, 'foam');
-    expect(foam).toHaveLength(64);
+    expect(foam).toHaveLength(2 * RULES.cols);
     const kinds = plan.low.map((d) => (d.kind === 'sprite' ? d.role : d.kind));
     const lastFoam = kinds.lastIndexOf('foam');
     const shoreFile = APPEARANCE.map.shore.sheet.file;

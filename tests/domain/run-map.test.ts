@@ -39,27 +39,27 @@ function start(
 }
 
 describe('Mapa de la partida (spec procedural-map)', () => {
-  it('Scenario: Rejilla por defecto (partida: 32 × 18 celdas de 60 px)', () => {
+  it('Scenario: Rejilla por defecto (partida: 64 × 36 celdas de 60 px)', () => {
     const map = start(OPEN_TERRAIN).map;
-    expect([map.cols, map.rows, map.cellSize, map.cells.length]).toEqual([32, 18, 60, 576]);
+    expect([map.cols, map.rows, map.cellSize, map.cells.length]).toEqual([64, 36, 60, 2304]);
   });
 
-  it('Scenario: Partida con mapa vacío (semilla 7: 576 celdas grass)', () => {
+  it('Scenario: Partida con mapa vacío (semilla 7: 2.304 celdas grass)', () => {
     const map = start(OPEN_TERRAIN).map;
-    expect(map.counts).toEqual({ grass: 576, trunk: 0, water: 0, bridge: 0, castle: 0 });
-    expect(map.start).toEqual({ x: 960, y: 540, radius: 180 });
+    expect(map.counts).toEqual({ grass: 2304, trunk: 0, water: 0, bridge: 0, castle: 0 });
+    expect(map.start).toEqual({ x: 1920, y: 1080, radius: 180 });
   });
 
   it('el mapa generado de la partida es el de generateMap con la semilla derivada', () => {
     const map = start(generated(42)).map;
     expect(map.cells).toEqual(typesOf(mapForSeed(CONFIG, 42)));
     const total = Object.values(map.counts).reduce((a, b) => a + b, 0);
-    expect(total).toBe(576);
+    expect(total).toBe(2304);
     expect(map.counts.trunk).toBe(map.cells.filter((t) => t === 'trunk').length);
   });
 
-  it('Scenario: Mapa de dimensiones incorrectas (30 × 17: la partida no se crea)', () => {
-    const cells = cellsWith(mapRules(undefined, 1800, 1020), {});
+  it('Scenario: Mapa de dimensiones incorrectas (32 × 18, la rejilla anterior: la partida no se crea)', () => {
+    const cells = cellsWith(mapRules(undefined, 1920, 1080), {});
     const r = Run.start(CONFIG, new Mulberry32RandomGenerator(7), {}, { kind: 'cells', cells });
     expect(!r.ok && r.error.message).toContain('dimensiones');
     const viaUseCase = new StartRun().execute(
@@ -127,20 +127,20 @@ describe('Mapa de la partida (spec procedural-map)', () => {
 describe('Salida por mapa (0016)', () => {
   const cellsOf = (layout: Layout) => cellsWith(RULES, layout);
 
-  it('Scenario: Partida con mapa vacío (576 grass, ningún castle, salida (960, 540))', () => {
+  it('Scenario: Partida con mapa vacío (2.304 grass, ningún castle, salida (1.920, 1.080))', () => {
     const map = start(OPEN_TERRAIN).map;
-    expect(map.counts.grass).toBe(576);
+    expect(map.counts.grass).toBe(2304);
     expect(map.counts.castle).toBe(0);
     expect(map.castle).toBeNull();
-    expect([map.start.x, map.start.y]).toEqual([960, 540]);
+    expect([map.start.x, map.start.y]).toEqual([1920, 1080]);
   });
 
-  it('Scenario: Mapa explícito con salida declarada (vacío con salida (990, 630))', () => {
+  it('Scenario: Mapa explícito con salida declarada (vacío con salida (1.950, 1.170))', () => {
     const run = start(emptyWithExit(CONFIG));
-    expect(run.map.counts.grass).toBe(576);
-    expect(run.map.start).toEqual({ x: 990, y: 630, radius: 180 });
+    expect(run.map.counts.grass).toBe(2304);
+    expect(run.map.start).toEqual({ x: 1950, y: 1170, radius: 180 });
     expect(run.map.castle).toBeNull();
-    expect([run.snapshot().player.x, run.snapshot().player.y]).toEqual([990, 630]);
+    expect([run.snapshot().player.x, run.snapshot().player.y]).toEqual([1950, 1170]);
   });
 
   it.each([
@@ -180,30 +180,30 @@ describe('Salida por mapa (0016)', () => {
       {},
       {
         kind: 'open',
-        start: { x: 1910, y: 540 },
+        start: { x: 3830, y: 1080 },
       },
     );
     expect(!r.ok && r.error.field).toBe('map.start');
   });
 
-  it('Scenario: Mapa explícito con celdas de castillo ((3, 3) castle, salida (960, 540))', () => {
+  it('Scenario: Mapa explícito con celdas de castillo ((3, 3) castle, salida (1.920, 1.080))', () => {
     const map = start({ kind: 'cells', cells: cellsOf({ '3,3': 'castle' }) }).map;
     expect(map.counts.castle).toBe(1);
-    expect(map.cells[3 * 32 + 3]).toBe('castle');
+    expect(map.cells[3 * 64 + 3]).toBe('castle');
     expect(map.castle).toBeNull();
-    expect([map.start.x, map.start.y]).toEqual([960, 540]);
+    expect([map.start.x, map.start.y]).toEqual([1920, 1080]);
   });
 
-  it('Scenario: Partida nueva con el mapa vacío (semilla 42: jugador en (960, 540))', () => {
+  it('Scenario: Partida nueva con el mapa vacío (semilla 42: jugador en (1.920, 1.080))', () => {
     const player = startSeededRun(CONFIG, 42, 'empty').snapshot().player;
-    expect([player.x, player.y]).toEqual([960, 540]);
+    expect([player.x, player.y]).toEqual([1920, 1080]);
   });
 
   it('Scenario: Mapa explícito con y sin salida declarada (tronco (3, 3))', () => {
     const cells = cellsOf({ '3,3': 'trunk' });
     const without = start({ kind: 'cells', cells }).snapshot().player;
     const declared = start({ kind: 'cells', cells, start: { x: 300, y: 900 } }).snapshot().player;
-    expect([without.x, without.y]).toEqual([960, 540]);
+    expect([without.x, without.y]).toEqual([1920, 1080]);
     expect([declared.x, declared.y]).toEqual([300, 900]);
   });
 

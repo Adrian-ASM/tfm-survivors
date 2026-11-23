@@ -43,7 +43,9 @@ describe('Determinismo con progresión y elecciones', () => {
     const a = snapshots(ra, inputs);
     const b = snapshots(rb, inputs);
     expect(Object.keys(a.at(-1) ?? {})).toEqual(expect.arrayContaining(['outcome', 'kills']));
-    expect(a.at(-1)?.kills).toBeGreaterThan(0);
+    // Con el anillo de 1.500 (0017) la primera baja llega tras el tick 600: la comparación tiene
+    // sentido porque hay enemigos en la ventana.
+    expect(a.some((snap) => snap.enemies.length > 0)).toBe(true);
     for (let i = 0; i < inputs.length; i++) expect(a[i]).toStrictEqual(b[i]);
     expect(ra.map.counts.trunk).toBeGreaterThan(0);
     expect(rb.map.cells).toEqual(ra.map.cells);

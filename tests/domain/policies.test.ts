@@ -56,7 +56,7 @@ const directionOf = (input: PlayerInput) => ({ x: input.direction.x, y: input.di
 
 // Política de movimiento del bot de referencia (medición de ganabilidad de 0006, spec de 0010).
 // Desde 0013 el bot se construye con la configuración de la partida y huye de sus paredes.
-describe('fleeInput (movimiento del bot de referencia, mundo 1.920 × 1.080)', () => {
+describe('fleeInput (movimiento del bot de referencia, mundo 3.840 × 2.160)', () => {
   /** Input del bot por defecto con el jugador en `player` (o en el centro) y los enemigos dados. */
   const botInput = (setup: RunSetup = {}): PlayerInput => {
     const config = aDefaultConfig();
@@ -67,37 +67,37 @@ describe('fleeInput (movimiento del bot de referencia, mundo 1.920 × 1.080)', (
     enemies: [{ type: 'goblin-torch', x, y }],
   });
 
-  it('Scenario: Huida sin amenazas (jugador en (960, 540))', () => {
+  it('Scenario: Huida sin amenazas (jugador en (1.920, 1.080))', () => {
     const config = aDefaultConfig();
     const run = startRun(config);
     const snapshot = run.snapshot();
 
-    expect([snapshot.player.x, snapshot.player.y]).toEqual([960, 540]);
+    expect([snapshot.player.x, snapshot.player.y]).toEqual([1920, 1080]);
     expect(referenceBot(config, run.map).input(snapshot)).toBe(PlayerInput.NONE);
   });
 
   it('Scenario: Huida de un enemigo (a 100 px a la derecha)', () => {
-    expect(directionOf(botInput(torchAt(1060, 540)))).toEqual({ x: -1, y: 0 });
+    expect(directionOf(botInput(torchAt(2020, 1080)))).toEqual({ x: -1, y: 0 });
   });
 
   it('Scenario: Enemigo fuera de rango (a 150 px exactos)', () => {
-    expect(botInput(torchAt(1110, 540))).toBe(PlayerInput.NONE);
+    expect(botInput(torchAt(2070, 1080))).toBe(PlayerInput.NONE);
   });
 
   it('Scenario: Repulsión de la pared derecha del mundo (a 20 px)', () => {
-    expect(directionOf(botInput({ player: { x: 1900, y: 540 } }))).toEqual({ x: -1, y: 0 });
+    expect(directionOf(botInput({ player: { x: 3820, y: 1080 } }))).toEqual({ x: -1, y: 0 });
   });
 
-  it('Scenario: El borde de la vista no es una pared ((940, 270))', () => {
-    expect(botInput({ player: { x: 940, y: 270 } })).toBe(PlayerInput.NONE);
+  it('Scenario: El borde de la vista no es una pared ((1.270, 270))', () => {
+    expect(botInput({ player: { x: 1270, y: 270 } })).toBe(PlayerInput.NONE);
   });
 
   it('Scenario: Pared a exactamente 64 px', () => {
-    expect(botInput({ player: { x: 64, y: 540 } })).toBe(PlayerInput.NONE);
+    expect(botInput({ player: { x: 64, y: 1080 } })).toBe(PlayerInput.NONE);
   });
 
-  it('Scenario: Esquina del mundo ((1.904, 1.064), diagonal hacia −x y −y)', () => {
-    const { x, y } = directionOf(botInput({ player: { x: 1904, y: 1064 } }));
+  it('Scenario: Esquina del mundo ((3.824, 2.144), diagonal hacia −x y −y)', () => {
+    const { x, y } = directionOf(botInput({ player: { x: 3824, y: 2144 } }));
 
     expect(x).toBeLessThan(0);
     expect(y).toBe(x);
@@ -105,7 +105,7 @@ describe('fleeInput (movimiento del bot de referencia, mundo 1.920 × 1.080)', (
 
   it('se aleja de la pared izquierda cuando no hay enemigos cerca', () => {
     const config = aDefaultConfig();
-    const run = startRun(config, { player: { x: 20, y: 540 } });
+    const run = startRun(config, { player: { x: 20, y: 1080 } });
 
     expect(directionOf(referenceBot(config, run.map).input(run.snapshot()))).toEqual({
       x: 1,
@@ -118,7 +118,7 @@ describe('fleeInput (movimiento del bot de referencia, mundo 1.920 × 1.080)', (
 describe('Bot ligado a la configuración de la partida (0013)', () => {
   const bigWorld = (): RunConfig => ({
     ...aDefaultConfig(),
-    arena: { width: 4000, height: 4000, view: aDefaultConfig().arena.view },
+    arena: { width: 4000, height: 4000 },
   });
 
   it('Scenario: El bot huye de las paredes del mundo real (pared derecha a 20 px)', () => {
@@ -202,8 +202,8 @@ describe('Bot de referencia v2 con el mapa', () => {
   it('Scenario: Dirección bloqueada por el castillo ((0, −1), +45° y −45° bloqueadas: (1, 0))', () => {
     const config = withPlayer(aDefaultConfig(), { speed: 200 });
     const setup: RunSetup = {
-      player: { x: 990, y: 616 },
-      enemies: [{ type: 'goblin-torch', x: 990, y: 626 }],
+      player: { x: 1950, y: 1156 },
+      enemies: [{ type: 'goblin-torch', x: 1950, y: 1166 }],
     };
     const r = Run.start(config, new Mulberry32RandomGenerator(1), setup, {
       kind: 'cells',

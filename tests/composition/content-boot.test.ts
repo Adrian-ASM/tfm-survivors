@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import appearanceJson from '../../content/appearance.json';
+import arenaJson from '../../content/arena.json';
 import provenanceJson from '../../content/asset-provenance.json';
 import { bootContent, checkAppearanceRefs } from '../../src/composition/contentBoot';
 import type { DomainError } from '../../src/domain/shared/Result';
@@ -29,6 +30,9 @@ describe('bootContent', () => {
     const { booted, errors } = boot(raw());
     expect(errors).toEqual([]);
     expect(booted?.appearance.maxCorpses).toBe(64);
+    // Spec world-camera (0017): el tope de vista llega a la presentación (no al núcleo).
+    expect(booted?.maxView).toEqual(arenaJson.maxView);
+    expect(booted && 'maxView' in booted.config.arena).toBe(false);
     expect(Object.keys(booted?.appearance.enemies ?? {})).toEqual(
       booted?.config.enemies.types.map((t) => t.id),
     );

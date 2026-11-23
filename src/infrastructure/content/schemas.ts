@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { VIEW_SIZE_MUST_BE_POSITIVE } from '../../domain/arena/View';
 import { RUN_DURATION_MUST_BE_INTEGER } from '../../domain/run/RunDuration';
 import {
   BRIDGES_OUT_OF_RANGE,
@@ -45,6 +44,7 @@ import {
   MAX_ALIVE_MUST_BE_INTEGER,
   MAX_BUDGET_MUST_BE_POSITIVE,
   MAX_ATTEMPTS_MUST_BE_INTEGER,
+  RING_RADIUS_MUST_BE_POSITIVE,
   SPAWN_DISTANCE_MUST_BE_NON_NEGATIVE,
 } from '../../domain/wave/SpawnRules';
 import {
@@ -87,27 +87,37 @@ export const PlayerSchema = z.strictObject({
   pickupRadius: z.number().positive({ error: PICKUP_RADIUS_MUST_BE_POSITIVE }),
 });
 
-export const WORLD_NARROWER_THAN_VIEW = 'El ancho del mundo debe ser al menos el de la vista.';
-export const WORLD_LOWER_THAN_VIEW = 'El alto del mundo debe ser al menos el de la vista.';
+export const MAX_VIEW_MUST_BE_POSITIVE_INTEGER =
+  'El tope de vista debe tener un ancho y un alto enteros y positivos.';
+export const WORLD_NARROWER_THAN_VIEW =
+  'El ancho del mundo debe ser al menos el del tope de vista.';
+export const WORLD_LOWER_THAN_VIEW = 'El alto del mundo debe ser al menos el del tope de vista.';
+
+/** Regla cruzada de infraestructura (ADR-0015): el anillo de aparición queda fuera del tope. */
+export const SPAWN_RING_INSIDE_MAX_VIEW =
+  'El radio del anillo de aparición debe ser mayor que la media diagonal del tope de vista.';
+
+const MaxViewSide = z
+  .number({ error: MAX_VIEW_MUST_BE_POSITIVE_INTEGER })
+  .int({ error: MAX_VIEW_MUST_BE_POSITIVE_INTEGER })
+  .positive({ error: MAX_VIEW_MUST_BE_POSITIVE_INTEGER });
 
 /**
- * Mundo (`width` × `height`) y vista del lienzo. El mundo es al menos tan grande como la vista
- * (0013, D1b): con unos límites menores que la vista, la cámara mostraría zonas fuera del mundo.
+ * Mundo (`width` × `height`) y tope de vista del lienzo (`maxView`, 0017, ADR-0014). El mundo es al
+ * menos tan grande como el tope: con unos límites menores que la vista, la cámara mostraría zonas
+ * fuera del mundo. Sin `view`: la vista sale de la ventana, no del contenido.
  */
 export const ArenaSchema = z
   .strictObject({
     width: z.number().int().positive(),
     height: z.number().int().positive(),
-    view: z.strictObject({
-      width: z.number().positive({ error: VIEW_SIZE_MUST_BE_POSITIVE }),
-      height: z.number().positive({ error: VIEW_SIZE_MUST_BE_POSITIVE }),
-    }),
+    maxView: z.strictObject({ width: MaxViewSide, height: MaxViewSide }),
   })
-  .superRefine(({ width, height, view }, ctx) => {
-    if (width < view.width) {
+  .superRefine(({ width, height, maxView }, ctx) => {
+    if (width < maxView.width) {
       ctx.addIssue({ code: 'custom', path: ['width'], message: WORLD_NARROWER_THAN_VIEW });
     }
-    if (height < view.height) {
+    if (height < maxView.height) {
       ctx.addIssue({ code: 'custom', path: ['height'], message: WORLD_LOWER_THAN_VIEW });
     }
   });
@@ -233,7 +243,7 @@ export const WavesSchema = z.strictObject({
   maxAlive: Count(MAX_ALIVE_MUST_BE_INTEGER),
   maxBudget: z.number().positive({ error: MAX_BUDGET_MUST_BE_POSITIVE }),
   spawn: z.strictObject({
-    margin: Distance,
+    ringRadius: z.number().positive({ error: RING_RADIUS_MUST_BE_POSITIVE }),
     minDistance: Distance,
     maxAttempts: Count(MAX_ATTEMPTS_MUST_BE_INTEGER),
   }),

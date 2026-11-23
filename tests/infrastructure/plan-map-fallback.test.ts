@@ -81,7 +81,7 @@ describe('planMapArt · reserva por elemento', () => {
 
   it('Scenario: Reserva del castillo (semilla 42: 1 rectángulo castle sobre la huella, sin tejado)', () => {
     const plan = planFor(SEED_42(), 42, [MAP.castle.sheet.file]);
-    expect(rects(plan, terrain.castle)).toEqual([[840, 360, 1140, 600]]);
+    expect(rects(plan, terrain.castle)).toEqual([[1800, 900, 2100, 1140]]);
     expect([spritesOf(plan, 'castle'), spritesOf(plan, 'roof')]).toEqual([[], []]);
     expect(spritesOf(plan, 'trunk').length).toBe(SEED_42().counts.trunk);
     expect(plan.counts.castle).toEqual({ painted: 1, fallback: 1 });
@@ -105,12 +105,12 @@ describe('planMapArt · reserva por elemento', () => {
   });
 });
 
-// Spec sprite-rendering (0016), "Coste de render del mapa": tope sin navegador que entra en verify.
-// Medido en el punto de control 2: 196 (42), 245 (123); máximo de 1..50, 258 (semilla 15).
-const MAX_MAP_OBJECTS = 300;
+// Spec sprite-rendering (0017), "Coste de render del mapa": tope sin navegador que entra en verify.
+// Con el mundo de 3.840 × 2.160 (0017): 667 (42) y 750 (123).
+const MAX_MAP_OBJECTS = 1000;
 
 describe('planMapArt · objetos del mapa (punto de control 2)', () => {
-  it.each([42, 123])('Scenario: Objetos del mapa (semilla %i: ≤ 300 sin navegador)', (seed) => {
+  it.each([42, 123])('Scenario: Objetos del mapa (semilla %i: ≤ 1.000 sin navegador)', (seed) => {
     const plan = planFor(toMapSnapshot(mapForSeed(aDefaultConfig(), seed)), seed);
     expect(plan.objects).toBeLessThanOrEqual(MAX_MAP_OBJECTS);
     expect(plan.objects).toBe(objectsOf(plan));

@@ -5,11 +5,12 @@ import { cellsWith, mapRules, mapWith } from '../../support/mapLayouts';
 const RULES = mapRules();
 
 describe('GameMap · rejilla de celdas tipadas (spec procedural-map)', () => {
-  it('Scenario: Rejilla por defecto (mapa abierto de 32 × 18, todo hierba)', () => {
+  it('Scenario: Rejilla por defecto (mapa abierto de 64 × 36 = 2.304, todo hierba)', () => {
     const map = GameMap.open(RULES);
-    expect([map.cols, map.rows, map.cellSize]).toEqual([32, 18, 60]);
+    expect([map.cols, map.rows, map.cellSize]).toEqual([64, 36, 60]);
+    expect(map.cols * map.rows).toBe(2304);
     expect(map.typeAt(0, 0)).toBe('grass');
-    expect(map.typeAt(31, 17)).toBe('grass');
+    expect(map.typeAt(63, 35)).toBe('grass');
     expect(map.cellRect(3, 2)).toEqual({ left: 180, top: 120, right: 240, bottom: 180 });
   });
 
@@ -21,10 +22,10 @@ describe('GameMap · rejilla de celdas tipadas (spec procedural-map)', () => {
   });
 
   it.each([
-    [959.9, 539.9, 15, 8],
-    [960, 540, 16, 9],
+    [1919.9, 1079.9, 31, 17],
+    [1920, 1080, 32, 18],
     [0, 0, 0, 0],
-    [1920, 1080, 31, 17],
+    [3840, 2160, 63, 35],
   ])('Scenario: Celda de un punto (%d, %d) ⇒ (%d, %d)', (x, y, col, row) => {
     const map = GameMap.open(RULES);
     expect(map.cellAt(x, y)).toEqual({ col, row });
@@ -44,8 +45,8 @@ describe('GameMap · rejilla de celdas tipadas (spec procedural-map)', () => {
       [6, 3],
       [7, 3],
       [-1, 0],
-      [32, 0],
-      [0, 18],
+      [64, 0],
+      [0, 36],
     ];
     expect(cells.map(([c, r]) => map.isWalkable(c, r))).toEqual([
       false,
@@ -80,8 +81,8 @@ describe('GameMap · rejilla de celdas tipadas (spec procedural-map)', () => {
     expect(map.overlapsBlocked(345, 210, 16)).toBe(true);
   });
 
-  it('Scenario: Mapa de dimensiones incorrectas (30 × 17 con la rejilla de 32 × 18)', () => {
-    const wrong = cellsWith(mapRules(undefined, 1800, 1020), {});
+  it('Scenario: Mapa de dimensiones incorrectas (32 × 18 con la rejilla de 64 × 36)', () => {
+    const wrong = cellsWith(mapRules(undefined, 1920, 1080), {});
     const r = GameMap.fromCells(wrong, RULES);
     expect(!r.ok && r.error.field).toBe('map.cells');
     expect(!r.ok && r.error.message).toContain('dimensiones');

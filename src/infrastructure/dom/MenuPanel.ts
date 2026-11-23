@@ -31,6 +31,9 @@ export class MenuPanel {
     this.root.className = 'menu-panel';
     this.root.setAttribute('aria-label', 'Menú de inicio');
     this.root.hidden = true;
+    // Título en el mismo bloque que las opciones: centrados juntos por la rejilla CSS (0017, D11).
+    const title = doc.createElement('h1');
+    title.textContent = MENU_LABELS.title;
     this.message = doc.createElement('p');
     this.message.className = 'menu-panel__message';
     this.message.setAttribute('role', 'status');
@@ -64,7 +67,7 @@ export class MenuPanel {
     const list = doc.createElement('div');
     list.className = 'menu-panel__actions';
     list.append(...this.buttons, file);
-    this.root.append(list, this.message);
+    this.root.append(title, list, this.message);
     parent.append(this.root);
   }
 

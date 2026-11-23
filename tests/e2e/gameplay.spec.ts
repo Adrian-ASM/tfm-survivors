@@ -21,8 +21,9 @@ import {
 
 // Suite de humo (chore e2e-lite): lo que solo se ve en el navegador durante la partida (overlay de
 // mejoras, cámara, sprites y mapa pintado), en modo manual y sin esperas de reloj.
-const VIEW = arena.view;
 const WORLD = { width: arena.width, height: arena.height };
+/** Ventana de `playwright.config.ts`: por debajo del tope, la vista mide lo mismo (0017). */
+const VIEW = { width: 1280, height: 720 };
 
 async function openGame(page: Page, url: string): Promise<void> {
   await page.goto(url);
@@ -31,8 +32,8 @@ async function openGame(page: Page, url: string): Promise<void> {
   await focusGame(page);
 }
 
-// Spec upgrades, "Recorrido en el navegador". Semilla 7 sin input: primera oferta en el tick 4.346
-// con el mundo 2x (plazo de 80 s de juego).
+// Spec upgrades, "Recorrido en el navegador". Semilla 7 sin input: primera oferta en el tick 1.527
+// con el mundo de 0017 (plazo de 80 s de juego).
 const FIRST_OFFER_LIMIT = 80 * 60;
 
 test('Subida de nivel: con ?seed=7 aparece la oferta de 3, se pulsa 1 y la partida sigue', async ({
@@ -58,22 +59,64 @@ test('Subida de nivel: con ?seed=7 aparece la oferta de 3, se pulsa 1 y la parti
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
+// Spec world-camera (0017), "Redimensionado con la oferta abierta [E2E]": vista nueva desde el primer
+// frame, sin ticks, y el clic en el centro de la ventana elige la carta central (índice 1).
+test('Redimensionado con la oferta abierta: vista 1.000 × 600, mismo tick y clic central → offer[1]', async ({
+  page,
+}) => {
+  const problems = collect(page, ['error']);
+  await openGame(page, gameUrl({ seed: 7, manual: true }));
+  const offered = await stepUntil(page, (s) => s.offer.length > 0, FIRST_OFFER_LIMIT);
+  if (!offered) throw new Error('sin oferta');
+
+  await page.setViewportSize({ width: 1000, height: 600 });
+  await expect.poll(async () => (await probe(page))?.camera?.width ?? null).toBe(1000);
+
+  const p = await probe(page);
+  const s = p?.snapshot;
+  const cam = p?.camera;
+  if (!s || !cam) throw new Error('sin sonda');
+  expect(p.viewport).toEqual({ width: 1000, height: 600, uiScale: 1 });
+  expect([cam.width, cam.height]).toEqual([1000, 600]);
+  expect(Math.abs(cam.x - clamp(s.player.x - 500, 0, WORLD.width - 1000))).toBeLessThanOrEqual(1);
+  expect(Math.abs(cam.y - clamp(s.player.y - 300, 0, WORLD.height - 600))).toBeLessThanOrEqual(1);
+  expect(s.tick).toBe(offered.tick);
+  expect(s.offer.map((o) => o.id)).toEqual(offered.offer.map((o) => o.id));
+
+  await page.mouse.click(500, 300);
+  expect(await step(page, 1)).toBe(1);
+  const after = await snapshotOf(page);
+  expect(after?.upgrades).toEqual([{ id: offered.offer[1]?.id, level: 1 }]);
+  expect(problems).toEqual([]);
+});
+
 // Spec world-camera, "Nada fuera del mundo con el mapa real": la cámara sigue al jugador sin
 // suavizado y recortada al mundo.
+/**
+ * 0017: con el mapa real de 64 × 36 (~700 objetos) a 1.280 × 720, el runner de CI sin GPU pinta
+ * cada frame ~2,5 veces más lento que en 0016 y estos bucles esperan un frame por step. Triple de
+ * plazo con `test.slow()`; sin umbrales de fps ni de tiempo (regla e2e-lite).
+ */
+function slowMapRealOnCi(): void {
+  test.slow();
+}
+
 test('Cámara: centrada al empezar y sigue al jugador hacia la derecha sin salir del mundo', async ({
   page,
 }) => {
+  slowMapRealOnCi();
   await openGame(page, gameUrl({ seed: 7, manual: true, map: 'real' }));
   const first = await probe(page);
   expect(first?.world).toEqual(WORLD);
-  // 0016: el jugador nace ante la puerta del castillo; la vista sigue la fórmula de la cámara.
+  // 0017: ventana 1.280 × 720 a ×1; la vista mide lo mismo y sigue la fórmula de la cámara.
+  expect(first?.viewport).toEqual({ ...VIEW, uiScale: 1 });
   const p0 = first?.snapshot?.player ?? { x: 0, y: 0 };
   expect(first?.camera).toEqual({
     x: clamp(p0.x - VIEW.width / 2, 0, WORLD.width - VIEW.width),
     y: clamp(p0.y - VIEW.height / 2, 0, WORLD.height - VIEW.height),
     ...VIEW,
   });
-  expect([first?.camera?.x, first?.camera?.y]).toEqual([510, 360]);
+  expect([first?.camera?.x, first?.camera?.y]).toEqual([1310, 810]);
 
   const problems: string[] = [];
   for (let i = 0; i < 20; i++) {
@@ -113,6 +156,7 @@ const SAMPLED_TICKS = 600;
 test('Sprites: recuentos de la sonda iguales al snapshot y reserva si fallan Torch y las hojas del mapa', async ({
   page,
 }) => {
+  slowMapRealOnCi();
   const problems: string[] = [];
   page.on('pageerror', (e) => problems.push(`pageerror: ${e.message}`));
   page.on('console', (m) => {
@@ -194,6 +238,7 @@ function shoreCount(m: MapView): number {
 test('Mapa real: sonda igual a la firma de la semilla 42, castillo y salida, y sin atravesar troncos, agua ni castillo', async ({
   page,
 }) => {
+  slowMapRealOnCi();
   await openGame(page, gameUrl({ seed: 42, manual: true, map: 'real' }));
   const first = await probe(page);
   const m = first?.map;
@@ -201,11 +246,12 @@ test('Mapa real: sonda igual a la firma de la semilla 42, castillo y salida, y s
   expect(signatureOf(m.cells)).toBe(MAP_GOLDEN[42]);
   expect(m.emptyForced).toBe(false);
   expect(m.counts.trunk).toBeGreaterThan(0);
-  // 0016, "Sonda con castillo y salida": huella 14–18 × 6–9 y jugador en la salida (990, 630).
+  // 0017, "Sonda con castillo y salida": 64 × 36, huella 30–34 × 15–18 y salida (1.950, 1.170).
+  expect([m.cols, m.rows]).toEqual([64, 36]);
   expect(m.counts.castle).toBe(20);
-  expect(m.castle).toEqual({ firstCol: 14, lastCol: 18, firstRow: 6, lastRow: 9 });
-  expect([m.start.x, m.start.y]).toEqual([990, 630]);
-  expect([first.snapshot?.player.x, first.snapshot?.player.y]).toEqual([990, 630]);
+  expect(m.castle).toEqual({ firstCol: 30, lastCol: 34, firstRow: 15, lastRow: 18 });
+  expect([m.start.x, m.start.y]).toEqual([1950, 1170]);
+  expect([first.snapshot?.player.x, first.snapshot?.player.y]).toEqual([1950, 1170]);
   expect(first.sprites?.cells).toEqual({
     trunk: m.counts.trunk,
     water: m.counts.water,

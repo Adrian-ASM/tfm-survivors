@@ -21,13 +21,16 @@ import { play, playReferenceBot, startSeededRun, stillSurvivors } from '../suppo
 // (tarea 1.27) se comprueban con el contenido por defecto completo y la política de elección fija.
 const FIRST_HIT_LIMIT = 4800;
 // 0013 (mundo 1.920 × 1.080): pulso a 4.800 por decisión del usuario; medido en el tick 4.161.
+// 0017 (mundo 3.840 × 2.160, anillo 1.500): pulso en el 1.434; primera baja en el 656, plazo de
+// la spec 900 ticks (decisión del usuario).
 const PULSE_LIMIT = 4800;
-const TEN_SECONDS = 600;
+const FIRST_KILL_WINDOW = 900;
 
 // Tarea 0.2: aceptación de plazos con el contenido por defecto de 0005 (armas y mejoras), input
 // (0, 0) y la política de elección fija. Medido en el punto de control 0.3 con pickupRadius 128 (decisión
 // del usuario): primera oferta con semilla 7 en el tick 3332, primer golpe con semilla 42 en el 4122.
 // 0013 (mundo 1.920 × 1.080): primera oferta a 4.800 por decisión del usuario; medida en el 4.346.
+// 0017 (mundo 3.840 × 2.160, tabla 1,2/2,4/2,4/3,0/4,2): medida en el tick 1.527.
 const OFFER_LIMIT = 4800;
 
 /** Contenido por defecto: crea las partidas y el bot de referencia (mismo mundo para ambos). */
@@ -68,7 +71,7 @@ describe('Plazos con progresión (0005, medidos en el punto de control 0.3)', ()
     expect(DEFAULT_ENEMY_TYPES.map((t) => prev - t.damage)).toContain(health);
   });
 
-  it('Scenario: Jugador quieto con el contenido por defecto (semilla 7: baja ≤ 600, pulso ≤ 4.800)', () => {
+  it('Scenario: Jugador quieto con el contenido por defecto (semilla 7: baja ≤ 900, pulso ≤ 4.800)', () => {
     const run = startDefault(7);
     let previous = new Set<number>();
     let kills = 0;
@@ -76,7 +79,7 @@ describe('Plazos con progresión (0005, medidos en el punto de control 0.3)', ()
     play(run, PULSE_LIMIT, (t, r) => {
       const s = r.snapshot();
       const alive = new Set(s.enemies.map((e) => e.id));
-      if (t <= TEN_SECONDS) for (const id of previous) if (!alive.has(id)) kills++;
+      if (t <= FIRST_KILL_WINDOW) for (const id of previous) if (!alive.has(id)) kills++;
       previous = alive;
       if (firstPulse === 0 && s.pulses.some((p) => p.weapon === 'tests')) firstPulse = t;
       return false;

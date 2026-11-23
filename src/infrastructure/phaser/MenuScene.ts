@@ -9,24 +9,17 @@ export interface MenuView {
   takePlay(): boolean;
 }
 
-const TITLE_Y = 72;
-const TITLE_STYLE = { fontFamily: 'monospace', fontSize: '40px', color: '#ffffff' } as const;
-
 /**
- * Pantalla del menú de inicio (ADR-0011): sin partida, sin teclas registradas. Solo pinta el título
- * y enruta: Jugar arranca `GameScene`, que crea la partida al entrar. No contiene reglas: las del
- * menú están en `MenuController`.
+ * Pantalla del menú de inicio (ADR-0011): sin partida, sin teclas registradas. No pinta nada (el
+ * título es el `h1` del panel DOM, 0017 D11): solo enruta. Jugar arranca `GameScene`, que crea
+ * la partida al entrar. No contiene reglas: las del menú están en `MenuController`.
  */
 export class MenuScene extends Phaser.Scene {
-  constructor(
-    private readonly menu: MenuView,
-    private readonly title: string,
-  ) {
+  constructor(private readonly menu: MenuView) {
     super(MENU_SCENE_KEY);
   }
 
   create(): void {
-    this.add.text(this.scale.width / 2, TITLE_Y, this.title, TITLE_STYLE).setOrigin(0.5);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.menu.hide();
     });

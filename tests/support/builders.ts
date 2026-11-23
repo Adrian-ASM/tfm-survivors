@@ -1,6 +1,7 @@
 import arenaJson from '../../content/arena.json';
 import mapJson from '../../content/map.json';
 import playerJson from '../../content/player.json';
+import wavesJson from '../../content/waves.json';
 import type { RunConfig, UpgradesConfig } from '../../src/domain/run/RunConfig';
 import type { WeaponsConfig } from '../../src/domain/weapon/WeaponLoadout';
 import type { WeaponTypeConfig } from '../../src/domain/weapon/WeaponType';
@@ -157,24 +158,11 @@ export const DEFAULT_ENEMY_TYPES = [
   { id: 'goblin-barrel', speed: 70, radius: 16, cost: 2, damage: 8, health: 20, xp: 2 },
 ] as const;
 
-const ALL = ['goblin-torch', 'goblin-barrel', 'goblin-tnt'];
-
 /**
- * Tabla de oleadas y parámetros de spawn (espejo de content/waves.json). Desde 0010, los tramos de
- * 300 y 480 s están calibrados con el bot de referencia sobre las semillas 1..50.
+ * Tabla de oleadas y parámetros de spawn, leídos de content/waves.json (una sola fuente: el radio
+ * del anillo y la tabla calibrada viven solo en `content/`, spec run-outcome 0017).
  */
-export const DEFAULT_WAVES: RunConfig['waves'] = {
-  maxAlive: 200,
-  maxBudget: 10,
-  spawn: { margin: 32, minDistance: 200, maxAttempts: 8 },
-  segments: [
-    { fromSecond: 0, budgetPerSecond: 1, types: ['goblin-torch'] },
-    { fromSecond: 60, budgetPerSecond: 2, types: ['goblin-torch', 'goblin-barrel'] },
-    { fromSecond: 180, budgetPerSecond: 2.5, types: ALL },
-    { fromSecond: 300, budgetPerSecond: 4, types: ALL },
-    { fromSecond: 480, budgetPerSecond: 5.6, types: ALL },
-  ],
-};
+export const DEFAULT_WAVES: RunConfig['waves'] = structuredClone(wavesJson);
 
 /**
  * Vida del jugador para pruebas que miden el spawn y no el daño (long-run, bench): finita y válida,
@@ -201,7 +189,6 @@ export const DEFAULT_PICKUP_RADIUS = 128;
 export const SCENARIO_ARENA: RunConfig['arena'] = {
   width: 960,
   height: 540,
-  view: { width: 960, height: 540 },
 };
 
 /**
@@ -211,12 +198,11 @@ export const SCENARIO_ARENA: RunConfig['arena'] = {
  */
 export const DEFAULT_MAP: RunConfig['map'] = structuredClone(mapJson);
 
-/** Mundo y vista del contenido por defecto, leídos de content/arena.json (una sola fuente). */
-const CONTENT_ARENA: RunConfig['arena'] = {
-  width: arenaJson.width,
-  height: arenaJson.height,
-  view: { width: arenaJson.view.width, height: arenaJson.view.height },
-};
+/** Tope de vista del contenido por defecto (presentación, no llega al núcleo; 0017). */
+export const DEFAULT_MAX_VIEW = { ...arenaJson.maxView } as const;
+
+/** Mundo del contenido por defecto, leído de content/arena.json (una sola fuente). */
+const CONTENT_ARENA: RunConfig['arena'] = { width: arenaJson.width, height: arenaJson.height };
 
 /**
  * Contenido de partida de la spec (arena de escenario 960 × 540, radio 16, velocidad 200 px/s, vida 100,
@@ -350,12 +336,12 @@ export interface RawContent {
     invulnerabilityTicks: number;
     pickupRadius: number;
   };
-  arena: { width: number; height: number; view: { width: number; height: number } };
+  arena: { width: number; height: number; maxView: { width: number; height: number } };
   enemies: { types: [MutableType, MutableType, MutableType] };
   waves: {
     maxAlive: number;
     maxBudget: number;
-    spawn: { margin: number; minDistance: number; maxAttempts: number };
+    spawn: { ringRadius: number; minDistance: number; maxAttempts: number };
     segments: [MutableSegment, MutableSegment, ...MutableSegment[]];
   };
   weapons: {
@@ -386,6 +372,9 @@ export interface RawContent {
 
 /** Copia nueva del contenido por defecto en forma de ficheros (cada llamada es independiente). */
 export const rawContent = (): RawContent =>
-  structuredClone(aDefaultConfig()) as unknown as RawContent;
+  ({
+    ...structuredClone(aDefaultConfig()),
+    arena: structuredClone(arenaJson),
+  }) as unknown as RawContent;
 
 export const TICK_MS = 1000 / 60;

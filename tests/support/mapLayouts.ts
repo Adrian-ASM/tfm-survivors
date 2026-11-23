@@ -24,7 +24,7 @@ export function mapRules(
 }
 
 /**
- * Mapa vacío con la salida del castillo del contenido `config` declarada ((990, 630) por defecto):
+ * Mapa vacío con la salida del castillo del contenido `config` declarada ((1.950, 1.170) por defecto):
  * la referencia de las comparaciones "con y sin mapa" de 0016 (design §12.1 A3).
  */
 export function emptyWithExit(config: RunConfig): TerrainSource {
@@ -42,9 +42,9 @@ export type Layout = Readonly<Record<string, CellType>>;
 
 /**
  * Celdas `castle` de un rectángulo de columnas `c0..c1` y filas `r0..r1` (por defecto, la huella
- * del contenido por defecto: columnas 14–18 y filas 6–9, x en [840, 1.140] e y en [360, 600]).
+ * del contenido por defecto: columnas 30–34 y filas 15–18, x en [1.800, 2.100] e y en [900, 1.140]).
  */
-export function castleBlock(c0 = 14, c1 = 18, r0 = 6, r1 = 9): Layout {
+export function castleBlock(c0 = 30, c1 = 34, r0 = 15, r1 = 18): Layout {
   const layout: Record<string, CellType> = {};
   for (let r = r0; r <= r1; r++)
     for (let c = c0; c <= c1; c++) layout[`${String(c)},${String(r)}`] = 'castle';

@@ -6,19 +6,19 @@ import { mapRules, mapWith } from '../../support/mapLayouts';
 const RULES = mapRules();
 
 describe('Zona de inicio (spec procedural-map)', () => {
-  it('Scenario: Celdas dentro y fuera de la zona (salida (990, 630): (19, 10) y (16, 13) sí)', () => {
-    expect(RULES.inStartZone(19, 10)).toBe(true);
-    expect(RULES.inStartZone(20, 10)).toBe(false);
-    expect(RULES.inStartZone(16, 13)).toBe(true);
-    expect(RULES.inStartZone(16, 14)).toBe(false);
+  it('Scenario: Celdas dentro y fuera de la zona (salida (1.950, 1.170): (35, 19) y (32, 22) sí)', () => {
+    expect(RULES.inStartZone(35, 19)).toBe(true);
+    expect(RULES.inStartZone(36, 19)).toBe(false);
+    expect(RULES.inStartZone(32, 22)).toBe(true);
+    expect(RULES.inStartZone(32, 23)).toBe(false);
   });
 
   it('la zona del generador se centra en la salida del castillo; la del centro no cambia', () => {
-    expect(RULES.castleStart).toEqual({ x: 990, y: 630, radius: 180 });
-    expect(RULES.centerStart).toEqual({ x: 960, y: 540, radius: 180 });
+    expect(RULES.castleStart).toEqual({ x: 1950, y: 1170, radius: 180 });
+    expect(RULES.centerStart).toEqual({ x: 1920, y: 1080, radius: 180 });
   });
 
-  it('con el contenido por defecto la zona es el bloque 13..19 × 7..13 sin esquinas (45)', () => {
+  it('con el contenido por defecto la zona es el bloque 29..35 × 16..22 sin esquinas (45)', () => {
     const zone: string[] = [];
     for (let r = 0; r < RULES.rows; r++) {
       for (let c = 0; c < RULES.cols; c++)
@@ -27,14 +27,14 @@ describe('Zona de inicio (spec procedural-map)', () => {
     const cols = zone.map((k) => Number(k.split(',')[0]));
     const rows = zone.map((k) => Number(k.split(',')[1]));
     expect([Math.min(...cols), Math.max(...cols), Math.min(...rows), Math.max(...rows)]).toEqual([
-      13, 19, 7, 13,
+      29, 35, 16, 22,
     ]);
     expect(zone).toHaveLength(45);
     const corners = [
-      [13, 7],
-      [19, 7],
-      [13, 13],
-      [19, 13],
+      [29, 16],
+      [35, 16],
+      [29, 22],
+      [35, 22],
     ] as const;
     expect(corners.map(([c, r]) => RULES.inStartZone(c, r))).toEqual([false, false, false, false]);
   });

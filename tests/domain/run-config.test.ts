@@ -54,19 +54,20 @@ function failure(config: RunConfig): { field: string; message: string } {
 }
 
 describe('buildRunRules', () => {
-  it('compone arena, vista, catálogo, tabla y reglas de spawn del contenido por defecto', () => {
+  it('compone arena, catálogo, tabla y reglas de spawn del contenido por defecto', () => {
     const r = buildRunRules(aRunConfig());
     if (!r.ok) throw new Error(r.error.message);
-    const { arena, view, catalog, table, spawn } = r.value;
-    expect([arena.width, arena.height, view.width, view.height]).toEqual([960, 540, 960, 540]);
+    const { arena, catalog, table, spawn } = r.value;
+    expect([arena.width, arena.height]).toEqual([960, 540]);
     expect(catalog.ids).toEqual(['goblin-torch', 'goblin-tnt', 'goblin-barrel']);
     expect(table.segments.map((s) => s.fromSecond)).toEqual([0, 60, 180, 300, 480]);
-    expect(spawn).toMatchObject({ maxAlive: 200, minDistance: 200, maxAttempts: 8, margin: 32 });
+    expect(spawn).toMatchObject({ maxAlive: 200, minDistance: 200, maxAttempts: 8 });
   });
 
-  it('radio del anillo = mitad de la diagonal de la vista + margin ≈ 582,727', () => {
-    const r = buildRunRules(aRunConfig());
-    expect(r.ok && r.value.spawn.ringRadius).toBeCloseTo(582.7268, 4);
+  it('el radio del anillo es el del contenido (ringRadius), sin vista', () => {
+    const config = aRunConfig();
+    const r = buildRunRules(config);
+    expect(r.ok && r.value.spawn.ringRadius).toBe(config.waves.spawn.ringRadius);
   });
 
   it.each([0, 12.5, -3])('Tope de vivos no entero (maxAlive %s)', (maxAlive) => {
@@ -84,22 +85,16 @@ describe('buildRunRules', () => {
     });
   });
 
-  it.each(['margin', 'minDistance'] as const)('rechaza %s negativo', (key) => {
-    expect(failure(withWaves({}, { [key]: -1 }))).toMatchObject({
-      field: `waves.spawn.${key}`,
+  it('rechaza minDistance negativo', () => {
+    expect(failure(withWaves({}, { minDistance: -1 }))).toMatchObject({
+      field: 'waves.spawn.minDistance',
       message: SPAWN_DISTANCE_MUST_BE_NON_NEGATIVE,
     });
   });
 
-  it('acepta margin y minDistance 0, y minDistance mayor que el anillo', () => {
-    expect(buildRunRules(withWaves({}, { margin: 0, minDistance: 0 })).ok).toBe(true);
+  it('acepta minDistance 0 y minDistance mayor que el anillo', () => {
+    expect(buildRunRules(withWaves({}, { minDistance: 0 })).ok).toBe(true);
     expect(buildRunRules(withWaves({}, { minDistance: 2000 })).ok).toBe(true);
-  });
-
-  it('rechaza una vista sin tamaño', () => {
-    const base = aRunConfig();
-    const config = { ...base, arena: { ...base.arena, view: { width: 0, height: 540 } } };
-    expect(failure(config).field).toBe('arena.view.width');
   });
 
   it('propaga las reglas del catálogo y de la tabla con la ruta del campo', () => {
