@@ -149,7 +149,8 @@ describe('Partidas largas (10 min)', () => {
 
   // Spec player-movement y xp-gems (0015): semilla 7 con el mapa generado e input aleatorio.
   it('Scenario: Partida larga sin solapes (el jugador nunca solapa una celda no caminable)', () => {
-    expect(startSeededRun(SPAWN_AUDIT, SEED).map.counts.trunk).toBeGreaterThan(0);
+    const counts = startSeededRun(SPAWN_AUDIT, SEED).map.counts;
+    expect([counts.trunk > 0, counts.castle]).toEqual([true, 20]);
     expect(audited.v.overlaps).toBe(0);
     expect(audited.v.playerOutside).toBe(0);
   });

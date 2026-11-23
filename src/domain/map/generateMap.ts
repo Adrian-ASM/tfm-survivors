@@ -2,7 +2,7 @@ import type { RandomGenerator } from '../shared/RandomGenerator';
 import { BRIDGE, CASTLE, WATER } from './CellType';
 import { GameMap } from './GameMap';
 import type { MapRules } from './MapRules';
-import { isFullyConnected } from './connectivity';
+import { isFullyConnectedFrom } from './connectivity';
 import { placeTrunks, trunkTarget } from './placeTrunks';
 
 /** Entero uniforme en [lo, hi] (un valor del generador). */
@@ -184,5 +184,28 @@ function checkPostcondition(map: GameMap, rules: MapRules, trunks: number): void
       `Invariante rota: ${String(trunks)} troncos para un objetivo de ${String(target)}`,
     );
   }
-  if (!isFullyConnected(map)) throw new Error('Invariante rota: mapa sin conectividad completa');
+  checkCastle(map, rules);
+}
+
+/**
+ * Postcondición del castillo (design 0016 §3.4 paso 4): exactamente las `cols · rows` celdas de la
+ * huella son `castle`, la puerta es caminable y toda celda caminable se alcanza desde ella. Pura:
+ * los tests la ejercitan con borradores rotos.
+ */
+export function checkCastle(map: GameMap, rules: MapRules): void {
+  const { firstCol, lastCol, firstRow, lastRow, door } = rules.castle;
+  for (let r = 0; r < map.rows; r++) {
+    for (let c = 0; c < map.cols; c++) {
+      const inside = c >= firstCol && c <= lastCol && r >= firstRow && r <= lastRow;
+      if (inside !== (map.typeAt(c, r) === 'castle')) {
+        throw new Error(`Invariante rota: huella del castillo en ${String(c)},${String(r)}`);
+      }
+    }
+  }
+  if (!map.isWalkable(door.col, door.row)) {
+    throw new Error('Invariante rota: puerta del castillo no caminable');
+  }
+  if (!isFullyConnectedFrom(map, door.col, door.row)) {
+    throw new Error('Invariante rota: mapa sin conectividad completa desde la puerta');
+  }
 }

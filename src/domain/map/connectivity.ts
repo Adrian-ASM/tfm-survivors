@@ -50,18 +50,30 @@ function codesOf(map: GameMap): Uint8Array {
   return codes;
 }
 
-/** Celdas alcanzables (1) desde la del centro de la zona de inicio, en orden de filas. */
-export function reachableCells(map: GameMap): Uint8Array {
+/** Celdas alcanzables (1) desde la celda (col, row), en orden de filas. */
+export function reachableCellsFrom(map: GameMap, col: number, row: number): Uint8Array {
   const n = map.cols * map.rows;
   const seen = new Uint8Array(n);
-  const start = map.rowAt(map.start.y) * map.cols + map.colAt(map.start.x);
-  reachableFrom(codesOf(map), map.cols, map.rows, start, seen, new Int32Array(n));
+  reachableFrom(codesOf(map), map.cols, map.rows, row * map.cols + col, seen, new Int32Array(n));
   return seen;
+}
+
+/** Celdas alcanzables (1) desde la de la salida del mapa (centro de su zona), en orden de filas. */
+export function reachableCells(map: GameMap): Uint8Array {
+  return reachableCellsFrom(map, map.colAt(map.start.x), map.rowAt(map.start.y));
+}
+
+/** ¿Es alcanzable toda celda caminable desde la celda (col, row)? */
+export function isFullyConnectedFrom(map: GameMap, col: number, row: number): boolean {
+  return allWalkableSeen(map, reachableCellsFrom(map, col, row));
 }
 
 /** ¿Es alcanzable toda celda caminable desde la posición inicial? (spec "Conectividad"). */
 export function isFullyConnected(map: GameMap): boolean {
-  const seen = reachableCells(map);
+  return allWalkableSeen(map, reachableCells(map));
+}
+
+function allWalkableSeen(map: GameMap, seen: Uint8Array): boolean {
   for (let r = 0; r < map.rows; r++) {
     for (let c = 0; c < map.cols; c++) {
       if (map.isWalkable(c, r) && seen[r * map.cols + c] !== 1) return false;

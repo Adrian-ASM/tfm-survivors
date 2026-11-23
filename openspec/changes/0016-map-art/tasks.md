@@ -40,7 +40,7 @@
   defecto", "Sin río ni troncos", "Celdas dentro y fuera de la zona", "Celdas tras el castillo alcanzables",
   "Partida nueva con el mapa generado", "Choque con la fachada del castillo", "Tasa de victoria del bot de
   referencia", "Jugador quieto pierde con todas las semillas"
-- [ ] 1.6 Postcondición del castillo en `generateMap` (exactamente `cols · rows` celdas `castle` en la huella, puerta
+- [x] 1.6 Postcondición del castillo en `generateMap` (exactamente `cols · rows` celdas `castle` en la huella, puerta
   caminable, BFS desde la puerta; si no, `Error('Invariante rota…')`), rojo con un borrador roto en el comprobador
   puro. Regresión en el mismo commit: suites exhaustivas y comparaciones contra `emptyWithExit`. — escenarios: "Misma
   huella con todas las semillas", "Composición con las semillas del conjunto", "Zona libre con todas las semillas",

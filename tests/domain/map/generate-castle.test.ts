@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { reachableCells } from '../../../src/domain/map/connectivity';
+import { checkCastle } from '../../../src/domain/map/generateMap';
+import { castleBlock, mapRules, mapWith, type Layout } from '../../support/mapLayouts';
 import { PlayerInput } from '../../../src/domain/player/PlayerInput';
 import type { RunConfig } from '../../../src/domain/run/RunConfig';
 import { BALANCE_SEEDS } from '../../support/balanceSeeds';
@@ -44,6 +46,35 @@ describe('generateMap · castillo (spec procedural-map 0016)', () => {
     expect(grass.every((i) => seen[i] === 1)).toBe(true);
     expect(seen[5 * 32 + 16]).toBe(1);
     expect(countOf(map, 'castle')).toBe(20);
+  });
+});
+
+// Design 0016 §3.4 paso 4: postcondición del castillo, con borradores rotos en el comprobador puro.
+describe('checkCastle · postcondición del castillo', () => {
+  const RULES = mapRules();
+  const check = (layout: Layout) => () => {
+    checkCastle(mapWith(RULES, layout), RULES);
+  };
+
+  it('un borrador correcto (solo la huella) pasa', () => {
+    expect(check(castleBlock())).not.toThrow();
+  });
+
+  it('falta una celda de la huella', () => {
+    expect(check({ ...castleBlock(), '16,8': 'grass' })).toThrow(/Invariante rota/);
+  });
+
+  it('una celda castle fuera de la huella', () => {
+    expect(check({ ...castleBlock(), '3,3': 'castle' })).toThrow(/Invariante rota/);
+  });
+
+  it('puerta no caminable', () => {
+    expect(check({ ...castleBlock(), '16,10': 'trunk' })).toThrow(/Invariante rota/);
+  });
+
+  it('celda caminable sin alcanzar desde la puerta', () => {
+    const walled: Layout = { ...castleBlock(), '0,1': 'trunk', '1,0': 'trunk' };
+    expect(check(walled)).toThrow(/Invariante rota/);
   });
 });
 
