@@ -15,6 +15,9 @@ export default defineConfig({
     include: ['tests/**/*.test.ts'],
     environment: 'node',
     testTimeout: 20_000,
+    // Tope de hilos: sin él Vitest usa todos los núcleos y deja la CPU al 100 % en cada verify y
+    // pre-commit. El fichero de balance (~9 s, secuencial) marca la duración igualmente.
+    maxWorkers: '50%',
     // `npm run bench` (aparte de `npm test`, que solo incluye *.test.ts): design 0002-enemy-spawning.
     benchmark: { include: ['tests/bench/**/*.bench.ts'] },
   },
