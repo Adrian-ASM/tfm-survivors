@@ -37,6 +37,8 @@ Reglas:
   Anota en el diario de IA qué consultaste y por qué vía.
 - Si un hook te bloquea, no lo esquives: adapta el diseño (puerto/adaptador) y anótalo para el diario de IA.
 - No instales dependencias que no estén en `design.md`.
+- En el commit, añade solo tus ficheros por ruta; nada de `git add -A` ni `git add .`: el orquestador comparte el
+  worktree y colarías sus cambios (0014).
 - Antes de usar una API del motor, compruébala en la documentación de la versión fijada.
 
 Salida al orquestador: tareas completadas, tests añadidos, incidencias y desviaciones respecto al diseño.

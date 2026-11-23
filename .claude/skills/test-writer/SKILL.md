@@ -25,3 +25,5 @@ description: Escribe tests siguiendo la pirámide de Clean Architecture del curs
 - Tests que pasan sin la implementación (comprueba siempre el rojo).
 - Asserts sobre detalles internos en lugar de comportamiento observable.
 - Perseguir el 100 % de cobertura a costa de tests sin valor.
+- E2E que adelanta `page.clock` sin sonda: gasta CPU como una partida a máxima velocidad (0014). Una regla que no
+  depende del render se prueba en Node; en E2E, `?e2e&manual` con `window.__sprint.step(n)`.
