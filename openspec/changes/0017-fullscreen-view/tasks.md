@@ -59,7 +59,7 @@
   - Código: `superRefine` de `RunConfigSchema` con `ringRadius > hypot(maxView) / 2` (estricto) y
     `SPAWN_RING_INSIDE_MAX_VIEW` en `waves.spawn.ringRadius`. Con el contenido actual (582,727 > 550,7) sigue válido.
   - Escenarios: "Radio del anillo fuera de rango", "Radio del anillo en el límite", "Margen heredado".
-- [ ] 2.4 **Mundo 3.840 × 2.160, tope 2.560 × 1.440, `ringRadius` 1.500 y tabla de 2.1** (design D8, D9; atómica).
+- [x] 2.4 **Mundo 3.840 × 2.160, tope 2.560 × 1.440, `ringRadius` 1.500 y tabla de 2.1** (design D8, D9; atómica).
   - Rojo primero (con los literales nuevos de las specs): rejilla 64 × 36 = 2.304; celda de (1.919,9; 1.079,9),
     (1.920, 1.080), (0, 0) y (3.840, 2.160); castillo 30–34 × 15–18 y salida (1.950, 1.170) con semillas 42, 1..1.000,
     0 y 4.294.967.295; arena 4.000 × 4.000 → 67 × 67, castillo 31–35 × 30–33, salida (2.010, 2.070); zona de inicio

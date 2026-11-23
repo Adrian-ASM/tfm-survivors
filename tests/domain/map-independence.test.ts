@@ -53,7 +53,7 @@ describe('Mapa generado frente a mapa vacío (semilla 7, quieto)', () => {
   it('el mapa generado no es el vacío (la comparación tiene sentido)', () => {
     const map = startSeededRun(CONFIG, 7).map;
     expect(map.counts.trunk).toBeGreaterThan(0);
-    expect(startSeededRun(CONFIG, 7, 'empty').map.counts.grass).toBe(576);
+    expect(startSeededRun(CONFIG, 7, 'empty').map.counts.grass).toBe(2304);
   });
 
   it('Scenario: Mismos spawns con y sin mapa (1.200 ticks: id, tipo y posición)', () => {
@@ -70,20 +70,25 @@ describe('Mapa generado frente a mapa vacío (semilla 7, quieto)', () => {
   });
 });
 
+/** Plazo de primera subida (spec upgrades, "Primera subida en el núcleo"). */
+const FIRST_OFFER_LIMIT = 4800;
+
 describe('Primera oferta con y sin mapa (semilla 7, quieto)', () => {
   /** Juega hasta la primera oferta y devuelve el tick y sus opciones. */
   function firstOffer(run: Run): { tick: number; options: string[] } {
-    play(run, 10_800, (_t, r) => r.status === 'choosing');
+    play(run, FIRST_OFFER_LIMIT, (_t, r) => r.status === 'choosing');
     const s = run.snapshot();
     return { tick: s.tick, options: s.offer.map((o) => o.id) };
   }
 
-  it('Scenario: Primera oferta igual con y sin mapa (mismo tick, mismas opciones y orden)', () => {
+  // 0017: se exige el plazo de primera subida en ambas, no el mismo tick ni las mismas opciones.
+  it('Scenario: Primera oferta en plazo con y sin mapa (ambas ≤ 4.800 ticks)', () => {
     const generated = firstOffer(startSeededRun(CONFIG, 7));
     const empty = firstOffer(startEmptyWithExit(CONFIG, 7));
     expect(generated.options).toHaveLength(3);
-    expect(generated.tick).toBe(empty.tick);
-    expect(generated.options).toEqual(empty.options);
+    expect(empty.options).toHaveLength(3);
+    expect(generated.tick).toBeLessThanOrEqual(FIRST_OFFER_LIMIT);
+    expect(empty.tick).toBeLessThanOrEqual(FIRST_OFFER_LIMIT);
   });
 });
 

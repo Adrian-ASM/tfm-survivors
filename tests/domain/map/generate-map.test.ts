@@ -31,11 +31,11 @@ function compositionFailures(map: GameMap): string[] {
     if (r.bridges < 2 || r.bridges > 3) failures.push(`puentes: ${String(r.bridges)}`);
   }
   const trunks = countOf(map, 'trunk');
-  if (trunks < 58 || trunks > 80) failures.push(`troncos: ${String(trunks)}`);
+  if (trunks < 231 || trunks > 322) failures.push(`troncos: ${String(trunks)}`);
   const patches = components(map, (t) => t === 'trunk').map((c) => c.length);
   if (patches.some((n) => n < 3 || n > 8)) failures.push(`manchas: ${patches.join(',')}`);
   const walkable = countOf(map, 'grass') + countOf(map, 'bridge');
-  if (walkable < 404) failures.push(`caminables: ${String(walkable)}`);
+  if (walkable < 1613) failures.push(`caminables: ${String(walkable)}`);
   if (trunksNextToBridges(map) > 0) failures.push('tronco junto a un puente');
   if (castleCells(map).join() !== FOOTPRINT_CELLS.join()) failures.push('huella del castillo');
   const wet = typesOf(map).flatMap((t, i) => (t === 'water' || t === 'bridge' ? [i] : []));
@@ -87,7 +87,7 @@ describe('generateMap · semillas 1..1000 (zona y conectividad)', () => {
 
   it('Scenario: Zona libre con todas las semillas (1..1.000, 0 y 2³² − 1)', () => {
     const dirty = [...maps, ...extra].filter(
-      ({ map }) => blockedInStartZone(map) > 0 || map.overlapsBlocked(990, 630, 16),
+      ({ map }) => blockedInStartZone(map) > 0 || map.overlapsBlocked(1950, 1170, 16),
     );
     expect(dirty.map((m) => m.seed)).toEqual([]);
   });
@@ -96,8 +96,8 @@ describe('generateMap · semillas 1..1000 (zona y conectividad)', () => {
     const wrong = [...maps, ...extra].filter(
       ({ map }) =>
         castleCells(map).join() !== FOOTPRINT_CELLS.join() ||
-        map.start.x !== 990 ||
-        map.start.y !== 630,
+        map.start.x !== 1950 ||
+        map.start.y !== 1170,
     );
     expect(wrong.map((m) => m.seed)).toEqual([]);
   });

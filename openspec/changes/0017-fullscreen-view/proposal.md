@@ -79,6 +79,9 @@ Con el change hecho, el jugador observa que:
   el mundo nuevo.
 - `openspec/specs/run-outcome` (modificada): balance recalibrado con el mundo y el anillo nuevos; fuente única del
   tamaño del mundo en tests.
+- `openspec/specs/auto-weapons` (modificada, añadida en apply el 2026-11-23 por decisión del usuario): en
+  "Armas observables en el juego", la ventana de la primera baja del jugador quieto pasa de 600 a 900 ticks por el
+  anillo de 1.500 y la tabla de oleadas nueva.
 
 ADRs previstos (los redacta el architect): modelo de escalado y tope de vista; aparición desacoplada de la vista
 (revisa la parte de ADR-0002 que hoy liga el anillo a la vista); tamaño de mundo y rejilla (extiende ADR-0013).

@@ -40,7 +40,7 @@ describe('placeSpawn', () => {
     }
   });
 
-  it('Scenario: Jugador en el centro del mundo por defecto (fuera de la cámara)', () => {
+  it('Scenario: Jugador en el centro del mundo por defecto (fuera del tope de vista)', () => {
     const { arena: world, waves } = aDefaultConfig();
     const defaultRules = unwrap(
       SpawnRules.create({ maxAlive: waves.maxAlive, maxBudget: waves.maxBudget, ...waves.spawn }),
@@ -53,7 +53,7 @@ describe('placeSpawn', () => {
       const p = placeSpawn(player, r, defaultRules, a, random);
       if (!p) throw new Error('se esperaba una posición');
       expect([a.clampX(p.x, r), a.clampY(p.y, r)]).toEqual([p.x, p.y]);
-      const insideCamera = p.x > 480 && p.x < 1440 && p.y > 270 && p.y < 810;
+      const insideCamera = p.x > 640 && p.x < 3200 && p.y > 360 && p.y < 1800;
       expect(insideCamera).toBe(false);
       const touchesTopOrBottom = p.y === r || p.y === world.height - r;
       const ringError = touchesTopOrBottom
@@ -61,11 +61,11 @@ describe('placeSpawn', () => {
         : Math.abs(p.distanceTo(player) - waves.spawn.ringRadius);
       expect(ringError).toBeLessThanOrEqual(0.001);
     }
-    expect([player.x, player.y]).toEqual([960, 540]);
+    expect([player.x, player.y]).toEqual([1920, 1080]);
   });
 
-  // Spec enemy-spawning (0016): el jugador nace ante la puerta, no en el centro del mundo.
-  it('Scenario: Jugador ante la puerta del castillo (semilla 42, vista (510, 360)–(1.470, 900))', () => {
+  // Spec enemy-spawning (0017): el jugador nace ante la puerta; fuera del tope, fuera de toda vista.
+  it('Scenario: Jugador ante la puerta del castillo (semilla 42, tope (670, 450)–(3.230, 1.890))', () => {
     const config = aDefaultConfig();
     const { arena: world, waves } = config;
     const defaultRules = unwrap(
@@ -73,7 +73,7 @@ describe('placeSpawn', () => {
     );
     const a = arena(world.width, world.height);
     const { x, y } = startSeededRun(config, 42).snapshot().player;
-    expect([x, y]).toEqual([990, 630]);
+    expect([x, y]).toEqual([1950, 1170]);
     const player = Vector2.of(x, y);
     const random = new Mulberry32RandomGenerator(42);
     for (let i = 0; i < 200; i++) {
@@ -82,7 +82,7 @@ describe('placeSpawn', () => {
       if (!p) throw new Error('se esperaba una posición');
       expect([a.clampX(p.x, r), a.clampY(p.y, r)]).toEqual([p.x, p.y]);
       expect(p.distanceTo(player)).toBeGreaterThanOrEqual(200);
-      const insideCamera = p.x > 510 && p.x < 1470 && p.y > 360 && p.y < 900;
+      const insideCamera = p.x > 670 && p.x < 3230 && p.y > 450 && p.y < 1890;
       expect(insideCamera).toBe(false);
     }
   });

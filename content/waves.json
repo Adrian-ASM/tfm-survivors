@@ -1,23 +1,35 @@
 {
   "maxAlive": 200,
   "maxBudget": 10,
-  "spawn": { "ringRadius": 582.727, "minDistance": 200, "maxAttempts": 8 },
+  "spawn": {
+    "ringRadius": 1500,
+    "minDistance": 200,
+    "maxAttempts": 8
+  },
   "segments": [
-    { "fromSecond": 0, "budgetPerSecond": 1, "types": ["goblin-torch"] },
-    { "fromSecond": 60, "budgetPerSecond": 2, "types": ["goblin-torch", "goblin-barrel"] },
+    {
+      "fromSecond": 0,
+      "budgetPerSecond": 1.2,
+      "types": ["goblin-torch"]
+    },
+    {
+      "fromSecond": 60,
+      "budgetPerSecond": 2.4,
+      "types": ["goblin-torch", "goblin-barrel"]
+    },
     {
       "fromSecond": 180,
-      "budgetPerSecond": 2.5,
+      "budgetPerSecond": 2.4,
       "types": ["goblin-torch", "goblin-barrel", "goblin-tnt"]
     },
     {
       "fromSecond": 300,
-      "budgetPerSecond": 4,
+      "budgetPerSecond": 3,
       "types": ["goblin-torch", "goblin-barrel", "goblin-tnt"]
     },
     {
       "fromSecond": 480,
-      "budgetPerSecond": 5.6,
+      "budgetPerSecond": 4.2,
       "types": ["goblin-torch", "goblin-barrel", "goblin-tnt"]
     }
   ]

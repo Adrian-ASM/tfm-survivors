@@ -157,7 +157,7 @@ describe('createRunLauncher (spec simulation-loop, "Semilla de la partida")', ()
       (s) => s?.tickRun.map().counts.grass,
     );
 
-    expect(counts).toEqual([576, 576, 576]);
+    expect(counts).toEqual([2304, 2304, 2304]);
   });
 
   it('usa el contenido recibido (aDefaultConfig también arranca)', () => {

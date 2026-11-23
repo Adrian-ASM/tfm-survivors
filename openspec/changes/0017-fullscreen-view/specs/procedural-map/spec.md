@@ -140,11 +140,17 @@ azar de la partida igual. Para comparar con el mapa generado se usa el **mapa va
 - **WHEN** ambas ejecutan 1.200 ticks
 - **THEN** en cada tick aparecen los mismos enemigos en ambas: mismo identificador, tipo y posición de aparición
 
-#### Scenario: Primera oferta igual con y sin mapa
-- **GIVEN** las dos partidas del escenario anterior con un jugador quieto que abre su primera oferta en el mismo tick
-  en ambas
-- **WHEN** se lee esa oferta
-- **THEN** sus opciones son las mismas y en el mismo orden
+#### Scenario: Primera oferta en plazo con y sin mapa
+<!-- Reformulado en apply de 0017 (decisión del usuario): con el mundo nuevo el jugador quieto ya no abre la primera
+     oferta en el mismo tick con ambos mapas (semilla 7: tick 1.527 con el generado, 1.846 con el vacío con salida),
+     porque el mapa cambia qué gemas alcanza. Se exige el plazo de primera subida, no la igualdad de tick ni de
+     opciones. -->
+- **GIVEN** las dos partidas del escenario anterior (semilla 7, input (0, 0), política de elección fija; una con el
+  mapa generado y otra con el mapa vacío con salida (1.950, 1.170))
+- **WHEN** cada una se ejecuta hasta abrir su primera oferta de mejoras o hasta el tick 4.800
+- **THEN** ambas abren su primera oferta en un tick ≤ 4.800 (plazo de primera subida)
+- **AND** no se exige que lo hagan en el mismo tick ni con las mismas opciones (medido en apply de 0017: 1.527 con el
+  mapa generado y 1.846 con el vacío)
 
 ### Requirement: Composición del mapa
 El sistema SHALL generar, con el contenido por defecto y con cada semilla de 1 a 50, un mapa que cumpla:

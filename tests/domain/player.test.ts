@@ -32,8 +32,8 @@ function arena(width = 960, height = 540): Arena {
   return r.value;
 }
 
-/** Mundo explícito de los escenarios de límites de 0013 (1.920 × 1.080). */
-const WORLD = arena(1920, 1080);
+/** Mundo explícito de los escenarios de límites de 0017 (3.840 × 2.160). */
+const WORLD = arena(3840, 2160);
 
 function simulate(
   start: [number, number],
@@ -91,14 +91,14 @@ describe('Player · movimiento', () => {
 });
 
 describe('Arena · límites', () => {
-  it('Scenario: Choque con el borde derecho (mundo 1.920 × 1.080)', () => {
-    const p = simulate([1900, 540], PlayerInput.of(1, 0), 60, WORLD);
-    expect([p.position.x, p.position.y]).toEqual([1904, 540]);
+  it('Scenario: Choque con el borde derecho (mundo 3.840 × 2.160)', () => {
+    const p = simulate([3820, 1080], PlayerInput.of(1, 0), 60, WORLD);
+    expect([p.position.x, p.position.y]).toEqual([3824, 1080]);
   });
 
-  it('Scenario: Choque con el borde inferior (mundo 1.920 × 1.080)', () => {
-    const p = simulate([960, 1060], PlayerInput.of(0, 1), 60, WORLD);
-    expect([p.position.x, p.position.y]).toEqual([960, 1064]);
+  it('Scenario: Choque con el borde inferior (mundo 3.840 × 2.160)', () => {
+    const p = simulate([1920, 2140], PlayerInput.of(0, 1), 60, WORLD);
+    expect([p.position.x, p.position.y]).toEqual([1920, 2144]);
   });
 
   it('Scenario: Esquina superior izquierda', () => {
@@ -106,15 +106,15 @@ describe('Arena · límites', () => {
     expect([p.position.x, p.position.y]).toEqual([16, 16]);
   });
 
-  it('Scenario: Esquina inferior derecha (mundo 1.920 × 1.080)', () => {
-    const p = simulate([1900, 1060], PlayerInput.of(1, 1), 60, WORLD);
-    expect([p.position.x, p.position.y]).toEqual([1904, 1064]);
+  it('Scenario: Esquina inferior derecha (mundo 3.840 × 2.160)', () => {
+    const p = simulate([3820, 2140], PlayerInput.of(1, 1), 60, WORLD);
+    expect([p.position.x, p.position.y]).toEqual([3824, 2144]);
   });
 
-  it('Scenario: Deslizar por la pared (mundo 1.920 × 1.080)', () => {
-    const p = simulate([1904, 540], PlayerInput.of(1, 1), 30, WORLD);
-    expect(p.position.x).toBe(1904);
-    expectWithinSpec(p.position.y - 540, 70.711);
+  it('Scenario: Deslizar por la pared (mundo 3.840 × 2.160)', () => {
+    const p = simulate([3824, 1080], PlayerInput.of(1, 1), 30, WORLD);
+    expect(p.position.x).toBe(3824);
+    expectWithinSpec(p.position.y - 1080, 70.711);
   });
 
   it('choque con el borde derecho de una arena de escenario de 960 × 540', () => {
@@ -189,23 +189,23 @@ describe('Player.withRules', () => {
   });
 });
 
-// Spec player-movement (0013): el mundo por defecto (1.920 × 1.080) es mayor que la vista.
+// Spec player-movement (0017): el mundo por defecto (3.840 × 2.160) es mayor que cualquier vista.
 describe('Player · mundo por defecto (0013)', () => {
-  it('Scenario: Partida nueva con el mundo por defecto (jugador en (960, 540))', () => {
+  it('Scenario: Partida nueva con el mundo por defecto (jugador en (1.920, 1.080))', () => {
     const run = startRun(aDefaultConfig());
 
     const { x, y } = run.snapshot().player;
 
-    expect([x, y]).toEqual([960, 540]);
+    expect([x, y]).toEqual([1920, 1080]);
   });
 
-  it('Scenario: El borde de la vista no es una pared ((940, 270) → (1.140, 270))', () => {
+  it('Scenario: El borde de la vista no es una pared ((1.270, 270) → (1.470, 270))', () => {
     const config = withPlayer(aDefaultConfig(), { speed: 200 }); // velocidad de la spec
-    const run = startRun(config, { player: { x: 940, y: 270 } });
+    const run = startRun(config, { player: { x: 1270, y: 270 } });
 
     const last = ticks(run, 60, PlayerInput.of(1, 0)).at(-1)?.player;
 
-    expectWithinSpec(last?.x ?? 0, 1140);
+    expectWithinSpec(last?.x ?? 0, 1470);
     expect(last?.y).toBe(270);
   });
 });

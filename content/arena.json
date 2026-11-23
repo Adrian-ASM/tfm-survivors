@@ -1,8 +1,8 @@
 {
-  "width": 1920,
-  "height": 1080,
+  "width": 3840,
+  "height": 2160,
   "maxView": {
-    "width": 960,
-    "height": 540
+    "width": 2560,
+    "height": 1440
   }
 }

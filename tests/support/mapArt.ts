@@ -1,4 +1,5 @@
 import appearanceJson from '../../content/appearance.json';
+import arenaJson from '../../content/arena.json';
 import provenanceJson from '../../content/asset-provenance.json';
 import type { MapSnapshot } from '../../src/domain/map/MapSnapshot';
 import type { Appearance } from '../../src/infrastructure/content/appearanceSchema';
@@ -57,7 +58,8 @@ export function repoMapLooks(missing: readonly string[] = []): MapLooks {
   return resolveMapLooks(a.map, a.terrain, loadedExcept(missing), bridgeFrames());
 }
 
-export const WORLD = { width: 1920, height: 1080 } as const;
+/** Mundo del contenido por defecto (content/arena.json, una sola fuente). */
+export const WORLD = { width: arenaJson.width, height: arenaJson.height } as const;
 
 /** Plan del mapa con los aspectos del repositorio y la semilla de decoración de `seed`. */
 export function planFor(map: MapSnapshot, seed = 42, missing: readonly string[] = []): MapArtPlan {

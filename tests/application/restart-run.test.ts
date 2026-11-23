@@ -203,7 +203,7 @@ describe('RestartRun · equivalencia y primer frame', () => {
   });
 
   // Spec player-movement (0016), "Posición inicial en el punto de salida del mapa".
-  it('Scenario: Partida nueva tras acabar en una esquina (R con la 123: jugador en (990, 630))', () => {
+  it('Scenario: Partida nueva tras acabar en una esquina (R con la 123: jugador en (1.950, 1.170))', () => {
     const corner = { x: 16, y: 16 };
     const s = started(lethal(), {
       player: corner,
@@ -215,6 +215,6 @@ describe('RestartRun · equivalencia y primer frame', () => {
 
     const r = new RestartRun(aDefaultConfig(), () => seededRun(123)).execute(s.tickRun);
     const fresh = r.ok ? r.value.tickRun.snapshot() : null;
-    expect([fresh?.tick, fresh?.player.x, fresh?.player.y]).toEqual([0, 990, 630]);
+    expect([fresh?.tick, fresh?.player.x, fresh?.player.y]).toEqual([0, 1950, 1170]);
   });
 });

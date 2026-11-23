@@ -26,13 +26,7 @@ import {
   WORLD_LOWER_THAN_VIEW,
   WORLD_NARROWER_THAN_VIEW,
 } from '../../src/infrastructure/content/schemas';
-import {
-  SCENARIO_ARENA,
-  aDefaultConfig,
-  aRunConfig,
-  rawContent,
-  type RawContent,
-} from '../support/builders';
+import { aDefaultConfig, aRunConfig, rawContent, type RawContent } from '../support/builders';
 
 type RawMap = RawContent['map'];
 import { StubRandom } from '../support/random';
@@ -41,13 +35,6 @@ function failure(raw: RawContent): { field: string; message: string } {
   const r = parseRunConfig(raw);
   if (r.ok) throw new Error('se esperaba un error de contenido');
   return r.error;
-}
-
-/** Contenido crudo con la arena explícita de escenario 960 × 540 (casos de radio de las specs). */
-function inScenarioArena(): RawContent {
-  const raw = rawContent();
-  raw.arena = { ...structuredClone(SCENARIO_ARENA), maxView: { width: 960, height: 540 } };
-  return raw;
 }
 
 /** Contenido crudo con un mundo explícito, tope 2.560 × 1.440 y anillo 1.500 explícitos (0017). */
@@ -254,9 +241,9 @@ describe('Contenido del jugador validado', () => {
     expect(failure(raw).message).toBe(SPEED_MUST_BE_POSITIVE);
   });
 
-  it('Radio que no cabe en la arena (jugador)', () => {
-    const raw = inScenarioArena();
-    raw.player.radius = 300;
+  it('Scenario: Radio que no cabe en la arena (jugador, 1.081 en 3.840 × 2.160)', () => {
+    const raw = rawContent();
+    raw.player.radius = 1081;
     expect(failure(raw).field).toBe('player.radius');
   });
 
@@ -426,15 +413,15 @@ describe('Contenido de enemigos y oleadas validado · reglas cruzadas (dominio d
     expect(e.message).toContain(legacy);
   });
 
-  it('Radio que no cabe en la arena', () => {
-    const raw = inScenarioArena();
-    raw.enemies.types[0].radius = 300;
+  it('Scenario: Radio que no cabe en la arena (1.081 en 3.840 × 2.160)', () => {
+    const raw = rawContent();
+    raw.enemies.types[0].radius = 1081;
     expect(failure(raw).field).toBe('enemies.types.0.radius');
   });
 
-  it('Radio en el límite exacto', () => {
-    const raw = inScenarioArena();
-    raw.enemies.types[0].radius = 270;
+  it('Scenario: Radio en el límite exacto (1.080 en 3.840 × 2.160)', () => {
+    const raw = rawContent();
+    raw.enemies.types[0].radius = 1080;
     expect(parseRunConfig(raw).ok).toBe(true);
   });
 
@@ -526,8 +513,9 @@ describe('Contenido por defecto del repositorio', () => {
   });
 
   // Spec world-camera (0017): el núcleo recibe el mundo, pero no el tope de vista ni la ventana.
-  it('Scenario: Contenido por defecto (el núcleo recibe el mundo sin ningún tamaño de vista)', () => {
-    expect(config?.arena).toEqual({ width: 1920, height: 1080 });
+  it('Scenario: Contenido por defecto (el núcleo recibe el mundo de 3.840 × 2.160, sin vista)', () => {
+    expect(config?.arena).toEqual({ width: 3840, height: 2160 });
+    expect(config?.waves.spawn.ringRadius).toBe(1500);
   });
 
   // Spec enemy-spawning (0017): "Radio del anillo por defecto", sin tamaño de vista ni de ventana.
@@ -620,9 +608,9 @@ describe('Contenido del mapa validado', () => {
     });
   });
 
-  it('el dominio recibe las reglas del mapa: rejilla de 32 × 18', () => {
+  it('el dominio recibe las reglas del mapa: rejilla de 64 × 36', () => {
     const rules = loaded.ok ? buildRunRules(loaded.value) : null;
-    expect(rules?.ok && [rules.value.map.cols, rules.value.map.rows]).toEqual([32, 18]);
+    expect(rules?.ok && [rules.value.map.cols, rules.value.map.rows]).toEqual([64, 36]);
   });
 
   it('Scenario: Celda en el límite del radio del jugador (32 carga, 31 falla con cellSize)', () => {
@@ -642,7 +630,7 @@ describe('Contenido del mapa validado', () => {
     ['cellSize', (m: RawMap) => (m.cellSize = 0)],
     ['cellSize', (m: RawMap) => (m.cellSize = 60.5)],
     ['startRadius', (m: RawMap) => (m.startRadius = 0)],
-    ['startRadius', (m: RawMap) => (m.startRadius = 541)],
+    ['startRadius', (m: RawMap) => (m.startRadius = 1081)],
     ['trunkDensity', (m: RawMap) => (m.trunkDensity = -0.01)],
     ['trunkDensity', (m: RawMap) => (m.trunkDensity = 0.31)],
     ['trunkPatch', (m: RawMap) => (m.trunkPatch = { min: 4, max: 3 })],
@@ -657,8 +645,8 @@ describe('Contenido del mapa validado', () => {
     ['castle.cols', (m: RawMap) => (m.castle = { cols: 0, rows: 4 })],
     ['castle.rows', (m: RawMap) => (m.castle = { cols: 5, rows: 0 })],
     ['castle.cols', (m: RawMap) => (m.castle = { cols: 5.5, rows: 4 })],
-    ['castle', (m: RawMap) => (m.castle = { cols: 17, rows: 4 })],
-    ['castle', (m: RawMap) => (m.castle = { cols: 5, rows: 10 })],
+    ['castle', (m: RawMap) => (m.castle = { cols: 33, rows: 4 })],
+    ['castle', (m: RawMap) => (m.castle = { cols: 5, rows: 19 })],
   ])('Scenario: Valores fuera de rango (%s)', (field, mutate) => {
     const raw = rawContent();
     mutate(raw.map);
@@ -666,14 +654,14 @@ describe('Contenido del mapa validado', () => {
   });
 
   it.each([
-    ['startRadius 540', (m: RawMap) => (m.startRadius = 540)],
+    ['startRadius 1.080', (m: RawMap) => (m.startRadius = 1080)],
     ['trunkDensity 0', (m: RawMap) => (m.trunkDensity = 0)],
     ['trunkDensity 0,3', (m: RawMap) => (m.trunkDensity = 0.3)],
     ['rivers 0', (m: RawMap) => (m.rivers = 0)],
     ['rivers 2', (m: RawMap) => (m.rivers = 2)],
     ['trunkPatch { 1, 1 }', (m: RawMap) => (m.trunkPatch = { min: 1, max: 1 })],
     ['castle { 1, 1 }', (m: RawMap) => (m.castle = { cols: 1, rows: 1 })],
-    ['castle { 16, 9 }', (m: RawMap) => (m.castle = { cols: 16, rows: 9 })],
+    ['castle { 32, 18 }', (m: RawMap) => (m.castle = { cols: 32, rows: 18 })],
   ])('Scenario: Límites válidos (%s)', (_name, mutate) => {
     const raw = rawContent();
     mutate(raw.map);
