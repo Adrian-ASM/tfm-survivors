@@ -151,7 +151,7 @@
     volver a `playing`; `results-overlay.test.ts` sigue en verde.
   - Escenarios: "Resultados centrados" (estructura: un único bloque), "Botones tras redimensionar" (la partida
     terminada no cambia).
-- [ ] 3.9 `applyUiScale` y CSS (design D6, D11). Ficheros: `src/infrastructure/dom/applyUiScale.ts`, `src/styles.css`.
+- [x] 3.9 `applyUiScale` y CSS (design D6, D11). Ficheros: `src/infrastructure/dom/applyUiScale.ts`, `src/styles.css`.
   - Rojo: `tests/infrastructure/apply-ui-scale.test.ts` con un doble de `style.setProperty`: pone `--ui-scale` 1 y 2
     según el frame y no escribe si no cambia.
   - CSS: `body { overflow: hidden }`, `#game > canvas { display: block }`, `.results-panel` centrado (fuera
