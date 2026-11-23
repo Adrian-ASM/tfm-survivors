@@ -269,7 +269,7 @@
     `waitForTimeout(PAUSED_MS/1000/300)` y los polls del tick. Se queda `@realtime` "velocidad 8".
   - Hecho: la guarda incluye el fichero, `verify` verde y `npm run test:e2e -- pause` verde.
 
-- [ ] 4.7 **`clear-progress.spec.ts`**.
+- [x] 4.7 **`clear-progress.spec.ts`**.
   - Cambios: `playToEnd` en manual; `menuInE2E` con `gameUrl({ manual: true })` y `step(11)`; los dos tests que
     juegan tras Jugar, en manual; `waitForTimeout(500)` pasa a `waitFrames(30)`.
   - Hecho: la guarda incluye el fichero, `verify` verde y `npm run test:e2e -- clear-progress` verde.

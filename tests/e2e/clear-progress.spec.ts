@@ -7,14 +7,16 @@ import {
   backToMenu,
   collect,
   confirmDialog,
+  expectManual,
   focusGame,
   gameUrl,
   menuButton,
   menuPanel,
-  playChoosingFirst,
+  playToEnd,
   playerUrl,
   probe,
-  snapshotOf,
+  step,
+  waitForRun,
   waitFrames,
 } from './probe';
 import { F, P0, progressText, seedProgress } from './progressFixtures';
@@ -29,15 +31,16 @@ const G_TEXT = progressText({
 });
 const DAMAGED = '{"schemaVersion":1,"records":';
 /**
- * Las partidas tras Volver al menú usan una semilla aleatoria nueva (spec simulation-loop): se
- * juegan a la velocidad máxima para que la derrota sin input llegue en pocos segundos. Los tests
- * solo exigen que la partida termine (victoria o derrota), así que el peor caso está acotado por la
- * duración: 36.000 ticks / 15 por frame = 2.400 frames (40 s a 60 Hz, 80 s a 30 Hz). El margen
- * cubre ese peor caso aunque la semilla no pierda pronto.
+ * Las partidas tras Volver al menú usan una semilla aleatoria nueva (spec simulation-loop) y se
+ * juegan en modo manual (change 0014) con la política de elección fija. Los tests solo exigen que
+ * la partida termine (victoria o derrota): el peor caso es la duración, 36.000 ticks, unos 60
+ * frames de 600 ticks. El margen de reloj cubre ese peor caso; no es la aserción.
  */
-const MAX_SPEED = 15;
-const PLAY_TIMEOUT_MS = 120_000;
-const TEST_TIMEOUT_MS = 180_000;
+const TEST_TIMEOUT_MS = 60_000;
+/** Ticks de la partida abandonada antes de volver al menú. */
+const ABANDONED_TICKS = 11;
+/** Frames sin efecto que se esperan en el menú (un número de frames, no un tiempo). */
+const IDLE_FRAMES = 30;
 
 const stored = (page: Page): Promise<string | null> =>
   page.evaluate((key) => window.localStorage.getItem(key), KEY);
@@ -69,18 +72,22 @@ async function openClear(page: Page): Promise<void> {
   await expect(confirmDialog(page)).toBeVisible();
 }
 
-/** Juega la partida en curso sin input hasta que termina (política de elección fija). */
-async function playToEnd(page: Page) {
+/** Juega la partida que empieza tras Jugar sin input hasta que termina (modo manual). */
+async function playUntilOver(page: Page) {
+  await expect.poll(async () => (await probe(page))?.screen).toBe('playing');
+  await waitForRun(page);
   await focusGame(page);
-  const ended = await playChoosingFirst(page, (s) => s.status === 'over', PLAY_TIMEOUT_MS);
+  const ended = await playToEnd(page);
   expect(ended?.status).toBe('over');
   return ended;
 }
 
-/** Carga con ?e2e a velocidad máxima y vuelve al menú sin terminar la partida. */
+/** Carga con ?e2e en modo manual y vuelve al menú sin terminar la partida. */
 async function menuInE2E(page: Page): Promise<void> {
-  await page.goto(gameUrl({ speed: MAX_SPEED }));
-  await expect.poll(async () => (await snapshotOf(page))?.tick ?? 0).toBeGreaterThan(10);
+  await page.goto(gameUrl({ manual: true }));
+  await expectManual(page);
+  await waitForRun(page);
+  expect(await step(page, ABANDONED_TICKS)).toBe(ABANDONED_TICKS);
   await focusGame(page);
   await backToMenu(page);
 }
@@ -106,7 +113,7 @@ test('Diálogo propio: Confirmar y Cancelar, 0 diálogos nativos y opciones bloq
   await menuButton(page, 'Exportar').dispatchEvent('click');
   await page.keyboard.press('Escape');
   await page.keyboard.press('r');
-  await page.waitForTimeout(500);
+  await waitFrames(page, IDLE_FRAMES);
 
   await expect(confirmDialog(page)).toBeVisible();
   await expect(menuPanel(page)).toBeVisible();
@@ -247,8 +254,7 @@ test('Cancelar con datos dañados: el valor sigue intacto y el overlay avisa de 
   await confirmDialog(page).getByRole('button', { name: 'Cancelar' }).click();
   expect(await stored(page)).toBe(DAMAGED);
   await menuButton(page, 'Jugar').click();
-  await expect.poll(async () => (await probe(page))?.screen).toBe('playing');
-  await playToEnd(page);
+  await playUntilOver(page);
 
   const notices = (await probe(page))?.progress?.notices ?? [];
   expect(notices.some((n) => n.includes('dañados'))).toBe(true);
@@ -272,8 +278,7 @@ test('Borrar datos dañados y jugar: sin aviso de dañados y 1 entrada con esa p
   ).setFiles({ name: 'x.json', mimeType: 'text/plain', buffer: Buffer.from('hola') });
   await expect(menuMessage(page)).toContainText('no válido');
   await menuButton(page, 'Jugar').click();
-  await expect.poll(async () => (await probe(page))?.screen).toBe('playing');
-  const ended = await playToEnd(page);
+  const ended = await playUntilOver(page);
 
   const progress = (await probe(page))?.progress;
   expect(progress?.message).toBeNull();

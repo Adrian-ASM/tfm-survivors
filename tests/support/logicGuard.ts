@@ -15,6 +15,7 @@ export const LOGIC_GUARDED_SPECS: readonly string[] = [
   'results.spec.ts',
   'progress.spec.ts',
   'pause.spec.ts',
+  'clear-progress.spec.ts',
 ];
 
 export type ClockWaitRule = 'waitForTimeout' | 'playChoosingFirst' | 'poll-tick';
