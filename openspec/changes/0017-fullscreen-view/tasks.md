@@ -144,7 +144,7 @@
     escucha activa.
   - Escenarios: "Muchos cambios seguidos" (sin escuchas duplicadas), "Redimensionado en el menú y con resultados"
     (sin partida nueva al reentrar).
-- [ ] 3.8 Líneas de resultados en el DOM (design D11). Ficheros: `src/infrastructure/dom/DomResultsLines.ts`,
+- [x] 3.8 Líneas de resultados en el DOM (design D11). Ficheros: `src/infrastructure/dom/DomResultsLines.ts`,
   `dom/ResultsPanel.ts` (cabecera), `sceneWidgets.ts` (`createResultsOverlay` solo con velo).
   - Rojo: `tests/infrastructure/dom-results-lines.test.ts` con dobles `{ textContent, hidden }`: `ResultsOverlay`
     sobre `DomResultsLines` rellena título, tiempo, nivel, bajas e indicación de R al terminar y las oculta al

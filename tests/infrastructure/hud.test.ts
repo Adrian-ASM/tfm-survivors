@@ -198,6 +198,9 @@ describe('El HUD solo lee el snapshot', () => {
   });
 });
 
+/** Línea de resultados mínima (las líneas reales son DOM desde 0017). */
+const aLine = () => ({ setText: () => undefined, setVisible: () => undefined });
+
 /** Objeto del motor falso: guarda posición y scrollFactor; cualquier otro método encadena. */
 interface Made {
   kind: string;
@@ -249,7 +252,13 @@ describe('Widgets fijos en pantalla (0013)', () => {
 
     createHud(scene, screenFrame(view.width, view.height));
     const offer = createUpgradeOverlay(scene, screenFrame(view.width, view.height));
-    const results = createResultsOverlay(scene);
+    const results = createResultsOverlay(scene, screenFrame(view.width, view.height), {
+      title: aLine(),
+      time: aLine(),
+      level: aLine(),
+      kills: aLine(),
+      hint: aLine(),
+    }).overlay;
     offer.sync(
       ['strict-rules', 'guardrail', 'shortcuts'].map((id) => ({
         id,

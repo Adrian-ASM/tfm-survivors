@@ -1,11 +1,17 @@
 import type Phaser from 'phaser';
 import { CARD_TEXT_WRAP } from './cardLayout';
 import { Hud, type HudPlacement } from './Hud';
-import { ResultsOverlay, type ShowableText } from './ResultsOverlay';
+import { ResultsOverlay, type ResultsTexts } from './ResultsOverlay';
 import { UpgradeOverlay, type CardBox, type CardParts, type CardText } from './UpgradeOverlay';
 import { XpBar } from './XpBar';
 import type { ScreenFrame } from './ui/screenFrame';
-import { hudLayout, type BarAnchor, type HudLayout, type TextAnchor } from './ui/uiLayout';
+import {
+  hudLayout,
+  veilLayout,
+  type BarAnchor,
+  type HudLayout,
+  type TextAnchor,
+} from './ui/uiLayout';
 
 // Fábricas de objetos del motor para el HUD y los overlays (presentación, sin lógica). Se llaman
 // una vez en `GameScene.create()`; la lógica vive en `Hud`, `UpgradeOverlay` y `ResultsOverlay`.
@@ -23,10 +29,6 @@ const RESULTS_VEIL_ALPHA = 0.75;
 const CARD_COLOR = 0x23233a;
 const CARD_BORDER = 0x7ce2fe;
 const TEXT_STYLE = { fontFamily: 'monospace', fontSize: '14px', color: '#ffffff' } as const;
-const TITLE_STYLE = { ...TEXT_STYLE, fontSize: '40px' } as const;
-const RESULTS_STYLE = { ...TEXT_STYLE, fontSize: '20px' } as const;
-/** Separación vertical de las líneas del overlay de resultados respecto al centro. */
-const RESULTS_LINES_DY = [-90, -20, 15, 50, 110] as const;
 
 type Scene = Phaser.Scene;
 
@@ -150,20 +152,19 @@ export function createUpgradeOverlay(scene: Scene, frame: ScreenFrame): UpgradeO
   return new UpgradeOverlay(veil, cards, frame);
 }
 
-/** Overlay de resultados (spec run-results): velo y 5 líneas centradas, por encima de todo. */
-export function createResultsOverlay(scene: Scene): ResultsOverlay {
-  const { width, height } = scene.scale;
+/**
+ * Overlay de resultados (spec run-results): en Phaser solo el velo, por encima de todo; las 5 líneas
+ * son DOM y llegan ya creadas (`DomResultsLines`, design 0017 D11).
+ */
+export function createResultsOverlay(
+  scene: Scene,
+  frame: ScreenFrame,
+  texts: ResultsTexts,
+): { overlay: ResultsOverlay; veil: Phaser.GameObjects.Rectangle } {
+  const v = veilLayout(frame);
   const veil = scene.add
-    .rectangle(width / 2, height / 2, width, height, VEIL_COLOR, RESULTS_VEIL_ALPHA)
+    .rectangle(v.x, v.y, v.width, v.height, VEIL_COLOR, RESULTS_VEIL_ALPHA)
     .setScrollFactor(0)
     .setDepth(RESULTS_DEPTH);
-  const [title, time, level, kills, hint] = RESULTS_LINES_DY.map((dy, i): ShowableText =>
-    scene.add
-      .text(width / 2, height / 2 + dy, '', i === 0 ? TITLE_STYLE : RESULTS_STYLE)
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setDepth(RESULTS_DEPTH + 1),
-  );
-  if (!title || !time || !level || !kills || !hint) throw new Error('Faltan líneas de resultados');
-  return new ResultsOverlay(veil, { title, time, level, kills, hint });
+  return { overlay: new ResultsOverlay(veil, texts), veil };
 }

@@ -14,7 +14,7 @@ import { PauseKey } from './PauseKey';
 import type { RingSprite } from './PulseLayer';
 import { RestartKey } from './RestartKey';
 import { GAME_SCENE_KEY, MENU_SCENE_KEY } from './sceneKeys';
-import type { ResultsOverlay } from './ResultsOverlay';
+import type { ResultsOverlay, ResultsTexts } from './ResultsOverlay';
 import type { ResultsView } from './resultsText';
 import type { RunLauncher } from './RunLauncher';
 import { createHud, createResultsOverlay, createUpgradeOverlay } from './sceneWidgets';
@@ -95,6 +95,8 @@ export interface GameSceneDeps {
    */
   readonly decorSeed: () => number;
   readonly progress: SceneProgress;
+  /** Las 5 líneas de resultados, en el DOM con el panel (design 0017 D11). */
+  readonly resultsLines: ResultsTexts;
   readonly pause: PauseView;
   readonly onRender?: OnRender;
   readonly onScreen?: (screen: Screen) => void;
@@ -124,6 +126,11 @@ interface Widgets {
   readonly hud: Hud;
   readonly offer: UpgradeOverlay;
   readonly results: ResultsOverlay;
+  /** Velo de resultados (Phaser): se recoloca al redimensionar. */
+  readonly resultsVeil: {
+    setPosition(x: number, y: number): unknown;
+    setSize(w: number, h: number): unknown;
+  };
   readonly move: KeyboardInput;
   readonly choice: ChoiceKeys;
   readonly restart: RestartKey;
@@ -193,13 +200,15 @@ export class GameScene extends Phaser.Scene {
     this.rig = new CameraRig(this.cameras.main, this.deps.world);
     const snapshot = started.tickRun.snapshot();
     const frame = screenFrame(this.scale.width, this.scale.height);
+    const results = createResultsOverlay(this, frame, this.deps.resultsLines);
     this.w = {
       mapArt,
       mapLooks,
       layers,
       hud: createHud(this, frame),
       offer: createUpgradeOverlay(this, frame),
-      results: createResultsOverlay(this),
+      results: results.overlay,
+      resultsVeil: results.veil,
       move: new KeyboardInput(keyboard),
       choice: new ChoiceKeys(keyboard),
       restart: new RestartKey(keyboard),

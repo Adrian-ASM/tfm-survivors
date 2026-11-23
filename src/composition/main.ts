@@ -198,6 +198,7 @@ function bootstrap(): void {
     // Variedad de árboles de la partida en curso (0016): `probe.seed` ya es la de esa partida.
     decorSeed: () => decorSeedOf(probe.seed),
     progress: progress.scene,
+    resultsLines: progress.resultsLines,
     pause,
     // Snapshot y sprites en la misma llamada: cualquier lectura ve un par coherente (design D7).
     onRender: (snapshot, results, sprites) => {
