@@ -18,6 +18,7 @@ import {
   snapshotOf,
   startCameraSampler,
   stopCameraSampler,
+  toScreen,
   waitFrames,
   walkToCorner,
   watchNextRun,
@@ -225,4 +226,29 @@ test.describe('HUD y overlays con la cámara movida', () => {
     await backToMenu(page);
     await expect(menuPanel(page)).toBeVisible();
   });
+});
+
+// Spec world-camera (0013), "Elementos de la partida en coordenadas de mundo": pantalla = mundo −
+// esquina del rectángulo visible de la sonda.
+test('Scenario: Enemigo a la derecha del jugador ((1.200, 600) → pantalla (720, 330))', async ({
+  page,
+}) => {
+  await page.goto(gameUrl({ seed: 42 }));
+  await expect.poll(async () => (await probe(page))?.camera ?? null).not.toBeNull();
+  const camera = (await probe(page))?.camera;
+  if (!camera) throw new Error('Sin cámara');
+
+  expect(toScreen({ x: 1200, y: 600 }, camera)).toEqual({ x: 720, y: 330 });
+});
+
+test('Scenario: Jugador junto a una esquina ((16, 1.064) → pantalla (16, 524))', async ({
+  page,
+}) => {
+  test.setTimeout(60_000);
+  const at = await atCorner(page, 'bl');
+  const camera = (await probe(page))?.camera;
+  if (!at || !camera) throw new Error('Sin esquina o sin cámara');
+
+  expect([at.player.x, at.player.y]).toEqual([16, WORLD.height - 16]);
+  expect(toScreen(at.player, camera)).toEqual({ x: 16, y: VIEW.height - 16 });
 });

@@ -629,3 +629,9 @@ export async function cornerTour(
   const walked = await walkToCorners(page, world);
   return { walked, sample: await stopCameraSampler(page) };
 }
+
+/** Posición en pantalla de un punto del mundo con la cámara dada: (x − izquierda, y − arriba). */
+export const toScreen = (
+  point: { x: number; y: number },
+  camera: CameraViewData,
+): { x: number; y: number } => ({ x: point.x - camera.x, y: point.y - camera.y });

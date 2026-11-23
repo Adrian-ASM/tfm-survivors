@@ -120,7 +120,7 @@
   Escenarios: world-camera "Overlay de elección con la cámara movida", "Resultados y pausa con la cámara movida",
   "HUD con la cámara movida" (en el navegador, posición del lienzo).
   Test: `tests/e2e/camera.spec.ts`. E2E afectados: `camera`, `pause`, `level-up`
-- [ ] 4.4 Enemigos en coordenadas de mundo y aparición fuera de pantalla: `enemies.spec.ts` pierde `ARENA` y lee
+- [x] 4.4 Enemigos en coordenadas de mundo y aparición fuera de pantalla: `enemies.spec.ts` pierde `ARENA` y lee
   `content/arena.json`; nuevo caso `?e2e&seed=42` sin input, 600 frames, primera posición de cada id fuera del
   rectángulo visible (480, 270)–(1.440, 810); conversión de pantalla (x − izquierda, y − arriba) para el enemigo y el
   jugador junto a una esquina. Guardarraíl `single-arena-source.test.ts` (D6): sin `DEFAULT_ARENA` en `tests/` y
