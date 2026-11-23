@@ -137,7 +137,7 @@
   `speed`
 
 ## 5. Rendimiento
-- [ ] 5.1 Suite E2E con `CI_LIKE=1 --workers=12 --repeat-each=3` sobre `camera`, `sprites`, `smoke` y `menu-flow`;
+- [x] 5.1 Suite E2E con `CI_LIKE=1 --workers=12 --repeat-each=3` sobre `camera`, `sprites`, `smoke` y `menu-flow`;
   si aparece temblor visible con la cámara en movimiento, `roundPixels` true (R4) con su test en
   `camera-rig.test.ts`. Escenario: sprite-rendering "Fondo en las cuatro esquinas" (sin fallos intermitentes).
   E2E afectados: `camera`, `sprites`, `smoke`, `menu-flow`

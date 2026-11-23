@@ -3,7 +3,6 @@ import arena from '../../content/arena.json' with { type: 'json' };
 import {
   CORNERS,
   E2E_SPEED,
-  backToMenu,
   collect,
   cornerTour,
   expectSpeed,
@@ -76,6 +75,8 @@ const BOTTOM_RIGHT = CORNERS.find((c) => c.name === 'br');
 /** Margen de reloj (no es la aserción): llegar a la esquina y perder quieto a E2E_SPEED. */
 const CORNER_TIMEOUT_MS = 20_000;
 const DEFEAT_TIMEOUT_MS = 60_000;
+/** Primer segundo de la partida nueva (spec run-results: tick ≤ 60). */
+const FRESH_MAX_TICKS = 60;
 
 /** Partida en `?e2e&seed=7` a E2E_SPEED con el jugador llevado a la esquina inferior derecha. */
 async function toBottomRight(page: Page): Promise<SnapshotView | null> {
@@ -89,8 +90,9 @@ async function toBottomRight(page: Page): Promise<SnapshotView | null> {
 
 /** Lo que exige la spec del primer frame de una partida nueva: jugador y cámara en el centro. */
 function expectCentered(frame: FirstFrameView): void {
-  // Primer frame pintado: a E2E_SPEED ya lleva hasta 8 ticks; sin input, el jugador no se ha movido.
-  expect(frame.snapshot?.tick).toBeLessThanOrEqual(E2E_SPEED);
+  // Primer frame pintado de la partida nueva: a E2E_SPEED, y más con la máquina cargada, ya lleva
+  // varios ticks (como en results.spec, primer segundo); sin input, el jugador no se ha movido.
+  expect(frame.snapshot?.tick).toBeLessThanOrEqual(FRESH_MAX_TICKS);
   expect([frame.snapshot?.player.x, frame.snapshot?.player.y]).toEqual([
     WORLD.width / 2,
     WORLD.height / 2,
@@ -128,7 +130,9 @@ test('Scenario: Partida nueva tras acabar en una esquina (Volver al menú y Juga
   const corner = await toBottomRight(page);
   expect(corner).not.toBeNull();
 
-  await backToMenu(page);
+  await pauseWhileRunning(page);
+  await pauseOverlay(page).getByRole('button', { name: 'Volver al menú' }).click();
+  await expect(menuPanel(page)).toBeVisible();
   expect((await probe(page))?.camera).toBeNull();
   await watchNextRun(page);
   await menuButton(page, 'Jugar').click();
@@ -163,6 +167,26 @@ async function waitOffer(page: Page): Promise<SnapshotView | null> {
     await page.waitForTimeout(50);
   }
   return null;
+}
+
+/**
+ * Pausa con Esc (solo actúa con la partida `running`): antes elige la opción 1 de cualquier oferta
+ * abierta, que con la máquina cargada puede abrirse justo al llegar a la esquina. Reintenta si Esc
+ * cayó en un frame con oferta.
+ */
+async function pauseWhileRunning(page: Page): Promise<void> {
+  await expect
+    .poll(async () => {
+      const snap = await snapshotOf(page);
+      if (snap?.status === 'choosing') {
+        await page.keyboard.press('1');
+        return false;
+      }
+      if (await pauseOverlay(page).isVisible()) return true;
+      await page.keyboard.press('Escape');
+      return pauseOverlay(page).isVisible();
+    })
+    .toBe(true);
 }
 
 /**
@@ -206,8 +230,7 @@ test.describe('HUD y overlays con la cámara movida', () => {
     const boxes: Record<string, { canvas: unknown; pause: unknown; results: unknown }> = {};
     for (const name of ['tr', REFERENCE]) {
       expect(await atCorner(page, name)).not.toBeNull();
-      await page.keyboard.press('Escape');
-      await expect(pauseOverlay(page)).toBeVisible();
+      await pauseWhileRunning(page);
       const pause = await pauseOverlay(page).boundingBox();
       await pauseOverlay(page).getByRole('button', { name: 'Reanudar' }).click();
       await focusGame(page);
@@ -223,7 +246,8 @@ test.describe('HUD y overlays con la cámara movida', () => {
     expect(boxes.tr).toEqual(boxes[REFERENCE]);
 
     expect(await atCorner(page, 'tr')).not.toBeNull();
-    await backToMenu(page);
+    await pauseWhileRunning(page);
+    await pauseOverlay(page).getByRole('button', { name: 'Volver al menú' }).click();
     await expect(menuPanel(page)).toBeVisible();
   });
 });
