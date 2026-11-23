@@ -21,6 +21,11 @@ export function mapRules(
   return r.value;
 }
 
+/** Mapa vacío de la rejilla por defecto sobre una arena dada (escenarios sin mapa declarado). */
+export function openMap(arena: Arena): GameMap {
+  return GameMap.open(mapRules(DEFAULT_MAP, arena.width, arena.height));
+}
+
 /** Celdas `'c,r'` → tipo sobre hierba (p. ej. `{ '10,4': 'trunk' }`), en orden de filas. */
 export type Layout = Readonly<Record<string, CellType>>;
 

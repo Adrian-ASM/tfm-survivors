@@ -113,4 +113,80 @@ export class GameMap {
       bottom: Math.min((row + 1) * s, this.height),
     };
   }
+
+  /**
+   * ¿Solapa el círculo (x, y, r) alguna celda no caminable? Distancia del centro al punto más
+   * cercano del rectángulo cerrado, estricta: la tangencia no es solape (con un margen de redondeo
+   * de `TANGENCY_EPS` en d², para que un contacto calculado con raíces siga siendo tangente).
+   */
+  overlapsBlocked(x: number, y: number, r: number): boolean {
+    const limit = r * r - TANGENCY_EPS;
+    for (let row = this.rowAt(y - r); row <= this.rowAt(y + r); row++) {
+      const ey = gap(y, row * this.cellSize, this.edge(row + 1, this.height));
+      for (let col = this.colAt(x - r); col <= this.colAt(x + r); col++) {
+        if (this.isWalkable(col, row)) continue;
+        const ex = gap(x, col * this.cellSize, this.edge(col + 1, this.width));
+        if (ex * ex + ey * ey < limit) return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Posición x final de un círculo que barre de `x0` a `x1` a la altura `y` (design 0015 §4): el
+   * primer contacto con una celda no caminable en la dirección del movimiento (cara: tangente a
+   * ella; esquina: `left − √(r² − ey²)`), recortado a [x0, x1]. Sin túneles ni rebotes; sin asignar.
+   */
+  limitMoveX(x0: number, x1: number, y: number, r: number): number {
+    return this.sweep(x0, x1, y, r, true);
+  }
+
+  /** Como `limitMoveX` en el eje y, con la x ya resuelta. */
+  limitMoveY(y0: number, y1: number, x: number, r: number): number {
+    return this.sweep(y0, y1, x, r, false);
+  }
+
+  /** Columna (eje x) o fila (eje y) de una coordenada de mundo. */
+  private indexAt(v: number, alongX: boolean): number {
+    return alongX ? this.colAt(v) : this.rowAt(v);
+  }
+
+  /** Borde final de la celda `index − 1` en un eje, recortado al mundo. */
+  private edge(index: number, side: number): number {
+    return Math.min(index * this.cellSize, side);
+  }
+
+  private sweep(a0: number, a1: number, b: number, r: number, alongX: boolean): number {
+    if (a1 === a0) return a0;
+    const forward = a1 > a0;
+    const aSide = alongX ? this.width : this.height;
+    const bSide = alongX ? this.height : this.width;
+    const j0 = this.indexAt(Math.min(a0, a1) - r, alongX);
+    const j1 = this.indexAt(Math.max(a0, a1) + r, alongX);
+    const k1 = this.indexAt(b + r, !alongX);
+    let limit = a1;
+    for (let k = this.indexAt(b - r, !alongX); k <= k1; k++) {
+      const eb = gap(b, k * this.cellSize, this.edge(k + 1, bSide));
+      if (eb >= r) continue;
+      const reach = Math.sqrt(r * r - eb * eb);
+      for (let j = j0; j <= j1; j++) {
+        if (alongX ? this.isWalkable(j, k) : this.isWalkable(k, j)) continue;
+        const near = j * this.cellSize;
+        const far = this.edge(j + 1, aSide);
+        if (forward && near >= a0) limit = Math.min(limit, near - reach);
+        if (!forward && far <= a0) limit = Math.max(limit, far + reach);
+      }
+    }
+    return forward ? Math.max(a0, limit) : Math.min(a0, limit);
+  }
+}
+
+/** Margen de redondeo en d² para la tangencia (px²; irrelevante a escala de juego). */
+const TANGENCY_EPS = 1e-6;
+
+/** Distancia de v al intervalo cerrado [lo, hi] (0 si está dentro). */
+function gap(v: number, lo: number, hi: number): number {
+  if (v < lo) return lo - v;
+  if (v > hi) return v - hi;
+  return 0;
 }

@@ -45,7 +45,7 @@ manchas de 3–8 en alguna semilla, ajustar `tuning.patchAttempts` y avisar al o
 provisional en la spec).
 
 ## 2. Colisión, gemas y partida con mapa
-- [ ] 2.1 Colisión por barrido (design §4.1): `GameMap.overlapsBlocked`, `limitMoveX/Y` (cara y esquina) y
+- [x] 2.1 Colisión por barrido (design §4.1): `GameMap.overlapsBlocked`, `limitMoveX/Y` (cara y esquina) y
   `Player.move(input, dt, arena, map)`; `Run` pasa `GameMap.open` mientras no haya `TerrainSource`.
   Escenarios: MOV "Choque frontal con un tronco", "Choque a velocidad máxima", "Deslizar a lo largo de una fila de
   troncos", "Rodear la esquina de un tronco", "Sin paso entre dos troncos en diagonal", "Cruzar un río por el

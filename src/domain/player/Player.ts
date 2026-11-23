@@ -1,7 +1,8 @@
 import type { Arena } from '../arena/Arena';
 import type { PlayerRules } from './PlayerRules';
 import { Health } from '../shared/Health';
-import type { Vector2 } from '../shared/Vector2';
+import { Vector2 } from '../shared/Vector2';
+import type { GameMap } from '../map/GameMap';
 import type { PlayerInput } from './PlayerInput';
 
 /**
@@ -45,11 +46,18 @@ export class Player {
     return new Player(this.position, rules, health, this.invulnerableUntil);
   }
 
-  /** Avanza dt segundos sin inercia y sin salir de la arena; conserva vida e invulnerabilidad. */
-  move(input: PlayerInput, dtSeconds: number, arena: Arena): Player {
-    const next = this.position.add(input.direction.scale(this.rules.speed * dtSeconds));
-    const position = arena.clampCircle(next, this.rules.radius);
-    return new Player(position, this.rules, this.health, this.invulnerableUntil);
+  /**
+   * Avanza dt segundos sin inercia, sin salir de la arena y sin solapar celdas no caminables del
+   * mapa (spec player-movement, "Colisión con el mapa"): por ejes, primero x y luego y con la x ya
+   * resuelta, cada uno tangente al primer obstáculo. Conserva vida e invulnerabilidad.
+   */
+  move(input: PlayerInput, dtSeconds: number, arena: Arena, map: GameMap): Player {
+    const step = this.rules.speed * dtSeconds;
+    const { x: x0, y: y0 } = this.position;
+    const r = this.rules.radius;
+    const x = map.limitMoveX(x0, arena.clampX(x0 + input.direction.x * step, r), y0, r);
+    const y = map.limitMoveY(y0, arena.clampY(y0 + input.direction.y * step, r), x, r);
+    return new Player(Vector2.of(x, y), this.rules, this.health, this.invulnerableUntil);
   }
 
   /** ¿Un contacto en el tick n le haría daño? */

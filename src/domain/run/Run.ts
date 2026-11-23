@@ -2,6 +2,7 @@ import type { Arena } from '../arena/Arena';
 import { contactDamage } from '../collision/contact';
 import type { Enemy } from '../enemy/Enemy';
 import { Horde } from '../enemy/Horde';
+import { GameMap } from '../map/GameMap';
 import type { Player } from '../player/Player';
 import type { PlayerInput } from '../player/PlayerInput';
 import type { RandomGenerator } from '../shared/RandomGenerator';
@@ -67,6 +68,7 @@ export class Run {
   private tickCount = 0;
   private phase: RunPhase = RUNNING;
   private readonly arena: Arena;
+  private readonly map: GameMap;
   private readonly director: WaveDirector;
   private readonly arsenal: Arsenal;
   private player: Player;
@@ -81,6 +83,7 @@ export class Run {
     initial: InitialState,
   ) {
     this.arena = rules.arena;
+    this.map = GameMap.open(rules.map);
     this.player = initial.player;
     this.horde = new Horde(initial.enemies, rules.arena, initial.kills);
     this.gems = initial.gems;
@@ -166,7 +169,7 @@ export class Run {
   tick(input: PlayerInput): void {
     if (this.phase.status !== 'running') return;
     const n = this.tickCount + 1;
-    this.player = this.player.move(input, TICK_SECONDS, this.arena);
+    this.player = this.player.move(input, TICK_SECONDS, this.arena, this.map);
     const { x, y } = this.player.position;
     this.horde.chase(x, y, TICK_SECONDS);
     if (this.arsenal.step(n, x, y, this.horde.alive) > 0) this.horde.removeDead(this.dropGem);
