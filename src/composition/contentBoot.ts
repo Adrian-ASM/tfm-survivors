@@ -1,7 +1,7 @@
 import type { RunConfig } from '../domain/run/RunConfig';
 import { err, invalidConfig, ok, type DomainError, type Result } from '../domain/shared/Result';
 import type { Appearance } from '../infrastructure/content/appearanceSchema';
-import { parseAppearance } from '../infrastructure/content/loadAppearance';
+import { checkTileScales, parseAppearance } from '../infrastructure/content/loadAppearance';
 import { parseRunConfig } from '../infrastructure/content/loadRunConfig';
 
 export const APPEARANCE_MISSING = 'Falta el aspecto de este tipo de enemigo.';
@@ -57,6 +57,11 @@ export function bootContent(
   const refs = checkAppearanceRefs(appearance.value, config.value);
   if (!refs.ok) {
     report(refs.error);
+    return null;
+  }
+  const scales = checkTileScales(appearance.value, config.value.map.cellSize);
+  if (!scales.ok) {
+    report(scales.error);
     return null;
   }
   return { config: config.value, appearance: appearance.value };

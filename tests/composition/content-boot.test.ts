@@ -3,6 +3,8 @@ import appearanceJson from '../../content/appearance.json';
 import provenanceJson from '../../content/asset-provenance.json';
 import { bootContent, checkAppearanceRefs } from '../../src/composition/contentBoot';
 import type { DomainError } from '../../src/domain/shared/Result';
+import { TILE_SCALE_MISMATCH } from '../../src/infrastructure/content/loadAppearance';
+import { canopyCut, roofCut } from '../../src/infrastructure/phaser/map/mapCuts';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import { rawContent } from '../support/builders';
 import { randomInputs } from '../support/inputs';
@@ -93,31 +95,79 @@ describe('bootContent', () => {
     expect([booted, errors.map((e) => e.field)]).toEqual([null, ['terrain.water']]);
   });
 
+  // Spec sprite-rendering (0016), "Baldosas del mapa a la escala de la celda".
+  it('Scenario: Escala del repositorio (fondo, agua y orilla de 60 × 60; castillo 300 × 240)', () => {
+    const { booted } = boot(raw());
+    if (!booted) throw new Error('arranque inválido');
+    const { ground, map } = booted.appearance;
+    const cell = booted.config.map.cellSize;
+    for (const a of [ground, map.water, map.shore]) {
+      expect(a.sheet.frameWidth * a.scale).toBe(cell);
+      expect(a.sheet.frameHeight * a.scale).toBe(cell);
+    }
+    const { castle } = map;
+    const { cols, rows } = booted.config.map.castle;
+    expect(castle.sheet.frameWidth * castle.scale).toBe(cols * cell);
+    expect(castle.sheet.frameHeight * castle.scale).toBe(rows * cell);
+  });
+
+  it('Scenario: Escala del repositorio (cortes de copa y tejado dentro del dibujo)', () => {
+    const { booted } = boot(raw());
+    if (!booted) throw new Error('arranque inválido');
+    const { trees, castle } = booted.appearance.map;
+    const cell = booted.config.map.cellSize;
+    const tree = canopyCut(trees, cell);
+    const roof = roofCut(castle, cell);
+    expect(tree > 0 && tree < trees.sheet.frameHeight).toBe(true);
+    expect(roof).toBe(192);
+  });
+
+  it.each([
+    ['ground.scale', (a: Record<string, unknown>) => ((a.ground as { scale: number }).scale = 1)],
+    [
+      'map.water.scale',
+      (a: Record<string, unknown>) =>
+        (((a.map as Record<string, { scale: number }>).water ?? { scale: 0 }).scale = 0.94),
+    ],
+    [
+      'map.shore.scale',
+      (a: Record<string, unknown>) =>
+        (((a.map as Record<string, { scale: number }>).shore ?? { scale: 0 }).scale = 1),
+    ],
+  ])('Scenario: Escala que no casa con la celda (%s: arranque bloqueado)', (field, mutate) => {
+    const r = raw();
+    mutate(r.appearance);
+    const { booted, errors } = boot(r);
+    expect([booted, errors.map((e) => e.field)]).toEqual([null, [field]]);
+    expect(errors[0]?.message).toBe(TILE_SCALE_MISMATCH);
+  });
+
+  it('una escala que casa con un error de redondeo ≤ 0,001 vale', () => {
+    const r = raw();
+    (r.appearance.ground as { scale: number }).scale = 0.9375 + 0.00001;
+    expect(boot(r).errors).toEqual([]);
+  });
+
   it('checkAppearanceRefs acepta el contenido del repositorio', () => {
     const { booted } = boot(raw());
     if (!booted) throw new Error('arranque inválido');
     expect(checkAppearanceRefs(booted.appearance, booted.config).ok).toBe(true);
   });
 
-  it('Scenario: Los aspectos no cambian la simulación (escalas × 2, semilla 42, 1.200 ticks)', () => {
+  it('Scenario: Los aspectos no cambian la simulación (entidades × 2 y otros colores del mapa)', () => {
     const doubled = raw();
     const a = doubled.appearance as {
       player: { scale: number };
       enemies: Record<string, { scale: number }>;
       projectile: { scale: number };
       gem: { scale: number };
-      ground: { scale: number };
       corpse: { scale: number };
+      terrain: Record<string, string>;
     };
-    for (const look of [
-      a.player,
-      ...Object.values(a.enemies),
-      a.projectile,
-      a.gem,
-      a.ground,
-      a.corpse,
-    ])
+    // 0016: el fondo ya no se dobla (su baldosa debe medir la celda); la spec habla de entidades.
+    for (const look of [a.player, ...Object.values(a.enemies), a.projectile, a.gem, a.corpse])
       look.scale *= 2;
+    a.terrain = { trunk: '#010101', water: '#020202', bridge: '#030303', castle: '#040404' };
     const one = boot(raw()).booted;
     const two = boot(doubled).booted;
     if (!one || !two) throw new Error('arranque inválido');

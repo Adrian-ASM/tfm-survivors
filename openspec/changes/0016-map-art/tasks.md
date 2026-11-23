@@ -68,7 +68,7 @@ opción (script temporal en el scratchpad) y esperar su decisión.
   lados de río). — escenarios: "Datos del
   repositorio", "Datos del mapa inválidos", "Rutas de hoja no admitidas" (hoja del castillo), "Colores del
   repositorio", "Colores inválidos", "Datos inválidos en el arranque" (sin agua)
-- [ ] 2.3 Escala de baldosa en el arranque: `loadAppearance(raw, { enemyIds, cellSize })` exige `frame · scale =
+- [x] 2.3 Escala de baldosa en el arranque: `loadAppearance(raw, { enemyIds, cellSize })` exige `frame · scale =
   cellSize` (± 0,001) en `ground`, `map.water` y `map.shore`; `ground.scale` 0,9375. Test de contenido del repositorio:
   castillo 320 × 256 · 0,9375 = 300 × 240 y corte derivado de copa/tejado con `0 < cut < frameHeight` (B4). —
   escenarios: "Escala del repositorio", "Escala que no casa con la celda"
