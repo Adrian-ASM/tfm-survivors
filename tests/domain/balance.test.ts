@@ -1,7 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { Run } from '../../src/domain/run/Run';
+import type { Run } from '../../src/domain/run/Run';
 import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
-import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import {
   BALANCE_SEEDS,
   STILL_DEFEAT_SEED,
@@ -15,7 +14,7 @@ import {
   withPlayer,
 } from '../support/builders';
 import { referenceBot } from '../support/policies';
-import { play, playReferenceBot, stillSurvivors } from '../support/runs';
+import { play, playReferenceBot, startSeededRun, stillSurvivors } from '../support/runs';
 
 // Medición de equilibrio de 0004 (tasks 4.7): primer golpe con semilla 42 en el tick 4100; con
 // semilla 7, primer pulso en el tick 950. Plazos de la spec tras el gate: 4.800 y 1.800. Desde 0005
@@ -37,11 +36,8 @@ const DEFAULT_CONFIG = aDefaultConfig();
 const botFor = (run: Run) => referenceBot(DEFAULT_CONFIG, run.map);
 const playBot = (run: Run, maxTicks: number) => playReferenceBot(run, botFor(run), maxTicks);
 
-function startDefault(seed: number): Run {
-  const r = Run.start(DEFAULT_CONFIG, new Mulberry32RandomGenerator(seed));
-  if (!r.ok) throw new Error(r.error.message);
-  return r.value;
-}
+/** Contenido por defecto con el mapa que genera la semilla, sembrado como la composición (0015). */
+const startDefault = (seed: number): Run => startSeededRun(DEFAULT_CONFIG, seed);
 
 describe('Plazos con progresión (0005, medidos en el punto de control 0.3)', () => {
   it('Scenario: Primera subida en el núcleo (semilla 7: oferta en algún tick ≤ 4.800)', () => {
@@ -105,8 +101,12 @@ describe('Plazos con progresión (0005, medidos en el punto de control 0.3)', ()
 
 // Spec run-outcome (0010), "Partida ganable y perdible": requisito "Perdible" sobre 1..50.
 describe('Jugador quieto pierde (0010)', () => {
-  it('Scenario: Jugador quieto pierde con todas las semillas', () => {
+  it('Scenario: Jugador quieto pierde con todas las semillas (mapa generado)', () => {
     expect(stillSurvivors(aDefaultConfig(), BALANCE_SEEDS, STILL_LIMIT_TICKS)).toEqual([]);
+  });
+
+  it('Scenario: Jugador quieto pierde también con el mapa vacío', () => {
+    expect(stillSurvivors(aDefaultConfig(), BALANCE_SEEDS, STILL_LIMIT_TICKS, 'empty')).toEqual([]);
   });
 
   it('Scenario: Muerte quieta en el límite de 180 s (viva en el tick 10.799 cuenta como fallo)', () => {

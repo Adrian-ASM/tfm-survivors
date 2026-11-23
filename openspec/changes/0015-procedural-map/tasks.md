@@ -87,7 +87,7 @@ provisional en la spec).
   bloqueada por un tronco", "Huida sin amenazas con el mapa generado", "El bot huye de las paredes del mundo real" y
   los vivos de huida y elección.
   Test: `tests/domain/policies.test.ts`. E2E afectados: —
-- [ ] 3.2 Medición con el mapa: `balance.test.ts` con `startSeededRun` (mapa generado) para el bot y el quieto, y
+- [x] 3.2 Medición con el mapa: `balance.test.ts` con `startSeededRun` (mapa generado) para el bot y el quieto, y
   quieto también con mapa vacío. Barrido temporal (scratchpad, no versionado) de `player.speed` 200/210/220 (y
   `maxHealth` 100/110 solo si speed no basta), con tabla `victorias | quietos vivos gen./vacío | primera subida |
   primer pulso | derrota media` en `docs/ai-log/`. **Parar y presentar la tabla al usuario**; no tocar contenido.
