@@ -7,6 +7,7 @@ import {
   aSegment,
   aStillType,
   aWavesConfig,
+  withExtraTypes,
   withScenarioCurve,
 } from '../support/builders';
 import { aBehaviorConfig, aProbeType, startRun, ticks } from '../support/runs';
@@ -87,8 +88,7 @@ describe('Invulnerabilidad mejorada (player-health 0024)', () => {
     const probe = aProbeType({ damage: 10, health: 1e6 });
     const config = withPlayerStat(
       {
-        ...base,
-        enemies: { ...base.enemies, types: [...base.enemies.types, probe] },
+        ...withExtraTypes(base, probe),
         waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 0)] }).waves,
       },
       'steady-nerves',

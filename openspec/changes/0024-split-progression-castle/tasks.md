@@ -64,7 +64,7 @@
   `run-levelup-heal.test.ts` y ampliar `run-meat.test.ts`.
 
 ## 2. Dominio · economía del oro
-- [ ] 2.1 Oro por baja, más oro en estructuras, bonus y gasto (TDD). `drops.goldPerKill` completa en `ResourceRules`;
+- [x] 2.1 Oro por baja, más oro en estructuras, bonus y gasto (TDD). `drops.goldPerKill` completa en `ResourceRules`;
   suelta en `onDeath` tras gema y madera (no si `detonated`); `Stockpile.add` con resto propio y `spend`;
   `resources.json` con la tabla y casas/torres provisionales (design §2); `aRunConfig` con `goldPerKill` 0,
   `withGoldPerKill` y `withoutResourceSources` en `tests/support/`, y los tests vivos de recuento de drops pasados a la

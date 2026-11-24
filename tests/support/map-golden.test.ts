@@ -51,3 +51,20 @@ describe('Firma dorada de las estructuras', () => {
     expect(startSeededRun(aDefaultConfig(), 42, 'empty').map.structures).toEqual([]);
   });
 });
+
+// Spec resources (0024): "Firmas intactas" con el oro por baja y el oro nuevo de casas y torres.
+describe('Firmas intactas con la economía del oro (0024)', () => {
+  it.each([42, 123] as const)(
+    'Scenario: Firmas intactas (%i: mapa, estructuras, recursos y ovejas)',
+    (seed) => {
+      const run = startSeededRun(aDefaultConfig(), seed);
+      const s = run.snapshot();
+
+      expect(Object.values(aDefaultConfig().resources.drops.goldPerKill ?? {})).not.toHaveLength(0);
+      expect(signatureOf(run.map.cells)).toBe(MAP_GOLDEN[seed]);
+      expect(structureSignatureOf(run.map.structures)).toEqual(STRUCTURE_GOLDEN[seed]);
+      expect(resourceSignatureOf(run.map)).toEqual(RESOURCE_GOLDEN[seed]);
+      expect(sheepSignatureOf(s)).toEqual(SHEEP_GOLDEN[seed]);
+    },
+  );
+});

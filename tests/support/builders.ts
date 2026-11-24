@@ -187,6 +187,33 @@ export const withDrops = (
   return withResources(config, { ...config.resources, drops: { enemies, structures } });
 };
 
+/**
+ * El mismo contenido con oro por baja (0024): la tabla completa sobre los tipos de enemigo de
+ * `config`, con 0 en los que no se dan (`withGoldPerKill(c, {})` = todo 0, la convención de los
+ * escenarios vivos que cuentan u ordenan recogibles de bajas con el contenido por defecto).
+ */
+export const withGoldPerKill = (
+  config: RunConfig,
+  gold: Readonly<Record<string, number>>,
+): RunConfig => {
+  const goldPerKill = Object.fromEntries(config.enemies.types.map((t) => [t.id, gold[t.id] ?? 0]));
+  const { drops } = config.resources;
+  return withResources(config, { ...config.resources, drops: { ...drops, goldPerKill } });
+};
+
+/**
+ * El mismo contenido con tipos de enemigo de escenario añadidos; si el contenido tiene tabla de oro
+ * por baja (0024: completa por tipo), los tipos nuevos entran con 0.
+ */
+export const withExtraTypes = (config: RunConfig, ...types: EnemyTypeConfig[]): RunConfig => {
+  const next = {
+    ...config,
+    enemies: { ...config.enemies, types: [...config.enemies.types, ...types] },
+  };
+  const table = config.resources.drops.goldPerKill;
+  return table ? withGoldPerKill(next, table) : next;
+};
+
 /** Ovejas por defecto, leídas de content/sheep.json (0023, una sola fuente). */
 export const CONTENT_SHEEP: SheepConfig = frozen(sheepJson);
 

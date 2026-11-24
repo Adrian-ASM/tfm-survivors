@@ -12,6 +12,8 @@ export const RESOURCE_PLACEMENT_MUST_BE_INTEGER =
 export const MEAT_HEAL_PERCENT_OUT_OF_RANGE =
   'La curación de la carne debe ser un entero entre 1 y 100 (% de la vida máxima).';
 export const RESOURCE_DROP_UNKNOWN_ENEMY = 'Drop de recursos de un tipo de enemigo desconocido';
+export const RESOURCE_GOLD_PER_KILL_INVALID =
+  'El oro por baja necesita un entero ≥ 0 para cada tipo de enemigo y ninguno más';
 export const RESOURCE_DROP_UNKNOWN_STRUCTURE =
   'Drop de recursos de un tipo de estructura desconocido';
 
@@ -37,6 +39,11 @@ export interface ResourcesConfig {
     readonly enemies: Readonly<Record<string, { readonly wood: number }>>;
     /** Oro por estructura destruida, por id de tipo de estructura. */
     readonly structures: Readonly<Record<string, { readonly gold: number }>>;
+    /**
+     * Oro por enemigo abatido (0024), por id de tipo: si está, exactamente los tipos del catálogo,
+     * enteros ≥ 0. Ausente (válido en el dominio, no en el fichero), ningún tipo suelta oro.
+     */
+    readonly goldPerKill?: Readonly<Record<string, number>>;
   };
   readonly woodPiles: { readonly count: number; readonly wood: number };
   readonly goldVeins: { readonly count: number; readonly gold: number; readonly radius: number };
@@ -93,6 +100,28 @@ function resolveDrops<K extends string>(
 }
 
 /**
+ * Oro por baja resuelto contra el catálogo (spec resources 0024): un tipo de más, un valor que no es
+ * entero ≥ 0 o un tipo que falta es un error que nombra el tipo.
+ */
+function resolveGoldPerKill(
+  table: Readonly<Record<string, number>> | undefined,
+  catalog: EnemyCatalog,
+): Result<ReadonlyMap<string, number>, DomainError> {
+  const out = new Map<string, number>();
+  if (!table) return ok(out);
+  const fail = (id: string) =>
+    err(
+      invalidConfig(`${PATH}.drops.goldPerKill.${id}`, `${RESOURCE_GOLD_PER_KILL_INVALID}: ${id}`),
+    );
+  for (const [id, gold] of Object.entries(table)) {
+    if (catalog.get(id) === undefined || !isCount(gold)) return fail(id);
+    out.set(id, gold);
+  }
+  const missing = catalog.ids.find((id) => !out.has(id));
+  return missing === undefined ? ok(out) : fail(missing);
+}
+
+/**
  * Reglas de los recursos de la partida (value object, spec resources): cantidades de cada fuente,
  * montones y vetas por mapa y su colocación. Un tipo sin drop no suelta nada (mapas vacíos válidos).
  */
@@ -105,6 +134,7 @@ export class ResourceRules {
     readonly placement: ResourcePlacementConfig,
     /** Carne por oveja y curación por unidad (0023). */
     readonly meat: MeatConfig,
+    private readonly goldPerKill: ReadonlyMap<string, number>,
   ) {
     Object.freeze(this);
   }
@@ -112,6 +142,11 @@ export class ResourceRules {
   /** Madera que suelta la baja sin explotar de un tipo de enemigo (0 si ninguna). */
   woodFor(enemyType: string): number {
     return this.wood.get(enemyType) ?? 0;
+  }
+
+  /** Oro que suelta un enemigo abatido de ese tipo (0 si ninguno, 0024). */
+  goldForEnemy(enemyType: string): number {
+    return this.goldPerKill.get(enemyType) ?? 0;
   }
 
   /** Oro que suelta un tipo de estructura al quedar destruida (0 si ninguno). */
@@ -140,6 +175,8 @@ export class ResourceRules {
       RESOURCE_DROP_UNKNOWN_STRUCTURE,
     );
     if (!gold.ok) return gold;
+    const perKill = resolveGoldPerKill(config.drops.goldPerKill, catalog);
+    if (!perKill.ok) return perKill;
     const scalarError = checkScalars(config);
     if (scalarError) return err(scalarError);
     return ok(
@@ -150,6 +187,7 @@ export class ResourceRules {
         Object.freeze({ ...config.goldVeins }),
         Object.freeze({ ...config.placement }),
         Object.freeze({ ...config.meat }),
+        perKill.value,
       ),
     );
   }

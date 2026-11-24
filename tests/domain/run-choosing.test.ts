@@ -13,6 +13,7 @@ import {
   aWavesConfig,
   anUpgrade,
   upgradesOf,
+  withExtraTypes,
 } from '../support/builders';
 import { CountingRandom } from '../support/random';
 import { aProbeType, advance, startRun, ticks } from '../support/runs';
@@ -29,8 +30,7 @@ function busyConfig(): RunConfig {
   const base = withScenarioCurve(aDefaultConfig());
   const probe = aProbeType({ health: 1e6, speed: 1e-6 });
   return {
-    ...base,
-    enemies: { ...base.enemies, types: [...base.enemies.types, probe] },
+    ...withExtraTypes(base, probe),
     waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 0)] }).waves,
   };
 }
@@ -98,7 +98,7 @@ describe('Pausa y reanudación', () => {
   it('Scenario: La invulnerabilidad no corre durante la pausa (sin daño de 21 a 40, sí en 41)', () => {
     const base = quietDefault({ upgrades: upgradesOf([anUpgrade('context-window')]) });
     const probe = aProbeType({ damage: 10, health: 1e6 });
-    const config = { ...base, enemies: { ...base.enemies, types: [...base.enemies.types, probe] } };
+    const config = withExtraTypes(base, probe);
     // El probe (1 px/tick) entra en contacto en el tick 10; la gema atraída se recoge en el 20.
     const setup: RunSetup = {
       player: atPlayer,
@@ -172,9 +172,8 @@ describe('Elección de mejora (Run.chooseUpgrade)', () => {
     const killer = aProbeType({ damage: 10, health: 1e6 });
     const dying = startRun(
       {
-        ...base,
+        ...withExtraTypes(base, killer),
         player: { ...base.player, maxHealth: 10 },
-        enemies: { ...base.enemies, types: [...base.enemies.types, killer] },
       },
       { player: atPlayer, enemies: [{ type: 'probe', ...atPlayer }] },
     );
@@ -238,8 +237,7 @@ describe('Cadencia y elecciones', () => {
   ) {
     const base = quietDefault({ upgrades: upgradesOf(list) });
     const config: RunConfig = {
-      ...base,
-      enemies: { ...base.enemies, types: [...base.enemies.types, still] },
+      ...withExtraTypes(base, still),
       weapons: weaponsOf(weapons),
     };
     return startRun(config, { player: atPlayer, ...setup });

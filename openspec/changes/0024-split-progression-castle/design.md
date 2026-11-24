@@ -385,6 +385,13 @@ por id con id propio de la curación; puerta declarada en mapas `open`/`cells`; 
   Tres escenarios de mejoras de arma a mitad de partida se retiran en 1.1 y vuelven en 3.2 con la compra.
   **Incidencia de specs**: "Límites válidos" de `resources` (carne 100 con el contenido por defecto) choca con la
   cota de la carne efectiva de `upgrades` (100 + el máximo de `hunter` > 100); el test prueba el límite sin `hunter`.
+- **Grupo 2**: `drops.goldPerKill` es **opcional en el dominio** (ausente = ningún tipo suelta oro, como los
+  catálogos vacíos); si está, debe tener exactamente los tipos del catálogo (enteros ≥ 0, error en
+  `resources.drops.goldPerKill.<tipo>`). El fichero lo exige (zod). Así `aRunConfig` (`NO_RESOURCES`) y `withDrops`
+  quedan con oro por baja 0 sin cambiar los escenarios que eligen otros tipos; `withGoldPerKill(c, {…})` construye la
+  tabla completa sobre los tipos de `c` y `withExtraTypes` añade tipos de escenario con 0. `aSheepConfig` aplica la
+  convención (oro por baja 0). `Stockpile.add(oro, madera, g)` y `spend(precio)`; el bonus de oro se aplica a la
+  suma de 7.1 y a cada veta en 7.2.
 
 ## ADRs
 - `docs/adr/0023-progresion-separada-y-tienda-como-fase.md` (nuevo): catálogo con dos orígenes sobre un vector de

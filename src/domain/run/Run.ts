@@ -296,9 +296,10 @@ export class Run {
     this.pickups.step(x, y, this.player.radius, this.player.pickupRadius, gain);
     // La bonificación se aplica a la suma del paso: con el resto arrastrado equivale a gema a gema.
     if (gain.xp > 0) this.experience.gain(gain.xp, this.player.effective.xpBonusPercent ?? 0);
-    this.stock.add(gain.gold, gain.wood);
+    const goldBonus = this.player.effective.goldBonusPercent ?? 0;
+    this.stock.add(gain.gold, gain.wood, goldBonus);
     if (gain.meat > 0) this.heal(gain.meat);
-    for (const v of this.veins) this.stock.add(v.tap(x, y, this.player.radius), 0);
+    for (const v of this.veins) this.stock.add(v.tap(x, y, this.player.radius), 0, goldBonus);
   }
 
   /**
@@ -383,15 +384,21 @@ export class Run {
   }
 
   /**
-   * Cada muerto suelta su gema en su posición, en orden de la lista (spec xp-gems), y después su
-   * madera si su tipo la suelta y no ha explotado por su mecha (spec enemy-hazards 0022); un
+   * Cada muerto suelta su gema en su posición, en orden de la lista (spec xp-gems), y después, si no
+   * ha explotado por su mecha, su madera (spec enemy-hazards 0022) y su oro por baja (spec resources
+   * 0024), si su tipo los suelta; un
    * guardia deja libre su hueco en el tope de su casa. Se crea una sola vez: no asigna por tick.
    */
   private readonly onDeath = (dead: Enemy): void => {
     const { x, y, type } = dead;
     this.pickups.drop('xp', x, y, type.xp);
-    const wood = dead.detonated ? 0 : this.rules.resources.woodFor(type.id);
-    if (wood > 0) this.pickups.drop('wood', x, y, wood);
+    if (!dead.detonated) {
+      const { resources } = this.rules;
+      const wood = resources.woodFor(type.id);
+      if (wood > 0) this.pickups.drop('wood', x, y, wood);
+      const gold = resources.goldForEnemy(type.id);
+      if (gold > 0) this.pickups.drop('gold', x, y, gold);
+    }
     dead.post?.release();
   };
 

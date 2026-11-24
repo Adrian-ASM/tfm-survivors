@@ -11,6 +11,7 @@ import {
   withDuration,
   withMeat,
   withPlayer,
+  withExtraTypes,
   withScenarioCurve,
 } from '../support/builders';
 import { CountingRandom } from '../support/random';
@@ -27,10 +28,8 @@ const quiet = (patch: Partial<RunConfig> = {}): RunConfig => ({
 });
 
 /** `quiet` con un tipo más (`still` de daño 10 o el perseguidor de daño 10). */
-const withType = (config: RunConfig, type = aStillType({ damage: 10 })): RunConfig => ({
-  ...config,
-  enemies: { ...config.enemies, types: [...config.enemies.types, type] },
-});
+const withType = (config: RunConfig, type = aStillType({ damage: 10 })): RunConfig =>
+  withExtraTypes(config, type);
 
 const meatAt = (x: number, y: number, value = 1, attracted = false) => ({
   kind: 'meat' as const,

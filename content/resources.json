@@ -1,7 +1,8 @@
 {
   "drops": {
     "enemies": { "goblin-barrel": { "wood": 1 } },
-    "structures": { "goblin-house": { "gold": 5 }, "goblin-tower": { "gold": 8 } }
+    "structures": { "goblin-house": { "gold": 15 }, "goblin-tower": { "gold": 25 } },
+    "goldPerKill": { "goblin-torch": 1, "goblin-tnt": 2, "goblin-barrel": 1, "goblin-tnt-guard": 2 }
   },
   "woodPiles": { "count": 8, "wood": 3 },
   "goldVeins": { "count": 3, "gold": 10, "radius": 30 },
