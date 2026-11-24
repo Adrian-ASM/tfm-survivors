@@ -2,14 +2,24 @@
 
 ## Resumen
 Opción A de `exploration.md`: cada entrada del plan del mapa (`planMapArt`, puro) lleva su caja en mundo
-(`bounds`). Una regla pura decide qué entradas tocan la **vista del frame que se va a pintar**, calculada con la
-misma fórmula que aplica la cámara en su `preRender` (sin el desfase de `worldView`), ampliada a celdas enteras
-más una celda de margen. Un `MapCuller` sin motor aplica `setVisible` solo a los objetos que cambian y solo cuando
-cambia la ventana de celdas. Todo en `src/infrastructure`. `domain`, `application`, `content/` y la firma dorada
-no cambian.
+(`bounds`). Una regla pura decide qué entradas intersectan el **rectángulo de recorte** del frame: la vista del
+frame que se va a pintar, calculada con la misma fórmula que aplica la cámara en su `preRender` (sin el desfase de
+`worldView`), ampliada exactamente M px por lado, con M = 1 celda de `map.cellSize`. Un `MapCuller` sin motor
+evalúa la regla **en cada frame** sobre todas las entradas y llama a `setVisible` solo en las que cambian. Todo en
+`src/infrastructure`. `domain`, `application`, `content/` y la firma dorada no cambian.
 
 Vía de consulta de la API: MCP `phaser-docs` (BaseCamera `worldView`, Camera `preRender`, Components.Visible
 `setVisible`) y, para la 4.2.1 instalada, los fuentes de `node_modules/phaser/src` (detalle en §2).
+
+## 0. Decisiones del gate (usuario, 2026-11-24)
+- **G1–G4 aprobadas** tal como se proponían en §11: `test.slow()` se mantiene (se quitará en un chore posterior si
+  los tres E2E del mapa real bajan a ≤ 30 s en el run del PR y en el de `main`); basta con mejorar frente a 0017;
+  margen fijo; un objeto que toca el borde se dibuja.
+- **Conflicto design/spec resuelto a favor de la spec**: se elimina la ampliación a celdas enteras y la clave de
+  celdas como disparador. El rectángulo de recorte es la vista del frame (fórmula del rig) + M px por lado,
+  M = `CULL_MARGIN_CELLS` × `map.cellSize` con `CULL_MARGIN_CELLS = 1`. La regla se evalúa en cada frame sobre
+  todas las entradas del plan (≤ 1.000 comparaciones AABB) y `setVisible` solo se llama donde cambia el estado.
+  D1/D2/D3 y §4–§6 ya reflejan esto.
 
 ## 1. Piezas por capa
 
@@ -18,10 +28,10 @@ Vía de consulta de la API: MCP `phaser-docs` (BaseCamera `worldView`, Camera `p
 | domain | (ninguna) | — | Sin cambios. Recortar es presentación, no regla de juego. |
 | application | (ninguna) | — | Sin cambios. |
 | infrastructure | `map/planMapArt.ts`: tipo `Box`, campo `bounds` en `TileDraw`, `SpriteDraw` y `RectDraw`; `MapArtPlan.cellSize` | Mod. | Puro. `objects`, `counts`, `cells` y el orden del plan no cambian (§3). |
-| infrastructure | `map/mapCulling.ts`: `cullWindow`, `touches`, clase `MapCuller` | Nueva | Puro, sin motor. Regla de visibilidad y aplicación incremental (§4, §5). |
+| infrastructure | `map/mapCulling.ts`: `CULL_MARGIN_CELLS`, `cullMargin(cellSize)`, `clipRect(view, margin)`, `touches(box, rect)`, clase `MapCuller` | Nueva | Puro, sin motor. Regla de visibilidad y aplicación incremental (§4, §5). |
 | infrastructure | `CameraRig.ts`: función pura `followView` y método `CameraRig.nextView()` | Mod. | Vista del frame que se va a pintar (§2). `view()` (sonda, `worldView`) sigue igual. |
 | infrastructure | `TerrainView.ts`: `MapArtCanvas.show(index, visible)`; `MapArtProbe.drawn` y `zeroMapArt` con `drawn: 0` | Mod. | Costura sin motor. `paintMapArt` no cambia de contrato. |
-| infrastructure | `phaserArt.ts` `mapArtCanvas`: lista `painted` en orden del plan y `show` | Mod. | Único punto con motor: `setVisible`. `foam` sigue aplicándose a **todas** las espumas pintadas, visibles o no (§6). |
+| infrastructure | `phaserArt.ts` `mapArtCanvas`: lista `painted` en orden de llamada (vaciada en `clear`) y `show` | Mod. | Único punto con motor: `setVisible`. `foam` sigue aplicándose a **todas** las espumas pintadas, visibles o no (§6). |
 | infrastructure | `RenderLayers.ts`: dueño del `MapCuller`; `paintMap` lo reinicia; `cullMap(view)` actualiza `counts.mapArt.drawn` | Mod. | Sin Phaser como valor, como hasta ahora. |
 | infrastructure | `GameScene.ts` `render`: tras `rig.track`, `layers.cullMap(rig.nextView())` | Mod. | Una línea; la escena sigue sin reglas. |
 | composition | (ninguna) | — | La sonda ya expone `sprites.mapArt` tal cual; `drawn` viaja con él. |
@@ -50,11 +60,13 @@ Consecuencia: en `GameScene.render` (dentro de `update`) `camera.worldView` toda
 Recortar contra él daría huecos de un frame en el borde que avanza.
 
 **Decisión D1**: la vista del recorte se calcula, no se lee. `followView(target, size, world)` (pura, en
-`CameraRig.ts`) devuelve `{ x: clamp(tx − w/2, 0, W − w), y: clamp(ty − h/2, 0, H − h), width: w, height: h }`,
-que es la fórmula de arriba con `originX = originY = 0,5`, zoom 1 y `bounds` (0, 0, W, H) del rig.
+`CameraRig.ts`) devuelve `{ x: clamp(tx − w/2, 0, max(0, W − w)), y: clamp(ty − h/2, 0, max(0, H − h)), width: w,
+height: h }`, que es la fórmula de arriba con `originX = originY = 0,5`, zoom 1 y `bounds` (0, 0, W, H) del rig.
 `CameraRig.nextView()` la aplica al objetivo que acaba de fijar `track` y al tamaño actual de la cámara
 (`FollowCamera` gana `readonly width` y `readonly height`, públicos en `BaseCamera`). Como `RESIZE` llega en
-`PRE_STEP`, el tamaño ya es el de este frame cuando se recorta.
+`PRE_STEP`, el tamaño ya es el de este frame cuando se recorta. El tamaño de la cámara es el del lienzo con el tope
+`arena.maxView` (0017), así que una ventana de 3.840 × 2.160 da una vista de 2.560 × 1.440, como dicen los
+escenarios de la spec; los tests puros reciben directamente la vista.
 
 La fórmula es la misma que ya comprueba el E2E de Cámara contra `worldView` (`gameplay.spec.ts` l. 114-141), así
 que si el motor cambiara de criterio ese E2E fallaría. `view()` (sonda `camera`) sigue leyendo `worldView`.
@@ -64,7 +76,8 @@ Descartado: margen de un frame de movimiento sin calcular la vista. Funciona a v
 
 ## 3. Cajas del plan (`bounds`)
 
-`Box = { x, y, width, height }` en px de mundo, la caja de lo que el objeto pinta:
+`Box = { x, y, width, height }` en px de mundo, la caja de lo que el objeto pinta (error ≤ 1 px, fija durante la
+partida):
 - `tiles` y `rect`: su propio rectángulo (origen (0, 0)).
 - `sprite`: con frame de `fw × fh` (hoja de `aspect.sheet`; puentes: `looks.bridges.rects[orientación]`) y el
   recorte `c` (o el frame entero si `crop` es `null`):
@@ -73,67 +86,76 @@ Descartado: margen de un frame de movimiento sin calcular la vista. Funciona a v
   Con `flipX` se toma la unión de `c` y de su espejo `fw − c.x − c.width` (conservador: el motor refleja el recorte,
   `textures/Frame.js` l. 632-635). Hoy solo se voltean árboles, cuyo recorte ocupa todo el ancho, así que la caja
   es la misma.
+- Castillo de la semilla 42 (escenario "Partes del castillo por separado"): tejado (1.800, 900)–(2.100, 1.080) y
+  fachada (1.800, 1.080)–(2.100, 1.140), por el corte `cut` de `castleDraws`.
 
 `MapArtPlan.cellSize` = `map.cellSize` del snapshot (60 px con `content/map.json`). Se añade al plan porque es lo
 único que falta al recorte y el plan ya se construye desde el snapshot.
 
-## 4. Regla de visibilidad, margen y cuantización
+## 4. Regla de visibilidad y margen
 
-- `cullWindow(view, cell)`: la vista ampliada hacia fuera a múltiplos de `cell` y luego `CULL_MARGIN_CELLS`
-  celdas por cada lado. Se devuelve como rango entero de celdas `{ c0, r0, c1, r1 }`, que sirve también de clave.
-- `touches(box, window)`: intersección **inclusiva**. Una caja que toca el borde de la ventana se dibuja
-  (conservador: nunca hay hueco). Si la spec delta dice otra cosa en "tocando el borde", manda la spec. Con el
-  margen no se nota en pantalla.
-- No se recorta la ventana al mundo: la vista ya viene recortada (D1). Las cajas que salen del mundo (copas de la
-  fila 0) siguen el mismo criterio.
+- `clipRect(view, margin)`: `{ x: view.x − M, y: view.y − M, width: view.width + 2M, height: view.height + 2M }`.
+  Sin cuantizar a celdas y sin recortar al mundo (la vista ya viene recortada por D1; las cajas que salen del
+  mundo, como copas de la fila 0, siguen el mismo criterio).
+- `touches(box, rect)`: intersección **inclusiva** (`box.x ≤ rect.x + rect.width && box.x + box.width ≥ rect.x`, y
+  lo mismo en y). Una caja que solo toca el borde se dibuja (G4; escenario "Caja que toca el borde": D y F sí, E y
+  G no, en los cuatro bordes).
+- La regla recibe M como parámetro, así los tests puros usan M = 0 y M = 60 como pide la spec; el juego usa
+  `cullMargin(plan.cellSize)`.
 
-**Decisión D2 (pregunta 4): margen fijo de 1 celda**, `CULL_MARGIN_CELLS = 1` (constante con nombre en
-`mapCulling.ts`), en celdas de `map.cellSize`. No es contenido de juego (no cambia lo que se ve ni la partida,
-regla 5), así que no va a `content/` ni a zod. Lo que se ve está siempre de 1 a 2 celdas (60-120 px) dentro de la
-ventana.
+**Decisión D2 (G3): margen fijo de 1 celda**, `CULL_MARGIN_CELLS = 1` (constante con nombre en `mapCulling.ts`),
+M = 1 × `map.cellSize` = 60 px con el contenido por defecto. No depende de la vista ni del snapshot (la spec lo
+permite). No es contenido de juego (no cambia lo que se ve ni la partida, regla 5), así que no va a `content/` ni a
+zod.
 - Fijo y no proporcional: el desfase ya está resuelto por D1, así que el margen solo absorbe el redondeo de
-  `Linear(sx, objetivo, 1)` (unas ULP) y la cuantización. Con un margen proporcional (p. ej. 10 % de la vista)
-  se recortaría menos justo con la vista grande (2.560 × 1.440: unos 256 px más por lado), que es donde ya se gana
-  menos.
+  `Linear(sx, objetivo, 1)` (unas ULP) y errores de caja ≤ 1 px. Con un margen proporcional (p. ej. 10 % de la
+  vista) se recortaría menos justo con la vista grande (2.560 × 1.440), que es donde ya se gana menos.
 - Alternativa descartada: ponerlo en `content/arena.json`. Sería un parámetro de afinado del render sin efecto
   visible, y metería en el contenido validado algo que no es del juego.
+- Alternativa descartada (gate): ampliar la vista a celdas enteras y usar el rango de celdas como clave para
+  recalcular solo al cruzar una frontera. Ahorraba pasadas, pero el rectángulo de recorte dejaba de ser
+  "vista + M" y contradecía los escenarios exactos de la spec ("Caja que toca el borde", "Vista recortada al mundo
+  en una esquina").
 
 ## 5. Cuándo se recalcula y coste
 
-**Decisión D3**: en cada `render` se calcula la clave (`cullWindow`, O(1)). Solo si difiere de la última aplicada
-se recorren todas las entradas (`touches`, N ≤ 1.000 por el tope de `plan-map-fallback.test.ts`) y se llama a
-`canvas.show(i, v)` **solo** donde cambia el estado guardado (`Uint8Array` por índice). `drawn` se mantiene
-incremental.
+**Decisión D3**: en cada `cullMap(view)` se calcula `clipRect` y se recorren todas las entradas del plan
+(`touches`, N ≤ 1.000 por el tope de `plan-map-fallback.test.ts`). El estado de cada índice se guarda en un
+`Uint8Array`; `canvas.show(i, v)` se llama **solo** donde el resultado difiere del estado guardado, y `drawn` se
+actualiza de forma incremental. Sin clave ni caché de la ventana anterior: el primer frame tras R, resize o una
+partida nueva no hereda nada (requisito "Recorte al cambiar de partida, de ventana y de modo").
 
-- A velocidad 1 (215 px/s, 60 fps) se cruza una frontera de celda de 60 px cada ~17 frames por eje, así que la
-  pasada completa ocurre en ≤ 1 de cada ~8 frames moviéndose en diagonal, y en ninguno quieto, en pausa o en la
-  pantalla de resultados.
-- Coste de la pasada: ~1.000 × 4 comparaciones más unas decenas de `setVisible`, del orden de microsegundos en
-  escritorio y < 0,5 ms con la CPU frenada ×25. Se puede medir con un bench opcional (`npm run bench`, sin gate).
-- Descartado: un índice espacial por trozos. Con N ≤ 1.000 y la pasada solo al cambiar de celda no compensa su
-  complejidad (sobreingeniería).
-
-`render` puede ejecutarse dos veces en un frame (elección de mejora + frame). La segunda llamada casi siempre tiene
-la misma clave y no hace nada.
+- Coste por frame: ~1.000 × 4 comparaciones de números sobre arrays planos, del orden de pocos microsegundos en
+  escritorio y por debajo de ~0,3 ms con la CPU frenada ×25 (estimación; se puede medir con un bench opcional,
+  `npm run bench`, sin gate). Las llamadas a `setVisible` son decenas por frame moviéndose y 0 quieto, en pausa,
+  con oferta o con la partida terminada (la vista no cambia).
+- Las cajas se copian en `reset` a un `Float64Array` (x0, y0, x1, y1 por entrada) para no recorrer objetos del plan
+  ni crear nada por frame.
+- `render` puede ejecutarse dos veces en un frame (elección de mejora + frame). La segunda pasada da el mismo
+  resultado y no llama a `show`.
+- Descartado: un índice espacial por trozos. Con N ≤ 1.000 no compensa su complejidad (sobreingeniería).
 
 ## 6. Ciclo de vida: espuma, R, resize, menú y reserva
 
-- **Pintado (al crear y con R)**: `paintMapArt` deja todo visible (como hoy). `RenderLayers.paintMap` llama a
-  `culler.reset(plan)`: guarda las cajas en orden `[...low, ...high]` (el mismo orden en que `paintMapArt` llama al
-  lienzo, y por eso el índice del lienzo), marca todo como visible, pone `drawn = objects` y borra la clave. El
-  `render` que sigue en el mismo `update` (en `create` y en `restart`) recorta antes del `preRender`, así que nunca
-  se pinta un frame con el mapa entero.
+- **Pintado (al crear y con R)**: `paintMapArt` llama a `canvas.clear()` (oculta todos los objetos de los pools,
+  también los del mapa anterior que no se reutilizan) y deja visible cada entrada del plan nuevo. El adaptador
+  vacía su lista `painted` en `clear` y añade cada objeto en el orden de llamada (`[...low, ...high]`), que es el
+  índice de `show`. `RenderLayers.paintMap` llama a `culler.reset(plan)`: copia las cajas en ese orden, marca todo
+  como visible y pone `drawn = objects`. El `render` que sigue en el mismo `update` (en `create` y en `restart`)
+  recorta antes del `preRender`, así que nunca se pinta un frame con el mapa entero ni con objetos del mapa
+  anterior (escenario "R tras acabar en una esquina").
 - **Espuma al reaparecer**: `MapArtCanvas.foam(frame)` sigue haciendo `setFrame` sobre todas las espumas pintadas,
   ocultas incluidas (la lista `foams` de `phaserArt.ts` ya es así; solo se corrige su comentario, "visibles"). Una
   espuma oculta tiene siempre el frame vigente y al reaparecer está sincronizada. El culler nunca toca frames.
   Alternativa descartada: animar solo las visibles y fijar el frame en `show`. Ahorraría unos pocos `setFrame` por
-  cambio de frame (a los fps de la espuma, no por frame de juego), pero acopla el culler a la animación.
-- **Resize**: cambia `camera.width/height` en `PRE_STEP`, `nextView()` devuelve otra vista, cambia la clave y se
-  hace la pasada. No hace falta escuchar `RESIZE`. Al encoger, lo que sale de la ventana se oculta; al crecer, se
-  muestra en el mismo frame.
+  cambio de frame, pero acopla el culler a la animación.
+- **Resize**: cambia `camera.width/height` en `PRE_STEP`; `nextView()` devuelve la vista nueva y la pasada de ese
+  mismo frame aplica la regla con ella. No hace falta escuchar `RESIZE`. Al encoger, lo que sale se oculta; al
+  crecer, se muestra en el mismo frame.
 - **Volver al menú**: el motor destruye los objetos y la escena suelta `w` y `rig` (`leave`). El culler vive en
-  `RenderLayers`, que `create` vuelve a crear. En el menú la sonda usa `emptyCounts` → `zeroMapArt`, con
-  `drawn: 0`.
+  `RenderLayers`, que `create` vuelve a crear con `Jugar`. En el menú la sonda usa `emptyCounts` → `zeroMapArt`,
+  con `drawn: 0`; además no hay `render` de partida, así que no se llama a `cullMap`.
+- **Mapa vacío**: plan sin entradas → `reset` deja `drawn = 0` y la pasada no hace nada.
 - **Reserva**: los `rect` de reserva tienen `bounds` y pasan por la misma regla. Los recuentos
   `painted`/`fallback` siguen siendo del plan entero.
 
@@ -141,8 +163,8 @@ la misma clave y no hace nada.
 
 `sprites.mapArt.drawn`: objetos del mapa de las dos capas con `visible = true` tras el último recorte, es decir,
 los que se mandan a dibujar en ese frame (el recorte ocurre antes del `preRender` del mismo frame). Siempre
-`0 ≤ drawn ≤ objects`, y `0` en el menú. No se redefine `painted`, `fallback`, `objects` ni `sprites.cells`.
-Sin desglose por capa: ningún escenario lo pide.
+`0 ≤ drawn ≤ objects`, y `0` en el menú y con el mapa vacío. No se redefine `painted`, `fallback`, `objects` ni
+`sprites.cells`. Sin desglose por capa: ningún escenario lo pide.
 
 Impacto en tests existentes (los ajusta apply, sin cambiar su intención):
 - `tests/e2e/probe.ts`: `MapArtView` gana `drawn`; en el menú también se exige `drawn === 0` (junto a
@@ -157,7 +179,7 @@ PRE_STEP  ScaleManager → RESIZE → watchScreen → rig.resize (camera.setSize
 update    GameScene.update → render(snapshot)
             layers.render(snapshot)              (entidades, espuma por reloj de render)
             rig.track(snapshot.player)           (objetivo de la cámara)
-            layers.cullMap(rig.nextView())       (clave; pasada y show(i, v) solo si cambia)
+            layers.cullMap(rig.nextView())       (N comparaciones; show(i, v) solo donde cambia)
             hud/offer/results/progress/onRender  (sonda con drawn)
 render    Camera.preRender (worldView = nextView) → Layer recorre hijos; los ocultos solo cuestan el chequeo
 ```
@@ -165,55 +187,49 @@ render    Camera.preRender (worldView = nextView) → Layer recorre hijos; los o
 ## 9. Tests (según e2e-lite: 0 E2E nuevos)
 
 Unitarios en Node, sin motor (`tests/infrastructure/`):
-- `followView`: centrada, recortada en las cuatro esquinas, 960 × 540 y 2.560 × 1.440, y la posición inicial del
-  E2E de Cámara (1.310, 810) a 1.280 × 720.
-- `bounds` del plan: tramo, rect de reserva, sprite con origen, escala y recorte (fachada + tejado de la semilla
-  42 = caja del castillo del test existente (1.800, 900)–(2.100, 1.140) en x; tronco + copa = frame del árbol),
-  `flipX` y puente con su `rect`.
-- Regla: dentro, fuera, tocando el borde, dentro del margen (≤ 1 celda fuera se dibuja), lejos (> 2 celdas fuera
-  no se dibuja), vista que crece, y la clave estable al moverse dentro de la misma celda.
-- `MapCuller` con un lienzo doble: `reset` deja todo visible y `drawn = objects`; el primer recorte oculta lo de
-  fuera; con la misma clave no hay ninguna llamada a `show`; solo se llama a `show` donde cambia; R (un `reset` con
-  otro plan) restablece; resize (vista mayor) sube `drawn`.
-- Cobertura, semillas 42 y 123 a 960 × 540 y 2.560 × 1.440: la unión de lo visible al recorrer el mundo con la
-  cámara en pasos de una celda cubre todos los índices del plan (escenario "ningún objeto queda sin poder verse").
-  Lleva también la medida previa sin navegador: `drawn` en la posición inicial a 1.280 × 720 `< objects` y reparto
-  del plan por rol.
-- `RenderLayers`: `paintMap` + `cullMap` rellenan `counts.mapArt.drawn`; `animateFoam` sigue llamando a
-  `canvas.foam` con espumas ocultas (espuma al reaparecer, §6). El `setFrame` real de `phaserArt.ts` es una línea
-  de adaptador sin cambio de lógica; queda cubierto por revisión.
+- `followView`: centrada, recortada en las cuatro esquinas, vista igual al mundo, 960 × 540 y 2.560 × 1.440, y la
+  posición inicial del E2E de Cámara (1.310, 810) a 1.280 × 720.
+- `bounds` del plan: tramo, rect de reserva, sprite con origen, escala y recorte (tejado y fachada de la semilla
+  42, tronco + copa = frame del árbol), `flipX` y puente con su `rect`.
+- Regla pura con los escenarios literales de la spec: "Objeto dentro, fuera y en parte", "Caja que toca el borde"
+  (cuatro bordes, M = 0 y 60), "Vista que crece con la ventana", "Vista recortada al mundo en una esquina",
+  "Vista que cubre el mundo entero".
+- Plan + regla: "Partes del castillo por separado", "Todo el plan se puede ver" (42 y 123, tres ventanas, rejilla de
+  60 px con extremos), "Totales del mapa sin cambios" (667 y 750).
+- `MapCuller` y `RenderLayers` con lienzo y cámara dobles: movimiento continuo a 1 y 15 ticks por frame, espuma al
+  reaparecer, pausa/oferta/terminada, R, redimensionado, menú y jugar, mapa vacío, reserva y `drawn` igual al
+  recorte. El `setVisible`/`setFrame` real de `phaserArt.ts` es una línea de adaptador; queda cubierto por revisión
+  y por el E2E de Cámara.
 
-E2E: se amplía "Cámara" (mapa real, manual, ya existente): al empezar `0 < drawn < objects`; tras cruzar el mapa
-hacia la derecha `drawn` es distinto del inicial y nunca supera `objects`. `realtime [map]` imprime `drawn` junto a
-`objects` (a demanda, sin umbral). Sin umbrales de fps ni de tiempo en el gate.
+E2E: se amplía "Cámara" (mapa real, manual, ya existente) con el escenario "Objetos dibujados con la cámara". El
+`realtime [map]` informa de `drawn` junto a `objects` (a demanda, sin umbral). Sin umbrales de fps ni de tiempo en
+el gate.
 
 ## 10. Plan de medición (informativo, sin gate)
 
 Línea base en `exploration.md` §Mediciones (main 35256f6). Después de apply:
-1. Sin navegador (en verify): reparto por rol y `drawn` inicial a 1.280 × 720 para 42/123 (§9).
+1. Sin navegador (en verify): `drawn` en la posición inicial a 1.280 × 720 para 42/123 (§9).
 2. Local, mismo comando y máquina que la base:
    `CI_LIKE=1 npx playwright test --project=realtime --grep "calibration|\[map\]"`. Se anotan fps de la mediana
    42/123, calibración (fps, p95, ticks por frame) y `objects`/`drawn`.
 3. CI: duración de Cámara, Sprites, Mapa real y suite total en el job `e2e` del PR. Se lee **una vez** al terminar
    el run, sin polling ni lanzamientos manuales.
-4. El orquestador rellena las columnas "después" de `exploration.md`.
+4. Se rellenan las columnas "después" de `exploration.md`.
 
-Expectativa honesta: a 1.280 × 720 la ventana con margen cubre ~1.520 × 960 px (~18 % del mundo). Los árboles y la
-espuma se recortan en proporción, pero los tramos largos de agua y orilla no. Se espera `drawn` en torno a un
-cuarto o un tercio de `objects`, por confirmar con el punto 1. El relleno de píxeles no cambia.
+Expectativa honesta: a 1.280 × 720 el rectángulo de recorte cubre 1.400 × 840 px (~14 % del mundo). Los árboles y
+la espuma se recortan en proporción, pero los tramos largos de agua y orilla no. Se espera `drawn` en torno a un
+cuarto de `objects`, por confirmar con el punto 1. El relleno de píxeles no cambia.
 
-## 11. Decisiones para el gate de tasks
+## 11. Decisiones del gate de tasks (aprobadas, ver §0)
 
-- **G1 (pregunta 2, `test.slow()`)**: se mantiene en este change. Propuesta: retirarlo en un chore posterior solo
-  si en el run del PR **y** en el de `main` tras fusionar los tres tests quedan ≤ 30 s (la mitad del `timeout` de CI
-  de 60 s, `playwright.config.ts` l. 27). Motivos: `test.slow()` no frena nada, solo amplía el plazo; una ejecución
-  sola es ruidosa (ya hay 1 reintento en CI); y el flow-field (0019) va a añadir carga justo ahí. Quitarlo ahora
-  solo arriesga flakes y no gana nada.
-- **G2 (pregunta 3)**: basta con **mejorar** respecto a 0017 (`drawn` < `objects`, y duración y fps mejor que la
-  base). Volver a las cifras de 0016 no es requisito: el relleno de 1.280 × 720 queda fuera del alcance.
-- **G3 (pregunta 4)**: margen **fijo** de 1 celda de `map.cellSize` más la cuantización a celdas (D2), con la vista
-  calculada desde el rig (D1).
-- **G4 (menor)**: "tocando el borde" = se dibuja (inclusivo), salvo que la spec delta diga otra cosa.
+- **G1 (`test.slow()`)**: se mantiene en este change. Se retira en un chore posterior solo si en el run del PR
+  **y** en el de `main` tras fusionar los tres tests quedan ≤ 30 s (la mitad del `timeout` de CI de 60 s,
+  `playwright.config.ts` l. 27).
+- **G2**: basta con **mejorar** respecto a 0017 (`drawn` < `objects`, y duración y fps mejor que la base). Volver
+  a las cifras de 0016 no es requisito.
+- **G3**: margen **fijo** de 1 celda de `map.cellSize` (D2), sin cuantizar a celdas, con la vista calculada desde
+  el rig (D1).
+- **G4**: "tocando el borde" = se dibuja (inclusivo), como fija la spec.
 
 ## Dependencias nuevas
 | Paquete | Versión exacta | Motivo | Alternativa descartada |
@@ -221,11 +237,11 @@ cuarto o un tercio de `objects`, por confirmar con el punto 1. El relleno de pí
 | (ninguna) | — | — | — |
 
 ## Rendimiento y seguridad
-- Presupuesto: 0 ms por tick de simulación (el núcleo no cambia). Render: O(1) por frame y una pasada O(N ≤ 1.000)
-  solo al cambiar de celda, en microsegundos y muy por debajo de 1 ms de 16,7 ms incluso frenado. El ahorro:
-  `objects − drawn` objetos menos que transformar y meter en el lote cada frame. Bundle: unos cientos de bytes.
+- Presupuesto: 0 ms por tick de simulación (el núcleo no cambia). Render: una pasada O(N ≤ 1.000) por frame, en
+  microsegundos y muy por debajo de 1 ms de 16,7 ms incluso frenado. El ahorro: `objects − drawn` objetos menos
+  que transformar y meter en el lote cada frame. Bundle: unos cientos de bytes.
 - Ningún objeto del motor se crea por frame: los pools y los objetos del mapa siguen creándose una vez por
-  partida.
+  partida; el culler reserva sus arrays en `reset`.
 - Datos persistidos y entradas externas: ninguno. `drawn` solo sale por la sonda E2E, que ya existía.
 
 ## ADRs
