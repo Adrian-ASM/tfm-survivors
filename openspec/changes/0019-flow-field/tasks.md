@@ -6,7 +6,7 @@
      RO run-outcome, XG xp-gems. Design: openspec/changes/0019-flow-field/design.md; ADR-0017. -->
 
 ## 1. Dominio: campo de distancias y línea libre
-- [ ] 1.1 `distancesFrom` en `src/domain/map/connectivity.ts` (BFS con distancias, orden izquierda, derecha, arriba,
+- [x] 1.1 `distancesFrom` en `src/domain/map/connectivity.ts` (BFS con distancias, orden izquierda, derecha, arriba,
   abajo; exportar `codesOf`) y `FlowField` (`src/domain/map/FlowField.ts`) con `retarget` + `distanceAt` perezoso
   y buffers preasignados (design §2). Test `tests/domain/map/flow-field.test.ts`. Escenarios PM: "Mapa vacío",
   "Río con un único puente", "Celda encerrada", "Objetivo no caminable", "Toda celda caminable con distancia en el
