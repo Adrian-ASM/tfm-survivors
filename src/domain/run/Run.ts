@@ -2,6 +2,7 @@ import type { Arena } from '../arena/Arena';
 import { contactDamage } from '../collision/contact';
 import type { Enemy } from '../enemy/Enemy';
 import { Horde } from '../enemy/Horde';
+import { FlowField } from '../map/FlowField';
 import type { GameMap } from '../map/GameMap';
 import { toMapSnapshot, type MapSnapshot } from '../map/MapSnapshot';
 import { OPEN_TERRAIN, resolveTerrain, type TerrainSource } from '../map/TerrainSource';
@@ -60,12 +61,15 @@ export {
 
 /**
  * Partida en curso (aggregate root). Único punto de entrada para cambiar el estado de la
- * simulación. Contrato de determinismo: el orden del tick (jugador → persecución → armas, con un
- * único removeDead() si hay bajas que suelta sus gemas → contacto con los vivos → victoria en el
- * tick de la duración objetivo → gemas y XP → director → apertura de oferta) y el consumo de azar
- * son fijos (colisión con el mapa, armas, gemas, XP y fin de partida no consumen azar; la oferta
- * sí); cambiarlos cambia las partidas de una semilla. El mapa es parte del estado inicial y sale de
- * un flujo de azar propio (ADR-0013); no cambia durante la partida.
+ * simulación. Contrato de determinismo: el orden del tick (jugador → campo de flujo hacia su celda
+ * → persecución → armas, con un único removeDead() si hay bajas que suelta sus gemas → contacto con
+ * los vivos → victoria en el tick de la duración objetivo → gemas y XP → director → apertura de
+ * oferta) y el consumo de azar son fijos (colisión con el mapa, campo, línea libre, navegación,
+ * recolocación de apariciones, armas, gemas, XP y fin de partida no consumen azar; la oferta y cada
+ * intento de aparición sí); cambiarlos cambia las partidas de una semilla. El mapa es parte del
+ * estado inicial y sale de un flujo de azar propio (ADR-0013); no cambia durante la partida. La
+ * navegación (ADR-0017): BFS 4-vecina con orden izquierda, derecha, arriba, abajo, campo solo
+ * función de (mapa, celda del jugador) y empates por ese orden.
  */
 export class Run {
   private tickCount = 0;
@@ -79,6 +83,7 @@ export class Run {
   private readonly experience: Experience;
   private readonly board: UpgradeBoard;
   private readonly mapView: MapSnapshot;
+  private readonly field: FlowField;
 
   private constructor(
     private readonly rules: RunRules,
@@ -88,6 +93,7 @@ export class Run {
   ) {
     this.arena = rules.arena;
     this.mapView = toMapSnapshot(terrain);
+    this.field = new FlowField(terrain);
     this.player = initial.player;
     this.horde = new Horde(initial.enemies, rules.arena, initial.kills);
     this.gems = initial.gems;
@@ -188,7 +194,8 @@ export class Run {
     const n = this.tickCount + 1;
     this.player = this.player.move(input, TICK_SECONDS, this.arena, this.terrain);
     const { x, y } = this.player.position;
-    this.horde.chase(x, y, TICK_SECONDS);
+    this.field.retarget(this.terrain.colAt(x), this.terrain.rowAt(y));
+    this.horde.chase(x, y, TICK_SECONDS, this.field);
     if (this.arsenal.step(n, x, y, this.horde.alive) > 0) this.horde.removeDead(this.dropGem);
     if (this.applyContact(n) || this.reachedEnd(n)) {
       this.tickCount = n;

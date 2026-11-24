@@ -1,21 +1,12 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import type { CellType } from '../../src/domain/map/CellType';
-import { Run } from '../../src/domain/run/Run';
+import type { Run } from '../../src/domain/run/Run';
 import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
-import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
-import {
-  aContactConfig,
-  play,
-  startEmptyWithExit,
-  startRun,
-  startSeededRun,
-  ticks,
-} from '../support/runs';
+import { play, startEmptyWithExit, startSeededRun } from '../support/runs';
 import { aDefaultConfig } from '../support/builders';
-import { castleBlock, cellsWith, mapRules } from '../support/mapLayouts';
 
-// Spec procedural-map, "Azar del mapa independiente del de la partida", y enemy-behavior, "Los
-// enemigos ignoran el mapa". Semilla 7, input (0, 0) y política de elección fija.
+// Spec procedural-map, "Azar del mapa independiente del de la partida" (los escenarios de
+// enemy-behavior "Los enemigos ignoran el mapa" se retiran en 0019). Semilla 7, input (0, 0) y
+// política de elección fija.
 const CONFIG = aDefaultConfig();
 const TICKS = 1200;
 
@@ -62,12 +53,6 @@ describe('Mapa generado frente a mapa vacío (semilla 7, quieto)', () => {
     expect(generated.every((s) => s.offer.length === 0)).toBe(true);
     expect(spawnsPerTick(generated)).toEqual(spawnsPerTick(empty));
   });
-
-  it('Scenario: Misma trayectoria con mapa generado y vacío (id, tipo, posición y vida)', () => {
-    const enemies = (list: RunSnapshot[]) =>
-      list.map((s) => s.enemies.map((e) => [e.id, e.type, e.x, e.y, e.health]));
-    expect(enemies(generated)).toEqual(enemies(empty));
-  });
 });
 
 /** Plazo de primera subida (spec upgrades, "Primera subida en el núcleo"). */
@@ -89,54 +74,5 @@ describe('Primera oferta con y sin mapa (semilla 7, quieto)', () => {
     expect(empty.options).toHaveLength(3);
     expect(generated.tick).toBeLessThanOrEqual(FIRST_OFFER_LIMIT);
     expect(empty.tick).toBeLessThanOrEqual(FIRST_OFFER_LIMIT);
-  });
-});
-
-describe('Los enemigos ignoran el mapa (spec enemy-behavior)', () => {
-  it('Scenario: Persecución a través del agua (celdas (3..6, 4) de agua)', () => {
-    const config = aContactConfig();
-    const water: Record<string, CellType> = {
-      '3,4': 'water',
-      '4,4': 'water',
-      '5,4': 'water',
-      '6,4': 'water',
-    };
-    const r = Run.start(
-      config,
-      new Mulberry32RandomGenerator(42),
-      { player: { x: 480, y: 270 }, enemies: [{ type: 'probe', x: 100, y: 270 }] },
-      { kind: 'cells', cells: cellsWith(mapRules(undefined, 960, 540), water) },
-    );
-    if (!r.ok) throw new Error(r.error.message);
-    const path = ticks(r.value, 240);
-    const at = (n: number) => path[n - 1]?.enemies[0];
-    expect(at(60)?.x).toBeCloseTo(160, 3);
-    expect(at(60)?.y).toBe(270);
-    expect(at(240)?.x).toBeCloseTo(340, 3);
-    const open = ticks(
-      startRun(config, {
-        player: { x: 480, y: 270 },
-        enemies: [{ type: 'probe', x: 100, y: 270 }],
-      }),
-      240,
-    );
-    expect(open.map((s) => s.enemies[0]?.x)).toEqual(path.map((s) => s.enemies[0]?.x));
-  });
-
-  it('Scenario: Persecución a través del castillo (cruza la huella entera)', () => {
-    const config = { ...aContactConfig(), arena: CONFIG.arena };
-    const setup = { player: { x: 990, y: 700 }, enemies: [{ type: 'probe', x: 990, y: 300 }] };
-    const r = Run.start(config, new Mulberry32RandomGenerator(42), setup, {
-      kind: 'cells',
-      cells: cellsWith(mapRules(), castleBlock()),
-    });
-    if (!r.ok) throw new Error(r.error.message);
-    const path = ticks(r.value, 330);
-    const at = (n: number) => path[n - 1]?.enemies[0];
-    expect(at(180)?.x).toBe(990);
-    expect(at(180)?.y).toBeCloseTo(480, 3);
-    expect(at(330)?.y).toBeCloseTo(630, 3);
-    const open = ticks(startRun(config, setup), 330);
-    expect(open.map((s) => s.enemies[0]?.y)).toEqual(path.map((s) => s.enemies[0]?.y));
   });
 });

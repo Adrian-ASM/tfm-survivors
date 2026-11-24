@@ -20,7 +20,8 @@ function fieldOf(map: GameMap, col: number, row: number): number[] {
 
 function distances(field: FlowField, map: GameMap): number[] {
   const out: number[] = [];
-  for (let r = 0; r < map.rows; r++) for (let c = 0; c < map.cols; c++) out.push(field.distanceAt(c, r));
+  for (let r = 0; r < map.rows; r++)
+    for (let c = 0; c < map.cols; c++) out.push(field.distanceAt(c, r));
   return out;
 }
 

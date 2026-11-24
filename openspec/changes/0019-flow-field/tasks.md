@@ -21,7 +21,7 @@
   (32, 14) gana el vecino izquierdo) y "Celda sin distancia en el campo" (objetivo = jugador).
 
 ## 2. Dominio: persecución y aparición en `Run`
-- [ ] 2.1 Cablear el campo: `Run` crea el `FlowField`, llama a `retarget` tras `player.move` y `Horde.chase(x, y, dt,
+- [x] 2.1 Cablear el campo: `Run` crea el `FlowField`, llama a `retarget` tras `player.move` y `Horde.chase(x, y, dt,
   field)` usa `steer` (sin asignar). Se actualiza el comentario del contrato de determinismo de `Run`. Se retiran de
   `tests/domain/map-independence.test.ts` "Los enemigos ignoran el mapa" y "Misma trayectoria con mapa generado y
   vacío" (EB REMOVED). Test `tests/domain/run-navigation.test.ts` con los escenarios EB "Cruce del río por el único
@@ -29,7 +29,7 @@
   segmento", "Segmento sobre el borde de una celda bloqueada", "Ataque directo en la celda del jugador" y "Celda sin
   distancia en el campo". Las escenas vigentes de "Persecución en línea recta" y "Enemigos dentro de la arena" siguen
   en verde.
-- [ ] 2.2 Determinismo de la navegación, en el mismo fichero (estos tests pasan en verde tras 2.1: si es así, se
+- [x] 2.2 Determinismo de la navegación, en el mismo fichero (estos tests pasan en verde tras 2.1: si es así, se
   juntan en el commit de 2.1). Escenarios EB: "Empate resuelto igual siempre" (tres partidas), "El campo solo depende
   de la celda del jugador" y "La navegación no consume azar". Escenarios SL: "La persecución usa la celda del jugador
   ya movido" y "La persecución por el mapa no consume azar".

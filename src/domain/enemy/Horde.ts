@@ -1,4 +1,5 @@
 import type { Arena } from '../arena/Arena';
+import type { FlowField } from '../map/FlowField';
 import { Enemy } from './Enemy';
 import type { EnemyType } from './EnemyType';
 
@@ -11,6 +12,8 @@ export class Horde {
   private readonly enemies: Enemy[];
   private nextId: number;
   private killCount: number;
+  /** Objetivo del enemigo en curso (reutilizado: la persecución no asigna). */
+  private readonly target = { x: 0, y: 0 };
 
   /** `initial`: enemigos ya presentes (ids 0 … n − 1) y `kills`: bajas previas, de `RunSetup`. */
   constructor(
@@ -32,9 +35,17 @@ export class Horde {
     return this.killCount;
   }
 
-  /** Todos persiguen el punto (x, y) en este tick. */
-  chase(x: number, y: number, dtSeconds: number): void {
-    for (const enemy of this.enemies) enemy.chase(x, y, dtSeconds, this.arena);
+  /**
+   * Todos persiguen al jugador en (x, y) en este tick (spec enemy-behavior): cada uno avanza hacia
+   * el objetivo que le da el campo (el jugador con línea libre o en su celda; si no, el centro de
+   * su siguiente celda). Sin asignar: el objetivo se escribe en un objeto reutilizado.
+   */
+  chase(x: number, y: number, dtSeconds: number, field: FlowField): void {
+    const target = this.target;
+    for (const enemy of this.enemies) {
+      field.steer(enemy.x, enemy.y, x, y, target);
+      enemy.chase(target.x, target.y, dtSeconds, this.arena);
+    }
   }
 
   /** Alta al final de la lista con el siguiente id. */
