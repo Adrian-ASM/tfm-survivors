@@ -53,33 +53,37 @@ aunque la pestaña haya estado congelada.
 ### Requirement: Determinismo
 El sistema SHALL producir exactamente el mismo `RunSnapshot`, enemigos (estado de comportamiento incluido), vida,
 invulnerabilidad, estado de la partida, resultado, bajas, proyectiles, pulsos, dinamitas, avisos, explosiones,
-estructuras (vida y destrucción incluidas), indicación de daño, recogibles de los tres tipos (gemas incluidas), oro,
-madera, vetas (activa o agotada), XP, nivel, ofertas y mejoras adquiridas incluidos, y el mismo mapa, a partir del
-mismo estado inicial, la misma semilla, la misma secuencia de inputs por tick y la misma secuencia de elecciones de
-mejora (índice elegido en cada oferta). En particular, el resultado de la partida, el tick en que termina, las bajas y
-la posición de cada enemigo en cada tick MUST ser los mismos. El núcleo MUST NOT depender de reloj del sistema,
-aleatoriedad global ni APIs del navegador: toda la aleatoriedad MUST venir de instancias del puerto `RandomGenerator`
-inicializadas a partir de la semilla de la partida: una para generar el mapa, otra para colocar las estructuras (ver
-"Colocación determinista con azar propio" en `goblin-structures`), otra para colocar las vetas y los montones (ver
-"Colocación de recursos determinista con azar propio" en `procedural-map`) y otra para el resto de la partida (ver
-"Azar del mapa independiente del de la partida" en `procedural-map`). Las armas (selección de objetivo entre enemigos
-y estructuras, disparo, proyectiles y pulsos), las bajas y su contador, la destrucción de estructuras, los recogibles
-de los tres tipos (suelta, madera del barril, oro de las estructuras, recolocación, tope por tipo, imán y recogida),
-las vetas (contacto y agotamiento), los contadores de oro y madera, la colisión del jugador con el mapa, la persecución
-de los enemigos (línea libre, campo de distancias y navegación), la navegación hacia un punto fijo, los estados de
-comportamiento y sus transiciones (patrulla, alerta y vuelta incluidas), el nacimiento de guardias, los lanzamientos,
-las dinamitas, los avisos y las explosiones, la recolocación de las apariciones y de los puntos de patrulla, la XP y
-la comprobación de victoria y derrota MUST NOT consumir azar; la apertura de ofertas de mejora sí lo consume, y cada
-intento de posición de aparición consume exactamente 1 valor (ver `enemy-spawning`). Los comportamientos, los peligros,
-las estructuras y los recursos MUST NOT cambiar el mapa generado por ninguna semilla.
+estructuras (vida y destrucción incluidas), ovejas (identificador, posición, vida, estado y punto de origen), indicación
+de daño, recogibles de los cuatro tipos (gemas y carne incluidas), oro, madera, vetas (activa o agotada), XP, nivel,
+ofertas y mejoras adquiridas incluidos, y el mismo mapa, a partir del mismo estado inicial, la misma semilla, la misma
+secuencia de inputs por tick y la misma secuencia de elecciones de mejora (índice elegido en cada oferta). En
+particular, el resultado de la partida, el tick en que termina, las bajas y la posición de cada enemigo y de cada oveja
+en cada tick MUST ser los mismos. El núcleo MUST NOT depender de reloj del sistema, aleatoriedad global ni APIs del
+navegador: toda la aleatoriedad MUST venir de instancias del puerto `RandomGenerator` inicializadas a partir de la
+semilla de la partida: una para generar el mapa, otra para colocar las estructuras (ver "Colocación determinista con
+azar propio" en `goblin-structures`), otra para colocar las vetas y los montones (ver "Colocación de recursos
+determinista con azar propio" en `procedural-map`), el azar de las ovejas (una o varias, ver "Ovejas deterministas" en
+`sheep`) y otra para el resto de la partida (ver "Azar del mapa independiente del de la partida" en `procedural-map`).
+Las armas (selección de objetivo entre enemigos, estructuras y ovejas, disparo, proyectiles y pulsos), las bajas y su
+contador, la destrucción de estructuras, el movimiento, la huida, el daño y la muerte de las ovejas, los recogibles de
+los cuatro tipos (suelta, madera del barril, oro de las estructuras, carne de las ovejas, recolocación, tope por tipo,
+imán y recogida), la curación, las vetas (contacto y agotamiento), los contadores de oro y madera, la colisión del
+jugador con el mapa, la persecución de los enemigos (línea libre, campo de distancias y navegación), la navegación hacia
+un punto fijo, los estados de comportamiento y sus transiciones (patrulla, alerta y vuelta incluidas), el nacimiento de
+guardias, los lanzamientos, las dinamitas, los avisos y las explosiones, la recolocación de las apariciones y de los
+puntos de patrulla, la XP y la comprobación de victoria y derrota MUST NOT consumir azar; la apertura de ofertas de
+mejora sí lo consume, y cada intento de posición de aparición consume exactamente 1 valor (ver `enemy-spawning`). La
+colocación inicial, el primer pasto, la dirección de los paseos y la reaparición de las ovejas consumen solo el azar de
+las ovejas. Los comportamientos, los peligros, las estructuras, los recursos y las ovejas MUST NOT cambiar el mapa
+generado por ninguna semilla.
 
 #### Scenario: Dos partidas idénticas
 - **GIVEN** dos partidas creadas con el mismo contenido y la semilla 42
 - **WHEN** ambas reciben la misma secuencia de 600 inputs (10 s) generada por una seed fija, con la política de
   elección fija
 - **THEN** sus snapshots son iguales campo a campo en cada tick, enemigos, vida, invulnerabilidad, estado,
-  resultado, bajas, proyectiles, pulsos, estructuras, recogibles, oro, madera, vetas, XP, nivel y ofertas incluidos
-  (comparación estricta, sin tolerancia)
+  resultado, bajas, proyectiles, pulsos, estructuras, ovejas, recogibles, oro, madera, vetas, XP, nivel y ofertas
+  incluidos (comparación estricta, sin tolerancia)
 - **AND** sus mapas son iguales celda a celda
 
 #### Scenario: Semillas distintas
@@ -139,6 +143,15 @@ las estructuras y los recursos MUST NOT cambiar el mapa generado por ninguna sem
 - **AND** sus snapshots son iguales campo a campo en cada tick, incluidos los recogibles con su tipo y valor, el oro, la
   madera y las vetas
 
+#### Scenario: Partida con ovejas y carne reproducible
+- **GIVEN** dos partidas con el contenido por defecto, la semilla 42 con su mapa generado, la misma secuencia de inputs
+  por tick que lleva al jugador junto a ≥ 1 oveja hasta que las armas la matan y recoge su carne, la política de
+  elección fija y una vida máxima de 1.000 (valor de escenario) para no llegar a 0
+- **WHEN** ambas ejecutan ticks hasta que ≥ 1 oveja ha reaparecido y el jugador se ha curado ≥ 1 vez, o hasta el tick
+  14.400
+- **THEN** en ambas la primera curación ocurre en el mismo tick, con la misma vida resultante
+- **AND** sus snapshots son iguales campo a campo en cada tick, incluidas las ovejas, los recogibles `meat` y la vida
+
 #### Scenario: Elecciones distintas divergen
 - **GIVEN** dos partidas con la misma semilla y los mismos inputs que abren la misma primera oferta de 3 opciones
 - **WHEN** en una se elige el índice 0 y en la otra el 1
@@ -148,7 +161,7 @@ las estructuras y los recursos MUST NOT cambiar el mapa generado por ninguna sem
 - **GIVEN** dos partidas con el contenido por defecto y la semilla 7
 - **WHEN** ambas reciben la misma secuencia de 36.000 inputs (10 min), con la política de elección fija
 - **THEN** sus snapshots finales son iguales campo a campo, incluidos el estado, el resultado, el tick en que
-  terminan, las bajas, el oro y la madera
+  terminan, las bajas, el oro, la madera y las ovejas
 
 #### Scenario: Resultado reproducible
 - **GIVEN** dos partidas con el contenido por defecto y la semilla 42, input (0, 0) y la política de elección fija
@@ -187,6 +200,12 @@ las estructuras y los recursos MUST NOT cambiar el mapa generado por ninguna sem
 - **WHEN** ambas ejecutan el tick n sin oferta de mejora ni aparición
 - **THEN** el estado del `RandomGenerator` de la partida es el mismo en las dos tras el tick
 
+#### Scenario: La curación no consume azar
+- **GIVEN** dos partidas con la semilla 7 y el mismo estado salvo que en una el jugador recoge en el tick n 2
+  recogibles `meat` que le curan y en la otra no hay carne
+- **WHEN** ambas ejecutan el tick n sin oferta de mejora ni aparición
+- **THEN** el estado del `RandomGenerator` de la partida es el mismo en las dos tras el tick
+
 #### Scenario: Mapa intacto
 - **GIVEN** el contenido por defecto tras el change
 - **WHEN** se generan los mapas de las semillas de la firma dorada de `tests/support/mapGolden.ts`
@@ -201,14 +220,15 @@ las estructuras y los recursos MUST NOT cambiar el mapa generado por ninguna sem
 
 #### Scenario: Snapshot no mutable desde fuera
 - **GIVEN** una partida en el tick 10 con ≥ 1 enemigo vivo, ≥ 1 proyectil vivo, ≥ 1 gema, ≥ 1 recogible `wood`,
-  ≥ 1 veta y ≥ 1 estructura, otra con ≥ 1 dinamita, ≥ 1 aviso y ≥ 1 explosión, otra con una oferta abierta y otra
-  terminada
+  ≥ 1 veta, ≥ 1 estructura y ≥ 1 oveja, otra con ≥ 1 dinamita, ≥ 1 aviso y ≥ 1 explosión, otra con una oferta
+  abierta y otra terminada
 - **WHEN** el adaptador modifica el objeto `RunSnapshot` que ha recibido, incluidas la posición de un enemigo, su
   estado de comportamiento, la lista de enemigos, la vida del jugador, su invulnerabilidad, el estado de la partida,
   el resultado, las bajas, la duración objetivo, la posición de un proyectil, la lista de proyectiles, la posición, el
   tipo y el valor de un recogible, la lista de recogibles, el oro, la madera, el estado y el oro de una veta, la lista
   de vetas, la posición y el objetivo de una dinamita, el centro y el radio de un aviso, la lista de explosiones, la
-  vida y la destrucción de una estructura, la lista de estructuras, la XP, el nivel y las opciones de la oferta
+  vida y la destrucción de una estructura, la lista de estructuras, la posición, la vida y el estado de una oveja, la
+  lista de ovejas, la XP, el nivel y las opciones de la oferta
 - **THEN** el siguiente tick (o la siguiente elección, o el siguiente snapshot leído) parte del estado interno, no
   del objeto modificado
 
@@ -226,6 +246,7 @@ pintar:
 - las bajas de la partida (ver `run-outcome`);
 - el oro y la madera de la partida (ver "Contadores de oro y madera de la partida" en `resources`);
 - la lista de enemigos vivos;
+- la lista de ovejas vivas (ver `sheep`);
 - la lista de proyectiles vivos (ver `auto-weapons`);
 - la lista de pulsos visibles (ver `auto-weapons`);
 - la lista de dinamitas en vuelo, la de avisos y la de explosiones visibles (ver `enemy-hazards`);
@@ -233,7 +254,7 @@ pintar:
   `goblin-structures`);
 - la lista de vetas de la partida, agotadas incluidas (ver "Vetas de oro al pasar" en `resources`);
 - la lista de armas equipadas, en el orden de `content/weapons.json`, con su identificador y si está cargada;
-- la lista de recogibles en el suelo, de los tres tipos (ver `xp-gems`); las gemas son los de tipo `xp`;
+- la lista de recogibles en el suelo, de los cuatro tipos (ver `xp-gems`); las gemas son los de tipo `xp`;
 - el nivel, la XP actual y la XP para el siguiente nivel (ver `leveling`);
 - la oferta de mejoras abierta, si la hay, con sus opciones en orden: id, nombre, descripción, nivel actual y nivel
   siguiente (ver `upgrades`);
@@ -249,22 +270,26 @@ Cada enemigo del snapshot MUST incluir:
 - su estado de comportamiento: el nombre del estado y su clase (persecución, mecha, carga, espera, patrulla, alerta o
   vuelta; ver `enemy-behavior`).
 
-Cada proyectil del snapshot MUST incluir un identificador único dentro de la partida que no se reutiliza, su
-posición y su radio. Cada pulso visible MUST incluir el identificador del arma que lo disparó, el tick en que se
-disparó, su centro y su radio. Cada recogible MUST incluir un identificador único dentro de la partida que no se
-reutiliza (una sola secuencia para los tres tipos), su tipo (`xp`, `gold` o `wood`), su valor, su posición y su radio.
-Cada veta MUST incluir un identificador único dentro de la partida, su posición, su radio de contacto, su oro y si está
-activa o agotada. Cada dinamita MUST incluir su identificador, su posición, su objetivo, su radio visual y el tick en
-que explotará; cada aviso, su centro, su radio, su origen (mecha o dinamita) y el tick en que explotará; cada
-explosión, su identificador, su centro, su radio y el tick en que ocurrió (ver `enemy-hazards`). Cada estructura MUST
-incluir los campos de "Estructuras en el snapshot" (`goblin-structures`).
+Cada oveja del snapshot MUST incluir su identificador (de la secuencia de las ovejas), su posición, su radio, su vida
+actual (> 0), su estado (`graze`, `wander` o `flee`) y si ha recibido daño recientemente (ver "Vida, daño y muerte de
+las ovejas" en `sheep`). Cada proyectil del snapshot MUST incluir un identificador único dentro de la partida que no
+se reutiliza, su posición y su radio. Cada pulso visible MUST incluir el identificador del arma que lo disparó, el
+tick en que se disparó, su centro y su radio. Cada recogible MUST incluir un identificador único dentro de la partida
+que no se reutiliza (una sola secuencia para los cuatro tipos), su tipo (`xp`, `gold`, `wood` o `meat`), su valor, su
+posición y su radio. Cada veta MUST incluir un identificador único dentro de la partida, su posición, su radio de
+contacto, su oro y si está activa o agotada. Cada dinamita MUST incluir su identificador, su posición, su objetivo, su
+radio visual y el tick en que explotará; cada aviso, su centro, su radio, su origen (mecha o dinamita) y el tick en
+que explotará; cada explosión, su identificador, su centro, su radio y el tick en que ocurrió (ver `enemy-hazards`).
+Cada estructura MUST incluir los campos de "Estructuras en el snapshot" (`goblin-structures`).
 
 La lista de enemigos contiene solo enemigos vivos y va ordenada por orden de aparición o nacimiento. Una baja MUST
-quitar al enemigo de la lista sin cambiar el orden relativo de los demás. La lista de proyectiles va ordenada por
-orden de creación y una desaparición no cambia el orden relativo de los demás. La lista de recogibles va ordenada por
-orden de creación, sin agrupar por tipo, y una recogida no cambia el orden relativo de los demás. Las listas de
-dinamitas y de explosiones van ordenadas por orden de creación y la de avisos con el orden de "Aviso en el suelo"
-(`enemy-hazards`). Las listas de estructuras y de vetas conservan su orden y su longitud durante toda la partida.
+quitar al enemigo de la lista sin cambiar el orden relativo de los demás. La lista de ovejas contiene solo ovejas vivas,
+va ordenada por orden de creación y una muerte no cambia el orden relativo de las demás. La lista de proyectiles va
+ordenada por orden de creación y una desaparición no cambia el orden relativo de los demás. La lista de recogibles va
+ordenada por orden de creación, sin agrupar por tipo, y una recogida no cambia el orden relativo de los demás. Las
+listas de dinamitas y de explosiones van ordenadas por orden de creación y la de avisos con el orden de "Aviso en el
+suelo" (`enemy-hazards`). Las listas de estructuras y de vetas conservan su orden y su longitud durante toda la
+partida.
 
 #### Scenario: Contador de ticks
 - **GIVEN** una partida recién creada
@@ -282,9 +307,9 @@ dinamitas y de explosiones van ordenadas por orden de creación y la de avisos c
 - **AND** el nivel vale 1, la XP actual 0 y la XP para el siguiente nivel 5
 - **AND** con el contenido por defecto, la lista de armas es `linter` y `tests`, en ese orden, ambas cargadas, y la
   duración objetivo equivale a 36.000 ticks
-- **AND** con el mapa vacío las listas de estructuras, vetas y recogibles están vacías y, con el mapa generado, la de
-  estructuras tiene todas las colocadas, ninguna destruida, la de vetas todas las colocadas, todas activas, y la de
-  recogibles solo los montones de madera
+- **AND** con el mapa vacío las listas de estructuras, vetas, ovejas y recogibles están vacías y, con el mapa generado,
+  la de estructuras tiene todas las colocadas, ninguna destruida, la de vetas todas las colocadas, todas activas, la de
+  ovejas todas las colocadas, en `graze`, y la de recogibles solo los montones de madera
 
 #### Scenario: Duración objetivo constante
 - **GIVEN** una partida con `durationSeconds` 90
@@ -293,8 +318,8 @@ dinamitas y de explosiones van ordenadas por orden de creación y la de avisos c
 
 #### Scenario: Carga de las armas en el snapshot
 - **GIVEN** una partida con el contenido por defecto en la que hay un enemigo vivo a 50 px del jugador en el tick 1
-  y ningún enemigo vivo ni estructura no destruida en alcance en los ticks 2 a 100, y en la que no se abre ninguna
-  oferta
+  y ningún enemigo vivo, estructura no destruida ni oveja en alcance en los ticks 2 a 100, y en la que no se abre
+  ninguna oferta
 - **WHEN** se ejecutan 100 ticks
 - **THEN** en los snapshots de los ticks 1 a 30 `linter` figura como no cargada, y de 31 a 100 como cargada
 - **AND** en los snapshots de los ticks 1 a 90 `tests` figura como no cargada, y de 91 a 100 como cargada
@@ -343,6 +368,13 @@ dinamitas y de explosiones van ordenadas por orden de creación y la de avisos c
 - **THEN** en ambos la lista de vetas es v1, v2, con sus posiciones, radio 24 y oro 15
 - **AND** en el del tick 0 ambas están activas y en el del tick n v1 está agotada y v2 activa
 
+#### Scenario: Ovejas en el snapshot del motor
+- **GIVEN** el mapa vacío con la oveja de prueba declarada en (1.000, 1.000) y el jugador quieto en (1.150, 1.000)
+- **WHEN** se leen los snapshots de los ticks 0 y 1
+- **THEN** en el del tick 0 hay 1 oveja con su identificador, posición (1.000, 1.000), radio 20, vida 12, estado
+  `graze` y sin daño reciente
+- **AND** en el del tick 1 la misma oveja, con el mismo identificador, está en (997, 1.000) en estado `flee`
+
 #### Scenario: Identificador estable
 - **GIVEN** un enemigo vivo con identificador X en el snapshot del tick n
 - **WHEN** se ejecuta 1 tick más sin que X se dé de baja
@@ -375,9 +407,9 @@ dinamitas y de explosiones van ordenadas por orden de creación y la de avisos c
 - **THEN** la lista de gemas del snapshot es g1, g3, g4, cada una con su posición y radio 5
 
 #### Scenario: Recogibles de varios tipos en el snapshot
-- **GIVEN** cuatro recogibles creados en este orden: w1 (`wood`), g1 (`xp`), o1 (`gold`) y w2 (`wood`)
+- **GIVEN** cinco recogibles creados en este orden: w1 (`wood`), g1 (`xp`), o1 (`gold`), m1 (`meat`) y w2 (`wood`)
 - **WHEN** g1 se recoge y se crea o2 (`gold`)
-- **THEN** la lista de recogibles del snapshot es w1, o1, w2, o2, cada uno con su tipo, su valor, su posición y
+- **THEN** la lista de recogibles del snapshot es w1, o1, m1, w2, o2, cada uno con su tipo, su valor, su posición y
   radio 5
 
 #### Scenario: Oferta en el snapshot
@@ -537,7 +569,9 @@ respecto a la posición del jugador, de modo que el contacto se mantenga sea cua
 
 ### Requirement: Orden de los pasos del tick
 El sistema SHALL ejecutar cada tick de una partida en curso en este orden:
-1. movimiento del jugador según el input (velocidad efectiva, ver `upgrades`);
+1. movimiento del jugador según el input (velocidad efectiva, ver `upgrades`); después, movimiento de las ovejas vivas,
+   en el orden de su lista, con la posición del jugador ya movido: huida o deambular (ver "Huida del jugador" y
+   "Deambular de las ovejas" en `sheep`);
 2. comportamiento de los enemigos vivos, en el orden de la lista de enemigos (ver "Estado de comportamiento de cada
    enemigo" en `enemy-behavior`): primero, las esperas que terminan en este tick pasan a su estado de destino; después,
    los enemigos en persecución o en alerta persiguen la nueva posición del jugador, con el campo de distancias de la
@@ -547,40 +581,48 @@ El sistema SHALL ejecutar cada tick de una partida en curso en este orden:
    enemigos en mecha, carga o espera no se mueven;
 3. armas (ver `auto-weapons`), en este orden:
    1. movimiento, impacto y caducidad de los proyectiles existentes, en orden de creación (contra enemigos y, los
-      dirigidos a una estructura, contra estructuras);
+      dirigidos a una estructura, contra estructuras, y los dirigidos a una oveja, contra ovejas);
    2. cada arma, en el orden de `content/weapons.json`, elige objetivo con las posiciones de ese momento (enemigos
-      primero; estructuras no destruidas solo si no hay enemigos en alcance) y, si está cargada y lo tiene, dispara
-      (crea su proyectil o aplica su pulso);
+      primero; estructuras no destruidas solo si no hay enemigos en alcance; ovejas vivas solo si tampoco hay
+      estructuras en alcance) y, si está cargada y lo tiene, dispara (crea su proyectil o aplica su pulso);
    3. los enemigos cuya vida ha llegado a 0 en este tick quedan dados de baja, suman cada uno 1 al contador de bajas
       y sueltan su gema y, si son un `goblin-barrel`, su madera, en el orden de la lista de enemigos (ver `xp-gems`,
       "Madera del barril abatido" en `enemy-hazards` y `run-outcome`);
    4. las estructuras cuya vida ha llegado a 0 en este tick quedan destruidas y sueltan su oro, en el orden de la lista
       de estructuras, sin gema ni baja (ver `goblin-structures`);
+   5. las ovejas cuya vida ha llegado a 0 en este tick mueren y sueltan su carne, en el orden de la lista de ovejas,
+      sin gema ni baja (ver "Vida, daño y muerte de las ovejas" en `sheep` y "Carne de las ovejas abatidas" en
+      `resources`);
 4. peligros (ver `enemy-hazards`), en este orden:
    1. explosiones del tick: las de los barriles vivos cuya mecha termina en este tick, en el orden de la lista de
       enemigos, y después las de las dinamitas cuyo vuelo termina en este tick, en orden de creación; cada una daña a
-      los enemigos vivos de su radio (fuego amigo), no daña estructuras ni vetas, y queda registrada como golpe
-      candidato si alcanza al jugador;
+      los enemigos vivos de su radio (fuego amigo) y a las ovejas vivas de su radio, no daña estructuras ni vetas, y
+      queda registrada como golpe candidato si alcanza al jugador;
    2. los barriles que han explotado y los enemigos cuya vida ha llegado a 0 en este paso quedan dados de baja, suman
       cada uno 1 al contador de bajas y sueltan su gema, en el orden de la lista de enemigos; los `goblin-barrel` dados
-      de baja sin haber explotado sueltan además su madera, y los que han explotado no;
+      de baja sin haber explotado sueltan además su madera, y los que han explotado no; después, las ovejas cuya vida
+      ha llegado a 0 en este paso mueren y sueltan su carne, en el orden de la lista de ovejas;
    3. lanzamientos: cada enemigo vivo cuya carga termina en este tick o que sigue en carga esperando sitio, en el
       orden de la lista de enemigos, lanza una dinamita hacia la posición del jugador tras el paso 1 si hay sitio bajo
       el tope de dinamitas, y entra en espera;
 5. golpe al jugador (ver `player-health`): con los contactos de los enemigos vivos con daño por contacto y las
-   explosiones del paso 4.1 que le alcanzan, un solo golpe del mayor daño si no está invulnerable; si la vida llega a
-   0, la partida termina con derrota y el tick acaba aquí;
+   explosiones del paso 4.1 que le alcanzan, un solo golpe del mayor daño si no está invulnerable (las ovejas no son
+   golpe candidato); si la vida llega a 0, la partida termina con derrota y el tick acaba aquí;
 6. si el número de este tick es igual a la duración objetivo en ticks, la partida termina con victoria y el tick
    acaba aquí (ver `run-outcome`);
 7. recogibles y vetas:
-   1. recogibles de los tres tipos, en orden de creación: atracción, movimiento del imán y recogida; la XP recogida se
-      suma y se registran las subidas de nivel (ver `xp-gems` y `leveling`), y el oro y la madera recogidos se suman a
-      sus contadores (ver `resources`);
+   1. recogibles de los cuatro tipos, en orden de creación: atracción, movimiento del imán y recogida; la XP recogida
+      se suma y se registran las subidas de nivel (ver `xp-gems` y `leveling`), el oro y la madera recogidos se suman a
+      sus contadores (ver `resources`) y la carne recogida cura al jugador (ver "Curación por carne" en
+      `player-health`);
    2. vetas, en el orden de su lista: cada veta activa en contacto con el jugador suma su oro y queda agotada (ver
       "Vetas de oro al pasar" en `resources`);
 8. director de oleadas (spawns, con la recolocación de las apariciones en celdas caminables, ver `enemy-spawning`);
-9. nacimiento de guardias en las casas no destruidas, en el orden de la lista de estructuras (ver "Nacimiento de
-   guardias en casas" en `enemy-spawning`);
+9. nacimientos:
+   1. nacimiento de guardias en las casas no destruidas, en el orden de la lista de estructuras (ver "Nacimiento de
+      guardias en casas" en `enemy-spawning`);
+   2. reaparición de ovejas: las reapariciones pendientes que tocan en este tick, en su orden, con la posición del
+      jugador tras el paso 1 (ver "Reaparición de ovejas" en `sheep`);
 10. si hay ≥ 1 subida pendiente y ≥ 1 mejora disponible, se abre la oferta (consume azar) y la partida pasa a
     eligiendo mejora (ver `upgrades` y `run-state`); el tick cuenta igualmente.
 
@@ -613,8 +655,8 @@ En una partida terminada o que está eligiendo mejora no se ejecuta ningún paso
 - **THEN** la vida del jugador tras el tick n es la misma que tras el tick n − 1, si ningún otro enemigo le toca
 
 #### Scenario: Un enemigo recién aparecido no es objetivo en su tick de aparición
-- **GIVEN** una partida sin enemigos vivos ni estructuras y armas cargadas, en la que el director hace aparecer un
-  enemigo en el tick n
+- **GIVEN** una partida sin enemigos vivos, estructuras ni ovejas y armas cargadas, en la que el director hace aparecer
+  un enemigo en el tick n
 - **WHEN** se ejecuta el tick n
 - **THEN** el snapshot del tick n no tiene proyectiles ni pulsos nuevos y el enemigo tiene su vida inicial
 
@@ -623,6 +665,12 @@ En una partida terminada o que está eligiendo mejora no se ejecuta ningún paso
   empezar el tick, está a distancia 101 (tras la persecución, a 99,5)
 - **WHEN** se ejecuta 1 tick
 - **THEN** Tests dispara un pulso en ese tick y el `goblin-torch` queda con vida 6
+
+#### Scenario: Las armas apuntan tras la huida de las ovejas
+- **GIVEN** un jugador quieto en (1.108, 1.000), Tests cargado, ningún enemigo ni estructura y la oveja de prueba en
+  (1.000, 1.000) (distancia 108 < 90 + 20 antes de huir)
+- **WHEN** se ejecuta 1 tick (la oveja huye a (997, 1.000), a 111 px)
+- **THEN** Tests no dispara, sigue cargado y la oveja conserva vida 12
 
 #### Scenario: Una baja libera el hueco antes del director
 - **GIVEN** `maxAlive` 1, un único `goblin-torch` vivo con vida 4 y un director con presupuesto para 1 `goblin-torch` y
@@ -713,6 +761,13 @@ En una partida terminada o que está eligiendo mejora no se ejecuta ningún paso
   destruida
 - **AND** hay 1 recogible `gold` nuevo, creado después de la gema
 
+#### Scenario: Las ovejas mueren tras las estructuras
+- **GIVEN** una partida con 2 bajas y un pulso de Tests en el tick n que deja a vida 0 a un `goblin-torch`, a una
+  torre y a una oveja
+- **WHEN** se ejecuta el tick n
+- **THEN** en el snapshot del tick n las bajas valen 3, la oveja no figura y se han creado en este orden la gema, el
+  `gold` de la torre y el `meat` de la oveja
+
 #### Scenario: Oro de una estructura recogido en su tick
 - **GIVEN** oro por torre 15, el jugador quieto con oro 0 a 10 px del centro de una torre con vida 4 que el pulso de
   Tests deja a vida 0 en el tick n
@@ -731,6 +786,15 @@ En una partida terminada o que está eligiendo mejora no se ejecuta ningún paso
 - **WHEN** se ejecuta el tick n
 - **THEN** en el snapshot del tick n el guardia está en la puerta, en patrulla, y la vida del jugador no ha bajado
   (el golpe del paso 5 va antes del nacimiento)
+
+#### Scenario: La oveja reaparecida no se mueve ni es objetivo en su tick
+- **GIVEN** el mapa vacío, el Linter y Tests cargados, ningún enemigo ni estructura, y una reaparición de oveja que toca
+  en el tick n
+- **WHEN** se ejecuta el tick n
+- **THEN** el snapshot del tick n tiene la oveja nueva en el centro de su celda, en `graze`, con la vida del contenido,
+  y ningún proyectil ni pulso nuevo
+- **AND** en el tick n + 1 la oveja sigue en el centro de su celda (primer tick de su pasto) si el jugador está a ≥ su
+  radio de huida
 
 ### Requirement: Pintado de los enemigos vivos
 El adaptador de render SHALL mostrar en cada frame exactamente un sprite de enemigo visible por cada enemigo del
@@ -1340,19 +1404,20 @@ estructuras ni para mover a los guardias.
 
 ### Requirement: Rendimiento con recogibles por tipo
 El sistema SHALL ejecutar un tick de simulación con el contenido por defecto, un mapa generado con sus estructuras, sus
-vetas y sus montones, 300 enemigos vivos, `maxProjectiles` (32) proyectiles vivos y, en el suelo, el tope de cada tipo
-de recogible lleno (`maxGems` gemas, el tope de oro y el tope de madera) con todos atraídos y a ≥ 400 px del jugador,
-en ≤ 2 ms de media, medido con un benchmark de Vitest sobre el núcleo, sin motor ni render. La medida es informativa
-(depende de la máquina): no bloquea `verify` ni CI. El verify-report de este change MUST anotar la media de este caso
-y la del escenario vivo "Peor caso con gemas" frente al objetivo informativo de ≤ 0,25 ms por tick. El camino caliente
-del tick MUST NOT crear objetos nuevos por tick para los recogibles ni para las vetas (reserva igual a la suma de los
-topes de los tres tipos).
+vetas, sus montones y sus ovejas, 300 enemigos vivos, `maxProjectiles` (32) proyectiles vivos, el tope de ovejas vivas
+del contenido (todas en huida) y, en el suelo, el tope de cada tipo de recogible lleno (`maxGems` gemas, el tope de oro,
+el de madera y el de carne) con todos atraídos y a ≥ 400 px del jugador, en ≤ 2 ms de media, medido con un benchmark de
+Vitest sobre el núcleo, sin motor ni render. La medida es informativa (depende de la máquina): no bloquea `verify` ni
+CI. El verify-report de este change MUST anotar la media de este caso y la del escenario vivo "Peor caso con gemas"
+frente al objetivo informativo de ≤ 0,25 ms por tick, y compararla con la de 0022 (0,27 ms con tres topes). El camino
+caliente del tick MUST NOT crear objetos nuevos por tick para los recogibles, las vetas ni las ovejas (reserva igual a
+la suma de los topes de los cuatro tipos de recogible).
 
-#### Scenario: Peor caso con los tres topes llenos
+#### Scenario: Peor caso con los cuatro topes llenos
 - **GIVEN** la partida descrita en el requisito, con una vida del jugador suficiente para no llegar a 0
 - **WHEN** el benchmark mide 60 ticks consecutivos (60 × 6 px = 360 px < 400, ningún recogible se recoge)
 - **THEN** la media es ≤ 2 ms por tick y la partida sigue en curso al terminar la medición
-- **AND** la media medida se anota en el verify-report frente al objetivo de ≤ 0,25 ms
+- **AND** la media medida se anota en el verify-report frente al objetivo de ≤ 0,25 ms y frente a los 0,27 ms de 0022
 
 <!-- historial: 0001-walking-skeleton (2026-11-19) -->
 <!-- historial: 0002-enemy-spawning (2026-11-19) -->
@@ -1371,3 +1436,4 @@ topes de los tres tipos).
 <!-- historial: 0020-enemy-behaviors (2026-11-24) -->
 <!-- historial: 0021-goblin-camps (2026-11-24) -->
 <!-- historial: 0022-resources-sheep (2026-11-24) -->
+<!-- historial: 0023-sheep-meat (2026-11-24) -->
