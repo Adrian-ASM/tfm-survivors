@@ -1,0 +1,955 @@
+/* Tema propio de la presentación: bosque oscuro con acento dorado. Sin fuentes externas (CSP 'self'). */
+/* Paleta sacada del arte de Tiny Swords: oro, hierba, azul caballero y rojo goblin. */
+:root {
+  --bg: #0f2227;
+  --bg-2: #173238;
+  --surface: rgba(29, 58, 64, 0.88);
+  --line: #2f5a60;
+  --text: #f3f1e4;
+  --muted: #a9c3bd;
+  --accent: #f2c14e;
+  --accent-2: #9bd35a;
+  --blue: #5b9be0;
+  --red: #e5604f;
+  --danger: #f07a68;
+  --font: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --mono: 'Cascadia Code', Consolas, 'SFMono-Regular', Menlo, monospace;
+}
+
+html,
+body {
+  background: var(--bg);
+}
+
+.reveal-viewport {
+  background: radial-gradient(ellipse at 20% 0%, var(--bg-2), var(--bg) 70%);
+}
+
+.reveal {
+  font-family: var(--font);
+  font-size: 30px;
+  color: var(--text);
+}
+
+.reveal .slides {
+  text-align: left;
+}
+
+.reveal .slides section {
+  height: 100%;
+  padding: 8px 24px;
+  box-sizing: border-box;
+}
+
+.reveal h1,
+.reveal h2,
+.reveal h3,
+.reveal h4 {
+  margin: 0 0 0.5em;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--text);
+}
+
+.reveal h1 {
+  font-size: 2.5em;
+  color: var(--accent);
+  text-shadow:
+    0 4px 0 #8a5a1c,
+    0 8px 18px rgba(0, 0, 0, 0.45);
+}
+
+.reveal h2 {
+  font-size: 1.6em;
+  padding-bottom: 0.25em;
+  border-bottom: 3px solid var(--accent);
+  display: inline-block;
+}
+
+.reveal h3 {
+  font-size: 1em;
+  color: var(--accent);
+}
+
+.reveal p,
+.reveal li {
+  line-height: 1.4;
+}
+
+.reveal ul,
+.reveal ol {
+  margin: 0 0 0 1.1em;
+  padding: 0;
+}
+
+.reveal li {
+  margin: 0.3em 0;
+}
+
+.reveal a {
+  color: var(--accent-2);
+  text-decoration: none;
+}
+
+.reveal a:hover {
+  text-decoration: underline;
+}
+
+.reveal code,
+.reveal pre {
+  font-family: var(--mono);
+}
+
+.reveal code {
+  font-size: 0.85em;
+  padding: 0.05em 0.3em;
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--accent);
+}
+
+.reveal strong {
+  color: var(--accent);
+}
+
+/* Portada y cierre */
+.reveal section.cover {
+  display: flex !important;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.kicker {
+  margin: 0;
+  font-size: 0.7em;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+}
+
+.lead {
+  font-size: 1.05em;
+  color: var(--muted);
+  max-width: 28em;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4em 1.6em;
+  font-size: 0.75em;
+  color: var(--muted);
+}
+
+.links span {
+  display: flex;
+  gap: 0.5em;
+}
+
+.big {
+  font-size: 1.25em;
+  margin: 0 0 0.4em;
+}
+
+.note,
+.hint {
+  font-size: 0.6em;
+  color: var(--muted);
+}
+
+.stack {
+  font-size: 0.7em;
+  color: var(--muted);
+  margin: 0 0 0.6em;
+}
+
+/* Rejillas */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2em;
+  align-items: start;
+}
+
+.two-col > *,
+[data-widget='layers'] > * {
+  min-width: 0;
+}
+
+.two-col.wide-right {
+  grid-template-columns: 0.8fr 1.2fr;
+  font-size: 0.85em;
+}
+
+.callout {
+  padding: 1em 1.2em;
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.callout p:first-child {
+  margin: 0 0 0.4em;
+  font-size: 0.65em;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.8em;
+  margin-top: 0.6em;
+}
+
+.card {
+  padding: 0.9em 1em;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: 0.8em;
+}
+
+.card p {
+  margin: 0;
+}
+
+.checks {
+  list-style: none;
+  margin-left: 0 !important;
+}
+
+.checks li::before {
+  content: '▸ ';
+  color: var(--accent);
+}
+
+.checks.next li::before {
+  content: '○ ';
+}
+
+/* Flujo SDD y guardarraíles */
+.flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35em;
+  margin: 0.4em 0 0.8em;
+  font-size: 0.75em;
+}
+
+.flow .step,
+.flow .gate {
+  padding: 0.35em 0.75em;
+  border-radius: 999px;
+  font-family: var(--mono);
+}
+
+.flow .step {
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.flow .gate {
+  border: 2px dashed var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.flow.small {
+  font-size: 0.65em;
+}
+
+.reveal ul.fragment,
+.reveal .flow + ul {
+  font-size: 0.8em;
+}
+
+/* Tabla de agentes */
+.agents {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.62em;
+}
+
+.agents th,
+.agents td {
+  padding: 0.45em 0.7em;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+.agents th {
+  color: var(--accent-2);
+  font-weight: 600;
+}
+
+.tree {
+  margin: 0;
+  padding: 1em;
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 0.5em;
+  line-height: 1.6;
+  white-space: pre;
+}
+
+.timeline {
+  font-size: 0.78em;
+}
+
+.demo-list {
+  font-size: 0.75em;
+  color: var(--muted);
+}
+
+/* Widget: capas */
+.widget {
+  margin-top: 0.4em;
+}
+
+[data-widget='layers'] {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: 1em;
+}
+
+.layers-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3em;
+}
+
+.layer {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0.55em 0.9em;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.7em;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+
+.layer span {
+  font-family: var(--mono);
+  font-size: 0.8em;
+  color: var(--muted);
+}
+
+.layer.is-allowed {
+  border-color: var(--accent-2);
+}
+
+.layer.is-active {
+  border-color: var(--accent);
+  background: #2a4433;
+}
+
+.layers-detail {
+  padding: 0.8em 1em;
+  border-radius: 10px;
+  background: var(--bg-2);
+  font-size: 0.65em;
+}
+
+.layers-detail h4 {
+  font-family: var(--mono);
+  color: var(--accent);
+}
+
+.layers-detail p {
+  margin: 0.3em 0;
+}
+
+.layers-detail .rule::before {
+  content: '✓ ';
+  color: var(--accent-2);
+}
+
+/* Widget: guardarraíl */
+.guard-form {
+  display: flex;
+  gap: 0.4em;
+  font-size: 0.55em;
+}
+
+.guard-form select,
+.guard-form input,
+.guard-form button,
+.chip {
+  padding: 0.45em 0.7em;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 1em;
+}
+
+.guard-form input {
+  flex: 1;
+  min-width: 0;
+}
+
+.guard-form button {
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.guard-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35em;
+  margin: 0.4em 0;
+  font-size: 0.45em;
+}
+
+.chip {
+  cursor: pointer;
+}
+
+.chip:hover {
+  border-color: var(--accent);
+}
+
+.guard-out {
+  margin: 0;
+  padding: 0.7em 1em;
+  border-radius: 8px;
+  background: var(--bg-2);
+  font-size: 0.5em;
+  white-space: pre-wrap;
+}
+
+.guard-out.is-ok {
+  border-left: 4px solid var(--accent-2);
+  color: var(--accent-2);
+}
+
+.guard-out.is-blocked {
+  border-left: 4px solid var(--danger);
+  color: var(--danger);
+}
+
+/* Widget: balance */
+.balance-chart {
+  width: 100%;
+  height: auto;
+}
+
+.balance-chart .band {
+  fill: var(--accent-2);
+  opacity: 0.18;
+}
+
+.balance-chart .band-edge {
+  stroke: var(--accent-2);
+  stroke-width: 2;
+  stroke-dasharray: 6 5;
+}
+
+.balance-chart .grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.balance-chart .axis {
+  fill: var(--muted);
+  font-size: 15px;
+  font-family: var(--mono);
+}
+
+.balance-chart .bar {
+  fill: var(--accent);
+  cursor: pointer;
+}
+
+.balance-chart .bar:hover {
+  fill: var(--accent-2);
+}
+
+.balance-chart .value {
+  fill: var(--text);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.balance-caption {
+  margin: 0.2em 0 0;
+  font-size: 0.6em;
+  color: var(--muted);
+}
+
+/* Widget: cifras */
+.figures {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.6em;
+}
+
+.figure {
+  display: flex;
+  flex-direction: column;
+  padding: 0.6em 0.7em;
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.figure strong {
+  font-size: 1.6em;
+  line-height: 1;
+}
+
+.figure span {
+  margin-top: 0.3em;
+  font-size: 0.5em;
+  color: var(--muted);
+}
+
+/* Etapas del proyecto (bloques de changes, sin fechas) */
+.stages {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.6em;
+  margin-top: 0.8em;
+}
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  padding: 0.5em 0.7em 0.7em;
+  border-radius: 12px;
+  background: var(--surface);
+  border-top: 4px solid var(--accent-2);
+}
+
+.stage-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 90px;
+}
+
+.stage h3 {
+  margin: 0.1em 0 0.2em;
+  font-size: 0.7em;
+}
+
+.stage p {
+  margin: 0 0 0.5em;
+  font-size: 0.5em;
+  color: var(--muted);
+}
+
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: auto;
+}
+
+.pill {
+  padding: 0.15em 0.45em;
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: var(--mono);
+  font-size: 0.42em;
+  font-weight: 700;
+}
+
+/* Controles de reveal */
+.reveal .controls,
+.reveal .progress {
+  color: var(--accent);
+}
+
+.reveal .slide-number {
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--mono);
+}
+
+/* Escenas (portada, demo, cierre): texto arriba, la isla del fondo abajo */
+.reveal section.scene {
+  justify-content: flex-start;
+  padding-top: 36px;
+}
+
+.reveal section.scene h2 {
+  font-size: 2em;
+}
+
+/* Sprites del juego (slides/sprites.ts) */
+.sprite {
+  display: inline-block;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  flex: none;
+}
+
+@keyframes sprite-play {
+  from {
+    background-position-x: var(--x0);
+  }
+  to {
+    background-position-x: var(--x1);
+  }
+}
+
+.flip {
+  transform: scaleX(-1);
+}
+
+.deco {
+  position: absolute;
+  pointer-events: none;
+}
+
+.callout {
+  position: relative;
+}
+
+.peek {
+  position: absolute;
+  top: -175px;
+  right: 10px;
+}
+
+.card {
+  position: relative;
+  border-top: 4px solid var(--accent);
+}
+
+.card--red {
+  border-top-color: var(--red);
+}
+
+.card--blue {
+  border-top-color: var(--blue);
+}
+
+.card--gold {
+  border-top-color: var(--accent);
+}
+
+.card--red h3 {
+  color: var(--red);
+}
+
+.card--blue h3 {
+  color: var(--blue);
+}
+
+.card-art {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 120px;
+  margin: -0.4em 0 0.2em;
+}
+
+.small-text {
+  font-size: 0.82em;
+}
+
+/* Reparto del juego */
+.cast {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4em;
+}
+
+.cast figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  margin: 0;
+  padding: 0.2em 0.2em 0.4em;
+  border-radius: 12px;
+  background: var(--surface);
+  border-bottom: 4px solid var(--red);
+}
+
+.cast figure.hero {
+  border-bottom-color: var(--blue);
+}
+
+.cast figure {
+  height: 165px;
+  overflow: hidden;
+}
+
+.cast figcaption {
+  position: relative;
+  padding: 0.1em 0.5em;
+  border-radius: 6px;
+  background: rgba(15, 34, 39, 0.85);
+  font-size: 0.45em;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* Fases del SDD: 2 filas de 5 en orden de lectura */
+.reveal ol.phases {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.45em;
+  margin: 0.3em 0 0.6em;
+  counter-reset: none;
+}
+
+.phases li {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0.6em 0.7em;
+  border-radius: 10px;
+  background: var(--surface);
+  border-top: 4px solid var(--blue);
+  font-size: 0.58em;
+  min-height: 172px;
+}
+
+.phases li b {
+  font-size: 1.2em;
+  color: var(--blue);
+}
+
+.phases li p {
+  flex: 1;
+  margin: 0.35em 0;
+  line-height: 1.3;
+}
+
+.phases li > code {
+  align-self: flex-start;
+  font-size: 0.85em;
+}
+
+.phases li.is-gate {
+  border-top-color: var(--accent);
+  background: rgba(242, 193, 78, 0.12);
+}
+
+.phases li.is-gate b {
+  color: var(--accent);
+}
+
+.phases .par {
+  font-family: var(--mono);
+  font-size: 0.85em;
+  color: var(--muted);
+}
+
+/* Change de principio a fin: fase · agente · qué se hizo */
+.reveal ol.pipeline {
+  list-style: none;
+  margin: 0;
+  max-width: 960px;
+  font-size: 0.62em;
+}
+
+.pipeline li {
+  display: grid;
+  grid-template-columns: 150px 300px 1fr;
+  gap: 0.6em;
+  align-items: center;
+  margin: 0.22em 0;
+  padding: 0.3em 0.7em;
+  border-radius: 8px;
+  background: var(--surface);
+  border-left: 4px solid var(--blue);
+}
+
+.pipeline li.is-gate {
+  border-left-color: var(--accent);
+  background: rgba(242, 193, 78, 0.12);
+}
+
+.pipeline .agent {
+  font-family: var(--mono);
+  font-size: 0.9em;
+}
+
+.pipeline em {
+  margin-left: 0.4em;
+  padding: 0.05em 0.45em;
+  border-radius: 999px;
+  font-style: normal;
+  font-family: var(--font);
+  font-size: 0.85em;
+  font-weight: 700;
+}
+
+.m-opus {
+  background: var(--red);
+  color: var(--bg);
+}
+
+.m-sonnet {
+  background: var(--blue);
+  color: var(--bg);
+}
+
+/* Conceptos aprendidos */
+.subtitle {
+  margin: -0.3em 0 0.5em;
+  font-size: 0.7em;
+  color: var(--muted);
+}
+
+.concepts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6em;
+}
+
+.concept {
+  display: flex;
+  gap: 0.4em;
+  align-items: center;
+  padding: 0.7em 0.8em;
+  border-radius: 12px;
+  background: var(--surface);
+  border-left: 4px solid var(--accent);
+  font-size: 0.6em;
+  min-height: 205px;
+}
+
+.concept h3 {
+  margin: 0 0 0.2em;
+  font-size: 1.25em;
+}
+
+.concept p {
+  margin: 0;
+  line-height: 1.3;
+}
+
+.concept .vs {
+  margin-top: 0.35em;
+  font-style: italic;
+  color: var(--muted);
+}
+
+.concept--blue {
+  border-left-color: var(--blue);
+}
+
+.concept--blue h3 {
+  color: var(--blue);
+}
+
+.concept--red {
+  border-left-color: var(--red);
+}
+
+.concept--red h3 {
+  color: var(--red);
+}
+
+.concept--green {
+  border-left-color: var(--accent-2);
+}
+
+.concept--green h3 {
+  color: var(--accent-2);
+}
+
+.concept-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: none;
+  width: 100px;
+}
+
+/* Hoja de ruta */
+.roadmap {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6em;
+  margin-top: 0.4em;
+}
+
+.step-card {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  min-height: 120px;
+  padding: 0.3em 0.7em;
+  border-radius: 12px;
+  background: var(--surface);
+  border-left: 4px solid var(--accent-2);
+  font-size: 0.62em;
+}
+
+.step-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: none;
+  width: 90px;
+}
+
+.step-card b {
+  display: block;
+  font-family: var(--mono);
+  color: var(--accent);
+}
+
+/* Escenario del guardarraíl */
+.guard-result {
+  display: grid;
+  grid-template-columns: 1fr 200px;
+  gap: 0.6em;
+  align-items: center;
+}
+
+.guard-stage {
+  position: relative;
+  height: 180px;
+}
+
+.guard-stage .sprite {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+}
+
+.guard-stage .boom {
+  display: none;
+}
+
+.guard-stage.is-blocked .boom {
+  display: block;
+}
+
+.guard-stage.is-blocked .shooter {
+  display: none;
+}
+
+/* Gráfica de balance en oro y hierba */
+.balance-chart .bar {
+  fill: var(--accent);
+}
+
+/* PDF (?print-pdf): sin pistas de interacción */
+.print-pdf .no-print {
+  display: none;
+}

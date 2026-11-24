@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <!-- Más laxa que la del juego solo en style-src: reveal.js posiciona y escala las slides con estilos en línea. -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Greentide Vanguard · TFM</title>
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides">
+        <!-- 1 · Portada -->
+        <section class="cover scene">
+          <p class="kicker">TFM · Máster de Desarrollo con IA</p>
+          <h1>Greentide Vanguard</h1>
+          <p class="lead">Un survivors-like para navegador construido con IA… y con disciplina</p>
+          <p class="links">
+            <span>Juego <a data-link="game"></a></span>
+            <span>Código <a data-link="repo"></a></span>
+          </p>
+          <div class="deco" style="left: 250px; top: 390px" data-sprite="archer-shoot" data-scale="1.2"></div>
+          <div class="deco" style="left: 500px; top: 480px" data-sprite="barrel-fuse" data-scale="1.1"></div>
+          <div class="deco flip" style="left: 580px; top: 380px" data-sprite="torch-walk" data-scale="1.05"></div>
+          <div class="deco flip" style="left: 700px; top: 440px" data-sprite="torch" data-scale="1"></div>
+          <div class="deco flip" style="left: 860px; top: 410px" data-sprite="tnt" data-scale="1.05"></div>
+          <aside class="notes">
+            Hola, soy Adrián. Os presento mi TFM: Greentide Vanguard, un juego 2D de tipo survivors-like que se juega
+            en el navegador. En los próximos minutos os cuento por qué un juego, cómo está construido y, sobre todo,
+            cómo he trabajado con la IA para que el resultado sea mantenible y no un prototipo que se rompe al tocarlo.
+            Al final haré una demo en directo.
+          </aside>
+        </section>
+
+        <!-- 2 · Sobre mí -->
+        <section>
+          <h2>Por qué un juego</h2>
+          <div class="two-col">
+            <div>
+              <p class="big">~12 años en <strong>backend</strong></p>
+              <ul>
+                <li class="fragment">APIs, servicios, datos… nunca un juego ni un front de este tipo</li>
+                <li class="fragment">Los videojuegos son uno de mis hobbies</li>
+                <li class="fragment">La IA me da el empujón para salir de mi zona: motor, render, game feel</li>
+              </ul>
+            </div>
+            <div class="callout fragment">
+              <div class="peek" data-sprite="archer" data-scale="1.3"></div>
+              <p>La pregunta del TFM</p>
+              <p class="big">¿Puedo construir algo fuera de mi especialidad sin renunciar a cómo trabajo en backend?</p>
+            </div>
+          </div>
+          <aside class="notes">
+            Llevo unos doce años dedicándome al backend. He hecho APIs, servicios, integraciones, pero nunca un juego.
+            Los videojuegos son uno de mis hobbies y siempre había tenido la espinita. Lo que me decidió fue la IA:
+            con ella podía lanzarme a un dominio nuevo, un motor de juego, render, animaciones, sin tardar meses en
+            aprender lo básico. Pero no quería renunciar a lo que sí sé hacer: arquitectura limpia, tests,
+            integración continua. Esa es la pregunta que guía el proyecto.
+          </aside>
+        </section>
+
+        <!-- 3 · El reto -->
+        <section>
+          <h2>El reto: IA sin «vibe coding»</h2>
+          <div class="cards">
+            <div class="card card--red fragment">
+              <div class="card-art"><div data-sprite="barrel-fuse" data-scale="1.3"></div></div>
+              <h3>Riesgo</h3>
+              <p>Prompts sueltos → código que funciona hoy y nadie entiende mañana</p>
+            </div>
+            <div class="card card--blue fragment">
+              <div class="card-art"><div data-sprite="castle" data-scale="0.42"></div></div>
+              <h3>Respuesta</h3>
+              <p>Specs vivas, agentes con rol, guardarraíles automáticos y gates humanos</p>
+            </div>
+            <div class="card card--gold fragment">
+              <div class="card-art"><div data-sprite="gold" data-scale="1.4"></div></div>
+              <h3>Resultado</h3>
+              <p>21 changes, cada uno con spec, diseño, tests, verificación y retro</p>
+            </div>
+          </div>
+          <aside class="notes">
+            El riesgo de desarrollar con IA es el vibe coding: pides algo, funciona, y al tercer cambio nadie sabe por
+            qué está así. Mi respuesta ha sido tratar a la IA como a un equipo: con especificaciones que viven con el
+            código, roles separados, reglas que se comprueban solas y puntos donde yo apruebo. El resultado son
+            veintiún cambios, todos trazables.
+          </aside>
+        </section>
+
+        <!-- 4 · El juego -->
+        <section>
+          <h2>El juego en 30 segundos</h2>
+          <div class="two-col">
+            <ul class="checks small-text">
+              <li>Solo te mueves (WASD); las armas disparan solas</li>
+              <li>Oleadas crecientes de goblins, cada tipo con su comportamiento</li>
+              <li>Al subir de nivel eliges 1 de 3 mejoras</li>
+              <li>Mapa procedural por semilla: río, puentes, bosque, castillo, campamentos goblin</li>
+              <li>Récords e historial en local, con exportar / importar JSON</li>
+            </ul>
+            <div class="cast">
+              <figure class="hero"><div data-sprite="archer" data-scale="1.35"></div><figcaption>Arquero · tú</figcaption></figure>
+              <figure class="foe"><div data-sprite="torch" data-scale="1.35" class="flip"></div><figcaption>Antorcha · persigue</figcaption></figure>
+              <figure class="foe"><div data-sprite="barrel-fuse" data-scale="1.6"></div><figcaption>Barril · mecha y ¡bum!</figcaption></figure>
+              <figure class="foe"><div data-sprite="tnt-throw" data-scale="1.35" class="flip"></div><figcaption>TNT · lanza dinamita</figcaption></figure>
+              <figure class="foe"><div data-sprite="house" data-scale="0.75"></div><figcaption>Casa · genera guardias</figcaption></figure>
+              <figure class="foe"><div data-sprite="tower" data-scale="0.62"></div><figcaption>Torre goblin</figcaption></figure>
+            </div>
+          </div>
+          <p class="note">Arte CC0 (Tiny Swords) con procedencia controlada por un guardarraíl.</p>
+          <aside class="notes">
+            Rápido, para situarnos: es un survivors-like. Tú solo te mueves y las armas disparan solas. Las oleadas van
+            creciendo y cada tipo de goblin se comporta distinto: el de la antorcha te persigue, el del barril se
+            acerca y explota, el de la dinamita te lanza TNT. Al subir de nivel eliges una mejora entre tres. El mapa se
+            genera con una semilla, así que cada partida es distinta pero reproducible. Luego lo veréis en vivo.
+          </aside>
+        </section>
+
+        <!-- 5 · Stack y arquitectura -->
+        <section>
+          <h2>Stack y Clean Architecture</h2>
+          <p class="stack">
+            TypeScript estricto · Vite · Phaser 4 · Vitest · Playwright · zod · GitHub Actions + Pages
+          </p>
+          <div class="widget" data-widget="layers"></div>
+          <p class="hint no-print">Pulsa una capa para ver a qué puede importar.</p>
+          <aside class="notes">
+            El stack es TypeScript estricto con Vite, Phaser 4 como motor, Vitest y Playwright para tests y zod para
+            validar datos. La decisión clave viene de mi lado backend: Clean Architecture. El núcleo de simulación,
+            dominio y aplicación, es puro y determinista; no sabe que existe Phaser. Phaser es solo un adaptador en
+            infraestructura. [Pulsar Dominio] El dominio no importa nada. [Pulsar Infraestructura] Infraestructura sí
+            puede usar el motor. Esto me permite testear toda la lógica del juego en milisegundos, sin navegador, y
+            con la misma semilla obtener siempre la misma partida.
+          </aside>
+        </section>
+
+        <!-- 6 · SDD -->
+        <section>
+          <h2>Spec-Driven Development</h2>
+          <ol class="phases">
+            <li>
+              <b>1 · Explore</b>
+              <p>Lee código, specs vivas y docs para entender qué toca el cambio.</p>
+              <code>exploration.md</code>
+            </li>
+            <li>
+              <b>2 · Propose</b>
+              <p>Qué y por qué: alcance, fuera de alcance y riesgos.</p>
+              <code>proposal.md</code>
+            </li>
+            <li class="is-gate">
+              <b>Gate humano</b>
+              <p>Apruebo la propuesta o la devuelvo. Sin esto no se diseña nada.</p>
+            </li>
+            <li>
+              <b>3 · Spec</b> <span class="par">∥ design</span>
+              <p>Requisitos con escenarios Given/When/Then, nunca el cómo.</p>
+              <code>specs/</code>
+            </li>
+            <li>
+              <b>4 · Design</b> <span class="par">∥ spec</span>
+              <p>Cómo encaja en Clean Architecture; ADR si cuesta revertirlo.</p>
+              <code>design.md</code>
+            </li>
+            <li>
+              <b>5 · Tasks</b>
+              <p>Una tarea por escenario, agrupadas por capa.</p>
+              <code>tasks.md</code>
+            </li>
+            <li>
+              <b>6 · Apply</b>
+              <p>TDD: rojo comprobado en el núcleo, <code>verify</code> y commit por grupo.</p>
+              <code>src/ · tests/</code>
+            </li>
+            <li>
+              <b>7 · Verify</b>
+              <p>Contrasta código con spec y diseño: Critical / Warning / Suggestion.</p>
+              <code>verify-report.md</code>
+            </li>
+            <li class="is-gate">
+              <b>Gate humano</b>
+              <p>Reviso el informe y fusiono la PR.</p>
+            </li>
+            <li>
+              <b>8 · Archive</b>
+              <p>Fusiona las specs delta en las vivas y escribe la retrospectiva.</p>
+              <code>retrospective.md</code>
+            </li>
+          </ol>
+          <p class="note">
+            Nivel <strong>Spec-Anchored</strong>: las specs de <code>openspec/specs/</code> evolucionan con el código ·
+            20 ADRs para las decisiones caras de revertir
+          </p>
+          <aside class="notes">
+            Para cada funcionalidad sigo Spec-Driven Development. Primero se explora el código, luego se hace una
+            propuesta, y aquí hay un gate: yo la apruebo o no. Después se escriben las especificaciones y el diseño, se
+            descompone en tareas, se implementa con TDD y se verifica. Otro gate mío antes de archivar. Al archivar,
+            las specs del cambio se fusionan en las specs vivas: siempre reflejan cómo se comporta el juego hoy.
+          </aside>
+        </section>
+
+        <!-- 7 · Multiagente -->
+        <section>
+          <h2>Un equipo de subagentes</h2>
+          <table class="agents">
+            <thead>
+              <tr><th>Agente</th><th>Fase</th><th>Escribe en</th><th>Modelo</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>game-designer</td><td>GDD, backlog</td><td><code>docs/gdd.md</code></td><td>Sonnet</td></tr>
+              <tr><td>sdd-explorer</td><td>explore</td><td><code>exploration.md</code></td><td>Sonnet</td></tr>
+              <tr><td>sdd-spec-writer</td><td>propose + spec</td><td><code>proposal.md</code>, <code>specs/</code></td><td>Opus</td></tr>
+              <tr><td>sdd-architect</td><td>design + tasks</td><td><code>design.md</code>, ADRs</td><td>Opus</td></tr>
+              <tr><td>sdd-implementer</td><td>apply</td><td><code>src/</code>, <code>tests/</code>, <code>content/</code></td><td>Opus</td></tr>
+              <tr><td>sdd-verifier</td><td>verify</td><td><code>verify-report.md</code></td><td>Sonnet</td></tr>
+            </tbody>
+          </table>
+          <p class="note">Quien explora no diseña; quien implementa no verifica. Verificar con otro modelo refuerza la independencia.</p>
+          <aside class="notes">
+            Cada fase la hace un subagente con su rol, sus permisos de escritura y su modelo. La sesión principal de
+            Claude Code hace de orquestador: habla conmigo y delega. Uso Opus donde se decide o se escribe código y
+            Sonnet donde se lee y se contrasta, que además ahorra créditos. Y el que verifica no es el que implementa,
+            ni siquiera el mismo modelo, igual que en un equipo no te revisas tu propio PR.
+          </aside>
+        </section>
+
+        <!-- 8 · Worktrees -->
+        <section>
+          <h2>Paralelismo con git worktrees</h2>
+          <div class="two-col">
+            <pre class="tree">tfm-survivors/            main, siempre limpio
+tfm-survivors.worktrees/
+  0021-goblin-camps/      change/0021-…
+  0022-resources-sheep/   change/0022-…</pre>
+            <ul>
+              <li>Un worktree y una rama por change</li>
+              <li>Varias sesiones de Claude a la vez sin pisarse</li>
+              <li>Todo entra por PR con el check <code>quality</code> en verde</li>
+            </ul>
+          </div>
+          <aside class="notes">
+            Cada cambio vive en su propio worktree de git, una carpeta con su rama. Así puedo tener varias sesiones de
+            Claude trabajando a la vez, por ejemplo una cerrando un change y otra explorando el siguiente, sin que se
+            pisen. Nada entra en main sin PR y sin que el CI pase.
+          </aside>
+        </section>
+
+        <!-- 9 · Guardarraíles -->
+        <section>
+          <h2>Guardarraíles en 3 capas</h2>
+          <div class="flow small">
+            <span class="step">1 · Hook del agente</span>
+            <span class="step">2 · pre-commit</span>
+            <span class="step">3 · CI</span>
+          </div>
+          <p class="note">Una sola fuente de reglas (<code>.claude/hooks/</code>) para cualquier autor: persona o IA.</p>
+          <div class="widget" data-widget="guard"></div>
+          <aside class="notes">
+            Las reglas de arquitectura no dependen de que la IA se porte bien. Hay tres capas: un hook que bloquea al
+            agente antes de escribir, un pre-commit para cualquier autor y el CI. Las tres usan las mismas reglas.
+            Probemos: [Elegir src/domain y pulsar Math.random] si un agente intenta usar Math.random en el dominio, se
+            bloquea y le dice qué hacer: usar el puerto RandomGenerator. [Pulsar el import de Phaser] Lo mismo con el
+            motor. En infraestructura, en cambio, está permitido. Cuando el hook salta, se anota en el diario de IA
+            como evidencia.
+          </aside>
+        </section>
+
+        <!-- 10 · Calidad -->
+        <section>
+          <h2>Calidad y balance medido</h2>
+          <div class="two-col wide-right">
+            <ul>
+              <li><strong>TDD por capa</strong>: rojo comprobado en el núcleo; test-after en infraestructura</li>
+              <li><strong>E2E ligeros</strong>: avance manual por ticks (<code>?e2e&amp;manual</code> + <code>step(n)</code>)</li>
+              <li><strong>Balance</strong>: un bot de referencia juega 50 semillas; el test exige 25–35 victorias</li>
+            </ul>
+            <div class="widget" data-widget="balance"></div>
+          </div>
+          <aside class="notes">
+            La calidad también está automatizada. TDD estricto en el núcleo, donde un fallo es caro. Los tests de
+            navegador son pocos y deterministas: no esperan al reloj, avanzan la simulación tick a tick. Y lo que más me
+            gusta: el balance es un test. Un bot juega las semillas del 1 al 50 y la tasa de victorias tiene que quedar
+            entre 25 y 35. Aquí veis cómo cada change que tocó la dificultad se recalibró para seguir dentro de la
+            banda.
+          </aside>
+        </section>
+
+        <!-- 11 · Un change de principio a fin -->
+        <section>
+          <h2>Un change de principio a fin: 0021</h2>
+          <p class="lead">Casas y torres goblin con TNT de guardia</p>
+          <ol class="pipeline">
+            <li class="fragment">
+              <strong>Explore</strong><span class="agent">sdd-explorer <em class="m-sonnet">Sonnet</em></span>
+              <span>qué toca: mapa, azar, armas, enemigos</span>
+            </li>
+            <li class="fragment">
+              <strong>Propose</strong><span class="agent">sdd-spec-writer <em class="m-opus">Opus</em></span>
+              <span>alcance y fuera de alcance (campamentos → backlog)</span>
+            </li>
+            <li class="fragment is-gate">
+              <strong>Gate</strong><span class="agent">yo</span><span>apruebo la propuesta</span>
+            </li>
+            <li class="fragment">
+              <strong>Spec</strong><span class="agent">sdd-spec-writer <em class="m-opus">Opus</em></span>
+              <span>escenarios Given/When/Then</span>
+            </li>
+            <li class="fragment">
+              <strong>Design + tasks</strong><span class="agent">sdd-architect <em class="m-opus">Opus</em></span>
+              <span>ADR-0020 y tareas por capa</span>
+            </li>
+            <li class="fragment">
+              <strong>Apply</strong><span class="agent">sdd-implementer <em class="m-opus">Opus</em></span>
+              <span>TDD en 8 grupos: tercer flujo de azar, firmas doradas intactas</span>
+            </li>
+            <li class="fragment">
+              <strong>Verify</strong><span class="agent">sdd-verifier <em class="m-sonnet">Sonnet</em></span>
+              <span>informe Critical / Warning / Suggestion</span>
+            </li>
+            <li class="fragment is-gate">
+              <strong>Gate</strong><span class="agent">yo</span><span>reviso y fusiono la PR #51</span>
+            </li>
+            <li class="fragment">
+              <strong>Archive</strong><span class="agent">orquestador + skill <code>sdd-archive</code></span>
+              <span>specs vivas y retrospectiva</span>
+            </li>
+          </ol>
+          <div class="deco" style="left: 1010px; top: 70px" data-sprite="house" data-scale="0.75"></div>
+          <div class="deco" style="left: 1060px; top: 210px" data-sprite="tower" data-scale="0.7"></div>
+          <aside class="notes">
+            Veamos un change real, el 0021: casas y torres goblin que generan goblins de guardia. [Ir mostrando] Cada
+            paso lo hace un subagente distinto. El explorador, con Sonnet, analizó qué partes del código tocaba. El
+            spec-writer, con Opus, escribió la propuesta, que dejó fuera los campamentos, y ahí paré yo a aprobarla.
+            Con la propuesta aprobada, el mismo agente escribió los escenarios y el arquitecto el diseño, con un ADR, y
+            las tareas. El implementador, con Opus, hizo TDD en ocho grupos de tareas: las estructuras usan un
+            flujo de azar propio para no alterar los mapas existentes, y eso lo prueban unas firmas doradas. Luego el
+            verificador, con Sonnet, un modelo distinto del que implementó, lo contrastó con la spec. Yo revisé y
+            fusioné la PR, y el orquestador archivó con la skill de archive: specs vivas y retrospectiva.
+            [Opcional: abrir una spec viva de openspec/specs/ en vista previa de Markdown. Ojo: las carpetas de archive llevan la fecha en el nombre y el pie de las specs, en un comentario]
+          </aside>
+        </section>
+
+        <!-- 12 · Demo -->
+        <section class="cover scene">
+          <p class="kicker">Demo en directo</p>
+          <h2>Juguemos</h2>
+          <p class="links"><a data-link="game"></a></p>
+          <ul class="demo-list">
+            <li>Menú, partida y elección de mejoras</li>
+            <li>Goblins: antorcha, barril, TNT y casas</li>
+            <li>Pausa, resultados, récords y exportar JSON</li>
+          </ul>
+          <div class="deco" style="left: 200px; top: 430px" data-sprite="house" data-scale="0.75"></div>
+          <div class="deco" style="left: 300px; top: 440px" data-sprite="tower" data-scale="0.7"></div>
+          <div class="deco" style="left: 560px; top: 400px" data-sprite="archer-walk" data-scale="1.1"></div>
+          <div class="deco" style="left: 700px; top: 380px" data-sprite="explosion" data-scale="1"></div>
+          <div class="deco flip" style="left: 780px; top: 420px" data-sprite="torch-walk" data-scale="1"></div>
+          <div class="deco" style="left: 470px; top: 520px" data-sprite="barrel-peek" data-scale="1"></div>
+          <aside class="notes">
+            Pasamos a la demo. [Cambiar a la pestaña del juego] Guion: menú → Jugar → moverse por el mapa, ver río y
+            castillo → subir de nivel y elegir mejora → enseñar barril con aviso y explosión → atacar una casa goblin →
+            pausa con Esc → terminar partida → resultados → menú → exportar. Si da tiempo, enseñar en el repo una spec
+            viva de openspec/specs/ en vista previa (el pie lleva fechas en un comentario; evitar las carpetas de archive).
+          </aside>
+        </section>
+
+        <!-- 13 · Cifras -->
+        <section>
+          <h2>En cifras</h2>
+          <div class="widget" data-widget="figures"></div>
+          <aside class="notes">
+            Algunas cifras: veintiún changes archivados, veinte decisiones de arquitectura documentadas, más de
+            doscientos ficheros de tests. Y así ha crecido el juego, por etapas: primero el bucle de partida, luego la calidad y el despliegue, después el arte y el mundo, y por último unos enemigos con comportamiento propio.
+          </aside>
+        </section>
+
+        <!-- 14 · Conceptos aprendidos -->
+        <section>
+          <h2>Conceptos aprendidos</h2>
+          <p class="subtitle">De backend a videojuego: lo que no te encuentras detrás de una API</p>
+          <div class="concepts">
+            <div class="concept concept--blue">
+              <div class="concept-icon"><div data-sprite="castle" data-scale="0.3"></div></div>
+              <div>
+                <h3>GDD</h3>
+                <p>Documento de diseño: pilares, core loop, victoria y derrota, backlog MoSCoW. El «qué» antes de las specs.</p>
+                <p class="vs">Backend: requisitos y contratos de API</p>
+              </div>
+            </div>
+            <div class="concept concept--gold">
+              <div class="concept-icon"><div data-sprite="archer-walk" data-scale="1"></div></div>
+              <div>
+                <h3>Sprites y animación</h3>
+                <p>Hojas de sprites, marcos, fps por animación, capas de dibujo y arte CC0 con procedencia.</p>
+                <p class="vs">Backend: no hay assets, solo JSON</p>
+              </div>
+            </div>
+            <div class="concept concept--green">
+              <div class="concept-icon"><div data-sprite="gold" data-scale="1"></div></div>
+              <div>
+                <h3>Semilla</h3>
+                <p>Misma semilla ⇒ mismo mapa y mismas oleadas. Flujos de azar separados para no romper partidas.</p>
+                <p class="vs">Backend: el azar es un UUID</p>
+              </div>
+            </div>
+            <div class="concept concept--blue">
+              <div class="concept-icon"><div data-sprite="torch-walk" data-scale="0.85" class="flip"></div></div>
+              <div>
+                <h3>Bucle de juego</h3>
+                <p>La simulación avanza a 60 ticks por segundo, pase lo que pase. El render solo la dibuja.</p>
+                <p class="vs">Backend: petición → respuesta</p>
+              </div>
+            </div>
+            <div class="concept concept--red">
+              <div class="concept-icon"><div data-sprite="barrel-fuse" data-scale="1.1"></div></div>
+              <div>
+                <h3>Balance</h3>
+                <p>Que sea retador y no injusto: 25–35 victorias de 50 semillas, medido en cada change.</p>
+                <p class="vs">Backend: un GET devuelve siempre lo mismo</p>
+              </div>
+            </div>
+            <div class="concept concept--red">
+              <div class="concept-icon"><div data-sprite="dead" data-scale="1.1"></div></div>
+              <div>
+                <h3>Tipos de jugador</h3>
+                <p>Bot que esquiva troncos, agua y avisos; jugador quieto que debe perder antes de 180 s.</p>
+                <p class="vs">Backend: el cliente sigue el contrato</p>
+              </div>
+            </div>
+          </div>
+          <aside class="notes">
+            Viniendo de backend, lo más interesante ha sido todo lo que un juego tiene y una API no. Empecé por un GDD,
+            el documento de diseño, que fija qué juego quiero antes de escribir ninguna spec. Aprendí cómo funcionan
+            los sprites: hojas con marcos, animaciones a distintos fps, capas de dibujo. Aprendí a usar semillas:
+            con la misma semilla sale el mismo mapa y las mismas oleadas, y separo el azar en flujos para que añadir
+            algo nuevo no cambie las partidas existentes. Y el bucle de juego: la simulación avanza a 60 ticks por
+            segundo, no espera a que alguien pregunte.
+            Pero lo que más me cambió el chip es el balance. En backend un GET con los mismos parámetros devuelve lo
+            mismo y el test es verde o rojo. En un juego la pregunta es otra: ¿es justo?, ¿es divertido?, ¿se puede
+            ganar haciendo trampas? Por eso pruebo con distintos tipos de jugador: un bot que juega razonablemente
+            bien tiene que ganar entre 25 y 35 de 50 partidas, y un jugador que se queda quieto tiene que perder
+            siempre antes de los tres minutos. Si un cambio rompe eso, el test falla aunque el código esté perfecto.
+          </aside>
+        </section>
+
+        <!-- 15 · Próximos pasos -->
+        <section>
+          <h2>Próximos pasos</h2>
+          <div class="roadmap">
+            <div class="step-card"><div class="step-icon"><div data-sprite="gold" data-scale="1.2"></div></div><span><b>0022</b> Recursos y ovejas</span></div>
+            <div class="step-card"><div class="step-icon"><div data-sprite="castle" data-scale="0.28"></div></div><span><b>0023</b> Progresión separada y castillo-tienda</span></div>
+            <div class="step-card"><div class="step-icon"><div data-sprite="house" data-scale="0.6"></div></div><span><b>0024</b> Solares de obra: casa y torre</span></div>
+            <div class="step-card"><div class="step-icon"><div data-sprite="tower" data-scale="0.4"></div></div><span><b>0025</b> Arqueros en las torres goblin y barras de vida</span></div>
+            <div class="step-card"><div class="step-icon"><div data-sprite="archer" data-scale="1.1"></div></div><span><b>0026</b> Elegir personaje: el Guerrero</span></div>
+            <div class="step-card"><div class="step-icon"><div data-sprite="torch" data-scale="1.1" class="flip"></div></div><span><b>balance</b> Pasada de equilibrio con playtest humano</span></div>
+          </div>
+          <p class="note">Después (Could): audio, minimapa, día/noche, reto diario con semilla compartida, login con Supabase.</p>
+          <aside class="notes">
+            El proyecto sigue vivo después de la entrega. El backlog tiene ya los siguientes changes priorizados:
+            recursos, una progresión separada con el castillo como tienda, construir edificios propios, arqueros en las
+            torres y un segundo personaje. Y una pasada de equilibrio con gente real jugando, no solo el bot.
+          </aside>
+        </section>
+
+        <!-- 16 · Cierre -->
+        <section class="cover scene">
+          <div class="deco" style="left: 300px; top: 390px" data-sprite="archer" data-scale="1.2"></div>
+          <div class="deco" style="left: 520px; top: 490px" data-sprite="gold" data-scale="1.1"></div>
+          <div class="deco" style="left: 600px; top: 510px" data-sprite="gold" data-scale="0.65"></div>
+          <div class="deco" style="left: 650px; top: 420px" data-sprite="dead" data-scale="1.5"></div>
+          <div class="deco flip" style="left: 790px; top: 450px" data-sprite="barrel-peek" data-scale="1"></div>
+          <h2>Gracias</h2>
+          <p class="lead">La IA me ha permitido salir de mi zona; la disciplina, que lo construido aguante.</p>
+          <p class="links">
+            <span>Juego <a data-link="game"></a></span>
+            <span>Código <a data-link="repo"></a></span>
+            <span>Slides <a data-link="slides"></a></span>
+          </p>
+          <aside class="notes">
+            Y eso es todo. Para mí la conclusión es doble: la IA me ha permitido lanzarme a algo que no habría hecho
+            solo, y la disciplina de specs, roles y guardarraíles ha hecho que lo construido aguante cambio tras cambio.
+            Tenéis los enlaces al juego, al código y a estas slides. Gracias.
+          </aside>
+        </section>
+      </div>
+    </div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
