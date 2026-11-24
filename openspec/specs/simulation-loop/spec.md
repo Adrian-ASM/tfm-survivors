@@ -55,13 +55,15 @@ El sistema SHALL producir exactamente el mismo `RunSnapshot`, enemigos, vida, in
 partida, resultado, bajas, proyectiles, pulsos, indicación de daño, gemas, XP, nivel, ofertas y mejoras adquiridas
 incluidos, y el mismo mapa, a partir del mismo estado inicial, la misma semilla, la misma secuencia de inputs por tick
 y la misma secuencia de elecciones de mejora (índice elegido en cada oferta). En particular, el resultado de la
-partida, el tick en que termina y las bajas MUST ser los mismos. El núcleo MUST NOT depender de reloj del sistema,
-aleatoriedad global ni APIs del navegador: toda la aleatoriedad MUST venir de instancias del puerto
-`RandomGenerator` inicializadas a partir de la semilla de la partida: una para generar el mapa y otra para el resto
-de la partida (ver "Azar del mapa independiente del de la partida" en `procedural-map`). Las armas (selección de
-objetivo, disparo, proyectiles y pulsos), las bajas y su contador, las gemas (suelta, recolocación, imán y recogida),
-la colisión del jugador con el mapa, la XP y la comprobación de victoria y derrota MUST NOT consumir azar; la
-apertura de ofertas de mejora sí lo consume.
+partida, el tick en que termina, las bajas y la posición de cada enemigo en cada tick MUST ser los mismos. El núcleo
+MUST NOT depender de reloj del sistema, aleatoriedad global ni APIs del navegador: toda la aleatoriedad MUST venir de
+instancias del puerto `RandomGenerator` inicializadas a partir de la semilla de la partida: una para generar el mapa y
+otra para el resto de la partida (ver "Azar del mapa independiente del de la partida" en `procedural-map`). Las armas
+(selección de objetivo, disparo, proyectiles y pulsos), las bajas y su contador, las gemas (suelta, recolocación, imán
+y recogida), la colisión del jugador con el mapa, la persecución de los enemigos (línea libre, campo de distancias y
+navegación), la recolocación de las apariciones, la XP y la comprobación de victoria y derrota MUST NOT consumir azar;
+la apertura de ofertas de mejora sí lo consume, y cada intento de posición de aparición consume exactamente 1 valor
+(ver `enemy-spawning`).
 
 #### Scenario: Dos partidas idénticas
 - **GIVEN** dos partidas creadas con el mismo contenido y la semilla 42
@@ -80,8 +82,8 @@ apertura de ofertas de mejora sí lo consume.
 #### Scenario: Partida con contactos reproducible
 - **GIVEN** dos partidas con el contenido por defecto y la semilla 42, con input (0, 0) en todos los ticks y la
   política de elección fija
-- **WHEN** ambas ejecutan 4.800 ticks y en ese tiempo el jugador recibe ≥ 1 golpe (plazo provisional, a revalidar
-  en apply)
+- **WHEN** ambas ejecutan 4.800 ticks y en ese tiempo el jugador recibe ≥ 1 golpe (plazo a revalidar en apply de
+  0019)
 - **THEN** sus snapshots son iguales campo a campo en cada tick, incluidos la vida, la invulnerabilidad, el
   estado, el resultado y, si la hay, el tick en que la partida termina
 
@@ -89,17 +91,15 @@ apertura de ofertas de mejora sí lo consume.
 - **GIVEN** dos partidas con el contenido por defecto y la semilla 7, con input (0, 0) en todos los ticks y la
   política de elección fija
 - **WHEN** ambas ejecutan 4.800 ticks y en ese tiempo ≥ 1 enemigo queda dado de baja por armas y se emite ≥ 1
-  pulso (0013: en el mundo 2x el primer pulso llega en el tick 4.161, medido; antes 3.600; a revalidar con el mapa
-  en apply de 0015)
+  pulso (plazo a revalidar en apply de 0019)
 - **THEN** sus snapshots son iguales campo a campo en cada tick, incluidos proyectiles, pulsos, vida de los enemigos,
   indicación de daño reciente y bajas
 
 #### Scenario: Partida con progresión reproducible
-- **GIVEN** dos partidas con el contenido por defecto (mundo de 1.920 × 1.080) y la semilla 7, con input (0, 0) y la
+- **GIVEN** dos partidas con el contenido por defecto (mundo de 3.840 × 2.160) y la semilla 7, con input (0, 0) y la
   política de elección fija
 - **WHEN** ambas ejecutan 4.800 ticks y en ese tiempo se recoge ≥ 1 gema y se abre ≥ 1 oferta (mismo plazo que
-  "Primera subida en el núcleo"; medido en apply de 0013: primera oferta en el tick 4.346; a revalidar con el mapa en
-  apply de 0015)
+  "Primera subida en el núcleo"; a revalidar en apply de 0019)
 - **THEN** sus snapshots son iguales campo a campo en cada tick, incluidas gemas, XP, nivel, ofertas y mejoras
   adquiridas
 
@@ -131,6 +131,19 @@ apertura de ofertas de mejora sí lo consume.
   recibe un input que lo empuja contra él, y en la otra está en hierba libre con el mismo input
 - **WHEN** ambas ejecutan el mismo tick sin oferta de mejora
 - **THEN** el estado del `RandomGenerator` de la partida es el mismo en las dos tras el tick
+
+#### Scenario: La persecución por el mapa no consume azar
+- **GIVEN** dos partidas con la semilla 7, el mismo estado y el mismo director, una con 300 enemigos vivos navegando
+  por el campo de un mapa con río y troncos y otra con los mismos 300 enemigos en el mapa vacío
+- **WHEN** ambas ejecutan el mismo tick sin oferta de mejora ni aparición
+- **THEN** el estado del `RandomGenerator` de la partida es el mismo en las dos tras el tick
+
+#### Scenario: Posiciones de enemigos reproducibles con el mapa generado
+- **GIVEN** dos partidas con el contenido por defecto, la semilla 42 con su mapa generado, la misma secuencia de
+  3.600 inputs generada por una seed fija y la política de elección fija
+- **WHEN** ambas ejecutan 3.600 ticks
+- **THEN** en cada tick la lista de enemigos (identificador, tipo, posición y vida) es igual en las dos, sin
+  tolerancia
 
 #### Scenario: Snapshot no mutable desde fuera
 - **GIVEN** una partida en el tick 10 con ≥ 1 enemigo vivo, ≥ 1 proyectil vivo y ≥ 1 gema, otra con una oferta
@@ -334,50 +347,72 @@ semilla ya resuelta y no conocer su origen.
 - **AND** tras pulsar `Jugar` el total de avisos que mencionan `seed` es exactamente 1
 
 ### Requirement: Rendimiento con el tope de enemigos
-El sistema SHALL ejecutar un tick de simulación con 200 enemigos vivos, la detección de contacto activa, las armas
-activas y las gemas activas en ≤ 2 ms de media, medido con un benchmark de Vitest sobre el núcleo, sin motor ni
-render. La partida medida MUST estar en curso en todos los ticks medidos, de modo que se midan los pasos completos
-del tick: si se abre una oferta, el benchmark elige la opción 0 antes del siguiente tick y esa elección cuenta en
-el tiempo medido. El camino caliente del tick MUST NOT crear objetos nuevos por tick para gemas (reserva de
-`maxGems`). Los escenarios que piden enemigos "en contacto" MUST colocarlos respecto a la posición del jugador, de
-modo que el contacto se mantenga sea cual sea el tamaño del mundo.
+El sistema SHALL ejecutar un tick de simulación con **300** enemigos vivos (el `maxAlive` por defecto), la persecución
+por el mapa generado activa (línea libre y campo de distancias), la detección de contacto activa, las armas activas y
+las gemas activas en ≤ 2 ms de media, medido con un benchmark de Vitest sobre el núcleo, sin motor ni render. El
+cálculo completo del campo de distancias de una celda con el mapa por defecto MUST tardar ≤ 0,1 ms de media en el mismo
+benchmark. Ambas medidas son informativas (dependen de la máquina): no bloquean `verify` ni CI. La partida medida MUST
+estar en curso en todos los ticks medidos, de modo que se midan los pasos completos del tick: si se abre una oferta, el
+benchmark elige la opción 0 antes del siguiente tick y esa elección cuenta en el tiempo medido. El camino caliente del
+tick MUST NOT crear objetos nuevos por tick para gemas (reserva de `maxGems`). Los escenarios que piden enemigos "en
+contacto" MUST colocarlos respecto a la posición del jugador, de modo que el contacto se mantenga sea cual sea el
+tamaño del mundo.
 
 #### Scenario: Tope de vivos alcanzado
-- **GIVEN** una partida con el contenido por defecto, semilla fija, exactamente 200 enemigos vivos y una
-  vida del jugador suficiente para no llegar a 0 en 600 ticks
+- **GIVEN** una partida con el contenido por defecto, semilla fija con su mapa generado, exactamente 300 enemigos vivos
+  y una vida del jugador suficiente para no llegar a 0 en 600 ticks
 - **WHEN** el benchmark mide 600 ticks consecutivos con input (1, 0)
 - **THEN** la media es ≤ 2 ms por tick
 
-#### Scenario: 200 enemigos encima del jugador
-- **GIVEN** una partida con semilla fija, 200 enemigos vivos en contacto con el jugador y una vida del jugador
+#### Scenario: 300 enemigos encima del jugador
+- **GIVEN** una partida con semilla fija, 300 enemigos vivos en contacto con el jugador y una vida del jugador
   suficiente para no llegar a 0 en 600 ticks
 - **WHEN** el benchmark mide 600 ticks consecutivos
 - **THEN** la media es ≤ 2 ms por tick y la partida sigue en curso al terminar la medición
 - **AND** en cada tick medido hay ≥ 1 enemigo en contacto con el jugador
 
 #### Scenario: Contacto con cualquier tamaño de mundo
-- **GIVEN** la preparación del escenario "200 enemigos encima del jugador", una vez con el mundo por defecto
-  (1.920 × 1.080) y otra con una arena explícita de 4.000 × 4.000
+- **GIVEN** la preparación del escenario "300 enemigos encima del jugador", una vez con el mundo por defecto
+  (3.840 × 2.160) y otra con una arena explícita de 4.000 × 4.000
 - **WHEN** se ejecutan 600 ticks en cada una
 - **THEN** en ambas, en cada tick, hay ≥ 1 enemigo en contacto con el jugador
 
 #### Scenario: Peor caso con proyectiles
-- **GIVEN** una partida con semilla fija, 200 enemigos vivos, `maxProjectiles` (32) proyectiles vivos en todos los
+- **GIVEN** una partida con semilla fija, 300 enemigos vivos, `maxProjectiles` (32) proyectiles vivos en todos los
   ticks medidos y una vida del jugador suficiente para no llegar a 0 en 600 ticks
 - **WHEN** el benchmark mide 600 ticks consecutivos
 - **THEN** la media es ≤ 2 ms por tick
 
 #### Scenario: Peor caso con gemas
-- **GIVEN** una partida con semilla fija, 200 enemigos vivos, `maxProjectiles` (32) proyectiles vivos y `maxGems`
+- **GIVEN** una partida con semilla fija, 300 enemigos vivos, `maxProjectiles` (32) proyectiles vivos y `maxGems`
   (300) gemas atraídas, todas a ≥ 400 px del jugador para que ninguna se recoja durante la medición, y una vida del
   jugador suficiente para no llegar a 0
 - **WHEN** el benchmark mide 60 ticks consecutivos (60 × 6 px = 360 px < 400)
 - **THEN** la media es ≤ 2 ms por tick
 
+#### Scenario: 300 enemigos sin línea libre
+- **GIVEN** una partida con el contenido por defecto y un mapa generado, el jugador quieto al otro lado del río
+  respecto a 300 enemigos vivos repartidos por el mundo, de modo que ≥ 150 de ellos no tienen línea libre en cada
+  tick medido, y una vida del jugador suficiente para no llegar a 0 en 600 ticks
+- **WHEN** el benchmark mide 600 ticks consecutivos
+- **THEN** la media es ≤ 2 ms por tick
+
+#### Scenario: Cálculo del campo
+- **GIVEN** el contenido por defecto y los mapas generados de las semillas 1 a 50
+- **WHEN** el benchmark calcula en cada mapa el campo de distancias hacia la celda de la salida y hacia la celda (0, 0)
+- **THEN** la media es ≤ 0,1 ms por cálculo
+
+#### Scenario: Jugador que cambia de celda en cada tick
+- **GIVEN** una partida con el contenido por defecto, semilla fija con su mapa generado, 300 enemigos vivos y un
+  jugador cuyo centro cambia de celda en cada tick medido (colocado por el escenario, no por el input)
+- **WHEN** el benchmark mide 600 ticks consecutivos
+- **THEN** la media es ≤ 2 ms por tick
+
 ### Requirement: Orden de los pasos del tick
 El sistema SHALL ejecutar cada tick de una partida en curso en este orden:
 1. movimiento del jugador según el input (velocidad efectiva, ver `upgrades`);
-2. persecución de los enemigos vivos hacia la nueva posición del jugador;
+2. persecución de los enemigos vivos hacia la nueva posición del jugador, con el campo de distancias de la celda que
+   ocupa el centro del jugador tras el paso 1 (ver "Navegación por el campo de flujo" en `enemy-behavior`);
 3. armas (ver `auto-weapons`), en este orden:
    1. movimiento, impacto y caducidad de los proyectiles existentes, en orden de creación;
    2. cada arma, en el orden de `content/weapons.json`, elige objetivo con las posiciones de ese momento y, si está
@@ -390,7 +425,7 @@ El sistema SHALL ejecutar cada tick de una partida en curso en este orden:
    acaba aquí (ver `run-outcome`);
 6. gemas, en orden de creación: atracción, movimiento del imán y recogida; la XP recogida se suma y se registran
    las subidas de nivel (ver `xp-gems` y `leveling`);
-7. director de oleadas (spawns);
+7. director de oleadas (spawns, con la recolocación de las apariciones en celdas caminables, ver `enemy-spawning`);
 8. si hay ≥ 1 subida pendiente y ≥ 1 mejora disponible, se abre la oferta (consume azar) y la partida pasa a
    eligiendo mejora (ver `upgrades` y `run-state`); el tick cuenta igualmente.
 
@@ -408,6 +443,14 @@ En una partida terminada o que está eligiendo mejora no se ejecuta ningún paso
   radio 10, velocidad 60, vida suficiente para no morir en este tick y damage 10 en (512, 270)
 - **WHEN** se ejecuta 1 tick (jugador en 483,333; enemigo en 511; distancia 27,667 > 26)
 - **THEN** la vida del jugador sigue valiendo 100
+
+#### Scenario: La persecución usa la celda del jugador ya movido
+- **GIVEN** un mapa de hierba con troncos en las celdas (10, 2) a (10, 6), un jugador en (958, 270) (celda (15, 4)) con
+  velocidad 200 e input (1, 0), que tras moverse queda en (961,333; 270) (celda (16, 4)), y un enemigo con velocidad 60
+  en (330, 270) sin línea libre
+- **WHEN** se ejecuta 1 tick
+- **THEN** el enemigo queda exactamente en la misma posición que en una partida igual con el jugador quieto en
+  (961,333; 270) desde el principio e input (0, 0)
 
 #### Scenario: Un enemigo recién aparecido no golpea en su tick de aparición
 - **GIVEN** el contenido de spawn por defecto (`minDistance` 200) y un jugador quieto
@@ -457,6 +500,7 @@ En una partida terminada o que está eligiendo mejora no se ejecuta ningún paso
   en el tick 120
 - **WHEN** se ejecuta el tick 120
 - **THEN** el `goblin-torch` queda dado de baja, su gema está en el snapshot del tick 120 y las bajas suben en 1
+
 ### Requirement: Pintado de los enemigos vivos
 El adaptador de render SHALL mostrar en cada frame exactamente un sprite de enemigo visible por cada enemigo del
 último snapshot, en su posición y con el aspecto de su tipo (hoja, escala y origen, ver `sprite-rendering`), también
@@ -1058,3 +1102,4 @@ entre llamadas a `step` no cambia cuáles se ejecutan ni en qué orden.
 <!-- historial: 0013-world-camera (2026-11-23) -->
 <!-- historial: 0014-e2e-manual-step (2026-11-23) -->
 <!-- historial: 0015-procedural-map (2026-11-23) -->
+<!-- historial: 0019-flow-field (2026-11-24) -->

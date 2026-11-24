@@ -214,8 +214,11 @@ la gema recolocada participa en el paso de gemas de ese mismo tick como cualquie
 Una gema no atraída MUST NOT estar en ningún tick en una celda no caminable. Una gema atraída sigue la regla de "Imán
 de gemas" en línea recta hacia el jugador y puede cruzar celdas no caminables, también las del castillo. Si la XP de
 la baja se suma a la gema más antigua por el tope (ver "Tope de gemas en el suelo"), no se crea ni se recoloca
-ninguna gema. Como los enemigos atraviesan el castillo (ver `enemy-behavior`), una baja puede producirse dentro de su
-huella; su gema se recoloca con esta misma regla.
+ninguna gema. Con el mapa generado los enemigos vivos mantienen el centro en celdas caminables (ver "Enemigos fuera de
+celdas no caminables en el mapa generado" en `enemy-behavior`), así que sus bajas no caen en celdas no caminables; aun
+así, un enemigo colocado directamente por un escenario o que persigue en línea recta como reserva (celda sin distancia
+en el campo) puede morir en una celda no caminable, también dentro de una celda `castle`, y su gema se recoloca con esta
+misma regla.
 
 #### Scenario: Baja sobre un tronco
 - **GIVEN** un mapa de hierba con un tronco en (10, 4) (x en [600, 660], y en [240, 300]), un jugador quieto en
@@ -273,3 +276,4 @@ huella; su gema se recoloca con esta misma regla.
 <!-- historial: 0012-sprite-rendering (2026-11-22) -->
 <!-- historial: 0015-procedural-map (2026-11-23) -->
 <!-- historial: 0016-map-art (2026-11-23) -->
+<!-- historial: 0019-flow-field (2026-11-24) -->
