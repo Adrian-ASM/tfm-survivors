@@ -167,6 +167,9 @@ flowchart LR
     `reload` (`wait` de 90) → `approach`.
   - Cotas: 38 < 260 ≤ 360 y ⌈(56 + 16) / 3,5833⌉ = 21 ≤ 45.
 - `goblin-torch`: `chase` sin salida.
+- **Valores finales tras la calibración (6.2, addendum del ADR-0019)**: salida del TNT a **100** (no 260; cota
+  38 < 100 ≤ 360), daño de la explosión del barril **25** (no 20) y curva de XP **9/4** (`xpGrowth` 3 → 4, spec delta
+  `leveling`). El resto de valores de esta sección se mantiene.
 - Stats de tipos intactos (`run-outcome`). Solo desaparece el `damage` del barril.
 - `appearance.json`:
   - `goblin-barrel.fuse` con frames [30, 31, 32] en bucle.

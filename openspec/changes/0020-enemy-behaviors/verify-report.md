@@ -67,3 +67,10 @@ Ninguno.
 
 ## Recuento
 C: 0 · W: 4 · S: 3
+
+## Resolución (orquestador, 2026-11-24, antes del PR)
+- **W1** resuelto: `design.md` §5 recoge los valores finales (100 / 25 / 9/4) y el ADR-0019 pasa a "aceptada".
+- **W3** registrado como **deuda** para la parte B (0020b): la regla de esquive del bot v3 se anula cuando la huida
+  es (0, 0) y la dinamita cae en su centro exacto; revisar la regla (p. ej. dirección de escape por defecto) y
+  recuperar una distancia de lanzamiento del TNT mayor que 100.
+- **W2**, **W4** y las Suggestions quedan para el gate humano de revisión del PR (W4: aceptar la delta `leveling`).
