@@ -6,14 +6,14 @@ import {
   SETUP_TOO_MANY_GEMS,
 } from '../../src/domain/run/RunSetup';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
-import { DEFAULT_PROGRESSION, aDefaultConfig, aRunConfig } from '../support/builders';
+import { SCENARIO_PROGRESSION, aDefaultConfig, aRunConfig } from '../support/builders';
 import { startRun } from '../support/runs';
 
 describe('Nivel y XP iniciales', () => {
-  it('Scenario: Partida recién creada (nivel 1, XP 0, xpToNext 5, listas vacías, sin oferta)', () => {
+  it('Scenario: Partida recién creada (nivel 1, XP 0, xpToNext 9, listas vacías, sin oferta)', () => {
     const snap = startRun(aDefaultConfig()).snapshot();
     expect(snap.status).toBe('running');
-    expect(snap.progression).toEqual({ level: 1, xp: 0, xpToNext: 5, pendingLevelUps: 0 });
+    expect(snap.progression).toEqual({ level: 1, xp: 0, xpToNext: 9, pendingLevelUps: 0 });
     expect([snap.gems, snap.offer, snap.upgrades]).toEqual([[], [], []]);
     expect([snap.enemies, snap.projectiles, snap.pulses]).toEqual([[], [], []]);
     expect([snap.player.health, snap.player.maxHealth]).toEqual([100, 100]);
@@ -38,7 +38,7 @@ describe('Nivel y XP iniciales', () => {
 
 describe('RunSetup · validación de gemas y experiencia', () => {
   const fail = (setup: Parameters<typeof Run.start>[2], maxGems = 300) => {
-    const config = { ...aRunConfig(), progression: { ...DEFAULT_PROGRESSION, maxGems } };
+    const config = { ...aRunConfig(), progression: { ...SCENARIO_PROGRESSION, maxGems } };
     const r = Run.start(config, new Mulberry32RandomGenerator(1), setup);
     if (r.ok) throw new Error('se esperaba un error');
     return r.error;

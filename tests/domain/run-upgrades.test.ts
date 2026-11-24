@@ -10,6 +10,7 @@ import {
   LINTER,
   TESTS,
   aDefaultConfig,
+  withScenarioCurve,
   aSegment,
   aWavesConfig,
   withPlayer,
@@ -34,7 +35,7 @@ function weaponRun(
   setup: RunSetup,
   list: readonly UpgradeTypeConfig[] = DEFAULT_UPGRADE_LIST,
 ) {
-  const base = aDefaultConfig();
+  const base = withScenarioCurve(aDefaultConfig());
   const config: RunConfig = {
     ...base,
     enemies: { types: STILL },
@@ -184,7 +185,7 @@ describe('Efectos de las mejoras del jugador', () => {
   const only = (id: string) => DEFAULT_UPGRADE_LIST.filter((u) => u.id === id);
   const xpRun = (setup: RunSetup, list: readonly UpgradeTypeConfig[], extra = STILL) => {
     // Velocidad base de los escenarios de la spec (200 px/s), no la del contenido (210 desde 0015).
-    const base = withPlayer(aDefaultConfig(), { speed: 200 });
+    const base = withPlayer(withScenarioCurve(aDefaultConfig()), { speed: 200 });
     const types = [...STILL, ...extra.filter((t) => !STILL.includes(t))];
     const config: RunConfig = {
       ...base,

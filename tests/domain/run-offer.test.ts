@@ -5,6 +5,7 @@ import type { RunConfig } from '../../src/domain/run/RunConfig';
 import {
   DEFAULT_UPGRADE_LIST,
   aDefaultConfig,
+  withScenarioCurve,
   aSegment,
   aWavesConfig,
   withUpgrades,
@@ -22,7 +23,7 @@ const levelUp = (xp: number, value: number, level = 1): RunSetup => ({
 });
 
 /** Contenido por defecto sin spawns (solo lo que pone el `RunSetup`). */
-const quiet = (base: RunConfig = aDefaultConfig()): RunConfig => ({
+const quiet = (base: RunConfig = withScenarioCurve(aDefaultConfig())): RunConfig => ({
   ...base,
   waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 0)] }).waves,
 });
@@ -72,7 +73,7 @@ describe('Oferta de mejoras', () => {
   });
 
   it('Scenario: El director actúa antes de abrir la oferta (bug nuevo y oferta en el tick n)', () => {
-    const base = aDefaultConfig();
+    const base = withScenarioCurve(aDefaultConfig());
     const config = {
       ...base,
       waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 60)] }).waves,
@@ -95,7 +96,7 @@ describe('Oferta de mejoras', () => {
 
 describe('Sin mejoras disponibles', () => {
   it('Scenario: Ninguna disponible (catálogo vacío: nivel 8, sin oferta, en curso, n + 1 normal)', () => {
-    const config = quiet(withUpgrades(aDefaultConfig(), { upgrades: [] }));
+    const config = quiet(withUpgrades(withScenarioCurve(aDefaultConfig()), { upgrades: [] }));
     const [n, next] = ticks(startRun(config, levelUp(34, 1, 7)), 2);
     expect(n?.progression).toEqual({ level: 8, xp: 0, xpToNext: 40, pendingLevelUps: 0 });
     expect([n?.status, n?.offer]).toEqual(['running', []]);
@@ -104,7 +105,7 @@ describe('Sin mejoras disponibles', () => {
   });
 
   it('Scenario: Sin pasar por eligiendo si no hay mejoras disponibles', () => {
-    const config = quiet(withUpgrades(aDefaultConfig(), { upgrades: [] }));
+    const config = quiet(withUpgrades(withScenarioCurve(aDefaultConfig()), { upgrades: [] }));
     const [first] = ticks(startRun(config, levelUp(4, 1)), 1);
     expect(first?.status).toBe('running');
   });

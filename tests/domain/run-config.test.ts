@@ -28,7 +28,7 @@ import {
   XP_GROWTH_MUST_BE_INTEGER,
 } from '../../src/domain/progression/XpCurve';
 import {
-  DEFAULT_PROGRESSION,
+  SCENARIO_PROGRESSION,
   DEFAULT_UPGRADES,
   DEFAULT_WEAPONS,
   LINTER,
@@ -213,7 +213,7 @@ describe('buildRunRules', () => {
 describe('buildRunRules · progresión y mejoras', () => {
   const withProgression = (patch: Partial<RunConfig['progression']>): RunConfig => ({
     ...aRunConfig(),
-    progression: { ...DEFAULT_PROGRESSION, ...patch },
+    progression: { ...SCENARIO_PROGRESSION, ...patch },
   });
 
   it('construye la curva, las reglas de las gemas y un catálogo vacío por defecto', () => {

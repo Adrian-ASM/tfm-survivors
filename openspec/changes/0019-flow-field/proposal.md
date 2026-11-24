@@ -74,6 +74,8 @@ balance vuelve a la banda 25–35 victorias de 50 con 0 quietos supervivientes.
   referencia para el balance" (nueva tasa, plazos de primer golpe/pulso/oferta/baja e invariante del quieto).
 - `openspec/specs/xp-gems` (modificada): "Recolocación de gemas en celdas no caminables" pierde la frase obsoleta
   "los enemigos atraviesan el castillo" (añadida en el gate de spec); la regla y sus escenarios no cambian.
+- `openspec/specs/leveling` (modificada): "Curva de XP validada" (curva por defecto `baseXp` 9, `xpGrowth` 3) y
+  "Nivel y XP iniciales" (XP para el nivel 2: 9); los demás escenarios pasan a una curva de escenario 5/5 explícita.
 - `docs/gdd.md` (renumeración) y ADR nueva o addendum a ADR-0013. AGENTS.md solo al archivar.
 
 ## Riesgos y dudas
@@ -105,6 +107,11 @@ balance vuelve a la banda 25–35 victorias de 50 con 0 quietos supervivientes.
    ninguna devuelve la banda 25–35 con 0 quietos supervivientes, el implementer **para y se vuelve al usuario**: la banda
    no se relaja por cuenta propia. (`maxAlive` 300 sigue dentro del alcance: es el tope, no el presupuesto.) Esta
    decisión sustituye a la pregunta 2 y a la línea de "Riesgos" que proponía bajar el presupuesto ×0,9–×0,95.
+
+## Decisión de calibración (usuario, apply 2026-11-24)
+Única palanca: la curva de XP (`content/`, progresión): `baseXp` 5 → **9** y `xpGrowth` 5 → **3**. Resultado medido:
+**26/50** victorias del bot v2 (semillas 1..50), 0 quietos supervivientes con el mapa generado y con el vacío, plazos
+del quieto intactos. Oleadas, `player.speed`, enemigos, armas y mejoras sin cambios. Spec delta en `specs/leveling`.
 
 ## Criterio de éxito
 - Escenarios de las specs delta en verde con `npm run verify`, entre ellos:

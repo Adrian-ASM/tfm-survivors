@@ -3,7 +3,7 @@ import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import type { RunSetup } from '../../src/domain/run/Run';
 import type { RunConfig } from '../../src/domain/run/RunConfig';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
-import { DEFAULT_PROGRESSION, LINTER, TESTS, aSegment, withWeapons } from '../support/builders';
+import { SCENARIO_PROGRESSION, LINTER, TESTS, aSegment, withWeapons } from '../support/builders';
 import { CountingRandom } from '../support/random';
 import { aContactConfig, aProbeType, startRun, ticks } from '../support/runs';
 import { weaponsOf } from '../support/weapons';
@@ -23,7 +23,7 @@ function config(
   });
   return {
     ...withWeapons(base, weaponsOf(weapons)),
-    progression: { ...DEFAULT_PROGRESSION, maxGems: patch.maxGems ?? 300 },
+    progression: { ...SCENARIO_PROGRESSION, maxGems: patch.maxGems ?? 300 },
   };
 }
 

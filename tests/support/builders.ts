@@ -62,6 +62,17 @@ export const NO_UPGRADES: UpgradesConfig = { upgrades: [] };
 /** Curva y gemas por defecto, leídas de content/progression.json (0019). */
 export const DEFAULT_PROGRESSION: RunConfig['progression'] = frozen(progressionJson);
 
+/**
+ * Curva de escenario (spec leveling 0019): baseXp 5 y xpGrowth 5, la anterior por defecto, con las
+ * gemas por defecto. La usan los escenarios de `aRunConfig` con cifras de XP; el contenido por defecto
+ * (`aDefaultConfig`) usa la de content/.
+ */
+export const SCENARIO_PROGRESSION: RunConfig['progression'] = Object.freeze({
+  ...DEFAULT_PROGRESSION,
+  baseXp: 5,
+  xpGrowth: 5,
+});
+
 /** Mejora de la lista por defecto por id, con cambios (para casos inválidos o de límite). */
 export const anUpgrade = (
   id: string,
@@ -152,7 +163,7 @@ export const aRunConfig = (overrides: Partial<PlayerConfig> = {}): RunConfig => 
   enemies: { types: DEFAULT_ENEMY_TYPES },
   waves: DEFAULT_WAVES,
   weapons: NO_WEAPONS,
-  progression: DEFAULT_PROGRESSION,
+  progression: SCENARIO_PROGRESSION,
   upgrades: NO_UPGRADES,
   run: DEFAULT_RUN,
   map: DEFAULT_MAP,
@@ -186,6 +197,7 @@ export const aDefaultConfig = (): RunConfig =>
       {
         ...aRunConfig({ pickupRadius: DEFAULT_PICKUP_RADIUS, speed: playerJson.speed }),
         arena: CONTENT_ARENA,
+        progression: DEFAULT_PROGRESSION,
       },
       DEFAULT_WEAPONS,
     ),
@@ -308,3 +320,12 @@ export const rawContent = (): RawContent =>
   }) as unknown as RawContent;
 
 export const TICK_MS = 1000 / 60;
+
+/**
+ * El mismo contenido con la curva de escenario 5/5 (spec leveling 0019): para los escenarios con
+ * cifras de XP escritos con la curva anterior por defecto.
+ */
+export const withScenarioCurve = (config: RunConfig): RunConfig => ({
+  ...config,
+  progression: { ...config.progression, baseXp: 5, xpGrowth: 5 },
+});

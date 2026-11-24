@@ -8,7 +8,13 @@ import {
   TICKS_PER_EXECUTE,
   advanceTicks,
 } from '../../src/infrastructure/phaser/advanceFrame';
-import { aDefaultConfig, aSegment, aWavesConfig, withDuration } from '../support/builders';
+import {
+  aDefaultConfig,
+  withScenarioCurve,
+  aSegment,
+  aWavesConfig,
+  withDuration,
+} from '../support/builders';
 import { aContactConfig, startRun } from '../support/runs';
 
 const CENTER = { x: 480, y: 270 };
@@ -22,7 +28,7 @@ function quiet(): TickRun {
 
 /** Partida que abre una oferta en el 3.er tick que ejecuta (gema a 36 px con XP 4 de 5). */
 function offeringAtThird(): { run: Run; tickRun: TickRun } {
-  const base = aDefaultConfig();
+  const base = withScenarioCurve(aDefaultConfig());
   const config = {
     ...base,
     waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 0)] }).waves,

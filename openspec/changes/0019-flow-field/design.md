@@ -167,6 +167,26 @@ de la semilla 7/42):
    tabla de lotes se copia al diario de IA y el resultado final a la spec `run-outcome` (tasa, plazos medidos) y al
    addendum de resultados de ADR-0017.
 
+### Resultado de la calibración (apply, 2026-11-24)
+Base real con `maxAlive` 300: **12/50**, no 18 como en el prototipo. 18 lotes en total: 15 del procedimiento y 3
+más aprobados por el usuario, solo con la curva de XP. Columnas: victorias del bot / quietos vivos en el mapa
+generado / quietos vivos en el vacío.
+| Lote | Configuración | Victorias | Quietos gen. | Quietos vacío |
+|---|---|---|---|---|
+| 1 | base | 12 | – | – |
+| 2–4 | `tnt.health` 40 / 35 / 30 | 15 / 15 / 14 | – | – |
+| 5–9 | tnt 40 + `tnt.damage` 14 / 13 / 12 / 11 / 10 | 15 / 16 / 16 / 16 / 16 | – | – |
+| 10–11 | tnt 40/13 + `strict-rules` 4 / 5 | 31 / 33 | 44 / 6, 42, 44 | 37 / 17, 37 |
+| 12–13 | tnt 40/13 + `xpGrowth` 4 / 3 | 30 / 37 | 27 / – | – |
+| 14–15 | `xpGrowth` 3 / + `tnt.health` 40 | 38 / 37 | – | – |
+| 16 | `xpGrowth` 3, `baseXp` 7 | 30 | 37 | 25 |
+| **17** | **`xpGrowth` 3, `baseXp` 9** (elegido) | **26** | – | – |
+| 18 | `xpGrowth` 4, `baseXp` 6 | 26 | – | 28 |
+
+Contenido final: solo la curva (`baseXp` 9, `xpGrowth` 3; delta de `leveling`). Plazos del quieto con la semilla 7:
+primer golpe 2.276, pulso 1.524, oferta 2.082 y baja 728; con la 42, primer golpe 2.442. 26 está en la banda, pero
+fuera del margen 27–33: aceptado como la configuración más cercana a 30 que cumple las demás condiciones (paso 4).
+
 ## 7. Rendimiento
 - Presupuesto: tick medio ≤ 2 ms con 300 vivos (bench, informativo, fuera de `verify`), y recálculo del campo
   ≤ 0,1 ms. Medido en el prototipo: BFS de 0,022 ms de media y 0,025 ms en p95; tick con 300 vivos de 0,027 ms. El

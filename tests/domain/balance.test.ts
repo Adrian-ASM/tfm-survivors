@@ -31,6 +31,8 @@ const FIRST_KILL_WINDOW = 900;
 // del usuario): primera oferta con semilla 7 en el tick 3332, primer golpe con semilla 42 en el 4122.
 // 0013 (mundo 1.920 × 1.080): primera oferta a 4.800 por decisión del usuario; medida en el 4.346.
 // 0017 (mundo 3.840 × 2.160, tabla 1,2/2,4/2,4/3,0/4,2): medida en el tick 1.527.
+// 0019 (navegación por el mapa, maxAlive 300, curva 9/3): oferta en el 2.082 (semilla 7) y primer
+// golpe en el 2.442 (semilla 42); bot de referencia 26/50, 0 quietos en ambos mapas.
 const OFFER_LIMIT = 4800;
 
 /** Contenido por defecto: crea las partidas y el bot de referencia (mismo mundo para ambos). */
@@ -99,6 +101,29 @@ describe('Plazos con progresión (0005, medidos en el punto de control 0.3)', ()
       return gem && offer;
     });
     expect([gem, offer]).toEqual([true, true]);
+  });
+});
+
+// Spec run-outcome (0019), "Plazos del jugador quieto con el contenido final": con la navegación
+// por el mapa, maxAlive 300 y la curva 9/3, medido en apply con la semilla 7: primer golpe en el
+// tick 2.276, primer pulso en el 1.524, primera oferta en el 2.082 y primera baja en el 728.
+describe('Plazos del jugador quieto con el contenido final (0019)', () => {
+  it('Scenario: Plazos del jugador quieto con el contenido final (semilla 7)', () => {
+    const run = startDefault(7);
+    const first = { hit: 0, pulse: 0, offer: 0, kill: 0 };
+    const maxHealth = run.snapshot().player.maxHealth;
+    play(run, OFFER_LIMIT, (t, r) => {
+      const s = r.snapshot();
+      if (!first.hit && s.player.maxHealth === maxHealth && s.player.health < maxHealth)
+        first.hit = t;
+      if (!first.pulse && s.pulses.some((p) => p.weapon === 'tests')) first.pulse = t;
+      if (!first.offer && s.status === 'choosing') first.offer = t;
+      if (!first.kill && s.kills > 0) first.kill = t;
+      return Object.values(first).every((v) => v > 0);
+    });
+    expect(Object.values(first).every((v) => v > 0)).toBe(true);
+    expect(Math.max(first.hit, first.pulse, first.offer)).toBeLessThanOrEqual(FIRST_HIT_LIMIT);
+    expect(first.kill).toBeLessThanOrEqual(FIRST_KILL_WINDOW);
   });
 });
 

@@ -58,7 +58,7 @@
   Prerrequisito de 4.1.
 
 ## 4. Balance y rendimiento
-- [ ] 4.1 **Calibración** (design §6). (a) Medir la base con el contenido final de 3.1 (`maxAlive` 300): bot v2
+- [x] 4.1 **Calibración** (design §6). (a) Medir la base con el contenido final de 3.1 (`maxAlive` 300): bot v2
   sobre 1..50, quietos con mapa generado y vacío y plazos de la semilla 7. (b) Barrer P1…P5 en orden, una palanca
   cada vez y por pasos, con un script **no versionado** en el directorio temporal que use `tests/support/runs.ts`
   (máximo 15 lotes). Aceptación: 27–33 victorias, 0 quietos en los dos mapas y plazos ≤ 4.800/900; si solo se llega
