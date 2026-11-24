@@ -93,6 +93,25 @@ describe('Run · oleadas por tramos', () => {
   });
 });
 
+describe('Run · tope de vivos por defecto (0019)', () => {
+  it('Scenario: Se alcanza el tope por defecto (300 tras 19 ticks y tras 600 más)', () => {
+    const config = withPlayer(
+      inWorld(
+        aWavesConfig({
+          segments: [aSegment(['goblin-torch'], 1000)],
+          maxBudget: 20,
+          maxAlive: 300,
+        }),
+      ),
+      { maxHealth: LONG_RUN_HEALTH },
+    );
+    const { run } = simulate(config, 19);
+    expect(run.snapshot().enemies).toHaveLength(300);
+    for (let i = 0; i < 600; i++) run.tick(PlayerInput.NONE);
+    expect(run.snapshot().enemies).toHaveLength(300);
+  });
+});
+
 describe('Run · posición de aparición', () => {
   it('Jugador en una esquina', () => {
     const config = aWavesConfig({ segments: [aSegment(['goblin-torch', 'goblin-tnt'], 5)] });

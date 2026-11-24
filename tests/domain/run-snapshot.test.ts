@@ -5,6 +5,7 @@ import type { RunConfig } from '../../src/domain/run/RunConfig';
 import {
   DEFAULT_UPGRADE_LIST,
   aDefaultConfig,
+  withScenarioCurve,
   aSegment,
   aWavesConfig,
   withDuration,
@@ -12,7 +13,7 @@ import {
 import { startRun, ticks } from '../support/runs';
 
 const quiet = (patch: Partial<RunConfig> = {}): RunConfig => ({
-  ...aDefaultConfig(),
+  ...withScenarioCurve(aDefaultConfig()),
   waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 0)] }).waves,
   ...patch,
 });
@@ -20,7 +21,7 @@ const CENTER = { x: 480, y: 270 };
 
 describe('Snapshot con resultado, duración y bajas (0006)', () => {
   it('Scenario: Partida recién creada (sin resultado, 0 bajas y 36.000 ticks de duración)', () => {
-    const snap = startRun(aDefaultConfig()).snapshot();
+    const snap = startRun(withScenarioCurve(aDefaultConfig())).snapshot();
 
     expect(snap).toMatchObject({
       tick: 0,
@@ -65,7 +66,10 @@ describe('Snapshot con resultado, duración y bajas (0006)', () => {
 
 describe('Snapshot no mutable desde fuera (resultado, bajas y duración)', () => {
   it('Scenario: Snapshot no mutable desde fuera (partida en curso y partida terminada)', () => {
-    const lethal = { ...aDefaultConfig(), player: { ...aDefaultConfig().player, maxHealth: 1 } };
+    const lethal = {
+      ...withScenarioCurve(aDefaultConfig()),
+      player: { ...withScenarioCurve(aDefaultConfig()).player, maxHealth: 1 },
+    };
     const live = startRun(quiet());
     const ended = startRun(lethal, {
       player: CENTER,

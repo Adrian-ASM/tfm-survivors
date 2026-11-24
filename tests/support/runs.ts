@@ -181,8 +181,8 @@ export const pile = (count: number, type: string, x: number, y: number) =>
   Array.from({ length: count }, () => ({ type, x, y }));
 
 /**
- * Preparación de "200 enemigos encima del jugador" (spec simulation-loop, 0013): `count` enemigos
- * del tipo dado en el centro de la arena de `config`, el punto donde nace el jugador.
+ * Preparación de "300 enemigos encima del jugador" (spec simulation-loop, 0013 y 0019): `count`
+ * enemigos del tipo dado en el centro de la arena de `config`, el punto donde nace el jugador.
  */
 export function pileOnPlayer(config: RunConfig, count: number, type = 'goblin-torch'): RunSetup {
   return { enemies: pile(count, type, config.arena.width / 2, config.arena.height / 2) };

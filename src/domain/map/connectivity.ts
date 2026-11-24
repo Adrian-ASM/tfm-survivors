@@ -41,8 +41,55 @@ function visit(j: number, cells: Uint8Array, seen: Uint8Array, queue: Int32Array
   return tail + 1;
 }
 
+/**
+ * BFS 4-vecina con distancias (spec procedural-map, "Campo de distancias hacia una celda"): escribe
+ * en `dist` los pasos hasta `start` de cada celda caminable conectada y −1 en el resto. Mismo orden
+ * de vecinos que `reachableFrom` (izquierda, derecha, arriba, abajo). Buffers del llamador (sin
+ * asignar): `dist` y `queue` con longitud ≥ celdas. Si `start` no es caminable, todo queda a −1.
+ */
+export function distancesFrom(
+  cells: Uint8Array,
+  cols: number,
+  rows: number,
+  start: number,
+  dist: Int32Array,
+  queue: Int32Array,
+): void {
+  dist.fill(-1);
+  if (start < 0 || start >= cells.length || !isWalkableCode(cells[start] ?? -1)) return;
+  let head = 0;
+  let tail = 0;
+  queue[tail++] = start;
+  dist[start] = 0;
+  while (head < tail) {
+    const i = queue[head++] ?? 0;
+    const d = (dist[i] ?? 0) + 1;
+    const c = i % cols;
+    const r = (i - c) / cols;
+    if (c > 0) tail = step(i - 1, d, cells, dist, queue, tail);
+    if (c < cols - 1) tail = step(i + 1, d, cells, dist, queue, tail);
+    if (r > 0) tail = step(i - cols, d, cells, dist, queue, tail);
+    if (r < rows - 1) tail = step(i + cols, d, cells, dist, queue, tail);
+  }
+}
+
+/** Fija la distancia `d` de la celda j si es caminable y no tiene; devuelve la cola nueva. */
+function step(
+  j: number,
+  d: number,
+  cells: Uint8Array,
+  dist: Int32Array,
+  queue: Int32Array,
+  tail: number,
+): number {
+  if (dist[j] !== -1 || !isWalkableCode(cells[j] ?? -1)) return tail;
+  dist[j] = d;
+  queue[tail] = j;
+  return tail + 1;
+}
+
 /** Códigos de las celdas del mapa en orden de filas (copia; fuera del tick). */
-function codesOf(map: GameMap): Uint8Array {
+export function codesOf(map: GameMap): Uint8Array {
   const codes = new Uint8Array(map.cols * map.rows);
   for (let r = 0; r < map.rows; r++) {
     for (let c = 0; c < map.cols; c++) codes[r * map.cols + c] = codeOf(map.typeAt(c, r));

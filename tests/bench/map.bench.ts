@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest';
 import { seededRun } from '../../src/composition/seedSource';
+import { FlowField } from '../../src/domain/map/FlowField';
 import { generateMap } from '../../src/domain/map/generateMap';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import { Run } from '../../src/domain/run/Run';
@@ -12,8 +13,10 @@ import { MAP_STREAM, deriveSeed } from '../../src/infrastructure/random/deriveSe
 // media, informativo) y el tick con el tope de enemigos sobre el mapa generado. `npm run bench`;
 // no bloquea `verify` ni el CI.
 const MAX_MAP_MS = 20;
+/** Cálculo completo del campo de distancias (spec simulation-loop, 0019): ≤ 0,1 ms de media. */
+const MAX_FIELD_MS = 0.1;
 const MAX_TICK_MS = 2;
-const CAP = 200;
+const CAP = 300;
 const SEED = 7;
 const BENCH_HEALTH = 1e9;
 const BENCH_DURATION = 1e6;
@@ -40,7 +43,7 @@ test('Generar mapa: generateMap con el contenido por defecto (semillas 1..)', as
   expect(result.latency.mean).toBeLessThan(MAX_MAP_MS);
 });
 
-test('Tope de vivos con el mapa generado: Run.tick con 200 vivos e input (1, 0)', async ({
+test('Tope de vivos con el mapa generado: Run.tick con 300 vivos e input (1, 0)', async ({
   bench,
 }) => {
   const config = {
@@ -62,10 +65,37 @@ test('Tope de vivos con el mapa generado: Run.tick con 200 vivos e input (1, 0)'
     step();
   }
   const right = PlayerInput.of(1, 0);
-  const result = await bench('Run.tick · 200 vivos con mapa', () => {
+  const result = await bench('Run.tick · 300 vivos con mapa', () => {
     step(right);
   }).run({ iterations: 600, time: 0, warmupIterations: 60, warmupTime: 0 });
   report(result.name, result.latency);
   expect(run.snapshot().enemies).toHaveLength(CAP);
   expect(result.latency.mean).toBeLessThanOrEqual(MAX_TICK_MS);
+});
+
+test('Cálculo del campo: BFS hacia la salida y hacia (0, 0) en los mapas 1..50', async ({
+  bench,
+}) => {
+  const rules = buildRunRules(content);
+  if (!rules.ok) throw new Error(rules.error.message);
+  const fields = Array.from({ length: 50 }, (_, i) => {
+    const map = generateMap(
+      rules.value.map,
+      new Mulberry32RandomGenerator(deriveSeed(i + 1, MAP_STREAM)),
+    );
+    return { field: new FlowField(map), exit: [map.colAt(map.start.x), map.rowAt(map.start.y)] };
+  });
+  let k = 0;
+  const result = await bench('FlowField · BFS completa', () => {
+    const entry = fields[Math.floor(k / 2) % fields.length];
+    if (!entry) throw new Error('sin campo');
+    const { field, exit } = entry;
+    const [c, r] = k % 2 === 0 ? exit : [0, 0];
+    field.retarget(c ?? 0, r ?? 0);
+    field.distanceAt(0, 0);
+    k++;
+  }).run({ iterations: 1000, time: 0, warmupIterations: 100, warmupTime: 0 });
+  report(result.name, result.latency);
+  expect(fields.every(({ field }) => field.computations > 0)).toBe(true);
+  expect(result.latency.mean).toBeLessThanOrEqual(MAX_FIELD_MS);
 });

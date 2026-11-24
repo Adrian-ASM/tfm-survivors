@@ -2,10 +2,26 @@ import arenaJson from '../../content/arena.json';
 import mapJson from '../../content/map.json';
 import playerJson from '../../content/player.json';
 import wavesJson from '../../content/waves.json';
+import enemiesJson from '../../content/enemies.json';
+import progressionJson from '../../content/progression.json';
+import upgradesJson from '../../content/upgrades.json';
+import type { EnemyTypeConfig } from '../../src/domain/enemy/EnemyType';
 import type { RunConfig, UpgradesConfig } from '../../src/domain/run/RunConfig';
 import type { WeaponsConfig } from '../../src/domain/weapon/WeaponLoadout';
 import type { WeaponTypeConfig } from '../../src/domain/weapon/WeaponType';
 import type { UpgradeTypeConfig } from '../../src/domain/upgrade/UpgradeType';
+
+/** Copia profunda congelada de un valor de content/ (los tests no pueden alterar el JSON). */
+function frozen<T>(value: T): T {
+  const copy = structuredClone(value);
+  const freeze = (v: unknown): void => {
+    if (typeof v !== 'object' || v === null) return;
+    Object.values(v).forEach(freeze);
+    Object.freeze(v);
+  };
+  freeze(copy);
+  return copy;
+}
 
 /** Linter del contenido por defecto (spec auto-weapons): proyectil al más cercano en alcance. */
 export const LINTER: WeaponTypeConfig = {
@@ -25,90 +41,14 @@ export const TESTS: WeaponTypeConfig = {
   attack: { type: 'pulse', visualTicks: 8 },
 };
 
-/** Catálogo de mejoras por defecto (content/upgrades.json), en el orden de la spec. */
-export const DEFAULT_UPGRADE_LIST: readonly UpgradeTypeConfig[] = [
-  {
-    id: 'strict-rules',
-    name: 'Puntas de acero',
-    description: 'Las flechas del arco hacen más daño.',
-    target: { kind: 'weapon', weapon: 'linter' },
-    stat: 'damage',
-    perLevel: 3,
-    maxLevel: 5,
-  },
-  {
-    id: 'fast-ci',
-    name: 'Tensado rápido',
-    description: 'El arco dispara más a menudo.',
-    target: { kind: 'weapon', weapon: 'linter' },
-    stat: 'cooldownTicks',
-    perLevel: -4,
-    maxLevel: 5,
-  },
-  {
-    id: 'wide-analysis',
-    name: 'Ojo de halcón',
-    description: 'El arco alcanza objetivos más lejanos.',
-    target: { kind: 'weapon', weapon: 'linter' },
-    stat: 'range',
-    perLevel: 60,
-    maxLevel: 5,
-  },
-  {
-    id: 'hard-asserts',
-    name: 'Filo templado',
-    description: 'El tajo hace más daño.',
-    target: { kind: 'weapon', weapon: 'tests' },
-    stat: 'damage',
-    perLevel: 2,
-    maxLevel: 5,
-  },
-  {
-    id: 'watch-mode',
-    name: 'Brazo incansable',
-    description: 'El tajo se lanza más a menudo.',
-    target: { kind: 'weapon', weapon: 'tests' },
-    stat: 'cooldownTicks',
-    perLevel: -12,
-    maxLevel: 5,
-  },
-  {
-    id: 'coverage',
-    name: 'Barrido amplio',
-    description: 'El tajo llega más lejos a tu alrededor.',
-    target: { kind: 'weapon', weapon: 'tests' },
-    stat: 'radius',
-    perLevel: 15,
-    maxLevel: 5,
-  },
-  {
-    id: 'guardrail',
-    name: 'Cota de malla',
-    description: 'Más vida máxima (y la misma cantidad de vida actual).',
-    target: { kind: 'player' },
-    stat: 'maxHealth',
-    perLevel: 20,
-    maxLevel: 5,
-  },
-  {
-    id: 'shortcuts',
-    name: 'Botas de viajero',
-    description: 'Te mueves más rápido.',
-    target: { kind: 'player' },
-    stat: 'speed',
-    perLevel: 20,
-    maxLevel: 5,
-  },
-  {
-    id: 'context-window',
-    name: 'Amuleto del saqueador',
-    description: 'Atraes las gemas desde más lejos.',
-    target: { kind: 'player' },
-    stat: 'pickupRadius',
-    perLevel: 32,
-    maxLevel: 5,
-  },
-];
+/**
+ * Catálogo de mejoras por defecto, leído de content/upgrades.json (una sola fuente para la
+ * calibración, 0019); el esquema zod lo valida en `loadRunConfig` y builders-content.test lo
+ * compara con lo cargado.
+ */
+export const DEFAULT_UPGRADE_LIST: readonly UpgradeTypeConfig[] = frozen(
+  upgradesJson.upgrades as UpgradeTypeConfig[],
+);
 
 /** Contenido de mejoras por defecto (content/upgrades.json). */
 export const DEFAULT_UPGRADES: UpgradesConfig = { upgrades: DEFAULT_UPGRADE_LIST };
@@ -119,14 +59,19 @@ export const DEFAULT_UPGRADES: UpgradesConfig = { upgrades: DEFAULT_UPGRADE_LIST
  */
 export const NO_UPGRADES: UpgradesConfig = { upgrades: [] };
 
-/** Curva y gemas por defecto (content/progression.json). */
-export const DEFAULT_PROGRESSION: RunConfig['progression'] = {
+/** Curva y gemas por defecto, leídas de content/progression.json (0019). */
+export const DEFAULT_PROGRESSION: RunConfig['progression'] = frozen(progressionJson);
+
+/**
+ * Curva de escenario (spec leveling 0019): baseXp 5 y xpGrowth 5, la anterior por defecto, con las
+ * gemas por defecto. La usan los escenarios de `aRunConfig` con cifras de XP; el contenido por defecto
+ * (`aDefaultConfig`) usa la de content/.
+ */
+export const SCENARIO_PROGRESSION: RunConfig['progression'] = Object.freeze({
+  ...DEFAULT_PROGRESSION,
   baseXp: 5,
   xpGrowth: 5,
-  gemRadius: 5,
-  magnetSpeed: 360,
-  maxGems: 300,
-};
+});
 
 /** Mejora de la lista por defecto por id, con cambios (para casos inválidos o de límite). */
 export const anUpgrade = (
@@ -151,12 +96,8 @@ export const DEFAULT_WEAPONS: WeaponsConfig = {
  */
 export const NO_WEAPONS: WeaponsConfig = { maxProjectiles: 32, hitFlashTicks: 4, weapons: [] };
 
-/** Tipos de enemigo de la spec (goblin-torch, goblin-tnt, goblin-barrel) con los valores del design. */
-export const DEFAULT_ENEMY_TYPES = [
-  { id: 'goblin-torch', speed: 90, radius: 10, cost: 1, damage: 5, health: 10, xp: 1 },
-  { id: 'goblin-tnt', speed: 45, radius: 22, cost: 3, damage: 15, health: 45, xp: 4 },
-  { id: 'goblin-barrel', speed: 70, radius: 16, cost: 2, damage: 8, health: 20, xp: 2 },
-] as const;
+/** Tipos de enemigo por defecto (torch, tnt, barrel), leídos de content/enemies.json (0019). */
+export const DEFAULT_ENEMY_TYPES: readonly EnemyTypeConfig[] = frozen(enemiesJson.types);
 
 /**
  * Tabla de oleadas y parámetros de spawn, leídos de content/waves.json (una sola fuente: el radio
@@ -222,7 +163,7 @@ export const aRunConfig = (overrides: Partial<PlayerConfig> = {}): RunConfig => 
   enemies: { types: DEFAULT_ENEMY_TYPES },
   waves: DEFAULT_WAVES,
   weapons: NO_WEAPONS,
-  progression: DEFAULT_PROGRESSION,
+  progression: SCENARIO_PROGRESSION,
   upgrades: NO_UPGRADES,
   run: DEFAULT_RUN,
   map: DEFAULT_MAP,
@@ -256,6 +197,7 @@ export const aDefaultConfig = (): RunConfig =>
       {
         ...aRunConfig({ pickupRadius: DEFAULT_PICKUP_RADIUS, speed: playerJson.speed }),
         arena: CONTENT_ARENA,
+        progression: DEFAULT_PROGRESSION,
       },
       DEFAULT_WEAPONS,
     ),
@@ -378,3 +320,12 @@ export const rawContent = (): RawContent =>
   }) as unknown as RawContent;
 
 export const TICK_MS = 1000 / 60;
+
+/**
+ * El mismo contenido con la curva de escenario 5/5 (spec leveling 0019): para los escenarios con
+ * cifras de XP escritos con la curva anterior por defecto.
+ */
+export const withScenarioCurve = (config: RunConfig): RunConfig => ({
+  ...config,
+  progression: { ...config.progression, baseXp: 5, xpGrowth: 5 },
+});

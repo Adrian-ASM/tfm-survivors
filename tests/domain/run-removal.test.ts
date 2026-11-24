@@ -114,6 +114,7 @@ describe('Bajas, director y persecución', () => {
       player: { maxHealth: LONG_RUN_HEALTH },
       segments: [aSegment(['probe'], 1000)],
       maxBudget: 20,
+      maxAlive: 200,
     });
     const run = startRun(armed(config), { enemies: row(200, [50]) });
     const snap = ticks(run, 1)[0];

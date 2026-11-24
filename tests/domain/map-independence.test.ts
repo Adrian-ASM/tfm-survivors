@@ -1,45 +1,58 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import type { CellType } from '../../src/domain/map/CellType';
-import { Run } from '../../src/domain/run/Run';
+import type { Run } from '../../src/domain/run/Run';
 import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
-import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
-import {
-  aContactConfig,
-  play,
-  startEmptyWithExit,
-  startRun,
-  startSeededRun,
-  ticks,
-} from '../support/runs';
+import type { GameMap } from '../../src/domain/map/GameMap';
+import { resolveTerrain } from '../../src/domain/map/TerrainSource';
+import { seededRun } from '../../src/composition/seedSource';
+import { mapRules } from '../support/mapLayouts';
+import { play, startEmptyWithExit, startSeededRun } from '../support/runs';
 import { aDefaultConfig } from '../support/builders';
-import { castleBlock, cellsWith, mapRules } from '../support/mapLayouts';
 
-// Spec procedural-map, "Azar del mapa independiente del de la partida", y enemy-behavior, "Los
-// enemigos ignoran el mapa". Semilla 7, input (0, 0) y política de elección fija.
+// Spec procedural-map, "Azar del mapa independiente del de la partida" (los escenarios de
+// enemy-behavior "Los enemigos ignoran el mapa" se retiran en 0019). Semilla 7, input (0, 0) y
+// política de elección fija.
 const CONFIG = aDefaultConfig();
 const TICKS = 1200;
 
-/** Snapshots de los `n` ticks con la política fija (sin ofertas en este plazo, ver más abajo). */
+/**
+ * Snapshots de hasta `n` ticks con la política fija; para tras el tick en que se abre la primera
+ * oferta (spec: "hasta que una de las dos abre su primera oferta o termina").
+ */
 function snaps(run: Run, n: number): RunSnapshot[] {
   const out: RunSnapshot[] = [];
   play(run, n, (_t, r) => {
     out.push(r.snapshot());
-    return false;
+    return r.status === 'choosing';
   });
   return out;
 }
 
-/** Enemigos que aparecen en cada tick: id, tipo y posición de aparición. */
-function spawnsPerTick(list: readonly RunSnapshot[]): string[][] {
+/** Aparición: id, tipo y posición en el snapshot de su tick. */
+interface Spawn {
+  readonly id: number;
+  readonly type: string;
+  readonly x: number;
+  readonly y: number;
+}
+
+/** Enemigos que aparecen en cada tick. */
+function spawnsPerTick(list: readonly RunSnapshot[]): Spawn[][] {
   const seen = new Set<number>();
   return list.map((s) =>
     s.enemies
       .filter((e) => !seen.has(e.id))
       .map((e) => {
         seen.add(e.id);
-        return `${String(e.id)}:${e.type}:${String(e.x)},${String(e.y)}`;
+        return { id: e.id, type: e.type, x: e.x, y: e.y };
       }),
   );
+}
+
+/** Mapa generado por la semilla 7 (el de `startSeededRun`). */
+function generatedMap(): GameMap {
+  const map = resolveTerrain(seededRun(7).terrain, mapRules());
+  if (!map.ok) throw new Error(map.error.message);
+  return map.value;
 }
 
 describe('Mapa generado frente a mapa vacío (semilla 7, quieto)', () => {
@@ -56,17 +69,28 @@ describe('Mapa generado frente a mapa vacío (semilla 7, quieto)', () => {
     expect(startSeededRun(CONFIG, 7, 'empty').map.counts.grass).toBe(2304);
   });
 
-  it('Scenario: Mismos spawns con y sin mapa (1.200 ticks: id, tipo y posición)', () => {
-    expect(generated).toHaveLength(TICKS);
-    expect(generated.some((s) => s.enemies.length > 0)).toBe(true);
-    expect(generated.every((s) => s.offer.length === 0)).toBe(true);
-    expect(spawnsPerTick(generated)).toEqual(spawnsPerTick(empty));
-  });
-
-  it('Scenario: Misma trayectoria con mapa generado y vacío (id, tipo, posición y vida)', () => {
-    const enemies = (list: RunSnapshot[]) =>
-      list.map((s) => s.enemies.map((e) => [e.id, e.type, e.x, e.y, e.health]));
-    expect(enemies(generated)).toEqual(enemies(empty));
+  // 0019: las apariciones que caen en una celda no caminable del mapa generado están en la
+  // recolocación (nearestWalkable) de la posición del mapa vacío.
+  it('Scenario: Mismos spawns con y sin mapa (id, tipo, tick y posición o su recolocación)', () => {
+    const n = Math.min(generated.length, empty.length);
+    expect(n).toBeGreaterThan(600);
+    const map = generatedMap();
+    const at = { x: 0, y: 0 };
+    const raw = spawnsPerTick(empty.slice(0, n));
+    const expected = raw.map((list) =>
+      list.map((e) => {
+        map.nearestWalkable(e.x, e.y, at);
+        return { ...e, x: at.x, y: at.y };
+      }),
+    );
+    const got = spawnsPerTick(generated.slice(0, n));
+    expect(got.flat().length).toBeGreaterThan(0);
+    expect(got).toEqual(expected);
+    const moved = expected.flat().filter((e, i) => {
+      const before = raw.flat()[i];
+      return before !== undefined && (before.x !== e.x || before.y !== e.y);
+    });
+    expect(moved.length).toBeGreaterThan(0);
   });
 });
 
@@ -89,54 +113,5 @@ describe('Primera oferta con y sin mapa (semilla 7, quieto)', () => {
     expect(empty.options).toHaveLength(3);
     expect(generated.tick).toBeLessThanOrEqual(FIRST_OFFER_LIMIT);
     expect(empty.tick).toBeLessThanOrEqual(FIRST_OFFER_LIMIT);
-  });
-});
-
-describe('Los enemigos ignoran el mapa (spec enemy-behavior)', () => {
-  it('Scenario: Persecución a través del agua (celdas (3..6, 4) de agua)', () => {
-    const config = aContactConfig();
-    const water: Record<string, CellType> = {
-      '3,4': 'water',
-      '4,4': 'water',
-      '5,4': 'water',
-      '6,4': 'water',
-    };
-    const r = Run.start(
-      config,
-      new Mulberry32RandomGenerator(42),
-      { player: { x: 480, y: 270 }, enemies: [{ type: 'probe', x: 100, y: 270 }] },
-      { kind: 'cells', cells: cellsWith(mapRules(undefined, 960, 540), water) },
-    );
-    if (!r.ok) throw new Error(r.error.message);
-    const path = ticks(r.value, 240);
-    const at = (n: number) => path[n - 1]?.enemies[0];
-    expect(at(60)?.x).toBeCloseTo(160, 3);
-    expect(at(60)?.y).toBe(270);
-    expect(at(240)?.x).toBeCloseTo(340, 3);
-    const open = ticks(
-      startRun(config, {
-        player: { x: 480, y: 270 },
-        enemies: [{ type: 'probe', x: 100, y: 270 }],
-      }),
-      240,
-    );
-    expect(open.map((s) => s.enemies[0]?.x)).toEqual(path.map((s) => s.enemies[0]?.x));
-  });
-
-  it('Scenario: Persecución a través del castillo (cruza la huella entera)', () => {
-    const config = { ...aContactConfig(), arena: CONFIG.arena };
-    const setup = { player: { x: 990, y: 700 }, enemies: [{ type: 'probe', x: 990, y: 300 }] };
-    const r = Run.start(config, new Mulberry32RandomGenerator(42), setup, {
-      kind: 'cells',
-      cells: cellsWith(mapRules(), castleBlock()),
-    });
-    if (!r.ok) throw new Error(r.error.message);
-    const path = ticks(r.value, 330);
-    const at = (n: number) => path[n - 1]?.enemies[0];
-    expect(at(180)?.x).toBe(990);
-    expect(at(180)?.y).toBeCloseTo(480, 3);
-    expect(at(330)?.y).toBeCloseTo(630, 3);
-    const open = ticks(startRun(config, setup), 330);
-    expect(open.map((s) => s.enemies[0]?.y)).toEqual(path.map((s) => s.enemies[0]?.y));
   });
 });

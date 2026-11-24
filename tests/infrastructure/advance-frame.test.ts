@@ -9,7 +9,13 @@ import type { Run } from '../../src/domain/run/Run';
 import { advanceFrame } from '../../src/infrastructure/phaser/advanceFrame';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import { resolveSpeed } from '../../src/infrastructure/url/resolveSpeed';
-import { aDefaultConfig, aSegment, aWavesConfig, withDuration } from '../support/builders';
+import {
+  aDefaultConfig,
+  withScenarioCurve,
+  aSegment,
+  aWavesConfig,
+  withDuration,
+} from '../support/builders';
 import { lethalConfig } from '../support/finishedRuns';
 import { driveFrames } from '../support/frameDriver';
 import { aContactConfig, startRun } from '../support/runs';
@@ -29,7 +35,7 @@ function quiet(): { run: Run; loop: FixedStepLoop; tickRun: TickRun } {
 
 /** Partida que abre una oferta en el 3.er tick que ejecuta (gema a 36 px con XP 4 de 5). */
 function offeringAtThird(): { run: Run; loop: FixedStepLoop; tickRun: TickRun } {
-  const base = aDefaultConfig();
+  const base = withScenarioCurve(aDefaultConfig());
   const config = {
     ...base,
     waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 0)] }).waves,
@@ -164,7 +170,8 @@ function doomed(): StartedRun {
 }
 
 /** RestartRun con el contenido por defecto y la semilla 42 en cada partida nueva. */
-const restartRun = (): RestartRun => new RestartRun(aDefaultConfig(), () => seededRun(42));
+const restartRun = (): RestartRun =>
+  new RestartRun(withScenarioCurve(aDefaultConfig()), () => seededRun(42));
 
 describe('advanceFrame · reinicio', () => {
   it('Scenario: La velocidad se mantiene al reiniciar (R y 1 frame a velocidad 8: tick 8)', () => {

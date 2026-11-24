@@ -6,12 +6,17 @@ import { loadRunConfig } from '../../src/infrastructure/content/loadRunConfig';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import type { WeaponsConfig } from '../../src/domain/weapon/WeaponLoadout';
 import { pileOnPlayer } from '../support/runs';
+import { seededRun } from '../../src/composition/seedSource';
+import { FlowField } from '../../src/domain/map/FlowField';
+import type { GameMap } from '../../src/domain/map/GameMap';
+import { resolveTerrain, type TerrainSource } from '../../src/domain/map/TerrainSource';
+import { buildRunRules } from '../../src/domain/run/RunConfig';
 import { aLinter, aPulse, weaponsOf } from '../support/weapons';
 
 // Benchmark del núcleo sin motor ni render (spec simulation-loop: "Rendimiento con el tope de
 // enemigos"). Se ejecuta con `npm run bench`; no bloquea `verify` ni el CI (design 0002).
 const SEED = 7;
-const CAP = 200;
+const CAP = 300;
 const MEASURED_TICKS = 600;
 const WARMUP_TICKS = 60;
 const MAX_MEAN_MS = 2;
@@ -25,7 +30,7 @@ const GEM_WARMUP_TICKS = 0;
  * congele por la muerte del jugador.
  */
 const BENCH_HEALTH = 1e9;
-/** Tope de ticks para llegar a 200 vivos: evita un bucle infinito si algo cambia el contenido. */
+/** Tope de ticks para llegar a 300 vivos: evita un bucle infinito si algo cambia el contenido. */
 const MAX_TICKS_TO_CAP = 36_000;
 /**
  * Duración del bench (0006): inalcanzable, para que `runAtCap` + los ticks medidos nunca terminen
@@ -35,7 +40,7 @@ const BENCH_DURATION = 1e6;
 
 /**
  * Contenido por defecto (armas incluidas) con la vida del jugador y la de cada tipo de enemigo
- * sustituidas por `BENCH_HEALTH` (design 0004): con armas, los enemigos mueren y el tope de 200 no
+ * sustituidas por `BENCH_HEALTH` (design 0004): con armas, los enemigos mueren y el tope de 300 no
  * se alcanzaría. Se añade el tipo lento `bench` para el peor caso con proyectiles.
  */
 function benchConfig(weapons?: WeaponsConfig): RunConfig {
@@ -80,7 +85,7 @@ const BENCH_WEAPONS = weaponsOf([
 ]);
 
 /**
- * 200 `bench` en los bordes izquierdo (x = 10) y derecho (x = ancho − 10), con la y repartida
+ * 300 `bench` en los bordes izquierdo (x = 10) y derecho (x = ancho − 10), con la y repartida
  * sobre el alto del mundo.
  */
 const edgeEnemies = () =>
@@ -90,15 +95,20 @@ const edgeEnemies = () =>
     y: 10 + (Math.floor(i / 2) % 100) * ((WORLD.height - 20) / 100),
   }));
 
-function start(setup?: RunSetup, weapons?: WeaponsConfig): Run {
-  const config = benchConfig(weapons);
-  const started = Run.start(config, new Mulberry32RandomGenerator(SEED), setup);
+function start(
+  setup?: RunSetup,
+  weapons?: WeaponsConfig,
+  terrain?: TerrainSource,
+  config: RunConfig = benchConfig(weapons),
+): Run {
+  const random = new Mulberry32RandomGenerator(SEED);
+  const started = Run.start(config, random, setup, terrain);
   if (!started.ok) throw new Error(started.error.message);
   return started.value;
 }
 
 /**
- * 200 `bench` en los bordes izquierdo y derecho (a ≥ ancho / 2 − 10 px del jugador): cada
+ * 300 `bench` en los bordes izquierdo y derecho (a ≥ ancho / 2 − 10 px del jugador): cada
  * proyectil vuela más de 32 ticks, así que con un disparo por tick el tope de 32 está lleno en
  * todos los ticks medidos.
  */
@@ -143,9 +153,9 @@ function runWorstCaseWithGems(): Run {
   return run;
 }
 
-/** Partida con el contenido por defecto avanzada hasta tener exactamente 200 enemigos vivos. */
+/** Partida con el contenido por defecto avanzada hasta tener exactamente 300 enemigos vivos. */
 function runAtCap(): Run {
-  const run = start();
+  const run = start(undefined, undefined, seededRun(SEED).terrain);
   for (let n = 0; run.snapshot().enemies.length < CAP; n++) {
     if (run.snapshot().status === 'over') {
       throw new Error(
@@ -159,7 +169,7 @@ function runAtCap(): Run {
 }
 
 /**
- * 200 `goblin-torch` (vida BENCH_HEALTH) en el centro del mundo, donde nace el jugador, desde el
+ * 300 `goblin-torch` (vida BENCH_HEALTH) en el centro del mundo, donde nace el jugador, desde el
  * tick 0 (contacto continuo con cualquier tamaño de mundo; ver piled-contact.test.ts).
  */
 function runPiledOnPlayer(): Run {
@@ -177,10 +187,10 @@ const OPTIONS = {
   warmupTime: 0,
 };
 
-test('Tope de vivos alcanzado: Run.tick con 200 vivos e input (1, 0)', async ({ bench }) => {
+test('Tope de vivos alcanzado: Run.tick con 300 vivos e input (1, 0)', async ({ bench }) => {
   const run = runAtCap();
   const right = PlayerInput.of(1, 0);
-  const result = await bench('Run.tick · 200 vivos', () => {
+  const result = await bench('Run.tick · 300 vivos', () => {
     step(run, right);
   }).run(OPTIONS);
   report(result.name, result.latency);
@@ -190,9 +200,9 @@ test('Tope de vivos alcanzado: Run.tick con 200 vivos e input (1, 0)', async ({ 
   expect(result.latency.mean).toBeLessThanOrEqual(MAX_MEAN_MS);
 });
 
-test('200 enemigos encima del jugador: Run.tick con contacto continuo', async ({ bench }) => {
+test('300 enemigos encima del jugador: Run.tick con contacto continuo', async ({ bench }) => {
   const run = runPiledOnPlayer();
-  const result = await bench('Run.tick · 200 encima', () => {
+  const result = await bench('Run.tick · 300 encima', () => {
     step(run);
   }).run(OPTIONS);
   report(result.name, result.latency);
@@ -204,7 +214,7 @@ test('200 enemigos encima del jugador: Run.tick con contacto continuo', async ({
   expect(result.latency.mean).toBeLessThanOrEqual(MAX_MEAN_MS);
 });
 
-test('Peor caso con proyectiles: 200 vivos y 32 proyectiles en todos los ticks', async ({
+test('Peor caso con proyectiles: 300 vivos y 32 proyectiles en todos los ticks', async ({
   bench,
 }) => {
   const run = runWorstCase();
@@ -215,7 +225,7 @@ test('Peor caso con proyectiles: 200 vivos y 32 proyectiles en todos los ticks',
     step(twin);
     if (twin.snapshot().projectiles.length < 32) belowCap += 1;
   }
-  const result = await bench('Run.tick · 200 vivos + 32 proyectiles', () => {
+  const result = await bench('Run.tick · 300 vivos + 32 proyectiles', () => {
     step(run);
   }).run(OPTIONS);
   report(result.name, result.latency);
@@ -228,7 +238,7 @@ test('Peor caso con proyectiles: 200 vivos y 32 proyectiles en todos los ticks',
   expect(result.latency.mean).toBeLessThanOrEqual(MAX_MEAN_MS);
 });
 
-test('Peor caso con gemas: 200 vivos, 32 proyectiles y 300 gemas atraídas (60 ticks)', async ({
+test('Peor caso con gemas: 300 vivos, 32 proyectiles y 300 gemas atraídas (60 ticks)', async ({
   bench,
 }) => {
   const run = runWorstCaseWithGems();
@@ -239,7 +249,7 @@ test('Peor caso con gemas: 200 vivos, 32 proyectiles y 300 gemas atraídas (60 t
     const s = twin.snapshot();
     if (s.projectiles.length < 32 || s.gems.length < GEMS) broken += 1;
   }
-  const result = await bench('Run.tick · 200 vivos + 32 proyectiles + 300 gemas', () => {
+  const result = await bench('Run.tick · 300 vivos + 32 proyectiles + 300 gemas', () => {
     step(run);
   }).run({ ...OPTIONS, iterations: GEM_MEASURED_TICKS, warmupIterations: GEM_WARMUP_TICKS });
   report(result.name, result.latency);
@@ -250,11 +260,100 @@ test('Peor caso con gemas: 200 vivos, 32 proyectiles y 300 gemas atraídas (60 t
   expect(result.latency.mean).toBeLessThanOrEqual(MAX_MEAN_MS);
 });
 
-test('Run.snapshot con 200 vivos (informativo, presupuesto ≤ 0,3 ms)', async ({ bench }) => {
+test('Run.snapshot con 300 vivos (informativo, presupuesto ≤ 0,3 ms)', async ({ bench }) => {
   const run = runAtCap();
-  const result = await bench('Run.snapshot · 200 vivos', () => {
+  const result = await bench('Run.snapshot · 300 vivos', () => {
     run.snapshot();
   }).run(OPTIONS);
   report(result.name, result.latency);
   expect(result.latency.samplesCount).toBeGreaterThanOrEqual(MEASURED_TICKS);
+});
+
+/** Mapa generado de la semilla del bench (el mismo que `seededRun(SEED)`). */
+function benchMap(): GameMap {
+  const rules = buildRunRules(benchConfig());
+  if (!rules.ok) throw new Error(rules.error.message);
+  const map = resolveTerrain(seededRun(SEED).terrain, rules.value.map);
+  if (!map.ok) throw new Error(map.error.message);
+  return map.value;
+}
+
+/**
+ * 300 `bench` (casi inmóviles) en centros de celdas caminables sin línea libre hasta el jugador
+ * quieto en la salida (1.950, 1.170): al otro lado del río, de troncos o del castillo, repartidos
+ * por el mundo (una de cada `stride` celdas candidatas, en orden de filas).
+ */
+function hiddenEnemies(map: GameMap): NonNullable<RunSetup['enemies']> {
+  const field = new FlowField(map);
+  const { x, y } = map.start;
+  const cells: { x: number; y: number }[] = [];
+  for (let r = 0; r < map.rows; r++) {
+    for (let c = 0; c < map.cols; c++) {
+      const cx = c * map.cellSize + map.cellSize / 2;
+      const cy = r * map.cellSize + map.cellSize / 2;
+      if (map.isWalkable(c, r) && !field.hasClearLine(cx, cy, x, y)) cells.push({ x: cx, y: cy });
+    }
+  }
+  if (cells.length < CAP) throw new Error(`Solo ${String(cells.length)} celdas sin línea libre`);
+  const stride = cells.length / CAP;
+  return Array.from({ length: CAP }, (_, i) => ({
+    type: 'bench',
+    ...(cells[Math.floor(i * stride)] ?? cells[0] ?? { x, y }),
+  }));
+}
+
+test('300 enemigos sin línea libre: Run.tick con el jugador quieto en la salida', async ({
+  bench,
+}) => {
+  const map = benchMap();
+  const setup = { enemies: hiddenEnemies(map) };
+  const run = start(setup, undefined, seededRun(SEED).terrain);
+  // Gemela determinista: ≥ 150 sin línea libre en cada tick (fuera de la medición).
+  const twin = start(setup, undefined, seededRun(SEED).terrain);
+  const field = new FlowField(map);
+  let fewHidden = 0;
+  for (let n = 0; n < WARMUP_TICKS + MEASURED_TICKS; n++) {
+    step(twin);
+    const s = twin.snapshot();
+    const hidden = s.enemies.filter((e) => !field.hasClearLine(e.x, e.y, s.player.x, s.player.y));
+    if (hidden.length < CAP / 2) fewHidden += 1;
+  }
+  const result = await bench('Run.tick · 300 sin línea libre', () => {
+    step(run);
+  }).run(OPTIONS);
+  report(result.name, result.latency);
+  expect(run.snapshot().status).toBe('running');
+  expect(run.snapshot().enemies).toHaveLength(CAP);
+  expect(fewHidden).toBe(0);
+  expect(result.latency.mean).toBeLessThanOrEqual(MAX_MEAN_MS);
+});
+
+/**
+ * Jugador ante la puerta (fila 19, libre por la zona de inicio) con velocidad de escenario 3.600
+ * px/s (60 px por tick) e input alterno (1, 0) / (−1, 0): cambia de celda en cada tick (design §7).
+ */
+test('Jugador que cambia de celda en cada tick: Run.tick con 300 vivos', async ({ bench }) => {
+  const base = benchConfig();
+  const config = { ...base, player: { ...base.player, speed: 3600 } };
+  const setup = { enemies: edgeEnemies() };
+  const make = () => start(setup, undefined, seededRun(SEED).terrain, config);
+  const inputs = [PlayerInput.of(1, 0), PlayerInput.of(-1, 0)];
+  const twin = make();
+  let sameCell = 0;
+  let last = Math.floor(twin.snapshot().player.x / 60);
+  for (let n = 0; n < WARMUP_TICKS + MEASURED_TICKS; n++) {
+    step(twin, inputs[n % 2]);
+    const col = Math.floor(twin.snapshot().player.x / 60);
+    if (col === last) sameCell += 1;
+    last = col;
+  }
+  const run = make();
+  let k = 0;
+  const result = await bench('Run.tick · 300 vivos, jugador cambia de celda', () => {
+    step(run, inputs[k++ % 2]);
+  }).run(OPTIONS);
+  report(result.name, result.latency);
+  expect(run.snapshot().status).toBe('running');
+  expect(sameCell).toBe(0);
+  expect(result.latency.mean).toBeLessThanOrEqual(MAX_MEAN_MS);
 });

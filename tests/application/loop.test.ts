@@ -7,6 +7,7 @@ import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulbe
 import {
   TICK_MS,
   aDefaultConfig,
+  withScenarioCurve,
   aRunConfig,
   aSegment,
   aWavesConfig,
@@ -141,7 +142,7 @@ describe('TickRun', () => {
 describe('TickRun · sin tiempo acumulado durante la elección', () => {
   /** Partida que abre una oferta en el tick 1 (gema a 20 px con XP 4). */
   function offering() {
-    const base = aDefaultConfig();
+    const base = withScenarioCurve(aDefaultConfig());
     const config = {
       ...base,
       waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 0)] }).waves,
@@ -186,7 +187,7 @@ describe('TickRun · sin tiempo acumulado durante la elección', () => {
 
 describe('TickRun · acumulador', () => {
   it('no acumula tiempo con la partida eligiendo ni terminada, y corta el frame que abre la oferta', () => {
-    const base = aDefaultConfig();
+    const base = withScenarioCurve(aDefaultConfig());
     const config = {
       ...base,
       waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 0)] }).waves,

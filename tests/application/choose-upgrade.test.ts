@@ -2,12 +2,18 @@ import { describe, expect, it } from 'vitest';
 import { StartRun } from '../../src/application/StartRun';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import type { RunConfig } from '../../src/domain/run/RunConfig';
-import { aDefaultConfig, aSegment, aWavesConfig, TICK_MS } from '../support/builders';
+import {
+  aDefaultConfig,
+  withScenarioCurve,
+  aSegment,
+  aWavesConfig,
+  TICK_MS,
+} from '../support/builders';
 import { CountingRandom, StubRandom } from '../support/random';
 
 /** Contenido por defecto sin spawns: el jugador del centro recoge en el tick 1 una gema de 1 XP. */
 function started(random = new CountingRandom(new StubRandom(0.5))) {
-  const base = aDefaultConfig();
+  const base = withScenarioCurve(aDefaultConfig());
   const config: RunConfig = {
     ...base,
     waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 0)] }).waves,

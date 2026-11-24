@@ -8,6 +8,7 @@ import {
   LINTER,
   TESTS,
   aDefaultConfig,
+  withScenarioCurve,
   aSegment,
   aWavesConfig,
   anUpgrade,
@@ -24,7 +25,7 @@ const UP_RIGHT = PlayerInput.of(1, 1);
  * (invulnerable) y se recoge la gema que abre la oferta.
  */
 function busyConfig(): RunConfig {
-  const base = aDefaultConfig();
+  const base = withScenarioCurve(aDefaultConfig());
   const probe = aProbeType({ health: 1e6, speed: 1e-6 });
   return {
     ...base,
@@ -68,7 +69,7 @@ describe('Simulación congelada mientras se elige mejora', () => {
 });
 
 const quietDefault = (patch: Partial<RunConfig> = {}): RunConfig => ({
-  ...aDefaultConfig(),
+  ...withScenarioCurve(aDefaultConfig()),
   waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 0)] }).waves,
   ...patch,
 });

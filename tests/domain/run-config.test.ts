@@ -28,7 +28,7 @@ import {
   XP_GROWTH_MUST_BE_INTEGER,
 } from '../../src/domain/progression/XpCurve';
 import {
-  DEFAULT_PROGRESSION,
+  SCENARIO_PROGRESSION,
   DEFAULT_UPGRADES,
   DEFAULT_WEAPONS,
   LINTER,
@@ -61,7 +61,7 @@ describe('buildRunRules', () => {
     expect([arena.width, arena.height]).toEqual([960, 540]);
     expect(catalog.ids).toEqual(['goblin-torch', 'goblin-tnt', 'goblin-barrel']);
     expect(table.segments.map((s) => s.fromSecond)).toEqual([0, 60, 180, 300, 480]);
-    expect(spawn).toMatchObject({ maxAlive: 200, minDistance: 200, maxAttempts: 8 });
+    expect(spawn).toMatchObject({ maxAlive: 300, minDistance: 200, maxAttempts: 8 });
   });
 
   it('el radio del anillo es el del contenido (ringRadius), sin vista', () => {
@@ -213,7 +213,7 @@ describe('buildRunRules', () => {
 describe('buildRunRules · progresión y mejoras', () => {
   const withProgression = (patch: Partial<RunConfig['progression']>): RunConfig => ({
     ...aRunConfig(),
-    progression: { ...DEFAULT_PROGRESSION, ...patch },
+    progression: { ...SCENARIO_PROGRESSION, ...patch },
   });
 
   it('construye la curva, las reglas de las gemas y un catálogo vacío por defecto', () => {

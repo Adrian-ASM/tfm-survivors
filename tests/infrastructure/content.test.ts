@@ -63,6 +63,42 @@ describe('Contenido de vida e invulnerabilidad validado', () => {
     expect(r.ok && r.value.player.speed).toBe(215);
   });
 
+  // Spec enemy-spawning (0019): el tope por defecto pasa de 200 a 300 (GDD).
+  it('Scenario: Tope por defecto (el dominio recibe maxAlive 300)', () => {
+    const r = loadRunConfig();
+    expect(r.ok && r.value.waves.maxAlive).toBe(300);
+    const rules = r.ok ? buildRunRules(r.value) : null;
+    expect(rules?.ok && rules.value.spawn.maxAlive).toBe(300);
+  });
+
+  // Spec run-outcome y enemy-spawning (0019): el presupuesto de oleadas, el anillo y la velocidad del
+  // jugador son literalmente los de antes del change (main, c537a3f); solo cambia `maxAlive`.
+  it('Scenario: Presupuesto de oleadas intacto (tramos, maxBudget, ringRadius y player.speed)', () => {
+    const r = loadRunConfig();
+    if (!r.ok) throw new Error(r.error.message);
+    const { waves, player } = r.value;
+    expect(waves.segments).toEqual([
+      { fromSecond: 0, budgetPerSecond: 1.2, types: ['goblin-torch'] },
+      { fromSecond: 60, budgetPerSecond: 2.4, types: ['goblin-torch', 'goblin-barrel'] },
+      {
+        fromSecond: 180,
+        budgetPerSecond: 2.4,
+        types: ['goblin-torch', 'goblin-barrel', 'goblin-tnt'],
+      },
+      {
+        fromSecond: 300,
+        budgetPerSecond: 3,
+        types: ['goblin-torch', 'goblin-barrel', 'goblin-tnt'],
+      },
+      {
+        fromSecond: 480,
+        budgetPerSecond: 4.2,
+        types: ['goblin-torch', 'goblin-barrel', 'goblin-tnt'],
+      },
+    ]);
+    expect([waves.maxBudget, waves.spawn.ringRadius, player.speed]).toEqual([10, 1500, 215]);
+  });
+
   it('Contenido válido: velocidad 215, radio 16, vida máxima 100 y radio de recogida 64', () => {
     const raw = rawContent();
     raw.player.pickupRadius = 64;
