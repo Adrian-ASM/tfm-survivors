@@ -13,17 +13,18 @@ parámetros de la curva `baseXp` (entero ≥ 1) y `xpGrowth` (entero ≥ 0). La 
 n + 1 MUST ser `xpToNext(n) = baseXp + xpGrowth · (n − 1)`. Un valor ausente, no entero, fuera de rango o un campo
 desconocido MUST impedir que la partida arranque con un error que nombre el campo.
 
-El contenido por defecto MUST fijar `baseXp` 9 y `xpGrowth` 3 (change 0019): es la palanca de calibración elegida para
-compensar el campo de flujo de los enemigos sin tocar las oleadas ni `player.speed` (ver "Partida ganable y perdible
-con el contenido por defecto" en `run-outcome`). Los escenarios de "Subida de nivel con arrastre", "Varias subidas en
-un tick", "Sin nivel máximo" y "Barra de XP y nivel en la vista" usan una **curva de escenario** explícita con
-`baseXp` 5 y `xpGrowth` 5 (la anterior por defecto), no el contenido por defecto; sus números no cambian.
+El contenido por defecto MUST fijar `baseXp` 9 y `xpGrowth` 4 (changes 0019 y 0020): es la palanca de calibración
+elegida para compensar el campo de flujo (0019) y los comportamientos y peligros de los enemigos (0020) sin tocar las
+oleadas ni `player.speed` (ver "Partida ganable y perdible con el contenido por defecto" en `run-outcome`). Los
+escenarios de "Subida de nivel con arrastre", "Varias subidas en un tick", "Sin nivel máximo" y "Barra de XP y nivel en
+la vista" usan una **curva de escenario** explícita con `baseXp` 5 y `xpGrowth` 5, no el contenido por defecto; sus
+números no cambian.
 
 #### Scenario: Curva por defecto
 - **GIVEN** el contenido por defecto
 - **WHEN** se carga el contenido
-- **THEN** `baseXp` vale 9 y `xpGrowth` vale 3
-- **AND** `xpToNext` vale 9 en el nivel 1, 12 en el 2, 15 en el 3 y 156 en el 50
+- **THEN** `baseXp` vale 9 y `xpGrowth` vale 4
+- **AND** `xpToNext` vale 9 en el nivel 1, 13 en el 2, 17 en el 3 y 205 en el 50
 
 #### Scenario: Curva de escenario
 - **GIVEN** un contenido con `baseXp` 5 y `xpGrowth` 5
@@ -132,3 +133,4 @@ La barra y el nivel forman parte del HUD (ver `hud`).
 <!-- historial: 0005-xp-and-level-up (2026-11-19) -->
 <!-- historial: 0006-run-lifecycle-hud (2026-11-20) -->
 <!-- historial: 0019-flow-field (2026-11-24) -->
+<!-- historial: 0020-enemy-behaviors (2026-11-24) -->

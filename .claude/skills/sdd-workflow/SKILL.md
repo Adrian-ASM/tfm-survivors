@@ -50,6 +50,10 @@ Tras cada fase, resume al usuario en ≤ 5 líneas: qué se produjo, decisiones 
   de balance no entra en la propuesta sin datos (0006: el design previó ajustes que no servían). Antes de pasar
   la configuración medida, contrástala con las specs vivas que la restringen (monotonía de oleadas, escenarios
   con ticks fijos): en 0017 una tabla medida incumplía "Oleadas que crecen" y dos escenarios rompieron en apply.
+- **Tiempo del lote de balance**: si el change cambia el bot de referencia o el coste por tick, mide también cuánto
+  tarda el lote de 50 partidas y compáralo con su timeout (0020: ~25 s en local, ~70 s en CI, tope 60 s).
+- **Número de ADR**: pide al `sdd-architect` un `git fetch` antes de numerar un ADR y renumera si `main` ocupó el
+  número durante el change (0020: dos ADR-0018).
 - **Contraste final del design**: spec y design van en paralelo, así que al pedir *tasks* indica al
   `sdd-architect` las specs delta que no existían cuando escribió el design y que las contraste antes de
   descomponer (0006: dos specs llegaron tarde y obligaron a reabrir el design). Pide también que contraste los

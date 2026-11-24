@@ -126,12 +126,12 @@ abrirse ninguna oferta de mejoras (misma regla que el tick de la muerte, ver `ru
   `goblin-torch`
 
 ### Requirement: Contador de bajas
-El sistema SHALL contar las bajas de la partida: cada enemigo que queda dado de baja (su vida llega a 0, ver
-`enemy-spawning`) suma exactamente 1. Una partida recién creada MUST empezar con 0 bajas. El contador no se
-reinicia al subir de nivel ni al elegir mejora, no baja nunca y no cambia mientras la partida está eligiendo mejora
-o terminada. Aplicar daño a un enemigo ya dado de baja MUST NOT sumar otra baja. Las bajas producidas en el paso de
-armas del tick en que la partida termina (por derrota o por victoria) sí cuentan. El snapshot MUST exponer las
-bajas.
+El sistema SHALL contar las bajas de la partida: cada enemigo que queda dado de baja (su vida llega a 0 por armas o
+por explosiones, o explota al terminar su mecha, ver `enemy-spawning`) suma exactamente 1. Una partida recién creada
+MUST empezar con 0 bajas. El contador no se reinicia al subir de nivel ni al elegir mejora, no baja nunca y no cambia
+mientras la partida está eligiendo mejora o terminada. Aplicar daño a un enemigo ya dado de baja MUST NOT sumar otra
+baja. Las bajas producidas en el paso de armas y en el paso de peligros del tick en que la partida termina (por
+derrota o por victoria) sí cuentan. El snapshot MUST exponer las bajas.
 
 #### Scenario: Partida recién creada
 - **GIVEN** una partida recién creada con el contenido por defecto
@@ -164,6 +164,18 @@ bajas.
 - **WHEN** se ejecuta el tick n y después se piden 600 ticks más
 - **THEN** el snapshot del tick n tiene 8 bajas y resultado derrota, y tras los 600 ticks las bajas siguen en 8
 
+#### Scenario: Explosión letal para el jugador y para el barril
+- **GIVEN** una partida con 3 bajas, el jugador a vida 20, no invulnerable, y un `goblin-barrel` cuya explosión de
+  daño ≥ 20 le alcanza en el tick n
+- **WHEN** se ejecuta el tick n
+- **THEN** el snapshot del tick n tiene resultado derrota, vida 0, 4 bajas y la gema del barril
+
+#### Scenario: Una explosión que mata a varios
+- **GIVEN** una partida con 0 bajas y una explosión en el tick n que deja a vida 0 a 3 enemigos, además del barril que
+  explota
+- **WHEN** se ejecuta el tick n
+- **THEN** las bajas valen 4
+
 ### Requirement: Invariante entre estado y resultado
 El sistema SHALL mantener en todo snapshot que el resultado está definido (victoria o derrota) si y solo si la
 partida está terminada. Una partida en curso o eligiendo mejora MUST NOT tener resultado, y una partida terminada
@@ -184,8 +196,9 @@ MUST tener exactamente uno, que no cambia nunca.
 El sistema SHALL permitir, con el contenido por defecto, tanto ganar como perder una partida sin motor, con una
 dificultad medida sobre el conjunto de semillas 1..50 (ver "Semillas de los tests de balance"), cada partida con el
 mapa que genera su semilla, castillo incluido, el jugador en su punto de salida (ver `procedural-map` y "Posición
-inicial en el punto de salida del mapa" en `player-movement`) y los enemigos navegando por ese mapa (ver
-`enemy-behavior`), con el tope de vivos por defecto (ver `enemy-spawning`):
+inicial en el punto de salida del mapa" en `player-movement`), los enemigos navegando por ese mapa y con su
+comportamiento por tipo (ver `enemy-behavior`) y sus peligros (ver `enemy-hazards`), con el tope de vivos por defecto
+(ver `enemy-spawning`):
 - **Ganable**: el bot de referencia (ver "Bot de referencia para el balance") MUST llegar vivo al tick 36.000
   (resultado victoria) con **al menos 25 y como mucho 35** de las 50 semillas (del 50 % al 70 %, ambos incluidos).
   Una semilla cuenta como victoria solo si la partida termina con resultado victoria en el tick 36.000; cualquier
@@ -199,30 +212,36 @@ La dificultad MUST ser la misma con cualquier tamaño de ventana: los tests de b
 Los números de contenido que producen esta dificultad viven en `content/*.json` y no se fijan en esta spec. En este
 change:
 - MUST NOT cambiar el presupuesto de oleadas de `content/waves.json` (tramos, `fromSecond`, `types`,
-  `budgetPerSecond` y `maxBudget`) ni `player.speed` (215); `maxAlive` es 300 (ver `enemy-spawning`) y el anillo de
-  aparición no cambia;
-- la calibración MUST hacerse con otras palancas de contenido (valores de los tipos de enemigo, de las armas, de las
-  mejoras o de la progresión de XP), validadas por sus esquemas;
-- todo valor de contenido que una spec viva fije de forma explícita y que la calibración cambie MUST actualizarse en
-  una spec delta de este change antes de verify;
+  `budgetPerSecond` y `maxBudget`), `maxAlive` (300), el anillo de aparición (`ringRadius` 1.500) ni `player.speed`
+  (215), ni la velocidad, el radio, el coste, la vida, el daño por contacto ni la XP de los tipos de enemigo (ver
+  "Stats por defecto" en `enemy-spawning`), ni las armas ni las mejoras;
+- la calibración MUST hacerse primero con los parámetros de comportamiento y de peligros (distancias, duraciones,
+  radios y daños de explosión, tope de dinamitas), dentro de las cotas de "Comportamiento por defecto legible y
+  esquivable" (`enemy-behavior`), y, solo si eso no basta, también con la progresión de XP, validadas por sus
+  esquemas;
+- todo valor de contenido que una spec viva o una spec delta de este change fije de forma explícita y que la
+  calibración cambie MUST actualizarse en una spec delta de este change antes de verify;
 - los plazos de las specs vivas para el jugador quieto con el contenido por defecto (primer golpe, primer pulso y
   primera oferta en ≤ 4.800 ticks; primera baja en ≤ 900) MUST seguir cumpliéndose con el contenido final, y los ticks
-  medidos MUST anotarse en el design o en el verify-report.
+  medidos (incluida la primera oferta de la semilla 7, 2.082 antes del change) MUST anotarse en el design o en el
+  verify-report.
 
 La banda y las reglas mandan sobre cualquier valor concreto y MUST NOT relajarse en este change: si ninguna
 combinación de esas palancas devuelve a la vez la banda 25–35 y 0 quietos supervivientes (con ambos mapas), el change
-MUST detenerse antes de verify y la decisión vuelve al usuario. Si el mundo, el anillo, la huella del castillo, la
-navegación o el contenido cambian en apply, el balance MUST volver a medirse con el contenido final antes de verify.
+MUST detenerse antes de verify y la decisión vuelve al usuario (también si hiciera falta tocar oleadas, `maxAlive`,
+stats de los tipos, armas o mejoras). Si el mundo, el anillo, la huella del castillo, la navegación, los
+comportamientos o el contenido cambian en apply, el balance MUST volver a medirse con el contenido final antes de
+verify.
 
 #### Scenario: Tasa de victoria del bot de referencia
-- **GIVEN** el contenido por defecto (mundo de 3.840 × 2.160, `ringRadius` 1.500, `maxAlive` 300), la navegación de
-  los enemigos por el mapa y el bot de referencia
+- **GIVEN** el contenido por defecto (mundo de 3.840 × 2.160, `ringRadius` 1.500, `maxAlive` 300), la navegación y
+  los comportamientos de los enemigos y el bot de referencia v3
 - **WHEN** se juega una partida con cada semilla de 1 a 50, con su mapa generado (castillo incluido) y el jugador en
   su salida, cada una hasta que termina o hasta el tick 36.000
 - **THEN** el número de partidas terminadas con resultado victoria en el tick 36.000 es ≥ 25 y ≤ 35
 
 #### Scenario: Toda partida del bot termina
-- **GIVEN** el contenido por defecto y el bot de referencia
+- **GIVEN** el contenido por defecto y el bot de referencia v3
 - **WHEN** se juega cada semilla de 1 a 50, con su mapa generado, hasta el tick 36.000
 - **THEN** las 50 partidas están terminadas, con resultado victoria o derrota, en un tick ≤ 36.000
 
@@ -244,11 +263,12 @@ navegación o el contenido cambian en apply, el balance MUST volver a medirse co
 - **WHEN** se evalúa el requisito "Perdible" para esa semilla
 - **THEN** el test de "quieto pierde" falla, aunque la partida termine con derrota en el tick 10.800 o después
 
-#### Scenario: Presupuesto de oleadas intacto
+#### Scenario: Presupuesto de oleadas y stats intactos
 - **GIVEN** el contenido por defecto tras el change y el de `main` antes del change
-- **WHEN** se comparan `content/waves.json` y `player.speed`
-- **THEN** los tramos (`fromSecond`, `types`, `budgetPerSecond`), `maxBudget`, `ringRadius` y `player.speed` son
-  iguales; solo `maxAlive` pasa de 200 a 300
+- **WHEN** se comparan `content/waves.json`, `player.speed`, las armas, las mejoras y los stats de los tipos de enemigo
+- **THEN** los tramos (`fromSecond`, `types`, `budgetPerSecond`), `maxBudget`, `maxAlive` (300), `ringRadius`,
+  `player.speed`, las armas, las mejoras y la velocidad, el radio, el coste, la vida, la XP y el `damage` de
+  `goblin-torch` y `goblin-tnt` son iguales; el único cambio de stats es que `goblin-barrel` ya no tiene `damage`
 
 #### Scenario: Plazos del jugador quieto con el contenido final
 - **GIVEN** el contenido por defecto final, input (0, 0), la política de elección fija y la semilla 7 con su mapa
@@ -258,10 +278,17 @@ navegación o el contenido cambian en apply, el balance MUST volver a medirse co
   un tick ≤ 4.800, y la primera baja ocurre en un tick ≤ 900
 
 ### Requirement: Bot de referencia para el balance
-El proyecto SHALL tener un **bot de referencia** versionado como helper de test (`tests/support/`), puro y
-determinista, que es la única referencia de dificultad de los tests de balance. El bot MUST jugar así:
-- **Movimiento**: en cada tick, el input es el de la política de huida `fleeInput` aplicada al snapshot anterior y al
-  mapa de la partida:
+El proyecto SHALL tener un **bot de referencia** (versión **v3**) versionado como helper de test (`tests/support/`),
+puro y determinista, que es la única referencia de dificultad de los tests de balance. El bot MUST jugar así:
+- **Esquiva** (nuevo en v3): en cada tick, a partir del snapshot anterior, un aviso (ver "Aviso en el suelo" en
+  `enemy-hazards`) es **amenazante** si la distancia entre su centro y el centro del jugador es estrictamente menor
+  que radio del aviso + radio del jugador + s, con s = velocidad efectiva del jugador × 1/60 (un tick de movimiento).
+  Si hay ≥ 1 aviso amenazante, el bot suma, por cada uno, el vector unitario que va del centro del aviso al centro del
+  jugador; cuantiza la suma a una de las 8 direcciones y aplica la regla de direcciones bloqueadas del paso 3 de
+  **Movimiento**. Si la suma es el vector nulo (o el jugador está exactamente en el centro de todos los avisos
+  amenazantes), usa el input de **Movimiento**. Sin avisos amenazantes, el input es el de **Movimiento**.
+- **Movimiento**: el input es el de la política de huida `fleeInput` aplicada al snapshot anterior y al mapa de la
+  partida:
   1. suma una repulsión 1/d² de cada enemigo vivo a menos de 150 px, de cada pared del mundo a menos de 64 px y de
      cada celda no caminable (`trunk`, `water` o `castle`) a menos de 64 px. La distancia a una pared se mide desde el
      centro del jugador; la distancia a una celda, desde el centro del jugador hasta el punto más cercano del
@@ -278,11 +305,13 @@ determinista, que es la única referencia de dificultad de los tests de balance.
   la lista de prioridad `guardrail` > `strict-rules` > `fast-ci` > `hard-asserts` > `watch-mode`, sea cual sea su
   posición en la oferta; si la oferta no contiene ninguno de esos ids, elige la opción de índice 0.
 
-El castillo no añade lógica al bot: sus celdas cuentan como cualquier otra celda no caminable. El bot no recibe la
-vista ni la ventana. El bot de referencia es un concepto aparte de la "política de elección fija" de
-`simulation-loop`, que sigue valiendo para los escenarios que no dicen nada de elecciones. Cualquier cambio de su
-movimiento o de su lista de prioridad MUST hacerse con un change que revise los requisitos de balance de esta spec. Los
-escenarios de este requisito con posiciones explícitas y sin mapa declarado usan el mapa vacío.
+El bot solo lee el snapshot y el mapa: no conoce el tick de explosión ni el daño de los avisos más allá de lo que
+expone el snapshot, ni las dinamitas que aún no se han lanzado. El castillo no añade lógica al bot: sus celdas
+cuentan como cualquier otra celda no caminable. El bot no recibe la vista ni la ventana. El bot de referencia es un
+concepto aparte de la "política de elección fija" de `simulation-loop`, que sigue valiendo para los escenarios que no
+dicen nada de elecciones. Cualquier cambio de su esquiva, de su movimiento o de su lista de prioridad MUST hacerse con
+un change que revise los requisitos de balance de esta spec. Los escenarios de este requisito con posiciones
+explícitas y sin mapa declarado usan el mapa vacío, el jugador con radio 16 y velocidad efectiva 215 (s = 3,5833).
 
 #### Scenario: Elige por prioridad, no por posición
 - **GIVEN** una oferta abierta con las opciones `watch-mode`, `fast-ci` y una tercera que no está en la lista de
@@ -386,6 +415,30 @@ escenarios de este requisito con posiciones explícitas y sin mapa declarado usa
 - **THEN** la dirección cuantizada (0, −1) está bloqueada, también la girada +45° y −45°, y el input es (1, 0)
   (+90° en sentido horario desde (0, −1))
 
+#### Scenario: La esquiva gana a la huida
+- **GIVEN** un snapshot con el jugador en (1.920, 1.080), un aviso de radio 50 centrado en (1.960, 1.080) (a 40 px,
+  < 50 + 16 + 3,5833) y un único enemigo vivo en (1.870, 1.080) (la huida empujaría hacia +x)
+- **WHEN** el bot de referencia calcula el input
+- **THEN** el input es (−1, 0)
+
+#### Scenario: Aviso no amenazante
+- **GIVEN** un snapshot con el jugador en (1.920, 1.080), ningún enemigo vivo y un aviso de radio 50 centrado en
+  (1.989,5833; 1.080) (a exactamente 50 + 16 + 3,5833 px)
+- **WHEN** el bot de referencia calcula el input
+- **THEN** el input es (0, 0)
+
+#### Scenario: Dos avisos que se anulan
+- **GIVEN** un snapshot con el jugador en (1.920, 1.080), dos avisos de radio 50 centrados en (1.880, 1.080) y
+  (1.960, 1.080) y un único enemigo vivo en (1.920, 1.180) (a 100 px por debajo)
+- **WHEN** el bot de referencia calcula el input
+- **THEN** la suma de la esquiva es nula y el input es el de la huida, (0, −1)
+
+#### Scenario: Esquiva bloqueada por un tronco
+- **GIVEN** el mapa con el tronco en (10, 4), velocidad 200 px/s, un snapshot con el jugador en (584, 270), tangente
+  a la cara izquierda del tronco, y un aviso de radio 50 centrado en (560, 270)
+- **WHEN** el bot de referencia calcula el input
+- **THEN** la dirección de esquiva (1, 0) está bloqueada, también la girada +45° y −45°, y el input es (0, 1)
+
 #### Scenario: Bot reproducible
 - **GIVEN** dos partidas con el contenido por defecto y la semilla 7, con su mapa generado, ambas jugadas por el bot
   de referencia
@@ -453,3 +506,4 @@ la configuración de Playwright (1.280 × 720) o lo declaran en el escenario.
 <!-- historial: 0016-map-art (2026-11-23) -->
 <!-- historial: 0017-fullscreen-view (2026-11-24) -->
 <!-- historial: 0019-flow-field (2026-11-24) -->
+<!-- historial: 0020-enemy-behaviors (2026-11-24) -->
