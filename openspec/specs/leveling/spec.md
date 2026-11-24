@@ -13,11 +13,22 @@ parámetros de la curva `baseXp` (entero ≥ 1) y `xpGrowth` (entero ≥ 0). La 
 n + 1 MUST ser `xpToNext(n) = baseXp + xpGrowth · (n − 1)`. Un valor ausente, no entero, fuera de rango o un campo
 desconocido MUST impedir que la partida arranque con un error que nombre el campo.
 
+El contenido por defecto MUST fijar `baseXp` 9 y `xpGrowth` 3 (change 0019): es la palanca de calibración elegida para
+compensar el campo de flujo de los enemigos sin tocar las oleadas ni `player.speed` (ver "Partida ganable y perdible
+con el contenido por defecto" en `run-outcome`). Los escenarios de "Subida de nivel con arrastre", "Varias subidas en
+un tick", "Sin nivel máximo" y "Barra de XP y nivel en la vista" usan una **curva de escenario** explícita con
+`baseXp` 5 y `xpGrowth` 5 (la anterior por defecto), no el contenido por defecto; sus números no cambian.
+
 #### Scenario: Curva por defecto
 - **GIVEN** el contenido por defecto
 - **WHEN** se carga el contenido
-- **THEN** `baseXp` vale 5 y `xpGrowth` vale 5 (provisional, a medir en apply)
-- **AND** `xpToNext` vale 5 en el nivel 1, 10 en el 2, 15 en el 3 y 250 en el 50
+- **THEN** `baseXp` vale 9 y `xpGrowth` vale 3
+- **AND** `xpToNext` vale 9 en el nivel 1, 12 en el 2, 15 en el 3 y 156 en el 50
+
+#### Scenario: Curva de escenario
+- **GIVEN** un contenido con `baseXp` 5 y `xpGrowth` 5
+- **WHEN** se carga el contenido
+- **THEN** la carga tiene éxito y `xpToNext` vale 5 en el nivel 1, 10 en el 2, 15 en el 3 y 250 en el 50
 
 #### Scenario: Valores inválidos
 - **GIVEN** un contenido con, en un caso cada vez, `baseXp` 0, `baseXp` 2,5, `xpGrowth` −1 o `xpGrowth` 1,5
@@ -37,7 +48,7 @@ en el snapshot el nivel, la XP actual y `xpToNext` del nivel actual.
 #### Scenario: Partida recién creada
 - **GIVEN** una partida recién creada con el contenido por defecto
 - **WHEN** se lee el snapshot antes del primer tick
-- **THEN** el nivel vale 1, la XP actual 0 y la XP para el siguiente nivel 5
+- **THEN** el nivel vale 1, la XP actual 0 y la XP para el siguiente nivel 9
 
 ### Requirement: Subida de nivel con arrastre
 El sistema SHALL sumar a la XP actual el valor de cada gema recogida (ver `xp-gems`). Mientras la XP actual sea
@@ -120,3 +131,4 @@ La barra y el nivel forman parte del HUD (ver `hud`).
 
 <!-- historial: 0005-xp-and-level-up (2026-11-19) -->
 <!-- historial: 0006-run-lifecycle-hud (2026-11-20) -->
+<!-- historial: 0019-flow-field (2026-11-24) -->

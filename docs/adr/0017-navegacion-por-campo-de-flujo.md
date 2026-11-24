@@ -1,6 +1,6 @@
 # ADR-0017 · Navegación de los enemigos por campo de flujo de 4 vecinos en el núcleo, con línea libre
 
-- **Estado**: propuesta (change 0019-flow-field)
+- **Estado**: aceptada (change 0019-flow-field, archivado 2026-11-24)
 - **Fecha**: 2026-11-24
 
 ## Contexto

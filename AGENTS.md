@@ -70,6 +70,15 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   (`CULL_MARGIN_CELLS`); `MapCuller` solo llama a `setVisible` donde cambia el estado. Solo infraestructura.
   Sonda `sprites.mapArt.drawn` (0 en el menú; totales sin cambios): 106/667 y 67/750 en 42 y 123. Los tres E2E del
   mapa real conservan `test.slow()` (38,5 / 27,8 / 42,1 s en CI).
+  Navegación por campo de flujo (change 0019, ADR-0017): `FlowField` (dominio, propiedad de `Run`) con BFS de
+  4 vecinos desde la celda del jugador, perezosa y recalculada solo al cambiar de celda; orden de vecinos y
+  empates fijos (parte del determinismo). Línea libre: persecución recta si el segmento entre centros solo cruza
+  celdas caminables (en esquinas exactas, ambas laterales); si no, al centro del vecino con distancia − 1. Con
+  mapa sin bloqueos la persecución es la de siempre. Las apariciones en celda bloqueada se recolocan en la
+  caminable más cercana (1 valor de azar por intento). `waves.maxAlive` 300. Sin separación ni colisión de
+  enemigos con el mapa (aplazadas). Balance recalibrado **solo con la curva de XP** (`baseXp` 9, `xpGrowth` 3;
+  oleadas y `player.speed` intactos): **26/50** victorias y 0 quietos. Los tests con cifras de XP usan la curva
+  de escenario 5/5 (`SCENARIO_PROGRESSION`, `withScenarioCurve`). GDD renumerado: Should 0020–0024.
   Fuente de verdad del comportamiento: `openspec/specs/`.
 
 ## 2. Comandos
