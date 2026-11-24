@@ -21,10 +21,11 @@ de crear el menú o la partida, sin números mágicos en el código de render. C
 
 Animaciones obligatorias: `idle` y `walk` en el jugador y en cada tipo de enemigo; además, `fuse` en cada tipo de
 enemigo cuyo comportamiento tiene un estado de mecha y `throw` en cada tipo cuyo comportamiento tiene un estado de
-carga (ver `enemy-behavior`); `death` sin bucle en el cadáver; `idle` en el proyectil, la gema, la dinamita y el
-fondo; `explode` sin bucle en la explosión. Los datos incluyen además el tope de cadáveres visibles a la vez (entero
-≥ 1) y el color de los avisos de mecha y de dinamita (cada uno con su opacidad en (0, 1)). Los tipos con aspecto MUST
-ser exactamente los `id` de `content/enemies.json`.
+carga (ver `enemy-behavior`); `death` sin bucle en el cadáver; `idle` en el proyectil, la gema, la dinamita, el
+fondo y en cada aspecto de estructura; `explode` sin bucle en la explosión. Los datos incluyen además el tope de
+cadáveres visibles a la vez (entero ≥ 1) y el color de los avisos de mecha y de dinamita (cada uno con su opacidad en
+(0, 1)). Los tipos con aspecto MUST ser exactamente los `id` de `content/enemies.json`. Dos tipos de enemigo pueden
+compartir hoja.
 
 Los datos incluyen también los aspectos del mapa, cada uno con hoja, escala y origen con las reglas anteriores y,
 según el elemento:
@@ -37,28 +38,35 @@ según el elemento:
   enteros ≥ 1 en píxeles de la hoja (la hoja no es regular);
 - **castillo**: tamaño de frame y el índice de su frame.
 
+Y los aspectos de las estructuras: por cada tipo de estructura de su contenido (ver `goblin-structures`), un aspecto
+intacto y uno de ruina, con las reglas de los aspectos de entidades, y los colores de reserva de "Pintado de las
+estructuras". Los tipos de estructura con aspecto MUST ser exactamente los del contenido de estructuras.
+
 Un campo desconocido, un campo obligatorio ausente, un valor fuera de rango, un caso de orilla ausente o repetido, un
-tipo de enemigo sin aspecto o un aspecto de un tipo inexistente MUST hacer fallar el arranque con un error que nombre
-el campo, el caso o el id, igual que el resto del contenido inválido: no se muestra el menú ni empieza ninguna
-partida. Los datos de aspecto MUST NOT cambiar la simulación.
+tipo de enemigo o de estructura sin aspecto o un aspecto de un tipo inexistente MUST hacer fallar el arranque con un
+error que nombre el campo, el caso o el id, igual que el resto del contenido inválido: no se muestra el menú ni
+empieza ninguna partida. Los datos de aspecto MUST NOT cambiar la simulación.
 
 #### Scenario: Datos del repositorio
 - **GIVEN** el contenido por defecto del repositorio
 - **WHEN** se carga el contenido
 - **THEN** los datos de aspecto son válidos, el tope de cadáveres vale 64 y hay aspecto para el jugador, el
   proyectil, la gema, el cadáver, el fondo, la dinamita, la explosión y exactamente los tipos `goblin-torch`,
-  `goblin-tnt` y `goblin-barrel`
-- **AND** `goblin-barrel` tiene `fuse` con los frames `[30, 31, 32]` en bucle y `goblin-tnt` tiene `throw` con los
-  frames `[14, 15, 16, 17, 18, 19, 20]`; la dinamita tiene `idle` de 6 frames en bucle y la explosión `explode` de 9
-  frames sin bucle
+  `goblin-tnt`, `goblin-barrel` y `goblin-tnt-guard`
+- **AND** `goblin-barrel` tiene `fuse` con los frames `[30, 31, 32]` en bucle, y `goblin-tnt` y `goblin-tnt-guard`
+  tienen `throw` con los frames `[14, 15, 16, 17, 18, 19, 20]` y la misma hoja; la dinamita tiene `idle` de 6 frames
+  en bucle y la explosión `explode` de 9 frames sin bucle
 - **AND** hay color de aviso de mecha y de dinamita, cada uno con opacidad > 0 y < 1
 - **AND** hay aspecto de agua, de orilla con los 15 casos, de espuma con `idle` de 8 frames en bucle, de árbol con
   ≥ 2 modelos, de puente con sus 2 recortes y de castillo
+- **AND** hay aspecto intacto y de ruina para exactamente `goblin-house` y `goblin-tower`, y colores de reserva de
+  `goblin-house`, `goblin-tower` y ruina
 
 #### Scenario: Valores fuera de rango
 - **GIVEN** los datos del repositorio con, en un caso cada vez en el aspecto de `goblin-torch`: ancho de frame 0,
   alto de frame 1,5, escala 0, escala −1, origen `x` 1,1, origen `y` −0,1, fps de `walk` 0, frames de `walk` `[]`,
-  `[-1]` o `[1.5]`; en otro caso el tope de cadáveres 0 o 2,5; y en otro la opacidad del aviso de dinamita 0, 1 o 1,2
+  `[-1]` o `[1.5]`; en otro caso el tope de cadáveres 0 o 2,5; en otro la opacidad del aviso de dinamita 0, 1 o 1,2; y
+  en otro la escala de la ruina de `goblin-house` 0
 - **WHEN** se carga el contenido
 - **THEN** la carga falla con un error que nombra ese campo
 
@@ -74,19 +82,19 @@ partida. Los datos de aspecto MUST NOT cambiar la simulación.
 #### Scenario: Rutas de hoja no admitidas
 - **GIVEN** los datos del repositorio con la hoja de `goblin-torch` igual, en un caso cada vez, a `""`,
   `"../secreto.png"`, `"/torch.png"`, `"https://ejemplo.com/torch.png"`, `"data:image/png;base64,AAAA"`,
-  `"torch.gif"` o una ruta `.png` que no figura en la nota de procedencia; y en otro caso la hoja del castillo, y en
-  otro la de la explosión, igual a una ruta `.png` que no figura en la nota
+  `"torch.gif"` o una ruta `.png` que no figura en la nota de procedencia; y en otro caso la hoja del castillo, en
+  otro la de la explosión y en otro la de la torre intacta, igual a una ruta `.png` que no figura en la nota
 - **WHEN** se carga el contenido
-- **THEN** la carga falla con un error que nombra la hoja de `goblin-torch`, la del castillo y la de la explosión
-  respectivamente
+- **THEN** la carga falla con un error que nombra la hoja de `goblin-torch`, la del castillo, la de la explosión y la
+  de `goblin-tower` respectivamente
 
 #### Scenario: Animaciones obligatorias y campos desconocidos
 - **GIVEN** los datos del repositorio con, en un caso cada vez: el jugador sin `walk`, `goblin-tnt` sin `idle`, el
   cadáver sin `death`, `death` del cadáver en bucle, un campo extra `rotation: 90` en el aspecto de la gema,
-  `goblin-barrel` sin `fuse`, `goblin-tnt` sin `throw`, la dinamita sin `idle`, la explosión sin `explode` o con
-  `explode` en bucle
+  `goblin-barrel` sin `fuse`, `goblin-tnt` sin `throw`, `goblin-tnt-guard` sin `throw`, la dinamita sin `idle`, la
+  explosión sin `explode` o con `explode` en bucle, o la ruina de `goblin-tower` sin `idle`
 - **WHEN** se carga el contenido
-- **THEN** la carga falla con un error que nombra ese campo (y el tipo, en los de enemigo)
+- **THEN** la carga falla con un error que nombra ese campo (y el tipo, en los de enemigo y de estructura)
 
 #### Scenario: Animación de comportamiento no exigida
 - **GIVEN** los datos del repositorio sin `fuse` ni `throw` en `goblin-torch` (su comportamiento no tiene mecha ni
@@ -95,10 +103,17 @@ partida. Los datos de aspecto MUST NOT cambiar la simulación.
 - **THEN** la carga tiene éxito
 
 #### Scenario: Tipos de enemigo y aspectos desalineados
-- **GIVEN** los datos del repositorio sin el aspecto de `goblin-barrel`, y en otro caso con un aspecto extra para
-  `goblin-dragon`, con el contenido de enemigos por defecto
+- **GIVEN** los datos del repositorio sin el aspecto de `goblin-barrel`, en otro caso sin el de `goblin-tnt-guard`, y
+  en otro con un aspecto extra para `goblin-dragon`, con el contenido de enemigos por defecto
 - **WHEN** se carga el contenido
-- **THEN** la carga falla con un error que nombra `goblin-barrel`, y `goblin-dragon` respectivamente
+- **THEN** la carga falla con un error que nombra `goblin-barrel`, `goblin-tnt-guard` y `goblin-dragon`
+  respectivamente
+
+#### Scenario: Tipos de estructura y aspectos desalineados
+- **GIVEN** los datos del repositorio sin el aspecto de ruina de `goblin-tower`, y en otro caso con un aspecto extra
+  para `goblin-mine`, con el contenido de estructuras por defecto
+- **WHEN** se carga el contenido
+- **THEN** la carga falla con un error que nombra `goblin-tower` y `goblin-mine` respectivamente
 
 #### Scenario: Datos inválidos en el arranque
 - **GIVEN** unos datos de aspecto sin el aspecto del jugador, y en otro caso sin el aspecto del agua
@@ -109,7 +124,8 @@ partida. Los datos de aspecto MUST NOT cambiar la simulación.
 #### Scenario: Los aspectos no cambian la simulación
 - **GIVEN** dos partidas con la semilla 42, el mismo contenido de juego, la misma secuencia de 1.200 inputs por tick
   y la política de elección fija, una con los datos de aspecto del repositorio y otra con todas las escalas de los
-  aspectos de entidades multiplicadas por 2 y los colores del mapa y de los avisos cambiados
+  aspectos de entidades y de estructuras multiplicadas por 2 y los colores del mapa, de las estructuras y de los
+  avisos cambiados
 - **WHEN** se ejecutan 1.200 ticks
 - **THEN** sus snapshots son iguales campo a campo en cada tick
 
@@ -117,7 +133,8 @@ partida. Los datos de aspecto MUST NOT cambiar la simulación.
 El sistema SHALL pintar, con los datos de aspecto del repositorio, cada elemento con su hoja de Update 010:
 - el jugador, con una hoja de la unidad Arquero (`Archer`);
 - cada tipo de enemigo, con la hoja de su unidad goblin: `goblin-torch` con `Torch`, `goblin-tnt` con `TNT` y
-  `goblin-barrel` con `Barrel`, tres hojas distintas; la mecha y el lanzamiento usan la misma hoja que su tipo;
+  `goblin-barrel` con `Barrel`, tres hojas distintas; `goblin-tnt-guard` con la misma hoja que `goblin-tnt`; la mecha y
+  el lanzamiento usan la misma hoja que su tipo;
 - el cadáver, con `Dead.png`;
 - el proyectil, con `Arrow.png`;
 - la gema, con una hoja del pack;
@@ -125,30 +142,36 @@ El sistema SHALL pintar, con los datos de aspecto del repositorio, cada elemento
 - el fondo, con un suelo de hierba del pack;
 - el agua, con `Water.png`; la espuma, con `Foam.png`; los árboles, con `Tree.png`; los puentes, con
   `Bridge_All.png`; el castillo, con `Castle_Blue.png` (castillo azul, como el arquero); la orilla, con una hoja de
-  terreno del pack.
+  terreno del pack;
+- la casa, con `Goblin_House.png`, y su ruina, con `Goblin_House_Destroyed.png`; la torre, con un único
+  `Wood_Tower_<color>.png`, y su ruina, con `Wood_Tower_Destroyed.png`.
 
 Los avisos no usan hoja. La unidad o el elemento de cada hoja se comprueba con la ruta de origen que registra la nota
 de procedencia (ver `asset-provenance`). Del pack solo se versionan las hojas que usan los datos de aspecto (ningún
-otro color de castillo, ni `Rocks`, ni `Fire.png`, ni hojas de casas o torres). Cambiar el arte de un elemento MUST
-requerir solo cambios de datos y de assets, no de código.
+otro color de castillo ni de torre, ni `Rocks`, ni `Fire.png`, ni `Wood_Tower_InConstruction`). Cambiar el arte de un
+elemento MUST requerir solo cambios de datos y de assets, no de código.
 
 #### Scenario: Hoja de cada elemento
 - **GIVEN** los datos de aspecto del repositorio y la nota de procedencia
 - **WHEN** se busca en la nota la ruta de origen de la hoja de cada aspecto
 - **THEN** la del jugador contiene `Archer`; las de `goblin-torch`, `goblin-tnt` y `goblin-barrel` contienen
-  `Torch`, `TNT` y `Barrel` respectivamente y son tres ficheros distintos; la del cadáver termina en `Dead.png` y la
-  del proyectil en `Arrow.png`
+  `Torch`, `TNT` y `Barrel` respectivamente y son tres ficheros distintos; la de `goblin-tnt-guard` es el mismo
+  fichero que la de `goblin-tnt`; la del cadáver termina en `Dead.png` y la del proyectil en `Arrow.png`
 - **AND** la de la dinamita contiene `TNT` y termina en `Dynamite.png`, y la de la explosión termina en
   `Explosions.png`
 - **AND** las del agua, la espuma, el árbol, el puente y el castillo terminan en `Water.png`, `Foam.png`, `Tree.png`,
   `Bridge_All.png` y `Castle_Blue.png` respectivamente
+- **AND** las de la casa y su ruina terminan en `Goblin_House.png` y `Goblin_House_Destroyed.png`, y las de la torre y
+  su ruina en `Wood_Tower_<color>.png` y `Wood_Tower_Destroyed.png`
 - **AND** todas las rutas de origen pertenecen a Tiny Swords Update 010
 
 #### Scenario: Solo las hojas usadas
 - **GIVEN** la lista de ficheros versionados y los datos de aspecto del repositorio
 - **WHEN** se compara cada asset gráfico de la nota de procedencia con las hojas de los datos de aspecto
 - **THEN** cada asset de la nota es la hoja de ≥ 1 aspecto y ningún fichero versionado contiene `Castle_Red`,
-  `Castle_Yellow`, `Castle_Purple`, `Castle_Black`, `Rocks`, `Fire`, `Goblin_House` ni `Wood_Tower`
+  `Castle_Yellow`, `Castle_Purple`, `Castle_Black`, `Rocks`, `Fire` ni `Wood_Tower_InConstruction`
+- **AND** de `Wood_Tower_Red`, `Wood_Tower_Blue`, `Wood_Tower_Purple` y `Wood_Tower_Yellow` hay exactamente 1 fichero
+  versionado, el de la hoja de la torre
 
 #### Scenario: Partida con arte
 - **GIVEN** la build de producción servida con `?e2e&seed=42`
@@ -259,18 +282,18 @@ El sistema SHALL animar el sprite del jugador y el de cada enemigo vivo según s
 - un enemigo cuyo estado de comportamiento en el snapshot pintado es de clase mecha reproduce `fuse`, y uno de clase
   carga reproduce `throw`, sin importar si se mueve; al entrar en uno de esos estados la animación empieza en su
   primer frame;
-- en el resto de casos (jugador, y enemigos en persecución o en espera), el estado se deduce al comparar el snapshot
-  pintado con el último snapshot pintado de un tick distinto de la misma partida: se mueve si su posición ha cambiado
-  más de 0,001 px y reproduce `walk`; si no, reproduce `idle`;
+- en el resto de casos (jugador, y enemigos en persecución, espera, patrulla, alerta o vuelta), el estado se deduce
+  al comparar el snapshot pintado con el último snapshot pintado de un tick distinto de la misma partida: se mueve si
+  su posición ha cambiado más de 0,001 px y reproduce `walk`; si no, reproduce `idle`;
 - cada animación avanza a sus fps en tiempo de render y, en bucle, vuelve al primer frame al acabar; sin bucle, se
   queda en su último frame.
 
 Un frame que repite el tick del anterior MUST conservar el estado y la orientación de cada sprite. Un enemigo en su
-primer frame pintado (recién aparecido o en un hueco reutilizado) y el jugador en el primer frame de una partida
-nueva MUST NOT heredar estado ni orientación de otro elemento o de una partida anterior: se pintan en `idle` y sin
-voltear (o en `fuse` o `throw` si su estado de comportamiento lo pide). Con el mundo detenido ninguna animación
-avanza. Con la partida terminada, el jugador se pinta en `idle` (el jugador no tiene animación de muerte). La
-animación no cambia la simulación.
+primer frame pintado (recién aparecido, recién nacido o en un hueco reutilizado) y el jugador en el primer frame de
+una partida nueva MUST NOT heredar estado ni orientación de otro elemento o de una partida anterior: se pintan en
+`idle` y sin voltear (o en `fuse` o `throw` si su estado de comportamiento lo pide). Con el mundo detenido ninguna
+animación avanza. Con la partida terminada, el jugador se pinta en `idle` (el jugador no tiene animación de muerte).
+La animación no cambia la simulación.
 
 #### Scenario: Quieto y andando
 - **GIVEN** un aspecto del jugador con `idle` (frames `[0, 1]`, 2 fps, bucle) y `walk` (frames `[6, 7, 8, 9]`,
@@ -303,6 +326,13 @@ animación no cambia la simulación.
 - **WHEN** se pintan los snapshots de n a n + A
 - **THEN** el barril reproduce `fuse` desde su primer frame en el frame del tick n y en todos los siguientes
 - **AND** el TNT reproduce `throw` desde su primer frame en el frame del tick n y `idle` en el del tick n + A
+
+#### Scenario: Guardia que patrulla y lanza
+- **GIVEN** un `goblin-tnt-guard` que se mueve en patrulla en los ticks n − 10 a n − 1, en alerta en los ticks n a
+  n + 4 y entra en carga en el tick n + 5
+- **WHEN** se pintan los snapshots de n − 10 a n + 5
+- **THEN** reproduce `walk` en los frames de los ticks n − 9 a n + 4 y `throw` desde su primer frame en el del tick
+  n + 5
 
 #### Scenario: Hueco reutilizado
 - **GIVEN** un `goblin-torch` de id 7 pintado en (100, 100) andando hacia la izquierda, que muere, y un `goblin-torch` de
@@ -503,23 +533,26 @@ El sistema SHALL exponer, solo con `?e2e` y como parte de la sonda `window.__spr
 - el recuento de sprites visibles por tipo: fondo, jugador, enemigo vivo, cadáver, proyectil, pulso, gema, dinamita,
   aviso y explosión; y por tipo y por aspecto de enemigo, de dinamita y de explosión, cuántos usan aspecto de reserva
   (los avisos nunca);
-- por clase de estado de comportamiento (persecución, mecha, carga y espera), cuántos sprites de enemigo vivo hay;
+- por clase de estado de comportamiento (persecución, mecha, carga, espera, patrulla, alerta y vuelta), cuántos
+  sprites de enemigo vivo hay;
 - el número de celdas del mapa pintadas por tipo (`trunk`, `water`, `bridge`, `castle`), con arte o con reserva;
 - por elemento del mapa, cuántos se pintan y cuántos de ellos con reserva: agua (celdas `water`), orilla (celdas de
   orilla con su pieza), espuma (celdas de orilla con espuma), árbol (celdas `trunk`), copa (árboles con copa), puente
   (celdas `bridge`) y castillo (0 o 1);
-- el número de objetos de escena usados para pintar el mapa;
+- por tipo de estructura, cuántas se pintan intactas, cuántas como ruina y cuántas de ellas con reserva;
+- el número de objetos de escena usados para pintar el mapa, estructuras incluidas;
 - el número de esos objetos **dibujados** en el último frame (`drawn`, ver "Recorte del arte del mapa por cámara"),
   con 0 ≤ `drawn` ≤ objetos del mapa.
 
-Los recuentos de celdas pintadas, de elementos del mapa (pintados y con reserva) y de objetos del mapa son del plan
-entero de la partida: MUST NOT depender de la cámara, de la ventana ni del recorte, y conservan el significado y el
-valor que tenían antes de este change para la misma semilla y el mismo contenido. Solo `drawn` depende del recorte.
-Los peligros no forman parte del plan del mapa ni de sus objetos.
+Los recuentos de celdas pintadas, de elementos del mapa y de estructuras (pintados y con reserva) y de objetos del
+mapa son del plan entero de la partida: MUST NOT depender de la cámara, de la ventana ni del recorte. Los de celdas y
+de elementos del mapa conservan el significado y el valor que tenían antes de este change para la misma semilla y el
+mismo contenido; el de objetos del mapa es el de antes más los objetos de las estructuras. Solo `drawn` depende del
+recorte. Los peligros no forman parte del plan del mapa ni de sus objetos.
 
 Un sprite oculto por el parpadeo cuenta como no visible. En modo menú los recuentos de jugador, enemigo, cadáver,
-proyectil, pulso, gema, dinamita, aviso, explosión, celdas del mapa, elementos del mapa, objetos del mapa y `drawn`
-valen 0. Sin `?e2e` MUST NOT existir. Leer la sonda MUST NOT cambiar la simulación ni lo que se pinta.
+proyectil, pulso, gema, dinamita, aviso, explosión, celdas del mapa, elementos del mapa, estructuras, objetos del mapa
+y `drawn` valen 0. Sin `?e2e` MUST NOT existir. Leer la sonda MUST NOT cambiar la simulación ni lo que se pinta.
 
 #### Scenario: Recuento coherente con el snapshot
 - **GIVEN** `?e2e&seed=42` y una partida en curso
@@ -542,12 +575,24 @@ valen 0. Sin `?e2e` MUST NOT existir. Leer la sonda MUST NOT cambiar la simulaci
 - **AND** en cada lectura los recuentos de aviso, dinamita y explosión de la sonda son iguales a los del snapshot y no
   hay errores no capturados
 
-#### Scenario: Totales del mapa sin cambios
+#### Scenario: Estructuras y guardias en el navegador [E2E]
+- **GIVEN** la build de producción servida con `?e2e&manual&seed=42` (mapa real), sin input de movimiento y con la
+  política de elección fija
+- **WHEN** arranca la partida, se lee la sonda, y después se avanza con `step(n)` hasta superar en 1 tick el
+  intervalo de nacimiento de `goblin-house` y se lee la sonda de nuevo
+- **THEN** en ambas lecturas las estructuras pintadas intactas y como ruina, por tipo, son iguales a las no
+  destruidas y destruidas del snapshot, y ninguna usa reserva
+- **AND** en la segunda lectura hay ≥ 1 sprite de enemigo en patrulla, sin aspecto de reserva, y no hay errores no
+  capturados
+
+#### Scenario: Totales del mapa con estructuras
 - **GIVEN** el contenido por defecto y las semillas 42 y 123
 - **WHEN** se calcula el plan del mapa y los recuentos de la sonda, con una ventana de 960 × 540, de 1.280 × 720 y
   de 3.840 × 2.160, y con el jugador en el centro del mundo y en (16, 16)
-- **THEN** en todos los casos las celdas pintadas por tipo, los elementos pintados y con reserva y los objetos del
-  mapa son iguales entre sí y a los de antes de este change (667 y 750 objetos del mapa respectivamente)
+- **THEN** en todos los casos las celdas pintadas por tipo, los elementos del mapa pintados y con reserva, las
+  estructuras pintadas y los objetos del mapa son iguales entre sí
+- **AND** las celdas pintadas por tipo y los elementos del mapa son iguales a los de antes de este change, y los
+  objetos del mapa son los de antes (667 y 750 respectivamente) más los de las estructuras de cada semilla, ≤ 1.000
 
 #### Scenario: Objetos dibujados con la cámara [E2E]
 - **GIVEN** la build de producción con `?e2e&manual&seed=7` (mapa real), una ventana de 1.280 × 720 y la flecha
@@ -561,14 +606,14 @@ valen 0. Sin `?e2e` MUST NOT existir. Leer la sonda MUST NOT cambiar la simulaci
 #### Scenario: `drawn` igual al recorte
 - **GIVEN** una partida con el mapa real de la semilla 42 y una ventana de 1.280 × 720
 - **WHEN** se pinta un frame con el jugador en (1.920, 1.080) y otro con el jugador en (16, 16)
-- **THEN** en cada frame `drawn` es igual al número de objetos del plan que da "Recorte del arte del mapa por cámara"
-  con el rectángulo visible de ese frame
+- **THEN** en cada frame `drawn` es igual al número de objetos del plan, estructuras incluidas, que da "Recorte del
+  arte del mapa por cámara" con el rectángulo visible de ese frame
 
 #### Scenario: Sonda en el menú
 - **GIVEN** `?e2e&seed=42` y el menú tras `Volver al menú`
 - **WHEN** se pinta 1 frame y se lee la sonda de render
 - **THEN** los recuentos de jugador, enemigo, cadáver, proyectil, pulso, gema, dinamita, aviso, explosión, celdas del
-  mapa, elementos del mapa, objetos del mapa y `drawn` valen 0
+  mapa, elementos del mapa, estructuras, objetos del mapa y `drawn` valen 0
 
 #### Scenario: Sin sonda fuera de E2E
 - **GIVEN** la URL `?seed=42`
@@ -808,15 +853,17 @@ ni de las partidas anteriores de la carga: la misma semilla y el mismo mapa dan 
 
 ### Requirement: Capas del mapa y de las entidades
 El sistema SHALL pintar, de abajo arriba: (1) el fondo; (2) el agua; (3) las orillas y la espuma; (4) los puentes;
-(5) el tronco de cada árbol y la fachada del castillo; (6) cadáveres, gemas, pulsos, jugador, enemigos y proyectiles,
-con su orden relativo de antes de este change; (7) las copas de los árboles y el tejado del castillo; (8) la **capa de
-peligros**: avisos, dinamitas y explosiones, en ese orden; (9) el HUD y los overlays, fijos en pantalla (ver
-`world-camera`). La **copa** es la parte del dibujo del árbol situada por encima del borde superior de su celda y el
-**tronco**, el resto. El **tejado** es la parte del dibujo del castillo situada por encima del borde superior de la
-fila inferior de la huella y la **fachada**, el resto. Las partes se separan con un error ≤ 1 px. Así, una entidad al
-sur de un árbol o ante la puerta se ve delante, y una que pasa detrás de una copa o sobre el tejado queda tapada; un
-aviso, una dinamita o una explosión se ven siempre sobre el mapa y las entidades y bajo el HUD. El orden de capas MUST
-mantenerse tras cualquier redimensionado de la ventana.
+(5) el tronco de cada árbol, la fachada del castillo y la parte baja de cada estructura (o su rectángulo de reserva);
+(6) cadáveres, gemas, pulsos, jugador, enemigos y proyectiles, con su orden relativo de antes de este change; (7) las
+copas de los árboles, el tejado del castillo y la parte alta de cada estructura; (8) la **capa de peligros**: avisos,
+dinamitas y explosiones, en ese orden; (9) el HUD y los overlays, fijos en pantalla (ver `world-camera`). La **copa**
+es la parte del dibujo del árbol situada por encima del borde superior de su celda y el **tronco**, el resto. El
+**tejado** es la parte del dibujo del castillo situada por encima del borde superior de la fila inferior de la huella
+y la **fachada**, el resto. Las partes baja y alta de una estructura son las de "Pintado de las estructuras". Las
+partes se separan con un error ≤ 1 px. Así, una entidad al sur de un árbol, ante la puerta del castillo o ante una
+casa se ve delante, y una que pasa detrás de una copa, sobre el tejado o detrás de una casa queda tapada; un aviso,
+una dinamita o una explosión se ven siempre sobre el mapa, las estructuras y las entidades y bajo el HUD. El orden de
+capas MUST mantenerse tras cualquier redimensionado de la ventana.
 
 #### Scenario: Tronco y copa
 - **GIVEN** un mapa de hierba con un tronco en (10, 4) (y en [240, 300]) y un snapshot con un enemigo en (630, 230)
@@ -831,6 +878,14 @@ mantenerse tras cualquier redimensionado de la ventana.
 - **THEN** la fachada (parte del dibujo con y ≥ 1.080) está por debajo del sprite del jugador y el tejado
   (y < 1.080) por encima
 - **AND** el HUD y el overlay de pausa, si está abierto, están por encima del tejado
+
+#### Scenario: Guardia ante la casa
+- **GIVEN** la casa de prueba (fila inferior en y [720, 780]), un guardia en su puerta (1.290, 810) y el jugador en
+  (1.260, 700), detrás de la casa
+- **WHEN** se pinta el snapshot
+- **THEN** la parte baja de la casa (y ≥ 720) está por debajo de los sprites del guardia y del jugador, y la parte
+  alta (y < 720) por encima de ambos y por debajo del HUD
+- **AND** con la casa destruida se cumple lo mismo con las partes de su ruina
 
 #### Scenario: Proyectiles y gemas bajo las copas
 - **GIVEN** un mapa de hierba con un tronco en (10, 4) y un snapshot con 1 proyectil y 1 gema en (630, 220)
@@ -1093,6 +1148,82 @@ explosión no avanzan. Pintar los peligros MUST NOT cambiar la simulación.
 - **THEN** en los 300 se ven la dinamita, su aviso y la explosión, cada sprite con el mismo frame de hoja que en el
   primer frame de la pausa
 
+### Requirement: Pintado de las estructuras
+El sistema SHALL pintar, mientras existe una partida, cada estructura de su snapshot (ver `goblin-structures`) fija en
+el mundo, con su origen en el punto medio del borde inferior de su huella (error ≤ 1 px):
+- una estructura no destruida, con el aspecto intacto de su tipo (`Goblin_House` en la casa, `Wood_Tower_<color>` en
+  la torre);
+- una estructura destruida, con el aspecto de ruina de su tipo (`Goblin_House_Destroyed`, `Wood_Tower_Destroyed`),
+  desde el primer frame que pinta un snapshot en el que figura destruida y hasta el final de la partida, sin dejar
+  visible su aspecto intacto.
+
+La **parte baja** del dibujo es la situada por debajo del borde superior de la fila inferior de la huella y la **parte
+alta**, el resto; se separan con un error ≤ 1 px y van en las capas de "Capas del mapa y de las entidades".
+
+**Reserva**: si la hoja de un aspecto de estructura falla al cargar o no contiene su frame, las estructuras con ese
+aspecto, y solo ellas, se pintan como un rectángulo relleno que cubre exactamente su huella (error ≤ 1 px), sin parte
+alta, con el color de su tipo si no está destruida o con el color de ruina si lo está, sin errores no capturados. Los
+datos de aspecto tienen un color `#RRGGBB` para `goblin-house`, otro para `goblin-tower` y otro para la ruina, distintos
+dos a dos y distintos de los colores del mapa (`trunk`, `water`, `bridge`, `castle`); un color ausente, con otro
+formato o repetido MUST hacer fallar el arranque con un error que nombre el campo.
+
+Los objetos de escena de las estructuras cuentan como objetos del mapa en la sonda (ver "Sonda de render para E2E") y
+se recortan con la regla de "Recorte del arte del mapa por cámara". Con el contenido por defecto y las semillas 42 y
+123, el total de objetos del mapa, estructuras incluidas, MUST ser ≤ 1.000 (comprobado por un test sin navegador del
+plan de pintado). Con el mapa vacío no se pinta ninguna estructura; en modo menú no se ve ninguna; al empezar una
+partida nueva no queda visible ninguna estructura de la anterior. Pintar las estructuras MUST NOT cambiar la
+simulación.
+
+#### Scenario: Casa en su sitio
+- **GIVEN** la casa de prueba sin destruir y los datos de aspecto del repositorio con todas las hojas cargadas
+- **WHEN** se pinta el snapshot
+- **THEN** el dibujo de la casa tiene su origen en (1.260, 780) (error ≤ 1 px) y usa la hoja `Goblin_House`
+- **AND** su parte baja es la parte del dibujo con y ≥ 720 y su parte alta la de y < 720
+
+#### Scenario: Ruina tras la destrucción
+- **GIVEN** la casa de prueba pintada sin destruir en el frame del tick n − 1 y destruida en el snapshot del tick n
+- **WHEN** se pintan los snapshots de n a n + 60
+- **THEN** desde el frame del tick n la casa se pinta con la hoja `Goblin_House_Destroyed`, con el mismo origen, y en
+  ninguno de esos frames se ve la hoja `Goblin_House`
+
+#### Scenario: Reserva de las estructuras
+- **GIVEN** la casa de prueba sin destruir, una torre explícita destruida con huella en columnas 40–41 y filas 5–6, y,
+  en un caso cada vez, sin cargar la hoja `Goblin_House` o la hoja `Wood_Tower_Destroyed`
+- **WHEN** se pinta el snapshot
+- **THEN** respectivamente: la casa es 1 rectángulo del color de `goblin-house` sobre (1.200, 600)–(1.320, 780) y la
+  torre se pinta con su hoja de ruina; o la torre es 1 rectángulo del color de ruina sobre (2.400, 300)–(2.520, 420) y
+  la casa se pinta con su hoja intacta
+- **AND** en cada caso no hay parte alta en la estructura de reserva y no hay errores no capturados
+
+#### Scenario: Colores de estructuras inválidos
+- **GIVEN** los datos de aspecto del repositorio con, en un caso cada vez: el color de `goblin-tower` igual a
+  `"#12345"`; sin el color de ruina; el color de `goblin-house` igual al de ruina; o el color de `goblin-house` igual
+  al de `trunk`
+- **WHEN** se carga el contenido
+- **THEN** la carga falla con un error que nombra `goblin-tower`, la ruina, `goblin-house` y `goblin-house`
+  respectivamente
+- **AND** no se muestra el menú ni empieza ninguna partida
+
+#### Scenario: Presupuesto de objetos con estructuras
+- **GIVEN** el contenido por defecto y las semillas 42 y 123
+- **WHEN** se calcula el plan de pintado del mapa sin navegador
+- **THEN** en ambas el número de objetos del mapa, estructuras incluidas, es ≤ 1.000
+- **AND** cada estructura colocada por el núcleo tiene en el plan sus objetos, con el origen en el punto medio del
+  borde inferior de su huella
+
+#### Scenario: Sin estructuras en el mapa vacío ni tras R
+- **GIVEN** una partida con el mapa real de la semilla 42 con ≥ 1 estructura pintada
+- **WHEN** se pulsa R y se pinta el primer frame de una partida con el mapa vacío, y en otro caso con la semilla 43
+- **THEN** con el mapa vacío no se pinta ninguna estructura y con la semilla 43 se pintan exactamente las del
+  snapshot de la partida nueva, ninguna de la anterior
+
+#### Scenario: Pintar no cambia la simulación
+- **GIVEN** dos partidas con la semilla 42, el mismo contenido de juego, la misma secuencia de 1.200 inputs por tick y
+  la política de elección fija, una con los datos de aspecto del repositorio y otra con las hojas de las estructuras
+  sin cargar
+- **WHEN** se ejecutan 1.200 ticks
+- **THEN** sus snapshots son iguales campo a campo en cada tick
+
 <!-- historial: 0012-sprite-rendering (2026-11-22) -->
 <!-- historial: 0013-world-camera (2026-11-23) -->
 <!-- historial: 0015-procedural-map (2026-11-23) -->
@@ -1100,3 +1231,4 @@ explosión no avanzan. Pintar los peligros MUST NOT cambiar la simulación.
 <!-- historial: 0017-fullscreen-view (2026-11-24) -->
 <!-- historial: 0018-map-culling (2026-11-24) -->
 <!-- historial: 0020-enemy-behaviors (2026-11-24) -->
+<!-- historial: 0021-goblin-camps (2026-11-24) -->

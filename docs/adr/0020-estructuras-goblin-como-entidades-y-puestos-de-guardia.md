@@ -1,6 +1,6 @@
 # ADR-0020 · Estructuras goblin como entidades del núcleo, puestos de guardia y flujo de azar propio
 
-- **Estado**: propuesta (change 0021-goblin-camps, design)
+- **Estado**: aceptada (change 0021-goblin-camps, verify C0 W0 S5, PR #51)
 - **Fecha**: 2026-11-24
 
 ## Contexto

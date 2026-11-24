@@ -153,7 +153,10 @@ pedidos mientras se elige mejora no cuentan (ver `run-state`).
 El sistema SHALL, para un arma con criterio `nearest-in-range`, elegir como objetivo el enemigo vivo cuya distancia
 al jugador sea mínima entre los que están a distancia ≤ `range` efectivo (ver `upgrades`), usando las posiciones del
 paso de armas del tick. Si hay varios a la misma distancia mínima, MUST elegirse el primero en el orden de la lista
-de enemigos (orden de aparición). Sin enemigos vivos a ≤ `range` efectivo no hay objetivo. La selección MUST NOT
+de enemigos (orden de aparición). Solo si no hay ningún enemigo vivo a ≤ `range` efectivo, el objetivo es la
+estructura **no destruida** (ver `goblin-structures`) cuyo centro está a distancia mínima del jugador entre las que
+están a ≤ `range` efectivo; a igual distancia, la primera en el orden de la lista de estructuras. Una ruina nunca es
+objetivo. Sin enemigos vivos ni estructuras no destruidas a ≤ `range` efectivo no hay objetivo. La selección MUST NOT
 consumir azar.
 
 #### Scenario: Elige el más cercano
@@ -183,21 +186,54 @@ consumir azar.
 - **THEN** el objetivo es ese enemigo
 - **AND** con un enemigo a 461 px no hay objetivo
 
+#### Scenario: Estructura sin enemigos en alcance
+- **GIVEN** la casa de prueba, un jugador en (1.260, 1.000) (distancia 310) y ningún enemigo vivo
+- **WHEN** el Linter cargado actúa en el tick T
+- **THEN** el objetivo es la casa y se crea 1 proyectil con dirección (0, −1)
+
+#### Scenario: El enemigo gana aunque esté más lejos
+- **GIVEN** la casa de prueba, un jugador en (1.260, 1.000) y un único enemigo vivo en (1.260, 1.390) (distancia 390,
+  más que los 310 de la casa)
+- **WHEN** el Linter cargado actúa
+- **THEN** el objetivo es el enemigo y el proyectil tiene dirección (0, 1)
+
+#### Scenario: Límite del alcance con una estructura
+- **GIVEN** la casa de prueba, ningún enemigo vivo y el jugador en (1.260, 1.090) (distancia 400), y en otro caso en
+  (1.260, 1.091) (distancia 401)
+- **WHEN** el Linter cargado actúa
+- **THEN** en el primer caso el objetivo es la casa; en el segundo no hay objetivo y el Linter sigue cargado
+
+#### Scenario: Empate entre estructuras
+- **GIVEN** ningún enemigo vivo, un jugador en (1.000, 1.000) y dos estructuras no destruidas s1 (antes en la lista)
+  con centro en (1.000, 700) y s2 con centro en (1.000, 1.300)
+- **WHEN** el Linter cargado actúa
+- **THEN** el objetivo es s1
+
+#### Scenario: Una ruina no es objetivo
+- **GIVEN** la casa de prueba destruida, un jugador en (1.260, 1.000) y ningún enemigo vivo durante 120 ticks
+- **WHEN** se ejecutan 120 ticks
+- **THEN** el Linter no crea ningún proyectil y sigue cargado
+
 ### Requirement: Proyectiles
 El sistema SHALL, cuando un arma con ataque `projectile` dispara en el tick T, crear un proyectil en la posición
 del jugador en ese paso, con el `radius` del arma, el `damage` efectivo del arma en el tick T y una dirección
 unitaria fija hacia la posición que tenía el objetivo en ese momento (si la distancia es 0, la dirección es (1, 0)).
-El proyectil conserva ese daño aunque después se elija una mejora de daño. El proyectil no persigue al objetivo. En
-el tick de creación no se mueve ni colisiona. En cada tick T + k (k ≥ 1):
+El proyectil conserva ese daño aunque después se elija una mejora de daño. El proyectil no persigue al objetivo. El
+proyectil recuerda si su objetivo al dispararse era un enemigo o una estructura. En el tick de creación no se mueve ni
+colisiona. En cada tick T + k (k ≥ 1):
 1. avanza `speed / 60` en su dirección;
 2. si su círculo solapa (distancia < suma de radios) el de algún enemigo vivo, daña al primero de ellos en el orden
    de la lista de enemigos con el daño del proyectil y desaparece;
-3. si no ha impactado y k = `lifetimeTicks`, desaparece.
+3. si no ha impactado en un enemigo y su objetivo era una estructura, y su círculo solapa el círculo de impacto de
+   alguna estructura no destruida, daña a la primera de ellas en el orden de la lista de estructuras con el daño del
+   proyectil y desaparece. Un proyectil cuyo objetivo era un enemigo MUST NOT colisionar con estructuras: las
+   atraviesa;
+4. si no ha impactado y k = `lifetimeTicks`, desaparece.
 
 Los proyectiles se procesan en orden de creación; un enemigo cuya vida llega a 0 por un proyectil deja de ser
-alcanzable por los siguientes en ese mismo tick. Los proyectiles no están limitados por la arena. Cada proyectil
-tiene un identificador único en la partida que no se reutiliza. Los ticks pedidos mientras se elige mejora no
-cuentan para k (ver `run-state`).
+alcanzable por los siguientes en ese mismo tick, y una estructura cuya vida llega a 0 por un proyectil también. Los
+proyectiles no están limitados por la arena. Cada proyectil tiene un identificador único en la partida que no se
+reutiliza. Los ticks pedidos mientras se elige mejora no cuentan para k (ver `run-state`).
 
 #### Scenario: Impacto en vuelo
 - **GIVEN** un proyectil del Linter creado en el tick T en (480, 270) hacia un `goblin-torch` de radio 10 y vida 10 que
@@ -236,6 +272,26 @@ cuentan para k (ver `run-state`).
 - **THEN** el `goblin-torch` queda con vida 4 (daño 6 de su creación)
 - **AND** el siguiente proyectil del Linter que lo impacta le resta 9
 
+#### Scenario: Impacto en una casa
+- **GIVEN** la casa de prueba, un jugador quieto en (1.260, 1.000), ningún enemigo vivo y un proyectil del Linter
+  creado en el tick T hacia la casa
+- **WHEN** se ejecutan los ticks T + 1 a T + 34
+- **THEN** en el snapshot de T + 33 el proyectil está en (1.260, 736) y la casa tiene vida 30
+- **AND** en el snapshot de T + 34 el proyectil ya no está y la casa tiene vida 24
+
+#### Scenario: Un proyectil dirigido a un enemigo atraviesa la casa
+- **GIVEN** la casa de prueba, un jugador quieto en (1.260, 1.000) y un único enemigo vivo de radio 10 y vida 10 que
+  permanece en (1.260, 640) (distancia 360), objetivo de un proyectil del Linter creado en el tick T
+- **WHEN** se ejecutan los ticks T + 1 a T + 44
+- **THEN** la casa conserva vida 30 en todos ellos y el enemigo recibe el impacto en T + 44 (vida 4)
+
+#### Scenario: Un proyectil dirigido a la casa da antes a un enemigo
+- **GIVEN** la casa de prueba, un jugador quieto en (1.260, 1.000), un proyectil del Linter creado en el tick T hacia
+  la casa sin ningún enemigo en alcance, y un enemigo de radio 10 y vida 10 que el escenario coloca en (1.260, 800) en
+  el tick T + 1 y que permanece allí
+- **WHEN** se ejecutan los ticks T + 1 a T + 34
+- **THEN** el enemigo recibe el impacto en T + 24 (vida 4), el proyectil desaparece y la casa conserva vida 30
+
 ### Requirement: Tope de proyectiles
 El sistema SHALL impedir que haya más de `maxProjectiles` proyectiles vivos. Un arma de proyectiles cargada, con
 objetivo y con el tope lleno MUST NOT disparar y MUST conservar la carga. Los proyectiles que desaparecen en un tick
@@ -251,9 +307,11 @@ liberan su plaza para los disparos de ese mismo tick.
 ### Requirement: Pulso de área
 El sistema SHALL, para un arma con criterio `any-in-radius`, considerar que hay objetivo cuando al menos un enemigo
 vivo tiene su círculo solapando (distancia < `radius` efectivo + radio del enemigo) el círculo de radio `radius`
-efectivo centrado en el jugador (ver `upgrades`). Cuando un arma con ataque `pulse` dispara, MUST restar el `damage`
-efectivo del arma, en ese mismo paso, a todos los enemigos vivos que cumplen esa condición, y a ningún otro. El pulso
-no crea entidades que dañen después.
+efectivo centrado en el jugador (ver `upgrades`), o, aunque no haya ninguno, cuando al menos una estructura no
+destruida tiene su círculo de impacto solapándolo (distancia < `radius` efectivo + radio de impacto). Cuando un arma
+con ataque `pulse` dispara, MUST restar el `damage` efectivo del arma, en ese mismo paso, a todos los enemigos vivos y
+a todas las estructuras no destruidas que cumplen esa condición, y a ningún otro. El pulso no crea entidades que dañen
+después.
 
 #### Scenario: Tres dentro y uno fuera
 - **GIVEN** un jugador en (480, 270), Tests cargado y cuatro `goblin-torch` de radio 10 y vida 10 a distancias 50, 80,
@@ -267,7 +325,8 @@ no crea entidades que dañen después.
 - **THEN** no hay pulso y el `goblin-torch` conserva su vida
 
 #### Scenario: Sin enemigos en el radio, sin pulso
-- **GIVEN** Tests cargado y ningún enemigo vivo a distancia < 100 (radio 90 + radio 10 del `goblin-torch`)
+- **GIVEN** Tests cargado, ningún enemigo vivo a distancia < 100 (radio 90 + radio 10 del `goblin-torch`) y ninguna
+  estructura
 - **WHEN** se ejecutan 300 ticks en esas condiciones
 - **THEN** no se dispara ningún pulso y Tests sigue cargado
 
@@ -276,6 +335,23 @@ no crea entidades que dañen después.
   dos `goblin-torch` de radio 10 y vida 10 a distancias 114 y 115
 - **WHEN** Tests actúa
 - **THEN** el primero queda con vida 4 y el segundo con vida 10
+
+#### Scenario: Pulso sobre una casa
+- **GIVEN** la casa de prueba, Tests cargado, ningún enemigo vivo y el jugador en (1.260, 819) (distancia 129 < 90 +
+  40), y en otro caso en (1.260, 820) (distancia 130)
+- **WHEN** Tests actúa
+- **THEN** en el primer caso dispara y la casa queda con vida 26; en el segundo no hay pulso y Tests sigue cargado
+
+#### Scenario: Pulso sobre un enemigo y una casa
+- **GIVEN** la casa de prueba, Tests cargado, el jugador en (1.260, 800) y un `goblin-torch` de radio 10 y vida 10 a
+  50 px del jugador
+- **WHEN** Tests dispara
+- **THEN** el `goblin-torch` queda con vida 6 y la casa con vida 26
+
+#### Scenario: Pulso sobre una ruina
+- **GIVEN** la casa de prueba destruida, Tests cargado, ningún enemigo vivo y el jugador en (1.260, 690)
+- **WHEN** se ejecutan 300 ticks
+- **THEN** no se dispara ningún pulso y la casa sigue con vida 0
 
 ### Requirement: Daño acumulado y bajas por armas
 El sistema SHALL restar a la vida de un enemigo, en cada impacto de proyectil, el daño del proyectil (ver
@@ -386,6 +462,7 @@ de bajas se muestra en el HUD (ver `hud`).
 - **WHEN** se pinta un snapshot en el que 1 de ellos ha desaparecido y se ha creado otro
 - **THEN** hay exactamente 3 sprites de flecha visibles, cada uno en la posición de un proyectil distinto del
   snapshot (error ≤ 0,001)
+
 ### Requirement: Armas observables en el juego
 El sistema SHALL hacer que, con el contenido por defecto, las armas maten enemigos en una partida real sin que el
 jugador pulse nada más que las elecciones de mejora.
@@ -411,3 +488,4 @@ jugador pulse nada más que las elecciones de mejora.
 <!-- historial: 0012-sprite-rendering (2026-11-22) -->
 <!-- historial: 0013-world-camera (2026-11-23) -->
 <!-- historial: 0017-fullscreen-view (2026-11-24) -->
+<!-- historial: 0021-goblin-camps (2026-11-24) -->

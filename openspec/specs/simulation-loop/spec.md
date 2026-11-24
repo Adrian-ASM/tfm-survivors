@@ -53,26 +53,30 @@ aunque la pestaña haya estado congelada.
 ### Requirement: Determinismo
 El sistema SHALL producir exactamente el mismo `RunSnapshot`, enemigos (estado de comportamiento incluido), vida,
 invulnerabilidad, estado de la partida, resultado, bajas, proyectiles, pulsos, dinamitas, avisos, explosiones,
-indicación de daño, gemas, XP, nivel, ofertas y mejoras adquiridas incluidos, y el mismo mapa, a partir del mismo
-estado inicial, la misma semilla, la misma secuencia de inputs por tick y la misma secuencia de elecciones de mejora
-(índice elegido en cada oferta). En particular, el resultado de la partida, el tick en que termina, las bajas y la
-posición de cada enemigo en cada tick MUST ser los mismos. El núcleo MUST NOT depender de reloj del sistema,
-aleatoriedad global ni APIs del navegador: toda la aleatoriedad MUST venir de instancias del puerto `RandomGenerator`
-inicializadas a partir de la semilla de la partida: una para generar el mapa y otra para el resto de la partida (ver
-"Azar del mapa independiente del de la partida" en `procedural-map`). Las armas (selección de objetivo, disparo,
-proyectiles y pulsos), las bajas y su contador, las gemas (suelta, recolocación, imán y recogida), la colisión del
-jugador con el mapa, la persecución de los enemigos (línea libre, campo de distancias y navegación), los estados de
-comportamiento y sus transiciones, los lanzamientos, las dinamitas, los avisos y las explosiones, la recolocación de
-las apariciones, la XP y la comprobación de victoria y derrota MUST NOT consumir azar; la apertura de ofertas de
-mejora sí lo consume, y cada intento de posición de aparición consume exactamente 1 valor (ver `enemy-spawning`). Los
-comportamientos y los peligros MUST NOT cambiar el mapa generado por ninguna semilla.
+estructuras (vida y destrucción incluidas), indicación de daño, gemas, XP, nivel, ofertas y mejoras adquiridas
+incluidos, y el mismo mapa, a partir del mismo estado inicial, la misma semilla, la misma secuencia de inputs por
+tick y la misma secuencia de elecciones de mejora (índice elegido en cada oferta). En particular, el resultado de la
+partida, el tick en que termina, las bajas y la posición de cada enemigo en cada tick MUST ser los mismos. El núcleo
+MUST NOT depender de reloj del sistema, aleatoriedad global ni APIs del navegador: toda la aleatoriedad MUST venir de
+instancias del puerto `RandomGenerator` inicializadas a partir de la semilla de la partida: una para generar el mapa,
+otra para colocar las estructuras (ver "Colocación determinista con azar propio" en `goblin-structures`) y otra para
+el resto de la partida (ver "Azar del mapa independiente del de la partida" en `procedural-map`). Las armas (selección
+de objetivo entre enemigos y estructuras, disparo, proyectiles y pulsos), las bajas y su contador, la destrucción de
+estructuras, las gemas (suelta, recolocación, imán y recogida), la colisión del jugador con el mapa, la persecución de
+los enemigos (línea libre, campo de distancias y navegación), la navegación hacia un punto fijo, los estados de
+comportamiento y sus transiciones (patrulla, alerta y vuelta incluidas), el nacimiento de guardias, los lanzamientos,
+las dinamitas, los avisos y las explosiones, la recolocación de las apariciones y de los puntos de patrulla, la XP y
+la comprobación de victoria y derrota MUST NOT consumir azar; la apertura de ofertas de mejora sí lo consume, y cada
+intento de posición de aparición consume exactamente 1 valor (ver `enemy-spawning`). Los comportamientos, los peligros
+y las estructuras MUST NOT cambiar el mapa generado por ninguna semilla.
 
 #### Scenario: Dos partidas idénticas
 - **GIVEN** dos partidas creadas con el mismo contenido y la semilla 42
 - **WHEN** ambas reciben la misma secuencia de 600 inputs (10 s) generada por una seed fija, con la política de
   elección fija
 - **THEN** sus snapshots son iguales campo a campo en cada tick, enemigos, vida, invulnerabilidad, estado,
-  resultado, bajas, proyectiles, pulsos, gemas, XP, nivel y ofertas incluidos (comparación estricta, sin tolerancia)
+  resultado, bajas, proyectiles, pulsos, estructuras, gemas, XP, nivel y ofertas incluidos (comparación estricta, sin
+  tolerancia)
 - **AND** sus mapas son iguales celda a celda
 
 #### Scenario: Semillas distintas
@@ -112,6 +116,16 @@ comportamientos y los peligros MUST NOT cambiar el mapa generado por ninguna sem
 - **THEN** sus snapshots son iguales campo a campo en cada tick, incluidos los estados de comportamiento, las
   dinamitas, los avisos, las explosiones, las bajas y las gemas
 
+#### Scenario: Partida con estructuras y guardias reproducible
+- **GIVEN** dos partidas con el contenido por defecto, una semilla de 1..50 con su mapa generado, la misma secuencia
+  de inputs por tick que lleva al jugador hasta una casa y la mantiene en el alcance del Linter, la política de
+  elección fija y una vida máxima del jugador suficiente para no llegar a 0
+- **WHEN** ambas ejecutan ticks hasta que la casa queda destruida y ≥ 1 guardia ha entrado en alerta, o hasta el tick
+  14.400
+- **THEN** ambas destruyen la casa en el mismo tick y ≥ 1 guardia entra en alerta
+- **AND** sus snapshots son iguales campo a campo en cada tick, incluidas las estructuras y los estados de los
+  guardias
+
 #### Scenario: Elecciones distintas divergen
 - **GIVEN** dos partidas con la misma semilla y los mismos inputs que abren la misma primera oferta de 3 opciones
 - **WHEN** en una se elige el índice 0 y en la otra el 1
@@ -149,7 +163,14 @@ comportamientos y los peligros MUST NOT cambiar el mapa generado por ninguna sem
 
 #### Scenario: Los comportamientos no consumen azar
 - **GIVEN** dos partidas con la semilla 7 y el mismo estado salvo que en una 10 enemigos cambian de estado en el tick
-  n (entran en mecha, en carga o vuelven a persecución) y en la otra siguen en persecución
+  n (entran en mecha, en carga, en alerta, en vuelta o vuelven a persecución o a patrulla) y en la otra siguen en su
+  estado
+- **WHEN** ambas ejecutan el tick n sin oferta de mejora ni aparición
+- **THEN** el estado del `RandomGenerator` de la partida es el mismo en las dos tras el tick
+
+#### Scenario: Las estructuras no consumen azar
+- **GIVEN** dos partidas con la semilla 7 y el mismo estado salvo que en una el Linter apunta a una casa y la
+  destruye en el tick n y en la otra no hay estructuras
 - **WHEN** ambas ejecutan el tick n sin oferta de mejora ni aparición
 - **THEN** el estado del `RandomGenerator` de la partida es el mismo en las dos tras el tick
 
@@ -166,13 +187,14 @@ comportamientos y los peligros MUST NOT cambiar el mapa generado por ninguna sem
   en las dos, sin tolerancia
 
 #### Scenario: Snapshot no mutable desde fuera
-- **GIVEN** una partida en el tick 10 con ≥ 1 enemigo vivo, ≥ 1 proyectil vivo y ≥ 1 gema, otra con ≥ 1 dinamita,
-  ≥ 1 aviso y ≥ 1 explosión, otra con una oferta abierta y otra terminada
+- **GIVEN** una partida en el tick 10 con ≥ 1 enemigo vivo, ≥ 1 proyectil vivo, ≥ 1 gema y ≥ 1 estructura, otra con
+  ≥ 1 dinamita, ≥ 1 aviso y ≥ 1 explosión, otra con una oferta abierta y otra terminada
 - **WHEN** el adaptador modifica el objeto `RunSnapshot` que ha recibido, incluidas la posición de un enemigo, su
   estado de comportamiento, la lista de enemigos, la vida del jugador, su invulnerabilidad, el estado de la partida,
   el resultado, las bajas, la duración objetivo, la posición de un proyectil, la lista de proyectiles, la posición de
   una gema, la lista de gemas, la posición y el objetivo de una dinamita, el centro y el radio de un aviso, la lista
-  de explosiones, la XP, el nivel y las opciones de la oferta
+  de explosiones, la vida y la destrucción de una estructura, la lista de estructuras, la XP, el nivel y las opciones
+  de la oferta
 - **THEN** el siguiente tick (o la siguiente elección, o el siguiente snapshot leído) parte del estado interno, no
   del objeto modificado
 
@@ -192,6 +214,8 @@ pintar:
 - la lista de proyectiles vivos (ver `auto-weapons`);
 - la lista de pulsos visibles (ver `auto-weapons`);
 - la lista de dinamitas en vuelo, la de avisos y la de explosiones visibles (ver `enemy-hazards`);
+- la lista de estructuras de la partida, destruidas incluidas (ver "Estructuras en el snapshot" en
+  `goblin-structures`);
 - la lista de armas equipadas, en el orden de `content/weapons.json`, con su identificador y si está cargada;
 - la lista de gemas en el suelo (ver `xp-gems`);
 - el nivel, la XP actual y la XP para el siguiente nivel (ver `leveling`);
@@ -206,21 +230,23 @@ Cada enemigo del snapshot MUST incluir:
 - su radio;
 - su vida actual (> 0, ya que solo se listan enemigos vivos);
 - si ha recibido daño recientemente (ver `auto-weapons`);
-- su estado de comportamiento: el nombre del estado y su clase (persecución, mecha, carga o espera; ver
-  `enemy-behavior`).
+- su estado de comportamiento: el nombre del estado y su clase (persecución, mecha, carga, espera, patrulla, alerta o
+  vuelta; ver `enemy-behavior`).
 
 Cada proyectil del snapshot MUST incluir un identificador único dentro de la partida que no se reutiliza, su
 posición y su radio. Cada pulso visible MUST incluir el identificador del arma que lo disparó, el tick en que se
 disparó, su centro y su radio. Cada gema MUST incluir un identificador único dentro de la partida que no se
 reutiliza, su posición y su radio. Cada dinamita MUST incluir su identificador, su posición, su objetivo, su radio
 visual y el tick en que explotará; cada aviso, su centro, su radio, su origen (mecha o dinamita) y el tick en que
-explotará; cada explosión, su identificador, su centro, su radio y el tick en que ocurrió (ver `enemy-hazards`).
+explotará; cada explosión, su identificador, su centro, su radio y el tick en que ocurrió (ver `enemy-hazards`). Cada
+estructura MUST incluir los campos de "Estructuras en el snapshot" (`goblin-structures`).
 
-La lista de enemigos contiene solo enemigos vivos y va ordenada por orden de aparición. Una baja MUST quitar al
-enemigo de la lista sin cambiar el orden relativo de los demás. La lista de proyectiles va ordenada por orden de
-creación y una desaparición no cambia el orden relativo de los demás. La lista de gemas va ordenada por orden de
-creación y una recogida no cambia el orden relativo de las demás. Las listas de dinamitas y de explosiones van
-ordenadas por orden de creación y la de avisos con el orden de "Aviso en el suelo" (`enemy-hazards`).
+La lista de enemigos contiene solo enemigos vivos y va ordenada por orden de aparición o nacimiento. Una baja MUST
+quitar al enemigo de la lista sin cambiar el orden relativo de los demás. La lista de proyectiles va ordenada por
+orden de creación y una desaparición no cambia el orden relativo de los demás. La lista de gemas va ordenada por orden
+de creación y una recogida no cambia el orden relativo de las demás. Las listas de dinamitas y de explosiones van
+ordenadas por orden de creación y la de avisos con el orden de "Aviso en el suelo" (`enemy-hazards`). La lista de
+estructuras conserva su orden y su longitud durante toda la partida.
 
 #### Scenario: Contador de ticks
 - **GIVEN** una partida recién creada
@@ -237,6 +263,8 @@ ordenadas por orden de creación y la de avisos con el orden de "Aviso en el sue
 - **AND** el nivel vale 1, la XP actual 0 y la XP para el siguiente nivel 5
 - **AND** con el contenido por defecto, la lista de armas es `linter` y `tests`, en ese orden, ambas cargadas, y la
   duración objetivo equivale a 36.000 ticks
+- **AND** la lista de estructuras está vacía con el mapa vacío y, con el mapa generado, tiene todas las estructuras
+  colocadas, ninguna destruida
 
 #### Scenario: Duración objetivo constante
 - **GIVEN** una partida con `durationSeconds` 90
@@ -245,7 +273,8 @@ ordenadas por orden de creación y la de avisos con el orden de "Aviso en el sue
 
 #### Scenario: Carga de las armas en el snapshot
 - **GIVEN** una partida con el contenido por defecto en la que hay un enemigo vivo a 50 px del jugador en el tick 1
-  y ningún enemigo vivo en los ticks 2 a 100, y en la que no se abre ninguna oferta
+  y ningún enemigo vivo ni estructura no destruida en alcance en los ticks 2 a 100, y en la que no se abre ninguna
+  oferta
 - **WHEN** se ejecutan 100 ticks
 - **THEN** en los snapshots de los ticks 1 a 30 `linter` figura como no cargada, y de 31 a 100 como cargada
 - **AND** en los snapshots de los ticks 1 a 90 `tests` figura como no cargada, y de 91 a 100 como cargada
@@ -257,7 +286,7 @@ ordenadas por orden de creación y la de avisos con el orden de "Aviso en el sue
 
 #### Scenario: Enemigos en el snapshot
 - **GIVEN** un único tramo con `budgetPerSecond` 1 y `types: ["goblin-torch"]`, `goblin-torch` con coste 1 y radio 10, en
-  una partida sin armas equipadas
+  una partida sin armas equipadas ni estructuras
 - **WHEN** se ejecutan 615 ticks
 - **THEN** el snapshot lista 10 enemigos de tipo `goblin-torch` con radio 10 e identificadores distintos
 - **AND** cada uno tiene una vida actual igual al `health` de `goblin-torch`, no indica daño reciente y está en su
@@ -265,10 +294,12 @@ ordenadas por orden de creación y la de avisos con el orden de "Aviso en el sue
 - **AND** el orden de la lista coincide con el orden de aparición
 
 #### Scenario: Estado de comportamiento en el snapshot
-- **GIVEN** un `goblin-barrel` en mecha y un `goblin-tnt` en espera
+- **GIVEN** un `goblin-barrel` en mecha, un `goblin-tnt` en espera y tres `goblin-tnt-guard`, en patrulla, en alerta
+  y en vuelta
 - **WHEN** se lee el snapshot
-- **THEN** el barril figura con el nombre de su estado de mecha y la clase mecha, y el TNT con el nombre de su estado
-  de espera y la clase espera
+- **THEN** el barril figura con el nombre de su estado de mecha y la clase mecha, el TNT con el nombre de su estado
+  de espera y la clase espera, y cada guardia con el nombre de su estado y la clase patrulla, alerta y vuelta
+  respectivamente
 
 #### Scenario: Peligros en el snapshot
 - **GIVEN** una dinamita d1 lanzada en el tick 154 con origen (1.199,5; 1.000), objetivo (1.000, 1.000), vuelo de 40
@@ -278,6 +309,12 @@ ordenadas por orden de creación y la de avisos con el orden de "Aviso en el sue
 - **AND** hay 2 avisos en este orden: el de mecha centrado en (500, 500), radio 56, tick 160, y el de dinamita
   centrado en (1.000, 1.000), radio 48, tick 194
 - **AND** la lista de explosiones está vacía
+
+#### Scenario: Estructuras en el snapshot del motor
+- **GIVEN** el mapa vacío con una casa declarada en columnas 20–21 y filas 10–12 con radio de impacto 40 y vida 30
+- **WHEN** se lee el snapshot del tick 0
+- **THEN** la lista de estructuras tiene 1 estructura de tipo `goblin-house`, posición (1.260, 690), radio 40, huella
+  (20, 10, 2, 3), vida 30 y sin destruir
 
 #### Scenario: Identificador estable
 - **GIVEN** un enemigo vivo con identificador X en el snapshot del tick n
@@ -315,6 +352,7 @@ ordenadas por orden de creación y la de avisos con el orden de "Aviso en el sue
 - **WHEN** se lee el snapshot
 - **THEN** la opción de `guardrail` tiene su nombre y descripción del contenido, nivel actual 2 y siguiente 3
 - **AND** la lista de mejoras adquiridas incluye `guardrail` con nivel 2
+
 ### Requirement: Semilla de la partida
 El sistema SHALL arrancar cada partida con una semilla que sea un entero sin signo de 32 bits
 (de 0 a 4.294.967.295). La URL se lee una sola vez por carga. La **primera partida de la carga** es la que empieza al
@@ -469,20 +507,26 @@ El sistema SHALL ejecutar cada tick de una partida en curso en este orden:
 1. movimiento del jugador según el input (velocidad efectiva, ver `upgrades`);
 2. comportamiento de los enemigos vivos, en el orden de la lista de enemigos (ver "Estado de comportamiento de cada
    enemigo" en `enemy-behavior`): primero, las esperas que terminan en este tick pasan a su estado de destino; después,
-   los enemigos en persecución persiguen la nueva posición del jugador, con el campo de distancias de la celda que
-   ocupa el centro del jugador tras el paso 1 (ver "Navegación por el campo de flujo"); por último, los que quedan a
-   distancia ≤ su distancia de salida entran en su estado de destino (mecha o carga). Los enemigos en mecha, carga o
-   espera no se mueven;
+   los enemigos en persecución o en alerta persiguen la nueva posición del jugador, con el campo de distancias de la
+   celda que ocupa el centro del jugador tras el paso 1 (ver "Navegación por el campo de flujo"), y los que están en
+   patrulla o en vuelta se dirigen a su punto (ver "Navegación hacia un punto fijo"); por último, se aplican las
+   transiciones tras moverse: salida por distancia (mecha o carga), detección, pérdida y llegada al puesto. Los
+   enemigos en mecha, carga o espera no se mueven;
 3. armas (ver `auto-weapons`), en este orden:
-   1. movimiento, impacto y caducidad de los proyectiles existentes, en orden de creación;
-   2. cada arma, en el orden de `content/weapons.json`, elige objetivo con las posiciones de ese momento y, si está
-      cargada y lo tiene, dispara (crea su proyectil o aplica su pulso);
+   1. movimiento, impacto y caducidad de los proyectiles existentes, en orden de creación (contra enemigos y, los
+      dirigidos a una estructura, contra estructuras);
+   2. cada arma, en el orden de `content/weapons.json`, elige objetivo con las posiciones de ese momento (enemigos
+      primero; estructuras no destruidas solo si no hay enemigos en alcance) y, si está cargada y lo tiene, dispara
+      (crea su proyectil o aplica su pulso);
    3. los enemigos cuya vida ha llegado a 0 en este tick quedan dados de baja, suman cada uno 1 al contador de bajas
       y sueltan su gema, en el orden de la lista de enemigos (ver `xp-gems` y `run-outcome`);
+   4. las estructuras cuya vida ha llegado a 0 en este tick quedan destruidas, sin gema ni baja (ver
+      `goblin-structures`);
 4. peligros (ver `enemy-hazards`), en este orden:
    1. explosiones del tick: las de los barriles vivos cuya mecha termina en este tick, en el orden de la lista de
       enemigos, y después las de las dinamitas cuyo vuelo termina en este tick, en orden de creación; cada una daña a
-      los enemigos vivos de su radio (fuego amigo) y queda registrada como golpe candidato si alcanza al jugador;
+      los enemigos vivos de su radio (fuego amigo), no daña estructuras, y queda registrada como golpe candidato si
+      alcanza al jugador;
    2. los barriles que han explotado y los enemigos cuya vida ha llegado a 0 en este paso quedan dados de baja, suman
       cada uno 1 al contador de bajas y sueltan su gema, en el orden de la lista de enemigos;
    3. lanzamientos: cada enemigo vivo cuya carga termina en este tick o que sigue en carga esperando sitio, en el
@@ -496,8 +540,10 @@ El sistema SHALL ejecutar cada tick de una partida en curso en este orden:
 7. gemas, en orden de creación: atracción, movimiento del imán y recogida; la XP recogida se suma y se registran
    las subidas de nivel (ver `xp-gems` y `leveling`);
 8. director de oleadas (spawns, con la recolocación de las apariciones en celdas caminables, ver `enemy-spawning`);
-9. si hay ≥ 1 subida pendiente y ≥ 1 mejora disponible, se abre la oferta (consume azar) y la partida pasa a
-   eligiendo mejora (ver `upgrades` y `run-state`); el tick cuenta igualmente.
+9. nacimiento de guardias en las casas no destruidas, en el orden de la lista de estructuras (ver "Nacimiento de
+   guardias en casas" en `enemy-spawning`);
+10. si hay ≥ 1 subida pendiente y ≥ 1 mejora disponible, se abre la oferta (consume azar) y la partida pasa a
+    eligiendo mejora (ver `upgrades` y `run-state`); el tick cuenta igualmente.
 
 En una partida terminada o que está eligiendo mejora no se ejecuta ningún paso (ver `run-state`).
 
@@ -528,8 +574,8 @@ En una partida terminada o que está eligiendo mejora no se ejecuta ningún paso
 - **THEN** la vida del jugador tras el tick n es la misma que tras el tick n − 1, si ningún otro enemigo le toca
 
 #### Scenario: Un enemigo recién aparecido no es objetivo en su tick de aparición
-- **GIVEN** una partida sin enemigos vivos y armas cargadas, en la que el director hace aparecer un enemigo en el
-  tick n
+- **GIVEN** una partida sin enemigos vivos ni estructuras y armas cargadas, en la que el director hace aparecer un
+  enemigo en el tick n
 - **WHEN** se ejecuta el tick n
 - **THEN** el snapshot del tick n no tiene proyectiles ni pulsos nuevos y el enemigo tiene su vida inicial
 
@@ -606,6 +652,25 @@ En una partida terminada o que está eligiendo mejora no se ejecuta ningún paso
   distancia de lanzamiento 200
 - **WHEN** se ejecuta el tick n
 - **THEN** en el snapshot del tick n el `goblin-tnt` está en persecución y se ha acercado 0,75 px (error ≤ 0,001)
+
+#### Scenario: Una casa destruida no hace nacer en ese tick
+- **GIVEN** una casa con vida 6, sin guardias vivos, cuyo nacimiento tocaría en el tick n, y un impacto del Linter de
+  daño 6 sobre ella en el tick n
+- **WHEN** se ejecuta el tick n
+- **THEN** la casa figura destruida en el snapshot del tick n y no nace ningún guardia
+
+#### Scenario: Las estructuras se destruyen tras las bajas
+- **GIVEN** una partida con 2 bajas, un pulso de Tests en el tick n que deja a vida 0 a un `goblin-torch` y a una torre
+- **WHEN** se ejecuta el tick n
+- **THEN** en el snapshot del tick n las bajas valen 3, hay 1 gema nueva (la del `goblin-torch`) y la torre figura
+  destruida
+
+#### Scenario: El guardia nacido no se mueve en su tick
+- **GIVEN** una casa que hace nacer un guardia de radio 22 y daño por contacto 15 en el tick n, con el jugador quieto,
+  no invulnerable y a 30 px de su puerta (< 22 + 16), y ningún otro enemigo
+- **WHEN** se ejecuta el tick n
+- **THEN** en el snapshot del tick n el guardia está en la puerta, en patrulla, y la vida del jugador no ha bajado
+  (el golpe del paso 5 va antes del nacimiento)
 
 ### Requirement: Pintado de los enemigos vivos
 El adaptador de render SHALL mostrar en cada frame exactamente un sprite de enemigo visible por cada enemigo del
@@ -1195,6 +1260,24 @@ entre llamadas a `step` no cambia cuáles se ejecutan ni en qué orden.
   hasta llegar al tick 1.200
 - **THEN** sus snapshots en el tick 1.200 son iguales campo a campo
 
+### Requirement: Rendimiento con estructuras y guardias
+El sistema SHALL ejecutar un tick de simulación con el contenido por defecto, un mapa generado con sus estructuras,
+300 enemigos vivos de los que ≥ 1 por casa son guardias en patrulla o en alerta (hasta el tope de guardias de cada
+casa) y las armas con estructuras como objetivo alternativo en ≤ 2 ms de media, medido con un benchmark de Vitest
+sobre el núcleo, sin motor ni render. La medida es informativa (depende de la máquina): no bloquea `verify` ni CI. El
+verify-report de este change MUST anotar la media de este peor caso frente al objetivo informativo de ≤ 0,25 ms por
+tick. El camino caliente del tick MUST NOT crear objetos nuevos por tick para elegir objetivos entre enemigos y
+estructuras ni para mover a los guardias.
+
+#### Scenario: Peor caso con estructuras y guardias
+- **GIVEN** una partida con el contenido por defecto, semilla fija con su mapa generado y todas sus estructuras sin
+  destruir, 300 enemigos vivos con cada casa en su tope de guardias, la mitad de ellos en patrulla y la otra mitad en
+  alerta, y una vida del jugador suficiente para no llegar a 0 en 600 ticks (los enemigos abatidos se reponen para
+  mantener 300 vivos)
+- **WHEN** el benchmark mide 600 ticks consecutivos
+- **THEN** la media es ≤ 2 ms por tick y la partida sigue en curso al terminar la medición
+- **AND** la media medida se anota en el verify-report frente al objetivo de ≤ 0,25 ms
+
 <!-- historial: 0001-walking-skeleton (2026-11-19) -->
 <!-- historial: 0002-enemy-spawning (2026-11-19) -->
 <!-- historial: 0003-collisions-and-damage (2026-11-19) -->
@@ -1210,3 +1293,4 @@ entre llamadas a `step` no cambia cuáles se ejecutan ni en qué orden.
 <!-- historial: 0015-procedural-map (2026-11-23) -->
 <!-- historial: 0019-flow-field (2026-11-24) -->
 <!-- historial: 0020-enemy-behaviors (2026-11-24) -->
+<!-- historial: 0021-goblin-camps (2026-11-24) -->
