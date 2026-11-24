@@ -10,7 +10,7 @@
 Sin tareas: el change no toca `src/domain` ni `src/application` (design §1).
 
 ## 2. Infraestructura pura: vista, regla y cajas
-- [ ] 2.1 `followView(target, size, world)` en `CameraRig.ts` y `CameraRig.nextView()`; `FollowCamera` gana
+- [x] 2.1 `followView(target, size, world)` en `CameraRig.ts` y `CameraRig.nextView()`; `FollowCamera` gana
   `readonly width` y `readonly height` (design D1). Test en `tests/infrastructure/camera-rig.test.ts` (rojo: no
   existe): vista centrada; recortada en las cuatro esquinas; jugador en (16, 16) a 1.280 × 720 → (0, 0)–(1.280,
   720); jugador en (3.824, 2.144) → (2.560, 1.440)–(3.840, 2.160); jugador en (1.920, 1.080) con vistas de 960 ×
