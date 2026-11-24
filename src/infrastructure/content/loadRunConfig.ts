@@ -97,7 +97,21 @@ export function parseContent(raw: RawContentFiles): Result<ParsedContent, Domain
   const path = (issue?.path ?? []).map(String);
   // Un campo desconocido se nombra a sí mismo (spec procedural-map: "nombra `lakes`").
   if (issue?.code === 'unrecognized_keys' && issue.keys[0] !== undefined) path.push(issue.keys[0]);
-  return err(invalidConfig(path.join('.'), issue?.message ?? 'Contenido inválido'));
+  const message = issue?.message ?? 'Contenido inválido';
+  return err(invalidConfig(path.join('.'), namingEnemyType(message, path, raw)));
+}
+
+/**
+ * Un error dentro de un tipo de enemigo nombra el tipo además del campo (spec enemy-behavior y
+ * enemy-spawning: "un error que nombre el tipo y el campo"): la ruta solo lleva su índice.
+ */
+function namingEnemyType(message: string, path: readonly string[], raw: RawContentFiles): string {
+  if (path[0] !== 'enemies' || path[1] !== 'types' || path[2] === undefined) return message;
+  const types: unknown = (raw.enemies as { types?: unknown } | null)?.types;
+  const entry: unknown = Array.isArray(types) ? types[Number(path[2])] : undefined;
+  const id = (entry as { id?: unknown } | undefined)?.id;
+  if (typeof id !== 'string' || message.includes(id)) return message;
+  return `${message} (${id})`;
 }
 
 /** Configuración de partida para el núcleo (sin el tope de vista). */

@@ -11,7 +11,7 @@ import {
   ENEMY_XP_MUST_BE_INTEGER,
   type EnemyTypeConfig,
 } from '../../src/domain/enemy/EnemyType';
-import { DEFAULT_ENEMY_TYPES } from '../support/builders';
+import { CHASE_BEHAVIOR, DEFAULT_ENEMY_TYPES } from '../support/builders';
 
 function arena(): Arena {
   const r = Arena.create(960, 540);
@@ -27,6 +27,7 @@ const bug: EnemyTypeConfig = {
   damage: 5,
   health: 10,
   xp: 1,
+  behavior: CHASE_BEHAVIOR,
 };
 const leak: EnemyTypeConfig = {
   id: 'goblin-tnt',
@@ -36,13 +37,24 @@ const leak: EnemyTypeConfig = {
   damage: 15,
   health: 45,
   xp: 4,
+  behavior: CHASE_BEHAVIOR,
 };
 
 describe('EnemyCatalog', () => {
   it('crea los tipos con sus valores y los busca por id', () => {
     const r = EnemyCatalog.create([bug, leak], arena());
     if (!r.ok) throw new Error(r.error.message);
-    expect(r.value.get('goblin-tnt')).toMatchObject(leak);
+    const { id, speed, radius, cost, damage, health, xp } = leak;
+    expect(r.value.get('goblin-tnt')).toMatchObject({
+      id,
+      speed,
+      radius,
+      cost,
+      damage,
+      health,
+      xp,
+    });
+    expect(r.value.get('goblin-tnt')?.behavior.names).toEqual(['chase']);
     expect(r.value.get('segfault')).toBeUndefined();
     expect(r.value.ids).toEqual(['goblin-torch', 'goblin-tnt']);
   });
@@ -114,6 +126,35 @@ describe('EnemyCatalog', () => {
     }
   });
 
+  it.each([0, -3])('Scenario: Daño cero o negativo (%s, dominio)', (damage) => {
+    const r = EnemyCatalog.create([{ ...bug, damage }], arena());
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.field).toBe('enemies.types.0.damage');
+  });
+
+  it('Daño ausente: el tipo no tiene contacto y su daño vale 0', () => {
+    const noDamage = { ...bug, damage: undefined };
+    const r = EnemyCatalog.create([noDamage], arena());
+    if (!r.ok) throw new Error(r.error.message);
+    expect(r.value.get('goblin-torch')?.hasContact).toBe(false);
+    expect(r.value.get('goblin-torch')?.damage).toBe(0);
+  });
+
+  it('con daño, el tipo tiene contacto', () => {
+    const r = EnemyCatalog.create([bug], arena());
+    expect(r.ok && r.value.get('goblin-torch')?.hasContact).toBe(true);
+  });
+
+  it('un comportamiento inválido nombra el campo dentro del tipo', () => {
+    const behavior = { initial: 'sleep', states: CHASE_BEHAVIOR.states };
+    const r = EnemyCatalog.create([leak, { ...bug, behavior }], arena());
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.error.field).toBe('enemies.types.1.behavior.initial');
+      expect(r.error.message).toContain('goblin-torch');
+    }
+  });
+
   it.each([0, -1, 1.5, Number.NaN])('XP inválida o ausente (xp %s)', (xp) => {
     const r = EnemyCatalog.create([leak, { ...bug, xp }], arena());
     expect(r.ok).toBe(false);
@@ -130,7 +171,7 @@ describe('EnemyCatalog', () => {
     expect(r.value.get('goblin-tnt')?.xp).toBe(1);
   });
 
-  it('Contenido por defecto: vida, daño > 0 y XP ≥ 1 en los 3 tipos', () => {
+  it('Contenido por defecto: vida y XP ≥ 1 en los 3 tipos; el barril sin contacto (0020)', () => {
     const r = EnemyCatalog.create(DEFAULT_ENEMY_TYPES, arena());
     if (!r.ok) throw new Error(r.error.message);
     const catalog = r.value;
@@ -141,7 +182,7 @@ describe('EnemyCatalog', () => {
     expect(values).toEqual([
       ['goblin-torch', 5, 10, 1],
       ['goblin-tnt', 15, 45, 4],
-      ['goblin-barrel', 8, 20, 2],
+      ['goblin-barrel', 0, 20, 2],
     ]);
   });
 });

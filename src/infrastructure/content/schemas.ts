@@ -21,6 +21,17 @@ import {
   ENEMY_XP_MUST_BE_INTEGER,
 } from '../../domain/enemy/EnemyType';
 import {
+  BEHAVIOR_INITIAL_UNKNOWN,
+  BEHAVIOR_KIND_UNKNOWN,
+  BEHAVIOR_TICKS_MUST_BE_INTEGER,
+  BEHAVIOR_VALUE_MUST_BE_POSITIVE,
+} from '../../domain/enemy/behavior/Behavior';
+import {
+  BLAST_TICKS_MUST_BE_INTEGER,
+  DYNAMITE_RADIUS_MUST_BE_POSITIVE,
+  MAX_DYNAMITES_MUST_BE_INTEGER,
+} from '../../domain/hazard/HazardRules';
+import {
   INVULNERABILITY_TICKS_MUST_BE_INTEGER,
   PICKUP_RADIUS_MUST_BE_POSITIVE,
   PLAYER_HEALTH_MUST_BE_POSITIVE,
@@ -77,6 +88,8 @@ export const ENEMY_ID_FORMAT =
 
 const EnemyId = z.string().regex(/^[a-z][a-z0-9-]*$/, { error: ENEMY_ID_FORMAT });
 const Count = (error: string) => z.number().int({ error }).min(1, { error });
+/** Como `Count`, pero un valor ausente o no numérico también da el mensaje del dominio (0020). */
+const RequiredCount = (error: string) => z.number({ error }).int({ error }).min(1, { error });
 const Distance = z.number().nonnegative({ error: SPAWN_DISTANCE_MUST_BE_NON_NEGATIVE });
 
 export const PlayerSchema = z.strictObject({
@@ -122,16 +135,88 @@ export const ArenaSchema = z
     }
   });
 
+export const BEHAVIOR_REQUIRED = 'Cada tipo de enemigo debe declarar su comportamiento.';
+export const BEHAVIOR_NEEDS_STATES = 'Un comportamiento debe declarar al menos un estado.';
+export const BEHAVIOR_STATE_NAME_REQUIRED = 'El nombre de un estado no puede estar vacío.';
+
+const StateName = z.string().min(1, { error: BEHAVIOR_STATE_NAME_REQUIRED });
+const BehaviorValue = z.number({ error: BEHAVIOR_VALUE_MUST_BE_POSITIVE }).positive({
+  error: BEHAVIOR_VALUE_MUST_BE_POSITIVE,
+});
+const BehaviorTicks = RequiredCount(BEHAVIOR_TICKS_MUST_BE_INTEGER);
+
+// Clases cerradas de estado (spec enemy-behavior, ADR-0019). Las referencias entre estados
+// (inicial, destinos, nombres repetidos) las resuelve `Behavior.create` desde `buildRunRules`.
+const StateSchema = z.discriminatedUnion(
+  'kind',
+  [
+    z.strictObject({
+      name: StateName,
+      kind: z.literal('chase'),
+      exit: z.strictObject({ distance: BehaviorValue, to: StateName }).optional(),
+    }),
+    z.strictObject({
+      name: StateName,
+      kind: z.literal('fuse'),
+      ticks: BehaviorTicks,
+      radius: BehaviorValue,
+      damage: BehaviorValue,
+    }),
+    z.strictObject({
+      name: StateName,
+      kind: z.literal('charge'),
+      ticks: BehaviorTicks,
+      to: StateName,
+      dynamite: z.strictObject({
+        flightTicks: BehaviorTicks,
+        radius: BehaviorValue,
+        damage: BehaviorValue,
+      }),
+    }),
+    z.strictObject({
+      name: StateName,
+      kind: z.literal('wait'),
+      ticks: BehaviorTicks,
+      to: StateName,
+    }),
+  ],
+  { error: (issue) => `${BEHAVIOR_KIND_UNKNOWN}: ${kindOf(issue.input)}` },
+);
+
+/** Valor de `kind` recibido (para el mensaje de una clase desconocida). */
+function kindOf(input: unknown): string {
+  if (typeof input !== 'object' || input === null || !('kind' in input)) return 'ausente';
+  return String(input.kind);
+}
+
+const BehaviorSchema = z.strictObject(
+  {
+    initial: z.string({ error: BEHAVIOR_INITIAL_UNKNOWN }),
+    states: z.array(StateSchema).min(1, { error: BEHAVIOR_NEEDS_STATES }),
+  },
+  { error: BEHAVIOR_REQUIRED },
+);
+
+const HazardsSchema = z.strictObject({
+  maxDynamites: RequiredCount(MAX_DYNAMITES_MUST_BE_INTEGER),
+  dynamiteRadius: z
+    .number({ error: DYNAMITE_RADIUS_MUST_BE_POSITIVE })
+    .positive({ error: DYNAMITE_RADIUS_MUST_BE_POSITIVE }),
+  blastTicks: RequiredCount(BLAST_TICKS_MUST_BE_INTEGER),
+});
+
 export const EnemiesSchema = z.strictObject({
+  hazards: HazardsSchema,
   types: z.array(
     z.strictObject({
       id: EnemyId,
       speed: z.number().positive({ error: ENEMY_SPEED_MUST_BE_POSITIVE }),
       radius: z.number().positive({ error: ENEMY_RADIUS_MUST_FIT }),
       cost: z.number().positive({ error: ENEMY_COST_MUST_BE_POSITIVE }),
-      damage: z.number().positive({ error: ENEMY_DAMAGE_MUST_BE_POSITIVE }),
+      damage: z.number().positive({ error: ENEMY_DAMAGE_MUST_BE_POSITIVE }).optional(),
       health: z.number().positive({ error: ENEMY_HEALTH_MUST_BE_POSITIVE }),
       xp: Count(ENEMY_XP_MUST_BE_INTEGER),
+      behavior: BehaviorSchema,
     }),
   ),
 });

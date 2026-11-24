@@ -4,13 +4,24 @@ import { Run, type RunSetup } from '../../src/domain/run/Run';
 import type { RunConfig } from '../../src/domain/run/RunConfig';
 import type { EnemySnapshot } from '../../src/domain/run/RunSnapshot';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
-import { aSegment, aWavesConfig } from '../support/builders';
+import { CHASE_BEHAVIOR, aSegment, aWavesConfig } from '../support/builders';
 import { StubRandom } from '../support/random';
 
 /** Catálogo con un tipo de velocidad fija y sin presupuesto: solo están los enemigos del setup. */
 const quiet = (speed: number, radius = 10): RunConfig =>
   aWavesConfig({
-    types: [{ id: 'probe', speed, radius, cost: 1, damage: 5, health: 10, xp: 1 }],
+    types: [
+      {
+        id: 'probe',
+        speed,
+        radius,
+        cost: 1,
+        damage: 5,
+        health: 10,
+        xp: 1,
+        behavior: CHASE_BEHAVIOR,
+      },
+    ],
     segments: [aSegment(['probe'], 0)],
   });
 
@@ -59,7 +70,18 @@ describe('Run · persecución', () => {
   it('Primer tick de vida', () => {
     // Arena grande para que el anillo (radio del contenido base) no se recorte.
     const base = aWavesConfig({
-      types: [{ id: 'probe', speed: 90, radius: 10, cost: 1, damage: 5, health: 10, xp: 1 }],
+      types: [
+        {
+          id: 'probe',
+          speed: 90,
+          radius: 10,
+          cost: 1,
+          damage: 5,
+          health: 10,
+          xp: 1,
+          behavior: CHASE_BEHAVIOR,
+        },
+      ],
       segments: [aSegment(['probe'], 1)],
     });
     const config: RunConfig = {

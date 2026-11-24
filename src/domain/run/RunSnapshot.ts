@@ -1,4 +1,7 @@
+import type { StateKind } from '../enemy/behavior/BehaviorConfig';
 import type { RunPhase } from './RunPhase';
+
+export type { StateKind };
 
 /** Enemigo vivo tal y como lo ve el adaptador de render (copia de escalares). */
 export interface EnemySnapshot {
@@ -12,6 +15,41 @@ export interface EnemySnapshot {
   readonly health: number;
   /** Ha recibido daño en los últimos `hitFlashTicks` ticks (spec auto-weapons). */
   readonly damaged: boolean;
+  /** Nombre del estado de comportamiento (spec enemy-behavior). */
+  readonly state: string;
+  /** Clase del estado: persecución, mecha, carga o espera. */
+  readonly stateKind: StateKind;
+}
+
+/** Dinamita en vuelo (spec enemy-hazards): posición interpolada, objetivo fijo y radio visual. */
+export interface DynamiteSnapshot {
+  /** Único en la partida, nunca reutilizado. */
+  readonly id: number;
+  readonly x: number;
+  readonly y: number;
+  readonly targetX: number;
+  readonly targetY: number;
+  readonly radius: number;
+  readonly explodesAt: number;
+}
+
+/** Aviso en el suelo de una explosión pendiente: radio igual al de la explosión que anuncia. */
+export interface WarningSnapshot {
+  readonly x: number;
+  readonly y: number;
+  readonly radius: number;
+  readonly source: 'fuse' | 'dynamite';
+  readonly explodesAt: number;
+}
+
+/** Explosión visible: solo hizo daño en su tick, figura `blastTicks` ticks. */
+export interface BlastSnapshot {
+  /** Único en la partida, nunca reutilizado. */
+  readonly id: number;
+  readonly x: number;
+  readonly y: number;
+  readonly radius: number;
+  readonly tick: number;
 }
 
 /** Arma equipada, en el orden de content/weapons.json, y si está cargada en este tick. */
@@ -92,6 +130,12 @@ export interface RunSnapshotBody {
   readonly projectiles: readonly ProjectileSnapshot[];
   /** Pulsos visibles en orden de disparo. */
   readonly pulses: readonly PulseSnapshot[];
+  /** Dinamitas en vuelo en orden de creación. */
+  readonly dynamites: readonly DynamiteSnapshot[];
+  /** Avisos por tick de explosión; a igual tick, mechas (orden de lista) y luego dinamitas. */
+  readonly warnings: readonly WarningSnapshot[];
+  /** Explosiones visibles en orden de creación. */
+  readonly blasts: readonly BlastSnapshot[];
   /** Armas equipadas en el orden del contenido. */
   readonly weapons: readonly WeaponSnapshot[];
   /** Gemas en el suelo en orden de creación. */

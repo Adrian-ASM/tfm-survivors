@@ -158,7 +158,7 @@ describe('bootContent', () => {
     expect(checkAppearanceRefs(booted.appearance, booted.config).ok).toBe(true);
   });
 
-  it('Scenario: Los aspectos no cambian la simulación (entidades × 2 y otros colores del mapa)', () => {
+  it('Scenario: Los aspectos no cambian la simulación (entidades × 2, colores del mapa y de los avisos)', () => {
     const doubled = raw();
     const a = doubled.appearance as {
       player: { scale: number };
@@ -166,11 +166,16 @@ describe('bootContent', () => {
       projectile: { scale: number };
       gem: { scale: number };
       corpse: { scale: number };
+      dynamite: { scale: number };
+      explosion: { scale: number };
       terrain: Record<string, string>;
+      warnings: Record<string, { color: string }>;
     };
     // 0016: el fondo ya no se dobla (su baldosa debe medir la celda); la spec habla de entidades.
-    for (const look of [a.player, ...Object.values(a.enemies), a.projectile, a.gem, a.corpse])
-      look.scale *= 2;
+    const entities = [a.player, ...Object.values(a.enemies), a.projectile, a.gem, a.corpse];
+    for (const look of [...entities, a.dynamite, a.explosion]) look.scale *= 2;
+    // 0020: también los colores de los avisos.
+    for (const w of Object.values(a.warnings)) w.color = '#0a0b0c';
     a.terrain = { trunk: '#010101', water: '#020202', bridge: '#030303', castle: '#040404' };
     const one = boot(raw()).booted;
     const two = boot(doubled).booted;

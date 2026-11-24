@@ -97,6 +97,20 @@
       "version": "Update 010",
       "sha256": "616cfeec6287ede0b368a14332afc9ac34462dee5bb3f5a8f7595464c8b2ca53",
       "bytes": 15018
+    },
+    {
+      "path": "public/assets/tiny-swords/Factions/Goblins/Troops/TNT/Dynamite/Dynamite.png",
+      "source": "Tiny Swords (Update 010)/Factions/Goblins/Troops/TNT/Dynamite/Dynamite.png",
+      "version": "Update 010",
+      "sha256": "5cfc3d6fa12655cd05a2562065993eb5c7ce85c685589490eab92faee189a5b5",
+      "bytes": 1545
+    },
+    {
+      "path": "public/assets/tiny-swords/Effects/Explosion/Explosions.png",
+      "source": "Tiny Swords (Update 010)/Effects/Explosion/Explosions.png",
+      "version": "Update 010",
+      "sha256": "fa3bcfbf05c3c1cef0e5f06976e2431c24c4ad05cdd71d7242e0b436f4e5ec8e",
+      "bytes": 12547
     }
   ]
 }

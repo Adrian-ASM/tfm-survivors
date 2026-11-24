@@ -6,7 +6,7 @@ import { emptyCounts } from '../../src/infrastructure/phaser/renderCounts';
 import { RenderLayers } from '../../src/infrastructure/phaser/RenderLayers';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import { aDefaultConfig, withPlayer } from '../support/builders';
-import { fakeKit } from '../support/FakeSprite';
+import { FAKE_HAZARD_CAPACITY, FakeGraphics, fakeKit } from '../support/FakeSprite';
 import { someLooks } from '../support/looks';
 import { chooseFirstWhileOpen, startRun } from '../support/runs';
 
@@ -35,6 +35,7 @@ function view() {
   const layers = new RenderLayers(
     {
       kit: fakeKit(),
+      warnings: () => new FakeGraphics(),
       ring: () => new FakeRing(),
       looks: someLooks(),
       capacity: {
@@ -44,10 +45,12 @@ function view() {
         gems: 300,
         corpses: 64,
         visualTicks: new Map([['tests', 8]]),
+        hazards: FAKE_HAZARD_CAPACITY,
       },
     },
     { visible: 1, placeholder: 0 },
   );
+  layers.createHazards();
   const paint = (s: RunSnapshot): void => {
     layers.advance(FRAME_MS, false);
     layers.render(s);
@@ -94,6 +97,8 @@ describe('Vista limpia tras reiniciar (spec run-results y sprite-rendering)', ()
         type: 'goblin-torch',
         health: 10,
         damaged: false,
+        state: 'chase',
+        stateKind: 'chase' as const,
       })),
       projectiles: Array.from({ length: 32 }, (_, i) => at(i)),
       pulses: [{ weapon: 'tests', firedAt: 898, x: 480, y: 270, radius: 90 }],
@@ -119,6 +124,8 @@ describe('Vista limpia tras reiniciar (spec run-results y sprite-rendering)', ()
         type: 'goblin-torch',
         health: 10,
         damaged: false,
+        state: 'chase',
+        stateKind: 'chase' as const,
       }));
     v.paint({ ...fresh, tick: 500, enemies: foes(25) });
     const ended = {
@@ -126,15 +133,35 @@ describe('Vista limpia tras reiniciar (spec run-results y sprite-rendering)', ()
       tick: 501,
       enemies: foes(25).slice(10),
       gems: Array.from({ length: 40 }, (_, i) => at(i)),
+      dynamites: [0, 1].map((id) => ({
+        ...at(id),
+        targetX: 0,
+        targetY: 0,
+        radius: 8,
+        explodesAt: 600,
+      })),
+      warnings: [0, 1, 2].map((i) => ({
+        ...at(i),
+        radius: 48,
+        source: 'dynamite',
+        explodesAt: 600,
+      })),
+      blasts: [{ ...at(0), radius: 56, tick: 501 }],
       status: 'over',
       outcome: 'lost',
     } as RunSnapshot;
     v.paint(ended);
     expect([v.layers.counts.corpses.visible, v.layers.counts.enemies.visible]).toEqual([10, 15]);
+    const hazards = () => {
+      const { warnings, dynamites, explosions } = v.layers.counts;
+      return [dynamites.visible, warnings.visible, explosions.visible];
+    };
+    expect(hazards()).toEqual([2, 3, 1]);
 
     v.layers.clear();
     v.paint(fresh);
     expect(v.visible()).toEqual([0, 0, 0, 0]);
+    expect(hazards()).toEqual([0, 0, 0]);
     expect(v.layers.counts.player.visible).toBe(1);
     for (let f = 0; f <= 60; f++) {
       expect(v.layers.counts.corpses.visible).toBe(0);
@@ -164,6 +191,8 @@ describe('Vista limpia tras reiniciar (spec run-results y sprite-rendering)', ()
   it('Scenario: Sonda en el menú (recuentos a 0 con las claves de enemigo)', () => {
     const c = emptyCounts(['goblin-torch', 'goblin-tnt', 'goblin-barrel']);
     const kinds = [c.player, c.enemies, c.corpses, c.projectiles, c.pulses, c.gems];
+    kinds.push(c.dynamites, c.warnings, c.explosions);
+    expect(c.enemyStates).toEqual({ chase: 0, fuse: 0, charge: 0, wait: 0 });
     expect(kinds.every((k) => k.visible === 0 && k.placeholder === 0)).toBe(true);
     expect(c.enemyPlaceholders).toEqual({ 'goblin-torch': 0, 'goblin-tnt': 0, 'goblin-barrel': 0 });
   });

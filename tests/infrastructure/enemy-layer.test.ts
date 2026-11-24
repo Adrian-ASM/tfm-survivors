@@ -26,6 +26,8 @@ const enemy = (
   radius: opts.radius ?? 10,
   health: 10,
   damaged: opts.damaged ?? false,
+  state: 'chase',
+  stateKind: 'chase',
 });
 
 class SpyCorpses implements CorpseSink {

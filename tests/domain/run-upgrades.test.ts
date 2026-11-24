@@ -38,7 +38,7 @@ function weaponRun(
   const base = withScenarioCurve(aDefaultConfig());
   const config: RunConfig = {
     ...base,
-    enemies: { types: STILL },
+    enemies: { ...base.enemies, types: STILL },
     waves: aWavesConfig({ types: STILL, segments: [aSegment(['goblin-torch'], 0)] }).waves,
     weapons: weaponsOf(weapons),
     upgrades: { upgrades: list.filter((u) => fitsLoadout(u, weapons)) },
@@ -189,7 +189,7 @@ describe('Efectos de las mejoras del jugador', () => {
     const types = [...STILL, ...extra.filter((t) => !STILL.includes(t))];
     const config: RunConfig = {
       ...base,
-      enemies: { types },
+      enemies: { ...base.enemies, types },
       waves: aWavesConfig({ types, segments: [aSegment(['goblin-torch'], 0)] }).waves,
       upgrades: { upgrades: list },
     };

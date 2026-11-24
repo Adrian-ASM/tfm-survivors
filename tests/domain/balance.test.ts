@@ -33,6 +33,8 @@ const FIRST_KILL_WINDOW = 900;
 // 0017 (mundo 3.840 × 2.160, tabla 1,2/2,4/2,4/3,0/4,2): medida en el tick 1.527.
 // 0019 (navegación por el mapa, maxAlive 300, curva 9/3): oferta en el 2.082 (semilla 7) y primer
 // golpe en el 2.442 (semilla 42); bot de referencia 26/50, 0 quietos en ambos mapas.
+// 0020 (comportamientos y peligros, curva 9/4, bot v3): mismos plazos (oferta 2.082, golpe 2.442);
+// bot v3 27/50, 0 quietos en ambos mapas (addendum de ADR-0019).
 const OFFER_LIMIT = 4800;
 
 /** Contenido por defecto: crea las partidas y el bot de referencia (mismo mundo para ambos). */
@@ -70,7 +72,7 @@ describe('Plazos con progresión (0005, medidos en el punto de control 0.3)', ()
     expect(hits).toHaveLength(1);
     const { health, prev, status } = hits[0] ?? { health: 0, prev: 0, status: '' };
     expect(status).not.toBe('over');
-    expect(DEFAULT_ENEMY_TYPES.map((t) => prev - t.damage)).toContain(health);
+    expect(DEFAULT_ENEMY_TYPES.map((t) => prev - (t.damage ?? 0))).toContain(health);
   });
 
   it('Scenario: Jugador quieto con el contenido por defecto (semilla 7: baja ≤ 900, pulso ≤ 4.800)', () => {
@@ -105,7 +107,8 @@ describe('Plazos con progresión (0005, medidos en el punto de control 0.3)', ()
 });
 
 // Spec run-outcome (0019), "Plazos del jugador quieto con el contenido final": con la navegación
-// por el mapa, maxAlive 300 y la curva 9/3, medido en apply con la semilla 7: primer golpe en el
+// por el mapa, maxAlive 300 y la curva 9/3 (0019; los mismos con la 9/4 y los peligros de 0020), medido
+// en apply con la semilla 7: primer golpe en el
 // tick 2.276, primer pulso en el 1.524, primera oferta en el 2.082 y primera baja en el 728.
 describe('Plazos del jugador quieto con el contenido final (0019)', () => {
   it('Scenario: Plazos del jugador quieto con el contenido final (semilla 7)', () => {
@@ -153,7 +156,8 @@ const TEN_MINUTES = 36_000;
 
 // Spec run-outcome (0010), "Partida ganable y perdible": requisito "Ganable" sobre 1..50. Las 50
 // partidas se juegan una vez (timeout propio: el global es de 20 s y en CI puede doblarse).
-const BOT_BATCH_TIMEOUT_MS = 60_000;
+// 0020: con el bot v3 y los peligros el lote pasó de 60 s en el runner de CI (≈ 70 s; ~25 s en local).
+const BOT_BATCH_TIMEOUT_MS = 180_000;
 
 describe('Balance con el contenido por defecto (0010)', () => {
   let finals: RunSnapshot[] = [];

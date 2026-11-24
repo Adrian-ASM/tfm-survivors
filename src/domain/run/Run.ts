@@ -2,6 +2,7 @@ import type { Arena } from '../arena/Arena';
 import { contactDamage } from '../collision/contact';
 import type { Enemy } from '../enemy/Enemy';
 import { Horde } from '../enemy/Horde';
+import { HazardField } from '../hazard/HazardField';
 import { FlowField } from '../map/FlowField';
 import type { GameMap } from '../map/GameMap';
 import { toMapSnapshot, type MapSnapshot } from '../map/MapSnapshot';
@@ -30,6 +31,8 @@ import { Arsenal } from '../weapon/Arsenal';
 import type { UpgradeBoard } from '../upgrade/UpgradeBoard';
 import type { RunSnapshot } from './RunSnapshot';
 import {
+  toBlastSnapshot,
+  toDynamiteSnapshot,
   toEnemySnapshot,
   toGemSnapshot,
   toOfferSnapshot,
@@ -37,6 +40,7 @@ import {
   toProjectileSnapshot,
   toPulseSnapshot,
   toUpgradeLevels,
+  toWarnings,
 } from './snapshotParts';
 import type { RunStatus } from './RunStatus';
 import { CHOOSING, LOST, RUNNING, WON, type RunOutcome, type RunPhase } from './RunPhase';
@@ -61,10 +65,15 @@ export {
 
 /**
  * Partida en curso (aggregate root). Único punto de entrada para cambiar el estado de la
- * simulación. Contrato de determinismo: el orden del tick (jugador → campo de flujo hacia su celda
- * → persecución → armas, con un único removeDead() si hay bajas que suelta sus gemas → contacto con
- * los vivos → victoria en el tick de la duración objetivo → gemas y XP → director → apertura de
- * oferta) y el consumo de azar son fijos (colisión con el mapa, campo, línea libre, navegación,
+ * simulación. Contrato de determinismo (spec simulation-loop, "Orden de los pasos del tick"): el
+ * orden del tick (1 jugador → 2 comportamiento en orden de lista: esperas que terminan, persecución
+ * por el campo de flujo hacia la celda del jugador y salidas por distancia tras moverse → 3 armas y,
+ * si hay bajas, removeDead() con sus gemas → 4 peligros (ADR-0019): explosiones caducadas, barriles
+ * cuya mecha termina (marcados todos antes, sin dañarse a sí mismos) y dinamitas que llegan, en ese
+ * orden, otro removeDead() y lanzamientos en orden de lista bajo el tope → 5 un solo golpe al
+ * jugador, el mayor entre contactos de tipos con daño y explosiones que le alcanzan → victoria en el
+ * tick de la duración objetivo → gemas y XP → director → apertura de oferta) y el consumo de azar
+ * son fijos (colisión con el mapa, campo, línea libre, navegación, comportamientos, peligros,
  * recolocación de apariciones, armas, gemas, XP y fin de partida no consumen azar; la oferta y cada
  * intento de aparición sí); cambiarlos cambia las partidas de una semilla. El mapa es parte del
  * estado inicial y sale de un flujo de azar propio (ADR-0013); no cambia durante la partida. La
@@ -84,6 +93,7 @@ export class Run {
   private readonly board: UpgradeBoard;
   private readonly mapView: MapSnapshot;
   private readonly field: FlowField;
+  private readonly hazards: HazardField;
 
   private constructor(
     private readonly rules: RunRules,
@@ -101,6 +111,7 @@ export class Run {
     this.board = initial.board;
     this.director = new WaveDirector(rules.table, rules.spawn, random);
     this.arsenal = new Arsenal(rules.loadout, rules.pulseCapacity);
+    this.hazards = new HazardField(rules.hazards, initial.dynamites);
     for (const w of rules.loadout.weapons) this.retune(w.id);
     const bonus = maxHealthBonus(rules.upgrades, this.board.levels);
     this.player = this.player.withRules(this.effectivePlayer(), bonus);
@@ -195,9 +206,10 @@ export class Run {
     this.player = this.player.move(input, TICK_SECONDS, this.arena, this.terrain);
     const { x, y } = this.player.position;
     this.field.retarget(this.terrain.colAt(x), this.terrain.rowAt(y));
-    this.horde.chase(x, y, TICK_SECONDS, this.field);
+    this.horde.act(n, x, y, TICK_SECONDS, this.field);
     if (this.arsenal.step(n, x, y, this.horde.alive) > 0) this.horde.removeDead(this.dropGem);
-    if (this.applyContact(n) || this.reachedEnd(n)) {
+    this.stepHazards(n, x, y);
+    if (this.applyHit(n) || this.reachedEnd(n)) {
       this.tickCount = n;
       return;
     }
@@ -223,12 +235,25 @@ export class Run {
   }
 
   /**
-   * Un solo golpe por tick con el mayor daño en contacto, si el jugador no es invulnerable.
+   * Paso 4 (spec simulation-loop): explosiones caducadas, explosiones del tick (barriles y luego
+   * dinamitas), bajas con su gema tras las de las armas y lanzamientos con el jugador ya movido.
+   */
+  private stepHazards(n: number, x: number, y: number): void {
+    const { hazards, horde } = this;
+    hazards.expire(n);
+    if (hazards.explode(n, horde.alive, x, y, this.player.radius)) horde.removeDead(this.dropGem);
+    hazards.launch(n, horde.alive, x, y);
+  }
+
+  /**
+   * Un solo golpe por tick con el mayor daño entre los contactos (tipos con daño por contacto) y
+   * las explosiones del paso 4 que alcanzan al jugador, si no es invulnerable (spec player-health).
    * Devuelve true si el golpe deja la vida en 0 (la partida termina en este tick).
    */
-  private applyContact(n: number): boolean {
+  private applyHit(n: number): boolean {
     const { x, y } = this.player.position;
-    const damage = contactDamage(x, y, this.player.radius, this.horde.alive);
+    const contact = contactDamage(x, y, this.player.radius, this.horde.alive);
+    const damage = Math.max(contact, this.hazards.playerHit);
     if (damage === 0 || !this.player.canBeHitAt(n)) return false;
     this.player = this.player.hit(damage, n);
     if (!this.player.health.isDepleted) return false;
@@ -265,7 +290,7 @@ export class Run {
       this.random,
     );
     if (!at) return false;
-    this.horde.spawn(type, at.x, at.y);
+    this.horde.spawn(type, at.x, at.y, this.tickCount + 1);
     return true;
   };
 
@@ -294,6 +319,13 @@ export class Run {
       enemies: Object.freeze(enemies),
       projectiles: Object.freeze(this.arsenal.projectiles.map(toProjectileSnapshot)),
       pulses: Object.freeze(this.arsenal.pulses.map(toPulseSnapshot)),
+      dynamites: Object.freeze(
+        this.hazards.dynamites.map((d) =>
+          toDynamiteSnapshot(d, k, this.rules.hazards.dynamiteRadius),
+        ),
+      ),
+      warnings: toWarnings(this.horde.alive, this.hazards.dynamites),
+      blasts: Object.freeze(this.hazards.blasts.map(toBlastSnapshot)),
       weapons: Object.freeze(
         this.arsenal.weapons.map((w) => Object.freeze({ id: w.type.id, ready: w.isChargedAt(k) })),
       ),

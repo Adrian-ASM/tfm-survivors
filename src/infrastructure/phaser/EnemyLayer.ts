@@ -1,6 +1,6 @@
-import type { EnemySnapshot } from '../../domain/run/RunSnapshot';
-import { AnimTrack, Motion, frameAt } from './art/animation';
-import { PLACEHOLDER_TEXTURE, type MovingLook } from './art/looks';
+import type { EnemySnapshot, StateKind } from '../../domain/run/RunSnapshot';
+import { AnimTrack, Motion, frameAt, type AnimSpec } from './art/animation';
+import { PLACEHOLDER_TEXTURE, type EnemyLook } from './art/looks';
 import type { SpriteCount } from './PlayerView';
 import { SlotPool } from './SlotPool';
 import { PaintedSprite, type SpriteKit } from './SpriteLike';
@@ -11,7 +11,7 @@ export interface CorpseSink {
 }
 
 /** Aspecto de un tipo sin datos (no ocurre tras `checkAppearanceRefs`): reserva gris. */
-const UNKNOWN: MovingLook = {
+const UNKNOWN: EnemyLook = {
   texture: PLACEHOLDER_TEXTURE,
   placeholder: true,
   scale: 1,
@@ -23,12 +23,19 @@ const UNKNOWN: MovingLook = {
   walk: { frames: [0], fps: 1, loop: true },
 };
 
+type EnemyAnim = 'idle' | 'walk' | 'fuse' | 'throw';
+
+/** Sprites de enemigo vivo por clase de estado de comportamiento (sonda E2E, 0020). */
+export type StateCounts = Record<StateKind, number>;
+
 interface EnemySlot {
   readonly painted: PaintedSprite;
   readonly motion: Motion;
-  readonly track: AnimTrack<'idle' | 'walk'>;
-  look: MovingLook;
+  readonly track: AnimTrack<EnemyAnim>;
+  look: EnemyLook;
   type: string;
+  /** Clase de estado contada en la sonda (null si el hueco no cuenta). */
+  kind: StateKind | null;
   x: number;
   y: number;
   radius: number;
@@ -44,6 +51,7 @@ export class EnemyLayer {
   readonly counts: SpriteCount = { visible: 0, placeholder: 0 };
   /** Sprites con aspecto de reserva por tipo (claves preasignadas con los tipos con aspecto). */
   readonly placeholdersByType: Record<string, number> = {};
+  readonly states: StateCounts = { chase: 0, fuse: 0, charge: 0, wait: 0 };
   private readonly pool: SlotPool<EnemySnapshot, EnemySlot>;
   private tick = 0;
   private clockMs = 0;
@@ -51,7 +59,7 @@ export class EnemyLayer {
   constructor(
     capacity: number,
     kit: SpriteKit,
-    private readonly looks: ReadonlyMap<string, MovingLook>,
+    private readonly looks: ReadonlyMap<string, EnemyLook>,
     corpses: CorpseSink,
   ) {
     for (const type of looks.keys()) this.placeholdersByType[type] = 0;
@@ -61,6 +69,7 @@ export class EnemyLayer {
       track: new AnimTrack(),
       look: UNKNOWN,
       type: '',
+      kind: null,
       x: 0,
       y: 0,
       radius: 0,
@@ -72,6 +81,7 @@ export class EnemyLayer {
       hide: (slot, cleared) => {
         slot.painted.show(false);
         this.count(slot, -1);
+        this.countState(slot, null);
         if (!cleared) corpses.spawn(slot.x, slot.y, slot.motion.facingLeft === true, slot.radius);
       },
     });
@@ -99,13 +109,14 @@ export class EnemyLayer {
       slot.motion.reset();
       slot.track.reset();
     }
+    this.countState(slot, enemy.stateKind);
     const look = slot.look;
     slot.motion.update(enemy.x, enemy.y, this.tick);
-    const walking = slot.motion.moving;
-    const elapsed = slot.track.play(walking ? 'walk' : 'idle', this.clockMs);
+    const [name, anim] = animFor(look, enemy.stateKind, slot.motion.moving);
+    const elapsed = slot.track.play(name, this.clockMs);
     slot.painted
       .look(look, enemy.radius)
-      .setFrame(look, frameAt(walking ? look.walk : look.idle, elapsed))
+      .setFrame(look, frameAt(anim, elapsed))
       .setFlip(look.flips && slot.motion.flipX(look.facing))
       .paint(look, enemy.damaged)
       .at(enemy.x, enemy.y)
@@ -115,6 +126,14 @@ export class EnemyLayer {
     slot.radius = enemy.radius;
   }
 
+  /** Recuento por clase de estado: mueve el hueco de su clase anterior a `kind` (null: fuera). */
+  private countState(slot: EnemySlot, kind: StateKind | null): void {
+    if (slot.kind === kind) return;
+    if (slot.kind) this.states[slot.kind] -= 1;
+    if (kind) this.states[kind] += 1;
+    slot.kind = kind;
+  }
+
   /** Contadores incrementales para la sonda (sin recorrer huecos). */
   private count(slot: EnemySlot, delta: number): void {
     this.counts.visible += delta;
@@ -122,4 +141,14 @@ export class EnemyLayer {
     this.counts.placeholder += delta;
     this.placeholdersByType[slot.type] = (this.placeholdersByType[slot.type] ?? 0) + delta;
   }
+}
+
+/**
+ * Animación de un enemigo (spec sprite-rendering 0020): `fuse` en mecha y `throw` en carga, se mueva o
+ * no; si no, `walk`/`idle` por desplazamiento. Al cambiar de nombre la pista empieza en su primer frame.
+ */
+function animFor(look: EnemyLook, kind: StateKind, moving: boolean): [EnemyAnim, AnimSpec] {
+  if (kind === 'fuse' && look.fuse) return ['fuse', look.fuse];
+  if (kind === 'charge' && look.throw) return ['throw', look.throw];
+  return moving ? ['walk', look.walk] : ['idle', look.idle];
 }

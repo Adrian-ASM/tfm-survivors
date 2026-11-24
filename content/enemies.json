@@ -1,4 +1,9 @@
 {
+  "hazards": {
+    "maxDynamites": 24,
+    "dynamiteRadius": 8,
+    "blastTicks": 30
+  },
   "types": [
     {
       "id": "goblin-torch",
@@ -7,7 +12,11 @@
       "cost": 1,
       "damage": 5,
       "health": 10,
-      "xp": 1
+      "xp": 1,
+      "behavior": {
+        "initial": "chase",
+        "states": [{ "name": "chase", "kind": "chase" }]
+      }
     },
     {
       "id": "goblin-tnt",
@@ -16,16 +25,36 @@
       "cost": 3,
       "damage": 15,
       "health": 45,
-      "xp": 4
+      "xp": 4,
+      "behavior": {
+        "initial": "approach",
+        "states": [
+          { "name": "approach", "kind": "chase", "exit": { "distance": 100, "to": "aim" } },
+          {
+            "name": "aim",
+            "kind": "charge",
+            "ticks": 30,
+            "to": "reload",
+            "dynamite": { "flightTicks": 45, "radius": 56, "damage": 15 }
+          },
+          { "name": "reload", "kind": "wait", "ticks": 90, "to": "approach" }
+        ]
+      }
     },
     {
       "id": "goblin-barrel",
       "speed": 70,
       "radius": 16,
       "cost": 2,
-      "damage": 8,
       "health": 20,
-      "xp": 2
+      "xp": 2,
+      "behavior": {
+        "initial": "approach",
+        "states": [
+          { "name": "approach", "kind": "chase", "exit": { "distance": 40, "to": "fuse" } },
+          { "name": "fuse", "kind": "fuse", "ticks": 40, "radius": 64, "damage": 25 }
+        ]
+      }
     }
   ]
 }

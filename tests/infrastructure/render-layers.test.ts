@@ -3,7 +3,12 @@ import type { EnemySnapshot, RunSnapshot } from '../../src/domain/run/RunSnapsho
 import type { RingSprite } from '../../src/infrastructure/phaser/PulseLayer';
 import { RenderLayers } from '../../src/infrastructure/phaser/RenderLayers';
 import { aDefaultConfig } from '../support/builders';
-import { fakeKit, type FakeSprite } from '../support/FakeSprite';
+import {
+  FAKE_HAZARD_CAPACITY,
+  FakeGraphics,
+  fakeKit,
+  type FakeSprite,
+} from '../support/FakeSprite';
 import { someLooks } from '../support/looks';
 import { startRun } from '../support/runs';
 import { toMapSnapshot } from '../../src/domain/map/MapSnapshot';
@@ -52,6 +57,8 @@ const foe = (id: number, x: number, y: number): EnemySnapshot => ({
   radius: 10,
   health: 10,
   damaged: false,
+  state: 'chase',
+  stateKind: 'chase',
 });
 
 function snap(tick: number, over: Partial<RunSnapshot> = {}): RunSnapshot {
@@ -65,6 +72,7 @@ function setup(maxCorpses = 64) {
   const layers = new RenderLayers(
     {
       kit,
+      warnings: () => new FakeGraphics(),
       ring: () => {
         const r = new FakeRing();
         rings.push(r);
@@ -78,6 +86,7 @@ function setup(maxCorpses = 64) {
         gems: 300,
         corpses: maxCorpses,
         visualTicks: new Map([['tests', 8]]),
+        hazards: FAKE_HAZARD_CAPACITY,
       },
     },
     { visible: 1, placeholder: 0 },
@@ -615,5 +624,30 @@ describe('RenderLayers · recuentos para la sonda', () => {
     ]);
     expect(c.ground).toEqual({ visible: 1, placeholder: 0 });
     expect(c.enemyPlaceholders).toEqual({ 'goblin-torch': 0, 'goblin-tnt': 0, 'goblin-barrel': 0 });
+  });
+
+  it('Scenario: Recuento coherente con el snapshot (peligros y clases de estado, 0020)', () => {
+    const { frame, layers } = setup();
+    layers.createHazards();
+    const s = snap(3, {
+      enemies: [
+        { ...foe(1, 10, 10), state: 'fuse', stateKind: 'fuse' },
+        { ...foe(2, 20, 20), state: 'aim', stateKind: 'charge' },
+        foe(3, 30, 30),
+      ],
+      dynamites: [{ id: 0, x: 1, y: 1, targetX: 2, targetY: 2, radius: 8, explodesAt: 9 }],
+      warnings: [
+        { x: 10, y: 10, radius: 56, source: 'fuse', explodesAt: 5 },
+        { x: 2, y: 2, radius: 48, source: 'dynamite', explodesAt: 9 },
+      ],
+      blasts: [{ id: 0, x: 5, y: 5, radius: 56, tick: 3 }],
+    });
+    frame(s);
+    const c = layers.counts;
+    expect([c.dynamites.visible, c.warnings.visible, c.explosions.visible]).toEqual([1, 2, 1]);
+    expect(c.enemyStates).toEqual({ chase: 1, fuse: 1, charge: 1, wait: 0 });
+    expect([c.dynamites.placeholder, c.warnings.placeholder, c.explosions.placeholder]).toEqual([
+      0, 0, 0,
+    ]);
   });
 });

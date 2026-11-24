@@ -13,6 +13,10 @@ export class Enemy {
   private life: number;
   /** Último tick en que recibió daño (0 = nunca; los ticks empiezan en 1). */
   private lastHitTick = 0;
+  /** Índice del estado de comportamiento en `type.behavior` (escalar mutable, ADR-0003). */
+  private stateIndex: number;
+  /** Tick en que entró en su estado (0 = antes del tick 1; `RunSetup` lo adelanta). */
+  private enteredAt: number;
 
   private constructor(
     readonly id: number,
@@ -20,10 +24,40 @@ export class Enemy {
     x: number,
     y: number,
     health: number,
+    state: number,
+    since: number,
   ) {
     this.px = x;
     this.py = y;
     this.life = health;
+    this.stateIndex = state;
+    this.enteredAt = since;
+  }
+
+  /** Estado de comportamiento actual (índice en `type.behavior`). */
+  get state(): number {
+    return this.stateIndex;
+  }
+
+  /** Tick en que entró en el estado actual. */
+  get since(): number {
+    return this.enteredAt;
+  }
+
+  /** Tick en que termina el estado actual si es temporizado (mecha, carga o espera). */
+  get stateEndsAt(): number {
+    return this.enteredAt + (this.type.behavior.ticks[this.stateIndex] ?? 0);
+  }
+
+  /** Entra en el estado `state` en el tick n (spec enemy-behavior). No toca la vida. */
+  enter(state: number, n: number): void {
+    this.stateIndex = state;
+    this.enteredAt = n;
+  }
+
+  /** El barril que explota queda dado de baja (vida 0) sin destello de daño. */
+  explode(): void {
+    this.life = 0;
   }
 
   get hp(): number {
@@ -59,8 +93,8 @@ export class Enemy {
   }
 
   /**
-   * Crea un enemigo con el centro recortado a la arena. `health` (vida inicial) solo la fija
-   * `RunSetup`; por defecto, la del tipo.
+   * Crea un enemigo con el centro recortado a la arena. `health` (vida inicial), `state` y `since`
+   * solo los fija `RunSetup`; por defecto, la vida del tipo y su estado inicial desde el tick `since`.
    */
   static spawn(
     id: number,
@@ -69,9 +103,11 @@ export class Enemy {
     y: number,
     arena: Arena,
     health: number = type.health,
+    state: number = type.behavior.initial,
+    since = 0,
   ): Enemy {
     const cx = arena.clampX(x, type.radius);
-    return new Enemy(id, type, cx, arena.clampY(y, type.radius), health);
+    return new Enemy(id, type, cx, arena.clampY(y, type.radius), health, state, since);
   }
 
   get x(): number {

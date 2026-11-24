@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { CHASE_BEHAVIOR } from '../support/builders';
 import { Arena } from '../../src/domain/arena/Arena';
 import { EnemyCatalog } from '../../src/domain/enemy/EnemyCatalog';
 import {
@@ -17,8 +18,26 @@ function catalog(): EnemyCatalog {
   if (!arena.ok) throw new Error(arena.error.message);
   const r = EnemyCatalog.create(
     [
-      { id: 'goblin-torch', speed: 90, radius: 10, cost: 1, damage: 5, health: 10, xp: 1 },
-      { id: 'goblin-tnt', speed: 45, radius: 22, cost: 3, damage: 5, health: 10, xp: 1 },
+      {
+        id: 'goblin-torch',
+        speed: 90,
+        radius: 10,
+        cost: 1,
+        damage: 5,
+        health: 10,
+        xp: 1,
+        behavior: CHASE_BEHAVIOR,
+      },
+      {
+        id: 'goblin-tnt',
+        speed: 45,
+        radius: 22,
+        cost: 3,
+        damage: 5,
+        health: 10,
+        xp: 1,
+        behavior: CHASE_BEHAVIOR,
+      },
     ],
     arena.value,
   );

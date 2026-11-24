@@ -1,4 +1,5 @@
 import { expect, test } from 'vitest';
+import { CHASE_BEHAVIOR } from '../support/builders';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import { Run, type RunSetup } from '../../src/domain/run/Run';
 import type { RunConfig } from '../../src/domain/run/RunConfig';
@@ -6,6 +7,7 @@ import { loadRunConfig } from '../../src/infrastructure/content/loadRunConfig';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import type { WeaponsConfig } from '../../src/domain/weapon/WeaponLoadout';
 import { pileOnPlayer } from '../support/runs';
+import { HAZARD_BLOCK_TICKS, hazardWorstCase } from '../support/hazardBench';
 import { seededRun } from '../../src/composition/seedSource';
 import { FlowField } from '../../src/domain/map/FlowField';
 import type { GameMap } from '../../src/domain/map/GameMap';
@@ -55,7 +57,7 @@ function benchConfig(weapons?: WeaponsConfig): RunConfig {
   return {
     ...config.value,
     player: { ...player, maxHealth: BENCH_HEALTH },
-    enemies: { types: [...types, BENCH_TYPE] },
+    enemies: { ...enemies, types: [...types, BENCH_TYPE] },
     weapons: weapons ?? config.value.weapons,
     upgrades: { upgrades: list },
     run: { durationSeconds: BENCH_DURATION },
@@ -71,6 +73,7 @@ const BENCH_TYPE = {
   damage: 1,
   health: BENCH_HEALTH,
   xp: 1,
+  behavior: CHASE_BEHAVIOR,
 };
 
 /** Mundo del contenido por defecto (content/arena.json): todas las posiciones se derivan de él. */
@@ -236,6 +239,36 @@ test('Peor caso con proyectiles: 300 vivos y 32 proyectiles en todos los ticks',
   expect(belowCap).toBe(0);
   expect(result.latency.samplesCount).toBeGreaterThanOrEqual(MEASURED_TICKS);
   expect(result.latency.mean).toBeLessThanOrEqual(MAX_MEAN_MS);
+});
+
+/**
+ * Peor caso con peligros (spec simulation-loop, 0020): 300 vivos (100 barriles en mecha escalonada,
+ * 100 TNT en carga lista y 100 `goblin-torch` encima del jugador), el tope de dinamitas en vuelo en
+ * todos los ticks y explosiones con ≥ 50 enemigos dentro en cada ventana de 10 ticks (lo comprueba
+ * hazard-bench-setup.test.ts). La partida se rehace con `RunSetup` cada 60 ticks, fuera del tiempo
+ * medido, hasta 600; la media es la de los 600 ticks. Objetivo informativo ≤ 0,25 ms (verify-report).
+ */
+test('Peor caso con peligros: 300 vivos, mechas, cargas y el tope de dinamitas', async ({
+  bench,
+}) => {
+  const terrain = seededRun(SEED).terrain;
+  const config = benchConfig();
+  const at = start(undefined, undefined, terrain, config).snapshot().player;
+  let total = 0;
+  let samples = 0;
+  for (let block = 0; block < MEASURED_TICKS / HAZARD_BLOCK_TICKS; block++) {
+    const run = start(hazardWorstCase(config, at), undefined, terrain, config);
+    const result = await bench('Run.tick · 300 vivos + peligros', () => {
+      step(run);
+    }).run({ iterations: HAZARD_BLOCK_TICKS, time: 0, warmupIterations: 0, warmupTime: 0 });
+    expect(run.snapshot().status).toBe('running');
+    total += result.latency.mean * result.latency.samplesCount;
+    samples += result.latency.samplesCount;
+  }
+  const mean = total / samples;
+  console.info(`Run.tick · 300 vivos + peligros: media ${mean.toFixed(4)} ms (600 ticks)`);
+  expect(samples).toBeGreaterThanOrEqual(MEASURED_TICKS);
+  expect(mean).toBeLessThanOrEqual(MAX_MEAN_MS);
 });
 
 test('Peor caso con gemas: 300 vivos, 32 proyectiles y 300 gemas atraídas (60 ticks)', async ({

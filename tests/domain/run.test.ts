@@ -9,7 +9,7 @@ import {
 import type { RunConfig } from '../../src/domain/run/RunConfig';
 import { UNKNOWN_ENEMY_TYPE } from '../../src/domain/wave/WaveTable';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
-import { aRunConfig, aSegment, aWavesConfig } from '../support/builders';
+import { CHASING, aRunConfig, aSegment, aWavesConfig } from '../support/builders';
 
 function startedRun(config: RunConfig = aRunConfig(), setup?: RunSetup): Run {
   const r = Run.start(config, new Mulberry32RandomGenerator(42), setup);
@@ -29,6 +29,9 @@ describe('Run', () => {
       enemies: [],
       projectiles: [],
       pulses: [],
+      dynamites: [],
+      warnings: [],
+      blasts: [],
       weapons: [],
       gems: [],
       progression: { level: 1, xp: 0, xpToNext: 5, pendingLevelUps: 0 },
@@ -183,8 +186,26 @@ describe('Run · estado inicial opcional (RunSetup)', () => {
       ],
     });
     expect(run.snapshot().enemies).toEqual([
-      { id: 0, type: 'goblin-torch', x: 100, y: 270, radius: 10, health: 10, damaged: false },
-      { id: 1, type: 'goblin-tnt', x: 938, y: 22, radius: 22, health: 45, damaged: false },
+      {
+        id: 0,
+        type: 'goblin-torch',
+        x: 100,
+        y: 270,
+        radius: 10,
+        health: 10,
+        damaged: false,
+        ...CHASING,
+      },
+      {
+        id: 1,
+        type: 'goblin-tnt',
+        x: 938,
+        y: 22,
+        radius: 22,
+        health: 45,
+        damaged: false,
+        ...CHASING,
+      },
     ]);
   });
 

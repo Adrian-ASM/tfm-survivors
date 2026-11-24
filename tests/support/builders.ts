@@ -6,6 +6,8 @@ import enemiesJson from '../../content/enemies.json';
 import progressionJson from '../../content/progression.json';
 import upgradesJson from '../../content/upgrades.json';
 import type { EnemyTypeConfig } from '../../src/domain/enemy/EnemyType';
+import type { BehaviorConfig } from '../../src/domain/enemy/behavior/BehaviorConfig';
+import type { HazardRulesConfig } from '../../src/domain/hazard/HazardRules';
 import type { RunConfig, UpgradesConfig } from '../../src/domain/run/RunConfig';
 import type { WeaponsConfig } from '../../src/domain/weapon/WeaponLoadout';
 import type { WeaponTypeConfig } from '../../src/domain/weapon/WeaponType';
@@ -97,7 +99,29 @@ export const DEFAULT_WEAPONS: WeaponsConfig = {
 export const NO_WEAPONS: WeaponsConfig = { maxProjectiles: 32, hitFlashTicks: 4, weapons: [] };
 
 /** Tipos de enemigo por defecto (torch, tnt, barrel), leídos de content/enemies.json (0019). */
-export const DEFAULT_ENEMY_TYPES: readonly EnemyTypeConfig[] = frozen(enemiesJson.types);
+export const DEFAULT_ENEMY_TYPES: readonly EnemyTypeConfig[] = frozen(
+  enemiesJson.types as EnemyTypeConfig[],
+);
+
+/** Globales de los peligros por defecto (content/enemies.json, `hazards`; 0020). */
+export const DEFAULT_HAZARDS: HazardRulesConfig = frozen(enemiesJson.hazards);
+
+/**
+ * Comportamiento de un tipo genérico de escenario (spec enemy-behavior, convención del delta 0020):
+ * un único estado de persecución sin salida, como `goblin-torch`.
+ */
+export const CHASE_BEHAVIOR: BehaviorConfig = Object.freeze({
+  initial: 'chase',
+  states: Object.freeze([Object.freeze({ name: 'chase', kind: 'chase' as const })]),
+});
+
+/**
+ * Tipos de escenario: los stats por defecto con `CHASE_BEHAVIOR` (los escenarios de 0001–0019 no
+ * conocen mechas ni cargas). El contenido por defecto (`aDefaultConfig`) usa los de content/.
+ */
+export const SCENARIO_ENEMY_TYPES: readonly EnemyTypeConfig[] = Object.freeze(
+  DEFAULT_ENEMY_TYPES.map((t) => Object.freeze({ ...t, behavior: CHASE_BEHAVIOR })),
+);
 
 /**
  * Tabla de oleadas y parámetros de spawn, leídos de content/waves.json (una sola fuente: el radio
@@ -160,7 +184,7 @@ export const aRunConfig = (overrides: Partial<PlayerConfig> = {}): RunConfig => 
     invulnerabilityTicks: overrides.invulnerabilityTicks ?? 30,
     pickupRadius: overrides.pickupRadius ?? 64,
   },
-  enemies: { types: DEFAULT_ENEMY_TYPES },
+  enemies: { hazards: DEFAULT_HAZARDS, types: SCENARIO_ENEMY_TYPES },
   waves: DEFAULT_WAVES,
   weapons: NO_WEAPONS,
   progression: SCENARIO_PROGRESSION,
@@ -198,6 +222,7 @@ export const aDefaultConfig = (): RunConfig =>
         ...aRunConfig({ pickupRadius: DEFAULT_PICKUP_RADIUS, speed: playerJson.speed }),
         arena: CONTENT_ARENA,
         progression: DEFAULT_PROGRESSION,
+        enemies: { hazards: DEFAULT_HAZARDS, types: DEFAULT_ENEMY_TYPES },
       },
       DEFAULT_WEAPONS,
     ),
@@ -218,7 +243,7 @@ export const aWavesConfig = (
   const base = aRunConfig();
   return {
     ...base,
-    enemies: { types: types ?? base.enemies.types },
+    enemies: { ...base.enemies, types: types ?? base.enemies.types },
     waves: { ...base.waves, ...waves, spawn: { ...base.waves.spawn, ...spawn } },
   };
 };
@@ -241,9 +266,10 @@ interface MutableType {
   speed: number;
   radius: number;
   cost: number;
-  damage: number;
+  damage?: number;
   health: number;
   xp: number;
+  behavior: { initial: string; states: Record<string, unknown>[] };
 }
 interface MutableSegment {
   fromSecond: number;
@@ -279,7 +305,10 @@ export interface RawContent {
     pickupRadius: number;
   };
   arena: { width: number; height: number; maxView: { width: number; height: number } };
-  enemies: { types: [MutableType, MutableType, MutableType] };
+  enemies: {
+    hazards: { maxDynamites: number; dynamiteRadius: number; blastTicks: number };
+    types: [MutableType, MutableType, MutableType];
+  };
   waves: {
     maxAlive: number;
     maxBudget: number;
@@ -329,3 +358,155 @@ export const withScenarioCurve = (config: RunConfig): RunConfig => ({
   ...config,
   progression: { ...config.progression, baseXp: 5, xpGrowth: 5 },
 });
+
+/** Tipo de escenario con comportamiento (0020): stats y estados de los escenarios de la spec. */
+interface BehaviorTypeOptions {
+  readonly id?: string;
+  readonly speed?: number;
+  readonly radius?: number;
+  readonly health?: number;
+  readonly xp?: number;
+  readonly damage?: number;
+}
+
+/**
+ * Barril de prueba de "Mecha y explosión con el jugador quieto" (spec enemy-behavior): velocidad 70,
+ * radio 16, vida 20, xp 2, sin daño por contacto, activación a 40, mecha de 30 ticks, radio 56 y
+ * daño 25.
+ */
+export const aBarrelType = (
+  o: BehaviorTypeOptions & {
+    readonly activation?: number;
+    readonly fuseTicks?: number;
+    readonly blastRadius?: number;
+    readonly blastDamage?: number;
+  } = {},
+): EnemyTypeConfig => ({
+  id: o.id ?? 'goblin-barrel',
+  speed: o.speed ?? 70,
+  radius: o.radius ?? 16,
+  cost: 2,
+  ...(o.damage === undefined ? {} : { damage: o.damage }),
+  health: o.health ?? 20,
+  xp: o.xp ?? 2,
+  behavior: {
+    initial: 'approach',
+    states: [
+      { name: 'approach', kind: 'chase', exit: { distance: o.activation ?? 40, to: 'fuse' } },
+      {
+        name: 'fuse',
+        kind: 'fuse',
+        ticks: o.fuseTicks ?? 30,
+        radius: o.blastRadius ?? 56,
+        damage: o.blastDamage ?? 25,
+      },
+    ],
+  },
+});
+
+/**
+ * TNT de prueba de "Ciclo completo de lanzamiento" (spec enemy-behavior): velocidad 45, radio 22,
+ * vida 45, contacto 15, lanzamiento a 200, carga de 20, dinamita de vuelo 40, radio 48 y daño 20,
+ * y espera de 60.
+ */
+export const aTntType = (
+  o: BehaviorTypeOptions & {
+    readonly launch?: number;
+    readonly chargeTicks?: number;
+    readonly flightTicks?: number;
+    readonly blastRadius?: number;
+    readonly blastDamage?: number;
+    readonly waitTicks?: number;
+  } = {},
+): EnemyTypeConfig => ({
+  id: o.id ?? 'goblin-tnt',
+  speed: o.speed ?? 45,
+  radius: o.radius ?? 22,
+  cost: 3,
+  damage: o.damage ?? 15,
+  health: o.health ?? 45,
+  xp: o.xp ?? 4,
+  behavior: {
+    initial: 'approach',
+    states: [
+      { name: 'approach', kind: 'chase', exit: { distance: o.launch ?? 200, to: 'aim' } },
+      {
+        name: 'aim',
+        kind: 'charge',
+        ticks: o.chargeTicks ?? 20,
+        to: 'reload',
+        dynamite: {
+          flightTicks: o.flightTicks ?? 40,
+          radius: o.blastRadius ?? 48,
+          damage: o.blastDamage ?? 20,
+        },
+      },
+      { name: 'reload', kind: 'wait', ticks: o.waitTicks ?? 60, to: 'approach' },
+    ],
+  },
+});
+
+/**
+ * Tipo de "Salida por distancia justo en el límite": velocidad 60, persecución con salida a 100 px
+ * hacia una espera de 600 ticks que vuelve a la persecución.
+ */
+export const aWaitType = (
+  o: BehaviorTypeOptions & { readonly exit?: number; readonly waitTicks?: number } = {},
+): EnemyTypeConfig => ({
+  id: o.id ?? 'waiter',
+  speed: o.speed ?? 60,
+  radius: o.radius ?? 10,
+  cost: 1,
+  damage: o.damage ?? 10,
+  health: o.health ?? 10,
+  xp: o.xp ?? 1,
+  behavior: {
+    initial: 'chase',
+    states: [
+      { name: 'chase', kind: 'chase', exit: { distance: o.exit ?? 100, to: 'wait' } },
+      { name: 'wait', kind: 'wait', ticks: o.waitTicks ?? 600, to: 'chase' },
+    ],
+  },
+});
+
+/**
+ * Enemigo de prueba quieto ("quieto en …" de los escenarios de peligros): una espera que no acaba
+ * en la partida. Sin daño por contacto salvo que se pida; radio 10, vida 50 y xp 1 por defecto.
+ */
+export const aStillType = (o: BehaviorTypeOptions = {}): EnemyTypeConfig => ({
+  id: o.id ?? 'still',
+  speed: o.speed ?? 60,
+  radius: o.radius ?? 10,
+  cost: 1,
+  ...(o.damage === undefined ? {} : { damage: o.damage }),
+  health: o.health ?? 50,
+  xp: o.xp ?? 1,
+  behavior: {
+    initial: 'still',
+    states: [{ name: 'still', kind: 'wait', ticks: 1_000_000, to: 'still' }],
+  },
+});
+
+/** Estado inicial de un enemigo de `RunSetup`: `elapsed` ticks ya pasados en él (0020). */
+export const inState = (state: string, elapsed = 0) => ({ state, elapsed });
+
+/**
+ * Dinamita de `RunSetup` (0020): lanzada "en el tick 0" desde (x, y) hacia el objetivo; explota en
+ * el tick `ticksLeft`. Por defecto, radio 48 y daño 20 (la de "Posiciones del vuelo").
+ */
+export const aDynamite = (
+  target: { readonly x: number; readonly y: number },
+  ticksLeft: number,
+  o: { readonly from?: { x: number; y: number }; radius?: number; damage?: number } = {},
+) => ({
+  x: o.from?.x ?? target.x,
+  y: o.from?.y ?? target.y,
+  targetX: target.x,
+  targetY: target.y,
+  ticksLeft,
+  radius: o.radius ?? 48,
+  damage: o.damage ?? 20,
+});
+
+/** Estado de un enemigo genérico de escenario en el snapshot (0020). */
+export const CHASING = { state: 'chase', stateKind: 'chase' } as const;

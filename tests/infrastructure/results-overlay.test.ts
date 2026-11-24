@@ -111,7 +111,7 @@ function endedRun(outcome: 'won' | 'lost'): StartedRun {
   const config: RunConfig =
     outcome === 'won'
       ? { ...base, run: { durationSeconds: 1 } }
-      : { ...base, enemies: { types: lethal } };
+      : { ...base, enemies: { ...base.enemies, types: lethal } };
   const center = { x: base.arena.width / 2, y: base.arena.height / 2 };
   const setup = outcome === 'won' ? {} : { enemies: [{ type: 'goblin-torch', ...center }] };
   const r = new StartRun().execute(config, new Mulberry32RandomGenerator(42), setup);

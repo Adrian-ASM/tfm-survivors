@@ -20,6 +20,7 @@ import { UpgradeCatalog } from '../upgrade/UpgradeCatalog';
 import type { UpgradeTypeConfig } from '../upgrade/UpgradeType';
 import { RunDuration } from './RunDuration';
 import { MapRules, type MapConfig } from '../map/MapRules';
+import { HazardRules, type HazardRulesConfig } from '../hazard/HazardRules';
 
 export type { WeaponsConfig, PlayerRules };
 export {
@@ -45,7 +46,11 @@ export interface RunConfig {
     readonly height: number;
   };
   readonly player: PlayerRules;
-  readonly enemies: { readonly types: readonly EnemyTypeConfig[] };
+  /** Globales de los peligros y tipos de enemigo (content/enemies.json). */
+  readonly enemies: {
+    readonly hazards: HazardRulesConfig;
+    readonly types: readonly EnemyTypeConfig[];
+  };
   readonly waves: {
     readonly maxAlive: number;
     readonly maxBudget: number;
@@ -76,6 +81,8 @@ export interface RunRules {
   readonly arena: Arena;
   readonly player: PlayerRules;
   readonly catalog: EnemyCatalog;
+  /** Tope de dinamitas, radio visual y duración visible de las explosiones (spec enemy-hazards). */
+  readonly hazards: HazardRules;
   readonly table: WaveTable;
   readonly spawn: SpawnRules;
   /** Armas equipadas al empezar, en el orden en que actúan. */
@@ -110,6 +117,8 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
   if (playerError) return err(playerError);
   const catalog = EnemyCatalog.create(config.enemies.types, arena.value);
   if (!catalog.ok) return catalog;
+  const hazards = HazardRules.create(config.enemies.hazards);
+  if (!hazards.ok) return hazards;
   const table = WaveTable.create(config.waves.segments, catalog.value);
   if (!table.ok) return table;
   const { maxAlive, maxBudget } = config.waves;
@@ -138,6 +147,7 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
     arena: arena.value,
     player: config.player,
     catalog: catalog.value,
+    hazards: hazards.value,
     table: table.value,
     spawn: spawn.value,
     loadout: loadout.value,

@@ -6,7 +6,7 @@ import type { RandomGenerator } from '../../src/domain/shared/RandomGenerator';
 import type { EnemyTypeConfig } from '../../src/domain/enemy/EnemyType';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import { seededRun, type MapMode } from '../../src/composition/seedSource';
-import { aRunConfig, aSegment, aWavesConfig } from './builders';
+import { CHASE_BEHAVIOR, aDefaultConfig, aRunConfig, aSegment, aWavesConfig } from './builders';
 import { emptyWithExit } from './mapLayouts';
 import type { ReferenceBot } from './policies';
 
@@ -19,6 +19,7 @@ export const aProbeType = (overrides: Partial<EnemyTypeConfig> = {}): EnemyTypeC
   damage: 10,
   health: 5,
   xp: 1,
+  behavior: CHASE_BEHAVIOR,
   ...overrides,
 });
 
@@ -47,6 +48,36 @@ export function aContactConfig(
     ...(options.maxBudget === undefined ? {} : { maxBudget: options.maxBudget }),
   });
   return { ...base, player: aRunConfig(options.player).player };
+}
+
+/**
+ * Contenido de los escenarios de comportamiento y peligros (0020): `aContactConfig` en el mundo del
+ * contenido (3.840 × 2.160, las posiciones de la spec llegan a (1.300, 1.000)), jugador a 210 px/s,
+ * radio de recogida 1 (las gemas de las bajas quedan en el suelo salvo que solapen al jugador)
+ * y radio 16, sin armas ni presupuesto salvo que se pidan, y los globales de peligros dados.
+ */
+export function aBehaviorConfig(
+  types: readonly EnemyTypeConfig[],
+  options: {
+    player?: Partial<PlayerConfig>;
+    hazards?: Partial<RunConfig['enemies']['hazards']>;
+    segments?: Segments;
+    maxAlive?: number;
+    maxBudget?: number;
+  } = {},
+): RunConfig {
+  const base = aContactConfig({
+    types,
+    player: { speed: 210, pickupRadius: 1, ...options.player },
+    ...(options.segments ? { segments: options.segments } : {}),
+    ...(options.maxAlive === undefined ? {} : { maxAlive: options.maxAlive }),
+    ...(options.maxBudget === undefined ? {} : { maxBudget: options.maxBudget }),
+  });
+  return {
+    ...base,
+    arena: aDefaultConfig().arena,
+    enemies: { ...base.enemies, hazards: { ...base.enemies.hazards, ...options.hazards } },
+  };
 }
 
 export function startRun(config: RunConfig, setup?: RunSetup, random?: RandomGenerator): Run {

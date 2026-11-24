@@ -135,6 +135,15 @@ export function fleeInput(snapshot: RunSnapshot, world: BotWorld): PlayerInput {
     fx += dx / d ** 3;
     fy += dy / d ** 3;
   }
+  return steer(snapshot, world, fx, fy);
+}
+
+/**
+ * Cuantiza (fx, fy) a una de las 8 direcciones y aplica la regla de direcciones bloqueadas (paso 3
+ * de Movimiento, spec run-outcome): +45°, −45°, +90°, −90°, +135° y −135°; si todas lo están, o el
+ * vector es nulo, quieto.
+ */
+function steer(snapshot: RunSnapshot, world: BotWorld, fx: number, fy: number): PlayerInput {
   if (fx === 0 && fy === 0) return PlayerInput.NONE;
   const k = Math.round(Math.atan2(fy, fx) / EIGHTH);
   for (const turn of [0, ...TURNS]) {
@@ -144,7 +153,33 @@ export function fleeInput(snapshot: RunSnapshot, world: BotWorld): PlayerInput {
   return PlayerInput.NONE;
 }
 
-/** Bot de referencia del balance: movimiento de huida y elección por prioridad. */
+/**
+ * Esquiva del bot v3 (spec run-outcome, 0020), con el snapshot anterior: un aviso es amenazante si
+ * la distancia de su centro al del jugador es estrictamente menor que radio del aviso + radio del
+ * jugador + s, con s = velocidad efectiva / 60 (un tick de movimiento). Con ≥ 1 amenazante, suma
+ * los vectores unitarios aviso → jugador, la cuantiza a 8 direcciones y aplica la regla de
+ * direcciones bloqueadas. Sin amenazas o con suma nula (también si el jugador está en el centro de
+ * todos ellos), el input es el de la huida (`fleeInput`). Sin pesos ni márgenes propios: solo lee
+ * lo que expone el snapshot (no conoce el daño ni las dinamitas aún no lanzadas).
+ */
+export function dodgeInput(snapshot: RunSnapshot, world: BotWorld): PlayerInput {
+  const { x, y, radius } = snapshot.player;
+  const step = world.speedOf(snapshot) * TICK_SECONDS;
+  let fx = 0;
+  let fy = 0;
+  for (const w of snapshot.warnings) {
+    const dx = x - w.x;
+    const dy = y - w.y;
+    const d = Math.hypot(dx, dy);
+    if (d >= w.radius + radius + step || d === 0) continue;
+    fx += dx / d;
+    fy += dy / d;
+  }
+  if (fx === 0 && fy === 0) return fleeInput(snapshot, world);
+  return steer(snapshot, world, fx, fy);
+}
+
+/** Bot de referencia del balance (v3): esquiva de avisos, huida y elección por prioridad. */
 export interface ReferenceBot {
   input(snapshot: RunSnapshot): PlayerInput;
   pick(offer: readonly OfferSnapshot[]): number;
@@ -178,14 +213,15 @@ export function botWorld(config: RunConfig, map: MapSnapshot): BotWorld {
 }
 
 /**
- * Bot de referencia ligado a la partida (spec run-outcome, 0013 y 0015): huye de las paredes de
+ * Bot de referencia v3 ligado a la partida (spec run-outcome, 0013, 0015 y 0020): esquiva los avisos
+ * amenazantes (`dodgeInput`) y, si no, huye de las paredes de
  * `config.arena` y de las celdas no caminables de `map` (el mapa de esa partida, `run.map`) sin
  * recibir ningún otro dato de tamaño ni de mapa.
  */
 export function referenceBot(config: RunConfig, map: MapSnapshot): ReferenceBot {
   const world = botWorld(config, map);
   return {
-    input: (snapshot) => fleeInput(snapshot, world),
+    input: (snapshot) => dodgeInput(snapshot, world),
     pick: (offer) => pickByPriority(offer),
   };
 }

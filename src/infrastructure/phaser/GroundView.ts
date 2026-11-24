@@ -41,7 +41,8 @@ export interface MapArtLayers {
 /**
  * Área de juego de una partida, en orden de pintado: el fondo del mundo (debajo de todo; se mueve
  * con el mundo, sin `scrollFactor`), la capa baja del mapa (agua, orillas, puentes, troncos y
- * fachada), las entidades y la capa alta del mapa (copas y tejado). HUD y overlays, después.
+ * fachada), las entidades, la capa alta del mapa (copas y tejado) y la de peligros (avisos, dinamitas y
+ * explosiones, 0020). HUD y overlays, después.
  */
 export function createPlayfield(
   parts: RenderParts,
@@ -52,5 +53,8 @@ export function createPlayfield(
   const counts = createGround(ground, parts.looks.ground, world);
   mapArt.low();
   const layers = new RenderLayers(parts, counts);
-  return { layers, mapArt: mapArt.high() };
+  const canvas = mapArt.high();
+  // Capa de peligros (0020): sobre la capa alta del mapa y bajo el HUD (que se crea después).
+  layers.createHazards();
+  return { layers, mapArt: canvas };
 }

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { CHASE_BEHAVIOR } from '../support/builders';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import { Run, type RunSetup } from '../../src/domain/run/Run';
 import type { RunConfig } from '../../src/domain/run/RunConfig';
@@ -207,7 +208,18 @@ describe('Run · posición de aparición', () => {
 describe('Run · catálogo', () => {
   it('Valores de cada tipo llegan al dominio', () => {
     const config = aWavesConfig({
-      types: [{ id: 'goblin-torch', speed: 90, radius: 10, cost: 1, damage: 5, health: 10, xp: 1 }],
+      types: [
+        {
+          id: 'goblin-torch',
+          speed: 90,
+          radius: 10,
+          cost: 1,
+          damage: 5,
+          health: 10,
+          xp: 1,
+          behavior: CHASE_BEHAVIOR,
+        },
+      ],
       segments: [aSegment(['goblin-torch'], 1)],
     });
     const { run, births } = simulate(config, 60);

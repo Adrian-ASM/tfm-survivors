@@ -12,6 +12,10 @@ export const FRAME_INDEX_MUST_BE_INTEGER = 'Un índice de frame es un entero ≥
 export const MAX_CORPSES_MUST_BE_INTEGER = 'El tope de cadáveres es un entero ≥ 1.';
 export const COLOR_FORMAT = 'El color de reserva es #rrggbb.';
 export const DEATH_MUST_NOT_LOOP = 'La animación de muerte no va en bucle.';
+export const EXPLODE_MUST_NOT_LOOP = 'La animación de la explosión no va en bucle.';
+export const ALPHA_OUT_OF_RANGE = 'La opacidad de un aviso está en (0, 1).';
+export const MAX_BLAST_SPRITES_MUST_BE_INTEGER =
+  'El tope de explosiones pintadas es un entero ≥ 1.';
 
 const FrameSize = z
   .number()
@@ -66,6 +70,37 @@ const BaseShape = {
 export const StillSchema = z.strictObject({ ...BaseShape, idle: AnimSchema });
 export const MovingSchema = z.strictObject({ ...BaseShape, idle: AnimSchema, walk: AnimSchema });
 export const CorpseSchema = z.strictObject({ ...BaseShape, death: DeathSchema });
+
+/**
+ * Enemigo (0020): `idle`/`walk` y, si su comportamiento las pide, `fuse` (mecha) y `throw` (carga),
+ * de la misma hoja. La exigencia por clase de estado la comprueba la composición con el contenido.
+ */
+export const EnemyAspectSchema = z.strictObject({
+  ...BaseShape,
+  idle: AnimSchema,
+  walk: AnimSchema,
+  fuse: AnimSchema.optional(),
+  throw: AnimSchema.optional(),
+});
+
+/** Explosión (0020): `explode` se reproduce una vez y se queda en su último frame. */
+export const ExplosionSchema = z.strictObject({
+  ...BaseShape,
+  explode: z.strictObject({
+    frames: Frames,
+    fps: Fps,
+    loop: z.literal(false, { error: EXPLODE_MUST_NOT_LOOP }),
+  }),
+});
+
+const Alpha = z
+  .number({ error: ALPHA_OUT_OF_RANGE })
+  .gt(0, { error: ALPHA_OUT_OF_RANGE })
+  .lt(1, { error: ALPHA_OUT_OF_RANGE });
+const WarningLook = z.strictObject({ color: Hex, alpha: Alpha });
+
+/** Avisos en el suelo (0020): forma de color sin hoja, uno por origen; deja ver lo que cubre. */
+const WarningsSchema = z.strictObject({ fuse: WarningLook, dynamite: WarningLook });
 
 export const TERRAIN_COLORS_MUST_DIFFER =
   'Los colores del mapa (trunk, water, bridge, castle) son distintos dos a dos.';
@@ -179,11 +214,18 @@ export const AppearanceSchema = z.strictObject({
     .int({ error: MAX_CORPSES_MUST_BE_INTEGER })
     .min(1, { error: MAX_CORPSES_MUST_BE_INTEGER }),
   player: MovingSchema,
-  enemies: z.record(z.string(), MovingSchema),
+  maxBlastSprites: z
+    .number()
+    .int({ error: MAX_BLAST_SPRITES_MUST_BE_INTEGER })
+    .min(1, { error: MAX_BLAST_SPRITES_MUST_BE_INTEGER }),
+  enemies: z.record(z.string(), EnemyAspectSchema),
   projectile: StillSchema,
   gem: StillSchema,
   ground: StillSchema,
   corpse: CorpseSchema,
+  dynamite: StillSchema,
+  explosion: ExplosionSchema,
+  warnings: WarningsSchema,
   terrain: TerrainSchema,
   map: MapAppearanceSchema,
 });
@@ -192,9 +234,13 @@ export type Appearance = z.output<typeof AppearanceSchema>;
 export type MapAppearance = z.output<typeof MapAppearanceSchema>;
 /** Recorte en px de una hoja no regular (marcos del puente). */
 export type SheetRect = z.output<typeof RectSchema>;
-export type Anim = z.output<typeof AnimSchema> | z.output<typeof DeathSchema>;
+export type Anim =
+  z.output<typeof AnimSchema> | z.output<typeof DeathSchema> | ExplosionAspect['explode'];
 export type StillAspect = z.output<typeof StillSchema>;
 export type MovingAspect = z.output<typeof MovingSchema>;
 export type CorpseAspect = z.output<typeof CorpseSchema>;
+export type EnemyAspect = z.output<typeof EnemyAspectSchema>;
+export type ExplosionAspect = z.output<typeof ExplosionSchema>;
+export type WarningLooks = z.output<typeof WarningsSchema>;
 /** Lo común a todos los aspectos: hoja, escala, origen, orientación y color de reserva. */
-export type Aspect = StillAspect | MovingAspect | CorpseAspect;
+export type Aspect = StillAspect | MovingAspect | CorpseAspect | EnemyAspect | ExplosionAspect;

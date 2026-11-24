@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { RunConfig } from '../../src/domain/run/RunConfig';
-import { LINTER, aSegment, LONG_RUN_HEALTH, withWeapons } from '../support/builders';
+import { CHASING, LINTER, aSegment, LONG_RUN_HEALTH, withWeapons } from '../support/builders';
 import { StubRandom } from '../support/random';
 import { aContactConfig, aProbeType, enemyById, startRun, ticks } from '../support/runs';
 import { aPulse, weaponsOf } from '../support/weapons';
@@ -131,7 +131,7 @@ describe('Bajas, director y persecución', () => {
     expect(snap?.status).toBe('running');
     expect(snap?.player.health).toBeLessThan(1000);
     expect(snap?.enemies).toEqual([
-      { id: 0, type: 'probe', ...CENTER, radius: 10, health: 5, damaged: false },
+      { id: 0, type: 'probe', ...CENTER, radius: 10, health: 5, damaged: false, ...CHASING },
     ]);
   });
 

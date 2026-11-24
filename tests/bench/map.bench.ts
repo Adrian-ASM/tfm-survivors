@@ -49,7 +49,10 @@ test('Tope de vivos con el mapa generado: Run.tick con 300 vivos e input (1, 0)'
   const config = {
     ...content,
     player: { ...content.player, maxHealth: BENCH_HEALTH },
-    enemies: { types: content.enemies.types.map((t) => ({ ...t, health: BENCH_HEALTH })) },
+    enemies: {
+      ...content.enemies,
+      types: content.enemies.types.map((t) => ({ ...t, health: BENCH_HEALTH })),
+    },
     run: { durationSeconds: BENCH_DURATION },
   };
   const { random, terrain } = seededRun(SEED);

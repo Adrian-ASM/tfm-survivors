@@ -13,6 +13,8 @@ export const FOAM_FILE = 'Terrain/Water/Foam/Foam.png';
 export const TREE_FILE = 'Resources/Trees/Tree.png';
 export const BRIDGE_FILE = 'Terrain/Bridge/Bridge_All.png';
 export const CASTLE_FILE = 'Factions/Knights/Buildings/Castle/Castle_Blue.png';
+export const DYNAMITE_FILE = 'Factions/Goblins/Troops/TNT/Dynamite/Dynamite.png';
+export const EXPLOSION_FILE = 'Effects/Explosion/Explosions.png';
 
 const FILES = [
   TORCH_FILE,
@@ -28,6 +30,8 @@ const FILES = [
   TREE_FILE,
   BRIDGE_FILE,
   CASTLE_FILE,
+  DYNAMITE_FILE,
+  EXPLOSION_FILE,
 ];
 
 /** Los 15 casos de orilla (lados de río, letras en orden N-E-S-W; design 0016 §12.2 B2). */
@@ -81,12 +85,16 @@ const still = (file: string, size: number, color: string): Json => ({
 
 export interface RawAppearance {
   maxCorpses: unknown;
+  maxBlastSprites: unknown;
   player: Json;
   enemies: Record<string, Json>;
   projectile: Json;
   gem: Json;
   ground: Json;
   corpse: Json;
+  dynamite: Json;
+  explosion: Json;
+  warnings: Record<string, Json>;
   terrain: Record<string, unknown>;
   map: Record<string, Json>;
   [extra: string]: unknown;
@@ -137,13 +145,23 @@ export function rawAppearance(): RawAppearance {
     player: moving(ARCHER_FILE, 192, '#4cc38a'),
     enemies: {
       'goblin-torch': moving(TORCH_FILE, 192, '#e5484d'),
-      'goblin-tnt': moving(TNT_FILE, 192, '#8e4ec6'),
-      'goblin-barrel': moving(BARREL_FILE, 128, '#f76b15'),
+      'goblin-tnt': { ...moving(TNT_FILE, 192, '#8e4ec6'), throw: anim([14, 15, 16], 14, false) },
+      'goblin-barrel': {
+        ...moving(BARREL_FILE, 128, '#f76b15'),
+        fuse: anim([30, 31, 32], 10, true),
+      },
     },
     projectile: still(ARROW_FILE, 64, '#ffd60a'),
     gem: still(GEM_FILE, 128, '#3e9bff'),
     ground: still(GROUND_FILE, 64, '#2f6b3a'),
     corpse: { ...base(DEAD_FILE, 128, '#b0b4ba'), death: anim([1, 2, 3, 4, 5, 6], 15, false) },
+    dynamite: still(DYNAMITE_FILE, 64, '#c0392b'),
+    explosion: { ...base(EXPLOSION_FILE, 192, '#ffb224'), explode: anim([0, 1, 2], 18, false) },
+    warnings: {
+      fuse: { color: '#ff8a00', alpha: 0.35 },
+      dynamite: { color: '#e5484d', alpha: 0.35 },
+    },
+    maxBlastSprites: 64,
     terrain: { trunk: '#5b3a1e', water: '#2b6cb0', bridge: '#a47148', castle: '#6b7a8f' },
     map: rawMapAppearance(),
   };

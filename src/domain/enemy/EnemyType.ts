@@ -1,5 +1,7 @@
 import type { Arena } from '../arena/Arena';
 import { err, invalidConfig, ok, type DomainError, type Result } from '../shared/Result';
+import { Behavior } from './behavior/Behavior';
+import type { BehaviorConfig } from './behavior/BehaviorConfig';
 
 /**
  * Mensajes de las invariantes de un tipo de enemigo; la validación de contenido (zod) usa los
@@ -19,20 +21,26 @@ export interface EnemyTypeConfig {
   readonly speed: number;
   readonly radius: number;
   readonly cost: number;
-  readonly damage: number;
+  /** Daño por contacto; ausente = el tipo no golpea al tocar (spec enemy-spawning, D3). */
+  readonly damage?: number | undefined;
   readonly health: number;
-  /** XP de la gema que suelta al morir por armas (spec xp-gems). */
+  /** XP de la gema que suelta al morir (spec xp-gems). */
   readonly xp: number;
+  /** Comportamiento por estados (spec enemy-behavior, ADR-0019). */
+  readonly behavior: BehaviorConfig;
 }
 
 const isPositive = (v: number): boolean => Number.isFinite(v) && v > 0;
 
 /**
  * Tipo de enemigo (value object): inmutable y compartido por todos los enemigos de ese tipo.
- * Invariantes: velocidad, coste, daño y vida positivos y finitos; XP entera ≥ 1; el círculo cabe
- * en la arena.
+ * Invariantes: velocidad, coste y vida positivos y finitos; daño por contacto positivo si está
+ * (si falta, `damage` vale 0 y `hasContact` es false); XP entera ≥ 1; el círculo cabe en la arena;
+ * comportamiento válido.
  */
 export class EnemyType {
+  readonly hasContact: boolean;
+
   private constructor(
     readonly id: string,
     readonly speed: number,
@@ -41,7 +49,9 @@ export class EnemyType {
     readonly damage: number,
     readonly health: number,
     readonly xp: number,
+    readonly behavior: Behavior,
   ) {
+    this.hasContact = damage > 0;
     Object.freeze(this);
   }
 
@@ -59,7 +69,7 @@ export class EnemyType {
     }
     if (!arena.fits(radius)) return err(invalidConfig(`${path}.radius`, ENEMY_RADIUS_MUST_FIT));
     if (!isPositive(cost)) return err(invalidConfig(`${path}.cost`, ENEMY_COST_MUST_BE_POSITIVE));
-    if (!isPositive(damage)) {
+    if (damage !== undefined && !isPositive(damage)) {
       return err(invalidConfig(`${path}.damage`, ENEMY_DAMAGE_MUST_BE_POSITIVE));
     }
     if (!isPositive(health)) {
@@ -68,6 +78,9 @@ export class EnemyType {
     if (!Number.isInteger(xp) || xp < 1) {
       return err(invalidConfig(`${path}.xp`, ENEMY_XP_MUST_BE_INTEGER));
     }
-    return ok(new EnemyType(id, speed, radius, cost, damage, health, xp));
+    const behavior = Behavior.create(config.behavior, id, `${path}.behavior`);
+    if (!behavior.ok) return behavior;
+    const type = new EnemyType(id, speed, radius, cost, damage ?? 0, health, xp, behavior.value);
+    return ok(type);
   }
 }
