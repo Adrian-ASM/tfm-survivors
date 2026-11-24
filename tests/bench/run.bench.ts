@@ -51,15 +51,18 @@ function benchConfig(weapons?: WeaponsConfig): RunConfig {
   const { player, enemies, upgrades, sheep } = config.value;
   const types = enemies.types.map((t) => ({ ...t, health: BENCH_HEALTH }));
   // Con las armas de bench (cadencia 1), las mejoras de cadencia no pasan la build de peor caso.
-  const list = weapons
-    ? upgrades.upgrades.filter((u) => u.stat !== 'cooldownTicks')
-    : upgrades.upgrades;
+  const list = {
+    character: upgrades.character,
+    weapons: weapons
+      ? upgrades.weapons.filter((u) => u.stat !== 'cooldownTicks')
+      : upgrades.weapons,
+  };
   return {
     ...config.value,
     player: { ...player, maxHealth: BENCH_HEALTH },
     enemies: { ...enemies, types: [...types, BENCH_TYPE] },
     weapons: weapons ?? config.value.weapons,
-    upgrades: { upgrades: list },
+    upgrades: list,
     run: { durationSeconds: BENCH_DURATION },
     // 0023: ovejas indestructibles en el bench (el pulso de bench alcanza toda la arena).
     sheep: { ...sheep, health: BENCH_HEALTH },
@@ -420,9 +423,12 @@ test('Peor caso con los cuatro topes llenos: 300 vivos, 32 proyectiles, 404 reco
   const { maxGems, maxGold, maxWood, maxMeat } = config.progression;
   const run = runWorstCaseThreeTopes(config, maxMeat);
   const topes = maxGems + maxGold + maxWood + maxMeat;
-  const result = await bench('Run.tick · 300 vivos + 32 proyectiles + cuatro topes + ovejas en huida', () => {
-    step(run);
-  }).run({ ...OPTIONS, iterations: GEM_MEASURED_TICKS, warmupIterations: GEM_WARMUP_TICKS });
+  const result = await bench(
+    'Run.tick · 300 vivos + 32 proyectiles + cuatro topes + ovejas en huida',
+    () => {
+      step(run);
+    },
+  ).run({ ...OPTIONS, iterations: GEM_MEASURED_TICKS, warmupIterations: GEM_WARMUP_TICKS });
   report(result.name, result.latency);
   const snap = run.snapshot();
   expect(snap.status).toBe('running');

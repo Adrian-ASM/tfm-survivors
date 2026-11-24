@@ -5,6 +5,7 @@ import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
 import { BALANCE_SEEDS, STILL_LIMIT_TICKS } from './balanceSeeds';
 import { botWorld, referenceBot, threateningWarnings, type ReferenceBot } from './policies';
 import type { MapMode } from '../../src/composition/seedSource';
+import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import { chooseWhileOpen, play, startSeededRun, stillSurvivors } from './runs';
 
 /** Duración objetivo de la partida (content/run.json): 600 s = 36.000 ticks. */
@@ -131,6 +132,8 @@ export interface StillTrace {
   readonly final: RunSnapshot;
   /** Vida recuperada con la carne. */
   readonly healed: number;
+  /** Ids de todas las opciones de todas las ofertas abiertas (0024: ninguna de arma). */
+  readonly offered: ReadonlySet<string>;
 }
 
 /**
@@ -142,19 +145,26 @@ export function traceStillBatch(config: RunConfig, mode: MapMode = 'generated'):
     const run = startSeededRun(config, seed, mode);
     let prev = run.snapshot();
     let healed = 0;
-    play(run, STILL_LIMIT_TICKS - 1, (_, r) => {
-      const now = r.snapshot();
+    const offered = new Set<string>();
+    for (let t = 1; t < STILL_LIMIT_TICKS && run.status !== 'over'; t++) {
+      chooseWhileOpen(run, (offer) => {
+        for (const o of offer) offered.add(o.id);
+        return 0;
+      });
+      run.tick(PlayerInput.NONE);
+      const now = run.snapshot();
       healed += healedBetween(prev, now);
       prev = now;
-      return false;
-    });
-    return { seed, final: run.snapshot(), healed };
+    }
+    return { seed, final: run.snapshot(), healed, offered };
   });
 }
 
 /** Semillas cuyo quieto no ha perdido antes del tick 10.800. */
 export const stillAlive = (traces: readonly StillTrace[]): number[] =>
-  traces.filter((t) => !(t.final.status === 'over' && t.final.outcome === 'lost')).map((t) => t.seed);
+  traces
+    .filter((t) => !(t.final.status === 'over' && t.final.outcome === 'lost'))
+    .map((t) => t.seed);
 
 /** Media por partida de un contador del rastro. */
 export const perRun = (traces: readonly BotTrace[], pick: (t: BotTrace) => number): number =>

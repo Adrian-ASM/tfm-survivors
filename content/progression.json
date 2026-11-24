@@ -6,5 +6,6 @@
   "maxGems": 300,
   "maxGold": 32,
   "maxWood": 64,
-  "maxMeat": 8
+  "maxMeat": 8,
+  "levelUpHealPercent": 10
 }

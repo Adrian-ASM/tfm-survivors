@@ -17,6 +17,7 @@ import {
   withDuration,
   withUpgrades,
   withWeapons,
+  upgradesOf,
 } from '../support/builders';
 import { aBehaviorConfig, enemyById, startRun, ticks } from '../support/runs';
 import { aLinter, weaponsOf } from '../support/weapons';
@@ -495,7 +496,7 @@ describe('Congelación y determinismo de los peligros', () => {
   });
 
   it('Scenario: Peligros en pausa durante la oferta', () => {
-    const c = withUpgrades(config(), { upgrades: [anUpgrade('guardrail')] });
+    const c = withUpgrades(config(), upgradesOf([anUpgrade('guardrail')]));
     const r = run(
       {
         experience: { level: 1, xp: 4 },

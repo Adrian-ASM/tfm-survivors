@@ -15,6 +15,7 @@ import {
 } from '../support/builders';
 import { CountingRandom } from '../support/random';
 import { aContactConfig, aProbeType, startRun, ticks } from '../support/runs';
+import { withPlayerStat } from '../support/upgrades';
 
 const CENTER = { x: 480, y: 270 };
 
@@ -242,10 +243,23 @@ describe('Vida inicial de RunSetup (escenarios de curación)', () => {
     expect(healing(37, []).snapshot().player).toMatchObject({ health: 37, maxHealth: 100 });
   });
 
-  it.each([0, 101, 12.5, Number.NaN])('rechaza una vida fuera de [1, máx] o no entera (%s)', (h) => {
-    const setup = { player: { ...CENTER, health: h } };
-    const r = Run.start(quiet(), new Mulberry32RandomGenerator(1), setup);
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.error.field).toBe('setup.player.health');
+  it.each([0, 101, 12.5, Number.NaN])(
+    'rechaza una vida fuera de [1, máx] o no entera (%s)',
+    (h) => {
+      const setup = { player: { ...CENTER, health: h } };
+      const r = Run.start(quiet(), new Mulberry32RandomGenerator(1), setup);
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.error.field).toBe('setup.player.health');
+    },
+  );
+});
+
+// Spec player-health (0024), "Curación por carne": curación efectiva = contenido + meatHealPercent.
+describe('Carne con meatHealPercent (0024)', () => {
+  it('Scenario: Carne con la mejora del cazador (50 de 100, 20 % + 10: 80)', () => {
+    const config = withPlayerStat(withMeat(quiet(), { healPercent: 20 }), 'hunter', 10);
+    const run = healing(50, [meatAt(CENTER.x, CENTER.y)], config, { upgrades: { hunter: 1 } });
+
+    expect(healthAfter(run)?.health).toBe(80);
   });
 });

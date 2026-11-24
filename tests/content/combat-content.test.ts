@@ -4,8 +4,8 @@ import enemiesJson from '../../content/enemies.json';
 import playerJson from '../../content/player.json';
 import progressionJson from '../../content/progression.json';
 import resourcesJson from '../../content/resources.json';
+import sheepJson from '../../content/sheep.json';
 import structuresJson from '../../content/structures.json';
-import upgradesJson from '../../content/upgrades.json';
 import wavesJson from '../../content/waves.json';
 import weaponsJson from '../../content/weapons.json';
 import { COMBAT_CONTENT_SHA256 } from '../support/balanceBaseline';
@@ -22,24 +22,45 @@ const canon = (v: unknown): string => {
 };
 const sha = (v: unknown): string => createHash('sha256').update(canon(v)).digest('hex');
 
-// Spec resources (0022), "Balance sin recalibrar con los recursos": los campos de combate del
-// contenido son los de `main` antes del change (huella congelada en M0, tasks 0.1).
-describe('Contenido de combate intacto (resources)', () => {
-  // Spec sheep (0023), "Contenido de combate intacto": lo mismo sin los campos de ovejas y carne.
-  it('Scenario: Contenido de combate intacto (huella de M0 campo a campo, sin ovejas ni carne)', () => {
+/**
+ * Huellas de `main` antes de 0024 (tasks 0.1) de lo que la calibración no puede tocar (spec
+ * run-outcome 0024): de resources.json, solo montones, vetas, colocación, carne y la madera del
+ * barril; de player.json, todo salvo los campos nuevos (`regenIntervalTicks`).
+ */
+const INTACT_SHA256 = {
+  resources: 'd988d575b1f2465931237a2bffd44f5c99eeaf6d07c04a511d3a76d32b1b04ce',
+  sheep: 'e4c9383d413ce8f91237d4c9866c56d3a54414ac8a810170949d9bf3b8c87832',
+} as const;
+
+// Spec run-outcome (0024), "Presupuesto de oleadas y stats intactos": oleadas, armas, enemigos,
+// estructuras (su oro vive en resources.json), XP, montones, vetas, ovejas y carne iguales a `main`.
+// Las 9 mejoras previas las compara `upgrades-text.test.ts` ("Mejoras de arma y de personaje sin
+// cambios"); `player.speed`, `tests/content/enemies.test.ts`.
+describe('Contenido de combate intacto (0024)', () => {
+  it('Scenario: Presupuesto de oleadas y stats intactos (huellas de M0 de lo que no se calibra)', () => {
     const { baseXp, xpGrowth, gemRadius, magnetSpeed, maxGems } = progressionJson;
-    const resources: Partial<typeof resourcesJson> = { ...resourcesJson };
-    delete resources.meat;
-    const now = {
+    const { woodPiles, goldVeins, placement, meat, drops } = resourcesJson;
+    const player: Record<string, unknown> = { ...playerJson };
+    delete player.regenIntervalTicks;
+
+    expect({
       waves: sha(wavesJson),
       enemies: sha(enemiesJson),
       weapons: sha(weaponsJson),
-      upgrades: sha(upgradesJson),
-      player: sha(playerJson),
+      player: sha(player),
       progression: sha({ baseXp, xpGrowth, gemRadius, magnetSpeed, maxGems }),
       structures: sha(structuresJson),
-      resources: sha(resources),
-    };
-    expect(now).toEqual(COMBAT_CONTENT_SHA256);
+    }).toEqual({
+      waves: COMBAT_CONTENT_SHA256.waves,
+      enemies: COMBAT_CONTENT_SHA256.enemies,
+      weapons: COMBAT_CONTENT_SHA256.weapons,
+      player: COMBAT_CONTENT_SHA256.player,
+      progression: COMBAT_CONTENT_SHA256.progression,
+      structures: COMBAT_CONTENT_SHA256.structures,
+    });
+    expect(sha({ woodPiles, goldVeins, placement, meat, woodDrops: drops.enemies })).toBe(
+      INTACT_SHA256.resources,
+    );
+    expect(sha(sheepJson)).toBe(INTACT_SHA256.sheep);
   });
 });

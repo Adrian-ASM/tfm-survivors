@@ -9,6 +9,7 @@ import {
   aSegment,
   aWavesConfig,
   withUpgrades,
+  upgradesOf,
 } from '../support/builders';
 import { CountingRandom, StubRandom } from '../support/random';
 import { startRun, ticks } from '../support/runs';
@@ -96,7 +97,7 @@ describe('Oferta de mejoras', () => {
 
 describe('Sin mejoras disponibles', () => {
   it('Scenario: Ninguna disponible (catálogo vacío: nivel 8, sin oferta, en curso, n + 1 normal)', () => {
-    const config = quiet(withUpgrades(withScenarioCurve(aDefaultConfig()), { upgrades: [] }));
+    const config = quiet(withUpgrades(withScenarioCurve(aDefaultConfig()), upgradesOf([])));
     const [n, next] = ticks(startRun(config, levelUp(34, 1, 7)), 2);
     expect(n?.progression).toEqual({ level: 8, xp: 0, xpToNext: 40, pendingLevelUps: 0 });
     expect([n?.status, n?.offer]).toEqual(['running', []]);
@@ -105,7 +106,7 @@ describe('Sin mejoras disponibles', () => {
   });
 
   it('Scenario: Sin pasar por eligiendo si no hay mejoras disponibles', () => {
-    const config = quiet(withUpgrades(withScenarioCurve(aDefaultConfig()), { upgrades: [] }));
+    const config = quiet(withUpgrades(withScenarioCurve(aDefaultConfig()), upgradesOf([])));
     const [first] = ticks(startRun(config, levelUp(4, 1)), 1);
     expect(first?.status).toBe('running');
   });

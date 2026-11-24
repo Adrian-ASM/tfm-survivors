@@ -201,7 +201,7 @@ export interface ReferenceBot {
 function effectiveSpeed(config: RunConfig, snapshot: RunSnapshot): number {
   let speed = config.player.speed;
   for (const { id, level } of snapshot.upgrades) {
-    const u = config.upgrades.upgrades.find((x) => x.id === id);
+    const u = config.upgrades.character.find((x) => x.id === id);
     if (u?.target.kind === 'player' && u.stat === 'speed') speed += u.perLevel * level;
   }
   return speed;

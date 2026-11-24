@@ -5,6 +5,7 @@ import { upgradedPlayer, upgradedWeapon } from '../../src/domain/upgrade/upgrade
 import { WeaponLoadout } from '../../src/domain/weapon/WeaponLoadout';
 import {
   DEFAULT_UPGRADE_LIST,
+  DEFAULT_UPGRADES,
   DEFAULT_WEAPONS,
   LINTER,
   TESTS,
@@ -16,7 +17,7 @@ function catalog(): UpgradeCatalog {
   const loadout = WeaponLoadout.create(DEFAULT_WEAPONS);
   if (!arena.ok || !loadout.ok) throw new Error('contenido inválido');
   const r = UpgradeCatalog.create(
-    DEFAULT_UPGRADE_LIST,
+    DEFAULT_UPGRADES,
     loadout.value,
     aRunConfig().player,
     arena.value,

@@ -31,28 +31,39 @@ function failure(raw: RawContent): { field: string; message: string } {
 /** Contenido crudo con la mejora `id` de la lista por defecto cambiada. */
 function withUpgrade(id: string, patch: Record<string, unknown>): RawContent {
   const raw = rawContent();
-  const u = raw.upgrades.upgrades.find((x) => x.id === id);
+  const u = [...raw.upgrades.character, ...raw.upgrades.weapons].find((x) => x.id === id);
   if (!u) throw new Error(id);
   Object.assign(u, patch);
   return raw;
 }
 
-const indexOf = (id: string) => rawContent().upgrades.upgrades.findIndex((u) => u.id === id);
+/** Ruta de la mejora `id` en el contenido por defecto (`upgrades.character.i` o `.weapons.i`). */
+const pathOf = (id: string): string => {
+  const { character, weapons } = rawContent().upgrades;
+  const c = character.findIndex((u) => u.id === id);
+  return c >= 0
+    ? `upgrades.character.${String(c)}`
+    : `upgrades.weapons.${String(weapons.findIndex((u) => u.id === id))}`;
+};
 
 describe('Contenido de progresión (content/progression.json)', () => {
   it('Scenario: Contenido por defecto (gemRadius 5, magnetSpeed 360, maxGems 300) y curva 9/4 (0020)', () => {
     const r = loadRunConfig();
     if (!r.ok) throw new Error(r.error.message);
-    expect(r.value.progression).toEqual({
+    expect(r.value.progression).toMatchObject({
       baseXp: 9,
       xpGrowth: 4,
       gemRadius: 5,
       magnetSpeed: 360,
       maxGems: 300,
-      maxGold: 32,
       maxWood: 64,
       maxMeat: 8,
     });
+    // 0024: `maxGold` y la curación por subida son palancas de la calibración (spec run-outcome).
+    const { maxGold, levelUpHealPercent } = r.value.progression;
+    expect(Number.isInteger(maxGold) && maxGold >= 1).toBe(true);
+    expect(Number.isInteger(levelUpHealPercent)).toBe(true);
+    expect(levelUpHealPercent >= 1 && levelUpHealPercent <= 100).toBe(true);
     expect(r.value.progression.maxWood).toBeGreaterThanOrEqual(r.value.resources.woodPiles.count);
     expect(r.value.player.pickupRadius).toBe(128);
   });
@@ -129,42 +140,54 @@ describe('Contenido de progresión (content/progression.json)', () => {
 });
 
 describe('Catálogo de mejoras (content/upgrades.json)', () => {
-  it('Scenario: Catálogo por defecto (9 mejoras, 6 de arma y 3 de jugador, maxLevel 5)', () => {
+  it('Scenario: Catálogo por defecto (15 mejoras: 9 de personaje y 6 de arma)', () => {
     const r = loadRunConfig();
     if (!r.ok) throw new Error(r.error.message);
-    const list = r.value.upgrades.upgrades;
-    expect(list.map((u) => u.id)).toEqual([
+    const { character, weapons } = r.value.upgrades;
+    const previous = [...weapons, ...character.slice(0, 3)];
+    expect(weapons.map((u) => u.id)).toEqual([
       'strict-rules',
       'fast-ci',
       'wide-analysis',
       'hard-asserts',
       'watch-mode',
       'coverage',
+    ]);
+    expect(character.map((u) => u.id)).toEqual([
       'guardrail',
       'shortcuts',
       'context-window',
+      'regeneration',
+      'armor',
+      'steady-nerves',
+      'scholar',
+      'prospector',
+      'hunter',
     ]);
-    expect(list.filter((u) => u.target.kind === 'weapon')).toHaveLength(6);
-    expect(list.every((u) => u.maxLevel === 5)).toBe(true);
-    expect(list.map((u) => u.perLevel)).toEqual([3, -4, 60, 2, -12, 15, 20, 20, 32]);
+    expect(weapons.every((u) => u.target.kind === 'weapon')).toBe(true);
+    expect(character.every((u) => u.target.kind === 'player')).toBe(true);
+    expect(previous.every((u) => u.maxLevel === 5)).toBe(true);
+    expect(previous.map((u) => u.perLevel)).toEqual([3, -4, 60, 2, -12, 15, 20, 20, 32]);
     expect(r.value.weapons.weapons.map((w) => w.id)).toEqual(['linter', 'tests']);
   });
 
-  it('Scenario: Identificador repetido o lista vacía', () => {
+  it('Scenario: Identificador repetido o lista vacía (cada catálogo vacío por separado)', () => {
     const dup = withUpgrade('guardrail', { id: 'fast-ci' });
     expect(failure(dup).message).toContain(UPGRADE_ID_MUST_BE_UNIQUE);
-    const empty = rawContent();
-    (empty.upgrades as { upgrades: unknown[] }).upgrades = [];
-    expect(failure(empty)).toMatchObject({
-      field: 'upgrades.upgrades',
-      message: UPGRADES_REQUIRED,
-    });
+    for (const key of ['character', 'weapons'] as const) {
+      const empty = rawContent();
+      (empty.upgrades as Record<string, unknown[]>)[key] = [];
+      expect(failure(empty)).toMatchObject({
+        field: `upgrades.${key}`,
+        message: UPGRADES_REQUIRED,
+      });
+    }
   });
 
   it('Scenario: Arma inexistente (refactor)', () => {
     const raw = withUpgrade('strict-rules', { target: { kind: 'weapon', weapon: 'refactor' } });
     const e = failure(raw);
-    expect(e.field).toBe(`upgrades.upgrades.${String(indexOf('strict-rules'))}.target.weapon`);
+    expect(e.field).toBe(`${pathOf('strict-rules')}.target.weapon`);
     expect(e.message).toContain(UPGRADE_UNKNOWN_WEAPON);
     expect(e.message).toContain('refactor');
   });
@@ -176,29 +199,32 @@ describe('Catálogo de mejoras (content/upgrades.json)', () => {
     ['guardrail', 'damage'],
   ])('Scenario: Estadística incompatible (%s con %s)', (id, stat) => {
     const e = failure(withUpgrade(id, { stat }));
-    expect(e.field).toBe(`upgrades.upgrades.${String(indexOf(id))}.stat`);
+    expect(e.field).toBe(`${pathOf(id)}.stat`);
     expect(e.message).toContain(UPGRADE_STAT_INCOMPATIBLE);
     expect(e.message).toContain(id);
   });
 
   it('Scenario: Nivel máximo que saca la cadencia de rango (fast-ci −6 × 5)', () => {
     const e = failure(withUpgrade('fast-ci', { perLevel: -6 }));
-    expect(e.field).toBe(`upgrades.upgrades.${String(indexOf('fast-ci'))}.perLevel`);
+    expect(e.field).toBe(`${pathOf('fast-ci')}.perLevel`);
     expect(e.message).toBe(`${UPGRADE_STAT_OUT_OF_RANGE}: linter.cooldownTicks = 0 (fast-ci)`);
   });
 
   it('Scenario: Límite exacto de la cadencia (fast-ci −29 × 1)', () => {
-    expect(parseRunConfig(withUpgrade('fast-ci', { perLevel: -29, maxLevel: 1 })).ok).toBe(true);
+    expect(
+      parseRunConfig(withUpgrade('fast-ci', { perLevel: -29, maxLevel: 1, prices: [10] })).ok,
+    ).toBe(true);
   });
 
   it('Scenario: Suma de varias mejoras sobre la misma estadística (−4 × 4 dos veces)', () => {
-    const raw = withUpgrade('fast-ci', { maxLevel: 4 });
-    Object.assign(raw.upgrades.upgrades[0], {
+    const raw = withUpgrade('fast-ci', { maxLevel: 4, prices: [1, 2, 3, 4] });
+    Object.assign(raw.upgrades.weapons[0], {
       id: 'faster-ci',
       target: { kind: 'weapon', weapon: 'linter' },
       stat: 'cooldownTicks',
       perLevel: -4,
       maxLevel: 4,
+      prices: [1, 2, 3, 4],
     });
     const e = failure(raw);
     expect(e.message).toContain('cooldownTicks');
@@ -212,14 +238,14 @@ describe('Catálogo de mejoras (content/upgrades.json)', () => {
     ['name', { name: '  ' }, UPGRADE_TEXT_REQUIRED],
   ] as const)('Scenario: Valores inválidos (%s %o)', (field, patch, message) => {
     expect(failure(withUpgrade('guardrail', patch))).toMatchObject({
-      field: `upgrades.upgrades.${String(indexOf('guardrail'))}.${field}`,
+      field: `${pathOf('guardrail')}.${field}`,
       message,
     });
   });
 
   it('Scenario: Valores inválidos (perLevel 1,5 en damage)', () => {
     const e = failure(withUpgrade('strict-rules', { perLevel: 1.5 }));
-    expect(e.field).toBe('upgrades.upgrades.0.perLevel');
+    expect(e.field).toBe('upgrades.weapons.0.perLevel');
     expect(e.message).toContain(UPGRADE_STEP_MUST_BE_INTEGER);
   });
 

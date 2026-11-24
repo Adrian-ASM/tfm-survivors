@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { UpgradeTypeConfig } from '../../src/domain/upgrade/UpgradeType';
 import type { RunConfig } from '../../src/domain/run/RunConfig';
 import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
@@ -23,13 +24,18 @@ const PREVIOUS_TEXTS: Readonly<Record<string, readonly [string, string]>> = {
 };
 
 /** El contenido por defecto con los textos del tema anterior. */
-const withPreviousTexts = (config: RunConfig): RunConfig =>
-  withUpgrades(config, {
-    upgrades: config.upgrades.upgrades.map((u) => {
-      const [name, description] = PREVIOUS_TEXTS[u.id] ?? ['', ''];
-      return { ...u, name, description };
-    }),
+const withPreviousTexts = (config: RunConfig): RunConfig => {
+  // 0024: las mejoras de personaje nuevas no tenían texto anterior y conservan el suyo.
+  const previous = (u: UpgradeTypeConfig): UpgradeTypeConfig => {
+    const [name, description] = PREVIOUS_TEXTS[u.id] ?? [u.name, u.description];
+    return { ...u, name, description };
+  };
+  const { character, weapons } = config.upgrades;
+  return withUpgrades(config, {
+    character: character.map(previous),
+    weapons: weapons.map(previous),
   });
+};
 
 /** Snapshot sin `name` ni `description` en las opciones de la oferta. */
 const withoutTexts = (s: RunSnapshot) => ({

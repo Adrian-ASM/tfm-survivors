@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CHASE_BEHAVIOR } from '../support/builders';
+import { CHASE_BEHAVIOR, upgradesOf } from '../support/builders';
 import {
   INVULNERABILITY_TICKS_MUST_BE_INTEGER,
   MAX_BUDGET_BELOW_MAX_COST,
@@ -43,6 +43,8 @@ import {
   withWeapons,
 } from '../support/builders';
 import { RUN_DURATION_MUST_BE_INTEGER } from '../../src/domain/run/RunDuration';
+import { LEVEL_UP_HEAL_PERCENT_OUT_OF_RANGE } from '../../src/domain/progression/LevelUpHeal';
+import { UPGRADE_STAT_OUT_OF_RANGE } from '../../src/domain/upgrade/UpgradeType';
 
 type Waves = RunConfig['waves'];
 const withWaves = (waves: Partial<Waves>, spawn: Partial<Waves['spawn']> = {}): RunConfig => {
@@ -256,14 +258,51 @@ describe('buildRunRules · progresión y mejoras', () => {
   it('construye el catálogo por defecto sobre las armas y propaga sus errores con su ruta', () => {
     const full = withUpgrades(withWeapons(aRunConfig(), DEFAULT_WEAPONS), DEFAULT_UPGRADES);
     const r = buildRunRules(full);
-    expect(r.ok && r.value.upgrades.upgrades.map((u) => u.id)).toHaveLength(9);
+    expect(r.ok && r.value.upgrades.upgrades.map((u) => u.id)).toHaveLength(15);
     const noWeapons = withUpgrades(aRunConfig(), DEFAULT_UPGRADES);
-    expect(failure(noWeapons).field).toBe('upgrades.upgrades.0.target.weapon');
+    expect(failure(noWeapons).field).toBe('upgrades.weapons.0.target.weapon');
+  });
+
+  it.each([0, 101, 2.5])('curación por subida fuera de rango (%s)', (levelUpHealPercent) => {
+    expect(failure(withProgression({ levelUpHealPercent }))).toEqual({
+      code: 'invalid-config',
+      field: 'progression.levelUpHealPercent',
+      message: LEVEL_UP_HEAL_PERCENT_OUT_OF_RANGE,
+    });
+  });
+
+  // Spec upgrades (0024), "Peor caso fuera de rango": carne efectiva (contenido + mejoras) en [1, 100].
+  it.each([
+    ['hunter +20 × 5 sobre 20 (120 > 100)', 20, 5, 'player.meatHealPercent = 120 (hunter)'],
+    ['hunter −5 × 4 sobre 20 (0 < 1)', -5, 4, 'player.meatHealPercent = 0 (hunter)'],
+  ])('Scenario: Peor caso fuera de rango (%s)', (_name, perLevel, maxLevel, detail) => {
+    const meat = withUpgrades(aRunConfig(), {
+      character: [anUpgrade('hunter', { perLevel, maxLevel })],
+      weapons: [],
+    });
+
+    expect(failure(meat)).toEqual({
+      code: 'invalid-config',
+      field: 'upgrades.character.0.perLevel',
+      message: `${UPGRADE_STAT_OUT_OF_RANGE}: ${detail}`,
+    });
+  });
+
+  it('carne efectiva en el límite (hunter +20 × 4 sobre 20 = 100) es válida', () => {
+    const meat = withUpgrades(aRunConfig(), {
+      character: [anUpgrade('hunter', { perLevel: 20, maxLevel: 4 })],
+      weapons: [],
+    });
+
+    expect(buildRunRules(meat).ok).toBe(true);
   });
 
   it('pulseCapacity es la del peor caso de las mejoras (Tests a 6 ticks: 2 ecos)', () => {
     const weapons = withWeapons(aRunConfig(), DEFAULT_WEAPONS);
-    const fast = withUpgrades(weapons, { upgrades: [anUpgrade('watch-mode', { maxLevel: 7 })] });
+    const fast = withUpgrades(
+      weapons,
+      upgradesOf([anUpgrade('watch-mode', { maxLevel: 7, prices: [1, 1, 1, 1, 1, 1, 1] })]),
+    );
     const a = buildRunRules(weapons);
     const b = buildRunRules(fast);
     expect(a.ok && a.value.pulseCapacity).toBe(1);

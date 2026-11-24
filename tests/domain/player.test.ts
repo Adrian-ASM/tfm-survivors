@@ -16,6 +16,7 @@ const RULES = {
   maxHealth: 100,
   invulnerabilityTicks: 30,
   pickupRadius: 64,
+  regenIntervalTicks: 60,
 };
 
 /** Error ≤ 0,001 px respecto al valor que da la spec (tolerancia literal de la spec). */

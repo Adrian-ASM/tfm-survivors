@@ -274,7 +274,17 @@ describe('Contenido de recursos validado (resources, con zod)', () => {
       },
     ],
     ['curación de la carne 1', (r: Raw) => (r.resources.meat.healPercent = 1)],
-    ['curación de la carne 100', (r: Raw) => (r.resources.meat.healPercent = 100)],
+    // 0024: con el contenido por defecto, 100 + el máximo de `hunter` pasaría de 100 (spec upgrades,
+    // carne efectiva ≤ 100); el límite del campo se prueba sin la mejora del cazador (incidencia de
+    // apply: 'Límites válidos' de resources choca con la cota de la carne de upgrades).
+    [
+      'curación de la carne 100 (sin hunter)',
+      (r: Raw) => {
+        r.resources.meat.healPercent = 100;
+        const hunter = r.upgrades.character.findIndex((u) => u.id === 'hunter');
+        r.upgrades.character.splice(hunter, 1);
+      },
+    ],
     [
       'todas las distancias a 0',
       (r: Raw) => {

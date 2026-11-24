@@ -56,7 +56,8 @@ describe('Recogida según el tipo (spec xp-gems, resources)', () => {
       resources: { gold: 25, wood: 6 },
     });
     const [s] = ticks(run, 1);
-    expect(s?.player.health).toBe(90);
+    // Golpe de 10 (invulnerable) y, sin mejoras disponibles, la subida cura el 10 % (0024): 100.
+    expect([s?.player.health, s?.player.invulnerable]).toEqual([100, true]);
     expect(s?.progression.level).toBe(2);
     expect(s?.resources).toEqual({ gold: 25, wood: 6 });
   });

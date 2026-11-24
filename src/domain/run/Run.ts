@@ -18,6 +18,7 @@ import type { Player } from '../player/Player';
 import type { PlayerInput } from '../player/PlayerInput';
 import type { RandomGenerator } from '../shared/RandomGenerator';
 import type { Experience } from '../progression/Experience';
+import { levelUpHeal } from '../progression/LevelUpHeal';
 import { PickupGain, type PickupField } from '../pickup/PickupField';
 import type { Stockpile } from '../resource/Stockpile';
 import type { GoldVein } from '../resource/GoldVein';
@@ -277,6 +278,7 @@ export class Run {
       return;
     }
     this.collect(x, y);
+    this.regenerate(n);
     this.director.step(n, horde.alive.length, this.place);
     structures.spawnGuards(n, horde, this.rules.spawn.maxAlive);
     this.flock.respawn(n, x, y);
@@ -292,35 +294,52 @@ export class Run {
   private collect(x: number, y: number): void {
     const { gain } = this;
     this.pickups.step(x, y, this.player.radius, this.player.pickupRadius, gain);
-    if (gain.xp > 0) this.experience.gain(gain.xp);
+    // La bonificación se aplica a la suma del paso: con el resto arrastrado equivale a gema a gema.
+    if (gain.xp > 0) this.experience.gain(gain.xp, this.player.effective.xpBonusPercent ?? 0);
     this.stock.add(gain.gold, gain.wood);
     if (gain.meat > 0) this.heal(gain.meat);
     for (const v of this.veins) this.stock.add(v.tap(x, y, this.player.radius), 0);
   }
 
   /**
-   * Curación por carne (spec player-health 0023): `valor × max(1, ⌊% × máx / 100⌋)` con la vida
+   * Paso 7.3 (spec player-health 0024): en los ticks múltiplos del intervalo del contenido, la
+   * regeneración efectiva cura con tope. Sin regeneración no hace nada. No consume azar.
+   */
+  private regenerate(n: number): void {
+    const { regeneration = 0, regenIntervalTicks } = this.player.effective;
+    if (regeneration > 0 && n % regenIntervalTicks === 0)
+      this.player = this.player.heal(regeneration);
+  }
+
+  /**
+   * Curación por carne (spec player-health 0023 y 0024): `valor × max(1, ⌊% × máx / 100⌋)`, con %
+   * = la del contenido + `meatHealPercent` efectiva, con la vida
    * máxima efectiva de este momento y tope en ella. Sumar las piezas del paso y curar una vez es lo
    * mismo que curar pieza a pieza (el tope es monótono). No consume azar.
    */
   private heal(meat: number): void {
     const max = this.player.health.max;
-    const perUnit = Math.max(1, Math.floor((this.rules.resources.meat.healPercent * max) / 100));
+    const percent =
+      this.rules.resources.meat.healPercent + (this.player.effective.meatHealPercent ?? 0);
+    const perUnit = Math.max(1, Math.floor((percent * max) / 100));
     this.player = this.player.heal(meat * perUnit);
   }
 
   /**
    * Último paso del tick (y tras cada elección): con subidas pendientes y sin oferta abierta,
-   * sortea la siguiente (único consumo de azar nuevo) y pasa a eligiendo. Sin mejoras disponibles
-   * las subidas quedan registradas, sin oferta ni pausa y sin consumir azar.
+   * sortea la siguiente (único consumo de azar nuevo) y pasa a eligiendo. Sin mejoras de personaje
+   * disponibles, cada subida cura (con tope) y queda registrada, sin oferta ni pausa ni azar.
    */
   private openNextOffer(): void {
     if (this.experience.pendingLevelUps === 0 || this.board.isOpen) return;
     if (this.board.open(this.random)) {
       this.phase = CHOOSING;
-    } else {
-      this.experience.clearPending();
+      return;
     }
+    // Sin mejoras de personaje disponibles, cada subida pendiente cura (spec leveling 0024).
+    const each = levelUpHeal(this.rules.levelUpHealPercent, this.player.health.max);
+    this.player = this.player.heal(this.experience.pendingLevelUps * each);
+    this.experience.clearPending();
   }
 
   /**

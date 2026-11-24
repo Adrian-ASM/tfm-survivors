@@ -374,6 +374,18 @@ por id con id propio de la curación; puerta declarada en mapas `open`/`cells`; 
   bot compra **curación primero** bajo el umbral (la propuesta decía "arma primero") y la lista de palancas es cerrada
   (la propuesta dejaba abiertas "más vetas"; la decisión 2 del autor ya las excluía).
 
+## 15. Desviaciones del apply
+- **Grupo 1**: los 5 stats de base 0 (`regeneration`, `armor`, `xpBonusPercent`, `goldBonusPercent`,
+  `meatHealPercent`) son **opcionales** en `PlayerRules` (ausentes = 0; `playerWith` siempre los rellena), así que
+  `content/player.json` y los escenarios no los declaran; `regenIntervalTicks` sí es obligatorio. `checkPlayer`
+  exige enteros ≥ 0 en los cuatro primeros; la cota de la carne vive en `UpgradeCatalog.checkMeatHeal(base)`, que
+  llama `buildRunRules` tras `ResourceRules` (peor y mejor caso, error en el `perLevel` de la primera mejora que
+  empuja fuera). La curación por subida es un VO pequeño (`progression/LevelUpHeal.ts`) validado en `buildRunRules`
+  (`progression.levelUpHealPercent`). `Experience.bonusRemainder` expone el resto (solo tests; no va al snapshot).
+  Tres escenarios de mejoras de arma a mitad de partida se retiran en 1.1 y vuelven en 3.2 con la compra.
+  **Incidencia de specs**: "Límites válidos" de `resources` (carne 100 con el contenido por defecto) choca con la
+  cota de la carne efectiva de `upgrades` (100 + el máximo de `hunter` > 100); el test prueba el límite sin `hunter`.
+
 ## ADRs
 - `docs/adr/0023-progresion-separada-y-tienda-como-fase.md` (nuevo): catálogo con dos orígenes sobre un vector de
   niveles, tienda como fase de `Run` con puerta re-armable y compras sin azar. Matiza ADR-0008 (origen y precios) y

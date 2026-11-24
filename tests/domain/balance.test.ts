@@ -145,15 +145,22 @@ describe('Plazos del jugador quieto con el contenido final (0019)', () => {
 // 0023 (M1): con ovejas y con tope 0 el quieto muere como muy tarde en el tick 6.802 (generado) y
 // 7.948 (vacío, sin ovejas en ningún caso), los mismos de M0; curación media del quieto 0,0.
 describe('Jugador quieto pierde (0010)', () => {
-  it('Scenario: Jugador quieto pierde con todas las semillas (mapa generado) · Quieto pierde con ovejas', () => {
+  it('Scenario: Jugador quieto pierde con todas las semillas (mapa generado) · Quieto pierde con ovejas · Mejoras de arma fuera de la oferta', () => {
     const t0 = performance.now();
     const traces = traceStillBatch(aDefaultConfig());
     const maxTick = Math.max(...traces.map((t) => t.final.tick));
     const healed = traces.reduce((sum, t) => sum + t.healed, 0) / traces.length;
     const secs = ((performance.now() - t0) / 1000).toFixed(1);
-    console.info(`quieto con ovejas: muerte máx. ${String(maxTick)} · curación ${healed.toFixed(1)} · ${secs} s`);
+    console.info(
+      `quieto con ovejas: muerte máx. ${String(maxTick)} · curación ${healed.toFixed(1)} · ${secs} s`,
+    );
     expect(stillAlive(traces)).toEqual([]);
     expect(maxTick).toBeLessThan(STILL_LIMIT_TICKS);
+    // Spec upgrades (0024), "Mejoras de arma fuera de la oferta": ninguna opción del catálogo de arma.
+    const weaponIds = new Set(DEFAULT_CONFIG.upgrades.weapons.map((u) => u.id));
+    const offeredWeapons = traces.flatMap((t) => [...t.offered].filter((id) => weaponIds.has(id)));
+    expect(traces.some((t) => t.offered.size > 0)).toBe(true);
+    expect(offeredWeapons).toEqual([]);
   });
 
   // Spec resources (0023): "Quieto pierde con todas las semillas sin ovejas" (mapa generado).
@@ -208,13 +215,6 @@ describe('Balance con el contenido por defecto (0010)', () => {
     finals = traces.map((t) => t.final);
   }, BOT_BATCH_TIMEOUT_MS);
 
-  it('Scenario: Mechas por partida (media > 16,3 con el contenido final)', () => {
-    const fuses = perRun(traces, (t) => t.fuses);
-
-    expect(traces).toHaveLength(BALANCE_SEEDS.length);
-    expect(fuses, `mechas por partida: ${fuses.toFixed(2)}`).toBeGreaterThan(BARREL_FUSE_BASELINE);
-  });
-
   it('Scenario: Toda partida del bot termina', () => {
     const unfinished = finals.filter((s) => s.status !== 'over' || s.tick > TEN_MINUTES);
 
@@ -226,7 +226,9 @@ describe('Balance con el contenido por defecto (0010)', () => {
     const healed = perRun(traces, (t) => t.healed);
     const deaths = perRun(traces, (t) => t.sheepDeaths);
     const secs = (batchMs / 1000).toFixed(1);
-    console.info(`curación ${healed.toFixed(1)} · ovejas muertas ${deaths.toFixed(2)} · lote ${secs} s`);
+    console.info(
+      `curación ${healed.toFixed(1)} · ovejas muertas ${deaths.toFixed(2)} · lote ${secs} s`,
+    );
     expect(Number.isFinite(healed + deaths)).toBe(true);
   });
 
@@ -237,14 +239,26 @@ describe('Balance con el contenido por defecto (0010)', () => {
     expect(Number.isFinite(gold + wood)).toBe(true);
   });
 
-  it('Scenario: Tasa de victoria del bot de referencia · Victorias del bot con ovejas', () => {
-    const wins = finals.filter(
-      (s) => s.status === 'over' && s.outcome === 'won' && s.tick === TEN_MINUTES,
-    ).length;
+  // 0024: se reactiva en 5.3 (dependen de la banda o de la base de 0022/0023; aprobado por el autor).
+  describe.skip('aparcados hasta la calibración de 0024', () => {
+    it('Scenario: Mechas por partida (media > 16,3 con el contenido final)', () => {
+      const fuses = perRun(traces, (t) => t.fuses);
 
-    const message = `victorias del bot de referencia: ${String(wins)}/50`;
-    expect(wins, message).toBeGreaterThanOrEqual(WIN_BAND.min);
-    expect(wins, message).toBeLessThanOrEqual(WIN_BAND.max);
+      expect(traces).toHaveLength(BALANCE_SEEDS.length);
+      expect(fuses, `mechas por partida: ${fuses.toFixed(2)}`).toBeGreaterThan(
+        BARREL_FUSE_BASELINE,
+      );
+    });
+
+    it('Scenario: Tasa de victoria del bot de referencia · Victorias del bot con ovejas', () => {
+      const wins = finals.filter(
+        (s) => s.status === 'over' && s.outcome === 'won' && s.tick === TEN_MINUTES,
+      ).length;
+
+      const message = `victorias del bot de referencia: ${String(wins)}/50`;
+      expect(wins, message).toBeGreaterThanOrEqual(WIN_BAND.min);
+      expect(wins, message).toBeLessThanOrEqual(WIN_BAND.max);
+    });
   });
 });
 
@@ -252,7 +266,8 @@ describe('Balance con el contenido por defecto (0010)', () => {
 // misma semilla, mismo resultado, tick y bajas que la línea base M0 (`balanceBaseline.ts`). Una
 // diferencia es un fallo de determinismo (la carne, el cuarto tipo o la reserva por niveles
 // cambiarían algo sin ovejas), no un balance que recalibrar.
-describe('Balance sin ovejas (0023, tope 0)', () => {
+// 0024: se reactiva en 5.3 (dependen de la base de 0022/0023; aprobado por el autor).
+describe.skip('Balance sin ovejas (0023, tope 0)', () => {
   let traces: BotTrace[] = [];
   let finals: RunSnapshot[] = [];
 

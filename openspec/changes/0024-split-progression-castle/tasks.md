@@ -15,15 +15,23 @@
      siguen activos. 5.3 los reactiva o los sustituye y el verify comprueba que no queda ningún `skip`. -->
 
 ## 0. Medición previa (M0, sin tocar código)
-- [ ] 0.1 M0 en esta máquina (design §9): bench (`npm.cmd run bench`, caso "tres topes llenos"); tiempo de pared del
+- [x] 0.1 M0 en esta máquina (design §9): bench (`npm.cmd run bench`, caso "tres topes llenos"); tiempo de pared del
   lote del bot dos veces (`vitest run tests/domain/balance.test.ts`); tick de muerte máximo del quieto sobre 1..50
   con el mapa generado y con el vacío; **bajas medias por tipo** del bot v3 sobre 1..50; sha256 canónico de
   `content/upgrades.json`, `resources.json`, `player.json`, `progression.json`, `waves.json`, `enemies.json` y
   `weapons.json` de `main` (los tres últimos deben seguir iguales al final). Anotar las cifras aquí debajo; entran en
   el commit del grupo 1.
+  **M0 (2026-11-24, código de b1fac67)**: bench "tres topes llenos" media 0,286 ms (p99 0,465 ms). Fichero
+  `balance.test.ts` completo (dos lotes del bot + quietos): 62,3 s y 63,4 s de Vitest (64 s de pared las dos veces);
+  un lote del bot v3 con ovejas y una lectura extra por tick, 36,3 s. Quieto: muerte máxima en el tick **6.802**
+  (generado) y **7.948** (vacío). Bajas medias por partida del bot v3: `goblin-torch` 301,5, `goblin-barrel` 227,1,
+  `goblin-tnt` 130,7, `goblin-tnt-guard` 5,0 (664 en total). sha256 canónico (claves ordenadas): `upgrades`
+  `ad0bfdca…0751`, `resources` `d7c2a151…4744`, `player` `625622ed…88f0`, `progression` `3017d257…2474`, `waves`
+  `ad7b9a6c…ecc7`, `enemies` `5ab43172…c07c`, `weapons` `4aa8c55f…a0f9` (los tres últimos, iguales a
+  `COMBAT_CONTENT_SHA256`).
 
 ## 1. Dominio · dos catálogos y progresión de personaje
-- [ ] 1.1 Dos catálogos con precios y oferta solo de personaje (TDD). `UpgradeType.source`/`prices`,
+- [x] 1.1 Dos catálogos con precios y oferta solo de personaje (TDD). `UpgradeType.source`/`prices`,
   `UpgradeCatalog.create({ character, weapons }, …)` con índices `character` → `weapons`, reglas de catálogo
   equivocado, id único entre listas, `prices` (longitud `maxLevel`, enteros ≥ 1, no decrecientes) y peor caso de los
   stats nuevos; `UpgradeBoard.open` solo sobre `levelIndices` y `raise(i)`; `toUpgradeLevels` en orden de catálogo;
@@ -39,7 +47,7 @@
   - castle-shop · "Contenido por defecto" (precios), "Valores inválidos" y "Límites válidos" (solo los de precios).
   Tests: `tests/domain/upgrade-catalog.test.ts`, `upgrade-board.test.ts`, `upgrades-text.test.ts` (ampliar) y revisar
   `upgrades-rename-determinism.test.ts`, `builders.ts` y `policies.ts` (`config.upgrades.character`).
-- [ ] 1.2 Efectos de las estadísticas nuevas y curación por subida (TDD). `playerWith` con los 6 stats (base 0);
+- [x] 1.2 Efectos de las estadísticas nuevas y curación por subida (TDD). `playerWith` con los 6 stats (base 0);
   `checkPlayer` y `player.regenIntervalTicks`; armadura en `applyHit` (`max(1, bruto − armadura)`); regeneración en
   7.3; `Experience.gain` con resto en centésimas; carne con `meatHealPercent` y su cota [1, 100] con `bestCase` en
   `buildRunRules`; `progression.levelUpHealPercent` y curación en `openNextOffer` (paso 10 y tras elegir). Escenarios:
@@ -97,6 +105,9 @@
   - run-state · "En tienda y vuelta a en curso";
   - simulation-loop · "Tienda en el snapshot", "Compras distintas divergen", "Partida con tienda y compras
     reproducible", "La política de tienda fija no cambia la partida", "Frames en la tienda", "Tienda a mitad de frame".
+  Apply (1.1): al sacar las mejoras de arma de la oferta se retiraron de `run-choosing` y `run-upgrades` "Cadencia
+  mejorada sin reiniciar la carga", "Proyectil en vuelo durante una mejora de daño" y "Pulso visible durante una
+  mejora de radio" (necesitan comprar a mitad de partida); vuelven aquí con la compra en la tienda.
   Tests: `tests/domain/run-shop-buy.test.ts`, `tests/application/shop-use-cases.test.ts`, ampliar
   `tests/application/tick-run.test.ts` y `tests/domain/determinism.test.ts`.
 

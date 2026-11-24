@@ -6,6 +6,12 @@ import type { GameMap } from '../map/GameMap';
 import type { PlayerInput } from './PlayerInput';
 
 /**
+ * Daño mínimo de un golpe con armadura (regla del juego de 0024, no un número de balance: la
+ * armadura nunca deja un golpe en 0).
+ */
+export const MIN_HIT_DAMAGE = 1;
+
+/**
  * Jugador (entidad). Inmutable: cada movimiento o golpe devuelve un Player nuevo.
  * La invulnerabilidad se guarda como tick absoluto (`invulnerableUntil`, el último tick protegido),
  * así que no hay contador que decrementar por tick.
@@ -37,6 +43,11 @@ export class Player {
     return this.rules.pickupRadius;
   }
 
+  /** Reglas efectivas (base + mejoras) con las que se mueve, recibe golpes y se cura. */
+  get effective(): PlayerRules {
+    return this.rules;
+  }
+
   /**
    * Jugador con reglas efectivas nuevas (mejora, camino frío): conserva posición e
    * invulnerabilidad y sube la vida máxima y la actual en `maxHealthGain` (ver `Health.raise`).
@@ -65,10 +76,15 @@ export class Player {
     return tick > this.invulnerableUntil;
   }
 
-  /** Golpe en el tick n: resta el daño (mínimo 0) y protege los ticks n + 1 … n + N. */
+  /**
+   * Golpe de daño bruto `damage` (> 0) en el tick n: resta `max(MIN_HIT_DAMAGE, bruto − armadura)`
+   * (spec player-health 0024; la vida queda como mínimo en 0) y protege los ticks n + 1 … n + N, con
+   * la N efectiva de este momento.
+   */
   hit(damage: number, tick: number): Player {
+    const applied = Math.max(MIN_HIT_DAMAGE, damage - (this.rules.armor ?? 0));
     const until = tick + this.rules.invulnerabilityTicks;
-    return new Player(this.position, this.rules, this.health.damage(damage), until);
+    return new Player(this.position, this.rules, this.health.damage(applied), until);
   }
 
   /**

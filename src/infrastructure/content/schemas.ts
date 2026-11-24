@@ -34,6 +34,7 @@ import {
 import {
   INVULNERABILITY_TICKS_MUST_BE_INTEGER,
   PICKUP_RADIUS_MUST_BE_POSITIVE,
+  REGEN_INTERVAL_MUST_BE_INTEGER,
   PLAYER_HEALTH_MUST_BE_POSITIVE,
   SPEED_MUST_BE_POSITIVE,
 } from '../../domain/run/RunConfig';
@@ -62,12 +63,14 @@ import {
   SHEEP_SPEED_MUST_BE_POSITIVE,
   SHEEP_TICKS_MUST_BE_INTEGER,
 } from '../../domain/sheep/SheepRules';
+import { LEVEL_UP_HEAL_PERCENT_OUT_OF_RANGE } from '../../domain/progression/LevelUpHeal';
 import {
   BASE_XP_MUST_BE_INTEGER,
   XP_GROWTH_MUST_BE_INTEGER,
 } from '../../domain/progression/XpCurve';
 import {
   UPGRADE_MAX_LEVEL_MUST_BE_INTEGER,
+  UPGRADE_PRICES_INVALID,
   UPGRADE_STATS,
   UPGRADE_STEP_MUST_NOT_BE_ZERO,
 } from '../../domain/upgrade/UpgradeType';
@@ -125,6 +128,7 @@ export const PlayerSchema = z.strictObject({
   maxHealth: z.number().positive({ error: PLAYER_HEALTH_MUST_BE_POSITIVE }),
   invulnerabilityTicks: Count(INVULNERABILITY_TICKS_MUST_BE_INTEGER),
   pickupRadius: z.number().positive({ error: PICKUP_RADIUS_MUST_BE_POSITIVE }),
+  regenIntervalTicks: RequiredCount(REGEN_INTERVAL_MUST_BE_INTEGER),
 });
 
 export const MAX_VIEW_MUST_BE_POSITIVE_INTEGER =
@@ -329,6 +333,11 @@ export const ProgressionSchema = z.strictObject({
   maxGold: RequiredCount(MAX_GOLD_MUST_BE_INTEGER),
   maxWood: RequiredCount(MAX_WOOD_MUST_BE_INTEGER),
   maxMeat: RequiredCount(MAX_MEAT_MUST_BE_INTEGER),
+  levelUpHealPercent: z
+    .number({ error: LEVEL_UP_HEAL_PERCENT_OUT_OF_RANGE })
+    .int({ error: LEVEL_UP_HEAL_PERCENT_OUT_OF_RANGE })
+    .min(1, { error: LEVEL_UP_HEAL_PERCENT_OUT_OF_RANGE })
+    .max(100, { error: LEVEL_UP_HEAL_PERCENT_OUT_OF_RANGE }),
 });
 
 export const UPGRADES_REQUIRED = 'El contenido debe definir al menos una mejora.';
@@ -356,21 +365,32 @@ const UpgradeText = (max: number) =>
     .min(1, { error: UPGRADE_TEXT_REQUIRED })
     .max(max, { error: UPGRADE_TEXT_TOO_LONG });
 
-// Las reglas cruzadas (ids únicos, arma existente, compatibilidad, incremento entero en daño y
-// cadencia, build de peor caso) las aplica `buildRunRules` desde el superRefine del loader.
+// Las reglas cruzadas (ids únicos entre catálogos, catálogo de cada objetivo, arma existente,
+// compatibilidad, incremento entero, precios por nivel, build de peor caso) las aplica
+// `buildRunRules` desde el superRefine del loader.
+const UpgradeFields = {
+  id: z.string().regex(/^[a-z][a-z0-9-]*$/, { error: UPGRADE_ID_FORMAT }),
+  name: UpgradeText(UPGRADE_NAME_MAX),
+  description: UpgradeText(UPGRADE_DESCRIPTION_MAX),
+  target: UpgradeTargetSchema,
+  stat: z.enum(UPGRADE_STATS),
+  perLevel: z
+    .number({ error: UPGRADE_STEP_MUST_NOT_BE_ZERO })
+    .refine((v) => v !== 0, { error: UPGRADE_STEP_MUST_NOT_BE_ZERO }),
+  maxLevel: Count(UPGRADE_MAX_LEVEL_MUST_BE_INTEGER),
+};
+
+/** Precio de un nivel de una mejora de arma (castle-shop 0024): entero ≥ 1. */
+const UpgradePrice = RequiredCount(UPGRADE_PRICES_INVALID);
+
+// Dos catálogos (ADR-0023): `character` (sin precios) y `weapons` (con un precio por nivel).
 export const UpgradesSchema = z.strictObject({
-  upgrades: z
+  character: z.array(z.strictObject(UpgradeFields)).min(1, { error: UPGRADES_REQUIRED }),
+  weapons: z
     .array(
       z.strictObject({
-        id: z.string().regex(/^[a-z][a-z0-9-]*$/, { error: UPGRADE_ID_FORMAT }),
-        name: UpgradeText(UPGRADE_NAME_MAX),
-        description: UpgradeText(UPGRADE_DESCRIPTION_MAX),
-        target: UpgradeTargetSchema,
-        stat: z.enum(UPGRADE_STATS),
-        perLevel: z
-          .number({ error: UPGRADE_STEP_MUST_NOT_BE_ZERO })
-          .refine((v) => v !== 0, { error: UPGRADE_STEP_MUST_NOT_BE_ZERO }),
-        maxLevel: Count(UPGRADE_MAX_LEVEL_MUST_BE_INTEGER),
+        ...UpgradeFields,
+        prices: z.array(UpgradePrice, { error: UPGRADE_PRICES_INVALID }),
       }),
     )
     .min(1, { error: UPGRADES_REQUIRED }),

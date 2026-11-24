@@ -54,18 +54,41 @@ export const TESTS: WeaponTypeConfig = {
  * calibración, 0019); el esquema zod lo valida en `loadRunConfig` y builders-content.test lo
  * compara con lo cargado.
  */
-export const DEFAULT_UPGRADE_LIST: readonly UpgradeTypeConfig[] = frozen(
-  upgradesJson.upgrades as UpgradeTypeConfig[],
+export const DEFAULT_CHARACTER_UPGRADES: readonly UpgradeTypeConfig[] = frozen(
+  upgradesJson.character as UpgradeTypeConfig[],
 );
 
-/** Contenido de mejoras por defecto (content/upgrades.json). */
-export const DEFAULT_UPGRADES: UpgradesConfig = { upgrades: DEFAULT_UPGRADE_LIST };
+/** Catálogo de arma por defecto (0024): las 6 mejoras de arma, con sus precios por nivel. */
+export const DEFAULT_WEAPON_UPGRADES: readonly UpgradeTypeConfig[] = frozen(
+  upgradesJson.weapons as UpgradeTypeConfig[],
+);
+
+/** Las 15 mejoras de los dos catálogos en el orden del vector de niveles: personaje y luego arma. */
+export const DEFAULT_UPGRADE_LIST: readonly UpgradeTypeConfig[] = Object.freeze([
+  ...DEFAULT_CHARACTER_UPGRADES,
+  ...DEFAULT_WEAPON_UPGRADES,
+]);
+
+/** Contenido de mejoras por defecto (content/upgrades.json, dos catálogos desde 0024). */
+export const DEFAULT_UPGRADES: UpgradesConfig = Object.freeze({
+  character: DEFAULT_CHARACTER_UPGRADES,
+  weapons: DEFAULT_WEAPON_UPGRADES,
+});
 
 /**
  * Sin mejoras: válido en el dominio (no en el fichero). Por defecto en `aRunConfig`, así que los
  * escenarios de 0001–0004 no se pausan: las subidas se registran sin oferta.
  */
-export const NO_UPGRADES: UpgradesConfig = { upgrades: [] };
+export const NO_UPGRADES: UpgradesConfig = Object.freeze({ character: [], weapons: [] });
+
+/**
+ * Los dos catálogos a partir de una lista mezclada: las de objetivo jugador van al de personaje y
+ * las de objetivo arma, al de arma (escenarios escritos con una sola lista antes de 0024).
+ */
+export const upgradesOf = (list: readonly UpgradeTypeConfig[]): UpgradesConfig => ({
+  character: list.filter((u) => u.target.kind === 'player'),
+  weapons: list.filter((u) => u.target.kind === 'weapon'),
+});
 
 /** Curva y gemas por defecto, leídas de content/progression.json (0019). */
 export const DEFAULT_PROGRESSION: RunConfig['progression'] = frozen(progressionJson);
@@ -201,10 +224,7 @@ export const withoutSheep = (config: RunConfig): RunConfig => ({
 });
 
 /** El mismo contenido con la carne cambiada (0023: `perSheep` y `healPercent`). */
-export const withMeat = (
-  config: RunConfig,
-  meat: Partial<ResourcesConfig['meat']>,
-): RunConfig =>
+export const withMeat = (config: RunConfig, meat: Partial<ResourcesConfig['meat']>): RunConfig =>
   withResources(config, { ...config.resources, meat: { ...config.resources.meat, ...meat } });
 
 /** El mismo contenido sin fuentes de recursos (design 0022 §10). */
@@ -294,6 +314,7 @@ export const aRunConfig = (overrides: Partial<PlayerConfig> = {}): RunConfig => 
     maxHealth: overrides.maxHealth ?? 100,
     invulnerabilityTicks: overrides.invulnerabilityTicks ?? 30,
     pickupRadius: overrides.pickupRadius ?? 64,
+    regenIntervalTicks: overrides.regenIntervalTicks ?? 60,
   },
   enemies: { hazards: DEFAULT_HAZARDS, types: SCENARIO_ENEMY_TYPES },
   waves: DEFAULT_WAVES,
@@ -334,7 +355,11 @@ export const aDefaultConfig = (): RunConfig =>
   withUpgrades(
     withWeapons(
       {
-        ...aRunConfig({ pickupRadius: DEFAULT_PICKUP_RADIUS, speed: playerJson.speed }),
+        ...aRunConfig({
+          pickupRadius: DEFAULT_PICKUP_RADIUS,
+          speed: playerJson.speed,
+          regenIntervalTicks: playerJson.regenIntervalTicks,
+        }),
         arena: CONTENT_ARENA,
         progression: DEFAULT_PROGRESSION,
         enemies: { hazards: DEFAULT_HAZARDS, types: DEFAULT_ENEMY_TYPES },
@@ -409,6 +434,7 @@ interface MutableUpgrade {
   stat: string;
   perLevel: number;
   maxLevel: number;
+  prices?: number[];
 }
 /**
  * Contenido crudo con la forma de los ficheros de juego de content/, mutable para preparar casos
@@ -421,6 +447,7 @@ export interface RawContent {
     maxHealth: number;
     invulnerabilityTicks: number;
     pickupRadius: number;
+    regenIntervalTicks: number;
   };
   arena: { width: number; height: number; maxView: { width: number; height: number } };
   enemies: {
@@ -447,9 +474,13 @@ export interface RawContent {
     maxGold: number;
     maxWood: number;
     maxMeat: number;
+    levelUpHealPercent: number;
     [extra: string]: unknown;
   };
-  upgrades: { upgrades: [MutableUpgrade, MutableUpgrade, ...MutableUpgrade[]] };
+  upgrades: {
+    character: [MutableUpgrade, ...MutableUpgrade[]];
+    weapons: [MutableUpgrade, ...MutableUpgrade[]];
+  };
   run: { durationSeconds: number };
   map: {
     cellSize: number;
