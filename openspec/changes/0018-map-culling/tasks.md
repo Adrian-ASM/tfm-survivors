@@ -19,7 +19,7 @@ Sin tareas: el change no toca `src/domain` ni `src/application` (design §1).
   `resize` (cámara doble con `width`/`height`).
   — escenarios: "Vista que crece con la ventana", "Vista recortada al mundo en una esquina", "Vista que cubre el
   mundo entero" (parte de rectángulos visibles).
-- [ ] 2.2 `src/infrastructure/phaser/map/mapCulling.ts`: tipo `Box` (o importado de `planMapArt`),
+- [x] 2.2 `src/infrastructure/phaser/map/mapCulling.ts`: tipo `Box` (o importado de `planMapArt`),
   `CULL_MARGIN_CELLS = 1`, `cullMargin(cellSize)`, `clipRect(view, margin)` y `touches(box, rect)` inclusivo
   (design §4). Test nuevo `tests/infrastructure/map-culling.test.ts` (rojo: el módulo no existe) con los datos
   literales de la spec: A y C sí, B no; D y F sí, E y G no, y sus reflejos en los bordes izquierdo, superior e

@@ -9,6 +9,14 @@ import { treeModels } from './treeChoices';
 // aspectos resueltos en la lista de objetos de cada capa, en orden de pintado. Puro: sin motor.
 // Capa baja: agua, espuma, orillas, puentes, troncos y fachada. Capa alta: copas y tejado.
 
+/** Caja en px de mundo de lo que pinta un objeto del mapa (0018, design §3; error ≤ 1 px). */
+export interface Box {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
 /** Recorte en px del frame (relativo a él), como `setCrop`. */
 export interface Crop {
   readonly x: number;
