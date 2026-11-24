@@ -14,7 +14,7 @@ mejorar el arma y en construir defensas.
 **Temática** (v2.0, 2026-11-22): caballeros contra goblins. Título: **"Greentide Vanguard"** (decidido 2026-11-22),
 que sustituye a "Sprint Survivors" (dev en un sprint infinito; v1 la había elegido para no parecerse a
 *Bug Bane Survivors*). Los ids de enemigo pasan a `goblin-torch` (antes `bug`), `goblin-tnt` (`memory-leak`) y
-`goblin-barrel` (`merge-conflict`), con los mismos stats; sus comportamientos propios siguen en 0019. El nombre del
+`goblin-barrel` (`merge-conflict`), con los mismos stats; sus comportamientos propios siguen en 0020. El nombre del
 repo, la URL de Pages y las claves técnicas `sprint-survivors` (localStorage, nombre del export, `window.__sprint`)
 se mantienen; renombrarlos es una posible tarea futura, no decidida.
 
@@ -54,7 +54,7 @@ Teclado (WASD / flechas). Pausa con Esc. Táctil y gamepad: *Should/Could*.
 - Mundo de varias pantallas, cámara que sigue al jugador, **límites duros** (borde de agua). **Sin desniveles.**
 - Colisión del jugador contra troncos (no contra la copa) y agua.
 - **El castillo ya viene en el mapa**, uno por partida, en el punto de inicio del jugador: el generador reserva la
-  zona de inicio con el castillo (0015 reserva la zona; el castillo sólido llega con 0016 y la tienda con 0022).
+  zona de inicio con el castillo (0015 reserva la zona; el castillo sólido llega con 0016 y la tienda con 0023).
 - Genera también: zonas ricas en recursos con campamentos de guardianes, casas goblin, torres goblin, solares de obra
   y montones de leña aleatorios.
 
@@ -115,17 +115,20 @@ Should.
 | Prioridad | Contenido |
 |---|---|
 | **Must** (hecho) | Movimiento · 2 armas automáticas · oleadas · colisiones y vida · gemas de XP · subida de nivel con 3 opciones · temporizador, victoria y derrota · HUD · menú · guardado local + exportar/importar · despliegue público (0001–0011) |
-| **Must** (nuevo) | Arte con sprites del pack CC0 y tema medieval (0012) · mundo grande con cámara y límites (0013) · mapa procedural por semilla con colisión (0015) · arte del mapa (0016) · vista a pantalla completa (0017) · navegación por campo de flujo (0018) |
-| **Should** | Comportamientos de enemigos, casas goblin y campamentos (0019) · elección de personaje y Guerrero (0020) · recursos y ovejas (0021) · progresión separada y castillo-tienda (0022) · solares de obra: casa y torre (0023) · modo Objetivos · meta-progresión guardada · un jefe final · opciones de audio y accesibilidad · controles táctiles |
+| **Must** (nuevo) | Arte con sprites del pack CC0 y tema medieval (0012) · mundo grande con cámara y límites (0013) · mapa procedural por semilla con colisión (0015) · arte del mapa (0016) · vista a pantalla completa (0017) · recorte del arte del mapa fuera de cámara (0018) · navegación por campo de flujo (0019) |
+| **Should** | Comportamientos de enemigos, casas goblin y campamentos (0020) · elección de personaje y Guerrero (0021) · recursos y ovejas (0022) · progresión separada y castillo-tienda (0023) · solares de obra: casa y torre (0024) · modo Objetivos · meta-progresión guardada · un jefe final · opciones de audio y accesibilidad · controles táctiles |
 | **Could** | UI del pack · ciclo día/noche · minimapa/niebla de guerra · modo Infinito · victoria "defender el castillo" · talar árboles · colocación libre de edificios · jefes por escala · audio · login con Google + Supabase · reto diario con semilla compartida · i18n ES/EN · PWA |
 | **Won't** | Multijugador · desniveles/terreno multinivel · monetización · leaderboard con re-simulación · enemigos dibujados con IA |
 
 Nota: v1 tenía "mapas procedurales complejos" en Won't. Se acota a un mapa de rejilla sin desniveles y entra como
-Must (0015); lo que baja a Should es todo el bloque de contenido 0019–0023.
+Must (0015); lo que baja a Should es todo el bloque de contenido 0020–0024.
 
 Renumeración (2026-11-23): 0014 acabó siendo `e2e-manual-step` (infraestructura de tests), así que el mapa
 procedural pasa a 0015. Al aprobar 0015 se partió en mapa puro (0015) y arte del mapa (0016), y se añadió la vista
 a pantalla completa (0017); el campo de flujo pasa a 0018 y el bloque Should, a 0019–0023.
+
+Renumeración (2026-11-24): 0018 acabó siendo `map-culling` (recorte del arte del mapa fuera de cámara), así que el
+campo de flujo pasa a 0019 y el bloque Should, a 0020–0024.
 
 ### Historias Must nuevas (criterios clave)
 
@@ -156,7 +159,7 @@ un vistazo.**
 - Given las semillas 1..50 con el castillo, When se mide con el bot de referencia, Then el balance sigue en banda
   (`player.speed` 215) y el mapa es idéntico celda a celda por semilla.
 - Nota: el castillo cambia el núcleo (dominio, generador, firma dorada, bot de referencia y punto de salida). Los
-  enemigos lo atraviesan hasta 0018 (deuda aceptada).
+  enemigos lo atraviesan hasta 0019 (deuda aceptada).
 
 **0017 · Como jugador quiero que el juego ocupe todo el monitor para ver más mapa a mi alrededor.**
 - Given cualquier tamaño de ventana, When se juega, Then la vista ocupa la ventana completa y la cámara sigue al
@@ -164,11 +167,15 @@ un vistazo.**
 - Given la misma semilla en dos monitores distintos, When se simula, Then la partida es idéntica (la distancia de
   aparición de enemigos no depende del tamaño de la pantalla).
 
-**0018 · Como jugador quiero que los enemigos rodeen obstáculos y usen puentes para que la horda no se quede
+**0019 · Como jugador quiero que los enemigos rodeen obstáculos y usen puentes para que la horda no se quede
 atascada.**
 - Given un río con un puente, When el jugador está al otro lado, Then los enemigos cruzan por el puente.
 - Given 300 enemigos, When se simula el campo de flujo, Then el tick se mantiene dentro del presupuesto fijado en el
   spike previo.
+- Nota: el criterio del recálculo por edificios nuevos pasa a 0024 build-sites (en 0019 el mapa no cambia durante
+  la partida). Se acepta el apilamiento en los puentes (sin separación entre enemigos).
+
+**0024 · build-sites (criterio movido desde el campo de flujo).**
 - Given un edificio nuevo, When se construye, Then el campo se recalcula y los enemigos lo rodean.
 
 ## Estado del backlog Must hecho (2026-11-20, sin cambios)
@@ -187,7 +194,7 @@ Los changes 0008 (infraestructura de tests) y 0010 (equilibrio) no añaden Must:
 Hechos: 0001 walking-skeleton → 0002 enemy-spawning → 0003 collisions-and-damage → 0004 auto-weapons →
 0005 xp-and-level-up → 0006 run-lifecycle + HUD → 0007 local-save-export → 0008 e2e-fast-sim →
 0009 main-menu → 0010 balance-pass → 0011 public-deploy → 0012 sprite-rendering → 0013 world-camera →
-0014 e2e-manual-step → 0015 procedural-map.
+0014 e2e-manual-step → 0015 procedural-map → 0016 map-art → 0017 fullscreen-view → 0018 map-culling.
 
 Pendientes:
 | Change | Contenido | Prioridad | Spike previo |
@@ -195,12 +202,13 @@ Pendientes:
 | 0015 procedural-map | **Hecho (PR #36)**: mapa por semilla (hierba, troncos, río con puentes) puro y determinista, colisión del jugador, gemas recolocadas, colores de reserva, bot de referencia que esquiva y balance recalibrado; reserva la zona de inicio (ADR-0013) | Must | Sustituido por mediciones previas en explore |
 | 0016 map-art | Arte del mapa: agua con espuma, orillas con autotile, árboles (copa), puente y castillo sólido (núcleo, generador, firma dorada, bot, punto de salida; `player.speed` 215), con su procedencia CC0 | Must | Autotiling de orillas y si el mapa se ve bien (puerta visual al inicio del apply) |
 | 0017 fullscreen-view | **Hecho (PR #41)**: la vista ocupa toda la ventana (tope 2.560 × 1.440); aparición de enemigos desacoplada del tamaño de pantalla (anillo 1.500); mundo 3.840 × 2.160 (64 × 36); HUD y overlays anclados y escalados ×1/×2; balance recalibrado por oleadas (25/50) | Must | |
-| 0018 flow-field | Navegación por campo de flujo | Must | Con cientos de enemigos |
-| 0019 enemy-behaviors | Comportamientos, casas goblin y campamentos | Should | |
-| 0020 characters | Elección de personaje y Guerrero | Should | ¿Es divertido el Guerrero? |
-| 0021 resources-sheep | Recursos recogibles con tipo y ovejas | Should | |
-| 0022 split-progression-castle | Progresión separada + castillo-tienda (castillo ya en el mapa) | Should | |
-| 0023 build-sites | Solares de obra: casa y torre | Should | |
+| 0018 map-culling | **Hecho (PR #43)**: recorte del arte del mapa fuera de cámara | Must | |
+| 0019 flow-field | Navegación por campo de flujo (4 vecinos + línea libre, recolocación de apariciones, `maxAlive` 300) | Must | Con cientos de enemigos |
+| 0020 enemy-behaviors | Comportamientos, casas goblin y campamentos | Should | |
+| 0021 characters | Elección de personaje y Guerrero | Should | ¿Es divertido el Guerrero? |
+| 0022 resources-sheep | Recursos recogibles con tipo y ovejas | Should | |
+| 0023 split-progression-castle | Progresión separada + castillo-tienda (castillo ya en el mapa) | Should | |
+| 0024 build-sites | Solares de obra: casa y torre (incluye el recálculo del campo de flujo por edificios) | Should | |
 | Resto | UI del pack, día/noche, minimapa, jefes, audio | Could | |
 
 Notas:
@@ -243,8 +251,8 @@ Siguen abiertas:
 | 0010 · W1 | "Sin semillas sueltas de balance" se comprueba con grep, sin test automático que lo vigile. | Si reaparecen semillas fijas |
 | 0010 · W2 | Margen estrecho de la tasa: 30/50 en una banda 25–35, con ±3–4 victorias de ruido entre factores contiguos. Un ajuste pequeño de contenido puede sacarla de la banda: hay que volver a medir. | Cualquier change que toque `content/` (todos los de 0015 en adelante) |
 | 0009 · S5 | El test de "Primer frame tras Jugar" declara 601 frames de menú que no llega a pasar al bucle; la garantía es estructural (bucle nuevo por partida). | Con 0010 si se toca `run-launcher.test.ts` |
-| v2.0 | Sin separación entre enemigos la horda se amontona. | **Con 0018** (campo de flujo) |
-| v2.0 | `upgrades.json` mezcla mejoras de personaje y de arma. | Con 0022 |
+| v2.0 | Sin separación entre enemigos la horda se amontona. | Pendiente, change propio (0019 la mantiene: apilamiento en puentes aceptado) |
+| v2.0 | `upgrades.json` mezcla mejoras de personaje y de arma. | Con 0023 |
 
 ## Historial de changes hechos (resumen)
 
