@@ -10,6 +10,10 @@ import {
 
 export const APPEARANCE_MISSING = 'Falta el aspecto de este tipo de enemigo.';
 export const APPEARANCE_UNKNOWN = 'Aspecto de un tipo de enemigo que no existe en enemies.json.';
+export const APPEARANCE_FUSE_REQUIRED =
+  'El aspecto de un tipo con un estado de mecha necesita la animación fuse.';
+export const APPEARANCE_THROW_REQUIRED =
+  'El aspecto de un tipo con un estado de carga necesita la animación throw.';
 
 /** Contenido crudo del arranque: el de juego (`content/*.json`) y los datos de aspecto. */
 export interface RawBoot {
@@ -37,6 +41,17 @@ export function checkAppearanceRefs(
   if (missing !== undefined) return err(invalidConfig(`enemies.${missing}`, APPEARANCE_MISSING));
   const extra = Object.keys(appearance.enemies).find((id) => !ids.includes(id));
   if (extra !== undefined) return err(invalidConfig(`enemies.${extra}`, APPEARANCE_UNKNOWN));
+  // Animaciones por clase de estado (spec sprite-rendering 0020): fuse con mecha, throw con carga.
+  for (const { id, behavior } of config.enemies.types) {
+    const aspect = appearance.enemies[id];
+    const kinds = new Set(behavior.states.map((st) => st.kind));
+    if (kinds.has('fuse') && !aspect?.fuse) {
+      return err(invalidConfig(`enemies.${id}.fuse`, `${APPEARANCE_FUSE_REQUIRED} (${id})`));
+    }
+    if (kinds.has('charge') && !aspect?.throw) {
+      return err(invalidConfig(`enemies.${id}.throw`, `${APPEARANCE_THROW_REQUIRED} (${id})`));
+    }
+  }
   return ok(true);
 }
 

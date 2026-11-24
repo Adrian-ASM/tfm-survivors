@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ASSET_DIR, type Aspect } from '../../src/infrastructure/content/appearanceSchema';
+import { framesUsed } from '../../src/infrastructure/phaser/art/looks';
 import {
   aspectsOf,
   mapSheetsOf,
@@ -28,10 +29,7 @@ if (!parsed.ok) throw new Error(`${parsed.error.field}: ${parsed.error.message}`
 const appearance = parsed.value;
 const aspects = aspectsOf(appearance);
 
-function framesOf(aspect: Aspect): number[] {
-  const anims = 'death' in aspect ? [aspect.death] : [aspect.idle, 'walk' in aspect && aspect.walk];
-  return anims.flatMap((a) => (a ? a.frames : []));
-}
+const framesOf = (aspect: Aspect): number[] => framesUsed(aspect);
 
 function grid(file: string): { width: number; height: number } {
   const png = readFileSync(join(root, ASSET_DIR, file));

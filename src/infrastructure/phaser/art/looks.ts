@@ -43,10 +43,13 @@ export type FrameCount = (key: string) => number | null;
 
 const CENTER = { x: 0.5, y: 0.5 };
 
-function framesUsed(aspect: Aspect): number[] {
-  if ('death' in aspect) return [...aspect.death.frames];
-  const walk = 'walk' in aspect ? aspect.walk.frames : [];
-  return [...aspect.idle.frames, ...walk];
+/** Animaciones que puede tener un aspecto (las de comportamiento, `fuse` y `throw`, desde 0020). */
+const ANIM_KEYS = ['idle', 'walk', 'fuse', 'throw', 'death', 'explode'] as const;
+
+/** Todos los índices de frame que usa un aspecto: si alguno no está en la hoja, va con reserva. */
+export function framesUsed(aspect: Aspect): number[] {
+  const anims = aspect as Partial<Record<(typeof ANIM_KEYS)[number], AnimSpec>>;
+  return ANIM_KEYS.flatMap((k) => [...(anims[k]?.frames ?? [])]);
 }
 
 function base(aspect: Aspect, frames: FrameCount): LookBase {

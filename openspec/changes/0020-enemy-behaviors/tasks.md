@@ -69,24 +69,24 @@
   marca y se junta con la tarea anterior (ver nota al final).
 
 ## 3. Infraestructura · contenido
-- [ ] 3.1 `EnemiesSchema`: `hazards` estricto (con `chainReaction` → error), `behavior` obligatorio con
+- [x] 3.1 `EnemiesSchema`: `hazards` estricto (con `chainReaction` → error), `behavior` obligatorio con
   `discriminatedUnion('kind')` estricta, `damage` opcional y `Count` en los ticks. Los errores nombran el tipo
   (`superRefine` → `buildRunRules`). Escenarios EB: "Clase desconocida", "Estado inicial ausente o inexistente"
   (ausente), "Parámetros no positivos", "Duraciones inválidas" y "Duración mínima válida". ES: "Tipo sin
   comportamiento" y "Daño cero o negativo" (zod). EH: "Tope inválido", "Otros parámetros inválidos" y "Contenido por
   defecto" (forma).
-- [ ] 3.2 `content/enemies.json` con los comportamientos y `hazards` de design §5. El barril pierde `damage`.
+- [x] 3.2 `content/enemies.json` con los comportamientos y `hazards` de design §5. El barril pierde `damage`.
   Ajustar los tests existentes que suponían el contacto del barril (MODIFIED de las specs). Test de contenido
   `tests/content/enemies.test.ts`. Escenarios: EB "Comportamientos del contenido por defecto", "Sin contacto del
   barril por defecto", "Cotas del contenido por defecto" y "Esquiva con el contenido por defecto"; ES "Contenido por
   defecto" y "Stats por defecto"; RO "Presupuesto de oleadas y stats intactos" (comparando con una copia de los
   valores de `main` fijada en el test); EB "Velocidad por tipo · Dos tipos, dos velocidades" (TNT en persecución).
-- [ ] 3.3 `appearanceSchema`: `fuse`/`throw` opcionales por enemigo, `dynamite`, `explosion.explode` sin bucle,
+- [x] 3.3 `appearanceSchema`: `fuse`/`throw` opcionales por enemigo, `dynamite`, `explosion.explode` sin bucle,
   `warnings.fuse`/`warnings.dynamite` con `alpha` ∈ (0, 1) y `maxBlastSprites`. En composición,
   `checkAppearanceRefs` exige `fuse` si el tipo tiene un estado `fuse` y `throw` si tiene `charge`. Escenarios SR:
   "Valores fuera de rango" (opacidad), "Animaciones obligatorias y campos desconocidos", "Animación de
   comportamiento no exigida", "Rutas de hoja no admitidas" (explosión) y "El aviso deja ver lo que cubre".
-- [ ] 3.4 Copiar byte a byte `Dynamite.png` y `Explosions.png` a `public/assets/tiny-swords/...` y añadir sus **2
+- [x] 3.4 Copiar byte a byte `Dynamite.png` y `Explosions.png` a `public/assets/tiny-swords/...` y añadir sus **2
   entradas** a `content/asset-provenance.json` (`source`, `version`, `sha256` y `bytes`, medidos con un script del
   scratchpad). Datos en `appearance.json` (§5). Test de la nota y `npm run guard:all`. Escenarios: AP "Hojas nuevas
   registradas", "Hoja nueva sin entrada" y "Ninguna hoja de más"; SR "Datos del repositorio", "Hoja de cada
@@ -108,7 +108,7 @@
   "Los aspectos no cambian la simulación" (colores de aviso cambiados).
 
 ## 5. Test support · bot v3 y bench
-- [ ] 5.1 Bot v3 en `tests/support/policies.ts`: esquiva por avisos amenazantes (d < r_aviso + r_jugador + v/60),
+- [x] 5.1 Bot v3 en `tests/support/policies.ts`: esquiva por avisos amenazantes (d < r_aviso + r_jugador + v/60),
   suma de unitarios, cuantización a 8 direcciones, regla de direcciones bloqueadas y, con suma nula, `fleeInput`.
   Documentarlo en el JSDoc. Escenarios RO: "La esquiva gana a la huida", "Aviso no amenazante", "Dos avisos que se
   anulan" y "Esquiva bloqueada por un tronco". Los escenarios vigentes del bot siguen en verde.
@@ -122,7 +122,7 @@
   ticks, ≥ 1 explosión de barril y ≥ 1 dinamita), "Posiciones de enemigos reproducibles con el mapa generado" (con
   el estado) y "Mapa intacto" (`mapGolden.ts` sin cambios). EH: "Mismos peligros con cualquier ventana" (sin
   ventana en el núcleo, por comparación de snapshots). RO: "Bot reproducible".
-- [ ] 6.2 **Recalibración con el gate de balance.** `measureBalance` con el bot v3 sobre `BALANCE_SEEDS`. Iterar
+- [x] 6.2 **Recalibración con el gate de balance.** `measureBalance` con el bot v3 sobre `BALANCE_SEEDS`. Iterar
   solo con los parámetros de comportamiento y `hazards`, dentro de las cotas de 3.2, y solo si no basta, con la
   curva de XP. Objetivo: 25–35 victorias, 0 quietos con el mapa generado y con el vacío, y los plazos de la semilla
   7 (primer golpe, primer pulso y primera oferta ≤ 4.800, primera baja ≤ 900). Si ninguna combinación lo consigue,

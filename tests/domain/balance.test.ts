@@ -33,6 +33,8 @@ const FIRST_KILL_WINDOW = 900;
 // 0017 (mundo 3.840 × 2.160, tabla 1,2/2,4/2,4/3,0/4,2): medida en el tick 1.527.
 // 0019 (navegación por el mapa, maxAlive 300, curva 9/3): oferta en el 2.082 (semilla 7) y primer
 // golpe en el 2.442 (semilla 42); bot de referencia 26/50, 0 quietos en ambos mapas.
+// 0020 (comportamientos y peligros, curva 9/4, bot v3): mismos plazos (oferta 2.082, golpe 2.442);
+// bot v3 27/50, 0 quietos en ambos mapas (addendum de ADR-0018).
 const OFFER_LIMIT = 4800;
 
 /** Contenido por defecto: crea las partidas y el bot de referencia (mismo mundo para ambos). */
@@ -105,7 +107,8 @@ describe('Plazos con progresión (0005, medidos en el punto de control 0.3)', ()
 });
 
 // Spec run-outcome (0019), "Plazos del jugador quieto con el contenido final": con la navegación
-// por el mapa, maxAlive 300 y la curva 9/3, medido en apply con la semilla 7: primer golpe en el
+// por el mapa, maxAlive 300 y la curva 9/3 (0019; los mismos con la 9/4 y los peligros de 0020), medido
+// en apply con la semilla 7: primer golpe en el
 // tick 2.276, primer pulso en el 1.524, primera oferta en el 2.082 y primera baja en el 728.
 describe('Plazos del jugador quieto con el contenido final (0019)', () => {
   it('Scenario: Plazos del jugador quieto con el contenido final (semilla 7)', () => {

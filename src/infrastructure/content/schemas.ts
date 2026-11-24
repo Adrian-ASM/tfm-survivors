@@ -88,6 +88,8 @@ export const ENEMY_ID_FORMAT =
 
 const EnemyId = z.string().regex(/^[a-z][a-z0-9-]*$/, { error: ENEMY_ID_FORMAT });
 const Count = (error: string) => z.number().int({ error }).min(1, { error });
+/** Como `Count`, pero un valor ausente o no numérico también da el mensaje del dominio (0020). */
+const RequiredCount = (error: string) => z.number({ error }).int({ error }).min(1, { error });
 const Distance = z.number().nonnegative({ error: SPAWN_DISTANCE_MUST_BE_NON_NEGATIVE });
 
 export const PlayerSchema = z.strictObject({
@@ -141,7 +143,7 @@ const StateName = z.string().min(1, { error: BEHAVIOR_STATE_NAME_REQUIRED });
 const BehaviorValue = z.number({ error: BEHAVIOR_VALUE_MUST_BE_POSITIVE }).positive({
   error: BEHAVIOR_VALUE_MUST_BE_POSITIVE,
 });
-const BehaviorTicks = Count(BEHAVIOR_TICKS_MUST_BE_INTEGER);
+const BehaviorTicks = RequiredCount(BEHAVIOR_TICKS_MUST_BE_INTEGER);
 
 // Clases cerradas de estado (spec enemy-behavior, ADR-0018). Las referencias entre estados
 // (inicial, destinos, nombres repetidos) las resuelve `Behavior.create` desde `buildRunRules`.
@@ -196,11 +198,11 @@ const BehaviorSchema = z.strictObject(
 );
 
 const HazardsSchema = z.strictObject({
-  maxDynamites: Count(MAX_DYNAMITES_MUST_BE_INTEGER),
+  maxDynamites: RequiredCount(MAX_DYNAMITES_MUST_BE_INTEGER),
   dynamiteRadius: z
     .number({ error: DYNAMITE_RADIUS_MUST_BE_POSITIVE })
     .positive({ error: DYNAMITE_RADIUS_MUST_BE_POSITIVE }),
-  blastTicks: Count(BLAST_TICKS_MUST_BE_INTEGER),
+  blastTicks: RequiredCount(BLAST_TICKS_MUST_BE_INTEGER),
 });
 
 export const EnemiesSchema = z.strictObject({

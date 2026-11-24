@@ -29,9 +29,10 @@ function appearance(edit: (raw: ReturnType<typeof rawAppearance>) => void = () =
 describe('BootScene · plan de carga', () => {
   it('una carga por hoja distinta, con la clave = file y el tamaño de frame del aspecto', () => {
     const sheets = sheetsToLoad(appearance());
-    // 8 de entidades y fondo + agua, espuma, árbol y castillo (la orilla comparte la del fondo).
-    expect(sheets).toHaveLength(12);
-    expect(new Set(sheets.map((s) => s.key)).size).toBe(12);
+    // 8 de entidades y fondo + dinamita y explosión (0020) + agua, espuma, árbol y castillo (la orilla
+    // comparte la del fondo).
+    expect(sheets).toHaveLength(14);
+    expect(new Set(sheets.map((s) => s.key)).size).toBe(14);
     expect(sheets.find((s) => s.key === CASTLE_FILE)).toEqual({
       key: CASTLE_FILE,
       file: CASTLE_FILE,

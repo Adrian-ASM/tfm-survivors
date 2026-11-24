@@ -163,7 +163,7 @@ describe('Contenido de enemigos y oleadas validado · vida, daño y máximo de p
     expect(failure(raw)).toEqual({
       code: 'invalid-config',
       field: 'enemies.types.0.health',
-      message: ENEMY_HEALTH_MUST_BE_POSITIVE,
+      message: `${ENEMY_HEALTH_MUST_BE_POSITIVE} (goblin-torch)`,
     });
   });
 
@@ -173,7 +173,7 @@ describe('Contenido de enemigos y oleadas validado · vida, daño y máximo de p
     expect(failure(raw)).toEqual({
       code: 'invalid-config',
       field: 'enemies.types.0.damage',
-      message: ENEMY_DAMAGE_MUST_BE_POSITIVE,
+      message: `${ENEMY_DAMAGE_MUST_BE_POSITIVE} (goblin-torch)`,
     });
   });
 
@@ -236,7 +236,7 @@ describe('XP de los enemigos y radio de recogida validados (0005)', () => {
     expect(failure(raw)).toEqual({
       code: 'invalid-config',
       field: 'enemies.types.0.xp',
-      message: ENEMY_XP_MUST_BE_INTEGER,
+      message: `${ENEMY_XP_MUST_BE_INTEGER} (goblin-torch)`,
     });
   });
 
@@ -308,7 +308,7 @@ describe('Contenido de enemigos y oleadas validado · forma y rangos (zod)', () 
     expect(failure(raw)).toEqual({
       code: 'invalid-config',
       field: 'enemies.types.0.speed',
-      message: ENEMY_SPEED_MUST_BE_POSITIVE,
+      message: `${ENEMY_SPEED_MUST_BE_POSITIVE} (goblin-torch)`,
     });
   });
 
@@ -545,12 +545,14 @@ describe('Contenido por defecto del repositorio', () => {
     expect(loaded.ok).toBe(true);
   });
 
-  it('Contenido por defecto', () => {
+  it('Scenario: Contenido por defecto (0020: 3 tipos con comportamiento; el barril sin contacto)', () => {
     const types = config?.enemies.types ?? [];
     expect(types.map((t) => t.id)).toEqual(['goblin-torch', 'goblin-tnt', 'goblin-barrel']);
     for (const t of types) {
-      expect(Math.min(t.speed, t.radius, t.cost, t.health, t.damage ?? 0)).toBeGreaterThan(0);
+      expect(Math.min(t.speed, t.radius, t.cost, t.health, t.xp)).toBeGreaterThan(0);
+      expect(t.behavior.states.length).toBeGreaterThan(0);
     }
+    expect(types.map((t) => t.damage)).toEqual([5, 15, undefined]);
   });
 
   // Spec world-camera (0017): el núcleo recibe el mundo, pero no el tope de vista ni la ventana.
@@ -582,12 +584,12 @@ describe('Contenido por defecto del repositorio', () => {
     expect(stats).toEqual([
       ['goblin-torch', 90, 10, 10, 5, 1],
       ['goblin-tnt', 45, 22, 45, 15, 4],
-      ['goblin-barrel', 70, 16, 20, 8, 2],
+      ['goblin-barrel', 70, 16, 20, undefined, 2],
     ]);
   });
 
   // Spec enemy-spawning (0012), verify-report W2: los stats y los tramos de antes, con el id renombrado.
-  it('Scenario: Stats heredados sin cambios', () => {
+  it('Scenario: Stats por defecto (0020: el único cambio, el barril sin damage)', () => {
     const stats = Object.fromEntries(
       (config?.enemies.types ?? []).map(({ id, speed, radius, cost, damage, health, xp }) => [
         id,
@@ -597,7 +599,7 @@ describe('Contenido por defecto del repositorio', () => {
     expect(stats).toEqual({
       'goblin-torch': { speed: 90, radius: 10, cost: 1, damage: 5, health: 10, xp: 1 },
       'goblin-tnt': { speed: 45, radius: 22, cost: 3, damage: 15, health: 45, xp: 4 },
-      'goblin-barrel': { speed: 70, radius: 16, cost: 2, damage: 8, health: 20, xp: 2 },
+      'goblin-barrel': { speed: 70, radius: 16, cost: 2, damage: undefined, health: 20, xp: 2 },
     });
     const all = ['goblin-torch', 'goblin-barrel', 'goblin-tnt'];
     expect((config?.waves.segments ?? []).map((s) => s.types)).toEqual([

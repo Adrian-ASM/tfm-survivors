@@ -63,4 +63,37 @@ Para el daño de área:
   persecución de 0019 y obliga a recalibrar.
 
 ## Addendum · resultados del apply
-(Pendiente: balance del bot v3, valores finales de contenido, bench, primera oferta de la semilla 7 y demás plazos.)
+Calibración (tarea 6.2) con `measureBalance` y el bot v3 sobre `BALANCE_SEEDS` 1..50. Partida de los valores de
+design §5 (`maxDynamites` 24, barril 40/40/64/20, TNT 260/30/45-56-15/90, curva 9/3).
+
+**Hallazgo del bot v3.** Con la distancia de lanzamiento de 260 el bot pierde las 50 semillas aunque los peligros
+casi no hagan daño (2 dinamitas de daño 5: 0/50). El TNT lanza desde fuera del radio de huida (150 px): sin
+enemigos cerca, `fleeInput` da (0, 0), el bot está quieto, la dinamita apunta a su centro exacto, la suma de la
+esquiva es nula ("en el centro de todos los avisos") y la regla le manda usar la huida, que sigue siendo (0, 0).
+Recibe todas las dinamitas. La regla es la de la spec y no se toca; la palanca que lo resuelve está permitida: una
+distancia de lanzamiento < 150 deja al TNT dentro del radio de huida.
+
+| Lote (cambios sobre design §5) | Victorias | Quietos vivos (generado) | Quietos vivos (vacío) |
+|---|---|---|---|
+| ninguno | 0 | — | 21, 43 |
+| `maxDynamites` 8 · 4 · 2 (con daños 5/10) | 0 | — · — · 10, 23, 32, 42, 48 | 21, 43 · … |
+| lanzamiento 140 | 29 | — | 21, 43 |
+| lanzamiento 140, barril daño 25 · 26 · 28 · 30 | 28 · 28 · 27 · 24 | — | 43 |
+| lanzamiento 140, mecha 30 · 24 · 20 (daño 25) | 25 · 21 · 23 | 42 · 42 · 39, 42 | 21 · — · — |
+| lanzamiento 140, radio 72 · 80, activación 30 · 48 | 22 · 19 · 21 · 24 | — · — · 12, 42 · — | 43 · 43 · — · 7 |
+| lanzamiento 150 · 130 · 120 · 100 · 80 (daño 25–30) | 13 · 29 · 31 · 37 · 36 | — | 43 |
+| lanzamiento 140, daño 25, `xpGrowth` 4 | 19 | — | — |
+| lanzamiento 120, daño 25, `xpGrowth` 4 | 25 | — | — |
+| **lanzamiento 100, daño 25, `xpGrowth` 4** | **27** | **—** | **—** |
+
+Ninguna combinación solo de comportamiento y peligros dejó a 0 el quieto con el mapa vacío (la semilla 43
+sobrevive en todas las que dan ≥ 25 victorias), así que se usó también la segunda palanca, la curva de XP
+(`xpGrowth` 3 → 4; delta de `leveling`).
+
+Contenido final: TNT con salida a **100** (cotas: 38 < 100 ≤ 360; vuelo 45 ≥ 21), barril con daño de mecha **25**
+(40 < 64; mecha 40 ≥ 12), el resto como en design §5 (`maxDynamites` 24, `dynamiteRadius` 8, `blastTicks` 30);
+curva **9/4**. Oleadas, `maxAlive`, anillo, `player.speed`, stats, armas y mejoras sin cambios.
+
+Plazos del quieto con el contenido final (mapa generado): semilla 7, primera baja en el tick 728, primer pulso en el
+1.524, primera oferta en el **2.082** (igual que antes) y primer golpe en el 2.276; semilla 42, primer golpe en el
+2.442. Bot v3: **27/50** victorias; quietos vivos en el tick 10.799: 0 con el mapa generado y 0 con el vacío.

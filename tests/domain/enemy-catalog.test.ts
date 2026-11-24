@@ -171,7 +171,7 @@ describe('EnemyCatalog', () => {
     expect(r.value.get('goblin-tnt')?.xp).toBe(1);
   });
 
-  it('Contenido por defecto: vida, daño > 0 y XP ≥ 1 en los 3 tipos', () => {
+  it('Contenido por defecto: vida y XP ≥ 1 en los 3 tipos; el barril sin contacto (0020)', () => {
     const r = EnemyCatalog.create(DEFAULT_ENEMY_TYPES, arena());
     if (!r.ok) throw new Error(r.error.message);
     const catalog = r.value;
@@ -182,7 +182,7 @@ describe('EnemyCatalog', () => {
     expect(values).toEqual([
       ['goblin-torch', 5, 10, 1],
       ['goblin-tnt', 15, 45, 4],
-      ['goblin-barrel', 8, 20, 2],
+      ['goblin-barrel', 0, 20, 2],
     ]);
   });
 });

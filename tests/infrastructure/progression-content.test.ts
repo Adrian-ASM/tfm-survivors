@@ -40,12 +40,12 @@ function withUpgrade(id: string, patch: Record<string, unknown>): RawContent {
 const indexOf = (id: string) => rawContent().upgrades.upgrades.findIndex((u) => u.id === id);
 
 describe('Contenido de progresión (content/progression.json)', () => {
-  it('Scenario: Contenido por defecto (gemRadius 5, magnetSpeed 360, maxGems 300) y curva 9/3 (0019)', () => {
+  it('Scenario: Contenido por defecto (gemRadius 5, magnetSpeed 360, maxGems 300) y curva 9/4 (0020)', () => {
     const r = loadRunConfig();
     if (!r.ok) throw new Error(r.error.message);
     expect(r.value.progression).toEqual({
       baseXp: 9,
-      xpGrowth: 3,
+      xpGrowth: 4,
       gemRadius: 5,
       magnetSpeed: 360,
       maxGems: 300,
@@ -53,13 +53,13 @@ describe('Contenido de progresión (content/progression.json)', () => {
     expect(r.value.player.pickupRadius).toBe(128);
   });
 
-  // Spec leveling (0019): curva de calibración 9/3 (26/50 victorias del bot, 0 quietos).
-  it('Scenario: Curva por defecto (baseXp 9, xpGrowth 3: xpToNext 9, 12, 15 y 156 en el 50)', () => {
+  // Spec leveling (delta 0020): curva de calibración 9/4 (27/50 victorias del bot v3, 0 quietos).
+  it('Scenario: Curva por defecto (baseXp 9, xpGrowth 4: xpToNext 9, 13, 17 y 205 en el 50)', () => {
     const r = loadRunConfig();
-    expect(r.ok && [r.value.progression.baseXp, r.value.progression.xpGrowth]).toEqual([9, 3]);
+    expect(r.ok && [r.value.progression.baseXp, r.value.progression.xpGrowth]).toEqual([9, 4]);
     const rules = r.ok ? buildRunRules(r.value) : null;
     const curve = rules?.ok ? rules.value.curve : null;
-    expect([1, 2, 3, 50].map((n) => curve?.toNext(n))).toEqual([9, 12, 15, 156]);
+    expect([1, 2, 3, 50].map((n) => curve?.toNext(n))).toEqual([9, 13, 17, 205]);
   });
 
   it('Scenario: Curva de escenario (baseXp 5, xpGrowth 5: xpToNext 5, 10, 15 y 250 en el 50)', () => {

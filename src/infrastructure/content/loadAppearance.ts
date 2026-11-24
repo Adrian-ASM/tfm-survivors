@@ -19,6 +19,8 @@ export function aspectsOf(appearance: Appearance): [string[], Aspect][] {
     [['gem'], appearance.gem],
     [['ground'], appearance.ground],
     [['corpse'], appearance.corpse],
+    [['dynamite'], appearance.dynamite],
+    [['explosion'], appearance.explosion],
   ];
 }
 
