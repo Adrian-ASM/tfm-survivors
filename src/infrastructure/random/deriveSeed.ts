@@ -7,6 +7,12 @@ export const MAP_STREAM = 1;
  */
 export const DECOR_STREAM = 2;
 
+/**
+ * Flujo de la colocación de casas y torres (ADR-0020): independiente del mapa y de la partida.
+ * Cambiarlo cambia todas las estructuras: re-medir el balance.
+ */
+export const STRUCT_STREAM = 3;
+
 /** Sal de los flujos (constante áurea de 32 bits, como en las mezclas de hash habituales). */
 const STREAM_SALT = 0x9e3779b9;
 

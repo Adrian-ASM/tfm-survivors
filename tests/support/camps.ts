@@ -1,5 +1,10 @@
+import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
+import { MAP_STREAM, STRUCT_STREAM, deriveSeed } from '../../src/infrastructure/random/deriveSeed';
+import type { TerrainSource } from '../../src/domain/map/TerrainSource';
+import { Run, type RunSetup } from '../../src/domain/run/Run';
+import type { RandomGenerator } from '../../src/domain/shared/RandomGenerator';
 import type { EnemyTypeConfig } from '../../src/domain/enemy/EnemyType';
-import type { RunConfig } from '../../src/domain/run/RunConfig';
+import { buildRunRules, type RunConfig } from '../../src/domain/run/RunConfig';
 import type {
   StructureTypeConfig,
   StructuresConfig,
@@ -141,6 +146,44 @@ export const aStructuresConfig = (
 
 /** Valores de partida de las estructuras (design §2.1). */
 export const DEFAULT_STRUCTURES: StructuresConfig = aStructuresConfig();
+
+/** Generador de la colocación de la semilla, como en producción (`STRUCT_STREAM`, ADR-0020). */
+export const structureRandomFor = (seed: number): Mulberry32RandomGenerator =>
+  new Mulberry32RandomGenerator(deriveSeed(seed, STRUCT_STREAM));
+
+/**
+ * Mapa generado de la semilla con sus casas y torres, como lo sembrará `seededRun` (tarea 5.3):
+ * celdas con `MAP_STREAM` y estructuras con `STRUCT_STREAM`.
+ */
+export const campTerrain = (seed: number): TerrainSource => ({
+  kind: 'generated',
+  random: new Mulberry32RandomGenerator(deriveSeed(seed, MAP_STREAM)),
+  structureRandom: structureRandomFor(seed),
+});
+
+/** Partida de la semilla con el mapa generado y sus estructuras (azar de la partida: `seed`). */
+export function startCampRun(
+  config: RunConfig,
+  seed: number,
+  setup: RunSetup = {},
+  random: RandomGenerator = new Mulberry32RandomGenerator(seed),
+): Run {
+  const r = Run.start(config, random, setup, campTerrain(seed));
+  if (!r.ok) throw new Error(r.error.message);
+  return r.value;
+}
+
+/**
+ * Reglas de partida de `aCampsConfig(structures)` con sus reglas de estructuras (o excepción, para
+ * preparar escenarios).
+ */
+export function campRules(structures: StructuresConfig = DEFAULT_STRUCTURES) {
+  const r = buildRunRules(aCampsConfig(structures));
+  if (!r.ok) throw new Error(r.error.message);
+  const s = r.value.structures;
+  if (!s) throw new Error('sin reglas de estructuras');
+  return { ...r.value, structures: s };
+}
 
 /**
  * Contenido por defecto con campamentos: los tipos de content/ más `goblin-tnt-guard` y las

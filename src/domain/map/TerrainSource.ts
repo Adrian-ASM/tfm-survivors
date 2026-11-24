@@ -17,20 +17,43 @@ export interface DeclaredStart {
 }
 
 /**
+ * Estructura declarada por un mapa dado (spec procedural-map 0021): tipo de contenido y huella
+ * completa (primera columna y fila, columnas y filas), sin reglas de colocación.
+ */
+export interface DeclaredStructure {
+  readonly type: string;
+  readonly col: number;
+  readonly row: number;
+  readonly cols: number;
+  readonly rows: number;
+}
+
+/**
  * De dónde sale el mapa de una partida (ADR-0013). Es un valor, no un puerto: la composición lo
  * resuelve junto con la semilla y el dominio nunca la conoce.
  * - `open`: mapa vacío, todo hierba (escenarios sin mapa declarado y `?e2e&map=empty`).
- * - `generated`: `generateMap` con un generador propio, distinto del de la partida.
+ * - `generated`: `generateMap` con un generador propio, distinto del de la partida, y casas y
+ *   torres con otro (`structureRandom`, ADR-0020); sin él, el mapa no tiene estructuras.
  * - `cells`: mapa dado en orden de filas (tests); solo se le exigen las dimensiones.
- * `open` y `cells` pueden declarar su salida (`start`); sin ella, el centro del mundo.
+ * `open` y `cells` pueden declarar su salida (`start`); sin ella, el centro del mundo. También sus
+ * estructuras (`structures`); sin ellas, ninguna.
  */
 export type TerrainSource =
-  | { readonly kind: 'open'; readonly start?: DeclaredStart }
-  | { readonly kind: 'generated'; readonly random: RandomGenerator }
+  | {
+      readonly kind: 'open';
+      readonly start?: DeclaredStart;
+      readonly structures?: readonly DeclaredStructure[];
+    }
+  | {
+      readonly kind: 'generated';
+      readonly random: RandomGenerator;
+      readonly structureRandom?: RandomGenerator;
+    }
   | {
       readonly kind: 'cells';
       readonly cells: readonly CellType[];
       readonly start?: DeclaredStart;
+      readonly structures?: readonly DeclaredStructure[];
     };
 
 export const OPEN_TERRAIN: TerrainSource = Object.freeze({ kind: 'open' });

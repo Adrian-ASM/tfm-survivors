@@ -22,15 +22,15 @@
   — ES: "Guardia citado en una oleada".
 
 ## 2. Dominio · colocación y mapa (TDD estricto)
-- [ ] 2.1 `StructureSite`: posición = centro de la huella; puerta = centro de la celda (c0 + ⌊cols/2⌋, r0 + rows);
+- [x] 2.1 `StructureSite`: posición = centro de la huella; puerta = centro de la celda (c0 + ⌊cols/2⌋, r0 + rows);
   torre sin puerta. — GS: "Puerta de una casa".
-- [ ] 2.2 `placeStructures` (§3.2): rejillas de distancia y de ocupación, 2 valores por intento, orden casa → torre,
+- [x] 2.2 `placeStructures` (§3.2): rejillas de distancia y de ocupación, 2 valores por intento, orden casa → torre,
   parar un tipo cuando agota sus intentos. — GS: "Reglas de colocación con las semillas del conjunto" (1..1000, 0 y
   2³² − 1), "Contenido sin hueco suficiente".
-- [ ] 2.3 `TerrainSource` (`generated` con `structureRandom`; `open`/`cells` con `structures` declaradas),
+- [x] 2.3 `TerrainSource` (`generated` con `structureRandom`; `open`/`cells` con `structures` declaradas),
   `resolveStructures` y `MapSnapshot.structures`. — PM: "Mapa explícito con estructuras declaradas", "Estructura
   declarada fuera de la rejilla", "Partida con mapa vacío"; GS: "Mapa vacío sin estructuras".
-- [ ] 2.4 Independencia del azar. — GS: "Las estructuras no cambian las celdas", "Misma semilla, mismas estructuras",
+- [x] 2.4 Independencia del azar. — GS: "Las estructuras no cambian las celdas", "Misma semilla, mismas estructuras",
   "Colocar no consume el azar de la partida"; SL: "Mapa intacto" (con `MAP_GOLDEN` sin tocar).
 
 ## 3. Dominio · estructuras en la partida y armas (TDD estricto)

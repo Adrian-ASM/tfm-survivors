@@ -7,6 +7,8 @@ import { FlowField } from '../map/FlowField';
 import type { GameMap } from '../map/GameMap';
 import { toMapSnapshot, type MapSnapshot } from '../map/MapSnapshot';
 import { OPEN_TERRAIN, resolveTerrain, type TerrainSource } from '../map/TerrainSource';
+import { resolveStructures } from '../structure/resolveStructures';
+import type { StructureSite } from '../structure/StructureSite';
 import type { Player } from '../player/Player';
 import type { PlayerInput } from '../player/PlayerInput';
 import type { RandomGenerator } from '../shared/RandomGenerator';
@@ -100,9 +102,13 @@ export class Run {
     private readonly random: RandomGenerator,
     private readonly terrain: GameMap,
     initial: InitialState,
+    sites: readonly StructureSite[],
   ) {
     this.arena = rules.arena;
-    this.mapView = toMapSnapshot(terrain);
+    this.mapView = toMapSnapshot(
+      terrain,
+      sites.map((s) => ({ ...s, type: s.type.id })),
+    );
     this.field = new FlowField(terrain);
     this.player = initial.player;
     this.horde = new Horde(initial.enemies, rules.arena, initial.kills);
@@ -132,9 +138,11 @@ export class Run {
     if (!rules.ok) return rules;
     const map = resolveTerrain(terrain, rules.value.map);
     if (!map.ok) return map;
+    const sites = resolveStructures(terrain, map.value, rules.value.structures);
+    if (!sites.ok) return sites;
     const initial = initialState(rules.value, setup, map.value);
     if (!initial.ok) return initial;
-    return ok(new Run(rules.value, random, map.value, initial.value));
+    return ok(new Run(rules.value, random, map.value, initial.value, sites.value));
   }
 
   /** Mapa de la partida (spec procedural-map): la misma vista congelada durante toda la partida. */
