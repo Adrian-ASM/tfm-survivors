@@ -41,15 +41,17 @@ Guardia:
 - La colocación es `placeStructures(map, rules, random)`, pura, con
   `Mulberry32(deriveSeed(seed, STRUCT_STREAM = 3))`. Consume 2 valores por intento (columna y luego fila) y recorre
   los tipos en orden de contenido. Se ejecuta después de `generateMap`, que no cambia.
-- `GuardPost` (en `enemy/`) contiene el puesto, la ruta de patrulla, un `FlowField` propio hacia la celda del puesto
-  y el contador de guardias vivos. La ruta son las esquinas de un cuadrado de radio de contenido en orden fijo,
-  recolocadas a celda caminable y filtradas por línea libre. Las clases nuevas tienen estas transiciones:
-  - antes de moverse: `detect` en `patrol` y `return`, y `lose` en `alert`;
-  - después de moverse: `exit` en `alert`, la llegada exacta al puesto en `return` y el avance del punto de ruta en
-    `patrol`.
-  Nada consume azar.
+- `GuardPost` (en `enemy/`) contiene el puesto (la puerta de la casa), los 4 puntos de patrulla, una `FlowField`
+  por punto (calculada una vez, porque el mapa no cambia) y el contador de guardias vivos. Los puntos son las esquinas
+  de un cuadrado de radio de contenido, en orden fijo y en bucle, recolocadas a celda caminable. Para ir a un punto
+  fijo se aplica la regla de la persecución con el campo de la celda del punto (ADR-0017). Todas las transiciones de
+  las clases nuevas se comprueban después de moverse: `detect`, `lose`, `exit`, la llegada exacta al punto o al
+  puesto. Nada consume azar.
 - Orden del tick: el de ADR-0019, más el nacimiento de guardias después del director, con las casas en orden de
-  lista. Las armas usan las estructuras como reserva en el paso 3.
+  lista. La primera guardia nace cuando han pasado ≥ el intervalo desde el tick 0. Las armas usan las estructuras como
+  reserva en el paso 3.
+- Render: cada estructura aporta al plan del mapa un aspecto intacto y otro de ruina. Una máscara de "habilitado" en
+  `MapCuller` decide cuál se ve.
 
 ## Consecuencias
 - Positivas:
@@ -64,7 +66,7 @@ Guardia:
   - Entran en el **contrato de determinismo**: el orden de consumo de `STRUCT_STREAM`, el criterio de aceptación, el
     nacimiento de guardias y su lugar en el tick, la regla de reserva de las armas y las transiciones de las clases
     nuevas. Si cambian, cambian las partidas y hay que volver a medir el balance.
-  - Unos 20 KB por casa para su campo.
+  - Unos 18 KB por punto con campo (hasta 5 por casa, unos 360 KB con 4 casas).
   - Los guardias desplazan los ids de enemigo con el mapa generado.
 - Cómo revertirla: quitar `StructureField`, `GuardPost`, las clases nuevas y `STRUCT_STREAM` devuelve las partidas
   de 0020 (salvo los stats del barril de A3) y obliga a recalibrar. Pasar a las opciones 2 o 3 es el trabajo previsto
