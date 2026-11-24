@@ -54,9 +54,12 @@ describe('mapCulling · regla de recorte (0018)', () => {
     ['superior', 60, box(1500, 600, 1560, 660), box(1500, 599, 1560, 659)],
     ['inferior', 0, box(1500, 1440, 1560, 1500), box(1500, 1441, 1560, 1501)],
     ['inferior', 60, box(1500, 1500, 1560, 1560), box(1500, 1501, 1560, 1561)],
-  ])('Scenario: Caja que toca el borde (%s, M = %s): la que toca sí, la de 1 px fuera no', (_, m, on, off) => {
-    expect([drawn(on, m), drawn(off, m)]).toEqual([true, false]);
-  });
+  ])(
+    'Scenario: Caja que toca el borde (%s, M = %s): la que toca sí, la de 1 px fuera no',
+    (_, m, on, off) => {
+      expect([drawn(on, m), drawn(off, m)]).toEqual([true, false]);
+    },
+  );
 
   it('Scenario: Vista que crece con la ventana (H no a 1.280 × 720, sí a 2.560 × 1.440)', () => {
     expect(drawn(H, M)).toBe(false);

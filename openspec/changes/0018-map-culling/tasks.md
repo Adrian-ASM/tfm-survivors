@@ -36,7 +36,7 @@ Sin tareas: el change no toca `src/domain` ni `src/application` (design §1).
   rectángulo de celda o de huella ((1.800, 900)–(2.100, 1.140) para el castillo de la semilla 42); `cellSize` 60.
   — escenarios: "Recorte del arte del mapa por cámara" (definición de caja, tiles y reserva), "Recorte con aspecto
   de reserva" (cajas de los rectángulos).
-- [ ] 2.4 `bounds` en `SpriteDraw` (origen, escala, recorte, `flipX` como unión con el espejo, puentes con
+- [x] 2.4 `bounds` en `SpriteDraw` (origen, escala, recorte, `flipX` como unión con el espejo, puentes con
   `looks.bridges.rects[orientación]`; design §3). Tests en `plan-map-art.test.ts` (rojo): tejado
   (1.800, 900)–(2.100, 1.080) y fachada (1.800, 1.080)–(2.100, 1.140) de la semilla 42 (±1 px); árbol de
   "Elementos en su sitio" con origen (630, 300): caja del tronco + copa = frame del árbol; puente centrado en
