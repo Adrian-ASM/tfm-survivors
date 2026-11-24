@@ -250,7 +250,35 @@ export function startDeclared(
   setup: RunSetup = {},
   random: RandomGenerator = new Mulberry32RandomGenerator(42),
 ): Run {
-  const r = Run.start(config, random, setup, { kind: 'open', structures });
+  return startOn(config, { kind: 'open', structures }, setup, random);
+}
+
+/** Partida en el mapa dado (azar de la partida: semilla 42 salvo que se pase otro). */
+export function startOn(
+  config: RunConfig,
+  terrain: TerrainSource,
+  setup: RunSetup = {},
+  random: RandomGenerator = new Mulberry32RandomGenerator(42),
+): Run {
+  const r = Run.start(config, random, setup, terrain);
   if (!r.ok) throw new Error(r.error.message);
   return r.value;
 }
+
+type SetupEnemy = NonNullable<RunSetup['enemies']>[number];
+
+/**
+ * Guardia de prueba de `RunSetup` en (x, y): puesto (1.000, 1.000) salvo que se pase otro o una casa
+ * (`house`), en su estado inicial salvo que se pida otro (p. ej. `inState('return')`).
+ */
+export const aGuardAt = (
+  x: number,
+  y: number,
+  o: Partial<Omit<SetupEnemy, 'x' | 'y'>> = {},
+): SetupEnemy => ({
+  type: 'guard',
+  x,
+  y,
+  ...(o.house === undefined ? { post: { x: 1000, y: 1000 } } : {}),
+  ...o,
+});

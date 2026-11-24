@@ -54,24 +54,24 @@
   destruyen tras las bajas", "Las estructuras no consumen azar".
 
 ## 4. Dominio · guardias (TDD estricto)
-- [ ] 4.1 `GuardPost`: campos por punto (compartiendo los códigos) y "Navegación hacia un punto fijo" en
+- [x] 4.1 `GuardPost`: campos por punto (compartiendo los códigos) y "Navegación hacia un punto fijo" en
   `Horde.act`. `Enemy.post`/`waypoint` y `RunSetup.enemies[i].post`/`.house` con su validación (§2.4). — EB: "Línea
   recta hasta el punto", "Rodeo de un muro hasta el puesto".
-- [ ] 4.2 Patrulla: 4 esquinas en orden y en bucle, recolocadas con `nearestWalkable`, avance al llegar exactamente.
+- [x] 4.2 Patrulla: 4 esquinas en orden y en bucle, recolocadas con `nearestWalkable`, avance al llegar exactamente.
   — EB: "Patrulla en el mapa vacío", "Punto de patrulla recolocado", "El daño no saca de la patrulla".
-- [ ] 4.3 Transiciones después de moverse (`detect`, `exit`, `lose`, llegada) y ciclo de carga y espera desde la
+- [x] 4.3 Transiciones después de moverse (`detect`, `exit`, `lose`, llegada) y ciclo de carga y espera desde la
   alerta. — EB: "Detección justo en el límite", "Alerta, lanzamiento y vuelta a la alerta", "Abandono de la alerta",
   "Llegada al puesto", "Detección durante la vuelta"; SL: "Estado de comportamiento en el snapshot"; EH: "Guardia
   alcanzado por una explosión".
-- [ ] 4.4 `StructureField.spawnGuards`: tope por casa, intervalo desde el último nacimiento (o desde el tick 0),
+- [x] 4.4 `StructureField.spawnGuards`: tope por casa, intervalo desde el último nacimiento (o desde el tick 0),
   `maxAlive`, `release` al morir, y casa destruida. — ES: "Nacimientos hasta el tope", "Reposición tras una baja",
   "Intervalo mínimo", "El tope de vivos frena el nacimiento", "Casa destruida", "Baja de un guardia"; EB: "Guardia que
   nace en la puerta".
-- [ ] 4.5 El nacimiento en el orden del tick y congelado. — ES: "El director va antes que las casas", "Sin
+- [x] 4.5 El nacimiento en el orden del tick y congelado. — ES: "El director va antes que las casas", "Sin
   nacimientos en el tick final", "Nacer no consume azar"; SL: "Una casa destruida no hace nacer en ese tick", "El
   guardia nacido no se mueve en su tick"; RS: "Estructuras congeladas al terminar", "Nacimiento en pausa durante la
   oferta"; EB: "Estado inicial al aparecer".
-- [ ] 4.6 Azar de los estados de guardia. — EB: "Los estados de guardia no consumen azar"; SL: "Los comportamientos
+- [x] 4.6 Azar de los estados de guardia. — EB: "Los estados de guardia no consumen azar"; SL: "Los comportamientos
   no consumen azar" (con alerta, vuelta y patrulla).
 
 ## 5. Contenido, validación y composición (test-after)

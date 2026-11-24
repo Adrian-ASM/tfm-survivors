@@ -1,3 +1,4 @@
+import type { GuardPost } from '../enemy/GuardPost';
 import type { WeaponTarget } from '../weapon/WeaponTarget';
 import type { StructureSite } from './StructureSite';
 
@@ -11,9 +12,14 @@ export class Structure implements WeaponTarget {
   private life: number;
   private ruined: boolean;
 
+  /** Tick del último nacimiento de un guardia en esta casa (0 = ninguno, desde el tick 0). */
+  lastSpawnAt = 0;
+
   constructor(
     readonly site: StructureSite,
     health: number,
+    /** Puesto de los guardias de una casa (su puerta); `null` en las torres. */
+    readonly post: GuardPost | null = null,
   ) {
     this.life = health;
     this.ruined = health <= 0;

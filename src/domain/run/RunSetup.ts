@@ -3,6 +3,7 @@ import { Enemy } from '../enemy/Enemy';
 import type { GameMap } from '../map/GameMap';
 import type { EnemyCatalog } from '../enemy/EnemyCatalog';
 import type { EnemyType } from '../enemy/EnemyType';
+import { GuardPost } from '../enemy/GuardPost';
 import { Player } from '../player/Player';
 import { Experience } from '../progression/Experience';
 import { GemField } from '../progression/GemField';
@@ -34,6 +35,10 @@ export const SETUP_DYNAMITE_TICKS_LEFT =
   'Los ticks que le quedan a una dinamita inicial deben ser un entero ≥ 1.';
 export const SETUP_DYNAMITE_BLAST_MUST_BE_POSITIVE =
   'El radio y el daño de una dinamita inicial deben ser positivos.';
+export const SETUP_GUARD_NEEDS_POST =
+  'Un guardia (tipo que empieza en patrulla) necesita exactamente uno: puesto (post) o casa (house).';
+export const SETUP_POST_NOT_GUARD = 'Solo un guardia puede tener puesto o casa.';
+export const SETUP_HOUSE_UNKNOWN = 'La casa de un guardia debe ser una casa de la partida.';
 export const SETUP_TOO_MANY_STRUCTURES =
   'Hay más estructuras iniciales que estructuras en el mapa.';
 export const SETUP_STRUCTURE_HEALTH_OUT_OF_RANGE =
@@ -60,6 +65,12 @@ export interface RunSetup {
     /** Estado inicial por nombre (por defecto, el inicial del tipo) y ticks ya pasados en él. */
     readonly state?: string;
     readonly elapsed?: number;
+    /**
+     * Solo los guardias (tipos que empiezan en patrulla), y exactamente uno de los dos: su puesto
+     * (`post`) o el índice de su casa en la lista de estructuras (`house`, cuenta en su tope).
+     */
+    readonly post?: Point;
+    readonly house?: number;
   })[];
   /**
    * Dinamitas en vuelo (como mucho `maxDynamites`): lanzadas "en el tick 0" desde (x, y) hacia
@@ -116,10 +127,43 @@ export function initialPlayer(
   return ok(Player.spawn(position, player));
 }
 
+type SetupEnemy = NonNullable<RunSetup['enemies']>[number];
+
+/**
+ * Puesto de un enemigo de `RunSetup` (ADR-0020): un guardia necesita exactamente uno de `post` o
+ * `house` (que cuenta en el tope de esa casa) y cualquier otro tipo no puede tener ninguno.
+ */
+function postOf(
+  entry: SetupEnemy,
+  type: EnemyType,
+  path: string,
+  map: GameMap,
+  arena: Arena,
+  structures: readonly Structure[],
+): Result<GuardPost | null, DomainError> {
+  const given = (entry.post ? 1 : 0) + (entry.house === undefined ? 0 : 1);
+  if (!type.behavior.isGuard) {
+    return given === 0 ? ok(null) : err(invalidConfig(path, SETUP_POST_NOT_GUARD));
+  }
+  if (given !== 1) return err(invalidConfig(path, SETUP_GUARD_NEEDS_POST));
+  if (entry.post) {
+    if (!isFinitePoint(entry.post)) {
+      return err(invalidConfig(`${path}.post`, SETUP_POSITION_MUST_BE_FINITE));
+    }
+    return ok(new GuardPost(entry.post.x, entry.post.y, type, map, arena));
+  }
+  const house = structures[entry.house ?? -1]?.post;
+  if (!house) return err(invalidConfig(`${path}.house`, SETUP_HOUSE_UNKNOWN));
+  house.take();
+  return ok(house);
+}
+
 export function initialEnemies(
   setup: RunSetup,
   catalog: EnemyCatalog,
   arena: Arena,
+  map: GameMap,
+  structures: readonly Structure[] = [],
 ): Result<Enemy[], DomainError> {
   const enemies: Enemy[] = [];
   for (const [i, entry] of (setup.enemies ?? []).entries()) {
@@ -133,8 +177,10 @@ export function initialEnemies(
     }
     const state = initialStateOf(type, entry.state, entry.elapsed, path);
     if (!state.ok) return state;
+    const post = postOf(entry, type, path, map, arena, structures);
+    if (!post.ok) return post;
     const { index, since } = state.value;
-    enemies.push(Enemy.spawn(i, type, entry.x, entry.y, arena, health, index, since));
+    enemies.push(Enemy.spawn(i, type, entry.x, entry.y, arena, health, index, since, post.value));
   }
   return ok(enemies);
 }
@@ -238,10 +284,15 @@ export function initialExperience(
   return ok(new Experience(rules.curve, level, xp));
 }
 
-/** Casas y torres de la partida con la vida de su tipo o la de `RunSetup`. */
+/**
+ * Casas y torres de la partida con la vida de su tipo o la de `RunSetup`; cada casa, con el puesto
+ * de sus guardias en su puerta.
+ */
 export function initialStructures(
   setup: RunSetup,
   sites: readonly StructureSite[],
+  map: GameMap,
+  arena: Arena,
 ): Result<Structure[], DomainError> {
   const entries = setup.structures ?? [];
   if (entries.length > sites.length) {
@@ -254,7 +305,10 @@ export function initialStructures(
       const field = `setup.structures.${String(i)}.health`;
       return err(invalidConfig(field, SETUP_STRUCTURE_HEALTH_OUT_OF_RANGE));
     }
-    structures.push(new Structure(site, health));
+    const guard = site.type.guards?.type;
+    const post =
+      guard && site.door ? new GuardPost(site.door.x, site.door.y, guard, map, arena) : null;
+    structures.push(new Structure(site, health, post));
   }
   return ok(structures);
 }
@@ -283,7 +337,9 @@ export function initialState(
 ): Result<InitialState, DomainError> {
   const player = initialPlayer(rules, setup, map);
   if (!player.ok) return player;
-  const enemies = initialEnemies(setup, rules.catalog, rules.arena);
+  const structures = initialStructures(setup, sites, map, rules.arena);
+  if (!structures.ok) return structures;
+  const enemies = initialEnemies(setup, rules.catalog, rules.arena, map, structures.value);
   if (!enemies.ok) return enemies;
   const gems = initialGems(rules, setup, map);
   if (!gems.ok) return gems;
@@ -293,8 +349,6 @@ export function initialState(
   if (!board.ok) return board;
   const dynamites = initialDynamites(rules, setup);
   if (!dynamites.ok) return dynamites;
-  const structures = initialStructures(setup, sites);
-  if (!structures.ok) return structures;
   const kills = setup.kills ?? 0;
   if (!Number.isInteger(kills) || kills < 0) {
     return err(invalidConfig('setup.kills', SETUP_KILLS_MUST_BE_INTEGER));

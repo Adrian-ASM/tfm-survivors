@@ -29,8 +29,15 @@ export class FlowField {
   private dirty = true;
   private bfsCount = 0;
 
-  constructor(private readonly map: GameMap) {
-    this.cells = codesOf(map);
+  /**
+   * `cells`: copia de los códigos del mapa ya hecha (`codesOf`) para compartirla entre varios campos
+   * (los puntos de un puesto de guardia, ADR-0020); sin ella, se copia aquí. Nunca se escribe.
+   */
+  constructor(
+    private readonly map: GameMap,
+    cells: Uint8Array = codesOf(map),
+  ) {
+    this.cells = cells;
     this.cols = map.cols;
     this.rows = map.rows;
     this.dist = new Int32Array(this.cells.length);
