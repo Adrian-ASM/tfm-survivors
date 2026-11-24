@@ -5,5 +5,6 @@
   "magnetSpeed": 360,
   "maxGems": 300,
   "maxGold": 32,
-  "maxWood": 64
+  "maxWood": 64,
+  "maxMeat": 8
 }

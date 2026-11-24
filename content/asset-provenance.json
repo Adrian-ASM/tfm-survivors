@@ -160,6 +160,13 @@
       "version": "Update 010",
       "sha256": "83b6d5d74b84c565950f01b325bd93b0517ac6c19e719921095b71628065270a",
       "bytes": 6546
+    },
+    {
+      "path": "public/assets/tiny-swords/Resources/Resources/M_Idle.png",
+      "source": "Tiny Swords (Update 010)/Resources/Resources/M_Idle.png",
+      "version": "Update 010",
+      "sha256": "5c7b717272597e383fa05eb2010f5a7fe8e42a5f8643543c56640a3d42bd6b33",
+      "bytes": 1342
     }
   ]
 }

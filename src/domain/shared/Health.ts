@@ -29,6 +29,16 @@ export class Health {
     return new Health(Math.min(max, Math.max(1, this.current + amount)), max);
   }
 
+  /**
+   * Curación (spec player-health 0023, "Curación por carne"): current sube `amount` con tope en
+   * max. No resucita (con la vida a 0 no cambia) y sin cambio devuelve esta misma vida.
+   */
+  heal(amount: number): Health {
+    const current = Math.min(this.max, this.current + amount);
+    if (this.isDepleted || current === this.current) return this;
+    return new Health(current, this.max);
+  }
+
   get isDepleted(): boolean {
     return this.current === 0;
   }

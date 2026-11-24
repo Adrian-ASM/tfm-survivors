@@ -15,7 +15,7 @@ interface PickupSlot {
 }
 
 /**
- * Pinta los recogibles del snapshot (los tres tipos, ADR-0021) sobre un único pool de `Σ topes`
+ * Pinta los recogibles del snapshot (los cuatro tipos, ADR-0021) sobre un único pool de `Σ topes`
  * sprites preasignados, asociados por id (los ids son únicos entre tipos, ADR-0006). Al aparecer, el
  * sprite toma el aspecto de su tipo (un sprite reutilizado cambia de aspecto); el tamaño lo fija el
  * aspecto, no `gemRadius`, salvo en reserva. La gema sin hoja es una forma de color: nunca cuenta como
@@ -26,6 +26,7 @@ export class PickupLayer {
     xp: { visible: 0, placeholder: 0 },
     gold: { visible: 0, placeholder: 0 },
     wood: { visible: 0, placeholder: 0 },
+    meat: { visible: 0, placeholder: 0 },
   };
   private readonly pool: SlotPool<PickupSnapshot, PickupSlot>;
 

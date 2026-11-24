@@ -162,6 +162,13 @@ export const withDrops = (
   return withResources(config, { ...config.resources, drops: { enemies, structures } });
 };
 
+/** El mismo contenido con la carne cambiada (0023: `perSheep` y `healPercent`). */
+export const withMeat = (
+  config: RunConfig,
+  meat: Partial<ResourcesConfig['meat']>,
+): RunConfig =>
+  withResources(config, { ...config.resources, meat: { ...config.resources.meat, ...meat } });
+
 /** El mismo contenido sin fuentes de recursos (design 0022 §10). */
 export const withoutResourceSources = (config: RunConfig): RunConfig =>
   withResources(config, NO_RESOURCES);

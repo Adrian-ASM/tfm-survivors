@@ -9,6 +9,7 @@ interface Topes {
   maxGems?: number;
   maxGold?: number;
   maxWood?: number;
+  maxMeat?: number;
 }
 
 function field(topes: Topes = {}, map = GameMap.open(mapRules())): PickupField {
@@ -18,6 +19,7 @@ function field(topes: Topes = {}, map = GameMap.open(mapRules())): PickupField {
     maxGems: topes.maxGems ?? 300,
     maxGold: topes.maxGold ?? 32,
     maxWood: topes.maxWood ?? 64,
+    maxMeat: topes.maxMeat ?? 8,
   });
   if (!r.ok) throw new Error(r.error.message);
   return new PickupField(r.value, map);
@@ -29,7 +31,7 @@ const gain = new PickupGain();
 /** Un paso del campo con el jugador en (px, py); devuelve lo recogido por tipo. */
 const step = (f: PickupField, px = 480, py = 270, reach = PICKUP) => {
   f.step(px, py, PR, reach, gain);
-  return { xp: gain.xp, gold: gain.gold, wood: gain.wood };
+  return { xp: gain.xp, gold: gain.gold, wood: gain.wood, meat: gain.meat };
 };
 const xpOf = (f: PickupField, px = 480, py = 270) => step(f, px, py).xp;
 
@@ -78,12 +80,23 @@ describe('PickupField.drop', () => {
     for (let i = 0; i < 300; i++) f.drop('xp', 10, 10, 1);
     for (let i = 0; i < 5; i++) f.drop('wood', 3000, 200, 3);
     for (let i = 0; i < 4; i++) f.drop('gold', 3000, 300, 7);
+    for (let i = 0; i < 2; i++) f.drop('meat', 3000, 400, 1);
     const before = ids(f);
     f.drop('xp', 900, 500, 1);
     expect(ids(f)).toEqual(before);
     expect(values(f)[0]).toBe(2);
     expect(values(f, 'wood')).toEqual(Array.from({ length: 10 }, () => 3));
     expect(values(f, 'gold')).toEqual([7, 7, 7, 7]);
+    expect(values(f, 'meat')).toEqual([1, 1]);
+  });
+
+  it('Scenario: Tope de carne lleno (tope 2: m1 vale 2 y m2 1, mismos ids)', () => {
+    const f = field({ maxMeat: 2 });
+    f.drop('meat', 3000, 100, 1);
+    f.drop('meat', 3000, 200, 1);
+    f.drop('meat', 800, 300, 1);
+    expect(values(f, 'meat')).toEqual([2, 1]);
+    expect(ids(f, 'meat')).toEqual([0, 1]);
   });
 
   it('Scenario: Tope de madera lleno (tope 2: w1 vale 7 y w2 4; la gema se crea)', () => {
@@ -148,8 +161,8 @@ describe('PickupField.step · imán', () => {
     expect(xs.map((x) => Math.round(x * 1000) / 1000)).toEqual([538, 532, 526, 520, 514, 508, 502]);
   });
 
-  it.each(['xp', 'gold', 'wood'] as const)(
-    'Scenario: Mismo imán para los tres tipos (%s: 538 tras el 1, 502 tras el 7, recogido en el 8)',
+  it.each(['xp', 'gold', 'wood', 'meat'] as const)(
+    'Scenario: Mismo imán para los cuatro tipos (%s: 538 tras el 1, 502 tras el 7, recogido en el 8)',
     (kind) => {
       const f = field();
       f.drop(kind, 544, 270, 1);
@@ -247,13 +260,14 @@ describe('PickupField.step · recogida', () => {
     expect(f.pickups).toHaveLength(0);
   });
 
-  it('suma por tipo lo recogido en el paso (gold 10, wood 3, xp 1) y reinicia la ganancia', () => {
+  it('suma por tipo lo recogido en el paso (gold 10, wood 3, xp 1, meat 2) y reinicia la ganancia', () => {
     const f = field();
     f.drop('gold', 480, 270, 10);
     f.drop('wood', 480, 270, 3);
     f.drop('xp', 480, 270, 1);
-    expect(step(f)).toEqual({ xp: 1, gold: 10, wood: 3 });
-    expect(step(f)).toEqual({ xp: 0, gold: 0, wood: 0 });
+    f.drop('meat', 480, 270, 2);
+    expect(step(f)).toEqual({ xp: 1, gold: 10, wood: 3, meat: 2 });
+    expect(step(f)).toEqual({ xp: 0, gold: 0, wood: 0, meat: 0 });
   });
 
   it('Scenario: Plaza liberada por una recogida (maxGems 1: nueva y distinta de g1)', () => {

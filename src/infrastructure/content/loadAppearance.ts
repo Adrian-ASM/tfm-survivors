@@ -11,9 +11,9 @@ import {
 
 /** Aspectos con hoja de los recogibles (0022): la gema solo si tiene hoja; luego oro y madera. */
 export function pickupAspectsOf(appearance: Appearance): [string[], StillAspect][] {
-  const { xp, gold, wood } = appearance.pickups;
+  const { xp, gold, wood, meat } = appearance.pickups;
   const out: [string[], StillAspect][] = 'sheet' in xp ? [[['pickups', 'xp'], xp]] : [];
-  out.push([['pickups', 'gold'], gold], [['pickups', 'wood'], wood]);
+  out.push([['pickups', 'gold'], gold], [['pickups', 'wood'], wood], [['pickups', 'meat'], meat]);
   return out;
 }
 

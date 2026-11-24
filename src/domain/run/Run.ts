@@ -142,6 +142,7 @@ export class Run {
     for (const w of rules.loadout.weapons) this.retune(w.id);
     const bonus = maxHealthBonus(rules.upgrades, this.board.levels);
     this.player = this.player.withRules(this.effectivePlayer(), bonus);
+    if (initial.playerHealth !== null) this.player = this.player.withHealth(initial.playerHealth);
   }
 
   /**
@@ -255,8 +256,8 @@ export class Run {
   }
 
   /**
-   * Paso 7 (spec simulation-loop): 7.1 recogibles de los tres tipos en una pasada, en orden de
-   * creación; la XP sube de nivel y el oro y la madera van a sus contadores; 7.2 vetas en el orden
+   * Paso 7 (spec simulation-loop): 7.1 recogibles de los cuatro tipos en una pasada, en orden de
+   * creación; la XP sube de nivel, el oro y la madera van a sus contadores y la carne cura; 7.2 vetas en el orden
    * de su lista: cada una activa en contacto suma su oro y queda agotada.
    */
   private collect(x: number, y: number): void {
@@ -264,7 +265,19 @@ export class Run {
     this.pickups.step(x, y, this.player.radius, this.player.pickupRadius, gain);
     if (gain.xp > 0) this.experience.gain(gain.xp);
     this.stock.add(gain.gold, gain.wood);
+    if (gain.meat > 0) this.heal(gain.meat);
     for (const v of this.veins) this.stock.add(v.tap(x, y, this.player.radius), 0);
+  }
+
+  /**
+   * Curación por carne (spec player-health 0023): `valor × max(1, ⌊% × máx / 100⌋)` con la vida
+   * máxima efectiva de este momento y tope en ella. Sumar las piezas del paso y curar una vez es lo
+   * mismo que curar pieza a pieza (el tope es monótono). No consume azar.
+   */
+  private heal(meat: number): void {
+    const max = this.player.health.max;
+    const perUnit = Math.max(1, Math.floor((this.rules.resources.meat.healPercent * max) / 100));
+    this.player = this.player.heal(meat * perUnit);
   }
 
   /**

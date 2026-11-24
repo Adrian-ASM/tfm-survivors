@@ -9,6 +9,8 @@ export const RESOURCE_COUNT_MUST_BE_INTEGER =
 export const VEIN_RADIUS_MUST_BE_POSITIVE = 'El radio de contacto de una veta debe ser positivo.';
 export const RESOURCE_PLACEMENT_MUST_BE_INTEGER =
   'Una distancia de colocación de recursos debe ser un entero ≥ 0 (en celdas).';
+export const MEAT_HEAL_PERCENT_OUT_OF_RANGE =
+  'La curación de la carne debe ser un entero entre 1 y 100 (% de la vida máxima).';
 export const RESOURCE_DROP_UNKNOWN_ENEMY = 'Drop de recursos de un tipo de enemigo desconocido';
 export const RESOURCE_DROP_UNKNOWN_STRUCTURE =
   'Drop de recursos de un tipo de estructura desconocido';
@@ -22,7 +24,13 @@ export interface ResourcePlacementConfig {
   readonly minGapCells: number;
 }
 
-/** Fuentes de oro y madera (content/resources.json, spec resources, ADR-0021). */
+/** Carne de las ovejas (spec resources 0023): valor por oveja y % de vida máxima por unidad. */
+export interface MeatConfig {
+  readonly perSheep: number;
+  readonly healPercent: number;
+}
+
+/** Fuentes de oro, madera y carne (content/resources.json, spec resources, ADR-0021). */
 export interface ResourcesConfig {
   readonly drops: {
     /** Madera por baja sin explotar, por id de tipo de enemigo. */
@@ -33,6 +41,7 @@ export interface ResourcesConfig {
   readonly woodPiles: { readonly count: number; readonly wood: number };
   readonly goldVeins: { readonly count: number; readonly gold: number; readonly radius: number };
   readonly placement: ResourcePlacementConfig;
+  readonly meat: MeatConfig;
 }
 
 const isAmount = (v: number): boolean => Number.isInteger(v) && v >= 1;
@@ -43,7 +52,7 @@ const amountError = (field: string): DomainError =>
 
 /** Cantidades, números por mapa, radio y distancias (sin referencias cruzadas). */
 function checkScalars(c: ResourcesConfig): DomainError | null {
-  const { woodPiles, goldVeins, placement } = c;
+  const { woodPiles, goldVeins, placement, meat } = c;
   if (!isCount(woodPiles.count)) {
     return invalidConfig(`${PATH}.woodPiles.count`, RESOURCE_COUNT_MUST_BE_INTEGER);
   }
@@ -54,6 +63,11 @@ function checkScalars(c: ResourcesConfig): DomainError | null {
   if (!isAmount(goldVeins.gold)) return amountError('goldVeins.gold');
   if (!(Number.isFinite(goldVeins.radius) && goldVeins.radius > 0)) {
     return invalidConfig(`${PATH}.goldVeins.radius`, VEIN_RADIUS_MUST_BE_POSITIVE);
+  }
+  if (!isAmount(meat.perSheep)) return amountError('meat.perSheep');
+  const heal = meat.healPercent;
+  if (!(Number.isInteger(heal) && heal >= 1 && heal <= 100)) {
+    return invalidConfig(`${PATH}.meat.healPercent`, MEAT_HEAL_PERCENT_OUT_OF_RANGE);
   }
   const keys = ['minStartCells', 'minCastleCells', 'minGapCells'] as const;
   const bad = keys.find((k) => !isCount(placement[k]));
@@ -89,6 +103,8 @@ export class ResourceRules {
     readonly woodPiles: ResourcesConfig['woodPiles'],
     readonly goldVeins: ResourcesConfig['goldVeins'],
     readonly placement: ResourcePlacementConfig,
+    /** Carne por oveja y curación por unidad (0023). */
+    readonly meat: MeatConfig,
   ) {
     Object.freeze(this);
   }
@@ -133,6 +149,7 @@ export class ResourceRules {
         Object.freeze({ ...config.woodPiles }),
         Object.freeze({ ...config.goldVeins }),
         Object.freeze({ ...config.placement }),
+        Object.freeze({ ...config.meat }),
       ),
     );
   }

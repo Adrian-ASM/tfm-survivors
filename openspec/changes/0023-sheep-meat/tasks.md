@@ -9,13 +9,18 @@
      Los escenarios se citan como "capacidad · escenario". -->
 
 ## 0. Medición previa (M0, sin tocar código)
-- [ ] 0.1 M0 en la misma máquina (design §12): `npm.cmd run bench` (caso "tres topes llenos"); tiempo de pared del
+- [x] 0.1 M0 en la misma máquina (design §12): `npm.cmd run bench` (caso "tres topes llenos"); tiempo de pared del
   lote del bot dos veces (`vitest run tests/domain/balance.test.ts`); duración de los dos tests del quieto y tick de
   muerte máximo del quieto sobre 1..50 (mapa generado y vacío); sha256 canónico de `content/resources.json` de `main`
   para la huella de combate. Anotar cifras aquí debajo; entran en el commit del grupo 1.
+  - **M0 (2026-11-24, código de `a82b314`)**: bench "tres topes llenos" 0,263 ms/tick (p99 0,309) y "Peor caso con
+    gemas" 0,190 ms; `balance.test.ts` completo 31,6 s y 31,3 s (pared 32 y 33 s); quieto con mapa generado 2,06 /
+    2,03 s y con mapa vacío 0,51 / 0,53 s; tick de muerte máximo del quieto 6.802 (generado) y 7.948 (vacío), margen
+    hasta 10.800; sha256 canónico de `resources.json` de `main`
+    `c09e42573541d9b138d4a843eeea5f65717ecc70f203ecd9387c92716805787d`.
 
 ## 1. Dominio · carne y curación
-- [ ] 1.1 Recogible `meat` y curación (TDD). `'meat'` en `PickupKind`/`PICKUP_KINDS`, `maxMeat` y `capacity` = Σ 4
+- [x] 1.1 Recogible `meat` y curación (TDD). `'meat'` en `PickupKind`/`PICKUP_KINDS`, `maxMeat` y `capacity` = Σ 4
   topes, `PickupGain.meat`; `ResourceRules.meat` (`perSheep`, `healPercent`); `Health.heal` y `Player.heal` (no
   resucita, conserva invulnerabilidad); curación en 7.1 con `valor × max(1, ⌊% × máx / 100⌋)`; `RunSetup.player.health`
   (entero en [1, máx]). Contenido mínimo para compilar: `resources.json` `meat {1, 20}`, `progression.json`
@@ -28,6 +33,14 @@
     "Carne con la vida llena", "Tope de XP lleno con otros tipos en el suelo", "Tipos del snapshot";
   - simulation-loop · "La curación no consume azar", "Recogibles de varios tipos en el snapshot".
   Tests: `tests/domain/health-heal.test.ts`, `run-meat.test.ts` y ampliar `run-pickups.test.ts`.
+  - Apply: `'meat'` en `Record<PickupKind, …>` obliga a dar aspecto a la carne en infraestructura para compilar, así
+    que la **mitad de la carne de 6.1/6.2** entra aquí: `M_Idle.png` copiado byte a byte con su entrada de
+    procedencia (al final de la lista), `pickups.meat` en `appearance.json` y en el esquema (color tras la veta en
+    la regla de colores distintos, para que "color de `meat` igual al de la veta" nombre la carne), `PickupLayer`
+    y `renderCounts` con `meat`, y los escenarios de recogibles de 6.1/6.2 ("Datos del repositorio", "Datos
+    inválidos", "Topes de los cuatro tipos pintados", "Sprite reutilizado para la carne", "Reserva de la carne",
+    "Reserva de un tipo de recogible"). Los escenarios de pieza acumulada y tope de carne a nivel de campo están en
+    `pickup-field.test.ts`.
 
 ## 2. Dominio · ovejas declaradas y movimiento
 - [ ] 2.1 Entidad, flota y ovejas declaradas (TDD). `Sheep`, `Flock`, `SheepRules`, `RunConfig.sheep`,

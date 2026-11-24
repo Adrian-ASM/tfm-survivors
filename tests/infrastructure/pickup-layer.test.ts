@@ -4,7 +4,7 @@ import type { PickupSnapshot } from '../../src/domain/run/RunSnapshot';
 import { PLACEHOLDER_TEXTURE, resolveLooks } from '../../src/infrastructure/phaser/art/looks';
 import { PickupLayer } from '../../src/infrastructure/phaser/PickupLayer';
 import { parseAppearance } from '../../src/infrastructure/content/loadAppearance';
-import { GOLD_FILE, REGISTERED, WOOD_FILE, rawAppearance } from '../support/appearance';
+import { GOLD_FILE, MEAT_FILE, REGISTERED, WOOD_FILE, rawAppearance } from '../support/appearance';
 import { fakeKit } from '../support/FakeSprite';
 
 // Specs xp-gems ("Pintado de las gemas") y sprite-rendering ("Aspectos de los recogibles", "Flechas
@@ -73,23 +73,47 @@ describe('PickupLayer', () => {
     expect([visible(created).length, l.counts.xp.visible]).toEqual([0, 0]);
   });
 
-  it('Scenario: Topes de los tres tipos pintados (uno por recogible, con su aspecto, sin reserva)', () => {
-    const { l, created } = layer(396);
+  it('Scenario: Topes de los cuatro tipos pintados (uno por recogible, con su aspecto, sin reserva)', () => {
+    const { l, created } = layer(404);
     const all = [
       ...gems(0, 300),
       ...Array.from({ length: 32 }, (_, i) => pick(300 + i, 'gold', 1000 + i, 500)),
       ...Array.from({ length: 64 }, (_, i) => pick(332 + i, 'wood', 2000 + i, 800)),
+      ...Array.from({ length: 8 }, (_, i) => pick(396 + i, 'meat', 2500 + i, 900)),
     ];
     l.sync(all);
     const shown = visible(created);
-    expect(shown).toHaveLength(396);
+    expect(shown).toHaveLength(404);
+    expect(created).toHaveLength(404);
     expect(shown.filter((s) => s.texture === GOLD_FILE)).toHaveLength(32);
     expect(shown.filter((s) => s.texture === WOOD_FILE)).toHaveLength(64);
+    expect(shown.filter((s) => s.texture === MEAT_FILE)).toHaveLength(8);
     expect(l.counts).toEqual({
       xp: { visible: 300, placeholder: 0 },
       gold: { visible: 32, placeholder: 0 },
       wood: { visible: 64, placeholder: 0 },
+      meat: { visible: 8, placeholder: 0 },
     });
+  });
+
+  it('Scenario: Sprite reutilizado para la carne (el wood recogido; la carne con su aspecto)', () => {
+    const { l, created } = layer(1);
+    l.sync([pick(0, 'wood', 10, 10)]);
+    l.sync([pick(1, 'meat', 70, 80)]);
+    const shown = visible(created);
+    expect(shown).toHaveLength(1);
+    expect([shown[0]?.texture, shown[0]?.x, shown[0]?.y]).toEqual([MEAT_FILE, 70, 80]);
+    expect([l.counts.wood.visible, l.counts.meat.visible]).toEqual([0, 1]);
+  });
+
+  it('Scenario: Reserva de la carne (sin M_Idle: forma de 10 px del color de meat; el oro con G_Idle)', () => {
+    const { l, created } = layer(2, [MEAT_FILE]);
+    l.sync([pick(0, 'meat', 700, 400), pick(1, 'gold', 50, 50)]);
+    const [meat] = at(visible(created), { x: 700, y: 400 });
+    expect([meat?.texture, meat?.tint]).toEqual([PLACEHOLDER_TEXTURE, 0xc8504a]);
+    expect((meat?.scale ?? 0) * 64).toBeCloseTo(10, 6);
+    expect(at(visible(created), { x: 50, y: 50 })[0]?.texture).toBe(GOLD_FILE);
+    expect(l.counts.meat).toEqual({ visible: 1, placeholder: 1 });
   });
 
   it('Scenario: Sprite reutilizado con otro tipo (la gema recogida; el oro con su aspecto)', () => {
@@ -130,7 +154,7 @@ describe('PickupLayer', () => {
     ]);
   });
 
-  it('Scenario: Reserva de un tipo de recogible (wood sin hoja: 10 px, del color de wood)', () => {
+  it('Scenario: Reserva de un tipo de recogible (wood sin hoja: 10 px, del color de wood; meat con su hoja)', () => {
     const { l, created } = layer(396, [WOOD_FILE]);
     const snap = [
       pick(0, 'xp', 1, 1),
@@ -139,6 +163,8 @@ describe('PickupLayer', () => {
       pick(3, 'gold', 4, 4),
       pick(4, 'wood', 100.5, 200.25),
       pick(5, 'wood', 300, 400),
+      pick(6, 'meat', 600, 400),
+      pick(7, 'meat', 610, 400),
     ];
     l.sync(snap);
     const woods = [snap[4], snap[5]].flatMap((p) => (p ? at(visible(created), p) : []));
@@ -149,10 +175,13 @@ describe('PickupLayer', () => {
     }
     const golds = [snap[2], snap[3]].flatMap((p) => (p ? at(visible(created), p) : []));
     expect(golds.every((s) => s.texture === GOLD_FILE)).toBe(true);
+    const meats = [snap[6], snap[7]].flatMap((p) => (p ? at(visible(created), p) : []));
+    expect(meats.map((s) => s.texture)).toEqual([MEAT_FILE, MEAT_FILE]);
     expect(l.counts).toEqual({
       xp: { visible: 2, placeholder: 0 },
       gold: { visible: 2, placeholder: 0 },
       wood: { visible: 2, placeholder: 2 },
+      meat: { visible: 2, placeholder: 0 },
     });
   });
 });

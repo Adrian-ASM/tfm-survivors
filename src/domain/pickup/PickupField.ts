@@ -9,11 +9,13 @@ export class PickupGain {
   xp = 0;
   gold = 0;
   wood = 0;
+  meat = 0;
 
   reset(): void {
     this.xp = 0;
     this.gold = 0;
     this.wood = 0;
+    this.meat = 0;
   }
 
   add(kind: PickupKind, value: number): void {
@@ -31,7 +33,7 @@ export class PickupGain {
 export class PickupField {
   private readonly active: Pickup[] = [];
   private readonly free: Pickup[] = [];
-  private readonly counts: Record<PickupKind, number> = { xp: 0, gold: 0, wood: 0 };
+  private readonly counts: Record<PickupKind, number> = { xp: 0, gold: 0, wood: 0, meat: 0 };
   private nextId = 0;
   /** Punto de creación tras la recolocación (reutilizado: sin asignar por suelta). */
   private readonly spot = { x: 0, y: 0 };

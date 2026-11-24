@@ -278,13 +278,14 @@ function checkStructureColors(
 const XpShapeSchema = z.strictObject({ shape: z.literal(true), placeholderColor: Hex });
 
 /**
- * Aspectos de los recogibles (0022): exactamente los tipos de la unión `xp | gold | wood`. La gema
- * puede tener hoja (distinta de las de oro y madera) o ser una forma de color.
+ * Aspectos de los recogibles (0022, 0023): exactamente los tipos de la unión `xp | gold | wood |
+ * meat`. La gema puede tener hoja (distinta de las de oro, madera y carne) o ser una forma de color.
  */
 const PickupLooksSchema = z.strictObject({
   xp: z.union([StillSchema, XpShapeSchema]),
   gold: StillSchema,
   wood: StillSchema,
+  meat: StillSchema,
 });
 
 /** Aspectos de la veta (0022): activa y agotada, sin color propio (la reserva usa `veinColor`). */
@@ -294,14 +295,15 @@ const VeinLooksSchema = z.strictObject({
 });
 
 export const XP_SHEET_MUST_DIFFER =
-  'La hoja de la gema (xp) debe ser distinta de las del oro y la madera.';
+  'La hoja de la gema (xp) debe ser distinta de las del oro, la madera y la carne.';
 export const RESOURCE_COLORS_MUST_DIFFER =
   'Los colores de reserva de los recogibles y de la veta son distintos dos a dos, de los del mapa y ' +
   'de los de las estructuras.';
 
 /**
- * Colores de reserva de los recogibles (xp, gold, wood) y de la veta (0022): distintos dos a dos y
- * de los del mapa y de las estructuras. El error nombra el primero, en ese orden, que repite uno.
+ * Colores de reserva de los recogibles (xp, gold, wood, meat) y de la veta (0022, 0023): distintos dos a dos y
+ * de los del mapa y de las estructuras. El error nombra el primero, en ese orden (la carne, de 0023,
+ * va tras la veta), que repite uno.
  */
 function checkResourceColors(a: z.output<typeof AppearanceShape>, ctx: z.RefinementCtx): void {
   const seen = new Set<number>([...Object.values(a.terrain), ...Object.values(a.structureColors)]);
@@ -310,6 +312,7 @@ function checkResourceColors(a: z.output<typeof AppearanceShape>, ctx: z.Refinem
     [['pickups', 'gold', 'placeholderColor'], a.pickups.gold.placeholderColor],
     [['pickups', 'wood', 'placeholderColor'], a.pickups.wood.placeholderColor],
     [['veinColor'], a.veinColor],
+    [['pickups', 'meat', 'placeholderColor'], a.pickups.meat.placeholderColor],
   ];
   for (const [path, color] of colors) {
     if (seen.has(color)) {
@@ -318,8 +321,9 @@ function checkResourceColors(a: z.output<typeof AppearanceShape>, ctx: z.Refinem
     }
     seen.add(color);
   }
-  const { xp, gold, wood } = a.pickups;
-  if ('sheet' in xp && [gold.sheet.file, wood.sheet.file].includes(xp.sheet.file)) {
+  const { xp, gold, wood, meat } = a.pickups;
+  const others = [gold.sheet.file, wood.sheet.file, meat.sheet.file];
+  if ('sheet' in xp && others.includes(xp.sheet.file)) {
     ctx.addIssue({
       code: 'custom',
       path: ['pickups', 'xp', 'sheet', 'file'],
@@ -340,7 +344,7 @@ const AppearanceShape = z.strictObject({
     .min(1, { error: MAX_BLAST_SPRITES_MUST_BE_INTEGER }),
   enemies: z.record(z.string(), EnemyAspectSchema),
   projectile: StillSchema,
-  /** Por tipo de recogible (0022): `xp` (la gema), `gold` y `wood`. */
+  /** Por tipo de recogible (0022, 0023): `xp` (la gema), `gold`, `wood` y `meat`. */
   pickups: PickupLooksSchema,
   ground: StillSchema,
   corpse: CorpseSchema,

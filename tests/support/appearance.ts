@@ -10,6 +10,7 @@ export const GEM_FILE = 'Resources/Resources/G_Idle.png';
 /** Oro (0022): la bolsa de `G_Idle` pasa del aspecto de la gema al del oro. */
 export const GOLD_FILE = GEM_FILE;
 export const WOOD_FILE = 'Resources/Resources/W_Idle.png';
+export const MEAT_FILE = 'Resources/Resources/M_Idle.png';
 export const VEIN_FILE = 'Resources/Gold Mine/GoldMine_Active.png';
 export const VEIN_DEPLETED_FILE = 'Resources/Gold Mine/GoldMine_Inactive.png';
 export const GROUND_FILE = 'Terrain/Ground/Tilemap_Flat.png';
@@ -46,6 +47,7 @@ const FILES = [
   TOWER_FILE,
   TOWER_RUIN_FILE,
   WOOD_FILE,
+  MEAT_FILE,
   VEIN_FILE,
   VEIN_DEPLETED_FILE,
 ];
@@ -199,6 +201,7 @@ export function rawAppearance(): RawAppearance {
       xp: { shape: true, placeholderColor: '#3e9bff' },
       gold: still(GOLD_FILE, 128, '#e8c547'),
       wood: still(WOOD_FILE, 128, '#9c6b3c'),
+      meat: still(MEAT_FILE, 128, '#c8504a'),
     },
     ground: still(GROUND_FILE, 64, '#2f6b3a'),
     corpse: { ...base(DEAD_FILE, 128, '#b0b4ba'), death: anim([1, 2, 3, 4, 5, 6], 15, false) },

@@ -51,6 +51,7 @@ describe('Contenido de progresión (content/progression.json)', () => {
       maxGems: 300,
       maxGold: 32,
       maxWood: 64,
+      maxMeat: 8,
     });
     expect(r.value.progression.maxWood).toBeGreaterThanOrEqual(r.value.resources.woodPiles.count);
     expect(r.value.player.pickupRadius).toBe(128);

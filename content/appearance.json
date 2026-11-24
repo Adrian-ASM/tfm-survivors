@@ -99,6 +99,14 @@
       "facing": "right",
       "placeholderColor": "#9c6b3c",
       "idle": { "frames": [0], "fps": 1, "loop": true }
+    },
+    "meat": {
+      "sheet": { "file": "Resources/Resources/M_Idle.png", "frameWidth": 128, "frameHeight": 128 },
+      "scale": 0.3,
+      "origin": { "x": 0.5, "y": 0.5 },
+      "facing": "right",
+      "placeholderColor": "#c8504a",
+      "idle": { "frames": [0], "fps": 1, "loop": true }
     }
   },
   "ground": {

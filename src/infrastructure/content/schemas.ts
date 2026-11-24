@@ -42,9 +42,11 @@ import {
   MAGNET_SPEED_MUST_BE_POSITIVE,
   MAX_GEMS_MUST_BE_INTEGER,
   MAX_GOLD_MUST_BE_INTEGER,
+  MAX_MEAT_MUST_BE_INTEGER,
   MAX_WOOD_MUST_BE_INTEGER,
 } from '../../domain/pickup/PickupRules';
 import {
+  MEAT_HEAL_PERCENT_OUT_OF_RANGE,
   RESOURCE_AMOUNT_MUST_BE_INTEGER,
   RESOURCE_COUNT_MUST_BE_INTEGER,
   RESOURCE_PLACEMENT_MUST_BE_INTEGER,
@@ -316,6 +318,7 @@ export const ProgressionSchema = z.strictObject({
   maxGems: Count(MAX_GEMS_MUST_BE_INTEGER),
   maxGold: RequiredCount(MAX_GOLD_MUST_BE_INTEGER),
   maxWood: RequiredCount(MAX_WOOD_MUST_BE_INTEGER),
+  maxMeat: RequiredCount(MAX_MEAT_MUST_BE_INTEGER),
 });
 
 export const UPGRADES_REQUIRED = 'El contenido debe definir al menos una mejora.';
@@ -473,9 +476,9 @@ const ResourceAmount = RequiredCount(RESOURCE_AMOUNT_MUST_BE_INTEGER);
 const ResourceCount = NonNegativeInt(RESOURCE_COUNT_MUST_BE_INTEGER);
 const ResourceDistance = NonNegativeInt(RESOURCE_PLACEMENT_MUST_BE_INTEGER);
 
-// Fuentes de oro y madera (content/resources.json, spec resources, ADR-0021). Estricto en todos los
-// niveles: un tipo de recogible que no sea `gold` o `wood` (p. ej. `meat`) es un campo desconocido
-// y el error lo nombra. Que las claves de los drops existan en el catálogo de enemigos y en los
+// Fuentes de oro, madera y carne (content/resources.json, spec resources, ADR-0021 y 0023). Estricto
+// en todos los niveles: un tipo de recogible que no sea `gold` o `wood` en un drop (p. ej.
+// `potion`) o un campo de más (p. ej. `meatPerHouse`) es un campo desconocido y el error lo nombra. Que las claves de los drops existan en el catálogo de enemigos y en los
 // tipos de estructura lo comprueba `ResourceRules` desde `buildRunRules`, igual que el cruce
 // `progression.maxWood ≥ woodPiles.count`.
 export const ResourcesSchema = z.strictObject({
@@ -495,5 +498,13 @@ export const ResourcesSchema = z.strictObject({
     minStartCells: ResourceDistance,
     minCastleCells: ResourceDistance,
     minGapCells: ResourceDistance,
+  }),
+  meat: z.strictObject({
+    perSheep: ResourceAmount,
+    healPercent: z
+      .number({ error: MEAT_HEAL_PERCENT_OUT_OF_RANGE })
+      .int({ error: MEAT_HEAL_PERCENT_OUT_OF_RANGE })
+      .min(1, { error: MEAT_HEAL_PERCENT_OUT_OF_RANGE })
+      .max(100, { error: MEAT_HEAL_PERCENT_OUT_OF_RANGE }),
   }),
 });

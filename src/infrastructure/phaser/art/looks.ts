@@ -101,7 +101,7 @@ function base(aspect: Aspect, frames: FrameCount): LookBase {
 const SHAPE_IDLE: AnimSpec = Object.freeze({ frames: Object.freeze([0]), fps: 1, loop: true });
 
 /**
- * Aspectos de los recogibles (0022): `gold` y `wood` con su hoja (o reserva si no cargó); la gema,
+ * Aspectos de los recogibles (0022, 0023): `gold`, `wood` y `meat` con su hoja (o reserva si no cargó); la gema,
  * con hoja como ellos o, sin hoja, como forma de color sobre la textura de reserva (`shape`).
  */
 function pickupLooks(
@@ -123,7 +123,7 @@ function pickupLooks(
           idle: SHAPE_IDLE,
           shape: true,
         };
-  return { xp, gold: sheet(p.gold), wood: sheet(p.wood) };
+  return { xp, gold: sheet(p.gold), wood: sheet(p.wood), meat: sheet(p.meat) };
 }
 
 /**
