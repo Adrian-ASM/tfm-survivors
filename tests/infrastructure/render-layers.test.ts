@@ -16,7 +16,9 @@ import { touches } from '../../src/infrastructure/phaser/map/mapCulling';
 import type { MapArtPlan } from '../../src/infrastructure/phaser/map/planMapArt';
 import { paintMapArt, type MapArtCanvas } from '../../src/infrastructure/phaser/TerrainView';
 import { screenFrame } from '../../src/infrastructure/phaser/ui/screenFrame';
-import { planFor, visibleByRule } from '../support/mapArt';
+import { emptyCounts } from '../../src/infrastructure/phaser/renderCounts';
+import { drawnByRule, planFor, visibleByRule } from '../support/mapArt';
+import { mapRules, mapWith } from '../support/mapLayouts';
 import { mapForSeed } from '../support/mapStats';
 
 // Spec sprite-rendering: muertes, mundo detenido y sonda (change 0012, design D6/D7 y "Flujo").
@@ -264,25 +266,41 @@ describe('RenderLayers · espuma animada', () => {
 // Spec sprite-rendering (0018), "El recorte no cambia lo que se ve" y "Recorte al cambiar de
 // partida, de ventana y de modo": frame a frame con render → rig.track → cullMap(rig.nextView()).
 interface PaintedObject {
-  readonly id: string;
-  readonly foam: boolean;
+  id: string;
+  foam: boolean;
   visible: boolean;
   frame: number;
 }
 
-/** Lienzo doble del mapa con la semántica del adaptador: índices en orden de llamada. */
+/**
+ * Lienzo doble del mapa con la semántica del adaptador: un pool de objetos reutilizados entre
+ * partidas (`clear` los oculta todos) e índices de `show` en orden de llamada desde el último
+ * `clear`.
+ */
 function mapCanvas() {
+  const pool: PaintedObject[] = [];
   const objects: PaintedObject[] = [];
   let shows = 0;
-  const add = (id: string, foam = false) => objects.push({ id, foam, visible: true, frame: -1 });
+  const add = (id: string, foam = false) => {
+    const o = pool[objects.length] ?? { id, foam, visible: false, frame: -1 };
+    if (!pool.includes(o)) pool.push(o);
+    Object.assign(o, { id, foam, visible: true });
+    objects.push(o);
+  };
   const canvas: MapArtCanvas = {
     clear: () => {
+      for (const o of pool) o.visible = false;
       objects.length = 0;
     },
-    tiles: (t) => add(`low:tiles:${String(t.x)},${String(t.y)}`),
-    sprite: (layer, s) =>
-      add(`${layer}:${s.role}:${String(s.x)},${String(s.y)}`, s.role === 'foam'),
-    rect: (r) => add(`low:rect:${String(r.x)},${String(r.y)}`),
+    tiles: (t) => {
+      add(`low:tiles:${String(t.x)},${String(t.y)}`);
+    },
+    sprite: (layer, s) => {
+      add(`${layer}:${s.role}:${String(s.x)},${String(s.y)}`, s.role === 'foam');
+    },
+    rect: (r) => {
+      add(`low:rect:${String(r.x)},${String(r.y)}`);
+    },
     foam: (f) => {
       for (const o of objects) if (o.foam) o.frame = f;
     },
@@ -292,7 +310,7 @@ function mapCanvas() {
       if (o) o.visible = v;
     },
   };
-  return { canvas, objects, shows: () => shows };
+  return { canvas, objects, pool, shows: () => shows };
 }
 
 /** Cámara doble con lo que usa `CameraRig` (sin preRender: la vista del recorte se calcula). */
@@ -450,6 +468,124 @@ describe('RenderLayers · recorte del mapa (0018)', () => {
       visibleByRule(plan, followView(centre.player, screenFrame(960, 540), WORLD_42)),
     );
     expect(small.filter(Boolean).length).toBeLessThanOrEqual(big.filter(Boolean).length);
+  });
+});
+
+// Spec sprite-rendering (0018), "Sonda de render para E2E": `drawn` y totales del plan entero.
+const planOfSeed = (seed: number, missing: readonly string[] = []) =>
+  planFor(toMapSnapshot(mapForSeed(aDefaultConfig(), seed)), seed, missing);
+const viewOf = (p: { x: number; y: number }, w = 1280, h = 720) =>
+  followView(p, screenFrame(w, h), WORLD_42);
+const MAP_SHEETS_FILES = [
+  'Terrain/Water/Water.png',
+  'Terrain/Water/Foam/Foam.png',
+  'Resources/Trees/Tree.png',
+  'Terrain/Bridge/Bridge_All.png',
+  'Factions/Knights/Buildings/Castle/Castle_Blue.png',
+];
+
+describe('RenderLayers · sonda drawn (0018)', () => {
+  it.each([
+    [42, 667],
+    [123, 750],
+  ])(
+    'Scenario: Totales del mapa sin cambios (semilla %i: %i objetos con toda vista)',
+    (seed, n) => {
+      const totals: unknown[] = [];
+      const drawnAtStart: number[] = [];
+      for (const [w, h] of [
+        [960, 540],
+        [1280, 720],
+        [3840, 2160],
+      ] as const) {
+        for (const p of [{ x: 1920, y: 1080 }, { x: 16, y: 16 }, START]) {
+          const { paint, layers } = culled(planOfSeed(seed), screenFrame(w, h));
+          paint(at(0, p.x, p.y));
+          const { drawn, ...rest } = layers.counts.mapArt;
+          totals.push({ cells: { ...layers.counts.cells }, ...rest });
+          if (w === 1280 && p === START) drawnAtStart.push(drawn);
+        }
+      }
+      const [first] = totals;
+      expect(totals.every((t) => JSON.stringify(t) === JSON.stringify(first))).toBe(true);
+      expect((first as { objects: number }).objects).toBe(n);
+      const [start = 0] = drawnAtStart;
+      expect(start).toBeGreaterThan(0);
+      expect(start).toBeLessThan(n);
+    },
+  );
+
+  it.each([
+    [1920, 1080],
+    [16, 16],
+  ])('Scenario: `drawn` igual al recorte (semilla 42, jugador en (%s, %s))', (x, y) => {
+    const { paint, layers, objects, plan } = culled();
+
+    paint(at(5, x, y));
+
+    expect(layers.counts.mapArt.drawn).toBe(drawnByRule(plan, viewOf({ x, y })));
+    expect(objects.filter((o) => o.visible)).toHaveLength(layers.counts.mapArt.drawn);
+  });
+
+  it('Scenario: R tras acabar en una esquina (semilla 43: regla del plan nuevo, nada del anterior)', () => {
+    const { paint, layers, canvas, objects, pool } = culled();
+    paint(at(900, 3824, 2144, { status: 'over', outcome: 'lost' }));
+    const next = planOfSeed(43);
+
+    layers.clear();
+    layers.paintMap(canvas, next);
+    paint(at(0, START.x, START.y));
+
+    const view = viewOf(START);
+    expect(objects.map((o) => o.visible)).toEqual(visibleByRule(next, view));
+    expect(layers.counts.mapArt.drawn).toBe(drawnByRule(next, view));
+    expect(pool.slice(objects.length).some((o) => o.visible)).toBe(false);
+  });
+
+  it('Scenario: Volver al menú y jugar (capas nuevas: primer frame = regla; menú con drawn 0)', () => {
+    const old = culled();
+    old.paint(at(500, 400, 300), true);
+    expect(emptyCounts(['goblin-torch']).mapArt.drawn).toBe(0);
+
+    const fresh = culled();
+    fresh.paint(at(0, START.x, START.y));
+
+    expect(fresh.layers.counts.mapArt.drawn).toBe(drawnByRule(fresh.plan, viewOf(START)));
+    expect(fresh.objects.map((o) => o.visible)).toEqual(visibleByRule(fresh.plan, viewOf(START)));
+  });
+
+  it('Scenario: Mapa vacío (drawn 0)', () => {
+    const empty = planFor(toMapSnapshot(mapWith(mapRules(), {})));
+    const { paint, layers } = culled(empty);
+
+    paint(at(0, 1920, 1080));
+
+    expect([layers.counts.mapArt.drawn, layers.counts.mapArt.objects]).toEqual([0, 0]);
+  });
+
+  const reserveCases: [string, readonly string[]][] = [
+    ...MAP_SHEETS_FILES.map((f): [string, string[]] => [f, [f]]),
+    ['las cinco hojas', MAP_SHEETS_FILES],
+  ];
+  it.each(reserveCases)('Scenario: Recorte con aspecto de reserva (sin %s)', (_, sheets) => {
+    const plan = planOfSeed(42, sheets);
+    const { paint, layers, objects } = culled(plan);
+    const far = { x: START.x - 1300, y: START.y };
+    const frames: boolean[] = [];
+    for (const p of [START, far]) {
+      paint(at(0, p.x, p.y));
+      frames.push(
+        JSON.stringify(objects.map((o) => o.visible)) ===
+          JSON.stringify(visibleByRule(plan, viewOf(p))),
+        layers.counts.mapArt.drawn === drawnByRule(plan, viewOf(p)),
+      );
+    }
+    expect(frames).toEqual([true, true, true, true]);
+    const { water, shore, foam, tree, canopy, bridge, castle } = layers.counts.mapArt;
+    expect({ water, shore, foam, tree, canopy, bridge, castle }).toEqual(plan.counts);
+    expect(plan.low.some((d) => d.kind === 'rect')).toBe(
+      !sheets.every((f) => f === 'Terrain/Water/Foam/Foam.png'),
+    );
   });
 });
 

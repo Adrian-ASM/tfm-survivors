@@ -72,7 +72,7 @@ Sin tareas: el change no toca `src/domain` ni `src/application` (design §1).
   1.440 y luego a 960 × 540 → visibles = regla en el primer frame de cada tamaño.
   — escenarios: "Movimiento continuo sin huecos", "Salto de varios ticks en un frame", "Espuma al reaparecer",
   "Pausa, oferta y partida terminada", "Redimensionado".
-- [ ] 3.3 Sonda: `MapArtProbe.drawn`, `zeroMapArt()` con `drawn: 0` y `cullMap` escribe `counts.mapArt.drawn`
+- [x] 3.3 Sonda: `MapArtProbe.drawn`, `zeroMapArt()` con `drawn: 0` y `cullMap` escribe `counts.mapArt.drawn`
   (design §7). Tests en `render-layers.test.ts` y `map-probe.test.ts` (rojo: `drawn` no existe): semillas 42 y 123
   con vistas de 960 × 540, 1.280 × 720 y 2.560 × 1.440, jugador en el centro y en (16, 16) → `cells`, elementos
   pintados/reserva y `objects` iguales entre sí y a 667 y 750, y `0 < drawn < objects` en la posición inicial a

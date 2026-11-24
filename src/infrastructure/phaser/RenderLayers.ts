@@ -118,6 +118,7 @@ export class RenderLayers {
     mapArt.objects = painted.mapArt.objects;
     this.mapCanvas = canvas;
     this.culler.reset(plan);
+    mapArt.drawn = this.culler.drawn;
     this.foamAnim = plan.foam ? { frames: plan.foam.frames, fps: plan.foam.fps, loop: true } : null;
     this.foamFrame = -1;
   }
@@ -125,9 +126,12 @@ export class RenderLayers {
   /**
    * Recorte del mapa pintado con el rectángulo visible del frame que se va a pintar (0018, design
    * §8): tras `rig.track`, con `rig.nextView()`. Solo cambia la visibilidad de lo que entra o sale.
+   * Deja en la sonda (`mapArt.drawn`) los objetos del mapa que se dibujan en este frame.
    */
   cullMap(view: Box): void {
-    if (this.mapCanvas) this.culler.apply(view, this.mapCanvas);
+    if (!this.mapCanvas) return;
+    this.culler.apply(view, this.mapCanvas);
+    this.counts.mapArt.drawn = this.culler.drawn;
   }
 
   /** Cambio de partida: vacía las capas sin cadáveres y el jugador no hereda nada. */

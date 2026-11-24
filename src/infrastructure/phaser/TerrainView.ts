@@ -36,6 +36,8 @@ export type CellCounts = { -readonly [K in keyof MapCellCounts]: number };
 /** Elementos del mapa pintados (sonda `sprites.mapArt`), mutable para las capas. */
 export type MapArtProbe = { -readonly [K in keyof MapArtCounts]: ElementCount } & {
   objects: number;
+  /** Objetos del mapa visibles tras el último recorte por cámara (0018); 0 en el menú. */
+  drawn: number;
 };
 
 export const zeroCells = (): CellCounts => ({ trunk: 0, water: 0, bridge: 0, castle: 0 });
@@ -51,6 +53,7 @@ export const zeroMapArt = (): MapArtProbe => ({
   bridge: none(),
   castle: none(),
   objects: 0,
+  drawn: 0,
 });
 
 /** Recuentos del mapa pintado para la sonda de render (`sprites.cells` y `sprites.mapArt`). */
