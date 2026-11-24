@@ -34,20 +34,20 @@
   "Colocar no consume el azar de la partida"; SL: "Mapa intacto" (con `MAP_GOLDEN` sin tocar).
 
 ## 3. Dominio · estructuras en la partida y armas (TDD estricto)
-- [ ] 3.1 Entidad `Structure` y `StructureField` en `Run`. `RunSnapshot.structures` congelado, con la huella y en un
+- [x] 3.1 Entidad `Structure` y `StructureField` en `Run`. `RunSnapshot.structures` congelado, con la huella y en un
   orden y una longitud estables. — GS: "Lista inicial", "Orden estable tras destruir", "Lista no mutable"; SL:
   "Estructuras en el snapshot del motor", "Snapshot no mutable desde fuera" (parte de estructuras), "Partida recién
   creada" (lista de estructuras).
-- [ ] 3.2 `Arsenal`: el criterio `nearest-in-range` usa estructuras como reserva solo sin enemigos en alcance; las
+- [x] 3.2 `Arsenal`: el criterio `nearest-in-range` usa estructuras como reserva solo sin enemigos en alcance; las
   ruinas no son objetivo. — AW: "Estructura sin enemigos en alcance", "El enemigo gana aunque esté más lejos",
   "Límite del alcance con una estructura", "Empate entre estructuras", "Una ruina no es objetivo"; SL: "Carga de las
   armas en el snapshot".
-- [ ] 3.3 `Projectile.atStructure`: primero los enemigos y, solo si iba a una estructura, las estructuras. Las bajas
+- [x] 3.3 `Projectile.atStructure`: primero los enemigos y, solo si iba a una estructura, las estructuras. Las bajas
   devueltas son solo de enemigos. — AW: "Impacto en una casa", "Un proyectil dirigido a un enemigo atraviesa la casa",
   "Un proyectil dirigido a la casa da antes a un enemigo"; GS: "Daño que no destruye", "Daño mayor que la vida".
-- [ ] 3.4 El pulso se dispara con una estructura y daña a enemigos y estructuras que solapa. — AW: "Pulso sobre una
+- [x] 3.4 El pulso se dispara con una estructura y daña a enemigos y estructuras que solapa. — AW: "Pulso sobre una
   casa", "Pulso sobre un enemigo y una casa", "Pulso sobre una ruina", "Sin enemigos en el radio, sin pulso".
-- [ ] 3.5 Destrucción sin recompensa, ruina permanente y lugar en el tick. Incluye los escenarios que ya deberían
+- [x] 3.5 Destrucción sin recompensa, ruina permanente y lugar en el tick. Incluye los escenarios que ya deberían
   pasar en verde (explosiones y no colisión), juntos para que la tarea arranque en rojo con la destrucción. — GS:
   "Destrucción sin recompensa", "Ruina hasta el final", "Las explosiones no dañan estructuras", "El jugador atraviesa
   una casa", "Un enemigo cruza una torre"; EH: "Explosión sobre una casa y una torre"; SL: "Las estructuras se

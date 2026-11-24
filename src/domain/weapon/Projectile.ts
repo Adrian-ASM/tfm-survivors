@@ -14,6 +14,8 @@ export class Projectile {
   y = 0;
   radius = 0;
   damage = 0;
+  /** Su objetivo al dispararse era una estructura: solo entonces puede impactar en una (D5). */
+  atStructure = false;
   /** Gastado (impacto o caducidad): `Arsenal` lo devuelve al pool al compactar. */
   spent = true;
   private vx = 0;
@@ -22,7 +24,8 @@ export class Projectile {
 
   /**
    * Lanza desde (x, y) con dirección unitaria fija hacia (tx, ty) (con distancia 0, (1, 0)) y
-   * avance de speed / 60 por tick. No persigue al objetivo.
+   * avance de speed / 60 por tick. No persigue al objetivo. `atStructure`: el objetivo era una
+   * estructura (ADR-0020).
    */
   launch(
     id: number,
@@ -33,6 +36,7 @@ export class Projectile {
     damage: number,
     attack: ProjectileAttack,
     firedAt: number,
+    atStructure = false,
   ): void {
     const dx = tx - x;
     const dy = ty - y;
@@ -46,6 +50,7 @@ export class Projectile {
     this.radius = attack.radius;
     this.damage = damage;
     this.lastTick = firedAt + attack.lifetimeTicks;
+    this.atStructure = atStructure;
     this.spent = false;
   }
 

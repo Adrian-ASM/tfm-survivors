@@ -8,6 +8,7 @@ import type { GameMap } from '../map/GameMap';
 import { toMapSnapshot, type MapSnapshot } from '../map/MapSnapshot';
 import { OPEN_TERRAIN, resolveTerrain, type TerrainSource } from '../map/TerrainSource';
 import { resolveStructures } from '../structure/resolveStructures';
+import { StructureField } from '../structure/StructureField';
 import type { StructureSite } from '../structure/StructureSite';
 import type { Player } from '../player/Player';
 import type { PlayerInput } from '../player/PlayerInput';
@@ -40,6 +41,7 @@ import {
   toOfferSnapshot,
   toProgressionSnapshot,
   toProjectileSnapshot,
+  toStructureSnapshot,
   toPulseSnapshot,
   toUpgradeLevels,
   toWarnings,
@@ -96,6 +98,7 @@ export class Run {
   private readonly mapView: MapSnapshot;
   private readonly field: FlowField;
   private readonly hazards: HazardField;
+  private readonly structures: StructureField;
 
   private constructor(
     private readonly rules: RunRules,
@@ -118,6 +121,7 @@ export class Run {
     this.director = new WaveDirector(rules.table, rules.spawn, random);
     this.arsenal = new Arsenal(rules.loadout, rules.pulseCapacity);
     this.hazards = new HazardField(rules.hazards, initial.dynamites);
+    this.structures = new StructureField(initial.structures);
     for (const w of rules.loadout.weapons) this.retune(w.id);
     const bonus = maxHealthBonus(rules.upgrades, this.board.levels);
     this.player = this.player.withRules(this.effectivePlayer(), bonus);
@@ -140,7 +144,7 @@ export class Run {
     if (!map.ok) return map;
     const sites = resolveStructures(terrain, map.value, rules.value.structures);
     if (!sites.ok) return sites;
-    const initial = initialState(rules.value, setup, map.value);
+    const initial = initialState(rules.value, setup, map.value, sites.value);
     if (!initial.ok) return initial;
     return ok(new Run(rules.value, random, map.value, initial.value, sites.value));
   }
@@ -215,7 +219,9 @@ export class Run {
     const { x, y } = this.player.position;
     this.field.retarget(this.terrain.colAt(x), this.terrain.rowAt(y));
     this.horde.act(n, x, y, TICK_SECONDS, this.field);
-    if (this.arsenal.step(n, x, y, this.horde.alive) > 0) this.horde.removeDead(this.dropGem);
+    const { horde, structures } = this;
+    if (this.arsenal.step(n, x, y, horde.alive, structures.all) > 0) horde.removeDead(this.dropGem);
+    structures.settle();
     this.stepHazards(n, x, y);
     if (this.applyHit(n) || this.reachedEnd(n)) {
       this.tickCount = n;
@@ -334,6 +340,7 @@ export class Run {
       ),
       warnings: toWarnings(this.horde.alive, this.hazards.dynamites),
       blasts: Object.freeze(this.hazards.blasts.map(toBlastSnapshot)),
+      structures: Object.freeze(this.structures.all.map(toStructureSnapshot)),
       weapons: Object.freeze(
         this.arsenal.weapons.map((w) => Object.freeze({ id: w.type.id, ready: w.isChargedAt(k) })),
       ),

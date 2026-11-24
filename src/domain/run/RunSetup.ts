@@ -11,6 +11,8 @@ import { Vector2 } from '../shared/Vector2';
 import { UpgradeBoard } from '../upgrade/UpgradeBoard';
 import { UNKNOWN_ENEMY_TYPE } from '../wave/WaveTable';
 import type { RunRules } from './RunConfig';
+import { Structure } from '../structure/Structure';
+import type { StructureSite } from '../structure/StructureSite';
 
 export const SETUP_POSITION_MUST_BE_FINITE = 'La posición inicial debe ser finita.';
 export const SETUP_HEALTH_OUT_OF_RANGE =
@@ -32,6 +34,10 @@ export const SETUP_DYNAMITE_TICKS_LEFT =
   'Los ticks que le quedan a una dinamita inicial deben ser un entero ≥ 1.';
 export const SETUP_DYNAMITE_BLAST_MUST_BE_POSITIVE =
   'El radio y el daño de una dinamita inicial deben ser positivos.';
+export const SETUP_TOO_MANY_STRUCTURES =
+  'Hay más estructuras iniciales que estructuras en el mapa.';
+export const SETUP_STRUCTURE_HEALTH_OUT_OF_RANGE =
+  'La vida inicial de una estructura debe ser finita y estar entre 0 y la de su tipo.';
 export const SETUP_UPGRADE_LEVEL_OUT_OF_RANGE =
   'El nivel inicial de una mejora debe ser un entero en [0, maxLevel].';
 
@@ -71,6 +77,11 @@ export interface RunSetup {
   readonly upgrades?: Readonly<Record<string, number>>;
   /** Bajas ya acumuladas al empezar (entero ≥ 0; por defecto, 0). */
   readonly kills?: number;
+  /**
+   * Por índice de la lista de estructuras de la partida (tests): vida inicial en [0, la de su tipo]
+   * (0 = ya destruida). Como mucho tantas entradas como estructuras.
+   */
+  readonly structures?: readonly { readonly health?: number }[];
 }
 
 /** Dinamita inicial de `RunSetup` (tests y bench). */
@@ -227,6 +238,27 @@ export function initialExperience(
   return ok(new Experience(rules.curve, level, xp));
 }
 
+/** Casas y torres de la partida con la vida de su tipo o la de `RunSetup`. */
+export function initialStructures(
+  setup: RunSetup,
+  sites: readonly StructureSite[],
+): Result<Structure[], DomainError> {
+  const entries = setup.structures ?? [];
+  if (entries.length > sites.length) {
+    return err(invalidConfig('setup.structures', SETUP_TOO_MANY_STRUCTURES));
+  }
+  const structures: Structure[] = [];
+  for (const [i, site] of sites.entries()) {
+    const health = entries[i]?.health ?? site.type.health;
+    if (!Number.isFinite(health) || health < 0 || health > site.type.health) {
+      const field = `setup.structures.${String(i)}.health`;
+      return err(invalidConfig(field, SETUP_STRUCTURE_HEALTH_OUT_OF_RANGE));
+    }
+    structures.push(new Structure(site, health));
+  }
+  return ok(structures);
+}
+
 /** Estado inicial ya validado con el que arranca `Run`. */
 export interface InitialState {
   readonly player: Player;
@@ -238,6 +270,8 @@ export interface InitialState {
   readonly kills: number;
   /** Dinamitas en vuelo ya validadas. */
   readonly dynamites: readonly SetupDynamite[];
+  /** Casas y torres en el orden de la lista (ruinas incluidas). */
+  readonly structures: Structure[];
 }
 
 /** Valida el `RunSetup` contra las reglas y construye el estado inicial de la partida. */
@@ -245,6 +279,7 @@ export function initialState(
   rules: RunRules,
   setup: RunSetup,
   map: GameMap,
+  sites: readonly StructureSite[] = [],
 ): Result<InitialState, DomainError> {
   const player = initialPlayer(rules, setup, map);
   if (!player.ok) return player;
@@ -258,6 +293,8 @@ export function initialState(
   if (!board.ok) return board;
   const dynamites = initialDynamites(rules, setup);
   if (!dynamites.ok) return dynamites;
+  const structures = initialStructures(setup, sites);
+  if (!structures.ok) return structures;
   const kills = setup.kills ?? 0;
   if (!Number.isInteger(kills) || kills < 0) {
     return err(invalidConfig('setup.kills', SETUP_KILLS_MUST_BE_INTEGER));
@@ -270,5 +307,6 @@ export function initialState(
     board: board.value,
     kills,
     dynamites: dynamites.value,
+    structures: structures.value,
   });
 }

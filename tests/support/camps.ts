@@ -1,6 +1,7 @@
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import { MAP_STREAM, STRUCT_STREAM, deriveSeed } from '../../src/infrastructure/random/deriveSeed';
-import type { TerrainSource } from '../../src/domain/map/TerrainSource';
+import type { DeclaredStructure, TerrainSource } from '../../src/domain/map/TerrainSource';
+import { aBehaviorConfig, aProbeType } from './runs';
 import { Run, type RunSetup } from '../../src/domain/run/Run';
 import type { RandomGenerator } from '../../src/domain/shared/RandomGenerator';
 import type { EnemyTypeConfig } from '../../src/domain/enemy/EnemyType';
@@ -196,3 +197,60 @@ export const aCampsConfig = (structures: StructuresConfig = DEFAULT_STRUCTURES):
     : [...DEFAULT_ENEMY_TYPES, TNT_GUARD];
   return { ...base, enemies: { ...base.enemies, types }, structures };
 };
+
+/** Casa de prueba de auto-weapons: radio de impacto 40 y vida 30, sin nacimientos en la partida. */
+export const TEST_HOUSE: Partial<StructureTypeConfig> = Object.freeze({
+  radius: 40,
+  health: 30,
+  guards: { type: 'guard', max: 2, everyTicks: 1e9 },
+});
+
+/** Casa declarada en columnas 20–21 y filas 10–12: centro (1.260, 690) y puerta (1.290, 810). */
+export const HOUSE_AT_20_10 = Object.freeze({
+  type: 'goblin-house',
+  col: 20,
+  row: 10,
+  cols: 2,
+  rows: 3,
+});
+
+/**
+ * Contenido de los escenarios con estructuras explícitas (0021): `aBehaviorConfig` (mundo del
+ * contenido, jugador a 210 px/s y radio 16, sin armas ni presupuesto) con `probe` y el guardia de
+ * prueba (`guard`) en el catálogo, más los tipos dados, y la casa y la torre dadas (por defecto, la
+ * casa de prueba y la torre por defecto).
+ */
+export function aCampScenario(
+  o: {
+    readonly types?: readonly EnemyTypeConfig[];
+    readonly house?: Partial<StructureTypeConfig>;
+    readonly tower?: Partial<StructureTypeConfig>;
+    readonly player?: Partial<RunConfig['player']>;
+    readonly segments?: RunConfig['waves']['segments'];
+    readonly maxAlive?: number;
+  } = {},
+): RunConfig {
+  const types = [aProbeType(), aGuardType(), ...(o.types ?? [])];
+  const base = aBehaviorConfig(types, {
+    ...(o.player ? { player: o.player } : {}),
+    ...(o.segments ? { segments: o.segments } : {}),
+    ...(o.maxAlive === undefined ? {} : { maxAlive: o.maxAlive }),
+  });
+  const house = { ...TEST_HOUSE, ...o.house };
+  return {
+    ...base,
+    structures: aStructuresConfig({ house, ...(o.tower ? { tower: o.tower } : {}) }),
+  };
+}
+
+/** Partida en el mapa vacío con las estructuras declaradas (azar de la partida: semilla 42). */
+export function startDeclared(
+  config: RunConfig,
+  structures: readonly DeclaredStructure[],
+  setup: RunSetup = {},
+  random: RandomGenerator = new Mulberry32RandomGenerator(42),
+): Run {
+  const r = Run.start(config, random, setup, { kind: 'open', structures });
+  if (!r.ok) throw new Error(r.error.message);
+  return r.value;
+}

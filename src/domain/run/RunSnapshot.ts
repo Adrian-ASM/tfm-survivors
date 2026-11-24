@@ -17,7 +17,7 @@ export interface EnemySnapshot {
   readonly damaged: boolean;
   /** Nombre del estado de comportamiento (spec enemy-behavior). */
   readonly state: string;
-  /** Clase del estado: persecución, mecha, carga o espera. */
+  /** Clase del estado: persecución, mecha, carga, espera, patrulla, alerta o vuelta. */
   readonly stateKind: StateKind;
 }
 
@@ -50,6 +50,24 @@ export interface BlastSnapshot {
   readonly y: number;
   readonly radius: number;
   readonly tick: number;
+}
+
+/**
+ * Casa o torre de la partida (spec goblin-structures): id, tipo, posición, radio de impacto, huella
+ * (primera columna y fila, columnas y filas), vida actual (0 en las ruinas) y si está destruida.
+ */
+export interface StructureSnapshot {
+  readonly id: number;
+  readonly type: string;
+  readonly x: number;
+  readonly y: number;
+  readonly radius: number;
+  readonly col: number;
+  readonly row: number;
+  readonly cols: number;
+  readonly rows: number;
+  readonly health: number;
+  readonly destroyed: boolean;
 }
 
 /** Arma equipada, en el orden de content/weapons.json, y si está cargada en este tick. */
@@ -136,6 +154,8 @@ export interface RunSnapshotBody {
   readonly warnings: readonly WarningSnapshot[];
   /** Explosiones visibles en orden de creación. */
   readonly blasts: readonly BlastSnapshot[];
+  /** Casas y torres en su orden fijo, ruinas incluidas (misma longitud toda la partida). */
+  readonly structures: readonly StructureSnapshot[];
   /** Armas equipadas en el orden del contenido. */
   readonly weapons: readonly WeaponSnapshot[];
   /** Gemas en el suelo en orden de creación. */
