@@ -14,7 +14,7 @@ mejorar el arma y en construir defensas.
 **Temática** (v2.0, 2026-11-22): caballeros contra goblins. Título: **"Greentide Vanguard"** (decidido 2026-11-22),
 que sustituye a "Sprint Survivors" (dev en un sprint infinito; v1 la había elegido para no parecerse a
 *Bug Bane Survivors*). Los ids de enemigo pasan a `goblin-torch` (antes `bug`), `goblin-tnt` (`memory-leak`) y
-`goblin-barrel` (`merge-conflict`), con los mismos stats; sus comportamientos propios siguen en 0020. El nombre del
+`goblin-barrel` (`merge-conflict`), con los mismos stats; sus comportamientos propios llegaron en 0020 (parte A) y los campamentos, en 0021. El nombre del
 repo, la URL de Pages y las claves técnicas `sprint-survivors` (localStorage, nombre del export, `window.__sprint`)
 se mantienen; renombrarlos es una posible tarea futura, no decidida.
 
@@ -54,7 +54,7 @@ Teclado (WASD / flechas). Pausa con Esc. Táctil y gamepad: *Should/Could*.
 - Mundo de varias pantallas, cámara que sigue al jugador, **límites duros** (borde de agua). **Sin desniveles.**
 - Colisión del jugador contra troncos (no contra la copa) y agua.
 - **El castillo ya viene en el mapa**, uno por partida, en el punto de inicio del jugador: el generador reserva la
-  zona de inicio con el castillo (0015 reserva la zona; el castillo sólido llega con 0016 y la tienda con 0023).
+  zona de inicio con el castillo (0015 reserva la zona; el castillo sólido llega con 0016 y la tienda con 0024).
 - Genera también: zonas ricas en recursos con campamentos de guardianes, casas goblin, torres goblin, solares de obra
   y montones de leña aleatorios.
 
@@ -116,13 +116,13 @@ Should.
 |---|---|
 | **Must** (hecho) | Movimiento · 2 armas automáticas · oleadas · colisiones y vida · gemas de XP · subida de nivel con 3 opciones · temporizador, victoria y derrota · HUD · menú · guardado local + exportar/importar · despliegue público (0001–0011) |
 | **Must** (nuevo) | Arte con sprites del pack CC0 y tema medieval (0012) · mundo grande con cámara y límites (0013) · mapa procedural por semilla con colisión (0015) · arte del mapa (0016) · vista a pantalla completa (0017) · recorte del arte del mapa fuera de cámara (0018) · navegación por campo de flujo (0019) |
-| **Should** | Comportamientos de enemigos, casas goblin y campamentos (0020) · elección de personaje y Guerrero (0021) · recursos y ovejas (0022) · progresión separada y castillo-tienda (0023) · solares de obra: casa y torre (0024) · pasada de equilibrio como diseño (balance-pass-2, número al empezar) ·
+| **Should** | Comportamientos de enemigos (0020, parte A hecha) · casas y torres goblin con TNT de guardia (0021) · elección de personaje y Guerrero (0022) · recursos y ovejas (0023) · progresión separada y castillo-tienda (0024) · solares de obra: casa y torre (0025) · pasada de equilibrio como diseño (balance-pass-2, número al empezar) · campamentos de guardianes en zonas ricas (sin número, tras 0023) ·
 modo Objetivos · meta-progresión guardada · un jefe final · opciones de audio y accesibilidad · controles táctiles |
 | **Could** | UI del pack · ciclo día/noche · minimapa/niebla de guerra · modo Infinito · victoria "defender el castillo" · talar árboles · colocación libre de edificios · jefes por escala · audio · login con Google + Supabase · reto diario con semilla compartida · i18n ES/EN · PWA |
 | **Won't** | Multijugador · desniveles/terreno multinivel · monetización · leaderboard con re-simulación · enemigos dibujados con IA |
 
 Nota: v1 tenía "mapas procedurales complejos" en Won't. Se acota a un mapa de rejilla sin desniveles y entra como
-Must (0015); lo que baja a Should es todo el bloque de contenido 0020–0024.
+Must (0015); lo que baja a Should es todo el bloque de contenido 0020–0025.
 
 Renumeración (2026-11-23): 0014 acabó siendo `e2e-manual-step` (infraestructura de tests), así que el mapa
 procedural pasa a 0015. Al aprobar 0015 se partió en mapa puro (0015) y arte del mapa (0016), y se añadió la vista
@@ -130,6 +130,10 @@ a pantalla completa (0017); el campo de flujo pasa a 0018 y el bloque Should, a 
 
 Renumeración (2026-11-24): 0018 acabó siendo `map-culling` (recorte del arte del mapa fuera de cámara), así que el
 campo de flujo pasa a 0019 y el bloque Should, a 0020–0024.
+
+Renumeración (2026-11-24): el change 0020 `enemy-behaviors` cerró solo su parte A; la parte B (casas y torres
+goblin, TNT de guardia y campamentos) pasa a ser el change propio 0021 `goblin-camps` y el bloque Should pasa a
+0021–0025.
 
 ### Historias Must nuevas (criterios clave)
 
@@ -173,10 +177,10 @@ atascada.**
 - Given un río con un puente, When el jugador está al otro lado, Then los enemigos cruzan por el puente.
 - Given 300 enemigos, When se simula el campo de flujo, Then el tick se mantiene dentro del presupuesto fijado en el
   spike previo.
-- Nota: el criterio del recálculo por edificios nuevos pasa a 0024 build-sites (en 0019 el mapa no cambia durante
+- Nota: el criterio del recálculo por edificios nuevos pasa a 0025 build-sites (en 0019 el mapa no cambia durante
   la partida). Se acepta el apilamiento en los puentes (sin separación entre enemigos).
 
-**0024 · build-sites (criterio movido desde el campo de flujo).**
+**0025 · build-sites (criterio movido desde el campo de flujo).**
 - Given un edificio nuevo, When se construye, Then el campo se recalcula y los enemigos lo rodean.
 
 **balance-pass-2 (número al empezar) · Como jugador quiero que cada enemigo y cada personaje se sienta distinto y
@@ -223,12 +227,14 @@ Pendientes:
 | 0017 fullscreen-view | **Hecho (PR #41)**: la vista ocupa toda la ventana (tope 2.560 × 1.440); aparición de enemigos desacoplada del tamaño de pantalla (anillo 1.500); mundo 3.840 × 2.160 (64 × 36); HUD y overlays anclados y escalados ×1/×2; balance recalibrado por oleadas (25/50) | Must | |
 | 0018 map-culling | **Hecho (PR #43)**: recorte del arte del mapa fuera de cámara | Must | |
 | 0019 flow-field | Navegación por campo de flujo (4 vecinos + línea libre, recolocación de apariciones, `maxAlive` 300) | Must | Con cientos de enemigos |
-| 0020 enemy-behaviors | **Parte A hecha**: comportamiento por tipo en contenido (persecución, mecha, carga y espera), barril kamikaze con aviso y explosión de área, TNT artillero provisional con dinamita y aviso, fuego amigo, bot v3 que esquiva y balance 27/50 (ADR-0019). **Parte B pendiente** (change propio): casas y torres goblin destruibles, TNT de guardia con patrulla y alerta, campamentos | Should | |
-| 0021 characters | Elección de personaje y Guerrero | Should | ¿Es divertido el Guerrero? |
-| 0022 resources-sheep | Recursos recogibles con tipo y ovejas | Should | |
-| 0023 split-progression-castle | Progresión separada + castillo-tienda (castillo ya en el mapa) | Should | |
-| 0024 build-sites | Solares de obra: casa y torre (incluye el recálculo del campo de flujo por edificios) | Should | |
+| 0020 enemy-behaviors | **Parte A hecha**: comportamiento por tipo en contenido (persecución, mecha, carga y espera), barril kamikaze con aviso y explosión de área, TNT artillero provisional con dinamita y aviso, fuego amigo, bot v3 que esquiva y balance 27/50 (ADR-0019). La parte B sigue en 0021 | Should | |
+| 0021 goblin-camps | Parte B de 0020: casas y torres goblin destruibles generadas con el mapa, Goblin TNT de guardia que nace en ellas y patrulla, alerta y vuelve a su puesto, ajuste del barril. Los campamentos salen del alcance (decisión D8) | Should | |
+| 0022 characters | Elección de personaje y Guerrero | Should | ¿Es divertido el Guerrero? |
+| 0023 resources-sheep | Recursos recogibles con tipo y ovejas | Should | |
+| 0024 split-progression-castle | Progresión separada + castillo-tienda (castillo ya en el mapa) | Should | |
+| 0025 build-sites | Solares de obra: casa y torre (incluye el recálculo del campo de flujo por edificios) | Should | |
 | balance-pass-2 (número al empezar) | Pasada de equilibrio como diseño, no como red de seguridad: stats por tipo de enemigo y de personaje, métricas más allá de la tasa de victoria, revisión del bot de referencia y playtest humano con notas | Should | |
+| goblin-guard-camps (sin número, tras 0023) | Campamentos de guardianes en zonas ricas en recursos (sacados de 0021, D8) | Should | |
 | Resto | UI del pack, día/noche, minimapa, jefes, audio | Could | |
 
 Notas:
@@ -272,7 +278,7 @@ Siguen abiertas:
 | 0010 · W2 | Margen estrecho de la tasa: 30/50 en una banda 25–35, con ±3–4 victorias de ruido entre factores contiguos. Un ajuste pequeño de contenido puede sacarla de la banda: hay que volver a medir. | Cualquier change que toque `content/` (todos los de 0015 en adelante) |
 | 0009 · S5 | El test de "Primer frame tras Jugar" declara 601 frames de menú que no llega a pasar al bucle; la garantía es estructural (bucle nuevo por partida). | Con 0010 si se toca `run-launcher.test.ts` |
 | v2.0 | Sin separación entre enemigos la horda se amontona. | Pendiente, change propio (0019 la mantiene: apilamiento en puentes aceptado) |
-| v2.0 | `upgrades.json` mezcla mejoras de personaje y de arma. | Con 0023 |
+| v2.0 | `upgrades.json` mezcla mejoras de personaje y de arma. | Con 0024 |
 
 ## Historial de changes hechos (resumen)
 
