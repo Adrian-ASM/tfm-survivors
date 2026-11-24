@@ -15,7 +15,9 @@ Pasos:
    Un escenario de las specs vivas que solo cubría un E2E retirado en el chore `e2e-lite` se acepta sin test
    automático: márcalo "aceptado sin test (e2e-lite)", no como hallazgo.
 3. Revisa `design.md` frente al código: capas, nombres, dependencias, reglas de AGENTS.md §3.
-4. Revisa `tasks.md`: todas marcadas y con commit.
+4. Revisa `tasks.md`: todas marcadas y cada grupo con su commit (ADR-0018: un commit por grupo, no por tarea).
+   En infraestructura, composición y contenido el test puede ser posterior al código: no lo marques como
+   hallazgo, pero sí un test que pasaría sin la implementación (Critical, como un escenario sin test).
 5. Busca casos borde no cubiertos, código muerto y secretos.
 
 Escribe **solo** `openspec/changes/<id>/verify-report.md`:

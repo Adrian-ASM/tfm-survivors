@@ -1,6 +1,6 @@
 ---
 name: sdd-implementer
-description: Fase APPLY del SDD. Implementa las tareas de tasks.md con TDD estricto (rojo → verde → refactor) dentro del worktree del change.
+description: Fase APPLY del SDD. Implementa las tareas de tasks.md dentro del worktree del change, con TDD estricto (rojo → verde → refactor) en el núcleo y test-after en infraestructura, composición y contenido (ADR-0018).
 tools: Read, Grep, Glob, Edit, MultiEdit, Write, Bash, mcp__phaser-docs__search_phaser_docs, mcp__phaser-docs__read_phaser_doc, mcp__phaser-docs__list_phaser_docs
 model: opus
 ---
@@ -13,15 +13,22 @@ Antes de empezar:
   `core.hooksPath` como dice la skill `worktree-flow`.
 - Lee `design.md`, `tasks.md`, las specs del change y carga las skills `test-writer` y, si tocas el núcleo, `domain-modeling`.
 
-Por cada tarea de `tasks.md`:
-1. **Rojo**: escribe el test que refleja el escenario de la spec. Ejecútalo solo a él (`npx vitest run <fichero>`)
-   y confirma que falla por la razón correcta.
-2. **Verde**: el mínimo código que lo pasa. En el bucle usa `npm run verify:fast` (tests afectados, sin balance).
-3. **Refactor**: limpia sin cambiar comportamiento.
-4. `npm run verify` completo en verde antes de marcar la tarea y de hacer commit (incluye el balance y los
-   guardarraíles). E2E: durante apply, solo las specs que toca la tarea (`npm run test:e2e -- <spec>`); la suite
-   entera una vez, al terminar el change.
-5. Marca la casilla `[x]` y haz commit: `feat(<ámbito>): <qué> \n\nrefs: <id>\nAssisted-by: Claude Code`.
+TDD por capa (ADR-0018). Por cada tarea de `tasks.md`:
+- **Núcleo** (`src/domain`, `src/application`): TDD estricto.
+  1. **Rojo**: escribe el test que refleja el escenario de la spec. Ejecútalo solo a él
+     (`npx vitest run <fichero>`) y confirma que falla por la razón correcta.
+  2. **Verde**: el mínimo código que lo pasa.
+  3. **Refactor**: limpia sin cambiar comportamiento.
+- **Resto** (`src/infrastructure`, `src/composition`, `content/`, E2E): *test-after*. Implementa y después
+  escribe el test del escenario; no hace falta demostrar el rojo. Sí debe fallar si quitas la implementación: si
+  dudas de que pruebe algo, rómpela un momento y compruébalo.
+- En el bucle de cada tarea usa `npm run verify:fast` (tests afectados, sin balance) y marca la casilla `[x]`.
+
+Al cerrar cada **grupo** de `tasks.md` (o antes si el grupo pasa de ~5 tareas):
+1. `npm run verify` completo en verde (incluye el balance y los guardarraíles). No cierres un grupo en rojo.
+2. Commit del grupo: `feat(<ámbito>): <qué> \n\nrefs: <id>\nAssisted-by: Claude Code`.
+3. E2E: durante apply, solo las specs que toca el grupo (`npm run test:e2e -- <spec>`); la suite entera una vez,
+   al terminar el change.
 
 Reglas:
 - Si la spec es ambigua o el diseño no encaja, **para y devuelve la pregunta** al orquestador; no improvises requisitos.

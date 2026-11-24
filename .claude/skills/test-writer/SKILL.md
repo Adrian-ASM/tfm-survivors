@@ -26,8 +26,12 @@ description: Escribe tests siguiendo la pirámide de Clean Architecture del curs
   (`smoke`, `progress`, `gameplay`.spec). Sin umbrales de fps ni de tiempo real: eso va al proyecto `realtime`,
   a demanda y fuera del gate.
 
+- **TDD por capa** (ADR-0018): en `domain` y `application`, test primero y rojo comprobado. En
+  infraestructura, composición y contenido vale *test-after*, con el mismo nivel de exigencia sobre qué prueba.
+
 ## Antipatrones
-- Tests que pasan sin la implementación (comprueba siempre el rojo).
+- Tests que pasan sin la implementación. En el núcleo, comprueba siempre el rojo; en test-after, si dudas,
+  rompe la implementación un momento y mira que falle.
 - Asserts sobre detalles internos en lugar de comportamiento observable.
 - Perseguir el 100 % de cobertura a costa de tests sin valor.
 - E2E que adelanta `page.clock` sin sonda: gasta CPU como una partida a máxima velocidad (0014). Una regla que no
