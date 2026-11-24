@@ -320,7 +320,7 @@ interface MutableUpgrade {
   maxLevel: number;
 }
 /**
- * Contenido crudo con la forma de los 8 ficheros de content/, mutable para preparar casos
+ * Contenido crudo con la forma de los ficheros de juego de content/, mutable para preparar casos
  * inválidos.
  */
 export interface RawContent {

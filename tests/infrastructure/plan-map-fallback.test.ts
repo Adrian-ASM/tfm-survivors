@@ -10,6 +10,7 @@ import { aDefaultConfig } from '../support/builders';
 import { planFor, repoAppearance, spritesOf } from '../support/mapArt';
 import { mapRules, mapWith, type Layout } from '../support/mapLayouts';
 import { mapForSeed } from '../support/mapStats';
+import { startSeededRun } from '../support/runs';
 
 // Spec sprite-rendering (0016), "Pintado del mapa" (reserva por elemento) y "Sonda de render".
 const RULES = mapRules();
@@ -119,12 +120,13 @@ describe('planMapArt · reserva por elemento', () => {
 });
 
 // Spec sprite-rendering (0017), "Coste de render del mapa": tope sin navegador que entra en verify.
-// Con el mundo de 3.840 × 2.160 (0017): 667 (42) y 750 (123).
+// Con el mundo de 3.840 × 2.160 (0017): 667 (42) y 750 (123); con casas y torres (0021), 695 y 778.
 const MAX_MAP_OBJECTS = 1000;
 
 describe('planMapArt · objetos del mapa (punto de control 2)', () => {
   it.each([42, 123])('Scenario: Objetos del mapa (semilla %i: ≤ 1.000 sin navegador)', (seed) => {
-    const plan = planFor(toMapSnapshot(mapForSeed(aDefaultConfig(), seed)), seed);
+    const plan = planFor(startSeededRun(aDefaultConfig(), seed).map, seed);
+    expect(plan.structures.length).toBeGreaterThan(0);
     expect(plan.objects).toBeLessThanOrEqual(MAX_MAP_OBJECTS);
     expect(plan.objects).toBe(objectsOf(plan));
   });

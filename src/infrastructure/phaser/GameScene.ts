@@ -24,7 +24,7 @@ import { watchScreen } from './ui/watchScreen';
 import type { UpgradeOverlay } from './UpgradeOverlay';
 import type { Appearance } from '../content/appearanceSchema';
 import { resolveLooks } from './art/looks';
-import { resolveMapLooks, type MapLooks } from './map/mapLooks';
+import { resolveMapLooks, resolveStructureLooks, type MapLooks } from './map/mapLooks';
 import { planMapArt } from './map/planMapArt';
 import {
   ensurePlaceholderTexture,
@@ -192,6 +192,7 @@ export class GameScene extends Phaser.Scene {
       appearance.terrain,
       textureFrames(this),
       textureHasFrame(this),
+      resolveStructureLooks(appearance, textureFrames(this)),
     );
     const { layers, mapArt } = createPlayfield(
       {
@@ -200,6 +201,7 @@ export class GameScene extends Phaser.Scene {
         warnings: () => this.add.graphics(),
         looks,
         capacity: this.deps.capacity,
+        structureTypes: Object.keys(appearance.structures),
       },
       ground,
       this.deps.world,

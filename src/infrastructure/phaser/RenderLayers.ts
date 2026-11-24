@@ -13,6 +13,7 @@ import type { SpriteKit } from './SpriteLike';
 import { MapCuller } from './map/mapCulling';
 import type { Box, MapArtPlan } from './map/planMapArt';
 import { paintMapArt, zeroCells, zeroMapArt, type MapArtCanvas } from './TerrainView';
+import { StructureArt } from './StructureArt';
 
 /** Tamaño de los pools: el de la escena más el tope de cadáveres de los datos de aspecto. */
 export interface LayerCapacity {
@@ -33,6 +34,8 @@ export interface RenderParts {
   readonly warnings: () => WarningCanvas;
   readonly looks: Looks;
   readonly capacity: LayerCapacity;
+  /** Tipos de estructura del contenido (0021): claves de `sprites.structures`, también a 0. */
+  readonly structureTypes?: readonly string[];
 }
 
 /**
@@ -58,6 +61,8 @@ export class RenderLayers {
   private mapCanvas: MapArtCanvas | null = null;
   /** Recorte por cámara del mapa pintado (0018). */
   private readonly culler = new MapCuller();
+  /** Aspecto vigente (intacto o ruina) de cada estructura del mapa pintado (0021). */
+  private readonly structureArt: StructureArt;
   private foamAnim: AnimSpec | null = null;
   private foamFrame = -1;
 
@@ -70,6 +75,7 @@ export class RenderLayers {
     this.enemies = new EnemyLayer(capacity.enemies, kit, looks.enemies, this.corpses);
     this.projectiles = new ProjectileLayer(capacity.projectiles, kit, looks.projectile);
     this.player = new PlayerView(kit, looks.player);
+    this.structureArt = new StructureArt(parts.structureTypes ?? []);
     this.counts = {
       ground,
       player: this.player.counts,
@@ -85,6 +91,7 @@ export class RenderLayers {
       explosions: { visible: 0, placeholder: 0 },
       cells: zeroCells(),
       mapArt: zeroMapArt(),
+      structures: this.structureArt.counts,
     };
   }
 
@@ -122,6 +129,8 @@ export class RenderLayers {
     this.projectiles.sync(snapshot.projectiles);
     this.player.render(snapshot, ms);
     this.hazards?.sync(snapshot.warnings, snapshot.dynamites, snapshot.blasts, ms);
+    // Antes del recorte del frame (`cullMap`): la ruina se ve desde el frame en que figura destruida.
+    this.structureArt.sync(snapshot.structures);
     this.animateFoam(ms);
   }
 
@@ -148,6 +157,7 @@ export class RenderLayers {
     mapArt.objects = painted.mapArt.objects;
     this.mapCanvas = canvas;
     this.culler.reset(plan);
+    this.structureArt.reset(plan.structures, this.culler);
     mapArt.drawn = this.culler.drawn;
     this.foamAnim = plan.foam ? { frames: plan.foam.frames, fps: plan.foam.fps, loop: true } : null;
     this.foamFrame = -1;

@@ -1,5 +1,5 @@
 import type { Appearance, SheetRect } from '../content/appearanceSchema';
-import { aspectsOf } from '../content/loadAppearance';
+import { aspectsOf, structureAspectsOf } from '../content/loadAppearance';
 import { BRIDGE_FRAME_NAMES } from './map/mapLooks';
 import { GAME_SCENE_KEY, MENU_SCENE_KEY } from './sceneKeys';
 
@@ -23,10 +23,14 @@ function mapSheets(appearance: Appearance) {
   return [water.sheet, shore.sheet, foam.sheet, trees.sheet, castle.sheet];
 }
 
-/** Una carga por `file` distinto, en el orden de los aspectos y luego los del mapa. Puro. */
+/** Una carga por `file` distinto: aspectos, mapa y estructuras (0021), en ese orden. Puro. */
 export function sheetsToLoad(appearance: Appearance): SheetLoad[] {
   const byFile = new Map<string, SheetLoad>();
-  const sheets = [...aspectsOf(appearance).map(([, a]) => a.sheet), ...mapSheets(appearance)];
+  const sheets = [
+    ...aspectsOf(appearance).map(([, a]) => a.sheet),
+    ...mapSheets(appearance),
+    ...structureAspectsOf(appearance).map(([, a]) => a.sheet),
+  ];
   for (const { file, frameWidth, frameHeight } of sheets) {
     if (!byFile.has(file)) byFile.set(file, { key: file, file, frameWidth, frameHeight });
   }

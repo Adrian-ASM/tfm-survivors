@@ -5,6 +5,7 @@ import {
   SHEET_NOT_REGISTERED,
   type Appearance,
   type Aspect,
+  type StructureAspect,
 } from './appearanceSchema';
 
 /** Cada aspecto con su ruta de campo, en el orden del fichero (el error nombra el primero). */
@@ -69,6 +70,14 @@ export function mapSheetsOf(appearance: Appearance): [string[], string][] {
   ];
 }
 
+/** Aspectos de las estructuras (0021) con su ruta de campo, en el orden del fichero. */
+export function structureAspectsOf(appearance: Appearance): [string[], StructureAspect][] {
+  return Object.entries(appearance.structures).flatMap(([id, looks]) => [
+    [['structures', id, 'intact'], looks.intact] as [string[], StructureAspect],
+    [['structures', id, 'ruin'], looks.ruin] as [string[], StructureAspect],
+  ]);
+}
+
 /**
  * Valida los datos de aspecto (design D9). `registered` son las rutas de `files[].path` de la nota de
  * procedencia: una hoja solo vale si figura ahí. El error nombra el campo con su ruta unida por `.`.
@@ -85,6 +94,10 @@ export function parseAppearance(
         a.sheet.file,
       ]),
       ...mapSheetsOf(appearance),
+      ...structureAspectsOf(appearance).map(([path, a]): [string[], string] => [
+        [...path, 'sheet', 'file'],
+        a.sheet.file,
+      ]),
     ];
     for (const [path, file] of sheets) {
       if (!known.has(ASSET_DIR + file))

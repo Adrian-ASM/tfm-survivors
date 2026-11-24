@@ -172,7 +172,8 @@ describe('Procedencia de las hojas de los peligros (asset-provenance)', () => {
   const bySource = (source: string) => files.find((f) => f.source === source);
 
   it('Scenario: Hojas nuevas registradas', () => {
-    expect(files).toHaveLength(15);
+    // 0021: 15 de antes más las 4 hojas de casas, torres y ruinas.
+    expect(files).toHaveLength(19);
     expect(bySource(DYNAMITE_SOURCE)?.path).toBe(
       `${ASSET_DIR}Factions/Goblins/Troops/TNT/Dynamite/Dynamite.png`,
     );
@@ -205,8 +206,21 @@ describe('Procedencia de las hojas de los peligros (asset-provenance)', () => {
     const versioned = execFileSync('git', ['ls-files'], { cwd: root, encoding: 'utf8' }).split(
       '\n',
     );
-    const forbidden = /Fire\.png|Goblin_House|Wood_Tower|W_Idle\.png/;
-    expect(versioned.filter((f) => forbidden.test(f) && !f.startsWith('openspec/'))).toEqual([]);
+    const outsideSpecs = versioned.filter((f) => !f.startsWith('openspec/'));
+    // 0021: se retira la prohibición de casas y torres; siguen fuera el fuego, W_Idle y la obra.
+    const forbidden = /Fire\.png|W_Idle\.png|Wood_Tower_InConstruction/;
+    expect(outsideSpecs.filter((f) => forbidden.test(f))).toEqual([]);
+    const buildings = outsideSpecs.filter((f) => /Goblin_House|Wood_Tower/.test(f)).sort();
+    expect(buildings).toEqual(
+      [
+        'Wood_House/Goblin_House.png',
+        'Wood_House/Goblin_House_Destroyed.png',
+        'Wood_Tower/Wood_Tower_Red.png',
+        'Wood_Tower/Wood_Tower_Destroyed.png',
+      ]
+        .map((f) => `${ASSET_DIR}Factions/Goblins/Buildings/${f}`)
+        .sort(),
+    );
   });
 
   it('Scenario: Hoja de cada elemento (dinamita y explosión)', () => {

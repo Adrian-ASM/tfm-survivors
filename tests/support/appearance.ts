@@ -15,6 +15,10 @@ export const BRIDGE_FILE = 'Terrain/Bridge/Bridge_All.png';
 export const CASTLE_FILE = 'Factions/Knights/Buildings/Castle/Castle_Blue.png';
 export const DYNAMITE_FILE = 'Factions/Goblins/Troops/TNT/Dynamite/Dynamite.png';
 export const EXPLOSION_FILE = 'Effects/Explosion/Explosions.png';
+export const HOUSE_FILE = 'Factions/Goblins/Buildings/Wood_House/Goblin_House.png';
+export const HOUSE_RUIN_FILE = 'Factions/Goblins/Buildings/Wood_House/Goblin_House_Destroyed.png';
+export const TOWER_FILE = 'Factions/Goblins/Buildings/Wood_Tower/Wood_Tower_Red.png';
+export const TOWER_RUIN_FILE = 'Factions/Goblins/Buildings/Wood_Tower/Wood_Tower_Destroyed.png';
 
 const FILES = [
   TORCH_FILE,
@@ -32,6 +36,10 @@ const FILES = [
   CASTLE_FILE,
   DYNAMITE_FILE,
   EXPLOSION_FILE,
+  HOUSE_FILE,
+  HOUSE_RUIN_FILE,
+  TOWER_FILE,
+  TOWER_RUIN_FILE,
 ];
 
 /** Los 15 casos de orilla (lados de río, letras en orden N-E-S-W; design 0016 §12.2 B2). */
@@ -97,6 +105,8 @@ export interface RawAppearance {
   warnings: Record<string, Json>;
   terrain: Record<string, unknown>;
   map: Record<string, Json>;
+  structures: Record<string, Record<string, Json>>;
+  structureColors: Record<string, unknown>;
   [extra: string]: unknown;
 }
 
@@ -138,6 +148,29 @@ export function rawMapAppearance(): Record<string, Json> {
   };
 }
 
+/** Aspecto de estructura crudo (0021): hoja de `w × h`, origen en el borde inferior, `idle` [0]. */
+const structureLook = (file: string, w: number, h: number): Json => ({
+  sheet: { file, frameWidth: w, frameHeight: h },
+  scale: 0.9375,
+  origin: { x: 0.5, y: 1 },
+  facing: 'right',
+  idle: anim([0], 1, true),
+});
+
+/** Sección `structures` cruda válida: casa y torre, intactas y en ruina (0021). */
+export function rawStructureAppearance(): Record<string, Record<string, Json>> {
+  return {
+    'goblin-house': {
+      intact: structureLook(HOUSE_FILE, 128, 192),
+      ruin: structureLook(HOUSE_RUIN_FILE, 128, 192),
+    },
+    'goblin-tower': {
+      intact: structureLook(TOWER_FILE, 256, 192),
+      ruin: structureLook(TOWER_RUIN_FILE, 256, 192),
+    },
+  };
+}
+
 /** Datos de aspecto crudos válidos con los tres goblins. */
 export function rawAppearance(): RawAppearance {
   return {
@@ -164,5 +197,7 @@ export function rawAppearance(): RawAppearance {
     maxBlastSprites: 64,
     terrain: { trunk: '#5b3a1e', water: '#2b6cb0', bridge: '#a47148', castle: '#6b7a8f' },
     map: rawMapAppearance(),
+    structures: rawStructureAppearance(),
+    structureColors: { 'goblin-house': '#a33b2b', 'goblin-tower': '#7a5230', ruin: '#3d3a36' },
   };
 }

@@ -9,12 +9,13 @@ import { canopyCut, roofCut } from '../../src/infrastructure/phaser/map/mapCuts'
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import { rawContent } from '../support/builders';
 import { randomInputs } from '../support/inputs';
-import { chooseFirstWhileOpen, startRun } from '../support/runs';
+import { chooseFirstWhileOpen, startRun, startSeededRun } from '../support/runs';
 
 // Spec sprite-rendering, "Datos de aspecto validados" en el arranque (change 0012, design D9).
 const REGISTERED = provenanceJson.files.map((f) => f.path);
 
-type Raw = { content: ReturnType<typeof rawContent>; appearance: Record<string, unknown> };
+type Json = Record<string, unknown>;
+type Raw = { content: ReturnType<typeof rawContent>; appearance: Json };
 function raw(): Raw {
   return { content: rawContent(), appearance: structuredClone(appearanceJson) };
 }
@@ -158,7 +159,7 @@ describe('bootContent', () => {
     expect(checkAppearanceRefs(booted.appearance, booted.config).ok).toBe(true);
   });
 
-  it('Scenario: Los aspectos no cambian la simulación (entidades × 2, colores del mapa y de los avisos)', () => {
+  it('Scenario: Los aspectos no cambian la simulación (entidades y estructuras × 2, colores cambiados)', () => {
     const doubled = raw();
     const a = doubled.appearance as {
       player: { scale: number };
@@ -177,6 +178,17 @@ describe('bootContent', () => {
     // 0020: también los colores de los avisos.
     for (const w of Object.values(a.warnings)) w.color = '#0a0b0c';
     a.terrain = { trunk: '#010101', water: '#020202', bridge: '#030303', castle: '#040404' };
+    // 0021: también las escalas de las estructuras y sus colores de reserva.
+    const looks = (doubled.appearance as { structures: Record<string, Record<string, Json>> })
+      .structures;
+    for (const aspects of Object.values(looks)) {
+      for (const aspect of Object.values(aspects)) aspect['scale'] = Number(aspect['scale']) * 2;
+    }
+    doubled.appearance['structureColors'] = {
+      'goblin-house': '#050505',
+      'goblin-tower': '#060606',
+      ruin: '#070707',
+    };
     const one = boot(raw()).booted;
     const two = boot(doubled).booted;
     if (!one || !two) throw new Error('arranque inválido');
@@ -190,6 +202,20 @@ describe('bootContent', () => {
       });
     };
     expect(play(two.config)).toEqual(play(one.config));
+    // Con el mapa generado de la semilla 42 (con casas y torres).
+    const seeded = (config: typeof one.config) => {
+      const run = startSeededRun(config, 42);
+      return inputs.map((input) => {
+        chooseFirstWhileOpen(run);
+        run.tick(input);
+        return run.snapshot();
+      });
+    };
+    const generated = seeded(one.config);
+    expect(generated[0]?.structures.length).toBeGreaterThan(0);
+    expect(seeded(two.config)).toEqual(generated);
     expect(two.appearance.player.scale).toBe(one.appearance.player.scale * 2);
+    const house = (b: typeof one) => b.appearance.structures['goblin-house']?.intact.scale ?? 0;
+    expect(house(two)).toBe(house(one) * 2);
   });
 });

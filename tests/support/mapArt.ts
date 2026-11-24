@@ -8,6 +8,7 @@ import type { FrameCount } from '../../src/infrastructure/phaser/art/looks';
 import {
   BRIDGE_FRAME_NAMES,
   resolveMapLooks,
+  resolveStructureLooks,
   type HasFrame,
   type MapLooks,
 } from '../../src/infrastructure/phaser/map/mapLooks';
@@ -38,6 +39,10 @@ const FRAME_COUNTS: Readonly<Record<string, number>> = {
   'Resources/Trees/Tree.png': 12,
   'Terrain/Bridge/Bridge_All.png': 0,
   'Factions/Knights/Buildings/Castle/Castle_Blue.png': 1,
+  'Factions/Goblins/Buildings/Wood_House/Goblin_House.png': 1,
+  'Factions/Goblins/Buildings/Wood_House/Goblin_House_Destroyed.png': 1,
+  'Factions/Goblins/Buildings/Wood_Tower/Wood_Tower_Red.png': 4,
+  'Factions/Goblins/Buildings/Wood_Tower/Wood_Tower_Destroyed.png': 1,
 };
 
 /** Texturas cargadas salvo las de `missing` (doble de `textureFrames`). */
@@ -57,7 +62,13 @@ export const bridgeFrames =
 /** Aspectos del mapa del repositorio resueltos con las hojas que faltan dadas. */
 export function repoMapLooks(missing: readonly string[] = []): MapLooks {
   const a = repoAppearance();
-  return resolveMapLooks(a.map, a.terrain, loadedExcept(missing), bridgeFrames());
+  return resolveMapLooks(
+    a.map,
+    a.terrain,
+    loadedExcept(missing),
+    bridgeFrames(),
+    resolveStructureLooks(a, loadedExcept(missing)),
+  );
 }
 
 /** Mundo del contenido por defecto (content/arena.json, una sola fuente). */

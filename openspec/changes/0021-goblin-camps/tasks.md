@@ -93,25 +93,25 @@
   reproducibles con el mapa generado".
 
 ## 6. Infraestructura de render y arte (test-after)
-- [ ] 6.1 Datos de aspecto: `structures.<tipo>.{intact, ruin}` con `idle`, colores `goblin-house`/`goblin-tower`/
+- [x] 6.1 Datos de aspecto: `structures.<tipo>.{intact, ruin}` con `idle`, colores `goblin-house`/`goblin-tower`/
   `ruin` y aspecto `goblin-tnt-guard` (`TNT_Red` con `throw`). — SR: "Datos del repositorio", "Colores de
   estructuras inválidos", "Tipos de estructura y aspectos desalineados", "Tipos de enemigo y aspectos desalineados",
   "Valores fuera de rango" (escala de ruina), "Animaciones obligatorias y campos desconocidos", "Rutas de hoja no
   admitidas" (torre).
-- [ ] 6.2 Copiar las 4 hojas del pack local, añadir sus entradas sha256/bytes, reducir la prohibición de
+- [x] 6.2 Copiar las 4 hojas del pack local, añadir sus entradas sha256/bytes, reducir la prohibición de
   `appearance-hazards.test.ts` y pasar `guard:all`. — AP: "Hojas de estructuras registradas", "Hoja de estructura sin
   entrada", "Hojas de edificios no usadas", "Ninguna hoja de más", "Hojas nuevas registradas"; SR: "Hoja de cada
   elemento", "Solo las hojas usadas".
-- [ ] 6.3 `planMapArt`: partes baja y alta por aspecto, reserva sin parte alta e índices por estructura;
+- [x] 6.3 `planMapArt`: partes baja y alta por aspecto, reserva sin parte alta e índices por estructura;
   `plan-map-fallback.test.ts` con ≤ 1.000. — SR: "Casa en su sitio", "Reserva de las estructuras", "Presupuesto de
   objetos con estructuras", "Totales del mapa con estructuras" (regenerar 667/750 + estructuras).
-- [ ] 6.4 `MapCuller.setEnabled` (máscara × recorte) y `StructureArt` (cambio a ruina en la transición) con
+- [x] 6.4 `MapCuller.setEnabled` (máscara × recorte) y `StructureArt` (cambio a ruina en la transición) con
   `FakeSprite`. — SR: "Ruina tras la destrucción", "`drawn` igual al recorte", "Sin estructuras en el mapa vacío ni
   tras R", "Guardia ante la casa".
-- [ ] 6.5 `EnemyLayer`/`renderCounts`: clases nuevas en `enemyStates`, `sprites.structures` y `map.structures` en la
+- [x] 6.5 `EnemyLayer`/`renderCounts`: clases nuevas en `enemyStates`, `sprites.structures` y `map.structures` en la
   sonda (0 o `null` en el menú). — SR: "Guardia que patrulla y lanza", "Recuento coherente con el snapshot", "Sonda
   en el menú"; PM: "Sonda con el mapa vacío", "Sonda en el menú".
-- [ ] 6.6 El render no cambia la simulación. — SR: "Pintar no cambia la simulación", "Los aspectos no cambian la
+- [x] 6.6 El render no cambia la simulación. — SR: "Pintar no cambia la simulación", "Los aspectos no cambian la
   simulación" (escalas de estructura ×2 y colores cambiados).
 
 ## 7. Balance por pasos (tests/support y contenido; design §11)
