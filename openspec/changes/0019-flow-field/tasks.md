@@ -52,7 +52,7 @@
   larga sin spawns ilegales". Escenario SL: "Posiciones de enemigos reproducibles con el mapa generado". Escenario XG:
   "Ninguna gema en reposo en celda no caminable" (sigue en verde). Si este fichero pasa de ~20 s en local, se
   reducen los barridos a lo que pide la spec y se anota.
-- [ ] 3.3 `tests/support/builders.ts`: `DEFAULT_ENEMY_TYPES`, `DEFAULT_PROGRESSION` y `DEFAULT_UPGRADE_LIST` pasan a
+- [x] 3.3 `tests/support/builders.ts`: `DEFAULT_ENEMY_TYPES`, `DEFAULT_PROGRESSION` y `DEFAULT_UPGRADE_LIST` pasan a
   leerse de `content/*.json`, como `DEFAULT_WAVES`, para que la calibración tenga una sola fuente. Test: los tests
   existentes siguen en verde y uno nuevo comprueba la igualdad con el contenido cargado por `loadRunConfig`.
   Prerrequisito de 4.1.

@@ -13,12 +13,15 @@ import { aContactConfig, aProbeType, ticks } from '../support/runs';
 // Spec enemy-behavior, "Navegación por el campo de flujo", "Línea libre hasta el jugador" y
 // "Persecución en línea recta" (change 0019). Mapa de hierba de 64 × 36 (mundo por defecto).
 const RULES = mapRules();
+/** goblin-torch del contenido por defecto (velocidad 90). */
+const TORCH = DEFAULT_ENEMY_TYPES.find((t) => t.id === 'goblin-torch');
+if (!TORCH) throw new Error('falta goblin-torch en content/enemies.json');
 const WORLD = aDefaultConfig().arena;
 
 /** Probe (velocidad 60) y goblin-torch (velocidad 90), sin oleadas y con vida inagotable. */
 const CONFIG: RunConfig = {
   ...aContactConfig({
-    types: [aProbeType(), DEFAULT_ENEMY_TYPES[0]],
+    types: [aProbeType(), TORCH],
     player: { maxHealth: LONG_RUN_HEALTH },
   }),
   arena: WORLD,
