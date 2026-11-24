@@ -9,6 +9,7 @@ import { Experience } from '../progression/Experience';
 import { PickupField } from '../pickup/PickupField';
 import type { PickupKind } from '../pickup/PickupKind';
 import { Stockpile } from '../resource/Stockpile';
+import { GoldVein } from '../resource/GoldVein';
 import { err, invalidConfig, ok, type DomainError, type Result } from '../shared/Result';
 import { Vector2 } from '../shared/Vector2';
 import { UpgradeBoard } from '../upgrade/UpgradeBoard';
@@ -26,6 +27,8 @@ export const SETUP_TOO_MANY_GEMS =
   'Hay más recogibles iniciales de un tipo que el tope de ese tipo en el suelo.';
 export const SETUP_RESOURCES_MUST_BE_INTEGER =
   'El oro y la madera iniciales deben ser enteros ≥ 0.';
+export const SETUP_TOO_MANY_VEINS = 'Hay más vetas iniciales que vetas en el mapa.';
+export const SETUP_VEIN_GOLD_MUST_BE_INTEGER = 'El oro de una veta inicial debe ser un entero ≥ 1.';
 export const SETUP_EXPERIENCE_OUT_OF_RANGE =
   'La experiencia inicial necesita un nivel entero ≥ 1 y una XP entera en [0, xpToNext).';
 export const SETUP_UNKNOWN_UPGRADE = 'Mejora inicial desconocida en el catálogo.';
@@ -93,6 +96,11 @@ export interface RunSetup {
   })[];
   /** Oro y madera ya acumulados al empezar (enteros ≥ 0; por defecto, 0). */
   readonly resources?: { readonly gold: number; readonly wood: number };
+  /**
+   * Por índice de la lista de vetas de la partida (tests): oro (entero ≥ 1; por defecto, el del
+   * contenido) y si ya está agotada (por defecto, activa). Como mucho tantas entradas como vetas.
+   */
+  readonly veins?: readonly { readonly gold?: number; readonly depleted?: boolean }[];
   /** Nivel y XP iniciales (por defecto, nivel 1 con XP 0), sin subidas pendientes. */
   readonly experience?: { readonly level: number; readonly xp: number };
   /**
@@ -270,6 +278,29 @@ export function initialPickups(
   return ok(field);
 }
 
+/** Vetas de la partida en su orden, con el oro y el radio del contenido o los de `RunSetup`. */
+export function initialVeins(
+  rules: RunRules,
+  setup: RunSetup,
+  sites: readonly Point[],
+): Result<GoldVein[], DomainError> {
+  const entries = setup.veins ?? [];
+  if (entries.length > sites.length) {
+    return err(invalidConfig('setup.veins', SETUP_TOO_MANY_VEINS));
+  }
+  const { gold, radius } = rules.resources.goldVeins;
+  const veins: GoldVein[] = [];
+  for (const [i, p] of sites.entries()) {
+    const entry = entries[i] ?? {};
+    const value = entry.gold ?? gold;
+    if (!Number.isInteger(value) || value < 1) {
+      return err(invalidConfig(`setup.veins.${String(i)}.gold`, SETUP_VEIN_GOLD_MUST_BE_INTEGER));
+    }
+    veins.push(new GoldVein(i, p.x, p.y, radius, value, entry.depleted ?? false));
+  }
+  return ok(veins);
+}
+
 /** Oro y madera iniciales (por defecto, 0). */
 export function initialStockpile(setup: RunSetup): Result<Stockpile, DomainError> {
   const { gold, wood } = setup.resources ?? { gold: 0, wood: 0 };
@@ -348,6 +379,8 @@ export interface InitialState {
   readonly enemies: Enemy[];
   readonly pickups: PickupField;
   readonly stock: Stockpile;
+  /** Vetas en su orden fijo (agotadas incluidas). */
+  readonly veins: GoldVein[];
   readonly experience: Experience;
   readonly board: UpgradeBoard;
   /** Bajas ya acumuladas (por defecto, 0). */
@@ -365,6 +398,7 @@ export function initialState(
   map: GameMap,
   sites: readonly StructureSite[] = [],
   piles: readonly Point[] = [],
+  veinSites: readonly Point[] = [],
 ): Result<InitialState, DomainError> {
   const player = initialPlayer(rules, setup, map);
   if (!player.ok) return player;
@@ -376,6 +410,8 @@ export function initialState(
   if (!pickups.ok) return pickups;
   const stock = initialStockpile(setup);
   if (!stock.ok) return stock;
+  const veins = initialVeins(rules, setup, veinSites);
+  if (!veins.ok) return veins;
   const experience = initialExperience(rules, setup);
   if (!experience.ok) return experience;
   const board = initialBoard(rules, setup);
@@ -391,6 +427,7 @@ export function initialState(
     enemies: enemies.value,
     pickups: pickups.value,
     stock: stock.value,
+    veins: veins.value,
     experience: experience.value,
     board: board.value,
     kills,

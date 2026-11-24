@@ -13,9 +13,12 @@ export class StructureField {
     return this.list;
   }
 
-  /** Paso 3.4: las que han llegado a vida 0 en este tick quedan destruidas, sin gema ni baja. */
-  settle(): void {
-    for (const s of this.list) s.settle();
+  /**
+   * Paso 3.4: las que han llegado a vida 0 en este tick quedan destruidas, sin gema ni baja, y se
+   * avisa a `onRuin` de cada una en el orden de la lista (su oro, spec goblin-structures 0022).
+   */
+  settle(onRuin: (ruin: Structure) => void): void {
+    for (const s of this.list) if (s.settle()) onRuin(s);
   }
 
   /**

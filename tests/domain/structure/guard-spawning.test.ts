@@ -104,7 +104,7 @@ describe('Nacimiento de guardias en casas (enemy-spawning)', () => {
     for (let n = 1; n <= 1200; n++) {
       if (n === 200) {
         house?.takeDamage(1e9);
-        field.settle();
+        field.settle(() => undefined);
       }
       const before = horde.alive.length;
       field.spawnGuards(n, horde, 300);

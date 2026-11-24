@@ -147,6 +147,21 @@ export const withResources = (config: RunConfig, resources: ResourcesConfig): Ru
   resources,
 });
 
+/**
+ * El mismo contenido con estos drops y ningún otro (escenarios de 0022): madera por
+ * `goblin-barrel` abatido y oro por casa y por torre destruidas.
+ */
+export const withDrops = (
+  config: RunConfig,
+  o: { readonly wood?: number; readonly house?: number; readonly tower?: number },
+): RunConfig => {
+  const structures: Record<string, { gold: number }> = {};
+  if (o.house !== undefined) structures['goblin-house'] = { gold: o.house };
+  if (o.tower !== undefined) structures['goblin-tower'] = { gold: o.tower };
+  const enemies = o.wood === undefined ? {} : { 'goblin-barrel': { wood: o.wood } };
+  return withResources(config, { ...config.resources, drops: { enemies, structures } });
+};
+
 /** El mismo contenido sin fuentes de recursos (design 0022 §10). */
 export const withoutResourceSources = (config: RunConfig): RunConfig =>
   withResources(config, NO_RESOURCES);

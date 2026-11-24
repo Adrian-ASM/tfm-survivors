@@ -3,6 +3,7 @@ import type { Blast } from '../hazard/Blast';
 import type { Dynamite } from '../hazard/Dynamite';
 import type { Experience } from '../progression/Experience';
 import type { Pickup } from '../pickup/Pickup';
+import type { GoldVein } from '../resource/GoldVein';
 import type { Structure } from '../structure/Structure';
 import type { UpgradeBoard } from '../upgrade/UpgradeBoard';
 import type { UpgradeCatalog } from '../upgrade/UpgradeCatalog';
@@ -20,6 +21,7 @@ import type {
   StructureSnapshot,
   PulseSnapshot,
   UpgradeLevelSnapshot,
+  VeinSnapshot,
   WarningSnapshot,
 } from './RunSnapshot';
 
@@ -97,6 +99,11 @@ export function toStructureSnapshot(s: Structure): StructureSnapshot {
     health: s.hp,
     destroyed: s.destroyed,
   });
+}
+
+export function toVeinSnapshot(v: GoldVein): VeinSnapshot {
+  const { id, x, y, radius, gold, depleted } = v;
+  return Object.freeze({ id, x, y, radius, gold, depleted });
 }
 
 /**

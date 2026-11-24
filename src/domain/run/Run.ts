@@ -9,6 +9,7 @@ import { toMapSnapshot, type MapSnapshot } from '../map/MapSnapshot';
 import { OPEN_TERRAIN, resolveTerrain, type TerrainSource } from '../map/TerrainSource';
 import { resolveStructures } from '../structure/resolveStructures';
 import { StructureField } from '../structure/StructureField';
+import type { Structure } from '../structure/Structure';
 import type { StructureSite } from '../structure/StructureSite';
 import type { Player } from '../player/Player';
 import type { PlayerInput } from '../player/PlayerInput';
@@ -16,6 +17,8 @@ import type { RandomGenerator } from '../shared/RandomGenerator';
 import type { Experience } from '../progression/Experience';
 import { PickupGain, type PickupField } from '../pickup/PickupField';
 import type { Stockpile } from '../resource/Stockpile';
+import type { GoldVein } from '../resource/GoldVein';
+import { resolveResources } from '../resource/resolveResources';
 import type { PlayerRules } from '../player/PlayerRules';
 import { err, ok, type DomainError, type Result } from '../shared/Result';
 import type { UpgradeChoiceError } from '../upgrade/UpgradeChoiceError';
@@ -39,6 +42,7 @@ import {
   toDynamiteSnapshot,
   toEnemySnapshot,
   toPickupSnapshots,
+  toVeinSnapshot,
   toOfferSnapshot,
   toProgressionSnapshot,
   toProjectileSnapshot,
@@ -88,9 +92,6 @@ export {
  * (ADR-0017): BFS 4-vecina con orden izquierda, derecha, arriba, abajo, campo solo función de (mapa,
  * celda del jugador) y empates por ese orden.
  */
-/** Sin vetas hasta 2.2 (lista congelada compartida). */
-const NO_VEINS: RunSnapshot['veins'] = Object.freeze([]);
-
 export class Run {
   private tickCount = 0;
   private phase: RunPhase = RUNNING;
@@ -109,6 +110,8 @@ export class Run {
   private readonly field: FlowField;
   private readonly hazards: HazardField;
   private readonly structures: StructureField;
+  /** Vetas en su orden fijo (ADR-0021): ni se crean ni se retiran durante la partida. */
+  private readonly veins: readonly GoldVein[];
 
   private constructor(
     private readonly rules: RunRules,
@@ -133,6 +136,7 @@ export class Run {
     this.arsenal = new Arsenal(rules.loadout, rules.pulseCapacity);
     this.hazards = new HazardField(rules.hazards, initial.dynamites);
     this.structures = new StructureField(initial.structures);
+    this.veins = initial.veins;
     for (const w of rules.loadout.weapons) this.retune(w.id);
     const bonus = maxHealthBonus(rules.upgrades, this.board.levels);
     this.player = this.player.withRules(this.effectivePlayer(), bonus);
@@ -155,7 +159,10 @@ export class Run {
     if (!map.ok) return map;
     const sites = resolveStructures(terrain, map.value, rules.value.structures);
     if (!sites.ok) return sites;
-    const initial = initialState(rules.value, setup, map.value, sites.value);
+    const resources = resolveResources(terrain);
+    if (!resources.ok) return resources;
+    const { veins, woodPiles } = resources.value;
+    const initial = initialState(rules.value, setup, map.value, sites.value, woodPiles, veins);
     if (!initial.ok) return initial;
     return ok(new Run(rules.value, random, map.value, initial.value, sites.value));
   }
@@ -231,8 +238,8 @@ export class Run {
     this.field.retarget(this.terrain.colAt(x), this.terrain.rowAt(y));
     this.horde.act(n, x, y, TICK_SECONDS, this.field);
     const { horde, structures } = this;
-    if (this.arsenal.step(n, x, y, horde.alive, structures.all) > 0) horde.removeDead(this.dropGem);
-    structures.settle();
+    if (this.arsenal.step(n, x, y, horde.alive, structures.all) > 0) horde.removeDead(this.onDeath);
+    structures.settle(this.onRuin);
     this.stepHazards(n, x, y);
     if (this.applyHit(n) || this.reachedEnd(n)) {
       this.tickCount = n;
@@ -247,13 +254,15 @@ export class Run {
 
   /**
    * Paso 7 (spec simulation-loop): 7.1 recogibles de los tres tipos en una pasada, en orden de
-   * creación; la XP sube de nivel y el oro y la madera van a sus contadores.
+   * creación; la XP sube de nivel y el oro y la madera van a sus contadores; 7.2 vetas en el orden
+   * de su lista: cada una activa en contacto suma su oro y queda agotada.
    */
   private collect(x: number, y: number): void {
     const { gain } = this;
     this.pickups.step(x, y, this.player.radius, this.player.pickupRadius, gain);
     if (gain.xp > 0) this.experience.gain(gain.xp);
     this.stock.add(gain.gold, gain.wood);
+    for (const v of this.veins) this.stock.add(v.tap(x, y, this.player.radius), 0);
   }
 
   /**
@@ -277,7 +286,7 @@ export class Run {
   private stepHazards(n: number, x: number, y: number): void {
     const { hazards, horde } = this;
     hazards.expire(n);
-    if (hazards.explode(n, horde.alive, x, y, this.player.radius)) horde.removeDead(this.dropGem);
+    if (hazards.explode(n, horde.alive, x, y, this.player.radius)) horde.removeDead(this.onDeath);
     hazards.launch(n, horde.alive, x, y);
   }
 
@@ -308,13 +317,22 @@ export class Run {
   }
 
   /**
-   * Cada muerto suelta su gema en su posición, en orden de la lista (spec xp-gems), y un guardia
-   * deja libre su hueco en el tope de su casa. Se crea una
-   * sola vez: no asigna por tick.
+   * Cada muerto suelta su gema en su posición, en orden de la lista (spec xp-gems), y después su
+   * madera si su tipo la suelta y no ha explotado por su mecha (spec enemy-hazards 0022); un
+   * guardia deja libre su hueco en el tope de su casa. Se crea una sola vez: no asigna por tick.
    */
-  private readonly dropGem = (dead: Enemy): void => {
-    this.pickups.drop('xp', dead.x, dead.y, dead.type.xp);
+  private readonly onDeath = (dead: Enemy): void => {
+    const { x, y, type } = dead;
+    this.pickups.drop('xp', x, y, type.xp);
+    const wood = dead.detonated ? 0 : this.rules.resources.woodFor(type.id);
+    if (wood > 0) this.pickups.drop('wood', x, y, wood);
     dead.post?.release();
+  };
+
+  /** Una estructura que queda en ruina suelta su oro en su posición (spec goblin-structures). */
+  private readonly onRuin = (ruin: Structure): void => {
+    const gold = this.rules.resources.goldFor(ruin.site.type.id);
+    if (gold > 0) this.pickups.drop('gold', ruin.x, ruin.y, gold);
   };
 
   /** Los enemigos nuevos van al final de la lista y no se mueven en el tick en que aparecen. */
@@ -372,7 +390,7 @@ export class Run {
       pickups,
       gems,
       resources: Object.freeze({ gold: this.stock.gold, wood: this.stock.wood }),
-      veins: NO_VEINS,
+      veins: Object.freeze(this.veins.map(toVeinSnapshot)),
       progression: toProgressionSnapshot(this.experience),
       offer: toOfferSnapshot(this.board),
       upgrades: toUpgradeLevels(this.rules.upgrades, this.board),

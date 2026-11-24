@@ -45,7 +45,7 @@
 
 ## 2. Dominio · fuentes y vetas (TDD)
 
-- [ ] 2.1 **Drops.** `Enemy.detonated`, `onDeath` (gema y luego madera), `StructureField.settle(onRuin)` con el oro
+- [x] 2.1 **Drops.** `Enemy.detonated`, `onDeath` (gema y luego madera), `StructureField.settle(onRuin)` con el oro
   tras las bajas del paso de armas. Rojo: `tests/domain/run-resource-drops.test.ts`.
   Escenarios: `enemy-hazards` · "Madera del barril abatido" (sus 7); `goblin-structures` · "Vida, destrucción y
   ruina" › "Daño que no destruye", "Oro de una casa destruida", "Oro de una torre recogido", "Dos estructuras
@@ -55,7 +55,7 @@
   barril recogida en su tick"; "Tope" › "Tope de oro lleno"; "Recolocación" › "Barril abatido sobre un tronco";
   `simulation-loop` · "Orden de los pasos" › "Las armas actúan antes que la mecha", "Las estructuras se destruyen tras
   las bajas", "Oro de una estructura recogido en su tick".
-- [ ] 2.2 **`GoldVein` y paso 7.2**, `RunSetup.veins`, `veins` en el snapshot. Rojo: `tests/domain/run-veins.test.ts`.
+- [x] 2.2 **`GoldVein` y paso 7.2**, `RunSetup.veins`, `veins` en el snapshot. Rojo: `tests/domain/run-veins.test.ts`.
   Escenarios: `resources` · "Vetas de oro al pasar" (sus 7); `simulation-loop` · "Snapshot" › "Vetas en el snapshot
   del motor"; "Orden de los pasos" › "Recogibles antes que las vetas", "Sin recursos en el tick de la victoria"
   (vetas); "Determinismo" › "Snapshot no mutable desde fuera" (vetas).
