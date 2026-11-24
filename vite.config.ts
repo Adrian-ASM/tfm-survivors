@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 import { devCsp } from './config/csp.ts';
 
@@ -10,6 +11,13 @@ export default defineConfig({
     target: 'es2022',
     // Phaser 4 completo ocupa ~1,4 MB (≈380 KB gzip); medido en el change 0001. El aviso salta por encima de esto.
     chunkSizeWarningLimit: 1600,
+    // Dos páginas: el juego y la presentación del TFM (`slides/`, servida en /tfm-survivors/slides/).
+    rolldownOptions: {
+      input: {
+        main: fileURLToPath(new URL('./index.html', import.meta.url)),
+        slides: fileURLToPath(new URL('./slides/index.html', import.meta.url)),
+      },
+    },
   },
   test: {
     include: ['tests/**/*.test.ts'],
