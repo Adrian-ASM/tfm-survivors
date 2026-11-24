@@ -9,7 +9,7 @@
 
 ## 0. Mediciones previas (antes de tocar código)
 
-- [ ] 0.1 **M0, línea base.** En la misma máquina, sin cambios de código: `npm run bench` (caso "Peor caso con gemas")
+- [x] 0.1 **M0, línea base.** *Medido: lote 31,8 / 32,0 s; bench gemas 0,2154 / 0,1744 ms; 27/50, 26,88 mechas.* En la misma máquina, sin cambios de código: `npm run bench` (caso "Peor caso con gemas")
   y tiempo de pared del lote de balance, dos veces. Anotar en `docs/ai-log/`. Congelar
   `tests/support/balanceBaseline.ts` (resultado, tick final y bajas de las semillas 1..50 con el bot v3, y la media de
   mechas) y la huella de los campos de combate del contenido (waves, enemies, weapons, upgrades, player, XP de
