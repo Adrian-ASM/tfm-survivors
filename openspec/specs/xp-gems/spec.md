@@ -42,12 +42,15 @@ desconocido MUST impedir que la partida arranque con un error que nombre el camp
 - **THEN** la carga tiene éxito
 
 ### Requirement: Suelta de gema por baja
-El sistema SHALL crear, por cada enemigo dado de baja por armas en un tick, exactamente una gema en la posición que
-tenía el enemigo en el paso de armas de ese tick, o en la que fije "Recolocación de gemas en celdas no caminables" si
-esa posición está en una celda no caminable, con un valor de XP igual al `xp` de su tipo (ver `enemy-spawning`) y el
-radio `gemRadius`. Las gemas de las bajas de un mismo tick se crean en el orden de la lista de enemigos. Cada gema
-tiene un identificador único en la partida que no se reutiliza. Crear gemas MUST NOT consumir azar. Una gema creada
-en un tick participa en el paso de gemas de ese mismo tick (ver `simulation-loop`).
+El sistema SHALL crear, por cada enemigo dado de baja en un tick, por armas o por explosión (la del propio barril que
+explota o una ajena, ver `enemy-hazards`), exactamente una gema en la posición que tenía el enemigo en el paso en que
+queda dado de baja (paso de armas o paso de peligros, ver "Orden de los pasos del tick" en `simulation-loop`), o en
+la que fije "Recolocación de gemas en celdas no caminables" si esa posición está en una celda no caminable, con un
+valor de XP igual al `xp` de su tipo (ver `enemy-spawning`) y el radio `gemRadius`. Las gemas de las bajas de un mismo
+paso se crean en el orden de la lista de enemigos; las del paso de armas, antes que las del paso de peligros. Cada
+gema tiene un identificador único en la partida que no se reutiliza. Crear gemas MUST NOT consumir azar. Una gema
+creada en un tick participa en el paso de gemas de ese mismo tick (ver `simulation-loop`). Una baja suelta una sola
+gema aunque reciba daño de armas y de explosiones en el mismo tick.
 
 #### Scenario: Un goblin-torch abatido suelta una gema
 - **GIVEN** un jugador quieto en (480, 270) y un `goblin-torch` con vida 4 en (780, 270) que permanece ahí
@@ -83,6 +86,19 @@ en un tick participa en el paso de gemas de ese mismo tick (ver `simulation-loop
 - **GIVEN** dos partidas con la misma semilla y el mismo estado salvo que en una hay 10 gemas en el suelo más
 - **WHEN** ambas ejecutan el mismo tick sin oferta de mejora
 - **THEN** el estado del `RandomGenerator` es el mismo en las dos tras el tick
+
+#### Scenario: El barril que explota suelta su gema
+- **GIVEN** el contenido por defecto, el jugador lejos y un `goblin-barrel` que explota en el tick n en la posición P
+  (celda caminable)
+- **WHEN** se ejecuta el tick n
+- **THEN** el snapshot del tick n contiene exactamente 1 gema nueva de ese barril, en P, que da 2 de XP
+
+#### Scenario: Bajas por armas y por explosión en el mismo tick
+- **GIVEN** un `goblin-torch` A (antes en la lista) que muere por el Linter en el tick n y un `goblin-torch` B que
+  muere por una explosión en el mismo tick
+- **WHEN** se ejecuta el tick n
+- **THEN** hay 2 gemas nuevas y la de A tiene un identificador creado antes que la de B
+- **AND** si en otra partida A muere por la explosión y B por el Linter, la de B se crea antes que la de A
 
 ### Requirement: Gemas en el suelo
 El sistema SHALL mantener cada gema no atraída quieta en su posición, sin caducidad, mientras su distancia al
@@ -277,3 +293,4 @@ misma regla.
 <!-- historial: 0015-procedural-map (2026-11-23) -->
 <!-- historial: 0016-map-art (2026-11-23) -->
 <!-- historial: 0019-flow-field (2026-11-24) -->
+<!-- historial: 0020-enemy-behaviors (2026-11-24) -->

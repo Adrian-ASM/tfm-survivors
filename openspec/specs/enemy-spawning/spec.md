@@ -9,25 +9,26 @@ Los enemigos aparecen en oleadas que crecen con el tiempo: un director gasta un 
 
 ### Requirement: Catálogo de tipos de enemigo
 El sistema SHALL definir los tipos de enemigo exclusivamente desde contenido. Cada tipo tiene un identificador
-único, una velocidad, un radio, un coste, una vida (`health`), un daño por contacto (`damage`) y la XP que suelta
-al morir (`xp`). El contenido por defecto MUST incluir exactamente 3 tipos, uno por unidad goblin del pack:
-`goblin-torch`, `goblin-tnt` y `goblin-barrel`. Los tipos solo se diferencian en esos valores, que son los de los
-tres tipos anteriores (`bug`, `memory-leak` y `merge-conflict`) sin cambios. Ningún id de enemigo del contenido es
-`bug`, `memory-leak` ni `merge-conflict`.
+único, una velocidad, un radio, un coste, una vida (`health`), la XP que suelta al morir (`xp`), un comportamiento
+(ver "Comportamiento por tipo en contenido" en `enemy-behavior`) y, opcionalmente, un daño por contacto (`damage`): un
+tipo sin `damage` nunca hace daño por contacto (ver `player-health`). El contenido por defecto MUST incluir
+exactamente 3 tipos, uno por unidad goblin del pack: `goblin-torch`, `goblin-tnt` y `goblin-barrel`. Ningún id de
+enemigo del contenido es `bug`, `memory-leak` ni `merge-conflict`.
 
 #### Scenario: Contenido por defecto
 - **GIVEN** el contenido por defecto del repositorio
 - **WHEN** se carga el contenido
 - **THEN** el catálogo tiene 3 tipos con identificadores `goblin-torch`, `goblin-tnt` y `goblin-barrel`
-- **AND** cada uno tiene una velocidad > 0, un radio > 0, un coste > 0, una vida > 0, un daño > 0 y una XP ≥ 1
+- **AND** cada uno tiene una velocidad > 0, un radio > 0, un coste > 0, una vida > 0, una XP ≥ 1 y un comportamiento
+- **AND** `goblin-torch` y `goblin-tnt` tienen un daño por contacto > 0 y `goblin-barrel` no tiene daño por contacto
 
-#### Scenario: Stats heredados sin cambios
+#### Scenario: Stats por defecto
 - **GIVEN** el contenido por defecto del repositorio
 - **WHEN** se carga el contenido
 - **THEN** `goblin-torch` tiene `speed` 90, `radius` 10, `cost` 1, `damage` 5, `health` 10 y `xp` 1
 - **AND** `goblin-tnt` tiene `speed` 45, `radius` 22, `cost` 3, `damage` 15, `health` 45 y `xp` 4
-- **AND** `goblin-barrel` tiene `speed` 70, `radius` 16, `cost` 2, `damage` 8, `health` 20 y `xp` 2
-- **AND** `content/waves.json` cita en cada tramo los mismos tipos que antes del change, con el id renombrado
+- **AND** `goblin-barrel` tiene `speed` 70, `radius` 16, `cost` 2, `health` 20, `xp` 2 y ningún `damage`
+- **AND** `content/waves.json` cita en cada tramo los mismos tipos que antes del change
 
 #### Scenario: XP por defecto de cada tipo
 - **GIVEN** el contenido por defecto del repositorio
@@ -36,17 +37,22 @@ tres tipos anteriores (`bug`, `memory-leak` y `merge-conflict`) sin cambios. Nin
 
 #### Scenario: Valores de cada tipo llegan al dominio
 - **GIVEN** un tipo `goblin-torch` con `{ "speed": 90, "radius": 10, "cost": 1, "health": 5, "damage": 10, "xp": 3 }`
+  y su comportamiento de persecución
 - **WHEN** se carga el contenido y aparece un enemigo `goblin-torch`
 - **THEN** ese enemigo tiene radio 10, vida 5 y se mueve a 90 unidades/s
 - **AND** un golpe suyo resta 10 de vida al jugador
 - **AND** al morir por armas suelta una gema que da 3 de XP
 
 ### Requirement: Contenido de enemigos y oleadas validado
-El sistema SHALL validar con zod los tipos de enemigo, la tabla de oleadas y los parámetros de spawn antes de que
-lleguen al dominio. Un contenido inválido MUST impedir que la partida arranque, con un error que nombre el campo
-inválido. Las reglas son las siguientes:
-- `speed`, `radius`, `cost`, `health` y `damage` son > 0.
+El sistema SHALL validar con zod los tipos de enemigo (comportamiento incluido, ver "Comportamiento por tipo en
+contenido" en `enemy-behavior`), la tabla de oleadas y los parámetros de spawn antes de que lleguen al dominio. Un
+contenido inválido MUST impedir que la partida arranque, con un error que nombre el campo inválido. Las reglas son las
+siguientes:
+- `speed`, `radius`, `cost` y `health` son > 0.
+- `damage`, si está presente, es > 0; si falta, el tipo no hace daño por contacto.
 - `xp` es un entero ≥ 1.
+- Cada tipo tiene un comportamiento válido; un tipo sin comportamiento hace fallar la carga con un error que nombra
+  el tipo.
 - El diámetro de cada tipo cabe en la arena: 2 × `radius` ≤ min(ancho, alto).
 - Los `id` de los tipos no se repiten.
 - La tabla de oleadas tiene ≥ 1 tramo, el primero tiene `fromSecond` = 0 y los `fromSecond` son estrictamente
@@ -107,10 +113,20 @@ El contenido por defecto MUST fijar `ringRadius` 1.500.
 - **WHEN** se carga el contenido
 - **THEN** la carga falla con un error que menciona `health`
 
-#### Scenario: Daño cero o ausente
-- **GIVEN** un tipo `goblin-torch` con `"damage": 0` o sin el campo `damage`
+#### Scenario: Daño cero o negativo
+- **GIVEN** un tipo `goblin-torch` con `"damage": 0` o con `"damage": -3`
 - **WHEN** se carga el contenido
 - **THEN** la carga falla con un error que menciona `damage`
+
+#### Scenario: Daño ausente
+- **GIVEN** el contenido por defecto con `goblin-torch` sin el campo `damage`
+- **WHEN** se carga el contenido y un `goblin-torch` queda en contacto con el jugador durante 60 ticks
+- **THEN** la carga tiene éxito y la vida del jugador no baja por ese contacto
+
+#### Scenario: Tipo sin comportamiento
+- **GIVEN** el contenido por defecto con `goblin-torch` sin comportamiento
+- **WHEN** se carga el contenido
+- **THEN** la carga falla con un error que menciona `goblin-torch` y el comportamiento
 
 #### Scenario: XP inválida o ausente
 - **GIVEN** un tipo `goblin-torch` con `"xp": 0`, con `"xp": -1`, con `"xp": 1.5` o sin el campo `xp`
@@ -437,18 +453,23 @@ enemigo puede aparecer dentro del rectángulo visible de la cámara; esto se ace
 
 ### Requirement: Vida y baja de enemigos
 El sistema SHALL dar a cada enemigo, al aparecer, una vida igual al `health` de su tipo. Aplicar a un enemigo
-vivo un daño d > 0 MUST reducir su vida en d, sin bajar de 0. Cuando su vida llega a 0, el enemigo queda dado de
-baja: deja de estar vivo de forma irreversible, suelta exactamente una gema con el `xp` de su tipo en su posición
-(ver `xp-gems`) y desde ese momento:
+vivo un daño d > 0 MUST reducir su vida en d, sin bajar de 0. Un enemigo queda dado de baja cuando su vida llega a 0
+o cuando explota al terminar su mecha (ver "Kamikaze del Goblin Barril" en `enemy-behavior`): deja de estar vivo de
+forma irreversible, suelta exactamente una gema con el `xp` de su tipo en su posición (ver `xp-gems`) y desde ese
+momento:
 - no aparece en ningún snapshot;
-- no se mueve ni hace contacto con el jugador;
-- no es objetivo ni recibe daño de ningún arma;
+- no se mueve, no cambia de estado, no lanza ni explota, ni hace contacto con el jugador;
+- no es objetivo ni recibe daño de ningún arma ni de ninguna explosión;
 - no cuenta para `maxAlive`;
 - su identificador no se reutiliza para ningún otro enemigo de la partida.
 
-Aplicar daño a un enemigo ya dado de baja no tiene efecto ni suelta otra gema. En juego, el único mecanismo que daña
-a los enemigos son las armas (ver `auto-weapons`): cada impacto resta el `damage` efectivo del arma que golpea (base
-de contenido más mejoras, ver `upgrades`). El contacto con el jugador no les quita vida.
+Aplicar daño a un enemigo ya dado de baja no tiene efecto ni suelta otra gema. En juego, los mecanismos que dañan a
+los enemigos son las armas (ver `auto-weapons`), cuyos impactos restan el `damage` efectivo del arma que golpea (base
+de contenido más mejoras, ver `upgrades`), y las explosiones (ver "Explosión de área" en `enemy-hazards`), que restan
+su daño de explosión. Una baja por explosión, sea la del barril que explota o la de un enemigo alcanzado, cuenta y
+suelta gema igual que una baja por armas. Un enemigo que llega a vida 0 por armas y por una explosión en el mismo tick
+queda dado de baja una sola vez, en el paso de armas (ver "Orden de los pasos del tick" en `simulation-loop`). El
+contacto con el jugador no les quita vida.
 
 #### Scenario: Vida inicial del tipo
 - **GIVEN** un tipo `goblin-torch` con `health` 5
@@ -499,6 +520,24 @@ de contenido más mejoras, ver `upgrades`). El contacto con el jugador no les qu
 - **WHEN** recibe 1 impacto de un proyectil del Linter creado tras la elección
 - **THEN** sigue vivo con vida 1
 
+#### Scenario: Baja por explosión ajena
+- **GIVEN** un `goblin-torch` con identificador X y vida 10 dentro del radio de una explosión de daño 25 en el tick n
+- **WHEN** se ejecuta el tick n
+- **THEN** el snapshot del tick n no contiene a X, contiene una gema nueva de valor 1 en la posición que tenía X y las
+  bajas han subido en 1
+
+#### Scenario: Armas y explosión en el mismo tick
+- **GIVEN** un `goblin-torch` con vida 4 que recibe en el tick n un impacto mortal del Linter y está dentro del radio
+  de una explosión de ese mismo tick
+- **WHEN** se ejecuta el tick n
+- **THEN** las bajas suben exactamente en 1 y hay exactamente 1 gema nueva de ese `goblin-torch`
+
+#### Scenario: El hueco del barril que explota se repone en el mismo tick
+- **GIVEN** `maxAlive` 1, un único `goblin-barrel` vivo cuya mecha termina en el tick n y un director con presupuesto
+  para 1 `goblin-torch` y `goblin-torch` como tipo pendiente
+- **WHEN** se ejecuta el tick n
+- **THEN** el snapshot del tick n tiene exactamente 1 enemigo vivo, un `goblin-torch` distinto del barril
+
 <!-- historial: 0002-enemy-spawning (2026-11-19) -->
 <!-- historial: 0003-collisions-and-damage (2026-11-19) -->
 <!-- historial: 0004-auto-weapons (2026-11-19) -->
@@ -508,3 +547,4 @@ de contenido más mejoras, ver `upgrades`). El contacto con el jugador no les qu
 <!-- historial: 0016-map-art (2026-11-23) -->
 <!-- historial: 0017-fullscreen-view (2026-11-24) -->
 <!-- historial: 0019-flow-field (2026-11-24) -->
+<!-- historial: 0020-enemy-behaviors (2026-11-24) -->
