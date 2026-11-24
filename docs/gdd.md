@@ -116,7 +116,8 @@ Should.
 |---|---|
 | **Must** (hecho) | Movimiento · 2 armas automáticas · oleadas · colisiones y vida · gemas de XP · subida de nivel con 3 opciones · temporizador, victoria y derrota · HUD · menú · guardado local + exportar/importar · despliegue público (0001–0011) |
 | **Must** (nuevo) | Arte con sprites del pack CC0 y tema medieval (0012) · mundo grande con cámara y límites (0013) · mapa procedural por semilla con colisión (0015) · arte del mapa (0016) · vista a pantalla completa (0017) · recorte del arte del mapa fuera de cámara (0018) · navegación por campo de flujo (0019) |
-| **Should** | Comportamientos de enemigos, casas goblin y campamentos (0020) · elección de personaje y Guerrero (0021) · recursos y ovejas (0022) · progresión separada y castillo-tienda (0023) · solares de obra: casa y torre (0024) · modo Objetivos · meta-progresión guardada · un jefe final · opciones de audio y accesibilidad · controles táctiles |
+| **Should** | Comportamientos de enemigos, casas goblin y campamentos (0020) · elección de personaje y Guerrero (0021) · recursos y ovejas (0022) · progresión separada y castillo-tienda (0023) · solares de obra: casa y torre (0024) · pasada de equilibrio como diseño (balance-pass-2, número al empezar) ·
+modo Objetivos · meta-progresión guardada · un jefe final · opciones de audio y accesibilidad · controles táctiles |
 | **Could** | UI del pack · ciclo día/noche · minimapa/niebla de guerra · modo Infinito · victoria "defender el castillo" · talar árboles · colocación libre de edificios · jefes por escala · audio · login con Google + Supabase · reto diario con semilla compartida · i18n ES/EN · PWA |
 | **Won't** | Multijugador · desniveles/terreno multinivel · monetización · leaderboard con re-simulación · enemigos dibujados con IA |
 
@@ -178,6 +179,24 @@ atascada.**
 **0024 · build-sites (criterio movido desde el campo de flujo).**
 - Given un edificio nuevo, When se construye, Then el campo se recalcula y los enemigos lo rodean.
 
+**balance-pass-2 (número al empezar) · Como jugador quiero que cada enemigo y cada personaje se sienta distinto y
+justo para que la partida sea divertida y no solo "dentro de la banda".**
+- Motivo: desde 0010 cada change solo recalibra para mantener el gate (25–35/50 victorias del bot, quieto pierde
+  antes de 180 s); es una red de seguridad, no diseño. En 0020 el gate cuadró pero el Goblin Barril casi nunca llega
+  a encender la mecha en partida real porque el arco lo mata antes. Se hace después de 0024 porque personajes,
+  recursos, castillo-tienda y solares mueven los números; hacerlo antes no compensa.
+- Mientras tanto, los changes pueden hacer ajustes puntuales cuando una mecánica no se percibe (p. ej. el barril,
+  que ya mide 0020b).
+- Given los stats (vida, daño, velocidad) de cada tipo de enemigo y de cada personaje (Arquero y Guerrero), When
+  se revisan, Then quedan en `content/` con una tabla de intención por tipo y las victorias del bot siguen en banda.
+- Given un lote de semillas, When se mide, Then se informa además de la tasa de victoria: daño recibido por fuente,
+  barriles y TNT que llegan a actuar, ritmo de subidas de nivel y tasa de elección de mejoras (parte ya medida a
+  mano en `openspec/changes/archive/2026-11-24-0020-enemy-behaviors/measurements.md`).
+- Given el bot de referencia, When se revisa tras personajes, recursos y solares, Then sigue siendo representativo
+  del juego real (deuda W3 de 0020) o se documenta qué ya no cubre.
+- Given una sesión de playtest humano, When termina, Then hay notas (qué no se percibe, qué frustra, qué
+  divierte) que alimentan los ajustes; la diversión no la mide el bot.
+
 ## Estado del backlog Must hecho (2026-11-20, sin cambios)
 | Estado | Contenido | Change |
 |---|---|---|
@@ -209,6 +228,7 @@ Pendientes:
 | 0022 resources-sheep | Recursos recogibles con tipo y ovejas | Should | |
 | 0023 split-progression-castle | Progresión separada + castillo-tienda (castillo ya en el mapa) | Should | |
 | 0024 build-sites | Solares de obra: casa y torre (incluye el recálculo del campo de flujo por edificios) | Should | |
+| balance-pass-2 (número al empezar) | Pasada de equilibrio como diseño, no como red de seguridad: stats por tipo de enemigo y de personaje, métricas más allá de la tasa de victoria, revisión del bot de referencia y playtest humano con notas | Should | |
 | Resto | UI del pack, día/noche, minimapa, jefes, audio | Could | |
 
 Notas:
