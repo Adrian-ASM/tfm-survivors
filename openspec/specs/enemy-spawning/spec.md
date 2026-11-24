@@ -42,9 +42,9 @@ tres tipos anteriores (`bug`, `memory-leak` y `merge-conflict`) sin cambios. Nin
 - **AND** al morir por armas suelta una gema que da 3 de XP
 
 ### Requirement: Contenido de enemigos y oleadas validado
-El sistema SHALL validar con zod los tipos de enemigo, la tabla de oleadas, la vista y los parámetros de spawn
-antes de que lleguen al dominio. Un contenido inválido MUST impedir que la partida arranque, con un error que
-nombre el campo inválido. Las reglas son las siguientes:
+El sistema SHALL validar con zod los tipos de enemigo, la tabla de oleadas y los parámetros de spawn antes de que
+lleguen al dominio. Un contenido inválido MUST impedir que la partida arranque, con un error que nombre el campo
+inválido. Las reglas son las siguientes:
 - `speed`, `radius`, `cost`, `health` y `damage` son > 0.
 - `xp` es un entero ≥ 1.
 - El diámetro de cada tipo cabe en la arena: 2 × `radius` ≤ min(ancho, alto).
@@ -55,8 +55,36 @@ nombre el campo inválido. Las reglas son las siguientes:
 - Cada tramo tiene ≥ 1 tipo en `types` y cada tipo citado existe en el catálogo.
 - `maxAlive` y `maxAttempts` son enteros ≥ 1.
 - `maxBudget` es > 0 y ≥ el mayor `cost` del catálogo.
-- `margin` y `minDistance` son ≥ 0.
-- `width` y `height` de la vista son > 0.
+- `minDistance` es ≥ 0.
+- `ringRadius` (radio del anillo de aparición) es > la media diagonal del tope de vista del contenido
+  (√(`maxView.width`² + `maxView.height`²) / 2), de modo que ningún punto del anillo sin recorte cae dentro de una
+  vista centrada en el jugador, sea cual sea la ventana.
+- Los parámetros de spawn MUST NOT incluir `margin` ni ningún tamaño de vista: un campo `margin` o desconocido hace
+  fallar la carga con un error que lo nombra.
+
+El contenido por defecto MUST fijar `ringRadius` 1.500.
+
+#### Scenario: Radio del anillo por defecto
+- **GIVEN** el contenido por defecto del repositorio
+- **WHEN** se carga el contenido
+- **THEN** el dominio recibe `ringRadius` 1.500 y ningún tamaño de vista ni de ventana
+
+#### Scenario: Radio del anillo fuera de rango
+- **GIVEN** el contenido por defecto (tope 2.560 × 1.440) con, en un caso cada vez, `ringRadius` 0, −1, 1.468 o
+  1.468,6, o sin `ringRadius`
+- **WHEN** se carga el contenido
+- **THEN** la carga falla con un error que menciona `ringRadius`
+- **AND** no se crea ninguna partida
+
+#### Scenario: Radio del anillo en el límite
+- **GIVEN** el contenido por defecto con `ringRadius` 1.468,61
+- **WHEN** se carga el contenido
+- **THEN** la carga tiene éxito
+
+#### Scenario: Margen heredado
+- **GIVEN** el contenido por defecto con `"margin": 32` en los parámetros de spawn
+- **WHEN** se carga el contenido
+- **THEN** la carga falla con un error que menciona `margin`
 
 #### Scenario: Oleada con un tipo inexistente
 - **GIVEN** un tramo con `"types": ["goblin-torch", "segfault"]` y un catálogo sin `segfault`
@@ -96,12 +124,12 @@ nombre el campo inválido. Las reglas son las siguientes:
 - **THEN** la carga tiene éxito
 
 #### Scenario: Radio que no cabe en la arena
-- **GIVEN** un tipo con `"radius": 300` y una arena de 960 × 540
+- **GIVEN** un tipo con `"radius": 1081` y la arena por defecto de 3.840 × 2.160
 - **WHEN** se carga el contenido
 - **THEN** la carga falla con un error que menciona `radius`
 
 #### Scenario: Radio en el límite exacto
-- **GIVEN** un tipo con `"radius": 270` y una arena de 960 × 540
+- **GIVEN** un tipo con `"radius": 1080` y la arena por defecto de 3.840 × 2.160
 - **WHEN** se carga el contenido
 - **THEN** la carga tiene éxito
 
@@ -257,9 +285,9 @@ alcance para más enemigos.
 
 ### Requirement: Posición de aparición fuera de la vista
 El sistema SHALL colocar cada enemigo nuevo así:
-1. Toma un punto a una distancia del jugador igual al radio del anillo, en un ángulo elegido con el
-   `RandomGenerator`. El radio del anillo es la mitad de la diagonal de la vista más `margin`:
-   √(960² + 540²) / 2 + 32 ≈ 582,727 con los valores por defecto. Depende solo de la vista, no del tamaño del mundo.
+1. Toma un punto a una distancia del jugador igual a `ringRadius` (1.500 con el contenido por defecto), en un ángulo
+   elegido con el `RandomGenerator`. El radio es un valor de contenido: no depende de la vista, de la ventana ni del
+   tamaño del mundo.
 2. Recorta ese punto a la arena (el mundo) con la misma regla que al jugador, de modo que el centro quede en
    [radio, ancho − radio] × [radio, alto − radio] usando el radio del enemigo.
 3. Acepta la posición solo si, tras el recorte, su distancia al jugador es ≥ `minDistance`.
@@ -268,56 +296,60 @@ Si la posición no se acepta, se repite el proceso hasta un total de `maxAttempt
 intento es válido, ese enemigo no aparece en este tick, el presupuesto no se gasta y el tipo pendiente se
 mantiene. El sistema MUST NOT colocar nunca un enemigo a menos de `minDistance` del jugador ni fuera del mundo. La
 posición de aparición no tiene en cuenta el mapa: un enemigo puede aparecer sobre cualquier tipo de celda, también
-`castle`.
+`castle`. La posición de aparición MUST ser la misma con cualquier tamaño de ventana y con cualquier secuencia de
+redimensionados (ver "La cámara no cambia la simulación" en `world-camera`).
 
-Un punto del anillo que no necesita recorte queda siempre fuera del rectángulo de la vista centrado en el jugador.
-Cuando el recorte actúa (jugador a menos del radio del anillo de algún borde del mundo), el enemigo puede aparecer
-dentro del rectángulo visible de la cámara; esto se acepta y solo se garantizan el mundo y `minDistance`.
+Un punto del anillo que no necesita recorte queda siempre fuera de cualquier rectángulo del tamaño del tope de vista
+centrado en el jugador (y por tanto de cualquier vista centrada en él). Cuando el recorte actúa (jugador a menos de
+`ringRadius` de algún borde del mundo) o la cámara está recortada al mundo, el enemigo puede aparecer dentro del
+rectángulo visible de la cámara; esto se acepta y solo se garantizan el mundo y `minDistance`.
 
-#### Scenario: Arena mayor que la vista
-- **GIVEN** una arena de 4.000 × 4.000, el jugador en (2.000, 2.000), una vista de 960 × 540 y `margin` 32
+#### Scenario: Arena mayor que el anillo
+- **GIVEN** una arena explícita de 4.000 × 4.000, el jugador en (2.000, 2.000) y `ringRadius` 1.500
 - **WHEN** aparecen 100 enemigos
-- **THEN** cada uno está a 582,727 ± 0,001 unidades del jugador
-- **AND** ninguno está dentro del rectángulo de la vista centrado en el jugador
+- **THEN** cada uno está a 1.500 ± 0,001 unidades del jugador
+- **AND** ninguno está dentro del rectángulo del tope de vista centrado en el jugador, (720, 1.280)–(3.280, 2.720)
 
 #### Scenario: Jugador en el centro del mundo por defecto
-- **GIVEN** el contenido por defecto (mundo de 1.920 × 1.080, vista de 960 × 540) y el jugador en (960, 540)
+- **GIVEN** el contenido por defecto (mundo de 3.840 × 2.160, `ringRadius` 1.500) y el jugador en (1.920, 1.080)
 - **WHEN** aparecen 200 enemigos
-- **THEN** el centro de cada uno queda en [radio, 1.920 − radio] × [radio, 1.080 − radio]
-- **AND** ninguno tiene el centro dentro del rectángulo visible de la cámara, (480, 270)–(1.440, 810)
-- **AND** los que no tocan el borde superior ni el inferior del mundo están a 582,727 ± 0,001 unidades del jugador
+- **THEN** el centro de cada uno queda en [radio, 3.840 − radio] × [radio, 2.160 − radio]
+- **AND** ninguno tiene el centro dentro del rectángulo del tope de vista centrado en el jugador,
+  (640, 360)–(3.200, 1.800)
+- **AND** los que no tocan el borde superior ni el inferior del mundo están a 1.500 ± 0,001 unidades del jugador
 
 #### Scenario: Jugador ante la puerta del castillo
-- **GIVEN** el contenido por defecto, la semilla 42 y el jugador quieto en su salida (990, 630), con rectángulo
-  visible de la cámara (510, 360)–(1.470, 900)
+- **GIVEN** el contenido por defecto, la semilla 42 y el jugador quieto en su salida (1.950, 1.170)
 - **WHEN** aparecen 200 enemigos
-- **THEN** el centro de cada uno queda en [radio, 1.920 − radio] × [radio, 1.080 − radio], a ≥ 200 unidades del
-  jugador y fuera de (510, 360)–(1.470, 900)
+- **THEN** el centro de cada uno queda en [radio, 3.840 − radio] × [radio, 2.160 − radio], a ≥ 200 unidades del
+  jugador y fuera de (670, 450)–(3.230, 1.890), el rectángulo visible con una ventana igual o mayor que el tope
+- **AND** por tanto fuera del rectángulo visible con una ventana de 1.280 × 720, (1.310, 810)–(2.590, 1.530), y con
+  una de 960 × 540, (1.470, 900)–(2.430, 1.440)
 
-#### Scenario: Arena igual a la vista
-- **GIVEN** una arena explícita de 960 × 540 (no la del contenido por defecto), el jugador en (480, 270) y el
-  contenido de spawn por defecto
+#### Scenario: Arena menor que el anillo
+- **GIVEN** una arena explícita de 960 × 540 en el núcleo (no la del contenido por defecto), el jugador en (480, 270)
+  y el resto del contenido de spawn por defecto
 - **WHEN** aparecen 200 enemigos
 - **THEN** el centro de cada uno queda en [radio, 960 − radio] × [radio, 540 − radio]
 - **AND** cada uno está a ≥ 200 unidades del jugador
 - **AND** cada uno toca un borde de la arena: x = radio, x = 960 − radio, y = radio o y = 540 − radio
 
 #### Scenario: Jugador en una esquina
-- **GIVEN** el mundo de 1.920 × 1.080, el jugador quieto en (16, 16) con una vida máxima suficiente para no llegar a
+- **GIVEN** el mundo de 3.840 × 2.160, el jugador quieto en (16, 16) con una vida máxima suficiente para no llegar a
   0 en 3.600 ticks, y el contenido de spawn por defecto
 - **WHEN** se ejecutan 3.600 ticks con un tramo de `budgetPerSecond` 5
 - **THEN** cada enemigo aparecido está dentro del mundo y a ≥ 200 unidades del jugador en el tick de su
   aparición
 
 #### Scenario: Jugador en la esquina opuesta
-- **GIVEN** el mundo de 1.920 × 1.080, el jugador quieto en (1.904, 1.064) con una vida máxima suficiente para no
+- **GIVEN** el mundo de 3.840 × 2.160, el jugador quieto en (3.824, 2.144) con una vida máxima suficiente para no
   llegar a 0 en 3.600 ticks, y el contenido de spawn por defecto
 - **WHEN** se ejecutan 3.600 ticks con un tramo de `budgetPerSecond` 5
 - **THEN** cada enemigo aparecido está dentro del mundo y a ≥ 200 unidades del jugador en el tick de su
   aparición
 
 #### Scenario: Ninguna posición válida
-- **GIVEN** el mundo de 1.920 × 1.080, `minDistance` 2.500 (mayor que su diagonal, ≈ 2.202,9) y `maxAttempts` 8
+- **GIVEN** el mundo de 3.840 × 2.160, `minDistance` 4.500 (mayor que su diagonal, ≈ 4.405,8) y `maxAttempts` 8
 - **WHEN** se ejecutan 600 ticks con un tramo de `budgetPerSecond` 5
 - **THEN** no hay ningún enemigo vivo y la partida sigue avanzando sin error
 - **AND** en cada tick se hacen como mucho 8 intentos de posición
@@ -332,14 +364,14 @@ dentro del rectángulo visible de la cámara; esto se acepta y solo se garantiza
 - **GIVEN** el contenido por defecto salvo una vida máxima del jugador suficiente para no llegar a 0 en
   36.000 ticks, semilla 7 y un input aleatorio generado por una semilla fija
 - **WHEN** se ejecutan 36.000 ticks (10 min)
-- **THEN** ningún enemigo aparece fuera de [radio, 1.920 − radio] × [radio, 1.080 − radio] ni a menos de 200
+- **THEN** ningún enemigo aparece fuera de [radio, 3.840 − radio] × [radio, 2.160 − radio] ni a menos de 200
   unidades del jugador
 
-#### Scenario: Fuera de pantalla en una partida real
-- **GIVEN** la build de producción con `?e2e&seed=42` (mapa real) y sin input de movimiento (el jugador queda en su
-  salida (990, 630) y el rectángulo visible de la sonda en (510, 360)–(1.470, 900))
-- **WHEN** se pintan 600 frames y se leen las posiciones de aparición de los enemigos nuevos
-- **THEN** ninguna posición de aparición queda dentro del rectángulo visible
+#### Scenario: Mismas apariciones con cualquier ventana
+- **GIVEN** dos partidas con el contenido por defecto, la semilla 42, input (0, 0) y la política de elección fija,
+  una pintada con una ventana de 960 × 540 y otra con una de 2.560 × 1.440 que pasa a 1.280 × 720 en el tick 600
+- **WHEN** ambas ejecutan 1.200 ticks
+- **THEN** en cada tick aparecen los mismos enemigos en ambas: mismo identificador, tipo y posición de aparición
 
 ### Requirement: Vida y baja de enemigos
 El sistema SHALL dar a cada enemigo, al aparecer, una vida igual al `health` de su tipo. Aplicar a un enemigo
@@ -412,3 +444,4 @@ de contenido más mejoras, ver `upgrades`). El contacto con el jugador no les qu
 <!-- historial: 0012-sprite-rendering (2026-11-22) -->
 <!-- historial: 0013-world-camera (2026-11-23) -->
 <!-- historial: 0016-map-art (2026-11-23) -->
+<!-- historial: 0017-fullscreen-view (2026-11-24) -->

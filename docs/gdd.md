@@ -194,7 +194,7 @@ Pendientes:
 |---|---|---|---|
 | 0015 procedural-map | **Hecho (PR #36)**: mapa por semilla (hierba, troncos, río con puentes) puro y determinista, colisión del jugador, gemas recolocadas, colores de reserva, bot de referencia que esquiva y balance recalibrado; reserva la zona de inicio (ADR-0013) | Must | Sustituido por mediciones previas en explore |
 | 0016 map-art | Arte del mapa: agua con espuma, orillas con autotile, árboles (copa), puente y castillo sólido (núcleo, generador, firma dorada, bot, punto de salida; `player.speed` 215), con su procedencia CC0 | Must | Autotiling de orillas y si el mapa se ve bien (puerta visual al inicio del apply) |
-| 0017 fullscreen-view | La vista ocupa toda la ventana; aparición de enemigos desacoplada del tamaño de pantalla; mundo mayor que cualquier monitor razonable; HUD reubicable; recalibrar balance | Must | |
+| 0017 fullscreen-view | **Hecho (PR #41)**: la vista ocupa toda la ventana (tope 2.560 × 1.440); aparición de enemigos desacoplada del tamaño de pantalla (anillo 1.500); mundo 3.840 × 2.160 (64 × 36); HUD y overlays anclados y escalados ×1/×2; balance recalibrado por oleadas (25/50) | Must | |
 | 0018 flow-field | Navegación por campo de flujo | Must | Con cientos de enemigos |
 | 0019 enemy-behaviors | Comportamientos, casas goblin y campamentos | Should | |
 | 0020 characters | Elección de personaje y Guerrero | Should | ¿Es divertido el Guerrero? |

@@ -196,11 +196,12 @@ como sprites con aspecto de reserva y no dependen de la hoja del fondo, salvo la
 - **THEN** su sprite es una forma de 20 px de diámetro centrada en (300, 200) (error ≤ 0,001)
 
 #### Scenario: Fondo de reserva en el mundo entero
-- **GIVEN** la build de producción con `?e2e&map=empty&seed=7`, una prueba que hace fallar la petición de la hoja del
-  fondo y un input que lleva al jugador a las cuatro esquinas del mundo
-- **WHEN** se pintan los frames hasta que el jugador ha tocado las cuatro esquinas
-- **THEN** la sonda informa de que el fondo usa aspecto de reserva y en cada frame el rectángulo visible de la cámara
-  está entero dentro del rectángulo de mundo que cubre ese relleno, (0, 0)–(1.920, 1.080)
+- **GIVEN** la build de producción con `?e2e&manual&map=empty&seed=7` en una ventana de 1.280 × 720, una prueba que
+  hace fallar la petición de la hoja del fondo y un input que lleva al jugador a las cuatro esquinas del mundo
+- **WHEN** se avanza con `step(n)` hasta que el jugador ha tocado las cuatro esquinas, leyendo la sonda tras cada
+  llamada
+- **THEN** la sonda informa de que el fondo usa aspecto de reserva y en cada lectura el rectángulo visible de la
+  cámara está entero dentro del rectángulo de mundo que cubre ese relleno, (0, 0)–(3.840, 2.160)
 - **AND** no hay errores no capturados
 
 ### Requirement: Escala y origen
@@ -407,11 +408,11 @@ MUST NOT dejar animaciones en curso ni errores no capturados.
 El sistema SHALL pintar un sprite de flecha por cada proyectil del snapshot y un sprite de gema por cada gema, en su
 posición (error ≤ 0,001) y con el aspecto del repositorio, ambos en `idle`. El pulso de Tests no usa datos de
 aspecto: conserva su anillo (ver `auto-weapons`). Mientras existe una partida, el fondo de hierba MUST cubrir el mundo
-entero, (0, 0)–(ancho, alto) en coordenadas de mundo ((0, 0)–(1.920, 1.080) con el contenido por defecto), quedar por
+entero, (0, 0)–(ancho, alto) en coordenadas de mundo ((0, 0)–(3.840, 2.160) con el contenido por defecto), quedar por
 debajo de todos los demás elementos, incluidas las celdas pintadas del mapa, y estar fijo en el mundo: su posición de
-mundo no cambia entre snapshots y su posición en pantalla solo cambia con el rectángulo visible de la cámara (ver
-`world-camera`). En ningún frame de una partida MUST verse dentro del rectángulo visible una zona sin fondo. Esta spec
-no fija si el fondo se ve en modo menú.
+mundo no cambia entre snapshots ni al redimensionar la ventana y su posición en pantalla solo cambia con el
+rectángulo visible de la cámara (ver `world-camera`). En ningún frame de una partida, con ninguna ventana, MUST verse
+dentro del rectángulo visible una zona sin fondo. Esta spec no fija si el fondo se ve en modo menú.
 
 #### Scenario: Flechas y gemas
 - **GIVEN** un snapshot con 3 proyectiles y 4 gemas
@@ -425,17 +426,25 @@ no fija si el fondo se ve en modo menú.
 - **THEN** hay 1 anillo de radio 90 centrado en (480, 270) y ningún sprite de hoja para el pulso
 
 #### Scenario: Fondo de hierba en el mundo entero
-- **GIVEN** el mundo por defecto y una partida en curso con el jugador en (960, 540) y, después, en (100, 100)
+- **GIVEN** el mundo por defecto y una partida en curso con el jugador en (1.920, 1.080) y, después, en (100, 100)
 - **WHEN** se pinta cada snapshot
-- **THEN** en ambos el fondo cubre el rectángulo de mundo (0, 0)–(1.920, 1.080), está por debajo de las celdas
+- **THEN** en ambos el fondo cubre el rectángulo de mundo (0, 0)–(3.840, 2.160), está por debajo de las celdas
   pintadas del mapa, el jugador, los enemigos, los cadáveres, los proyectiles, los pulsos y las gemas, y su posición
   de mundo es la misma
 
+#### Scenario: Fondo con la ventana en el tope
+- **GIVEN** el mundo por defecto, una ventana de 3.840 × 2.160 (vista 2.560 × 1.440) y el jugador en (16, 16) y
+  después en (3.824, 2.144)
+- **WHEN** se pinta cada snapshot
+- **THEN** en ambos el rectángulo visible está entero dentro del rectángulo que cubre el fondo y no se ve ninguna zona
+  sin fondo dentro de la vista
+
 #### Scenario: Fondo en las cuatro esquinas
-- **GIVEN** la build de producción con `?e2e&map=empty&seed=7` y un input que lleva al jugador a las cuatro esquinas
-  del mundo
-- **WHEN** se pintan los frames hasta que el jugador ha tocado las cuatro esquinas
-- **THEN** en cada frame el rectángulo visible de la cámara está entero dentro del rectángulo que cubre el fondo y
+- **GIVEN** la build de producción con `?e2e&manual&map=empty&seed=7` en una ventana de 1.280 × 720 y un input que
+  lleva al jugador a las cuatro esquinas del mundo
+- **WHEN** se avanza con `step(n)` hasta que el jugador ha tocado las cuatro esquinas, leyendo la sonda tras cada
+  llamada
+- **THEN** en cada lectura el rectángulo visible de la cámara está entero dentro del rectángulo que cubre el fondo y
   la sonda informa de fondo visible
 
 ### Requirement: Sonda de render para E2E
@@ -497,7 +506,8 @@ pintan. Los colores viven en los datos de aspecto, uno por tipo (`trunk`, `water
 `#RRGGBB`, y son distintos dos a dos; se validan con zod en el arranque como el resto de datos de aspecto: un color
 ausente, con otro formato, repetido o de un tipo desconocido MUST hacer fallar el arranque con un error que nombre el
 campo. El pintado del mapa no cuenta como sprite de fondo ni como aspecto de reserva de sprites y MUST NOT cambiar la
-simulación; ningún requisito depende del frame de la espuma.
+simulación; ningún requisito depende del frame de la espuma. Redimensionar la ventana MUST NOT cambiar qué elemento
+corresponde a cada celda, su modelo ni su posición de mundo.
 
 Al empezar una partida nueva (R o `Volver al menú` + `Jugar`) se pinta su mapa y no queda visible ningún elemento del
 mapa anterior. En modo menú no se ve ningún elemento del mapa. Con el mapa vacío no se pinta ningún elemento del mapa.
@@ -525,7 +535,8 @@ mapa anterior. En modo menú no se ve ningún elemento del mapa. Con el mapa vac
 #### Scenario: Castillo sobre su huella
 - **GIVEN** el contenido por defecto, la semilla 42 y los datos de aspecto del repositorio
 - **WHEN** se pinta el snapshot del tick 0
-- **THEN** el dibujo del castillo tiene su origen en (990, 600) y cubre (840, 360)–(1.140, 600) (error ≤ 1 px)
+- **THEN** el dibujo del castillo tiene su origen en (1.950, 1.140) y cubre (1.800, 900)–(2.100, 1.140) (error
+  ≤ 1 px)
 - **AND** con el mapa vacío no hay castillo pintado
 
 #### Scenario: Reserva de cada elemento
@@ -541,7 +552,7 @@ mapa anterior. En modo menú no se ve ningún elemento del mapa. Con el mapa vac
 #### Scenario: Reserva del castillo
 - **GIVEN** el contenido por defecto, la semilla 42 y la hoja del castillo sin cargar
 - **WHEN** se pinta el snapshot del tick 0
-- **THEN** el castillo es 1 rectángulo del color `castle` que cubre (840, 360)–(1.140, 600) (error ≤ 1 px), sin
+- **THEN** el castillo es 1 rectángulo del color `castle` que cubre (1.800, 900)–(2.100, 1.140) (error ≤ 1 px), sin
   tejado, y los demás elementos del mapa se pintan con su arte
 
 #### Scenario: Celdas de castillo de un mapa explícito
@@ -554,6 +565,12 @@ mapa anterior. En modo menú no se ve ningún elemento del mapa. Con el mapa vac
 - **GIVEN** un recorte norte-sur del puente con `x` 400 y ancho 64 sobre una hoja de 384 px de ancho
 - **WHEN** se pinta un mapa con un puente norte-sur
 - **THEN** ese puente se pinta con el rectángulo del color `bridge` y no hay errores no capturados
+
+#### Scenario: Mapa intacto al redimensionar
+- **GIVEN** una partida con el contenido por defecto y la semilla 42 pintada con una ventana de 1.280 × 720
+- **WHEN** la ventana pasa a 2.560 × 1.440 y se pinta 1 frame
+- **THEN** cada elemento del mapa de las celdas visibles en ambos frames tiene el mismo modelo y la misma posición de
+  mundo que antes del cambio (error ≤ 1 px), y el número de objetos de escena del mapa sigue ≤ 1.000
 
 #### Scenario: Recuentos del mapa pintado [E2E]
 - **GIVEN** la build de producción con `?e2e&manual&seed=42` (mapa real)
@@ -697,7 +714,7 @@ overlays, fijos en pantalla (ver `world-camera`). La **copa** es la parte del di
 borde superior de su celda y el **tronco**, el resto. El **tejado** es la parte del dibujo del castillo situada por
 encima del borde superior de la fila inferior de la huella y la **fachada**, el resto. Las partes se separan con un
 error ≤ 1 px. Así, una entidad al sur de un árbol o ante la puerta se ve delante, y una que pasa detrás de una copa o
-sobre el tejado queda tapada.
+sobre el tejado queda tapada. El orden de capas MUST mantenerse tras cualquier redimensionado de la ventana.
 
 #### Scenario: Tronco y copa
 - **GIVEN** un mapa de hierba con un tronco en (10, 4) (y en [240, 300]) y un snapshot con un enemigo en (630, 230)
@@ -706,11 +723,11 @@ sobre el tejado queda tapada.
 - **AND** la copa ocupa solo la parte con y < 240 y está por encima del sprite del enemigo y por debajo del HUD
 
 #### Scenario: Jugador ante la puerta
-- **GIVEN** el contenido por defecto, la semilla 42 (huella en y [360, 600], fila inferior en y [540, 600]) y el
-  jugador en (990, 616)
+- **GIVEN** el contenido por defecto, la semilla 42 (huella en y [900, 1.140], fila inferior en y [1.080, 1.140]) y el
+  jugador en (1.950, 1.156)
 - **WHEN** se pinta el snapshot
-- **THEN** la fachada (parte del dibujo con y ≥ 540) está por debajo del sprite del jugador y el tejado (y < 540) por
-  encima
+- **THEN** la fachada (parte del dibujo con y ≥ 1.080) está por debajo del sprite del jugador y el tejado
+  (y < 1.080) por encima
 - **AND** el HUD y el overlay de pausa, si está abierto, están por encima del tejado
 
 #### Scenario: Proyectiles y gemas bajo las copas
@@ -718,6 +735,12 @@ sobre el tejado queda tapada.
 - **WHEN** se pinta el snapshot
 - **THEN** la copa del árbol está por encima del sprite del proyectil y del de la gema, y el agua y los puentes por
   debajo de ambos
+
+#### Scenario: Capas tras redimensionar
+- **GIVEN** el escenario "Jugador ante la puerta" pintado con una ventana de 1.280 × 720 y el overlay de pausa abierto
+- **WHEN** la ventana pasa a 960 × 540 y se pinta 1 frame
+- **THEN** la fachada sigue por debajo del jugador, el tejado por encima, y el HUD y el overlay de pausa por encima
+  del tejado
 
 ### Requirement: Baldosas del mapa a la escala de la celda
 El sistema SHALL pintar las baldosas del fondo de hierba, del agua y de las orillas con un tamaño en pantalla igual a
@@ -741,16 +764,17 @@ los datos del repositorio MUST medir exactamente su huella: `castle.cols` × `ce
 - **AND** no se muestra el menú ni empieza ninguna partida
 
 ### Requirement: Coste de render del mapa (a demanda)
-El sistema SHALL pintar el mapa de las semillas 42 y 123 con ≤ 300 objetos de escena del mapa cada una (sin contar
+El sistema SHALL pintar el mapa de las semillas 42 y 123 con ≤ 1.000 objetos de escena del mapa cada una (sin contar
 fondo, entidades, HUD ni overlays), según informe la sonda de render. Con `CI_LIKE=1` (sin GPU, frenado 25, 1 worker,
-mediana de 3 pasadas de la medición de fps del proyecto `realtime`), los fps con el mapa real de las semillas 42 y 123
-SHOULD ser ≥ 85 % de la base de rectángulos de 0015 (21,6 y 21,9 fps: ≥ 18,4 y ≥ 18,6). Este requisito se mide a
-demanda y es informativo: no bloquea `verify`, `test:e2e` ni CI; si no se cumple, se anota en el verify-report.
+mediana de 3 pasadas de la medición de fps del proyecto `realtime`, ventana de 1.280 × 720), se informa de los fps con
+el mapa real de las semillas 42 y 123 y de su porcentaje sobre la base de rectángulos de 0015 (21,6 y 21,9 fps); el
+objetivo orientativo SHOULD ser ≥ 85 % (≥ 18,4 y ≥ 18,6). Este requisito se mide a demanda y es informativo: no
+bloquea `verify`, `test:e2e` ni CI; si no se cumple, se anota en el verify-report.
 
 #### Scenario: Objetos del mapa [realtime]
 - **GIVEN** la build de producción con `?e2e&manual&seed=42`, y en otra carga `seed=123`
 - **WHEN** arranca la partida, se pinta 1 frame y se lee la sonda de render
-- **THEN** el número de objetos de escena del mapa es ≤ 300 en ambas
+- **THEN** el número de objetos de escena del mapa es ≤ 1.000 en ambas
 - **AND** el mismo tope lo comprueba además un test sin navegador del plan de pintado con el contenido por defecto y
   las semillas 42 y 123, que entra en `verify`; este escenario `[realtime]` solo lo confirma con la sonda
 
@@ -763,3 +787,4 @@ demanda y es informativo: no bloquea `verify`, `test:e2e` ni CI; si no se cumple
 <!-- historial: 0013-world-camera (2026-11-23) -->
 <!-- historial: 0015-procedural-map (2026-11-23) -->
 <!-- historial: 0016-map-art (2026-11-23) -->
+<!-- historial: 0017-fullscreen-view (2026-11-24) -->
