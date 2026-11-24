@@ -5,9 +5,9 @@ import { LONG_RUN_HEALTH, aDefaultConfig, withPlayer } from '../support/builders
 import { advance, pileOnPlayer, startRun } from '../support/runs';
 
 // Spec simulation-loop (0013), "Contacto con cualquier tamaño de mundo": la preparación del bench
-// "200 enemigos encima del jugador" con el mundo por defecto y con una arena de 4.000 × 4.000.
+// "300 enemigos encima del jugador" (0019) con el mundo por defecto y con una arena de 4.000 × 4.000.
 const MEASURED_TICKS = 600;
-const PILE = 200;
+const PILE = 300;
 
 /** Vida inalcanzable para jugador y enemigos, como en el bench (las armas no vacían el montón). */
 const immortal = (config: RunConfig): RunConfig => ({
@@ -24,7 +24,7 @@ const bigWorld = (config: RunConfig): RunConfig => ({
 const inContact = (s: RunSnapshot, playerRadius: number): boolean =>
   s.enemies.some((e) => Math.hypot(e.x - s.player.x, e.y - s.player.y) <= playerRadius + e.radius);
 
-describe('200 enemigos encima del jugador con cualquier tamaño de mundo (0013)', () => {
+describe('300 enemigos encima del jugador con cualquier tamaño de mundo (0013, 0019)', () => {
   it.each([
     ['mundo por defecto', immortal(aDefaultConfig())],
     ['arena explícita de 4.000 × 4.000', bigWorld(immortal(aDefaultConfig()))],

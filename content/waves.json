@@ -1,5 +1,5 @@
 {
-  "maxAlive": 200,
+  "maxAlive": 300,
   "maxBudget": 10,
   "spawn": {
     "ringRadius": 1500,

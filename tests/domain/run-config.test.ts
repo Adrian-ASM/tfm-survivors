@@ -61,7 +61,7 @@ describe('buildRunRules', () => {
     expect([arena.width, arena.height]).toEqual([960, 540]);
     expect(catalog.ids).toEqual(['goblin-torch', 'goblin-tnt', 'goblin-barrel']);
     expect(table.segments.map((s) => s.fromSecond)).toEqual([0, 60, 180, 300, 480]);
-    expect(spawn).toMatchObject({ maxAlive: 200, minDistance: 200, maxAttempts: 8 });
+    expect(spawn).toMatchObject({ maxAlive: 300, minDistance: 200, maxAttempts: 8 });
   });
 
   it('el radio del anillo es el del contenido (ringRadius), sin vista', () => {

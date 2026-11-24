@@ -41,7 +41,7 @@
   las recolocadas, que valen `nearestWalkable` de la posición del mapa vacío).
 
 ## 3. Contenido e invariantes con el mapa generado
-- [ ] 3.1 `content/waves.json` `maxAlive` 300 y tests de tope: `run-config.test.ts`, `content.test.ts` si fija el
+- [x] 3.1 `content/waves.json` `maxAlive` 300 y tests de tope: `run-config.test.ts`, `content.test.ts` si fija el
   valor, `long-run.test.ts` (200 → 300). Escenarios ES: "Tope por defecto" y "Se alcanza el tope por defecto".
   Escenario EB: "Partida larga" (≤ 300 vivos). Escenario RO: "Presupuesto de oleadas intacto" (literal de los tramos,
   `maxBudget`, `ringRadius` y `player.speed` de antes del change).

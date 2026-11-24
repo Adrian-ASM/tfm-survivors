@@ -140,7 +140,7 @@ describe('Partidas largas (10 min)', () => {
   it('Scenario: Partida larga (enemigos dentro del mundo en todos los ticks)', () => {
     expect(SPAWN_AUDIT.arena).toMatchObject({ width: 3840, height: 2160 });
     expect(audited.v.outside).toBe(0);
-    expect(audited.v.maxAlive).toBeLessThanOrEqual(200);
+    expect(audited.v.maxAlive).toBeLessThanOrEqual(300);
   });
 
   it('Scenario: Partida larga dentro del mundo (jugador en [16, 3.824] × [16, 2.144])', () => {
@@ -161,8 +161,8 @@ describe('Partidas largas (10 min)', () => {
   });
 
   it('sin bajas nacen exactamente maxAlive enemigos, todos legales (arena de escenario)', () => {
-    expect(noKills.v.births).toBe(200);
-    expect([noKills.v.tooClose, noKills.v.outside, noKills.v.maxAlive]).toEqual([0, 0, 200]);
+    expect(noKills.v.births).toBe(300);
+    expect([noKills.v.tooClose, noKills.v.outside, noKills.v.maxAlive]).toEqual([0, 0, 300]);
   });
 
   it('Partida larga reproducible', () => {
