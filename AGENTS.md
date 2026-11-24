@@ -97,6 +97,19 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   objetos por estructura: 695/778 objetos en 42/123). Sonda `sprites.structures`, `map.structures` y
   `snapshot.structures`. Balance sin recalibrar: **27/50**, 0 quietos, **26,9 mechas** y 14,6 explosiones de barril
   por partida (base 16,3/6,6; test "Mechas por partida"), lote ~30 s local; bot v3.
+  Recursos (change 0022, ADR-0021): todo lo que se recoge es un **recogible** `xp | gold | wood` en una sola lista
+  (orden de creación, una secuencia de ids) con **tope por tipo** (`maxGems` 300, `maxGold` 32, `maxWood` 64 en
+  `progression.json`; el relleno suma al más antiguo de su tipo), así que la XP no cambia. Oro y madera son contadores
+  de la partida (`Stockpile`, no se guardan ni salen en resultados). Fuentes en `content/resources.json`: madera del
+  barril abatido (no del que explota por su mecha, `Enemy.detonated`), oro de casas y torres al quedar en ruina,
+  montones de madera (recogibles `wood` desde el tick 0, ids 0..N−1) y vetas de oro "al pasar" (paso 7.2, una vez).
+  Montones y vetas los coloca un cuarto flujo `RESOURCE_STREAM` 4 por celdas candidatas (1 valor por recurso;
+  `RESOURCE_GOLDEN`; `MAP_GOLDEN` y `STRUCTURE_GOLDEN` intactas). Snapshot con `pickups`, `resources`, `veins` y
+  `gems` como vista de los `xp`. Render: `PickupLayer` (un pool de Σ topes, la gema como forma de color), vetas
+  `GoldMine_Active/Inactive` en el plan del mapa con el recorte de 0018 y HUD con icono y número de oro y madera.
+  Sondas `sprites.pickups`/`veins`, `map.veins`/`woodPiles` y `hud`. Balance **idéntico** a la línea base M0 semilla a
+  semilla (`tests/support/balanceBaseline.ts`, 27/50, 26,88 mechas, 0 quietos) y huella del contenido de combate;
+  M1: bench tres topes 0,27 ms, lote 28–32 s local; M2: 701/784 objetos del mapa en 42/123.
   Fuente de verdad del comportamiento: `openspec/specs/`.
 
 ## 2. Comandos

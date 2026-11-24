@@ -1,6 +1,6 @@
 # ADR-0021 · Recogibles con tipo en una lista con tope por tipo y flujo de azar de recursos
 
-- **Estado**: propuesta
+- **Estado**: aceptada (apply de 0022, 2026-11-24)
 - **Fecha**: 2026-11-24
 
 ## Contexto

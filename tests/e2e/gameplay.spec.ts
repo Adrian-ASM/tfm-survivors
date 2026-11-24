@@ -264,6 +264,27 @@ function structureMisses(p: ProbeRead): string[] {
   });
 }
 
+/**
+ * Recursos en los que la sonda de render no casa con el snapshot (0022): sprites `wood` y `gold`
+ * visibles = recogibles de su tipo, vetas activas y agotadas = las del snapshot, y sin reserva.
+ */
+function resourceMisses(p: ProbeRead): string[] {
+  const s = p?.sprites;
+  const snap = p?.snapshot;
+  if (!s || !snap) return ['sin sonda'];
+  const of = (kind: 'gold' | 'wood') => snap.pickups.filter((x) => x.kind === kind).length;
+  const pairs: [string, number, number][] = [
+    ['wood', s.pickups.wood.visible, of('wood')],
+    ['gold', s.pickups.gold.visible, of('gold')],
+    ['vetas activas', s.veins.active, snap.veins.filter((v) => !v.depleted).length],
+    ['vetas agotadas', s.veins.depleted, snap.veins.filter((v) => v.depleted).length],
+    ['reserva', s.pickups.wood.placeholder + s.pickups.gold.placeholder + s.veins.fallback, 0],
+  ];
+  return pairs.flatMap(([k, got, want]) =>
+    got === want ? [] : [`${k}: ${String(got)}≠${String(want)}`],
+  );
+}
+
 // Spec procedural-map, "Sonda coherente con el núcleo", y player-movement, "Sin solapes en la
 // build con el mapa real". Los E2E no importan `src/`: la firma dorada se fija en un unitario.
 // 0021, sprite-rendering "Estructuras y guardias en el navegador" (ampliación, sin input).
@@ -312,10 +333,17 @@ test('Mapa real: sonda igual a la firma de la semilla 42, castillo y salida, y s
   // nacimiento de la casa + 1 tick, pintadas intactas/ruina por tipo = snapshot y sin reserva.
   expect(m.structures.length).toBeGreaterThan(0);
   expect(structureMisses(first)).toEqual([]);
+  // 0022: montones (`wood`) y vetas activas pintados = los del snapshot, sin reserva.
+  expect(m.woodPiles.length).toBeGreaterThan(0);
+  expect(m.veins.length).toBeGreaterThan(0);
+  expect(first.sprites?.pickups.wood.visible).toBe(m.woodPiles.length);
+  expect(first.sprites?.veins.active).toBe(m.veins.length);
+  expect(resourceMisses(first)).toEqual([]);
   await step(page, structures.types['goblin-house'].guards.everyTicks + 1);
   const later = await probe(page);
   expect(later?.snapshot?.status).toBe('running');
   expect(structureMisses(later)).toEqual([]);
+  expect(resourceMisses(later)).toEqual([]);
   expect(later?.sprites?.enemyStates.patrol ?? 0).toBeGreaterThanOrEqual(1);
   expect(later?.sprites?.enemies.placeholder).toBe(0);
   expect(problems).toEqual([]);
@@ -384,5 +412,135 @@ test('Peligros: barril en mecha con su aviso y después su explosión, sin reser
   expect(fuseRead).toBeGreaterThanOrEqual(0);
   expect(blastRead).toBeGreaterThan(fuseRead);
   expect(misses).toEqual([]);
+  expect(problems).toEqual([]);
+});
+
+/** Punto de paso del recorrido (centro de una celda), en px de mundo. */
+interface Waypoint {
+  readonly x: number;
+  readonly y: number;
+}
+
+/**
+ * Recorrido de la salida al montón (0022): BFS de 4 vecinos por celdas caminables (`grass` y
+ * `bridge`) desde la celda de la salida hasta la del montón, comprimido en tramos rectos entre
+ * centros de celda (el radio del jugador, 16, cabe en media celda: ningún tramo roza un bloqueo).
+ * `null` si no hay camino. El primer punto es el centro de la celda de la salida.
+ */
+function routeTo(m: MapView, pile: { x: number; y: number }): Waypoint[] | null {
+  const s = m.cellSize;
+  const walkable = (c: number, r: number) =>
+    c >= 0 &&
+    r >= 0 &&
+    c < m.cols &&
+    r < m.rows &&
+    ['grass', 'bridge'].includes(m.cells[r * m.cols + c] ?? '');
+  const from = Math.floor(m.start.y / s) * m.cols + Math.floor(m.start.x / s);
+  const to = Math.floor(pile.y / s) * m.cols + Math.floor(pile.x / s);
+  const prev = new Map<number, number>([[from, -1]]);
+  const queue = [from];
+  for (let head = 0; head < queue.length && !prev.has(to); head++) {
+    const i = queue[head] ?? 0;
+    const c = i % m.cols;
+    const r = (i - c) / m.cols;
+    for (const [dc, dr] of [
+      [-1, 0],
+      [1, 0],
+      [0, -1],
+      [0, 1],
+    ] as const) {
+      const j = (r + dr) * m.cols + c + dc;
+      if (!walkable(c + dc, r + dr) || prev.has(j)) continue;
+      prev.set(j, i);
+      queue.push(j);
+    }
+  }
+  if (!prev.has(to)) return null;
+  const cells: number[] = [];
+  for (let i = to; i !== -1; i = prev.get(i) ?? -1) cells.unshift(i);
+  const center = (i: number): Waypoint => ({
+    x: (i % m.cols) * s + s / 2,
+    y: Math.floor(i / m.cols) * s + s / 2,
+  });
+  // Solo los giros (y el final): tramos rectos entre ellos.
+  const turns = cells.filter((i, k) => {
+    const a = cells[k - 1];
+    const b = cells[k + 1];
+    return a === undefined || b === undefined || i - a !== b - i;
+  });
+  return turns.map(center);
+}
+
+/** Tecla y ticks para ir en línea recta (un eje) desde `at` hasta `to`. */
+function legTo(at: Waypoint, to: Waypoint): { key: string; ticks: number } | null {
+  const dx = to.x - at.x;
+  const dy = to.y - at.y;
+  const horizontal = Math.abs(dx) >= Math.abs(dy);
+  const d = horizontal ? dx : dy;
+  const ticks = Math.round(Math.abs(d) / (player.speed / 60));
+  if (ticks === 0) return null;
+  const key = horizontal ? (d > 0 ? 'ArrowRight' : 'ArrowLeft') : d > 0 ? 'ArrowDown' : 'ArrowUp';
+  return { key, ticks };
+}
+
+// Spec hud (0022), "Contadores en el navegador": semilla 42 con el mapa real, el jugador va al
+// montón más cercano a la salida por un recorrido sin bloqueos y, en cada lectura, el oro y la
+// madera del HUD son los del snapshot pintado. Modo manual, sin esperas de reloj.
+test('Recursos: el HUD muestra el oro y la madera del snapshot mientras se va al montón más cercano', async ({
+  page,
+}) => {
+  slowMapRealOnCi();
+  const problems = collect(page, ['pageerror', 'error']);
+  await openGame(page, gameUrl({ seed: 42, manual: true, map: 'real' }));
+  const m = (await probe(page))?.map;
+  if (!m) throw new Error('sin mapa');
+  const exit = m.start;
+  const nearest = [...m.woodPiles].sort(
+    (a, b) => Math.hypot(a.x - exit.x, a.y - exit.y) - Math.hypot(b.x - exit.x, b.y - exit.y),
+  )[0];
+  if (!nearest) throw new Error('sin montones');
+  const route = routeTo(m, nearest);
+  // Precondición: un recorrido sin bloqueos (celdas caminables) de la salida al montón.
+  expect(route).not.toBeNull();
+  for (const w of route ?? []) expect(overlapsBlocked(m, w.x, w.y, player.radius)).toBe(false);
+
+  const mismatches: string[] = [];
+  const read = async () => {
+    const p = await probe(page);
+    const snap = p?.snapshot;
+    const shown = p?.hud;
+    if (!snap || !shown) {
+      mismatches.push('sin lectura');
+      return null;
+    }
+    const want = { gold: String(snap.resources.gold), wood: String(snap.resources.wood) };
+    if (shown.gold !== want.gold || shown.wood !== want.wood) {
+      mismatches.push(
+        `tick ${String(snap.tick)}: ${JSON.stringify(shown)}≠${JSON.stringify(want)}`,
+      );
+    }
+    return snap;
+  };
+  let last = await read();
+  // Cada tramo se apunta desde la posición real del jugador (sin deriva acumulada); para en cuanto
+  // la madera sube (el imán atrae el montón a < 128 px).
+  for (const w of route ?? []) {
+    for (let guard = 0; guard < 40 && (last?.resources.wood ?? 0) === 0; guard++) {
+      const at = last?.player;
+      const leg = at ? legTo(at, w) : null;
+      if (!leg) break;
+      if (last?.offer.length) await page.keyboard.press('1');
+      await holdKey(page, leg.key, Math.min(30, leg.ticks));
+      last = await read();
+    }
+  }
+  for (let i = 0; i < 20 && (last?.resources.wood ?? 0) === 0; i++) {
+    if (last?.offer.length) await page.keyboard.press('1');
+    await step(page, 10);
+    last = await read();
+  }
+  expect(mismatches).toEqual([]);
+  expect(last?.resources.wood ?? 0).toBeGreaterThan(0);
+  expect((await probe(page))?.hud?.wood).toBe(String(last?.resources.wood));
   expect(problems).toEqual([]);
 });

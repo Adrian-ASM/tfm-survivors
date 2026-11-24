@@ -138,17 +138,17 @@
 
 ## 6. E2E y documentación
 
-- [ ] 6.1 **E2E nuevo (1)**, proyecto `logic`, `?e2e&manual&seed=42`: el jugador va al montón más cercano a la salida
+- [x] 6.1 **E2E nuevo (1)**, proyecto `logic`, `?e2e&manual&seed=42`: el jugador va al montón más cercano a la salida
   (`map.woodPiles` de la sonda, con un recorrido sin bloqueos comprobado como precondición) con `holdKey`/`step(n)`;
   en cada lectura los números del HUD (`hud`) son iguales a los del snapshot; al final la madera es > 0. Sin esperas
   de reloj ni umbrales de fps.
   Escenario: `hud` · "Contenido y visibilidad del HUD" › "Contadores en el navegador [E2E]".
-- [ ] 6.2 **E2E ampliado** (no nuevo): "Estructuras y guardias en el navegador" añade los sprites `wood` y las vetas
+- [x] 6.2 **E2E ampliado** (no nuevo): "Estructuras y guardias en el navegador" añade los sprites `wood` y las vetas
   activas iguales a los del snapshot, sin reserva; los vivos "Sonda con castillo y salida", "Objetos dibujados con la
   cámara" y "Barril en mecha…" siguen en verde con `npm run test:e2e`.
   Escenarios: `sprite-rendering` · "Sonda de render" › "Estructuras y guardias en el navegador [E2E]", "Objetos
   dibujados con la cámara [E2E]", "Barril en mecha y su explosión en el navegador [E2E]"; `procedural-map` · "Sonda
   con castillo y salida [E2E]".
-- [ ] 6.3 **Documentación.** AGENTS.md §1 (estado de 0022: recogibles con tipo, contadores, fuentes,
+- [x] 6.3 **Documentación.** AGENTS.md §1 (estado de 0022: recogibles con tipo, contadores, fuentes,
   `RESOURCE_STREAM`, mediciones M1/M2), ADR-0021 aceptado, entrada en `docs/ai-log/` (mediciones, incidencias de
   hooks). El seguimiento del GDD (renumerar ovejas) queda anotado, sin editar `docs/gdd.md`.
