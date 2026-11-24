@@ -16,6 +16,15 @@ export interface SheepSpawn {
   readonly phaseEnd?: number | undefined;
 }
 
+/**
+ * Celdas en las que puede reaparecer una oveja (design 0023 §4.2), en orden de filas, ya filtradas
+ * a centros que son posición legal de su círculo, sobre el mapa de la partida.
+ */
+export interface SheepGround {
+  readonly map: GameMap;
+  readonly cells: readonly number[];
+}
+
 const D = Math.SQRT1_2;
 
 /**
@@ -44,6 +53,14 @@ export class Flock {
   private readonly alive: Sheep[] = [];
   private readonly free: Sheep[] = [];
   private nextId = 0;
+  /** Celdas base de reaparición con sus centros (calculados una vez al crear la partida). */
+  private readonly baseCells: Int32Array;
+  private readonly baseX: Float64Array;
+  private readonly baseY: Float64Array;
+  /** Cola FIFO de reapariciones pendientes: tick en que tocan y celda de la muerte. */
+  private readonly pendingDue: Float64Array;
+  private readonly pendingCell: Int32Array;
+  private pending = 0;
 
   constructor(
     private readonly rules: SheepRules,
@@ -51,8 +68,24 @@ export class Flock {
     /** Ovejas vivas como mucho (tope del mapa generado o número de declaradas). */
     readonly capacity: number = spawns.length,
     private readonly random: RandomGenerator | null = null,
+    private readonly ground: SheepGround | null = null,
   ) {
     for (let i = 0; i < capacity; i++) this.free.push(new Sheep(rules.radius));
+    const cells = ground?.cells ?? [];
+    this.baseCells = Int32Array.from(cells);
+    this.baseX = new Float64Array(cells.length);
+    this.baseY = new Float64Array(cells.length);
+    if (ground) {
+      const { map } = ground;
+      for (const [j, i] of cells.entries()) {
+        const c = i % map.cols;
+        const rect = map.cellRect(c, (i - c) / map.cols);
+        this.baseX[j] = (rect.left + rect.right) / 2;
+        this.baseY[j] = (rect.top + rect.bottom) / 2;
+      }
+    }
+    this.pendingDue = new Float64Array(capacity);
+    this.pendingCell = new Int32Array(capacity);
     const { ticks } = rules.config.graze;
     for (const s of spawns) {
       const sheep = this.add(s.x, s.y, s.health ?? rules.health, s.phaseEnd ?? ticks);
@@ -127,6 +160,86 @@ export class Flock {
     const y = map.limitMoveY(s.y, arena.clampY(s.y + s.dy * step, r), x, r);
     s.x = x;
     s.y = y;
+  }
+
+  /**
+   * Pasos 3.5 y 4.2 del tick n: las ovejas a vida 0 salen de la lista sin cambiar el orden de las
+   * demás (compactación estable); de cada una, en orden de lista, se avisa a `onDeath` (su carne,
+   * spec resources) y se encola su reaparición para el tick n + intervalo con la celda de su centro,
+   * antes de devolver su registro al pool.
+   */
+  settle(n: number, onDeath: (dead: Sheep) => void): void {
+    let w = 0;
+    for (let r = 0; r < this.alive.length; r++) {
+      const s = this.alive[r];
+      if (!s) continue;
+      if (s.alive) {
+        this.alive[w] = s;
+        w++;
+      } else {
+        onDeath(s);
+        this.enqueue(n + this.rules.config.respawn.everyTicks, s.x, s.y);
+        this.free.push(s);
+      }
+    }
+    this.alive.length = w;
+  }
+
+  /**
+   * Paso 9.2 del tick n con el jugador en (px, py) (spec sheep, "Reaparición de ovejas"): en orden de
+   * cola, cada pendiente que ya toca aparece en una celda candidata (base, distinta de la de su
+   * muerte y con el centro a ≥ la distancia mínima del jugador), elegida con 1 valor del azar de las
+   * ovejas; sin candidatas sigue pendiente sin consumir azar. La nueva va al final de la lista.
+   */
+  respawn(n: number, px: number, py: number): void {
+    if (this.pending === 0) return;
+    const { pendingDue, pendingCell } = this;
+    let w = 0;
+    for (let r = 0; r < this.pending; r++) {
+      const due = pendingDue[r] ?? 0;
+      const cell = pendingCell[r] ?? -1;
+      if (due <= n && this.spawnAway(n, px, py, cell)) continue;
+      pendingDue[w] = due;
+      pendingCell[w] = cell;
+      w++;
+    }
+    this.pending = w;
+  }
+
+  /** Encola una reaparición con la celda del punto (x, y) de la muerte. */
+  private enqueue(due: number, x: number, y: number): void {
+    const map = this.ground?.map;
+    if (!map || this.pending >= this.capacity) return;
+    this.pendingDue[this.pending] = due;
+    this.pendingCell[this.pending] = map.rowAt(y) * map.cols + map.colAt(x);
+    this.pending += 1;
+  }
+
+  /** Dos pasadas sin asignar: cuenta las candidatas y crea la oveja en la ⌊next · k⌋-ésima. */
+  private spawnAway(n: number, px: number, py: number, deathCell: number): boolean {
+    const { baseCells, baseX, baseY } = this;
+    const min = this.rules.config.respawn.minPlayerDistance;
+    const min2 = min * min;
+    const ok = (j: number): boolean => {
+      if (baseCells[j] === deathCell) return false;
+      const dx = (baseX[j] ?? 0) - px;
+      const dy = (baseY[j] ?? 0) - py;
+      return dx * dx + dy * dy >= min2;
+    };
+    let k = 0;
+    for (let j = 0; j < baseCells.length; j++) if (ok(j)) k++;
+    if (k === 0) return false;
+    if (!this.random) throw new Error('Invariante rota: ovejas sin su azar');
+    let pick = Math.floor(this.random.next() * k);
+    for (let j = 0; j < baseCells.length; j++) {
+      if (!ok(j)) continue;
+      if (pick === 0) {
+        this.add(baseX[j] ?? 0, baseY[j] ?? 0, this.rules.health, n + this.rules.config.graze.ticks);
+        return true;
+      }
+      pick--;
+    }
+    return false;
   }
 
   /** Crea una oveja del pool al final de la lista, con id nuevo. */

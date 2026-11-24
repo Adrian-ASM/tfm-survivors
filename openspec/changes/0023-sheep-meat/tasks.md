@@ -68,7 +68,7 @@
   Tests: `tests/domain/sheep-movement.test.ts`.
 
 ## 3. Dominio · daño, carne y reaparición
-- [ ] 3.1 Armas por niveles (TDD). `Arsenal.step(n, px, py, enemies, reserves)` con `reserves = [structures.all,
+- [x] 3.1 Armas por niveles (TDD). `Arsenal.step(n, px, py, enemies, reserves)` con `reserves = [structures.all,
   flock.all]`, `Projectile.tier` y pulso sobre los tres. Escenarios:
   - auto-weapons · "Oveja sin enemigos ni estructuras en alcance", "La estructura gana a la oveja aunque esté más
     lejos", "El enemigo gana a la oveja", "Límite del alcance con una oveja", "Empate entre ovejas", "Impacto en una
@@ -78,7 +78,10 @@
   - simulation-loop · "Las armas apuntan tras la huida de las ovejas", "Carga de las armas en el snapshot".
   Regresión: los tests de `auto-weapons` de 0021 siguen verdes sin cambios. Tests: ampliar `arsenal-*.test.ts` y
   `tests/domain/run-sheep-weapons.test.ts`.
-- [ ] 3.2 Muerte, carne y explosiones (TDD). `Flock.settle(onDeath)` en 3.5 y 4.2, `onSheepDeath` con
+  - Apply: `Arsenal.step(n, px, py, enemies, structures?, sheep?)` con los dos niveles de reserva como parámetros
+    (un array fijo interno de 2 huecos, sin asignar) en vez de `reserves[]`: así las llamadas de 0021 con
+    `[casa]` como quinto argumento siguen sin cambios. Escenarios en `tests/domain/arsenal-sheep.test.ts`.
+- [x] 3.2 Muerte, carne y explosiones (TDD). `Flock.settle(onDeath)` en 3.5 y 4.2, `onSheepDeath` con
   `drop('meat', …)` y `HazardField.explode` sobre ovejas. Escenarios:
   - sheep · "Dos impactos del Linter", "Explosión que mata a una oveja", "Explosión tangente", "Armas y explosión en el
     mismo tick", "Daño mayor que la vida", "Bajas solo de enemigos", "Muerte sin reordenar" (lista o1, o3);
@@ -88,13 +91,18 @@
   - xp-gems · "Una secuencia de identificadores", "Tope de carne lleno";
   - simulation-loop · "Las ovejas mueren tras las estructuras".
   Tests: `tests/domain/run-sheep-death.test.ts`, ampliar `run-hazards.test.ts`.
-- [ ] 3.3 Reaparición en 9.2 (TDD). Cola FIFO con celda de muerte, celdas base de reaparición (declarados: `grass`
+  - Apply: los escenarios de peligros están en `run-sheep-death.test.ts`. "Barril que explota junto a una oveja y un
+    goblin" usa la oveja con radio de huida 50 ("oveja quieta" de `auto-weapons`): a 69 px del jugador quieto la de
+    prueba huiría y no estaría a 30 px del barril en el tick 82.
+- [x] 3.3 Reaparición en 9.2 (TDD). Cola FIFO con celda de muerte, celdas base de reaparición (declarados: `grass`
   fuera de huellas y puertas), candidatas por celda distinta y `minPlayerDistance` en px, segunda pasada sin asignar.
   Escenarios:
   - sheep · "Reaparición tras el intervalo", "Dos muertes en el mismo tick", "Sin celda candidata", "Muerte en el tick
     de la victoria", "Muerte sin reordenar" (o4 al final);
   - simulation-loop · "La oveja reaparecida no se mueve ni es objetivo en su tick".
   Tests: `tests/domain/sheep-respawn.test.ts`.
+  - Apply: `candidateCells` (5.1) se extrae ya aquí para las celdas base de reaparición en mapas declarados;
+    `RESOURCE_GOLDEN` intacta. Las celdas base solo admiten centros legales para la oveja (ver 2.1).
 
 ## 4. Infraestructura · contenido validado (test-after)
 - [ ] 4.1 zod completo y cruces: `sheep.json` (rangos de design §2, `maxAlive` ≥ 0 sin máximo), `resources.meat`

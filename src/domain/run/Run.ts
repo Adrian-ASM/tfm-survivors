@@ -10,6 +10,7 @@ import { OPEN_TERRAIN, resolveTerrain, type TerrainSource } from '../map/Terrain
 import { resolveStructures } from '../structure/resolveStructures';
 import { resolveSheep } from '../sheep/resolveSheep';
 import type { Flock } from '../sheep/Flock';
+import type { Sheep } from '../sheep/Sheep';
 import { StructureField } from '../structure/StructureField';
 import type { Structure } from '../structure/Structure';
 import type { StructureSite } from '../structure/StructureSite';
@@ -171,7 +172,7 @@ export class Run {
     const resources = resolveResources(terrain, map.value, rules.value.resources, sites.value);
     if (!resources.ok) return resources;
     const { veins, woodPiles } = resources.value;
-    const sheep = resolveSheep(terrain, map.value, rules.value.sheep);
+    const sheep = resolveSheep(terrain, map.value, rules.value.sheep, sites.value);
     if (!sheep.ok) return sheep;
     const initial = initialState(
       rules.value,
@@ -257,9 +258,12 @@ export class Run {
     this.flock.step(n, x, y, this.terrain, this.arena);
     this.field.retarget(this.terrain.colAt(x), this.terrain.rowAt(y));
     this.horde.act(n, x, y, TICK_SECONDS, this.field);
-    const { horde, structures } = this;
-    if (this.arsenal.step(n, x, y, horde.alive, structures.all) > 0) horde.removeDead(this.onDeath);
+    const { horde, structures, flock } = this;
+    if (this.arsenal.step(n, x, y, horde.alive, structures.all, flock.all) > 0) {
+      horde.removeDead(this.onDeath);
+    }
     structures.settle(this.onRuin);
+    flock.settle(n, this.onSheepDeath);
     this.stepHazards(n, x, y);
     if (this.applyHit(n) || this.reachedEnd(n)) {
       this.tickCount = n;
@@ -268,6 +272,7 @@ export class Run {
     this.collect(x, y);
     this.director.step(n, horde.alive.length, this.place);
     structures.spawnGuards(n, horde, this.rules.spawn.maxAlive);
+    this.flock.respawn(n, x, y);
     this.tickCount = n;
     this.openNextOffer();
   }
@@ -316,9 +321,12 @@ export class Run {
    * dinamitas), bajas con su gema tras las de las armas y lanzamientos con el jugador ya movido.
    */
   private stepHazards(n: number, x: number, y: number): void {
-    const { hazards, horde } = this;
+    const { hazards, horde, flock } = this;
     hazards.expire(n);
-    if (hazards.explode(n, horde.alive, x, y, this.player.radius)) horde.removeDead(this.onDeath);
+    if (hazards.explode(n, horde.alive, flock.all, x, y, this.player.radius)) {
+      horde.removeDead(this.onDeath);
+    }
+    flock.settle(n, this.onSheepDeath);
     hazards.launch(n, horde.alive, x, y);
   }
 
@@ -365,6 +373,11 @@ export class Run {
   private readonly onRuin = (ruin: Structure): void => {
     const gold = this.rules.resources.goldFor(ruin.site.type.id);
     if (gold > 0) this.pickups.drop('gold', ruin.x, ruin.y, gold);
+  };
+
+  /** Una oveja muerta suelta su carne en su posición (spec resources 0023), sin gema ni baja. */
+  private readonly onSheepDeath = (dead: Sheep): void => {
+    this.pickups.drop('meat', dead.x, dead.y, this.rules.resources.meat.perSheep);
   };
 
   /** Los enemigos nuevos van al final de la lista y no se mueven en el tick en que aparecen. */

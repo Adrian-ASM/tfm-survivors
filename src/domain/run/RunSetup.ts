@@ -420,7 +420,7 @@ export function initialState(
   sites: readonly StructureSite[] = [],
   piles: readonly Point[] = [],
   veinSites: readonly Point[] = [],
-  sheepSites: SheepSites = { at: [], capacity: 0, random: null },
+  sheepSites: SheepSites = { at: [], capacity: 0, random: null, respawnCells: [] },
 ): Result<InitialState, DomainError> {
   const player = initialPlayer(rules, setup, map);
   if (!player.ok) return player;
@@ -440,7 +440,7 @@ export function initialState(
   if (!board.ok) return board;
   const dynamites = initialDynamites(rules, setup);
   if (!dynamites.ok) return dynamites;
-  const flock = initialFlock(rules, setup, sheepSites);
+  const flock = initialFlock(rules, setup, map, sheepSites);
   if (!flock.ok) return flock;
   const playerHealth = initialPlayerHealth(rules, setup, board.value);
   if (!playerHealth.ok) return playerHealth;
@@ -468,6 +468,7 @@ export function initialState(
 function initialFlock(
   rules: RunRules,
   setup: RunSetup,
+  map: GameMap,
   sites: SheepSites,
 ): Result<Flock, DomainError> {
   const entries = setup.sheep ?? [];
@@ -485,7 +486,8 @@ function initialFlock(
     }
   }
   const spawns = sites.at.map((p, i) => ({ ...p, ...entries[i] }));
-  return ok(new Flock(rules.sheep, spawns, sites.capacity, sites.random));
+  const ground = { map, cells: sites.respawnCells };
+  return ok(new Flock(rules.sheep, spawns, sites.capacity, sites.random, ground));
 }
 
 /** Vida inicial del jugador de `RunSetup`: entero en [1, vida máxima con las mejoras iniciales]. */
