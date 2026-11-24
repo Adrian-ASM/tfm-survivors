@@ -112,13 +112,13 @@
   suma de unitarios, cuantización a 8 direcciones, regla de direcciones bloqueadas y, con suma nula, `fleeInput`.
   Documentarlo en el JSDoc. Escenarios RO: "La esquiva gana a la huida", "Aviso no amenazante", "Dos avisos que se
   anulan" y "Esquiva bloqueada por un tronco". Los escenarios vigentes del bot siguen en verde.
-- [ ] 5.2 Bench "Peor caso con peligros" (`tests/bench/run.bench.ts`), con preparación por `RunSetup` rehecha cada
+- [x] 5.2 Bench "Peor caso con peligros" (`tests/bench/run.bench.ts`), con preparación por `RunSetup` rehecha cada
   60 ticks fuera del tiempo medido. Un test unitario comprueba sus condiciones: ≥ 100 barriles, ≥ 100 TNT, tope
   lleno y una explosión con ≥ 50 dentro cada 10 ticks. Anotar la media junto a la del peor caso con proyectiles.
   Escenarios SL: "Peor caso con peligros" y "Peor caso con proyectiles" (anotación).
 
 ## 6. Determinismo, balance y calibración
-- [ ] 6.1 Escenarios de reproducibilidad con el contenido final. SL: "Partida con peligros reproducible" (14.400
+- [x] 6.1 Escenarios de reproducibilidad con el contenido final. SL: "Partida con peligros reproducible" (14.400
   ticks, ≥ 1 explosión de barril y ≥ 1 dinamita), "Posiciones de enemigos reproducibles con el mapa generado" (con
   el estado) y "Mapa intacto" (`mapGolden.ts` sin cambios). EH: "Mismos peligros con cualquier ventana" (sin
   ventana en el núcleo, por comparación de snapshots). RO: "Bot reproducible".

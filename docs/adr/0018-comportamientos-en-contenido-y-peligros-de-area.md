@@ -97,3 +97,7 @@ curva **9/4**. Oleadas, `maxAlive`, anillo, `player.speed`, stats, armas y mejor
 Plazos del quieto con el contenido final (mapa generado): semilla 7, primera baja en el tick 728, primer pulso en el
 1.524, primera oferta en el **2.082** (igual que antes) y primer golpe en el 2.276; semilla 42, primer golpe en el
 2.442. Bot v3: **27/50** victorias; quietos vivos en el tick 10.799: 0 con el mapa generado y 0 con el vacío.
+
+Bench (`npm run bench`, informativo, máquina del apply): peor caso con proyectiles **0,195 ms/tick** y peor caso
+con peligros **0,038 ms/tick** (600 ticks en 10 bloques de 60 rehechos con `RunSetup`; contenido por defecto con
+sus armas), ambos ≤ 0,25 ms.

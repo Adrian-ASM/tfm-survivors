@@ -103,7 +103,7 @@ describe('Recolocación de las apariciones con el jugador quieto (semillas 1..50
 });
 
 describe('Posiciones de enemigos reproducibles con el mapa generado (semilla 42)', () => {
-  it('Scenario: dos partidas con los mismos 3.600 inputs tienen la misma lista de enemigos', () => {
+  it('Scenario: dos partidas con los mismos 3.600 inputs tienen la misma lista de enemigos (con su estado, 0020)', () => {
     const inputs = randomInputs(STILL_TICKS, INPUT_SEED);
     const enemies = (): string[] => {
       const run = startSeededRun(CONFIG, 42);
@@ -115,7 +115,8 @@ describe('Posiciones de enemigos reproducibles con el mapa generado (semilla 42)
         out.push(
           list
             .map(
-              (e) => `${String(e.id)}:${e.type}:${String(e.x)},${String(e.y)}:${String(e.health)}`,
+              (e) =>
+                `${String(e.id)}:${e.type}:${String(e.x)},${String(e.y)}:${String(e.health)}:${e.state}`,
             )
             .join('|'),
         );
