@@ -271,6 +271,61 @@ test('Peor caso con peligros: 300 vivos, mechas, cargas y el tope de dinamitas',
   expect(mean).toBeLessThanOrEqual(MAX_MEAN_MS);
 });
 
+/** Semilla del peor caso con estructuras (design 0021 §12): mapa generado de la 42. */
+const STRUCTURE_SEED = 42;
+
+/**
+ * Preparación del "Peor caso con estructuras y guardias" (spec simulation-loop, 0021): 300 guardias
+ * vivos (vida BENCH_HEALTH), cada casa en su tope (`house`) y el resto con un puesto (`post`) en la
+ * puerta de una casa, repartidos por turnos; la mitad en patrulla y la otra mitad en alerta.
+ */
+function structureWorstCase(config: RunConfig, map: Run['map']): RunSetup {
+  const guard = config.enemies.types.find((t) => t.behavior.initial === 'patrol');
+  const houseType = Object.entries(config.structures.types).find(([, t]) => t.guards);
+  if (!guard || !houseType) throw new Error('Sin guardias ni casas en el contenido');
+  const [houseId, { guards }] = houseType;
+  const state = (kind: string) =>
+    guard.behavior.states.find((s) => s.kind === kind)?.name ?? guard.behavior.initial;
+  const houses = map.structures.flatMap((s, i) =>
+    s.type === houseId && s.door ? [{ index: i, x: s.door.x, y: s.door.y }] : [],
+  );
+  if (!guards || houses.length === 0) throw new Error('Mapa sin casas');
+  const atTope = houses.length * guards.max;
+  return {
+    enemies: Array.from({ length: CAP }, (_, i) => {
+      const { index, x, y } = houses[i % houses.length] ?? { index: 0, x: 0, y: 0 };
+      const where = i < atTope ? { house: index } : { post: { x, y } };
+      return { type: guard.id, x, y, ...where, state: state(i % 2 ? 'alert' : 'patrol') };
+    }),
+  };
+}
+
+/**
+ * Peor caso con estructuras y guardias (spec simulation-loop, 0021): mapa de la semilla 42 con
+ * todas sus estructuras intactas, 300 guardias (cada casa en su tope, 150 en patrulla y 150 en
+ * alerta) e indestructibles, así que siguen 300 vivos. Objetivo informativo ≤ 0,25 ms.
+ */
+test('Peor caso con estructuras y guardias: 300 guardias, casas en su tope', async ({ bench }) => {
+  const config = benchConfig();
+  const terrain = () => seededRun(STRUCTURE_SEED).terrain;
+  const probe = start(undefined, undefined, terrain(), config);
+  const setup = structureWorstCase(config, probe.map);
+  const run = start(setup, undefined, terrain(), config);
+  const first = run.snapshot();
+  expect(first.enemies.filter((e) => e.stateKind === 'patrol')).toHaveLength(CAP / 2);
+  expect(first.enemies.filter((e) => e.stateKind === 'alert')).toHaveLength(CAP / 2);
+  const result = await bench('Run.tick · 300 guardias + estructuras', () => {
+    step(run);
+  }).run(OPTIONS);
+  report(result.name, result.latency);
+  const snap = run.snapshot();
+  expect(snap.status).toBe('running');
+  expect(snap.enemies).toHaveLength(CAP);
+  expect(snap.structures.length).toBeGreaterThan(0);
+  expect(snap.structures.filter((s) => s.destroyed)).toEqual([]);
+  expect(result.latency.mean).toBeLessThanOrEqual(MAX_MEAN_MS);
+});
+
 test('Peor caso con gemas: 300 vivos, 32 proyectiles y 300 gemas atraídas (60 ticks)', async ({
   bench,
 }) => {

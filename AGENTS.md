@@ -88,6 +88,15 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   `state`/`stateKind`, `dynamites`, `warnings` y `blasts`; capa de peligros sobre la capa alta del mapa (un
   `Graphics` y pools) y sonda `warnings`/`dynamites`/`explosions`/`enemyStates`. Arte `Dynamite.png` y
   `Explosions.png` (Update 010). Bot v3 (esquiva avisos) y balance **27/50**, 0 quietos, con curva **9/4**.
+  Campamentos goblin (change 0021, ADR-0020): 4 casas y 3 torres por mapa generado (`content/structures.json`,
+  huella 2 × 3, vida 60/90) colocadas con un tercer flujo de azar (`STRUCT_STREAM` 3), sin tocar las celdas
+  (`MAP_GOLDEN` intacta; `STRUCTURE_GOLDEN` nueva). No bloquean; las armas las apuntan solo sin enemigos en su
+  criterio y quedan en ruina al destruirse. Cada casa genera `goblin-tnt-guard` (tope 2, cada 900 ticks) con
+  `patrol`/`alert`/`return` en torno a su puerta (`GuardPost`, campos fijos por punto). Barril A3 (activación 60,
+  vida 25, radio 80). Arte `Goblin_House`, `Wood_Tower_Red` y sus ruinas (2 aspectos con máscara en el plan, ≤ 4
+  objetos por estructura: 695/778 objetos en 42/123). Sonda `sprites.structures`, `map.structures` y
+  `snapshot.structures`. Balance sin recalibrar: **27/50**, 0 quietos, **26,9 mechas** y 14,6 explosiones de barril
+  por partida (base 16,3/6,6; test "Mechas por partida"), lote ~30 s local; bot v3.
   Fuente de verdad del comportamiento: `openspec/specs/`.
 
 ## 2. Comandos

@@ -71,3 +71,28 @@ Guardia:
 - Cómo revertirla: quitar `StructureField`, `GuardPost`, las clases nuevas y `STRUCT_STREAM` devuelve las partidas
   de 0020 (salvo los stats del barril de A3) y obliga a recalibrar. Pasar a las opciones 2 o 3 es el trabajo previsto
   de 0025.
+
+## Addendum · resultados del apply
+Balance por pasos (design §11) con `measureBalance` y el bot v3 sobre `BALANCE_SEEDS` 1..50. Los pasos 1 y 2 se
+midieron con configuraciones de test no versionadas sobre el contenido final (sin estructuras con
+`NO_STRUCTURES`; sin guardias con `everyTicks` 10⁶). La fila base usa el barril de 0020 (40/20/64) y reproduce la
+línea base de la propuesta, lo que valida el rastro de mechas y explosiones.
+
+| Paso | Victorias | Quietos vivos (gen./vacío) | Mechas/partida | Explosiones/partida | Oferta s7 | Lote local |
+|---|---|---|---|---|---|---|
+| Base (barril de 0020, sin estructuras) | 27 | 0 / 0 | 16,30 | 6,56 | 2.082 | 30,2 s |
+| 1 · barril A3 (60/25/80), sin estructuras | 29 | 0 / 0 | 28,96 | 16,40 | 2.082 | 28,0 s |
+| 2 · estructuras sin guardias | 27 | 0 / 0 | 28,84 | 16,26 | 2.082 | 28,0 s |
+| **3 · contenido final** | **27** | **0 / 0** | **26,88** | **14,64** | **2.082** | **30,4 s** |
+
+- No se recalibró nada: el contenido final está en la banda (27/50) con 0 quietos en los dos mapas. Las estructuras
+  cuestan 2 victorias (dentro del margen de §11; sin guardias, el efecto esperado es la puntería sobre ellas cuando no
+  hay enemigos en el criterio) y los guardias, 0 en el total (cambian las semillas ganadas, no la cuenta).
+- Mechas por partida ×1,65 respecto a la base (> 16,3, test "Mechas por partida") y explosiones ×2,2.
+- Firma W3 (daño de dinamita de guardia con v3 en `NONE` y ≥ 1 aviso amenazante): 0 en las 50 semillas de los tres
+  pasos. El bot sigue en v3 y A2 no se aplica.
+- Lote con rastro: 30,4 s en local, ≈ 85 s equivalentes en CI (×2,8) ≤ 90; `BOT_BATCH_TIMEOUT_MS` sigue en 180 s.
+- Bench "peor caso con estructuras y guardias" (semilla 42, 300 guardias con cada casa en su tope, 150 en patrulla y
+  150 en alerta): media 0,06–0,07 ms por tick, frente a 2 ms (gate del bench) y 0,25 ms (objetivo).
+- Objetos del mapa: 695 (42) y 778 (123), ≤ 1.000. Firma de celdas sin cambios; `STRUCTURE_GOLDEN` nueva.
+- El estado pasa a "aceptada" tras verify.

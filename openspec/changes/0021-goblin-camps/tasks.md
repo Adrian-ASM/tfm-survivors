@@ -155,11 +155,18 @@ Resultados del grupo 7 (bot v3, semillas 1..50; pasos 1 y 2 con configuraciones 
   contenido.
 
 ## 8. Bench, E2E y documentación
-- [ ] 8.1 Bench "peor caso con estructuras y guardias" en `tests/bench/run.bench.ts` (§12): anotar la media frente a
+- [x] 8.1 Bench "peor caso con estructuras y guardias" en `tests/bench/run.bench.ts` (§12): anotar la media frente a
   2 ms y frente a 0,25 ms. — SL: "Peor caso con estructuras y guardias".
-- [ ] 8.2 E2E nuevo (1, modo manual, `map: 'real'`, `step(n)`, sin fps ni tiempo real), ampliando un test de humo
+  Media de 0,06–0,07 ms por tick (2 ejecuciones), ≤ 2 ms y ≤ 0,25 ms. Semilla 42, 300 guardias (8 con `house`, cada
+  casa en su tope, y 292 con `post` en las puertas), 150 en patrulla y 150 en alerta, indestructibles.
+- [x] 8.2 E2E nuevo (1, modo manual, `map: 'real'`, `step(n)`, sin fps ni tiempo real), ampliando un test de humo
   del proyecto `logic`. Actualizar las cifras de objetos del mapa en los E2E existentes. — SR: "Estructuras y guardias
   en el navegador [E2E]", "Objetos dibujados con la cámara [E2E]" (sin cambio de regla); PM: "Sonda con castillo y
   salida [E2E]" (sin cambios, debe seguir verde).
-- [ ] 8.3 Documentación: addendum de ADR-0020 con las cifras de §11 (y estado "aceptada" tras verify), estado del
+  Ampliado "Mapa real" de `gameplay.spec.ts` (semilla 42): sonda de estructuras = snapshot antes y después de
+  `step(901)`, ≥ 1 guardia en patrulla, sin reserva ni errores. `SnapshotView` con `structures`. Ningún E2E cita
+  cifras absolutas de objetos (solo `0 < drawn < objects`); las cifras viven en `plan-map-fallback.test.ts`.
+  `test:e2e`: 14/14.
+- [x] 8.3 Documentación: addendum de ADR-0020 con las cifras de §11 (y estado "aceptada" tras verify), estado del
   proyecto en AGENTS.md §1 y entrada en `docs/ai-log/`, incluidos los incidentes de hooks si los hay.
+  Estado de ADR-0020 sin cambiar hasta verify. Ningún hook bloqueó en los grupos 7–8.

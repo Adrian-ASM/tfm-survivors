@@ -59,7 +59,7 @@ export interface EnemyView {
   y: number;
   radius: number;
   /** Clase del estado de comportamiento (0020). */
-  stateKind: 'chase' | 'fuse' | 'charge' | 'wait';
+  stateKind: 'chase' | 'fuse' | 'charge' | 'wait' | 'patrol' | 'alert' | 'return';
 }
 
 export interface SnapshotView {
@@ -78,6 +78,8 @@ export interface SnapshotView {
   dynamites: { id: number; x: number; y: number }[];
   warnings: { x: number; y: number; radius: number; source: 'fuse' | 'dynamite' }[];
   blasts: { id: number; x: number; y: number; radius: number }[];
+  /** Casas y torres (0021), ruinas incluidas, en su orden fijo. */
+  structures: { id: number; type: string; health: number; destroyed: boolean }[];
   progression: { level: number; xp: number; xpToNext: number; pendingLevelUps: number };
   offer: { id: string; name: string; level: number; nextLevel: number }[];
   upgrades: { id: string; level: number }[];
