@@ -175,7 +175,7 @@ function bootstrap(): void {
       return viewportView();
     },
     get hud() {
-      return probe.screen === 'menu' ? null : hudView();
+      return hudView();
     },
   };
   const started = (s: number): void => {

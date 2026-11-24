@@ -75,7 +75,7 @@ describe('Montones y vetas del mapa generado en la partida', () => {
     const s = run.snapshot();
     const n = CONFIG.resources.woodPiles.count;
     expect(s.pickups.map((p) => p.kind)).toEqual([...Array<string>(n).fill('wood'), 'xp']);
-    expect(s.gems).toMatchObject([{ id: n, x: 100, y: 100, radius: 5 }]);
+    expect(s.gems).toEqual([{ id: n, kind: 'xp', value: 1, x: 100, y: 100, radius: 5 }]);
   });
 
   it('Scenario: Sin recursos (0 vetas y 0 montones: listas vacías en el tick 0)', () => {

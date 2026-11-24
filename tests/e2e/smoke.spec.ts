@@ -74,6 +74,10 @@ test('Jugar desde el menú: oculta el menú y empieza una partida nueva en el ti
     { width: 1280, height: 720, uiScale: 1 },
     null,
   ]);
+  // Spec hud (0022), "Sin HUD en el menú": la sonda del HUD (oro y madera incluidos) vale null en
+  // los frames del menú, porque la escena de la partida está parada.
+  await waitFrames(page, 60);
+  expect((await probe(page))?.hud).toBeNull();
 
   await menuButton(page, 'Jugar').click();
 
@@ -81,6 +85,8 @@ test('Jugar desde el menú: oculta el menú y empieza una partida nueva en el ti
   await expect.poll(async () => (await probe(page))?.runs).toBe(2);
   await waitForRun(page);
   expect((await probe(page))?.screen).toBe('playing');
+  // "HUD tras volver al menú y jugar": en el tick 0 de la partida nueva, oro 0 y madera 0.
+  expect((await probe(page))?.hud).toEqual({ gold: '0', wood: '0' });
   // Sin step la partida nueva sigue en su primer frame (modo manual).
   expect(await tickOf(page)).toBe(0);
   expect(await step(page, 30)).toBe(30);

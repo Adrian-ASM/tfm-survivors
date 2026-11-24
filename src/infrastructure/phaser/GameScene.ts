@@ -346,7 +346,9 @@ export class GameScene extends Phaser.Scene {
 
   /** Números de oro y madera que muestra el HUD (0022; null sin partida), para la sonda E2E. */
   hudView(): { readonly gold: string; readonly wood: string } | null {
-    return this.started ? (this.w?.hud.shown ?? null) : null;
+    // Solo con la escena de la partida activa: en el menú (escena parada, `leave`) no hay HUD.
+    if (!this.started || !this.sys.isActive()) return null;
+    return this.w?.hud.shown ?? null;
   }
 
   /** Rectángulo visible del último frame pintado (null sin partida), para la sonda E2E. */
