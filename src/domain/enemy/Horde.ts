@@ -36,21 +36,38 @@ export class Horde {
   }
 
   /**
-   * Todos persiguen al jugador en (x, y) en este tick (spec enemy-behavior): cada uno avanza hacia
-   * el objetivo que le da el campo (el jugador con línea libre o en su celda; si no, el centro de
-   * su siguiente celda). Sin asignar: el objetivo se escribe en un objeto reutilizado.
+   * Paso 2 del tick n con el jugador ya movido en (x, y) (spec enemy-behavior y simulation-loop),
+   * enemigo a enemigo en orden de lista (no interactúan entre sí, así que equivale a las tres
+   * pasadas del contrato): (a) una espera que termina en n pasa a su destino; (b) una persecución se
+   * mueve hacia el objetivo que le da el campo (el jugador con línea libre o en su celda; si no, el
+   * centro de su siguiente celda); (c) una persecución con salida a distancia ≤ la de salida entra
+   * en su destino. Mecha, carga y espera no se mueven. Sin asignar ni consumir azar.
    */
-  chase(x: number, y: number, dtSeconds: number, field: FlowField): void {
+  act(n: number, x: number, y: number, dtSeconds: number, field: FlowField): void {
     const target = this.target;
     for (const enemy of this.enemies) {
+      const b = enemy.type.behavior;
+      let state = enemy.state;
+      if (b.kinds[state] === 'wait' && enemy.stateEndsAt <= n) {
+        state = b.to[state] ?? state;
+        enemy.enter(state, n);
+      }
+      if (b.kinds[state] !== 'chase') continue;
       field.steer(enemy.x, enemy.y, x, y, target);
       enemy.chase(target.x, target.y, dtSeconds, this.arena);
+      const exit = b.exitDistSq[state] ?? -1;
+      if (exit < 0) continue;
+      const dx = x - enemy.x;
+      const dy = y - enemy.y;
+      if (dx * dx + dy * dy <= exit) enemy.enter(b.to[state] ?? state, n);
     }
   }
 
-  /** Alta al final de la lista con el siguiente id. */
-  spawn(type: EnemyType, x: number, y: number): void {
-    this.enemies.push(Enemy.spawn(this.nextId, type, x, y, this.arena));
+  /** Alta en el tick n al final de la lista con el siguiente id, en el estado inicial de su tipo. */
+  spawn(type: EnemyType, x: number, y: number, n = 0): void {
+    this.enemies.push(
+      Enemy.spawn(this.nextId, type, x, y, this.arena, type.health, type.behavior.initial, n),
+    );
     this.nextId += 1;
   }
 

@@ -29,7 +29,7 @@ function busyConfig(): RunConfig {
   const probe = aProbeType({ health: 1e6, speed: 1e-6 });
   return {
     ...base,
-    enemies: { types: [...base.enemies.types, probe] },
+    enemies: { ...base.enemies, types: [...base.enemies.types, probe] },
     waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 0)] }).waves,
   };
 }
@@ -97,7 +97,7 @@ describe('Pausa y reanudación', () => {
   it('Scenario: La invulnerabilidad no corre durante la pausa (sin daño de 21 a 40, sí en 41)', () => {
     const base = quietDefault({ upgrades: { upgrades: [anUpgrade('fast-ci')] } });
     const probe = aProbeType({ damage: 10, health: 1e6 });
-    const config = { ...base, enemies: { types: [...base.enemies.types, probe] } };
+    const config = { ...base, enemies: { ...base.enemies, types: [...base.enemies.types, probe] } };
     // El probe (1 px/tick) entra en contacto en el tick 10; la gema atraída se recoge en el 20.
     const setup: RunSetup = {
       player: atPlayer,
@@ -173,7 +173,7 @@ describe('Elección de mejora (Run.chooseUpgrade)', () => {
       {
         ...base,
         player: { ...base.player, maxHealth: 10 },
-        enemies: { types: [...base.enemies.types, killer] },
+        enemies: { ...base.enemies, types: [...base.enemies.types, killer] },
       },
       { player: atPlayer, enemies: [{ type: 'probe', ...atPlayer }] },
     );
@@ -252,7 +252,7 @@ describe('Cadencia y elecciones', () => {
     const base = quietDefault({ upgrades: { upgrades: list } });
     const config: RunConfig = {
       ...base,
-      enemies: { types: [...base.enemies.types, still] },
+      enemies: { ...base.enemies, types: [...base.enemies.types, still] },
       weapons: weaponsOf(weapons),
     };
     return startRun(config, { player: atPlayer, ...setup });

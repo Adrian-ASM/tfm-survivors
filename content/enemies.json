@@ -1,4 +1,9 @@
 {
+  "hazards": {
+    "maxDynamites": 24,
+    "dynamiteRadius": 8,
+    "blastTicks": 30
+  },
   "types": [
     {
       "id": "goblin-torch",
@@ -7,7 +12,11 @@
       "cost": 1,
       "damage": 5,
       "health": 10,
-      "xp": 1
+      "xp": 1,
+      "behavior": {
+        "initial": "chase",
+        "states": [{ "name": "chase", "kind": "chase" }]
+      }
     },
     {
       "id": "goblin-tnt",
@@ -16,7 +25,11 @@
       "cost": 3,
       "damage": 15,
       "health": 45,
-      "xp": 4
+      "xp": 4,
+      "behavior": {
+        "initial": "approach",
+        "states": [{ "name": "approach", "kind": "chase" }]
+      }
     },
     {
       "id": "goblin-barrel",
@@ -25,7 +38,11 @@
       "cost": 2,
       "damage": 8,
       "health": 20,
-      "xp": 2
+      "xp": 2,
+      "behavior": {
+        "initial": "approach",
+        "states": [{ "name": "approach", "kind": "chase" }]
+      }
     }
   ]
 }

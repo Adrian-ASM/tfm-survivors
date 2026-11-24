@@ -8,25 +8,25 @@
      Al cerrar cada sección: `npm run verify 2>&1 | tail -20` en verde. Bucle interno: `npm run verify:fast`. -->
 
 ## 1. Dominio · comportamiento por tipo
-- [ ] 1.1 `BehaviorConfig` y `Behavior.create`: compilar las cuatro clases (`chase` con `exit` opcional, `fuse`,
+- [x] 1.1 `BehaviorConfig` y `Behavior.create`: compilar las cuatro clases (`chase` con `exit` opcional, `fuse`,
   `charge` y `wait`) a arrays por índice. Rechazar `initial` inexistente, `to` inexistente y nombres repetidos, con
   el id del tipo y el nombre del estado en el mensaje. Test `tests/domain/enemy/Behavior.test.ts`. Escenarios: EB
   "Destino inexistente", "Estado inicial ausente o inexistente" (caso inexistente) y "Nombre de estado repetido".
-- [ ] 1.2 `EnemyType`: `behavior` obligatorio y `damage` opcional (si está, > 0; si falta, `hasContact` false y
+- [x] 1.2 `EnemyType`: `behavior` obligatorio y `damage` opcional (si está, > 0; si falta, `hasContact` false y
   `damage` 0). `EnemyCatalog` y `RunConfig.enemies` pasan a `{ hazards, types }`, y se añade `HazardRules`
   (`maxDynamites`, `dynamiteRadius` y `blastTicks`, con sus invariantes). Se adaptan `aDefaultConfig` y los
   builders: el contenido de escenario da a cada tipo genérico un `chase` sin salida. Escenarios: ES "Daño cero o
   negativo" (dominio) y EH "Tope inválido" y "Tope mínimo" (dominio).
-- [ ] 1.3 `Enemy.state`/`since`/`enter`/`explode` y `Horde.act` en sus tres pasadas: esperas que terminan, `chase`
+- [x] 1.3 `Enemy.state`/`since`/`enter`/`explode` y `Horde.act` en sus tres pasadas: esperas que terminan, `chase`
   que se mueve y salida por distancia tras moverse. En `fuse`, `charge` y `wait` el enemigo no se mueve. Escenarios:
   EB "Salida por distancia justo en el límite", "Barril que ya está dentro al aparecer en el escenario",
   "Persecución en línea recta · Un enemigo en espera no persigue" y SL "La espera termina antes de moverse" (este
   último con `RunSetup` de 1.4).
-- [ ] 1.4 `RunSetup`: `enemies[i].state`/`elapsed` y `dynamites[]`, validados (estado existente, `elapsed` en
+- [x] 1.4 `RunSetup`: `enemies[i].state`/`elapsed` y `dynamites[]`, validados (estado existente, `elapsed` en
   [0, ticks), tope de dinamitas, `ticksLeft` ≥ 1 y punto finito). Test `RunSetup.test.ts` con un caso inválido por
   regla y uno válido que arranca en mecha o carga. Builders `inState`, `aDynamite`, `aBarrelType`, `aTntType` y
   `aWaitType`. Escenario: EB "El daño no cambia el estado" (carga desde el tick t con y sin impacto del Linter).
-- [ ] 1.5 Snapshot: `EnemySnapshot.state` y `stateKind`. Listas `dynamites`, `warnings` y `blasts` vacías y
+- [x] 1.5 Snapshot: `EnemySnapshot.state` y `stateKind`. Listas `dynamites`, `warnings` y `blasts` vacías y
   congeladas. Escenarios: SL "Partida recién creada", "Enemigos en el snapshot" (estado de persecución) y "Estado
   de comportamiento en el snapshot", y EB "Estado inicial al aparecer".
 

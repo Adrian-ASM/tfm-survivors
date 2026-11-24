@@ -19,6 +19,7 @@ import type {
 // alterar la partida. Se ensamblan una vez por frame, no por tick.
 
 export function toEnemySnapshot(e: Enemy, damaged: boolean): EnemySnapshot {
+  const { names, kinds } = e.type.behavior;
   return Object.freeze({
     id: e.id,
     type: e.type.id,
@@ -27,6 +28,8 @@ export function toEnemySnapshot(e: Enemy, damaged: boolean): EnemySnapshot {
     radius: e.radius,
     health: e.hp,
     damaged,
+    state: names[e.state] ?? '',
+    stateKind: kinds[e.state] ?? 'chase',
   });
 }
 

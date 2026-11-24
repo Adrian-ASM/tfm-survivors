@@ -177,9 +177,14 @@ describe('Contenido de enemigos y oleadas validado · vida, daño y máximo de p
     });
   });
 
-  it.each(['damage', 'health'])('%s ausente', (key) => {
-    const raw = without(rawContent(), (r) => r.enemies.types[0], key);
-    expect(failure(raw).field).toBe(`enemies.types.0.${key}`);
+  it('health ausente', () => {
+    const raw = without(rawContent(), (r) => r.enemies.types[0], 'health');
+    expect(failure(raw).field).toBe('enemies.types.0.health');
+  });
+
+  it('Scenario: Daño ausente (la carga tiene éxito; 0020)', () => {
+    const raw = without(rawContent(), (r) => r.enemies.types[0], 'damage');
+    expect(parseRunConfig(raw).ok).toBe(true);
   });
 
   it.each([0, -1])('Máximo de presupuesto no positivo (%s)', (maxBudget) => {
@@ -544,7 +549,7 @@ describe('Contenido por defecto del repositorio', () => {
     const types = config?.enemies.types ?? [];
     expect(types.map((t) => t.id)).toEqual(['goblin-torch', 'goblin-tnt', 'goblin-barrel']);
     for (const t of types) {
-      expect(Math.min(t.speed, t.radius, t.cost, t.health, t.damage)).toBeGreaterThan(0);
+      expect(Math.min(t.speed, t.radius, t.cost, t.health, t.damage ?? 0)).toBeGreaterThan(0);
     }
   });
 

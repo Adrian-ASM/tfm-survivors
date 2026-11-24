@@ -1,4 +1,5 @@
 import { expect, test } from 'vitest';
+import { CHASE_BEHAVIOR } from '../support/builders';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import { Run, type RunSetup } from '../../src/domain/run/Run';
 import type { RunConfig } from '../../src/domain/run/RunConfig';
@@ -55,7 +56,7 @@ function benchConfig(weapons?: WeaponsConfig): RunConfig {
   return {
     ...config.value,
     player: { ...player, maxHealth: BENCH_HEALTH },
-    enemies: { types: [...types, BENCH_TYPE] },
+    enemies: { ...enemies, types: [...types, BENCH_TYPE] },
     weapons: weapons ?? config.value.weapons,
     upgrades: { upgrades: list },
     run: { durationSeconds: BENCH_DURATION },
@@ -71,6 +72,7 @@ const BENCH_TYPE = {
   damage: 1,
   health: BENCH_HEALTH,
   xp: 1,
+  behavior: CHASE_BEHAVIOR,
 };
 
 /** Mundo del contenido por defecto (content/arena.json): todas las posiciones se derivan de él. */

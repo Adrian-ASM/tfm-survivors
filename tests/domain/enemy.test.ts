@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { CHASE_BEHAVIOR } from '../support/builders';
 import { Arena } from '../../src/domain/arena/Arena';
 import { Enemy } from '../../src/domain/enemy/Enemy';
 import { EnemyType } from '../../src/domain/enemy/EnemyType';
@@ -24,7 +25,7 @@ function enemy(
   arena: Arena = ARENA,
 ): Enemy {
   const type = EnemyType.create(
-    { id, speed, radius, cost: 1, damage: 7, health, xp: 1 },
+    { id, speed, radius, cost: 1, damage: 7, health, xp: 1, behavior: CHASE_BEHAVIOR },
     arena,
     'enemies.types.0',
   );
@@ -64,7 +65,16 @@ describe('Enemy · vida y baja', () => {
 
   it('vida inicial opcional al aparecer (RunSetup); por defecto la del tipo', () => {
     const type = EnemyType.create(
-      { id: 'goblin-torch', speed: 90, radius: 10, cost: 1, damage: 5, health: 10, xp: 1 },
+      {
+        id: 'goblin-torch',
+        speed: 90,
+        radius: 10,
+        cost: 1,
+        damage: 5,
+        health: 10,
+        xp: 1,
+        behavior: CHASE_BEHAVIOR,
+      },
       ARENA,
       'enemies.types.0',
     );

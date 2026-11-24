@@ -52,6 +52,8 @@ const foe = (id: number, x: number, y: number): EnemySnapshot => ({
   radius: 10,
   health: 10,
   damaged: false,
+  state: 'chase',
+  stateKind: 'chase',
 });
 
 function snap(tick: number, over: Partial<RunSnapshot> = {}): RunSnapshot {

@@ -48,7 +48,7 @@ export const lethalConfig = (): RunConfig => {
   const types = base.enemies.types.map((t) =>
     t.id === 'goblin-torch' ? { ...t, damage: 1e6 } : t,
   );
-  return { ...base, enemies: { types } };
+  return { ...base, enemies: { ...base.enemies, types } };
 };
 
 /** `StartRun` que pone un bug letal encima del jugador: la partida muere en su primer tick. */

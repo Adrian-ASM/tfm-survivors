@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { CHASING } from '../support/builders';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import { aContactConfig, aProbeType, pile, startRun, ticks } from '../support/runs';
 
@@ -51,7 +52,7 @@ describe('Daño discreto por contacto', () => {
     const [snap] = ticks(run, 1);
     expect(snap?.player.health).toBe(90);
     expect(snap?.enemies).toEqual([
-      { id: 0, type: 'probe', ...CENTER, radius: 10, health: 5, damaged: false },
+      { id: 0, type: 'probe', ...CENTER, radius: 10, health: 5, damaged: false, ...CHASING },
     ]);
   });
 

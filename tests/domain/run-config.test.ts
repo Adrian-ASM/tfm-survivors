@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { CHASE_BEHAVIOR } from '../support/builders';
 import {
   INVULNERABILITY_TICKS_MUST_BE_INTEGER,
   MAX_BUDGET_BELOW_MAX_COST,
@@ -102,8 +103,18 @@ describe('buildRunRules', () => {
     const badType = {
       ...base,
       enemies: {
+        ...base.enemies,
         types: [
-          { id: 'goblin-torch', speed: 0, radius: 10, cost: 1, damage: 5, health: 10, xp: 1 },
+          {
+            id: 'goblin-torch',
+            speed: 0,
+            radius: 10,
+            cost: 1,
+            damage: 5,
+            health: 10,
+            xp: 1,
+            behavior: CHASE_BEHAVIOR,
+          },
         ],
       },
     };

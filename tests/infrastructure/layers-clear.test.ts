@@ -94,6 +94,8 @@ describe('Vista limpia tras reiniciar (spec run-results y sprite-rendering)', ()
         type: 'goblin-torch',
         health: 10,
         damaged: false,
+        state: 'chase',
+        stateKind: 'chase' as const,
       })),
       projectiles: Array.from({ length: 32 }, (_, i) => at(i)),
       pulses: [{ weapon: 'tests', firedAt: 898, x: 480, y: 270, radius: 90 }],
@@ -119,6 +121,8 @@ describe('Vista limpia tras reiniciar (spec run-results y sprite-rendering)', ()
         type: 'goblin-torch',
         health: 10,
         damaged: false,
+        state: 'chase',
+        stateKind: 'chase' as const,
       }));
     v.paint({ ...fresh, tick: 500, enemies: foes(25) });
     const ended = {

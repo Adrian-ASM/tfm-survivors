@@ -12,7 +12,10 @@ const PILE = 300;
 /** Vida inalcanzable para jugador y enemigos, como en el bench (las armas no vacían el montón). */
 const immortal = (config: RunConfig): RunConfig => ({
   ...withPlayer(config, { maxHealth: LONG_RUN_HEALTH }),
-  enemies: { types: config.enemies.types.map((t) => ({ ...t, health: LONG_RUN_HEALTH })) },
+  enemies: {
+    ...config.enemies,
+    types: config.enemies.types.map((t) => ({ ...t, health: LONG_RUN_HEALTH })),
+  },
 });
 
 const bigWorld = (config: RunConfig): RunConfig => ({

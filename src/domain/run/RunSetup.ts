@@ -2,6 +2,7 @@ import type { Arena } from '../arena/Arena';
 import { Enemy } from '../enemy/Enemy';
 import type { GameMap } from '../map/GameMap';
 import type { EnemyCatalog } from '../enemy/EnemyCatalog';
+import type { EnemyType } from '../enemy/EnemyType';
 import { Player } from '../player/Player';
 import { Experience } from '../progression/Experience';
 import { GemField } from '../progression/GemField';
@@ -23,6 +24,14 @@ export const SETUP_UNKNOWN_UPGRADE = 'Mejora inicial desconocida en el catálogo
 export const SETUP_PLAYER_ON_BLOCKED_CELL =
   'El jugador inicial no puede solapar una celda no caminable del mapa.';
 export const SETUP_KILLS_MUST_BE_INTEGER = 'Las bajas iniciales deben ser un entero ≥ 0.';
+export const SETUP_STATE_UNKNOWN = 'Estado de comportamiento inicial que el tipo no declara.';
+export const SETUP_ELAPSED_OUT_OF_RANGE =
+  'Los ticks ya pasados en el estado inicial deben ser un entero en [0, duración del estado).';
+export const SETUP_TOO_MANY_DYNAMITES = 'Hay más dinamitas iniciales que el tope de dinamitas.';
+export const SETUP_DYNAMITE_TICKS_LEFT =
+  'Los ticks que le quedan a una dinamita inicial deben ser un entero ≥ 1.';
+export const SETUP_DYNAMITE_BLAST_MUST_BE_POSITIVE =
+  'El radio y el daño de una dinamita inicial deben ser positivos.';
 export const SETUP_UPGRADE_LEVEL_OUT_OF_RANGE =
   'El nivel inicial de una mejora debe ser un entero en [0, maxLevel].';
 
@@ -39,7 +48,18 @@ interface Point {
 export interface RunSetup {
   readonly player?: Point;
   /** `health`: vida inicial opcional, 0 < health ≤ la del tipo (por defecto, la del tipo). */
-  readonly enemies?: readonly (Point & { readonly type: string; readonly health?: number })[];
+  readonly enemies?: readonly (Point & {
+    readonly type: string;
+    readonly health?: number;
+    /** Estado inicial por nombre (por defecto, el inicial del tipo) y ticks ya pasados en él. */
+    readonly state?: string;
+    readonly elapsed?: number;
+  })[];
+  /**
+   * Dinamitas en vuelo (como mucho `maxDynamites`): lanzadas "en el tick 0" desde (x, y) hacia
+   * (targetX, targetY); explotan en el tick `ticksLeft` con su radio y daño.
+   */
+  readonly dynamites?: readonly SetupDynamite[];
   /** Gemas en el suelo, en orden de creación (ids desde 0); `attracted` por defecto false. */
   readonly gems?: readonly (Point & { readonly value: number; readonly attracted?: boolean })[];
   /** Nivel y XP iniciales (por defecto, nivel 1 con XP 0), sin subidas pendientes. */
@@ -51,6 +71,15 @@ export interface RunSetup {
   readonly upgrades?: Readonly<Record<string, number>>;
   /** Bajas ya acumuladas al empezar (entero ≥ 0; por defecto, 0). */
   readonly kills?: number;
+}
+
+/** Dinamita inicial de `RunSetup` (tests y bench). */
+export interface SetupDynamite extends Point {
+  readonly targetX: number;
+  readonly targetY: number;
+  readonly ticksLeft: number;
+  readonly radius: number;
+  readonly damage: number;
 }
 
 const isFinitePoint = (p: Point): boolean => Number.isFinite(p.x) && Number.isFinite(p.y);
@@ -91,9 +120,55 @@ export function initialEnemies(
     if (!Number.isFinite(health) || health <= 0 || health > type.health) {
       return err(invalidConfig(`${path}.health`, SETUP_HEALTH_OUT_OF_RANGE));
     }
-    enemies.push(Enemy.spawn(i, type, entry.x, entry.y, arena, health));
+    const state = initialStateOf(type, entry.state, entry.elapsed, path);
+    if (!state.ok) return state;
+    const { index, since } = state.value;
+    enemies.push(Enemy.spawn(i, type, entry.x, entry.y, arena, health, index, since));
   }
   return ok(enemies);
+}
+
+/** Estado de comportamiento inicial de un enemigo de `RunSetup`: `since` = −elapsed. */
+function initialStateOf(
+  type: EnemyType,
+  name: string | undefined,
+  elapsed: number | undefined,
+  path: string,
+): Result<{ index: number; since: number }, DomainError> {
+  const b = type.behavior;
+  const index = name === undefined ? b.initial : b.names.indexOf(name);
+  if (index < 0) return err(invalidConfig(`${path}.state`, SETUP_STATE_UNKNOWN));
+  const passed = elapsed ?? 0;
+  const ticks = b.ticks[index] ?? 0;
+  const valid = Number.isInteger(passed) && passed >= 0 && (ticks === 0 || passed < ticks);
+  if (!valid) return err(invalidConfig(`${path}.elapsed`, SETUP_ELAPSED_OUT_OF_RANGE));
+  return ok({ index, since: -passed });
+}
+
+/** Valida las dinamitas iniciales contra el tope (sin crearlas: las crea `HazardField`). */
+export function initialDynamites(
+  rules: RunRules,
+  setup: RunSetup,
+): Result<readonly SetupDynamite[], DomainError> {
+  const entries = setup.dynamites ?? [];
+  if (entries.length > rules.hazards.maxDynamites) {
+    return err(invalidConfig('setup.dynamites', SETUP_TOO_MANY_DYNAMITES));
+  }
+  for (const [i, d] of entries.entries()) {
+    const path = `setup.dynamites.${String(i)}`;
+    const target = { x: d.targetX, y: d.targetY };
+    if (!isFinitePoint(d) || !isFinitePoint(target)) {
+      return err(invalidConfig(path, SETUP_POSITION_MUST_BE_FINITE));
+    }
+    if (!Number.isInteger(d.ticksLeft) || d.ticksLeft < 1) {
+      return err(invalidConfig(`${path}.ticksLeft`, SETUP_DYNAMITE_TICKS_LEFT));
+    }
+    const positive = (v: number) => Number.isFinite(v) && v > 0;
+    if (!positive(d.radius) || !positive(d.damage)) {
+      return err(invalidConfig(path, SETUP_DYNAMITE_BLAST_MUST_BE_POSITIVE));
+    }
+  }
+  return ok(entries);
 }
 
 export function initialGems(
@@ -161,6 +236,8 @@ export interface InitialState {
   readonly board: UpgradeBoard;
   /** Bajas ya acumuladas (por defecto, 0). */
   readonly kills: number;
+  /** Dinamitas en vuelo ya validadas. */
+  readonly dynamites: readonly SetupDynamite[];
 }
 
 /** Valida el `RunSetup` contra las reglas y construye el estado inicial de la partida. */
@@ -179,6 +256,8 @@ export function initialState(
   if (!experience.ok) return experience;
   const board = initialBoard(rules, setup);
   if (!board.ok) return board;
+  const dynamites = initialDynamites(rules, setup);
+  if (!dynamites.ok) return dynamites;
   const kills = setup.kills ?? 0;
   if (!Number.isInteger(kills) || kills < 0) {
     return err(invalidConfig('setup.kills', SETUP_KILLS_MUST_BE_INTEGER));
@@ -190,5 +269,6 @@ export function initialState(
     experience: experience.value,
     board: board.value,
     kills,
+    dynamites: dynamites.value,
   });
 }

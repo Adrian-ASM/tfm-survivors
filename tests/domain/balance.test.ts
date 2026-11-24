@@ -70,7 +70,7 @@ describe('Plazos con progresión (0005, medidos en el punto de control 0.3)', ()
     expect(hits).toHaveLength(1);
     const { health, prev, status } = hits[0] ?? { health: 0, prev: 0, status: '' };
     expect(status).not.toBe('over');
-    expect(DEFAULT_ENEMY_TYPES.map((t) => prev - t.damage)).toContain(health);
+    expect(DEFAULT_ENEMY_TYPES.map((t) => prev - (t.damage ?? 0))).toContain(health);
   });
 
   it('Scenario: Jugador quieto con el contenido por defecto (semilla 7: baja ≤ 900, pulso ≤ 4.800)', () => {

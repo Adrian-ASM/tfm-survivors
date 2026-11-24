@@ -195,7 +195,7 @@ export class Run {
     this.player = this.player.move(input, TICK_SECONDS, this.arena, this.terrain);
     const { x, y } = this.player.position;
     this.field.retarget(this.terrain.colAt(x), this.terrain.rowAt(y));
-    this.horde.chase(x, y, TICK_SECONDS, this.field);
+    this.horde.act(n, x, y, TICK_SECONDS, this.field);
     if (this.arsenal.step(n, x, y, this.horde.alive) > 0) this.horde.removeDead(this.dropGem);
     if (this.applyContact(n) || this.reachedEnd(n)) {
       this.tickCount = n;
@@ -265,7 +265,7 @@ export class Run {
       this.random,
     );
     if (!at) return false;
-    this.horde.spawn(type, at.x, at.y);
+    this.horde.spawn(type, at.x, at.y, this.tickCount + 1);
     return true;
   };
 
@@ -294,6 +294,9 @@ export class Run {
       enemies: Object.freeze(enemies),
       projectiles: Object.freeze(this.arsenal.projectiles.map(toProjectileSnapshot)),
       pulses: Object.freeze(this.arsenal.pulses.map(toPulseSnapshot)),
+      dynamites: Object.freeze([]),
+      warnings: Object.freeze([]),
+      blasts: Object.freeze([]),
       weapons: Object.freeze(
         this.arsenal.weapons.map((w) => Object.freeze({ id: w.type.id, ready: w.isChargedAt(k) })),
       ),
