@@ -61,7 +61,7 @@ Sin tareas: el change no toca `src/domain` ni `src/application` (design §1).
   deja el estado de la 43 sin heredar nada.
   — escenarios: "`drawn` igual al recorte", "Redimensionado", "Mapa vacío" (de "Recorte al cambiar…"),
   "R tras acabar en una esquina" (nivel culler).
-- [ ] 3.2 `RenderLayers.cullMap(view)`; `paintMap` llama a `culler.reset(plan)` (design §6). Test en
+- [x] 3.2 `RenderLayers.cullMap(view)`; `paintMap` llama a `culler.reset(plan)` (design §6). Test en
   `render-layers.test.ts` (rojo: `cullMap` no existe) con un lienzo doble que guarda visibilidad y frame de espuma
   por índice y un `CameraRig` sobre una cámara doble, encadenando por frame `render` → `rig.track` →
   `cullMap(rig.nextView())`: 600 snapshots de la semilla 42 a 1.280 × 720 moviéndose a 215 px/s a la derecha y

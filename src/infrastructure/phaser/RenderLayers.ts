@@ -9,7 +9,8 @@ import { ProjectileLayer } from './ProjectileLayer';
 import { PulseLayer, type RingSprite } from './PulseLayer';
 import type { SpriteCounts } from './renderCounts';
 import type { SpriteKit } from './SpriteLike';
-import type { MapArtPlan } from './map/planMapArt';
+import { MapCuller } from './map/mapCulling';
+import type { Box, MapArtPlan } from './map/planMapArt';
 import { paintMapArt, zeroCells, zeroMapArt, type MapArtCanvas } from './TerrainView';
 
 /** Tamaño de los pools: el de la escena más el tope de cadáveres de los datos de aspecto. */
@@ -45,8 +46,10 @@ export class RenderLayers {
   private readonly projectiles: ProjectileLayer;
   private readonly player: PlayerView;
   private status: RunSnapshot['status'] = 'running';
-  /** Lienzo y animación de la espuma del mapa pintado (0016), y último frame aplicado. */
-  private foamCanvas: MapArtCanvas | null = null;
+  /** Lienzo del mapa pintado, animación de la espuma (0016) y último frame aplicado. */
+  private mapCanvas: MapArtCanvas | null = null;
+  /** Recorte por cámara del mapa pintado (0018). */
+  private readonly culler = new MapCuller();
   private foamAnim: AnimSpec | null = null;
   private foamFrame = -1;
 
@@ -94,11 +97,11 @@ export class RenderLayers {
 
   /** Espuma del mapa en bucle con el reloj de render: `setFrame` solo cuando cambia (0016). */
   private animateFoam(ms: number): void {
-    if (!this.foamCanvas || !this.foamAnim) return;
+    if (!this.mapCanvas || !this.foamAnim) return;
     const frame = frameAt(this.foamAnim, ms);
     if (frame === this.foamFrame) return;
     this.foamFrame = frame;
-    this.foamCanvas.foam(frame);
+    this.mapCanvas.foam(frame);
   }
 
   /**
@@ -113,9 +116,18 @@ export class RenderLayers {
       mapArt[key] = { ...painted.mapArt[key] };
     }
     mapArt.objects = painted.mapArt.objects;
-    this.foamCanvas = canvas;
+    this.mapCanvas = canvas;
+    this.culler.reset(plan);
     this.foamAnim = plan.foam ? { frames: plan.foam.frames, fps: plan.foam.fps, loop: true } : null;
     this.foamFrame = -1;
+  }
+
+  /**
+   * Recorte del mapa pintado con el rectángulo visible del frame que se va a pintar (0018, design
+   * §8): tras `rig.track`, con `rig.nextView()`. Solo cambia la visibilidad de lo que entra o sale.
+   */
+  cullMap(view: Box): void {
+    if (this.mapCanvas) this.culler.apply(view, this.mapCanvas);
   }
 
   /** Cambio de partida: vacía las capas sin cadáveres y el jugador no hereda nada. */
