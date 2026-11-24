@@ -79,20 +79,27 @@ export {
 /**
  * Partida en curso (aggregate root). Único punto de entrada para cambiar el estado de la
  * simulación. Contrato de determinismo (spec simulation-loop, "Orden de los pasos del tick"): el
- * orden del tick (1 jugador → 2 comportamiento en orden de lista: esperas que terminan, persecución
+ * orden del tick (1 jugador y, tras él, ovejas en orden de lista: huida o pasto/paseo (ADR-0022) →
+ * 2 comportamiento en orden de lista: esperas que terminan, persecución
  * y alerta por el campo de flujo hacia la celda del jugador, patrulla y vuelta hacia su punto fijo, y
- * transiciones tras moverse → 3 armas (estructuras solo como reserva sin enemigos en el criterio) y,
- * si hay bajas, removeDead() con sus gemas, y después las estructuras a vida 0 quedan destruidas →
+ * transiciones tras moverse → 3 armas (estructuras como reserva sin enemigos en el criterio y ovejas
+ * sin estructuras) y, si hay bajas, removeDead() con sus gemas, después las estructuras a vida 0
+ * quedan destruidas (su oro) y las ovejas a vida 0 mueren (su carne; se encola su reaparición) →
  * 4 peligros (ADR-0019): explosiones caducadas, barriles cuya mecha termina (marcados todos antes,
- * sin dañarse a sí mismos) y dinamitas que llegan, en ese orden, otro removeDead() y lanzamientos en
+ * sin dañarse a sí mismos) y dinamitas que llegan, en ese orden, que dañan también a las ovejas,
+ * otro removeDead() y las ovejas muertas, y lanzamientos en
  * orden de lista bajo el tope → 5 un solo golpe al jugador, el mayor entre contactos de tipos con
- * daño y explosiones que le alcanzan → victoria en el tick de la duración objetivo → gemas y XP →
- * director → nacimiento de guardias en las casas, en orden de lista (ADR-0020) → apertura de oferta)
+ * daño y explosiones que le alcanzan → victoria en el tick de la duración objetivo → recogibles (XP,
+ * oro, madera y la carne, que cura) y vetas → director → nacimiento de guardias en las casas, en
+ * orden de lista (ADR-0020) → reaparición de ovejas en orden de cola → apertura de oferta)
  * y el consumo de azar son fijos (colisión con el mapa, campo, línea libre, navegación,
  * comportamientos, peligros, estructuras, nacimientos, recolocación de apariciones, armas, gemas, XP
  * y fin de partida no consumen azar; la oferta y cada intento de aparición sí); cambiarlos cambia las
  * partidas de una semilla. El mapa es parte del estado inicial y sale de un flujo de azar propio
- * (ADR-0013), y sus casas y torres de otro (ADR-0020); no cambia durante la partida. La navegación
+ * (ADR-0013), y sus casas y torres de otro (ADR-0020); no cambia durante la partida. Las ovejas
+ * consumen solo su flujo (ADR-0022), en este orden: colocación (1 valor por oveja), primer pasto (1 por
+ * oveja colocada), y en partida 1 por paseo aleatorio (paso 1) y 1 por reaparición con candidatas
+ * (paso 9.2); nunca el azar de la partida. La navegación
  * (ADR-0017): BFS 4-vecina con orden izquierda, derecha, arriba, abajo, campo solo función de (mapa,
  * celda del jugador) y empates por ese orden.
  */

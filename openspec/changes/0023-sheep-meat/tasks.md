@@ -212,11 +212,11 @@
     la entrada de Sprite); no hay API nueva.
 
 ## 7. E2E y documentación
-- [ ] 7.1 E2E (ninguno nuevo): ampliar "Estructuras y guardias en el navegador" de `tests/e2e/gameplay.spec.ts`
+- [x] 7.1 E2E (ninguno nuevo): ampliar "Estructuras y guardias en el navegador" de `tests/e2e/gameplay.spec.ts`
   (`?e2e&manual&seed=42`, `step(n)`, sin umbrales de tiempo): en ambas lecturas, sprites de oveja iguales en número y
   por estado al snapshot (en la primera, el tope del contenido) y `meat` igual a los recogibles `meat`, sin reserva.
   Escenario: sprite-rendering · "Estructuras y guardias en el navegador". `npm.cmd run test:e2e -- gameplay.spec`;
   `logicGuard` sin cambios de recuento.
-- [ ] 7.2 Documentación: `AGENTS.md` §1 (estado del proyecto con 0023: ovejas, carne, `SHEEP_STREAM` 5, banda M1),
+- [x] 7.2 Documentación: `AGENTS.md` §1 (estado del proyecto con 0023: ovejas, carne, `SHEEP_STREAM` 5, banda M1),
   ADR-0022 a "aceptada" con el addendum de balance de 5.2, docblock de `Run` con el orden del tick y el consumo de
   azar, y entrada del diario de IA en `docs/ai-log/` (incluidos los bloqueos de hooks si los hubo).

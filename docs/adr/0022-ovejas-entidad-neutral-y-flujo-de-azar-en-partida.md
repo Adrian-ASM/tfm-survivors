@@ -1,6 +1,6 @@
 # ADR-0022 · Ovejas como entidad neutral, flujo de azar de ovejas consumido en partida y reserva por niveles
 
-- **Estado**: propuesta (design de 0023)
+- **Estado**: aceptada (apply de 0023, 2026-11-24)
 - **Fecha**: 2026-11-24
 
 ## Contexto
@@ -64,3 +64,20 @@ explosiones, sueltan carne que cura y **reaparecen** con el tiempo. Hay cuatro f
   - Con `maxAlive` 0 no hay ovejas ni consumo de su flujo, y el nivel de reserva 2 queda vacío (lo vigila el lote con
     tope 0 igual a la línea base).
   - Quitar el nivel o el flujo no toca mapa, estructuras, recursos ni oleadas.
+
+## Addendum · balance y ajustes de apply (0023)
+- **M1 sin recalibrar**: con el contenido provisional del design (`maxAlive` 5, `healPercent` 20, reaparición cada
+  1.800 ticks a ≥ 600 px) el bot v3 gana **28/50** (base 27: la 9 pasa a derrota, la 10 y la 50 a victoria), con 26,76
+  mechas, 4,2 de vida curada y 0,30 ovejas muertas por partida; 0 quietos supervivientes con mapa generado y vacío
+  (muerte máxima en los ticks 6.802 y 7.948, iguales a M0; el quieto no se cura). Con tope 0, **27/50** idéntico a la
+  línea base semilla a semilla y 26,88 mechas. No se ha tocado ningún parámetro del orden de ajuste.
+- **Coste**: el lote del bot con ovejas tarda 28,8–29,1 s en local (≈ 81 s ×2,8, bajo el tope de 90 s), un 7,5 % más
+  que el mismo código con tope 0 (26,7–26,8 s); el segundo lote duplica `balance.test.ts` (63 s frente a 31,5 s).
+  Bench "cuatro topes llenos + ovejas en huida": 0,252 ms por tick.
+- **Sin el cruce `sheep.radius ≤ map.cellSize / 2`** del design: rompía el escenario vivo "Celda en el límite del
+  radio del jugador" (`cellSize` 32 carga con el contenido por defecto). Las celdas de colocación y de reaparición se
+  filtran a centros que son posición legal del círculo de la oveja: el invariante "toda oveja está en una posición
+  legal" se mantiene sin regla de contenido.
+- **Reserva por niveles con dos parámetros**: `Arsenal.step(n, x, y, enemies, structures?, sheep?)` con un array
+  interno fijo de dos niveles, para que las llamadas de 0021 (`[casa]` como quinto argumento) sigan igual. Añadir un
+  nivel sigue siendo añadir un hueco a ese array.
