@@ -163,20 +163,32 @@ function steer(snapshot: RunSnapshot, world: BotWorld, fx: number, fy: number): 
  * lo que expone el snapshot (no conoce el daño ni las dinamitas aún no lanzadas).
  */
 export function dodgeInput(snapshot: RunSnapshot, world: BotWorld): PlayerInput {
-  const { x, y, radius } = snapshot.player;
-  const step = world.speedOf(snapshot) * TICK_SECONDS;
+  const { x, y } = snapshot.player;
   let fx = 0;
   let fy = 0;
-  for (const w of snapshot.warnings) {
-    const dx = x - w.x;
-    const dy = y - w.y;
-    const d = Math.hypot(dx, dy);
-    if (d >= w.radius + radius + step || d === 0) continue;
-    fx += dx / d;
-    fy += dy / d;
+  for (const w of threateningWarnings(snapshot, world)) {
+    const d = Math.hypot(x - w.x, y - w.y);
+    fx += (x - w.x) / d;
+    fy += (y - w.y) / d;
   }
   if (fx === 0 && fy === 0) return fleeInput(snapshot, world);
   return steer(snapshot, world, fx, fy);
+}
+
+/**
+ * Avisos amenazantes para el bot v3 (ver `dodgeInput`), sin los centrados en el jugador (no dan
+ * dirección). También lo usa la firma W3 de la medición de balance (0021, design §11).
+ */
+export function threateningWarnings(
+  snapshot: RunSnapshot,
+  world: BotWorld,
+): RunSnapshot['warnings'] {
+  const { x, y, radius } = snapshot.player;
+  const step = world.speedOf(snapshot) * TICK_SECONDS;
+  return snapshot.warnings.filter((w) => {
+    const d = Math.hypot(x - w.x, y - w.y);
+    return d < w.radius + radius + step && d !== 0;
+  });
 }
 
 /** Bot de referencia del balance (v3): esquiva de avisos, huida y elección por prioridad. */

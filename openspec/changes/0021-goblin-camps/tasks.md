@@ -115,27 +115,44 @@
   simulación" (escalas de estructura ×2 y colores cambiados).
 
 ## 7. Balance por pasos (tests/support y contenido; design §11)
-- [ ] 7.1 Instrumentación de `measureBalance`: mechas y explosiones de barril por partida, tiempo del lote en local y
+- [x] 7.1 Instrumentación de `measureBalance`: mechas y explosiones de barril por partida, tiempo del lote en local y
   firma W3 (daño de dinamita de guardia con v3 en `NONE` y ≥ 1 aviso amenazante). Test de "Mechas por partida"
   (> 16,3). — RO: "Mechas por partida".
-- [ ] 7.2 **Paso 1 · barril**: medir con el barril A3, sin estructuras (config de test con `count` 0). Anotar
+- [x] 7.2 **Paso 1 · barril**: medir con el barril A3, sin estructuras (config de test con `count` 0). Anotar
   victorias, quietos, mechas, explosiones, s7 y lote. Se espera 29/50 y 0/0. Si no se reproduce, parar y avisar.
-- [ ] 7.3 **Paso 2 · estructuras sin guardias** (config de test con `everyTicks` > 36.000): medir y anotar. Se espera
+- [x] 7.3 **Paso 2 · estructuras sin guardias** (config de test con `everyTicks` > 36.000): medir y anotar. Se espera
   ±1 victoria respecto al paso 1. Si cae más de 2, revisar §5 antes de seguir.
-- [ ] 7.4 **Paso 3 · guardias** (contenido final): medir y anotar, incluido el lote en local (≤ 32 s, unos 90 s en CI
+- [x] 7.4 **Paso 3 · guardias** (contenido final): medir y anotar, incluido el lote en local (≤ 32 s, unos 90 s en CI
   con ×2,8, frente al timeout de 180 s, que no se sube). Recalibrar en este orden: guardias, barril dentro de A3 y
   cotas, y estructuras. Si ninguna combinación da la banda con 0 quietos, parar y volver al gate. — RO: "Tasa de
   victoria del bot de referencia", "Toda partida del bot termina", "Jugador quieto pierde con todas las semillas",
   "Jugador quieto pierde también con el mapa vacío", "Muerte quieta en el límite de 180 s", "Plazos del jugador quieto
   con el contenido final".
-- [ ] 7.5 **Condicional (A2): solo si 7.4 da < 25 victorias y la firma W3 es > 0 en semillas que el paso 2 ganaba.**
+- [x] 7.5 **Condicional (A2): solo si 7.4 da < 25 victorias y la firma W3 es > 0 en semillas que el paso 2 ganaba.**
   Bot v4 "flee-nearest" en `tests/support/policies.ts` (diff de la medición 4) con su test, y volver a medir 7.4.
-- [ ] 7.6 **Condicional, bloquea verify si se hizo 7.5**: devolver al spec-writer el MODIFIED de "Bot de referencia
+- [x] 7.6 **Condicional, bloquea verify si se hizo 7.5**: devolver al spec-writer el MODIFIED de "Bot de referencia
   para el balance" en `specs/run-outcome` (regla v4 y sus escenarios) y que "Tasa de victoria del bot de referencia"
   pase a citar v4. El implementer no edita specs.
-- [ ] 7.7 **Condicional, si 7.4 recalibró valores citados en specs**: devolver al spec-writer los escenarios con
+- [x] 7.7 **Condicional, si 7.4 recalibró valores citados en specs**: devolver al spec-writer los escenarios con
   valores explícitos (barril: EB "Parámetros del barril por defecto", ES "Stats por defecto" y "Vida por defecto de
   cada tipo"; guardias: EB, si se citan). Antes de verify.
+
+Resultados del grupo 7 (bot v3, semillas 1..50; pasos 1 y 2 con configuraciones de test no versionadas):
+
+| Paso | Victorias | Quietos (gen./vacío) | Mechas/partida | Explosiones/partida | s7 | Lote local |
+|---|---|---|---|---|---|---|
+| Base (barril de 0020, sin estructuras) | 27 | 0/0 | 16,30 | 6,56 | 2.082 | 30,2 s |
+| 1 · barril A3, sin estructuras (`NO_STRUCTURES`) | 29 | 0/0 | 28,96 | 16,40 | 2.082 | 28,0 s |
+| 2 · estructuras sin guardias (`everyTicks` 10⁶) | 27 | 0/0 | 28,84 | 16,26 | 2.082 | 28,0 s |
+| 3 · contenido final | 27 | 0/0 | 26,88 | 14,64 | 2.082 | 30,4 s |
+
+- La base reproduce las cifras de la propuesta (16,3 y 6,6): valida el rastro y es el rojo de "Mechas por partida".
+- Paso 1 reproduce la medición 7c (29/50, 29,0 y 16,4). Paso 2: −2 (no más de 2, sin revisar §5).
+- Lote con rastro: 30,4 s local, ≈ 85 s equivalentes en CI (×2,8) ≤ 90; `BOT_BATCH_TIMEOUT_MS` sigue en 180 s.
+- Firma W3: 0 en las 50 semillas de los tres pasos.
+- 7.5 y 7.6: **no aplican**: el paso 3 da 27/50 (en banda, no < 25) y la firma W3 es 0; el bot sigue en v3.
+- 7.7: **no aplica**: no se recalibró nada; los valores que citan las specs (barril 60/25/80, mecha 40) son los del
+  contenido.
 
 ## 8. Bench, E2E y documentación
 - [ ] 8.1 Bench "peor caso con estructuras y guardias" en `tests/bench/run.bench.ts` (§12): anotar la media frente a

@@ -13,6 +13,7 @@ import {
   aDefaultConfig,
   withPlayer,
 } from '../support/builders';
+import { perRun, traceBotBatch, type BotTrace } from '../support/balanceMeasure';
 import { referenceBot } from '../support/policies';
 import { play, playReferenceBot, startSeededRun, stillSurvivors } from '../support/runs';
 
@@ -35,6 +36,8 @@ const FIRST_KILL_WINDOW = 900;
 // golpe en el 2.442 (semilla 42); bot de referencia 26/50, 0 quietos en ambos mapas.
 // 0020 (comportamientos y peligros, curva 9/4, bot v3): mismos plazos (oferta 2.082, golpe 2.442);
 // bot v3 27/50, 0 quietos en ambos mapas (addendum de ADR-0019).
+// 0021 (casas, torres, guardias y barril A3): oferta en el 2.082; bot v3 27/50, 0 quietos en ambos
+// mapas (pasos de balance en el addendum de ADR-0020).
 const OFFER_LIMIT = 4800;
 
 /** Contenido por defecto: crea las partidas y el bot de referencia (mismo mundo para ambos). */
@@ -157,14 +160,29 @@ const TEN_MINUTES = 36_000;
 // Spec run-outcome (0010), "Partida ganable y perdible": requisito "Ganable" sobre 1..50. Las 50
 // partidas se juegan una vez (timeout propio: el global es de 20 s y en CI puede doblarse).
 // 0020: con el bot v3 y los peligros el lote pasó de 60 s en el runner de CI (≈ 70 s; ~25 s en local).
+// 0021: con estructuras, guardias y el rastro de mechas, ~30 s en local (≈ 85 s equivalentes en CI).
 const BOT_BATCH_TIMEOUT_MS = 180_000;
 
+// Spec run-outcome (0021), "Barril que cumple su papel": base medida antes del change con el bot v3
+// (16,3 mechas y 6,6 explosiones por partida; el rastro lo reproduce con el barril de 0020). Con el
+// contenido final, medido en apply: 26,9 mechas y 14,6 explosiones por partida.
+const BARREL_FUSE_BASELINE = 16.3;
+
 describe('Balance con el contenido por defecto (0010)', () => {
+  let traces: BotTrace[] = [];
   let finals: RunSnapshot[] = [];
 
   beforeAll(() => {
-    finals = BALANCE_SEEDS.map((seed) => playBot(startDefault(seed), TEN_MINUTES));
+    traces = traceBotBatch(DEFAULT_CONFIG);
+    finals = traces.map((t) => t.final);
   }, BOT_BATCH_TIMEOUT_MS);
+
+  it('Scenario: Mechas por partida (media > 16,3 con el contenido final)', () => {
+    const fuses = perRun(traces, (t) => t.fuses);
+
+    expect(traces).toHaveLength(BALANCE_SEEDS.length);
+    expect(fuses, `mechas por partida: ${fuses.toFixed(2)}`).toBeGreaterThan(BARREL_FUSE_BASELINE);
+  });
 
   it('Scenario: Toda partida del bot termina', () => {
     const unfinished = finals.filter((s) => s.status !== 'over' || s.tick > TEN_MINUTES);
