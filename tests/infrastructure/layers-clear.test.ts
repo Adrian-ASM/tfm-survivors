@@ -196,7 +196,7 @@ describe('Vista limpia tras reiniciar (spec run-results y sprite-rendering)', ()
   it('Scenario: Sonda en el menú (recuentos a 0 con las claves de enemigo)', () => {
     const c = emptyCounts(['goblin-torch', 'goblin-tnt', 'goblin-barrel']);
     const kinds = [c.player, c.enemies, c.corpses, c.projectiles, c.pulses, c.gems];
-    kinds.push(c.dynamites, c.warnings, c.explosions);
+    kinds.push(c.dynamites, c.warnings, c.explosions, c.pickups.meat, c.sheep);
     expect(c.enemyStates).toEqual({
       chase: 0,
       fuse: 0,
@@ -207,6 +207,7 @@ describe('Vista limpia tras reiniciar (spec run-results y sprite-rendering)', ()
       return: 0,
     });
     expect(kinds.every((k) => k.visible === 0 && k.placeholder === 0)).toBe(true);
+    expect(c.sheep.byState).toEqual({ graze: 0, wander: 0, flee: 0 });
     expect(c.enemyPlaceholders).toEqual({ 'goblin-torch': 0, 'goblin-tnt': 0, 'goblin-barrel': 0 });
   });
 });

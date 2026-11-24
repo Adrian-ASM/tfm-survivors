@@ -2,6 +2,7 @@ import type {
   Appearance,
   Aspect,
   PickupLooksAppearance,
+  SheepAspect,
   StillAspect,
 } from '../../content/appearanceSchema';
 import type { PickupKind } from '../../../domain/pickup/PickupKind';
@@ -50,6 +51,17 @@ export interface ExplosionLook extends LookBase {
 export interface PickupLook extends StillLook {
   readonly shape: boolean;
 }
+/**
+ * Aspecto de la oveja (0023): una vista por animación, cada una con la textura de su hoja (`idle`
+ * en pasto, `bounce` en paseo y huida; el campo `idle` de cada vista es su animación). Si falla
+ * cualquiera de las dos hojas, las dos vistas son la reserva (disco del color de la oveja).
+ */
+export interface SheepLook {
+  readonly idle: StillLook;
+  readonly bounce: StillLook;
+  readonly placeholder: boolean;
+}
+
 /** Color y opacidad de un aviso en el suelo (sin hoja: nunca es reserva). */
 export interface WarningLook {
   readonly color: number;
@@ -62,6 +74,7 @@ export interface Looks {
   readonly projectile: StillLook;
   /** Por tipo de recogible (0022): la gema, el oro y la madera. */
   readonly pickups: Readonly<Record<PickupKind, PickupLook>>;
+  readonly sheep: SheepLook;
   readonly ground: StillLook;
   readonly corpse: CorpseLook;
   readonly dynamite: StillLook;
@@ -95,6 +108,26 @@ function base(aspect: Aspect, frames: FrameCount): LookBase {
     color: aspect.placeholderColor,
     flips: fits,
   };
+}
+
+/** Vistas de la oveja contra las texturas cargadas: las dos con su hoja o las dos en reserva. */
+function sheepLook(a: SheepAspect, frames: FrameCount): SheepLook {
+  const fits = (anim: SheepAspect['idle']): boolean => {
+    const count = frames(anim.sheet.file);
+    return count !== null && anim.frames.every((i) => i < count);
+  };
+  const painted = fits(a.idle) && fits(a.bounce);
+  const view = (anim: SheepAspect['idle']): StillLook => ({
+    texture: painted ? anim.sheet.file : PLACEHOLDER_TEXTURE,
+    placeholder: !painted,
+    scale: a.scale,
+    origin: painted ? a.origin : CENTER,
+    facing: a.facing,
+    color: a.placeholderColor,
+    flips: painted,
+    idle: { frames: anim.frames, fps: anim.fps, loop: anim.loop },
+  });
+  return { idle: view(a.idle), bounce: view(a.bounce), placeholder: !painted };
 }
 
 /** `idle` de la gema sin hoja: el único frame de la textura de reserva. */
@@ -147,6 +180,7 @@ export function resolveLooks(appearance: Appearance, frames: FrameCount): Looks 
     ),
     projectile: still(appearance.projectile),
     pickups: pickupLooks(appearance.pickups, still),
+    sheep: sheepLook(appearance.sheep, frames),
     ground: still(appearance.ground),
     corpse: { ...base(appearance.corpse, frames), death: appearance.corpse.death },
     dynamite: still(appearance.dynamite),

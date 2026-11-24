@@ -17,6 +17,17 @@ export function pickupAspectsOf(appearance: Appearance): [string[], StillAspect]
   return out;
 }
 
+/** Hojas de la oveja (0023) con su ruta de campo: la de `idle` y la de `bounce`. */
+export function sheepSheetsOf(
+  appearance: Appearance,
+): [string[], { file: string; frameWidth: number; frameHeight: number }][] {
+  const { idle, bounce } = appearance.sheep;
+  return [
+    [['sheep', 'idle', 'sheet'], idle.sheet],
+    [['sheep', 'bounce', 'sheet'], bounce.sheet],
+  ];
+}
+
 /** Aspectos de la veta (0022) con su ruta de campo: activa y agotada. */
 export function veinAspectsOf(appearance: Appearance): [string[], StructureAspect][] {
   return [
@@ -118,6 +129,10 @@ export function parseAppearance(
       ...veinAspectsOf(appearance).map(([path, a]): [string[], string] => [
         [...path, 'sheet', 'file'],
         a.sheet.file,
+      ]),
+      ...sheepSheetsOf(appearance).map(([path, sheet]): [string[], string] => [
+        [...path, 'file'],
+        sheet.file,
       ]),
     ];
     for (const [path, file] of sheets) {

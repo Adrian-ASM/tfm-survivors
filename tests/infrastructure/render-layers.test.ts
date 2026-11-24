@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { EnemySnapshot, RunSnapshot } from '../../src/domain/run/RunSnapshot';
+import type { EnemySnapshot, RunSnapshot, SheepSnapshot } from '../../src/domain/run/RunSnapshot';
 import type { RingSprite } from '../../src/infrastructure/phaser/PulseLayer';
 import { RenderLayers } from '../../src/infrastructure/phaser/RenderLayers';
 import { aDefaultConfig } from '../support/builders';
@@ -61,6 +61,17 @@ const foe = (id: number, x: number, y: number): EnemySnapshot => ({
   stateKind: 'chase',
 });
 
+const lamb = (id: number, x: number, y: number): SheepSnapshot => ({
+  id,
+  x,
+  y,
+  radius: 20,
+  health: 12,
+  state: 'graze',
+  damaged: false,
+  origin: { x, y },
+});
+
 function snap(tick: number, over: Partial<RunSnapshot> = {}): RunSnapshot {
   return { ...BASE, tick, ...over } as RunSnapshot;
 }
@@ -83,7 +94,8 @@ function setup(maxCorpses = 64) {
         enemies: 200,
         projectiles: 32,
         pulses: 4,
-        pickups: 396,
+        pickups: 404,
+        sheep: 5,
         corpses: maxCorpses,
         visualTicks: new Map([['tests', 8]]),
         hazards: FAKE_HAZARD_CAPACITY,
@@ -623,10 +635,19 @@ describe('RenderLayers · recuentos para la sonda', () => {
         { id: 3, kind: 'xp', value: 1, x: 7, y: 7, radius: 5 },
         { id: 4, kind: 'gold', value: 5, x: 8, y: 8, radius: 5 },
         { id: 5, kind: 'wood', value: 3, x: 9, y: 9, radius: 5 },
+        { id: 6, kind: 'meat', value: 1, x: 4, y: 4, radius: 5 },
+      ],
+      // 0023: ovejas por estado.
+      sheep: [
+        { ...lamb(0, 100, 100), state: 'graze' },
+        { ...lamb(1, 200, 100), state: 'flee' },
+        { ...lamb(2, 300, 100), state: 'flee' },
       ],
     });
     frame(s);
     const c = layers.counts;
+    expect(c.pickups.meat).toEqual({ visible: 1, placeholder: 0 });
+    expect(c.sheep).toEqual({ visible: 3, placeholder: 0, byState: { graze: 1, wander: 0, flee: 2 } });
     expect([c.enemies.visible, c.projectiles.visible, c.gems.visible, c.player.visible]).toEqual([
       2, 1, 3, 1,
     ]);

@@ -62,8 +62,10 @@ const SheetFile = z
   .string()
   .regex(/^(?!.*\.\.)[A-Za-z0-9_][A-Za-z0-9_ ./-]*\.png$/, { error: SHEET_FILE_FORMAT });
 
+const SheetSchema = z.strictObject({ file: SheetFile, frameWidth: FrameSize, frameHeight: FrameSize });
+
 const BaseShape = {
-  sheet: z.strictObject({ file: SheetFile, frameWidth: FrameSize, frameHeight: FrameSize }),
+  sheet: SheetSchema,
   scale: z.number().positive({ error: SCALE_MUST_BE_POSITIVE }),
   origin: z.strictObject({ x: Unit, y: Unit }),
   facing: z.enum(['right', 'left']),
@@ -84,6 +86,28 @@ export const EnemyAspectSchema = z.strictObject({
   walk: AnimSchema,
   fuse: AnimSchema.optional(),
   throw: AnimSchema.optional(),
+});
+
+/** Animación con su propia hoja (oveja, 0023): cada animación puede venir de un fichero distinto. */
+const SheetAnimSchema = z.strictObject({
+  sheet: SheetSchema,
+  frames: Frames,
+  fps: Fps,
+  loop: z.boolean(),
+});
+
+/**
+ * Oveja (0023, design §10): `idle` (pasto) y `bounce` (paseo y huida), **cada una con su hoja**
+ * (`HappySheep_Idle` y `HappySheep_Bouncing`), con escala, origen, orientación y color de reserva
+ * comunes. Pasar a una hoja única (`HappySheep_All`) sería solo cambiar los datos.
+ */
+export const SheepAspectSchema = z.strictObject({
+  scale: BaseShape.scale,
+  origin: BaseShape.origin,
+  facing: BaseShape.facing,
+  placeholderColor: Hex,
+  idle: SheetAnimSchema,
+  bounce: SheetAnimSchema,
 });
 
 /** Explosión (0020): `explode` se reproduce una vez y se queda en su último frame. */
@@ -302,8 +326,8 @@ export const RESOURCE_COLORS_MUST_DIFFER =
 
 /**
  * Colores de reserva de los recogibles (xp, gold, wood, meat) y de la veta (0022, 0023): distintos dos a dos y
- * de los del mapa y de las estructuras. El error nombra el primero, en ese orden (la carne, de 0023,
- * va tras la veta), que repite uno.
+ * de los del mapa y de las estructuras, y el de la oveja (0023), distinto de todos ellos. El error
+ * nombra el primero, en ese orden (la carne y la oveja, de 0023, van tras la veta), que repite uno.
  */
 function checkResourceColors(a: z.output<typeof AppearanceShape>, ctx: z.RefinementCtx): void {
   const seen = new Set<number>([...Object.values(a.terrain), ...Object.values(a.structureColors)]);
@@ -313,6 +337,7 @@ function checkResourceColors(a: z.output<typeof AppearanceShape>, ctx: z.Refinem
     [['pickups', 'wood', 'placeholderColor'], a.pickups.wood.placeholderColor],
     [['veinColor'], a.veinColor],
     [['pickups', 'meat', 'placeholderColor'], a.pickups.meat.placeholderColor],
+    [['sheep', 'placeholderColor'], a.sheep.placeholderColor],
   ];
   for (const [path, color] of colors) {
     if (seen.has(color)) {
@@ -346,6 +371,8 @@ const AppearanceShape = z.strictObject({
   projectile: StillSchema,
   /** Por tipo de recogible (0022, 0023): `xp` (la gema), `gold`, `wood` y `meat`. */
   pickups: PickupLooksSchema,
+  /** Oveja (0023): `idle` y `bounce` con su hoja cada una. */
+  sheep: SheepAspectSchema,
   ground: StillSchema,
   corpse: CorpseSchema,
   dynamite: StillSchema,
@@ -379,6 +406,7 @@ export type StillAspect = z.output<typeof StillSchema>;
 /** Gema sin hoja (0022): forma de color. */
 export type XpShapeAspect = z.output<typeof XpShapeSchema>;
 export type PickupLooksAppearance = z.output<typeof PickupLooksSchema>;
+export type SheepAspect = z.output<typeof SheepAspectSchema>;
 export type VeinLooksAppearance = z.output<typeof VeinLooksSchema>;
 export type MovingAspect = z.output<typeof MovingSchema>;
 export type CorpseAspect = z.output<typeof CorpseSchema>;

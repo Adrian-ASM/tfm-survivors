@@ -181,7 +181,7 @@
       tope 0; los del contenido por defecto que fijaban cifras de 0022 se movieron al lote con tope 0).
 
 ## 6. Infraestructura · render, arte y sonda (test-after)
-- [ ] 6.1 Arte, procedencia y aspectos. Copiar `HappySheep_Idle.png`, `HappySheep_Bouncing.png` y `M_Idle.png`
+- [x] 6.1 Arte, procedencia y aspectos. Copiar `HappySheep_Idle.png`, `HappySheep_Bouncing.png` y `M_Idle.png`
   (byte a byte, Update 010) a `public/assets/tiny-swords/...` con sus entradas en `content/asset-provenance.json`
   **en el mismo commit**. `appearanceSchema`: aspecto `sheep` con `idle` y `bounce`, **cada una con su `sheet`**
   (design §10: cambiar a `HappySheep_All` sería solo contenido) y color de reserva; `pickups.meat` con `M_Idle`;
@@ -191,7 +191,12 @@
   - sprite-rendering · "Datos de la oveja inválidos", "Datos del repositorio", "Datos inválidos".
   Tests: `appearance-schema.test.ts` y `resource-provenance.test.ts` (dejan de prohibir `M_Idle`/`HappySheep`;
   prohíben `HappySheep_All`, `M_Spawn` y `NoShadow`), `npm.cmd run guard:all`.
-- [ ] 6.2 `SheepLayer`, carne en `PickupLayer` y sonda. Pool por id de `capacity` sprites, `idle`/`bounce` con
+  - Apply: la carne (`M_Idle`) ya entró en el grupo 1 (ver 1.1). Aspecto `sheep` con `idle` (8 fotogramas, 8 fps) y
+    `bounce` (6, 10 fps), cada una con su `sheet`, escala 0,6 (la oveja ocupa ~45 px de los 128 del fotograma: a
+    0,4 quedaría en 18 px, la mitad del círculo de 36), color `#f0ead6`, comprobado tras la veta y la carne. Las
+    hojas entran en la carga (`sheepSheetsOf`) y en la comprobación de la nota. Escenarios en
+    `sheep-provenance.test.ts` (nuevo).
+- [x] 6.2 `SheepLayer`, carne en `PickupLayer` y sonda. Pool por id de `capacity` sprites, `idle`/`bounce` con
   `setTexture` al cambiar de animación, volteo por Δx, destello, reserva conjunta; capa entre recogibles y
   jugador/enemigos; `PickupLayer` con Σ 4 topes; `renderCounts` con `sprites.sheep` (`visible`, `placeholder`,
   `byState`) y `sprites.pickups.meat`. Escenarios:
@@ -201,6 +206,10 @@
     del mapa con estructuras y vetas" (701/784), "Sonda en el menú";
   - xp-gems · "Topes de los cuatro tipos pintados", "Sprite reutilizado para la carne".
   Tests: `tests/infrastructure/sheep-layer.test.ts`, ampliar `pickup-layer.test.ts` y `render-counts.test.ts`.
+  - Apply: los recuentos están en `render-layers.test.ts` ("Recuento coherente con el snapshot") y
+    `layers-clear.test.ts` ("Sonda en el menú"); no existe `render-counts.test.ts`. API de Phaser: `setTexture(key,
+    frame?)` comprobada en `node_modules/phaser/types/phaser.d.ts` (la búsqueda del MCP `phaser-docs` no devolvió
+    la entrada de Sprite); no hay API nueva.
 
 ## 7. E2E y documentación
 - [ ] 7.1 E2E (ninguno nuevo): ampliar "Estructuras y guardias en el navegador" de `tests/e2e/gameplay.spec.ts`

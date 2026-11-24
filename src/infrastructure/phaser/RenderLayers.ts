@@ -4,6 +4,7 @@ import type { Looks } from './art/looks';
 import { CorpseLayer } from './CorpseLayer';
 import { EnemyLayer } from './EnemyLayer';
 import { PickupLayer } from './PickupLayer';
+import { SheepLayer } from './SheepLayer';
 import { HazardLayer, type HazardCapacity, type WarningCanvas } from './HazardLayer';
 import { PlayerView, type SpriteCount } from './PlayerView';
 import { ProjectileLayer } from './ProjectileLayer';
@@ -20,8 +21,10 @@ export interface LayerCapacity {
   readonly enemies: number;
   readonly projectiles: number;
   readonly pulses: number;
-  /** Recogibles de los tres tipos: la suma de los topes (0022). */
+  /** Recogibles de los cuatro tipos: la suma de los topes (0022, 0023). */
   readonly pickups: number;
+  /** Ovejas vivas como mucho (tope del contenido, 0023); 0 por defecto. */
+  readonly sheep?: number;
   readonly corpses: number;
   readonly visualTicks: ReadonlyMap<string, number>;
   /** Tope de dinamitas del contenido y de explosiones pintadas de los datos de aspecto (0020). */
@@ -41,7 +44,8 @@ export interface RenderParts {
 
 /**
  * Capas de la partida sobre el reloj de render (design "Flujo de un frame"), sin Phaser como valor.
- * El orden de creación es el de pintado: anillos, recogibles, cadáveres, enemigos, proyectiles y jugador
+ * El orden de creación es el de pintado: anillos, recogibles, ovejas (0023), cadáveres, enemigos,
+ * proyectiles y jugador
  * (el suelo, debajo, lo crea la escena). Una baja (salida del snapshot) deja un cadáver; `clear()`
  * (R o Volver al menú) no.
  */
@@ -50,6 +54,8 @@ export class RenderLayers {
   private readonly clock = new AnimClock();
   private readonly pulses: PulseLayer;
   private readonly pickups: PickupLayer;
+  /** Ovejas (0023): sobre los recogibles y bajo jugador y enemigos (capa 6 de sprite-rendering). */
+  private readonly sheep: SheepLayer;
   private readonly corpses: CorpseLayer;
   private readonly enemies: EnemyLayer;
   private readonly projectiles: ProjectileLayer;
@@ -74,6 +80,7 @@ export class RenderLayers {
     this.parts = parts;
     this.pulses = new PulseLayer(capacity.pulses, capacity.visualTicks, parts.ring);
     this.pickups = new PickupLayer(capacity.pickups, kit, looks.pickups);
+    this.sheep = new SheepLayer(capacity.sheep ?? 0, kit, looks.sheep);
     this.corpses = new CorpseLayer(capacity.corpses, kit, looks.corpse);
     this.enemies = new EnemyLayer(capacity.enemies, kit, looks.enemies, this.corpses);
     this.projectiles = new ProjectileLayer(capacity.projectiles, kit, looks.projectile);
@@ -88,6 +95,7 @@ export class RenderLayers {
       pulses: this.pulses.counts,
       pickups: this.pickups.counts,
       gems: this.pickups.counts.xp,
+      sheep: this.sheep.counts,
       enemyPlaceholders: this.enemies.placeholdersByType,
       enemyStates: this.enemies.states,
       warnings: { visible: 0, placeholder: 0 },
@@ -129,6 +137,7 @@ export class RenderLayers {
     this.status = snapshot.status;
     this.pulses.sync(snapshot.pulses, snapshot.tick);
     this.pickups.sync(snapshot.pickups);
+    this.sheep.sync(snapshot.sheep, snapshot.tick, ms);
     this.enemies.sync(snapshot.enemies, snapshot.tick, ms);
     this.corpses.sync(ms);
     this.projectiles.sync(snapshot.projectiles);
@@ -188,6 +197,7 @@ export class RenderLayers {
     this.projectiles.clear();
     this.pulses.clear();
     this.pickups.clear();
+    this.sheep.clear();
     this.hazards?.clear();
     this.player.reset();
     this.status = 'running';
