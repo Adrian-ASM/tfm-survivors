@@ -525,8 +525,8 @@ const SheepPlacement = NonNegativeInt(SHEEP_PLACEMENT_MUST_BE_INTEGER);
 
 // Ovejas neutrales (content/sheep.json, spec sheep 0023, ADR-0022). Estricto en todos los niveles:
 // un campo extra (p. ej. `contactDamage`) o ausente falla nombrándolo. `maxAlive` ≥ 0 sin máximo
-// (0 = sin ovejas). El cruce `radius ≤ map.cellSize / 2` lo comprueba `SheepRules` desde
-// `buildRunRules`.
+// (0 = sin ovejas). Sin cruce con `map.cellSize` (apply de 0023): la colocación y la reaparición
+// solo admiten celdas cuyo centro es posición legal del círculo de la oveja (`legalCells`).
 export const SheepSchema = z.strictObject({
   maxAlive: NonNegativeInt(SHEEP_MAX_ALIVE_MUST_BE_INTEGER),
   radius: SheepPositive(SHEEP_RADIUS_MUST_BE_POSITIVE),

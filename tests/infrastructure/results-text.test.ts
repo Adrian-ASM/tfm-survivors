@@ -8,6 +8,7 @@ import {
 } from '../../src/infrastructure/phaser/resultsText';
 import { aDefaultConfig } from '../support/builders';
 import { startRun } from '../support/runs';
+import { sheepFeast } from '../support/sheep';
 
 const base = (): RunSnapshot => startRun(aDefaultConfig()).snapshot();
 
@@ -79,5 +80,21 @@ describe('Resultados sin oro ni madera (0022)', () => {
 
     expect(Object.keys(view ?? {})).toEqual(['title', 'time', 'level', 'kills', 'hint']);
     expect(JSON.stringify(view)).not.toMatch(/30|\b8\b/);
+  });
+});
+
+// Spec sheep (0023), "Ovejas fuera de bajas y resultados" › "Resultados sin ovejas".
+describe('Resultados sin ovejas (0023)', () => {
+  it('Scenario: Resultados sin ovejas (6 ovejas muertas y 3 carnes recogidas: las 5 líneas de antes)', () => {
+    const { first, final } = sheepFeast();
+    expect(first.sheep).toEqual([]);
+    expect(first.pickups.filter((p) => p.kind === 'meat')).toHaveLength(3);
+    expect(final).toMatchObject({ status: 'over', outcome: 'won', kills: 0 });
+
+    const view = resultsView(final);
+
+    expect(Object.keys(view ?? {})).toEqual(['title', 'time', 'level', 'kills', 'hint']);
+    expect(view?.kills).toBe(final.kills);
+    expect(JSON.stringify(view)).not.toMatch(/sheep|meat|oveja|carne/i);
   });
 });

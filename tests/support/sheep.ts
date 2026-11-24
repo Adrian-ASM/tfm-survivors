@@ -6,7 +6,19 @@ import type { RunSnapshot, SheepSnapshot } from '../../src/domain/run/RunSnapsho
 import type { RandomGenerator } from '../../src/domain/shared/RandomGenerator';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import { SHEEP_STREAM, deriveSeed } from '../../src/infrastructure/random/deriveSeed';
-import { NO_UPGRADES, NO_WEAPONS, aDefaultConfig, aSegment, aWavesConfig, withSheep } from './builders';
+import { PlayerInput } from '../../src/domain/player/PlayerInput';
+import {
+  NO_UPGRADES,
+  NO_WEAPONS,
+  TESTS,
+  aDefaultConfig,
+  aSegment,
+  aWavesConfig,
+  withDuration,
+  withSheep,
+  withWeapons,
+} from './builders';
+import { weaponsOf } from './weapons';
 
 /** Posición por defecto de la oveja de prueba (spec sheep): celda (16, 16) del mapa vacío. */
 export const SHEEP_AT = { x: 1000, y: 1000 } as const;
@@ -71,3 +83,27 @@ export const firstAt = (s: RunSnapshot | undefined): [number, number] => [
   r3(s?.sheep[0]?.x),
   r3(s?.sheep[0]?.y),
 ];
+
+/**
+ * Partida terminada (victoria en el tick 60) en la que han muerto 6 ovejas y se han recogido 3
+ * piezas de carne (spec sheep, "Resultados sin ovejas"): un pulso de Tests mata en el tick 1 a 6
+ * ovejas de vida 4; la carne de las 3 pegadas al jugador se recoge y la de las otras 3 queda en el
+ * suelo (radio de recogida 1). Devuelve el snapshot del tick 1 y el final.
+ */
+export function sheepFeast(): { first: RunSnapshot; final: RunSnapshot } {
+  const base = withDuration(
+    withWeapons(aSheepConfig(), weaponsOf([TESTS])),
+    1,
+  );
+  const config = { ...base, player: { ...base.player, pickupRadius: 1 } };
+  const near = [-5, 0, 5].map((d) => ({ x: 1000 + d, y: 1005 }));
+  const far = [-60, 0, 60].map((d) => ({ x: 1000 + d, y: 1060 }));
+  const run = startWithSheep(config, [...near, ...far], {
+    player: { ...SHEEP_AT, health: 50 },
+    sheep: Array.from({ length: 6 }, () => ({ health: 4 })),
+  });
+  run.tick(PlayerInput.NONE);
+  const first = run.snapshot();
+  while (run.status === 'running') run.tick(PlayerInput.NONE);
+  return { first, final: run.snapshot() };
+}

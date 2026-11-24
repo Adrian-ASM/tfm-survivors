@@ -173,7 +173,8 @@
       `balance.test.ts` completo 63 s (31,5 s en M0: el segundo lote lo pide la spec `resources`). Las ovejas
       suben el lote un 7,5 % frente al mismo código sin ovejas (paso 1 de la flota y nivel 2 de las armas en cada
       tick sin enemigos ni estructuras en el criterio); los tests del quieto, 3,0 s y 1,1 s (< 10 s, sin timeout
-      propio).
+      propio). **Nueva línea base del lote** para los changes siguientes: ~29 s local, ~81 s equivalentes en CI
+      (+7,5 %; design §15.6).
     - Bench: "cuatro topes llenos + ovejas en huida" 0,252 ms/tick (p99 0,363; 0,27 ms en 0022 con tres topes, 0,263
       en M0), "Peor caso con gemas" 0,187 ms (≤ 0,25), "tres topes" 0,254 ms. El bench fija la vida de las ovejas a la
       de bench (el pulso de bench alcanza toda la arena).

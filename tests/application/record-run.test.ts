@@ -17,6 +17,7 @@ import {
   runningAt,
 } from '../support/finishedRuns';
 import { playedAtOf, records } from '../support/progress';
+import { sheepFeast } from '../support/sheep';
 
 const NOW = 1_763_596_800_000;
 
@@ -166,6 +167,24 @@ describe('RecordRun sin oro ni madera (0022)', () => {
 
     const stored = JSON.stringify(repo.stored);
     expect(stored).not.toMatch(/gold|wood|oro|madera/i);
+    expect(Object.keys(repo.stored?.history[0] ?? {}).sort()).toEqual(
+      ['kills', 'level', 'outcome', 'playedAt', 'seed', 'timeSeconds'].sort(),
+    );
+  });
+});
+
+// Spec sheep (0023), "Resultados sin ovejas": el récord y el historial no ganan campos de ovejas
+// ni de carne (sin cambios de código).
+describe('RecordRun sin ovejas ni carne (0023)', () => {
+  it('Scenario: Resultados sin ovejas (6 ovejas muertas y 3 carnes recogidas)', () => {
+    const { repo, record } = recorder();
+    const { final } = sheepFeast();
+
+    record.execute(aRunSource(final));
+
+    const stored = JSON.stringify(repo.stored);
+    expect(stored).not.toMatch(/sheep|meat|oveja|carne/i);
+    expect(repo.stored?.history[0]?.kills).toBe(0);
     expect(Object.keys(repo.stored?.history[0] ?? {}).sort()).toEqual(
       ['kills', 'level', 'outcome', 'playedAt', 'seed', 'timeSeconds'].sort(),
     );

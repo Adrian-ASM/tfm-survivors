@@ -23,7 +23,7 @@ recursos y oleadas no lo ven: `MAP_/STRUCTURE_/RESOURCE_GOLDEN` no cambian.
 |---|---|---|---|
 | domain | `sheep/Sheep.ts` | Nueva | Registro de pool mutable interno al agregado (ADR-0003), cumple `WeaponTarget`: id, x, y, origen (ox, oy), radio, vida, `mode` (`graze`/`wander`/`flee`), `phaseEnd` (último tick de la fase), dirección (dx, dy), `lastHitAt`. |
 | domain | `sheep/Flock.ts` | Nueva | Lo posee `Run`. Lista viva en orden de creación (compactación estable, ADR-0006), pool de `capacity`, secuencia de ids propia, cola FIFO de reapariciones pendientes y celdas base de reaparición. `step` (paso 1), `settle` (3.5 y 4.2), `respawn` (9.2). |
-| domain | `sheep/SheepRules.ts` | Nueva | VO de `content/sheep.json` (§2) con `maxAlive ≥ 0` y el cruce `radius ≤ cellSize / 2`. |
+| domain | `sheep/SheepRules.ts` | Nueva | VO de `content/sheep.json` (§2) con `maxAlive ≥ 0`, sin cruce con el mapa (§15). |
 | domain | `sheep/placeSheep.ts`, `resolveSheep.ts` | Nuevas | Colocación inicial pura (§4.1) y resolución por `TerrainSource` (declaradas o generadas), con validación de posición legal (`map.sheep[i]`). |
 | domain | `map/candidateCells.ts` | Nueva (extracción) | Celdas base `grass` fuera de huellas y puertas, con distancias opcionales a inicio y castillo. Lo usan `placeResources` (sin cambio de resultado: `RESOURCE_GOLDEN` lo vigila) y `placeSheep`/`Flock`. |
 | domain | `shared/Health.ts`, `player/Player.ts` | Mod. | `heal(amount)`: `min(max, current + amount)`; devuelve `this` si no cambia o si la vida está agotada (no resucita). `Player.heal` conserva posición e invulnerabilidad. |
@@ -79,9 +79,10 @@ contacto y objetivo de primer nivel, y el enemigo ignora el mapa mientras que la
 - **Carne en `resources.json`** (spec `resources`, "Contenido de recursos validado"): `meat.perSheep` entero ≥ 1 y
   `meat.healPercent` entero en [1, 100]. `meatPerHouse` u otro campo extra falla por estricto. `maxMeat` entero ≥ 1
   (spec `xp-gems`). La huella de "Contenido de combate intacto" compara `resources.json` **sin** `meat`.
-- **Cruce de ficheros** (`buildRunRules`, única implementación, también desde el `superRefine`): `sheep.radius ≤
-  map.cellSize / 2`, para que el centro de una celda caminable sea posición legal (colocación y reaparición). No lo
-  exige la spec pero es un invariante del modelo; el error nombra `sheep.radius`.
+- **Sin cruce de ficheros** (decisión de apply, §15): el cruce `sheep.radius ≤ map.cellSize / 2` previsto rompía el
+  escenario vivo "Celda en el límite del radio del jugador" (`procedural-map`: `cellSize` 32 carga con el contenido
+  por defecto). El invariante "toda oveja nace en una posición legal" se mantiene sin regla de contenido: las celdas
+  base de colocación y de reaparición se filtran a las de centro legal para el círculo de la oveja (`legalCells`).
 - **Distancia a la salida** (spec `procedural-map`): con el contenido por defecto, toda oveja colocada queda a más de
   `flee.radius + graze.radius + wander.speed × wander.ticks / 60` (200 + 240 + 40 = 480 px) de la salida. Lo asegura
   `minStartCells` 9 (la zona de inicio es de 180 px) y lo vigila el test de 1..1.000 semillas.
@@ -322,3 +323,19 @@ añadidos, sin asignaciones en el bucle. Bench nuevo "cuatro topes llenos + ovej
 - `docs/adr/0022-ovejas-entidad-neutral-y-flujo-de-azar-en-partida.md` (propuesta, actualizada tras el contraste):
   entidad neutral fuera de `Horde`, `SHEEP_STREAM` 5 con fases ordenadas y consumo en partida, deambular por estados
   con el flujo y reserva de las armas por niveles. Numeración confirmada libre en `origin/main` por el orquestador.
+
+## 15. Desviaciones de apply (registradas tras verify)
+1. **Sin el cruce `sheep.radius ≤ cellSize / 2`** (§2): ver arriba; `legalCells` filtra las celdas candidatas.
+2. **`Arsenal.step(n, x, y, enemies, structures?, sheep?)`** (§7): los dos niveles de reserva como parámetros, con un
+   array interno fijo de dos huecos (sin asignar por tick), en vez de `reserves[]`. Así las llamadas de los tests de
+   0021 (`[casa]` como quinto argumento) siguen sin cambios; añadir un nivel es añadir un hueco.
+3. **Escala de la oveja 0,6** (§10, "~0,4"): la oveja ocupa ~45 px de los 128 del fotograma; a 0,4 se vería de 18 px,
+   la mitad de su círculo de 36.
+4. **Escenario "Barril que explota junto a una oveja y un goblin"** (`enemy-hazards`): usa la oveja con radio de
+   huida 50 ("oveja quieta" de `auto-weapons`); la de prueba huiría del jugador quieto a 69 px y no estaría a 30 px
+   del barril en el tick 82.
+5. **Arte de la carne en el grupo 1** (no en 6.1): `'meat'` en `Record<PickupKind, …>` exige su aspecto para
+   compilar; `M_Idle.png` entró con su entrada de procedencia en el mismo commit.
+6. **Línea base nueva del lote del bot** (§12, M1): con ovejas 28,8–29,1 s en local (≈ 81 s ×2,8, bajo el tope de
+   90 s), un **+7,5 %** frente al mismo código con tope 0 (26,7–26,8 s); `balance.test.ts` completo 63 s con los dos
+   lotes. Es la referencia para los changes siguientes.
