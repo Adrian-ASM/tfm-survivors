@@ -19,6 +19,13 @@ export const STRUCT_STREAM = 3;
  */
 export const RESOURCE_STREAM = 4;
 
+/**
+ * Flujo de las ovejas (ADR-0022): colocación inicial, primer pasto, dirección de los paseos y celda
+ * de cada reaparición, consumidos en ese orden fijo. Independiente del mapa, de las estructuras, de
+ * los recursos y de la partida. Cambiarlo cambia todas las ovejas (`SHEEP_GOLDEN`).
+ */
+export const SHEEP_STREAM = 5;
+
 /** Sal de los flujos (constante áurea de 32 bits, como en las mezclas de hash habituales). */
 const STREAM_SALT = 0x9e3779b9;
 

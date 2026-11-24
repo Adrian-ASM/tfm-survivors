@@ -3,8 +3,10 @@ import { aDefaultConfig } from './builders';
 import {
   MAP_GOLDEN,
   RESOURCE_GOLDEN,
+  SHEEP_GOLDEN,
   STRUCTURE_GOLDEN,
   resourceSignatureOf,
+  sheepSignatureOf,
   signatureOf,
   structureSignatureOf,
 } from './mapGolden';
@@ -37,6 +39,12 @@ describe('Firma dorada de las estructuras', () => {
     expect(resourceSignatureOf({ veins: s.veins, woodPiles: s.pickups })).toEqual(
       RESOURCE_GOLDEN[seed],
     );
+  });
+
+  // Spec procedural-map (0023): "Firma de referencia de las ovejas" (`SHEEP_STREAM`).
+  it.each([42, 123] as const)('Scenario: Firma de referencia de las ovejas (%i)', (seed) => {
+    const run = startSeededRun(aDefaultConfig(), seed);
+    expect(sheepSignatureOf(run.snapshot())).toEqual(SHEEP_GOLDEN[seed]);
   });
 
   it('con el mapa vacío no hay estructuras', () => {

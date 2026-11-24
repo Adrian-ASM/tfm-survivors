@@ -7,6 +7,7 @@ import progressionJson from '../../content/progression.json';
 import upgradesJson from '../../content/upgrades.json';
 import structuresJson from '../../content/structures.json';
 import resourcesJson from '../../content/resources.json';
+import sheepJson from '../../content/sheep.json';
 import type { EnemyTypeConfig } from '../../src/domain/enemy/EnemyType';
 import type { BehaviorConfig } from '../../src/domain/enemy/behavior/BehaviorConfig';
 import type { HazardRulesConfig } from '../../src/domain/hazard/HazardRules';
@@ -16,6 +17,7 @@ import type { WeaponTypeConfig } from '../../src/domain/weapon/WeaponType';
 import type { UpgradeTypeConfig } from '../../src/domain/upgrade/UpgradeType';
 import type { StructuresConfig } from '../../src/domain/structure/StructureType';
 import type { ResourcesConfig } from '../../src/domain/resource/ResourceRules';
+import type { SheepConfig } from '../../src/domain/sheep/SheepRules';
 
 /** Copia profunda congelada de un valor de content/ (los tests no pueden alterar el JSON). */
 function frozen<T>(value: T): T {
@@ -162,6 +164,49 @@ export const withDrops = (
   return withResources(config, { ...config.resources, drops: { enemies, structures } });
 };
 
+/** Ovejas por defecto, leídas de content/sheep.json (0023, una sola fuente). */
+export const CONTENT_SHEEP: SheepConfig = frozen(sheepJson);
+
+/**
+ * Sin ovejas en el mapa generado (tope 0, válido): por defecto en `aRunConfig`, para que los
+ * escenarios de 0001–0022 sigan sin ovejas con cualquier mapa. Los mapas declarados solo tienen las
+ * que declaran.
+ */
+export const NO_SHEEP: SheepConfig = Object.freeze({ ...CONTENT_SHEEP, maxAlive: 0 });
+
+/**
+ * Oveja de prueba de la spec `sheep` (0023): radio 20, vida 12, paseo 60 px/s × 60 ticks, huida
+ * 180 px/s con radio 200, pasto de 120 ticks con radio 300 y reaparición cada 600 ticks a ≥ 500 px.
+ */
+export const TEST_SHEEP: SheepConfig = Object.freeze({
+  ...CONTENT_SHEEP,
+  radius: 20,
+  health: 12,
+  graze: Object.freeze({ ticks: 120, radius: 300 }),
+  wander: Object.freeze({ speed: 60, ticks: 60 }),
+  flee: Object.freeze({ radius: 200, speed: 180 }),
+  respawn: Object.freeze({ everyTicks: 600, minPlayerDistance: 500 }),
+});
+
+/** El mismo contenido con la oveja de prueba y estos cambios (p. ej. `{ flee: { … } }`). */
+export const withSheep = (config: RunConfig, patch: Partial<SheepConfig> = {}): RunConfig => ({
+  ...config,
+  sheep: { ...TEST_SHEEP, ...patch },
+});
+
+/** El mismo contenido con el tope de ovejas a 0 (lote "sin ovejas" del balance, 0023). */
+export const withoutSheep = (config: RunConfig): RunConfig => ({
+  ...config,
+  sheep: { ...config.sheep, maxAlive: 0 },
+});
+
+/** El mismo contenido con la carne cambiada (0023: `perSheep` y `healPercent`). */
+export const withMeat = (
+  config: RunConfig,
+  meat: Partial<ResourcesConfig['meat']>,
+): RunConfig =>
+  withResources(config, { ...config.resources, meat: { ...config.resources.meat, ...meat } });
+
 /** El mismo contenido sin fuentes de recursos (design 0022 §10). */
 export const withoutResourceSources = (config: RunConfig): RunConfig =>
   withResources(config, NO_RESOURCES);
@@ -259,6 +304,7 @@ export const aRunConfig = (overrides: Partial<PlayerConfig> = {}): RunConfig => 
   map: DEFAULT_MAP,
   structures: NO_STRUCTURES,
   resources: NO_RESOURCES,
+  sheep: NO_SHEEP,
 });
 
 /** El mismo contenido con otra duración objetivo en segundos (p. ej. 2 ⇒ 120 ticks). */
@@ -294,6 +340,7 @@ export const aDefaultConfig = (): RunConfig =>
         enemies: { hazards: DEFAULT_HAZARDS, types: DEFAULT_ENEMY_TYPES },
         structures: CONTENT_STRUCTURES,
         resources: CONTENT_RESOURCES,
+        sheep: CONTENT_SHEEP,
       },
       DEFAULT_WEAPONS,
     ),
@@ -399,6 +446,7 @@ export interface RawContent {
     maxGems: number;
     maxGold: number;
     maxWood: number;
+    maxMeat: number;
     [extra: string]: unknown;
   };
   upgrades: { upgrades: [MutableUpgrade, MutableUpgrade, ...MutableUpgrade[]] };
@@ -425,6 +473,18 @@ export interface RawContent {
     };
     woodPiles: { count: number; wood: number };
     goldVeins: { count: number; gold: number; radius: number; [extra: string]: unknown };
+    placement: { minStartCells: number; minCastleCells: number; minGapCells: number };
+    meat: { perSheep: number; healPercent: number; [extra: string]: unknown };
+    [extra: string]: unknown;
+  };
+  sheep: {
+    maxAlive: number;
+    radius: number;
+    health: number;
+    graze: { ticks: number; radius: number };
+    wander: { speed: number; ticks: number };
+    flee: { radius: number; speed: number };
+    respawn: { everyTicks: number; minPlayerDistance: number };
     placement: { minStartCells: number; minCastleCells: number; minGapCells: number };
     [extra: string]: unknown;
   };

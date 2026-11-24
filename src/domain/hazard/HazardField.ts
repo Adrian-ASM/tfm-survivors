@@ -3,6 +3,7 @@ import type { Enemy } from '../enemy/Enemy';
 import { Blast } from './Blast';
 import { Dynamite } from './Dynamite';
 import type { HazardRules } from './HazardRules';
+import type { WeaponTarget } from '../weapon/WeaponTarget';
 
 /** Dinamita ya en vuelo al empezar (forma de `RunSetup.dynamites`, validada antes). */
 export interface DynamiteSeed {
@@ -27,6 +28,8 @@ export class HazardField {
   private readonly spare: Dynamite[] = [];
   private readonly visible: Blast[] = [];
   private readonly spareBlasts: Blast[] = [];
+  /** Ovejas vivas del tick en curso (las daña `strike`; ninguna fuera de `explode`). */
+  private sheep: readonly WeaponTarget[] = [];
   /** Barriles cuya mecha termina en el tick (reutilizado: no asigna por tick). */
   private readonly fusing: Enemy[] = [];
   private nextDynamiteId = 0;
@@ -79,11 +82,20 @@ export class HazardField {
    * Paso 4.2 del tick n con el jugador en (px, py, pr): (a) los barriles vivos cuya mecha termina
    * en n, en orden de lista, marcados todos antes de resolver (explotan aunque otra explosión del
    * tick los deje a 0, D2); (b) las dinamitas que llegan, en orden de creación, que dejan su hueco.
-   * Cada explosión daña a todo enemigo vivo cuyo círculo la solapa (salvo al propio barril) y
-   * registra el golpe candidato del jugador. Al final los barriles marcados quedan a vida 0.
-   * Devuelve si hay bajas que retirar (`removeDead`, paso 4.3).
+   * Cada explosión daña a todo enemigo vivo cuyo círculo la solapa (salvo al propio barril) y a toda
+   * oveja viva que solapa (0023), y registra el golpe candidato del jugador. Al final los barriles
+   * marcados quedan a vida 0. Devuelve si hay bajas de enemigos que retirar (`removeDead`, paso
+   * 4.3); las ovejas muertas las retira `Flock.settle`.
    */
-  explode(n: number, enemies: readonly Enemy[], px: number, py: number, pr: number): boolean {
+  explode(
+    n: number,
+    enemies: readonly Enemy[],
+    sheep: readonly WeaponTarget[],
+    px: number,
+    py: number,
+    pr: number,
+  ): boolean {
+    this.sheep = sheep;
     this.hit = 0;
     const fusing = this.fusing;
     fusing.length = 0;
@@ -143,7 +155,8 @@ export class HazardField {
 
   /**
    * Una explosión en (cx, cy) de radio R y daño D: crea su `Blast`, resta D a cada enemigo vivo que
-   * la solapa estrictamente (salvo `self`) y registra el golpe al jugador. Devuelve si mata a alguno.
+   * la solapa estrictamente (salvo `self`), y a cada oveja viva que la solapa, y registra el golpe al
+   * jugador. Devuelve si mata a algún enemigo.
    */
   private strike(
     n: number,
@@ -168,6 +181,9 @@ export class HazardField {
       if (circlesOverlap(cx, cy, radius, e.x, e.y, e.radius) && e.takeDamage(damage, n)) {
         died = true;
       }
+    }
+    for (const s of this.sheep) {
+      if (s.alive && circlesOverlap(cx, cy, radius, s.x, s.y, s.radius)) s.takeDamage(damage, n);
     }
     return died;
   }

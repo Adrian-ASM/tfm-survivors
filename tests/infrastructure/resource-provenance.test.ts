@@ -53,8 +53,9 @@ describe('Procedencia de las hojas de los recursos (asset-provenance)', () => {
     const { checkAssets } = await guard();
     const list = [...new Set([...versioned(), ...files.map((f) => f.path)])].filter(Boolean);
     expect(checkAssets({ files: list, provenance: provenanceJson, digest: digestOf })).toEqual([]);
-    expect(files).toHaveLength(ENTRIES_BEFORE + 3);
-    const added = files.slice(ENTRIES_BEFORE);
+    // 0023 añade al final las hojas de la carne y de las ovejas: estas 3 siguen en su sitio.
+    expect(files.length).toBeGreaterThanOrEqual(ENTRIES_BEFORE + 3);
+    const added = files.slice(ENTRIES_BEFORE, ENTRIES_BEFORE + 3);
     expect(added.map((f) => f.source)).toEqual(SOURCES);
     for (const entry of added) {
       expect(entry.path).toBe(ASSET_DIR + entry.source.replace('Tiny Swords (Update 010)/', ''));
@@ -80,9 +81,9 @@ describe('Procedencia de las hojas de los recursos (asset-provenance)', () => {
     expect(problems.join('\n')).toContain(inactive);
   });
 
-  it('Scenario: Hojas de recursos no usadas (sin Destroyed, NoShadow, _Spawn, M_Idle ni HappySheep)', () => {
+  it('Scenario: Hojas de recursos no usadas (sin Destroyed, NoShadow, _Spawn ni HappySheep_All)', () => {
     const list = versioned().filter((f) => !f.startsWith('openspec/'));
-    const unused = /GoldMine_Destroyed|NoShadow|_Spawn|M_Idle|HappySheep/;
+    const unused = /GoldMine_Destroyed|NoShadow|_Spawn|HappySheep_All/;
     expect(list.filter((f) => unused.test(f))).toEqual([]);
   });
 });

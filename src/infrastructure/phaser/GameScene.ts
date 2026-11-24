@@ -56,8 +56,10 @@ export interface SceneCapacity {
   readonly enemies: number;
   readonly projectiles: number;
   readonly pulses: number;
-  /** Recogibles de los tres tipos: suma de los topes (0022). */
+  /** Recogibles de los cuatro tipos: suma de los topes (0022, 0023). */
   readonly pickups: number;
+  /** Ovejas vivas como mucho: el tope del contenido (0023). */
+  readonly sheep: number;
   /** Tope de cadáveres visibles a la vez (datos de aspecto, design D6). */
   readonly corpses: number;
   readonly visualTicks: ReadonlyMap<string, number>;

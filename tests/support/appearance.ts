@@ -10,6 +10,9 @@ export const GEM_FILE = 'Resources/Resources/G_Idle.png';
 /** Oro (0022): la bolsa de `G_Idle` pasa del aspecto de la gema al del oro. */
 export const GOLD_FILE = GEM_FILE;
 export const WOOD_FILE = 'Resources/Resources/W_Idle.png';
+export const MEAT_FILE = 'Resources/Resources/M_Idle.png';
+export const SHEEP_IDLE_FILE = 'Resources/Sheep/HappySheep_Idle.png';
+export const SHEEP_BOUNCE_FILE = 'Resources/Sheep/HappySheep_Bouncing.png';
 export const VEIN_FILE = 'Resources/Gold Mine/GoldMine_Active.png';
 export const VEIN_DEPLETED_FILE = 'Resources/Gold Mine/GoldMine_Inactive.png';
 export const GROUND_FILE = 'Terrain/Ground/Tilemap_Flat.png';
@@ -46,6 +49,9 @@ const FILES = [
   TOWER_FILE,
   TOWER_RUIN_FILE,
   WOOD_FILE,
+  MEAT_FILE,
+  SHEEP_IDLE_FILE,
+  SHEEP_BOUNCE_FILE,
   VEIN_FILE,
   VEIN_DEPLETED_FILE,
 ];
@@ -106,6 +112,7 @@ export interface RawAppearance {
   enemies: Record<string, Json>;
   projectile: Json;
   pickups: Record<string, Json>;
+  sheep: Json;
   veins: Record<string, Json>;
   veinColor: unknown;
   ground: Json;
@@ -199,6 +206,15 @@ export function rawAppearance(): RawAppearance {
       xp: { shape: true, placeholderColor: '#3e9bff' },
       gold: still(GOLD_FILE, 128, '#e8c547'),
       wood: still(WOOD_FILE, 128, '#9c6b3c'),
+      meat: still(MEAT_FILE, 128, '#c8504a'),
+    },
+    sheep: {
+      scale: 0.6,
+      origin: { x: 0.5, y: 0.5 },
+      facing: 'right',
+      placeholderColor: '#f0ead6',
+      idle: { sheet: { file: SHEEP_IDLE_FILE, frameWidth: 128, frameHeight: 128 }, ...anim([0, 1, 2, 3, 4, 5, 6, 7], 8, true) },
+      bounce: { sheet: { file: SHEEP_BOUNCE_FILE, frameWidth: 128, frameHeight: 128 }, ...anim([0, 1, 2, 3, 4, 5], 10, true) },
     },
     ground: still(GROUND_FILE, 64, '#2f6b3a'),
     corpse: { ...base(DEAD_FILE, 128, '#b0b4ba'), death: anim([1, 2, 3, 4, 5, 6], 15, false) },

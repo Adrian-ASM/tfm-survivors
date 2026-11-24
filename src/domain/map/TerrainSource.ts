@@ -38,6 +38,16 @@ export interface DeclaredResources {
 }
 
 /**
+ * Ovejas declaradas por un mapa dado (spec procedural-map 0023): posiciones en px, en el orden de la
+ * lista de ovejas, sin reglas de colocación ni tope, y el azar de las ovejas que usa la partida
+ * (paseos y reapariciones; ADR-0022). Cada posición debe ser legal para el círculo de la oveja.
+ */
+export interface DeclaredSheep {
+  readonly at: readonly DeclaredStart[];
+  readonly random: RandomGenerator;
+}
+
+/**
  * De dónde sale el mapa de una partida (ADR-0013). Es un valor, no un puerto: la composición lo
  * resuelve junto con la semilla y el dominio nunca la conoce.
  * - `open`: mapa vacío, todo hierba (escenarios sin mapa declarado y `?e2e&map=empty`).
@@ -46,7 +56,8 @@ export interface DeclaredResources {
  *   ADR-0021).
  * - `cells`: mapa dado en orden de filas (tests); solo se le exigen las dimensiones.
  * `open` y `cells` pueden declarar su salida (`start`); sin ella, el centro del mundo. También sus
- * estructuras (`structures`) y sus vetas y montones (`resources`); sin ellos, ninguno.
+ * estructuras (`structures`), sus vetas y montones (`resources`) y sus ovejas (`sheep`); sin ellos,
+ * ninguno.
  */
 export type TerrainSource =
   | {
@@ -54,6 +65,7 @@ export type TerrainSource =
       readonly start?: DeclaredStart;
       readonly structures?: readonly DeclaredStructure[];
       readonly resources?: DeclaredResources;
+      readonly sheep?: DeclaredSheep;
     }
   | {
       readonly kind: 'generated';
@@ -61,6 +73,8 @@ export type TerrainSource =
       readonly structureRandom: RandomGenerator;
       /** Vetas y montones (ADR-0021), con su propio flujo. */
       readonly resourceRandom: RandomGenerator;
+      /** Azar de las ovejas (ADR-0022): colocación, primer pasto, paseos y reapariciones. */
+      readonly sheepRandom: RandomGenerator;
     }
   | {
       readonly kind: 'cells';
@@ -68,6 +82,7 @@ export type TerrainSource =
       readonly start?: DeclaredStart;
       readonly structures?: readonly DeclaredStructure[];
       readonly resources?: DeclaredResources;
+      readonly sheep?: DeclaredSheep;
     };
 
 export const OPEN_TERRAIN: TerrainSource = Object.freeze({ kind: 'open' });

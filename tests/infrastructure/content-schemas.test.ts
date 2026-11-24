@@ -4,9 +4,11 @@ import {
   MAGNET_SPEED_MUST_BE_POSITIVE,
   MAX_GEMS_MUST_BE_INTEGER,
   MAX_GOLD_MUST_BE_INTEGER,
+  MAX_MEAT_MUST_BE_INTEGER,
   MAX_WOOD_MUST_BE_INTEGER,
 } from '../../src/domain/pickup/PickupRules';
 import {
+  MEAT_HEAL_PERCENT_OUT_OF_RANGE,
   RESOURCE_AMOUNT_MUST_BE_INTEGER,
   RESOURCE_COUNT_MUST_BE_INTEGER,
   RESOURCE_PLACEMENT_MUST_BE_INTEGER,
@@ -52,7 +54,7 @@ const tower = (raw: Raw) => {
 };
 
 describe('Contenido de gemas validado (xp-gems, con zod)', () => {
-  it('Scenario: Contenido por defecto (128, 5, 360, 300; topes de oro y madera ≥ 1 y madera ≥ montones)', () => {
+  it('Scenario: Contenido por defecto (128, 5, 360, 300; topes de oro, madera y carne ≥ 1 y madera ≥ montones)', () => {
     const r = loadRunConfig();
     if (!r.ok) throw new Error(r.error.message);
     const { progression, player, resources } = r.value;
@@ -60,7 +62,8 @@ describe('Contenido de gemas validado (xp-gems, con zod)', () => {
       128, 5, 360,
     ]);
     expect(progression.maxGems).toBe(300);
-    expect(Math.min(progression.maxGold, progression.maxWood)).toBeGreaterThanOrEqual(1);
+    const caps = [progression.maxGold, progression.maxWood, progression.maxMeat];
+    expect(caps.every((v) => Number.isInteger(v) && v >= 1)).toBe(true);
     expect(progression.maxWood).toBeGreaterThanOrEqual(resources.woodPiles.count);
   });
 
@@ -83,16 +86,18 @@ describe('Contenido de gemas validado (xp-gems, con zod)', () => {
     ['progression.maxGems', (r: Raw) => (r.progression.maxGems = 0), MAX_GEMS_MUST_BE_INTEGER],
     ['progression.maxGold', (r: Raw) => (r.progression.maxGold = 0), MAX_GOLD_MUST_BE_INTEGER],
     ['progression.maxWood', (r: Raw) => (r.progression.maxWood = 0), MAX_WOOD_MUST_BE_INTEGER],
+    ['progression.maxMeat', (r: Raw) => (r.progression.maxMeat = 0), MAX_MEAT_MUST_BE_INTEGER],
   ])('Scenario: Valores no positivos (%s)', (field, change, message) => {
     expect(failure(change)).toMatchObject({ field, message });
   });
 
-  it('Scenario: Tope de gemas no entero (maxGems 12,5 y tope de oro 2,5)', () => {
+  it('Scenario: Tope de gemas no entero (maxGems 12,5, tope de oro 2,5 y tope de carne 1,5)', () => {
     expect(failure((r) => (r.progression.maxGems = 12.5)).field).toBe('progression.maxGems');
     expect(failure((r) => (r.progression.maxGold = 2.5)).field).toBe('progression.maxGold');
+    expect(failure((r) => (r.progression.maxMeat = 1.5)).field).toBe('progression.maxMeat');
   });
 
-  it('Scenario: Campo desconocido o ausente (gemLifetime, sin magnetSpeed, sin el tope de madera)', () => {
+  it('Scenario: Campo desconocido o ausente (gemLifetime, sin magnetSpeed, sin los topes de madera y carne)', () => {
     expect(failure((r) => (r.progression.gemLifetime = 600)).field).toBe('progression.gemLifetime');
     expect(
       failure((r) => {
@@ -104,13 +109,19 @@ describe('Contenido de gemas validado (xp-gems, con zod)', () => {
         delete (r.progression as Partial<Raw['progression']>).maxWood;
       }).field,
     ).toBe('progression.maxWood');
+    expect(
+      failure((r) => {
+        delete (r.progression as Partial<Raw['progression']>).maxMeat;
+      }).field,
+    ).toBe('progression.maxMeat');
   });
 
-  it('Scenario: Tope mínimo válido (maxGems 1 y tope de oro 1)', () => {
+  it('Scenario: Tope mínimo válido (maxGems 1, tope de oro 1 y tope de carne 1)', () => {
     expect(
       loads((r) => {
         r.progression.maxGems = 1;
         r.progression.maxGold = 1;
+        r.progression.maxMeat = 1;
       }),
     ).toBe(true);
   });
@@ -130,17 +141,19 @@ describe('Contenido de gemas validado (xp-gems, con zod)', () => {
 });
 
 describe('Contenido de recursos validado (resources, con zod)', () => {
-  it('Scenario: Contenido por defecto (5 cantidades ≥ 1, montones y vetas ≥ 1, radio > 0)', () => {
+  it('Scenario: Contenido por defecto (6 cantidades ≥ 1, montones y vetas ≥ 1, radio > 0; carne 1 y 20)', () => {
     const r = loadRunConfig();
     if (!r.ok) throw new Error(r.error.message);
-    const { drops, woodPiles, goldVeins } = r.value.resources;
+    const { drops, woodPiles, goldVeins, meat } = r.value.resources;
     const amounts = [
       drops.enemies['goblin-barrel']?.wood,
       drops.structures['goblin-house']?.gold,
       drops.structures['goblin-tower']?.gold,
       goldVeins.gold,
       woodPiles.wood,
+      meat.perSheep,
     ];
+    expect(meat).toEqual({ perSheep: 1, healPercent: 20 });
     expect(amounts.every((v) => Number.isInteger(v) && (v ?? 0) >= 1)).toBe(true);
     expect(Math.min(woodPiles.count, goldVeins.count)).toBeGreaterThanOrEqual(1);
     expect(goldVeins.radius).toBeGreaterThan(0);
@@ -178,6 +191,12 @@ describe('Contenido de recursos validado (resources, con zod)', () => {
       (r: Raw) => (r.resources.woodPiles.wood = 0),
       'resources.woodPiles.wood',
     ],
+    ['carne por oveja 0', (r: Raw) => (r.resources.meat.perSheep = 0), 'resources.meat.perSheep'],
+    [
+      'carne por oveja 1,5',
+      (r: Raw) => (r.resources.meat.perSheep = 1.5),
+      'resources.meat.perSheep',
+    ],
   ])('Scenario: Valores fuera de rango (%s)', (_name, change, field) => {
     expect(failure(change)).toMatchObject({ field, message: RESOURCE_AMOUNT_MUST_BE_INTEGER });
   });
@@ -213,6 +232,24 @@ describe('Contenido de recursos validado (resources, con zod)', () => {
       'resources.placement.minGapCells',
       RESOURCE_PLACEMENT_MUST_BE_INTEGER,
     ],
+    [
+      'curación de la carne 0',
+      (r: Raw) => (r.resources.meat.healPercent = 0),
+      'resources.meat.healPercent',
+      MEAT_HEAL_PERCENT_OUT_OF_RANGE,
+    ],
+    [
+      'curación de la carne 101',
+      (r: Raw) => (r.resources.meat.healPercent = 101),
+      'resources.meat.healPercent',
+      MEAT_HEAL_PERCENT_OUT_OF_RANGE,
+    ],
+    [
+      'curación de la carne 12.5',
+      (r: Raw) => (r.resources.meat.healPercent = 12.5),
+      'resources.meat.healPercent',
+      MEAT_HEAL_PERCENT_OUT_OF_RANGE,
+    ],
   ])('Scenario: Valores fuera de rango (%s)', (_name, change, field, message) => {
     expect(failure(change)).toMatchObject({ field, message });
   });
@@ -233,8 +270,11 @@ describe('Contenido de recursos validado (resources, con zod)', () => {
         tower(r).gold = 1;
         r.resources.goldVeins.gold = 1;
         r.resources.woodPiles.wood = 1;
+        r.resources.meat.perSheep = 1;
       },
     ],
+    ['curación de la carne 1', (r: Raw) => (r.resources.meat.healPercent = 1)],
+    ['curación de la carne 100', (r: Raw) => (r.resources.meat.healPercent = 100)],
     [
       'todas las distancias a 0',
       (r: Raw) => {
@@ -245,14 +285,18 @@ describe('Contenido de recursos validado (resources, con zod)', () => {
     expect(loads(change)).toBe(true);
   });
 
-  it('Scenario: Campos ausentes, desconocidos y tipo no admitido (oro por veta, meatPerSheep, meat)', () => {
+  it('Scenario: Campos ausentes, desconocidos y tipo no admitido (oro por veta, curación, meatPerHouse, potion)', () => {
     const noGold = failure((r) => {
       delete (r.resources.goldVeins as Partial<Raw['resources']['goldVeins']>).gold;
     });
     expect(noGold.field).toBe('resources.goldVeins.gold');
-    expect(failure((r) => (r.resources.meatPerSheep = 5)).field).toBe('resources.meatPerSheep');
-    const meat = failure((r) => (barrel(r).meat = 2));
-    expect(meat.field).toBe('resources.drops.enemies.goblin-barrel.meat');
-    expect(failure((r) => (r.resources.drops.meat = {})).field).toBe('resources.drops.meat');
+    const noHeal = failure((r) => {
+      delete (r.resources.meat as Partial<Raw['resources']['meat']>).healPercent;
+    });
+    expect(noHeal.field).toBe('resources.meat.healPercent');
+    expect(failure((r) => (r.resources.meatPerHouse = 5)).field).toBe('resources.meatPerHouse');
+    const potion = failure((r) => (barrel(r).potion = 2));
+    expect(potion.field).toBe('resources.drops.enemies.goblin-barrel.potion');
+    expect(failure((r) => (r.resources.drops.potion = {})).field).toBe('resources.drops.potion');
   });
 });

@@ -7,6 +7,7 @@ import progressionJson from '../../../content/progression.json';
 import runJson from '../../../content/run.json';
 import structuresJson from '../../../content/structures.json';
 import resourcesJson from '../../../content/resources.json';
+import sheepJson from '../../../content/sheep.json';
 import upgradesJson from '../../../content/upgrades.json';
 import wavesJson from '../../../content/waves.json';
 import weaponsJson from '../../../content/weapons.json';
@@ -21,6 +22,7 @@ import {
   ProgressionSchema,
   RunSchema,
   ResourcesSchema,
+  SheepSchema,
   StructuresSchema,
   UpgradesSchema,
   WavesSchema,
@@ -43,6 +45,7 @@ const RunConfigSchema = z
     map: MapSchema,
     structures: StructuresSchema,
     resources: ResourcesSchema,
+    sheep: SheepSchema,
   })
   .superRefine((config, ctx) => {
     // Estricto: un punto del anillo sin recorte nunca cae en una vista centrada en el jugador.
@@ -78,6 +81,7 @@ export interface RawContentFiles {
   map: unknown;
   structures: unknown;
   resources: unknown;
+  sheep: unknown;
 }
 
 /** Tamaño en píxeles CSS (presentación): nunca llega al núcleo. */
@@ -157,5 +161,6 @@ export function repositoryContent(): RawContentFiles {
     map: mapJson,
     structures: structuresJson,
     resources: resourcesJson,
+    sheep: sheepJson,
   };
 }

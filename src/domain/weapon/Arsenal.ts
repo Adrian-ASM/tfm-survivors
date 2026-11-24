@@ -10,7 +10,7 @@ import { selectTarget } from './targeting';
 
 type PulseAttack = Extract<Weapon['type']['attack'], { type: 'pulse' }>;
 
-/** Sin objetivos de reserva (partidas sin estructuras). */
+/** Sin objetivos de reserva (partidas sin estructuras o sin ovejas). */
 const NO_TARGETS: readonly WeaponTarget[] = Object.freeze([]);
 
 /**
@@ -26,6 +26,11 @@ export class Arsenal {
   private readonly echoes: PulseEcho[] = [];
   private readonly freeEchoes: PulseEcho[] = [];
   private nextProjectileId = 0;
+  /**
+   * Niveles de reserva del tick en orden (1 estructuras, 2 ovejas; ADR-0022). Array fijo reutilizado:
+   * `step` solo reasigna sus dos huecos, sin asignar por tick.
+   */
+  private readonly reserves: (readonly WeaponTarget[])[] = [NO_TARGETS, NO_TARGETS];
 
   /**
    * `pulseCapacity`: ecos preasignados; por defecto los del loadout base. `Run` pasa la cota del
@@ -60,9 +65,10 @@ export class Arsenal {
 
   /**
    * Paso 3 del tick n con el jugador en (px, py): ecos caducados (3a), proyectiles existentes (3b),
-   * compactación (3c) y disparos en el orden del loadout (3d). `structures` son los objetivos de
-   * reserva (casas y torres, ADR-0020): solo cuentan si el criterio no encuentra ningún enemigo.
-   * Devuelve las bajas de enemigos del tick (destruir una estructura no es una baja).
+   * compactación (3c) y disparos en el orden del loadout (3d). Objetivos por niveles (ADR-0020 y
+   * ADR-0022): enemigos; si el criterio no encuentra ninguno, estructuras (casas y torres); si
+   * tampoco, ovejas. Devuelve las bajas de enemigos del tick (destruir una estructura o matar una
+   * oveja no es una baja).
    */
   step(
     n: number,
@@ -70,11 +76,15 @@ export class Arsenal {
     py: number,
     targets: readonly WeaponTarget[],
     structures: readonly WeaponTarget[] = NO_TARGETS,
+    sheep: readonly WeaponTarget[] = NO_TARGETS,
   ): number {
+    const { reserves } = this;
+    reserves[0] = structures;
+    reserves[1] = sheep;
     this.expireEchoes(n);
-    let kills = this.moveProjectiles(n, targets, structures);
+    let kills = this.moveProjectiles(n, targets, reserves);
     this.compactProjectiles();
-    for (const weapon of this.weapons) kills += this.fire(weapon, n, px, py, targets, structures);
+    for (const weapon of this.weapons) kills += this.fire(weapon, n, px, py, targets, reserves);
     return kills;
   }
 
@@ -95,21 +105,21 @@ export class Arsenal {
   }
 
   /**
-   * 3b: cada proyectil avanza y daña al primer enemigo vivo que solapa; si no hay ninguno y iba a
-   * una estructura, a la primera estructura no destruida que solapa (los dirigidos a un enemigo las
-   * atraviesan); si no impacta, caduca a su tiempo. Solo cuenta las bajas de enemigos.
+   * 3b: cada proyectil avanza y daña al primer enemigo vivo que solapa; si no hay ninguno y su
+   * objetivo era de un nivel de reserva, al primer objetivo vivo de ese nivel que solapa (atraviesa
+   * los de los demás niveles); si no impacta, caduca a su tiempo. Solo cuenta las bajas de enemigos.
    */
   private moveProjectiles(
     n: number,
     targets: readonly WeaponTarget[],
-    structures: readonly WeaponTarget[],
+    reserves: readonly (readonly WeaponTarget[])[],
   ): number {
     let kills = 0;
     for (const p of this.active) {
       p.advance();
       const hit = firstOverlapping(p.x, p.y, p.radius, targets);
-      const wall =
-        hit || !p.atStructure ? undefined : firstOverlapping(p.x, p.y, p.radius, structures);
+      const level = p.tier > 0 ? reserves[p.tier - 1] : undefined;
+      const wall = hit || !level ? undefined : firstOverlapping(p.x, p.y, p.radius, level);
       if (hit) {
         if (hit.takeDamage(p.damage, n)) kills++;
         p.spent = true;
@@ -141,8 +151,8 @@ export class Arsenal {
 
   /**
    * 3d: un arma cargada con objetivo ataca; si no, conserva la carga. El objetivo es el enemigo que
-   * elige su criterio o, si no hay ninguno, la estructura que elige el mismo criterio (sin
-   * concatenar ni asignar). Devuelve las bajas.
+   * elige su criterio o, si no hay ninguno, el del primer nivel de reserva en el que el mismo
+   * criterio encuentra uno (sin concatenar ni asignar). Devuelve las bajas.
    */
   private fire(
     weapon: Weapon,
@@ -150,22 +160,27 @@ export class Arsenal {
     px: number,
     py: number,
     targets: readonly WeaponTarget[],
-    structures: readonly WeaponTarget[],
+    reserves: readonly (readonly WeaponTarget[])[],
   ): number {
     if (!weapon.isChargedAt(n)) return 0;
     const { targeting } = weapon.type;
-    const enemy = targets[selectTarget(targeting, px, py, targets)];
-    const target = enemy ?? structures[selectTarget(targeting, px, py, structures)];
+    let tier = 0;
+    let target = targets[selectTarget(targeting, px, py, targets)];
+    for (let i = 0; !target && i < reserves.length; i++) {
+      const level = reserves[i] ?? NO_TARGETS;
+      target = level[selectTarget(targeting, px, py, level)];
+      tier = i + 1;
+    }
     if (!target) return 0;
     const { attack } = weapon.type;
     switch (attack.type) {
       case 'projectile':
-        if (!this.launch(weapon, attack, n, px, py, target, !enemy)) return 0;
+        if (!this.launch(weapon, attack, n, px, py, target, tier)) return 0;
         weapon.fireAt(n);
         return 0;
       case 'pulse':
         weapon.fireAt(n);
-        return this.pulse(weapon, attack, n, px, py, targets, structures);
+        return this.pulse(weapon, attack, n, px, py, targets, reserves);
       default:
         return assertNever(attack);
     }
@@ -179,21 +194,22 @@ export class Arsenal {
     px: number,
     py: number,
     target: WeaponTarget,
-    atStructure: boolean,
+    tier: number,
   ): boolean {
     if (this.active.length >= this.loadout.maxProjectiles) return false;
     const p = this.free.pop();
     if (!p) return false;
     const { damage } = weapon.type;
-    p.launch(this.nextProjectileId, px, py, target.x, target.y, damage, attack, n, atStructure);
+    p.launch(this.nextProjectileId, px, py, target.x, target.y, damage, attack, n, tier);
     this.nextProjectileId += 1;
     this.active.push(p);
     return true;
   }
 
   /**
-   * Daña en este mismo paso a todos los enemigos vivos y estructuras no destruidas que solapan el
-   * círculo del criterio, y a ningún otro; deja un eco visible. Devuelve las bajas de enemigos.
+   * Daña en este mismo paso a todos los enemigos vivos y a todos los objetivos vivos de los niveles
+   * de reserva (estructuras no destruidas y ovejas) que solapan el círculo del criterio, y a ningún
+   * otro; deja un eco visible. Devuelve las bajas de enemigos.
    */
   private pulse(
     weapon: Weapon,
@@ -202,7 +218,7 @@ export class Arsenal {
     px: number,
     py: number,
     targets: readonly WeaponTarget[],
-    structures: readonly WeaponTarget[],
+    reserves: readonly (readonly WeaponTarget[])[],
   ): number {
     const radius = reach(weapon.type.targeting);
     const { damage } = weapon.type;
@@ -213,9 +229,11 @@ export class Arsenal {
         if (t.takeDamage(damage, n)) kills++;
       }
     }
-    for (let i = 0; i < structures.length; i++) {
-      const s = structures[i];
-      if (s?.alive && circlesOverlap(px, py, radius, s.x, s.y, s.radius)) s.takeDamage(damage, n);
+    for (const level of reserves) {
+      for (let i = 0; i < level.length; i++) {
+        const s = level[i];
+        if (s?.alive && circlesOverlap(px, py, radius, s.x, s.y, s.radius)) s.takeDamage(damage, n);
+      }
     }
     const echo = this.freeEchoes.pop();
     if (echo) {

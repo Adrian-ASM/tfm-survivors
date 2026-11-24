@@ -11,10 +11,21 @@ import {
 
 /** Aspectos con hoja de los recogibles (0022): la gema solo si tiene hoja; luego oro y madera. */
 export function pickupAspectsOf(appearance: Appearance): [string[], StillAspect][] {
-  const { xp, gold, wood } = appearance.pickups;
+  const { xp, gold, wood, meat } = appearance.pickups;
   const out: [string[], StillAspect][] = 'sheet' in xp ? [[['pickups', 'xp'], xp]] : [];
-  out.push([['pickups', 'gold'], gold], [['pickups', 'wood'], wood]);
+  out.push([['pickups', 'gold'], gold], [['pickups', 'wood'], wood], [['pickups', 'meat'], meat]);
   return out;
+}
+
+/** Hojas de la oveja (0023) con su ruta de campo: la de `idle` y la de `bounce`. */
+export function sheepSheetsOf(
+  appearance: Appearance,
+): [string[], { file: string; frameWidth: number; frameHeight: number }][] {
+  const { idle, bounce } = appearance.sheep;
+  return [
+    [['sheep', 'idle', 'sheet'], idle.sheet],
+    [['sheep', 'bounce', 'sheet'], bounce.sheet],
+  ];
 }
 
 /** Aspectos de la veta (0022) con su ruta de campo: activa y agotada. */
@@ -118,6 +129,10 @@ export function parseAppearance(
       ...veinAspectsOf(appearance).map(([path, a]): [string[], string] => [
         [...path, 'sheet', 'file'],
         a.sheet.file,
+      ]),
+      ...sheepSheetsOf(appearance).map(([path, sheet]): [string[], string] => [
+        [...path, 'file'],
+        sheet.file,
       ]),
     ];
     for (const [path, file] of sheets) {

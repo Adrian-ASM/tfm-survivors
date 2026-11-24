@@ -4,6 +4,7 @@ import type { RunConfig } from '../../src/domain/run/RunConfig';
 import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
 import { BALANCE_SEEDS, STILL_LIMIT_TICKS } from './balanceSeeds';
 import { botWorld, referenceBot, threateningWarnings, type ReferenceBot } from './policies';
+import type { MapMode } from '../../src/composition/seedSource';
 import { chooseWhileOpen, play, startSeededRun, stillSurvivors } from './runs';
 
 /** Duración objetivo de la partida (content/run.json): 600 s = 36.000 ticks. */
@@ -21,7 +22,22 @@ export interface BotTrace {
    * explotó una dinamita lanzada por un guardia.
    */
   readonly w3Damage: number;
+  /** Vida recuperada en la partida (subidas de vida sin cambio de la máxima: la carne, 0023). */
+  readonly healed: number;
+  /** Ovejas que han muerto en la partida (0023). */
+  readonly sheepDeaths: number;
 }
+
+/** Vida curada entre dos snapshots (0 si cambió la máxima: una mejora no es curación). */
+const healedBetween = (a: RunSnapshot, b: RunSnapshot): number =>
+  b.player.maxHealth === a.player.maxHealth ? Math.max(0, b.player.health - a.player.health) : 0;
+
+/** Ovejas de `a` que ya no están en `b` (muertas en el tick). */
+const sheepLost = (a: RunSnapshot, b: RunSnapshot): number => {
+  if (a.sheep.length === 0) return 0;
+  const alive = new Set(b.sheep.map((o) => o.id));
+  return a.sheep.filter((o) => !alive.has(o.id)).length;
+};
 
 /** ¿Es un tipo de guardia (empieza en patrulla, spec enemy-behavior 0021)? */
 const isGuard = (t: EnemyTypeConfig): boolean =>
@@ -58,6 +74,8 @@ export function playBotTraced(
   let lastBlast = -1;
   let barrelBlasts = 0;
   let w3Damage = 0;
+  let healed = 0;
+  let sheepDeaths = 0;
   let last: RunSnapshot | null = null;
   for (let t = 0; t < maxTicks && run.status !== 'over'; t++) {
     const chosen = chooseWhileOpen(run, (offer) => bot.pick(offer));
@@ -68,6 +86,8 @@ export function playBotTraced(
     run.tick(input);
     const after = run.snapshot();
     last = after;
+    healed += healedBetween(before, after);
+    sheepDeaths += sheepLost(before, after);
     for (const e of after.enemies) if (e.stateKind === 'fuse') fused.add(e.id);
     for (const d of after.dynamites) {
       if (seenDynamites.has(d.id)) continue;
@@ -90,7 +110,7 @@ export function playBotTraced(
     )
       w3Damage += lost;
   }
-  return { final: run.snapshot(), fuses: fused.size, barrelBlasts, w3Damage };
+  return { final: run.snapshot(), fuses: fused.size, barrelBlasts, w3Damage, healed, sheepDeaths };
 }
 
 /** ¿Victoria en el tick 36.000 (spec run-outcome)? */
@@ -104,6 +124,37 @@ export function traceBotBatch(config: RunConfig): BotTrace[] {
     return playBotTraced(config, run, referenceBot(config, run.map), TEN_MINUTES);
   });
 }
+
+/** Partida de un jugador quieto con la política fija (spec run-outcome "Perdible", 0023). */
+export interface StillTrace {
+  readonly seed: number;
+  readonly final: RunSnapshot;
+  /** Vida recuperada con la carne. */
+  readonly healed: number;
+}
+
+/**
+ * Juega cada semilla con input (0, 0) y la política de elección fija hasta `STILL_LIMIT_TICKS − 1`
+ * (o hasta que termina), contando la vida curada. Sobrevivir en el tick 10.799 cuenta como fallo.
+ */
+export function traceStillBatch(config: RunConfig, mode: MapMode = 'generated'): StillTrace[] {
+  return BALANCE_SEEDS.map((seed) => {
+    const run = startSeededRun(config, seed, mode);
+    let prev = run.snapshot();
+    let healed = 0;
+    play(run, STILL_LIMIT_TICKS - 1, (_, r) => {
+      const now = r.snapshot();
+      healed += healedBetween(prev, now);
+      prev = now;
+      return false;
+    });
+    return { seed, final: run.snapshot(), healed };
+  });
+}
+
+/** Semillas cuyo quieto no ha perdido antes del tick 10.800. */
+export const stillAlive = (traces: readonly StillTrace[]): number[] =>
+  traces.filter((t) => !(t.final.status === 'over' && t.final.outcome === 'lost')).map((t) => t.seed);
 
 /** Media por partida de un contador del rastro. */
 export const perRun = (traces: readonly BotTrace[], pick: (t: BotTrace) => number): number =>

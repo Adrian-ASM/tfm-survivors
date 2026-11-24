@@ -2,6 +2,7 @@ import { type Page } from '@playwright/test';
 import arena from '../../content/arena.json' with { type: 'json' };
 import player from '../../content/player.json' with { type: 'json' };
 import structures from '../../content/structures.json' with { type: 'json' };
+import sheepContent from '../../content/sheep.json' with { type: 'json' };
 import { MAP_GOLDEN, signatureOf } from '../support/mapGolden';
 import { expect, test } from './fixtures';
 import {
@@ -285,6 +286,25 @@ function resourceMisses(p: ProbeRead): string[] {
   );
 }
 
+/** Ovejas pintadas (número y por estado) y carne frente al snapshot, sin reserva (0023). */
+function sheepMisses(p: ProbeRead): string[] {
+  const s = p?.sprites;
+  const snap = p?.snapshot;
+  if (!s || !snap) return ['sin sonda'];
+  const by = (state: 'graze' | 'wander' | 'flee') => snap.sheep.filter((o) => o.state === state);
+  const pairs: [string, number, number][] = [
+    ['ovejas', s.sheep.visible, snap.sheep.length],
+    ['graze', s.sheep.byState.graze, by('graze').length],
+    ['wander', s.sheep.byState.wander, by('wander').length],
+    ['flee', s.sheep.byState.flee, by('flee').length],
+    ['meat', s.pickups.meat.visible, snap.pickups.filter((x) => x.kind === 'meat').length],
+    ['reserva', s.sheep.placeholder + s.pickups.meat.placeholder, 0],
+  ];
+  return pairs.flatMap(([k, got, want]) =>
+    got === want ? [] : [`${k}: ${String(got)}≠${String(want)}`],
+  );
+}
+
 // Spec procedural-map, "Sonda coherente con el núcleo", y player-movement, "Sin solapes en la
 // build con el mapa real". Los E2E no importan `src/`: la firma dorada se fija en un unitario.
 // 0021, sprite-rendering "Estructuras y guardias en el navegador" (ampliación, sin input).
@@ -339,11 +359,15 @@ test('Mapa real: sonda igual a la firma de la semilla 42, castillo y salida, y s
   expect(first.sprites?.pickups.wood.visible).toBe(m.woodPiles.length);
   expect(first.sprites?.veins.active).toBe(m.veins.length);
   expect(resourceMisses(first)).toEqual([]);
+  // 0023: ovejas pintadas = las del snapshot (al arrancar, el tope del contenido) y carne, sin reserva.
+  expect(first.snapshot?.sheep).toHaveLength(sheepContent.maxAlive);
+  expect(sheepMisses(first)).toEqual([]);
   await step(page, structures.types['goblin-house'].guards.everyTicks + 1);
   const later = await probe(page);
   expect(later?.snapshot?.status).toBe('running');
   expect(structureMisses(later)).toEqual([]);
   expect(resourceMisses(later)).toEqual([]);
+  expect(sheepMisses(later)).toEqual([]);
   expect(later?.sprites?.enemyStates.patrol ?? 0).toBeGreaterThanOrEqual(1);
   expect(later?.sprites?.enemies.placeholder).toBe(0);
   expect(problems).toEqual([]);

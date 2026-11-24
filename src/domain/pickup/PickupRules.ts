@@ -1,4 +1,5 @@
 import { err, invalidConfig, ok, type DomainError, type Result } from '../shared/Result';
+import { assertNever } from '../shared/assertNever';
 import { TICK_SECONDS } from '../shared/Tick';
 import type { PickupKind } from './PickupKind';
 
@@ -10,12 +11,14 @@ export const MAX_GOLD_MUST_BE_INTEGER =
   'El tope de recogibles de oro en el suelo debe ser un entero ≥ 1.';
 export const MAX_WOOD_MUST_BE_INTEGER =
   'El tope de recogibles de madera en el suelo debe ser un entero ≥ 1.';
+export const MAX_MEAT_MUST_BE_INTEGER =
+  'El tope de recogibles de carne en el suelo debe ser un entero ≥ 1.';
 
 const PATH = 'progression';
 
 /** Parámetros de los recogibles en el contenido (fichero de progresión). */
 export interface PickupRulesConfig {
-  /** Radio de los tres tipos. */
+  /** Radio de los cuatro tipos. */
   readonly gemRadius: number;
   /** px/s. */
   readonly magnetSpeed: number;
@@ -23,6 +26,7 @@ export interface PickupRulesConfig {
   readonly maxGems: number;
   readonly maxGold: number;
   readonly maxWood: number;
+  readonly maxMeat: number;
 }
 
 const isPositive = (v: number): boolean => Number.isFinite(v) && v > 0;
@@ -32,7 +36,7 @@ const isCount = (v: number): boolean => Number.isInteger(v) && v >= 1;
 export class PickupRules {
   /** Distancia que avanza un recogible atraído en un tick (`magnetSpeed / 60`). */
   readonly pullPerTick: number;
-  /** Suma de los tres topes: la reserva de registros (y de sprites) de la partida. */
+  /** Suma de los cuatro topes: la reserva de registros (y de sprites) de la partida. */
   readonly capacity: number;
 
   private constructor(
@@ -41,20 +45,31 @@ export class PickupRules {
     readonly maxGems: number,
     readonly maxGold: number,
     readonly maxWood: number,
+    readonly maxMeat: number,
   ) {
     this.pullPerTick = magnetSpeed * TICK_SECONDS;
-    this.capacity = maxGems + maxGold + maxWood;
+    this.capacity = maxGems + maxGold + maxWood + maxMeat;
     Object.freeze(this);
   }
 
   /** Tope en el suelo del tipo. */
   max(kind: PickupKind): number {
-    if (kind === 'xp') return this.maxGems;
-    return kind === 'gold' ? this.maxGold : this.maxWood;
+    switch (kind) {
+      case 'xp':
+        return this.maxGems;
+      case 'gold':
+        return this.maxGold;
+      case 'wood':
+        return this.maxWood;
+      case 'meat':
+        return this.maxMeat;
+      default:
+        return assertNever(kind);
+    }
   }
 
   static create(config: PickupRulesConfig): Result<PickupRules, DomainError> {
-    const { gemRadius, magnetSpeed, maxGems, maxGold, maxWood } = config;
+    const { gemRadius, magnetSpeed, maxGems, maxGold, maxWood, maxMeat } = config;
     if (!isPositive(gemRadius)) {
       return err(invalidConfig(`${PATH}.gemRadius`, GEM_RADIUS_MUST_BE_POSITIVE));
     }
@@ -64,6 +79,7 @@ export class PickupRules {
     if (!isCount(maxGems)) return err(invalidConfig(`${PATH}.maxGems`, MAX_GEMS_MUST_BE_INTEGER));
     if (!isCount(maxGold)) return err(invalidConfig(`${PATH}.maxGold`, MAX_GOLD_MUST_BE_INTEGER));
     if (!isCount(maxWood)) return err(invalidConfig(`${PATH}.maxWood`, MAX_WOOD_MUST_BE_INTEGER));
-    return ok(new PickupRules(gemRadius, magnetSpeed, maxGems, maxGold, maxWood));
+    if (!isCount(maxMeat)) return err(invalidConfig(`${PATH}.maxMeat`, MAX_MEAT_MUST_BE_INTEGER));
+    return ok(new PickupRules(gemRadius, magnetSpeed, maxGems, maxGold, maxWood, maxMeat));
   }
 }

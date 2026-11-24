@@ -81,7 +81,7 @@ const randomSeed = (): number => crypto.getRandomValues(new Uint32Array(1))[0] ?
 
 /**
  * Tamaño de los pools de la escena desde el contenido ya validado: `pulseCapacity` del peor caso
- * de las mejoras (ADR-0008) y la suma de los topes de recogibles (0022).
+ * de las mejoras (ADR-0008), la suma de los topes de recogibles (0022) y el tope de ovejas (0023).
  */
 function sceneCapacity(config: RunConfig, corpses: number, blasts: number): SceneCapacity {
   const rules = buildRunRules(config);
@@ -96,6 +96,7 @@ function sceneCapacity(config: RunConfig, corpses: number, blasts: number): Scen
     projectiles: loadout.maxProjectiles,
     pulses: pulseCapacity,
     pickups: pickups.capacity,
+    sheep: rules.value.sheep.maxAlive,
     corpses,
     visualTicks,
     hazards: { dynamites: hazards.maxDynamites, blasts },

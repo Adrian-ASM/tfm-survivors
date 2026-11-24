@@ -74,8 +74,16 @@ export interface SnapshotView {
   pulses: { weapon: string; firedAt: number }[];
   weapons: { id: string; ready: boolean }[];
   gems: { id: number; x: number; y: number }[];
-  /** Recogibles de los tres tipos (0022), contadores y vetas. */
-  pickups: { id: number; kind: 'xp' | 'gold' | 'wood'; value: number; x: number; y: number }[];
+  /** Recogibles de los cuatro tipos (0022, `meat` desde 0023), contadores y vetas. */
+  pickups: {
+    id: number;
+    kind: 'xp' | 'gold' | 'wood' | 'meat';
+    value: number;
+    x: number;
+    y: number;
+  }[];
+  /** Ovejas vivas (0023). */
+  sheep: { id: number; x: number; y: number; state: 'graze' | 'wander' | 'flee' }[];
   resources: { gold: number; wood: number };
   veins: { id: number; x: number; y: number; radius: number; gold: number; depleted: boolean }[];
   /** Peligros (0020): dinamitas en vuelo, avisos y explosiones visibles. */
@@ -130,8 +138,10 @@ export interface SpritesView {
   projectiles: SpriteCountView;
   pulses: SpriteCountView;
   gems: SpriteCountView;
-  /** Recogibles por tipo (0022); `gems` es el mismo objeto que `pickups.xp`. */
-  pickups: Record<'xp' | 'gold' | 'wood', SpriteCountView>;
+  /** Recogibles por tipo (0022, `meat` desde 0023); `gems` es el mismo objeto que `pickups.xp`. */
+  pickups: Record<'xp' | 'gold' | 'wood' | 'meat', SpriteCountView>;
+  /** Ovejas pintadas, con reserva y por estado (0023). */
+  sheep: SpriteCountView & { byState: Record<'graze' | 'wander' | 'flee', number> };
   /** Vetas pintadas (0022): activas, agotadas y con reserva. */
   veins: { active: number; depleted: number; fallback: number };
   enemyPlaceholders: Record<string, number>;

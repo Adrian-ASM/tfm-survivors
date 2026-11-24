@@ -1,6 +1,7 @@
 import type { StateCounts } from './EnemyLayer';
 import type { SpriteCount } from './PlayerView';
 import type { PickupCounts } from './PickupLayer';
+import { zeroSheepCounts, type SheepCounts } from './SheepLayer';
 import { zeroCells, zeroMapArt, type CellCounts, type MapArtProbe } from './TerrainView';
 import { zeroStructureCounts, type StructureCount } from './StructureArt';
 
@@ -19,6 +20,8 @@ export interface SpriteCounts {
   readonly pickups: PickupCounts;
   /** Alias de `pickups.xp` (el mismo objeto), para las sondas de antes de 0022. */
   readonly gems: SpriteCount;
+  /** Ovejas pintadas, con reserva y por estado (0023). */
+  readonly sheep: SheepCounts;
   readonly enemyPlaceholders: Record<string, number>;
   /** Sprites de enemigo vivo por clase de estado de comportamiento (0020). */
   readonly enemyStates: StateCounts;
@@ -74,7 +77,7 @@ export function emptyCounts(
 ): SpriteCounts {
   const enemyPlaceholders: Record<string, number> = {};
   for (const id of enemyIds) enemyPlaceholders[id] = 0;
-  const pickups = { xp: zero(), gold: zero(), wood: zero() };
+  const pickups = { xp: zero(), gold: zero(), wood: zero(), meat: zero() };
   return {
     ground: zero(),
     player: zero(),
@@ -84,6 +87,7 @@ export function emptyCounts(
     pulses: zero(),
     pickups,
     gems: pickups.xp,
+    sheep: zeroSheepCounts(),
     enemyPlaceholders,
     enemyStates: { chase: 0, fuse: 0, charge: 0, wait: 0, patrol: 0, alert: 0, return: 0 },
     warnings: zero(),

@@ -5,6 +5,7 @@ import type { Experience } from '../progression/Experience';
 import type { Pickup } from '../pickup/Pickup';
 import type { GoldVein } from '../resource/GoldVein';
 import type { Structure } from '../structure/Structure';
+import type { Sheep } from '../sheep/Sheep';
 import type { UpgradeBoard } from '../upgrade/UpgradeBoard';
 import type { UpgradeCatalog } from '../upgrade/UpgradeCatalog';
 import type { Projectile } from '../weapon/Projectile';
@@ -20,6 +21,7 @@ import type {
   ProjectileSnapshot,
   StructureSnapshot,
   PulseSnapshot,
+  SheepSnapshot,
   UpgradeLevelSnapshot,
   VeinSnapshot,
   WarningSnapshot,
@@ -40,6 +42,19 @@ export function toEnemySnapshot(e: Enemy, damaged: boolean): EnemySnapshot {
     damaged,
     state: names[e.state] ?? '',
     stateKind: kinds[e.state] ?? 'chase',
+  });
+}
+
+export function toSheepSnapshot(o: Sheep, damaged: boolean): SheepSnapshot {
+  return Object.freeze({
+    id: o.id,
+    x: o.x,
+    y: o.y,
+    radius: o.radius,
+    health: o.hp,
+    state: o.mode,
+    damaged,
+    origin: Object.freeze({ x: o.originX, y: o.originY }),
   });
 }
 

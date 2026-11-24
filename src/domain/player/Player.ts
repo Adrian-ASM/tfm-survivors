@@ -71,6 +71,25 @@ export class Player {
     return new Player(this.position, this.rules, this.health.damage(damage), until);
   }
 
+  /**
+   * Curación (spec player-health 0023): sube la vida con tope en la máxima efectiva y conserva
+   * posición e invulnerabilidad (ni la inicia ni la cambia). Sin cambio, el mismo jugador.
+   */
+  heal(amount: number): Player {
+    const health = this.health.heal(amount);
+    if (health === this.health) return this;
+    return new Player(this.position, this.rules, health, this.invulnerableUntil);
+  }
+
+  /**
+   * La misma posición, reglas e invulnerabilidad con la vida actual `current` (`RunSetup`, ya
+   * validada en [1, máx]).
+   */
+  withHealth(current: number): Player {
+    const health = Health.full(this.health.max).damage(this.health.max - current);
+    return new Player(this.position, this.rules, health, this.invulnerableUntil);
+  }
+
   /** Lo que marca el snapshot del tick k: un contacto en k + 1 no dañaría. */
   isInvulnerableAfter(tick: number): boolean {
     return tick < this.invulnerableUntil;

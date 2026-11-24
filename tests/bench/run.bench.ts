@@ -48,7 +48,7 @@ const BENCH_DURATION = 1e6;
 function benchConfig(weapons?: WeaponsConfig): RunConfig {
   const config = loadRunConfig();
   if (!config.ok) throw new Error(config.error.message);
-  const { player, enemies, upgrades } = config.value;
+  const { player, enemies, upgrades, sheep } = config.value;
   const types = enemies.types.map((t) => ({ ...t, health: BENCH_HEALTH }));
   // Con las armas de bench (cadencia 1), las mejoras de cadencia no pasan la build de peor caso.
   const list = weapons
@@ -61,6 +61,8 @@ function benchConfig(weapons?: WeaponsConfig): RunConfig {
     weapons: weapons ?? config.value.weapons,
     upgrades: { upgrades: list },
     run: { durationSeconds: BENCH_DURATION },
+    // 0023: ovejas indestructibles en el bench (el pulso de bench alcanza toda la arena).
+    sheep: { ...sheep, health: BENCH_HEALTH },
   };
 }
 
@@ -355,8 +357,7 @@ test('Peor caso con gemas: 300 vivos, 32 proyectiles y 300 gemas atraídas (60 t
  * atraídos en las esquinas inferiores, a ≥ 400 px del jugador. Los montones del mapa, a > 308 px de
  * la salida, no se atraen ni se recogen en los 100 ticks.
  */
-function runWorstCaseThreeTopes(): Run {
-  const config = benchConfig(BENCH_WEAPONS);
+function runWorstCaseThreeTopes(config: RunConfig = benchConfig(BENCH_WEAPONS), meat = 0): Run {
   const { maxGems, maxGold, maxWood } = config.progression;
   const piles = config.resources.woodPiles.count;
   const corners = [
@@ -375,6 +376,7 @@ function runWorstCaseThreeTopes(): Run {
     ...Array<'xp'>(maxGems).fill('xp'),
     ...Array<'gold'>(maxGold).fill('gold'),
     ...Array<'wood'>(maxWood - piles).fill('wood'),
+    ...Array<'meat'>(meat).fill('meat'),
   ];
   const gems = kinds.map((kind, i) => ({ kind, ...at(i), value: 1, attracted: true }));
   const run = start(
@@ -402,6 +404,31 @@ test('Peor caso con los tres topes llenos: 300 vivos, 32 proyectiles y 396 recog
   expect(snap.status).toBe('running');
   expect([before.pickups.length, snap.pickups.length]).toEqual([topes, topes]);
   expect([snap.enemies.length, snap.projectiles.length, snap.veins.length]).toEqual([CAP, 32, 3]);
+  expect(result.latency.mean).toBeLessThanOrEqual(MAX_MEAN_MS);
+});
+
+/**
+ * Peor caso de 0023 (spec simulation-loop, "Peor caso con los cuatro topes llenos"): el de los tres
+ * topes más `maxMeat` recogibles `meat` atraídos lejos del jugador y el tope de ovejas del mapa
+ * generado, todas en huida en cada tick (radio de huida de bench mayor que la diagonal del mundo).
+ */
+test('Peor caso con los cuatro topes llenos: 300 vivos, 32 proyectiles, 404 recogibles y ovejas en huida', async ({
+  bench,
+}) => {
+  const base = benchConfig(BENCH_WEAPONS);
+  const config = { ...base, sheep: { ...base.sheep, flee: { ...base.sheep.flee, radius: REACH } } };
+  const { maxGems, maxGold, maxWood, maxMeat } = config.progression;
+  const run = runWorstCaseThreeTopes(config, maxMeat);
+  const topes = maxGems + maxGold + maxWood + maxMeat;
+  const result = await bench('Run.tick · 300 vivos + 32 proyectiles + cuatro topes + ovejas en huida', () => {
+    step(run);
+  }).run({ ...OPTIONS, iterations: GEM_MEASURED_TICKS, warmupIterations: GEM_WARMUP_TICKS });
+  report(result.name, result.latency);
+  const snap = run.snapshot();
+  expect(snap.status).toBe('running');
+  expect(snap.pickups).toHaveLength(topes);
+  expect(snap.sheep).toHaveLength(config.sheep.maxAlive);
+  expect(snap.sheep.every((o) => o.state === 'flee')).toBe(true);
   expect(result.latency.mean).toBeLessThanOrEqual(MAX_MEAN_MS);
 });
 

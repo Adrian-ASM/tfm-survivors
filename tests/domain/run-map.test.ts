@@ -1,4 +1,4 @@
-import { resourceRandomFor } from '../support/camps';
+import { resourceRandomFor, sheepRandomFor } from '../support/camps';
 import { describe, expect, it } from 'vitest';
 import { StartRun } from '../../src/application/StartRun';
 import type { CellType } from '../../src/domain/map/CellType';
@@ -29,6 +29,7 @@ const generated = (seed: number): TerrainSource => ({
   random: new Mulberry32RandomGenerator(deriveSeed(seed, MAP_STREAM)),
   structureRandom: new Mulberry32RandomGenerator(deriveSeed(seed, STRUCT_STREAM)),
   resourceRandom: resourceRandomFor(seed),
+  sheepRandom: sheepRandomFor(seed),
 });
 
 function start(

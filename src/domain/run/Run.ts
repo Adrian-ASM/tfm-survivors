@@ -8,6 +8,9 @@ import type { GameMap } from '../map/GameMap';
 import { toMapSnapshot, type MapSnapshot } from '../map/MapSnapshot';
 import { OPEN_TERRAIN, resolveTerrain, type TerrainSource } from '../map/TerrainSource';
 import { resolveStructures } from '../structure/resolveStructures';
+import { resolveSheep } from '../sheep/resolveSheep';
+import type { Flock } from '../sheep/Flock';
+import type { Sheep } from '../sheep/Sheep';
 import { StructureField } from '../structure/StructureField';
 import type { Structure } from '../structure/Structure';
 import type { StructureSite } from '../structure/StructureSite';
@@ -48,6 +51,7 @@ import {
   toProjectileSnapshot,
   toStructureSnapshot,
   toPulseSnapshot,
+  toSheepSnapshot,
   toUpgradeLevels,
   toWarnings,
 } from './snapshotParts';
@@ -75,20 +79,27 @@ export {
 /**
  * Partida en curso (aggregate root). Único punto de entrada para cambiar el estado de la
  * simulación. Contrato de determinismo (spec simulation-loop, "Orden de los pasos del tick"): el
- * orden del tick (1 jugador → 2 comportamiento en orden de lista: esperas que terminan, persecución
+ * orden del tick (1 jugador y, tras él, ovejas en orden de lista: huida o pasto/paseo (ADR-0022) →
+ * 2 comportamiento en orden de lista: esperas que terminan, persecución
  * y alerta por el campo de flujo hacia la celda del jugador, patrulla y vuelta hacia su punto fijo, y
- * transiciones tras moverse → 3 armas (estructuras solo como reserva sin enemigos en el criterio) y,
- * si hay bajas, removeDead() con sus gemas, y después las estructuras a vida 0 quedan destruidas →
+ * transiciones tras moverse → 3 armas (estructuras como reserva sin enemigos en el criterio y ovejas
+ * sin estructuras) y, si hay bajas, removeDead() con sus gemas, después las estructuras a vida 0
+ * quedan destruidas (su oro) y las ovejas a vida 0 mueren (su carne; se encola su reaparición) →
  * 4 peligros (ADR-0019): explosiones caducadas, barriles cuya mecha termina (marcados todos antes,
- * sin dañarse a sí mismos) y dinamitas que llegan, en ese orden, otro removeDead() y lanzamientos en
+ * sin dañarse a sí mismos) y dinamitas que llegan, en ese orden, que dañan también a las ovejas,
+ * otro removeDead() y las ovejas muertas, y lanzamientos en
  * orden de lista bajo el tope → 5 un solo golpe al jugador, el mayor entre contactos de tipos con
- * daño y explosiones que le alcanzan → victoria en el tick de la duración objetivo → gemas y XP →
- * director → nacimiento de guardias en las casas, en orden de lista (ADR-0020) → apertura de oferta)
+ * daño y explosiones que le alcanzan → victoria en el tick de la duración objetivo → recogibles (XP,
+ * oro, madera y la carne, que cura) y vetas → director → nacimiento de guardias en las casas, en
+ * orden de lista (ADR-0020) → reaparición de ovejas en orden de cola → apertura de oferta)
  * y el consumo de azar son fijos (colisión con el mapa, campo, línea libre, navegación,
  * comportamientos, peligros, estructuras, nacimientos, recolocación de apariciones, armas, gemas, XP
  * y fin de partida no consumen azar; la oferta y cada intento de aparición sí); cambiarlos cambia las
  * partidas de una semilla. El mapa es parte del estado inicial y sale de un flujo de azar propio
- * (ADR-0013), y sus casas y torres de otro (ADR-0020); no cambia durante la partida. La navegación
+ * (ADR-0013), y sus casas y torres de otro (ADR-0020); no cambia durante la partida. Las ovejas
+ * consumen solo su flujo (ADR-0022), en este orden: colocación (1 valor por oveja), primer pasto (1 por
+ * oveja colocada), y en partida 1 por paseo aleatorio (paso 1) y 1 por reaparición con candidatas
+ * (paso 9.2); nunca el azar de la partida. La navegación
  * (ADR-0017): BFS 4-vecina con orden izquierda, derecha, arriba, abajo, campo solo función de (mapa,
  * celda del jugador) y empates por ese orden.
  */
@@ -112,6 +123,8 @@ export class Run {
   private readonly structures: StructureField;
   /** Vetas en su orden fijo (ADR-0021): ni se crean ni se retiran durante la partida. */
   private readonly veins: readonly GoldVein[];
+  /** Ovejas neutrales (ADR-0022): fuera de `Horde`, del director y de las bajas. */
+  private readonly flock: Flock;
 
   private constructor(
     private readonly rules: RunRules,
@@ -139,9 +152,11 @@ export class Run {
     this.hazards = new HazardField(rules.hazards, initial.dynamites);
     this.structures = new StructureField(initial.structures);
     this.veins = initial.veins;
+    this.flock = initial.flock;
     for (const w of rules.loadout.weapons) this.retune(w.id);
     const bonus = maxHealthBonus(rules.upgrades, this.board.levels);
     this.player = this.player.withRules(this.effectivePlayer(), bonus);
+    if (initial.playerHealth !== null) this.player = this.player.withHealth(initial.playerHealth);
   }
 
   /**
@@ -164,7 +179,17 @@ export class Run {
     const resources = resolveResources(terrain, map.value, rules.value.resources, sites.value);
     if (!resources.ok) return resources;
     const { veins, woodPiles } = resources.value;
-    const initial = initialState(rules.value, setup, map.value, sites.value, woodPiles, veins);
+    const sheep = resolveSheep(terrain, map.value, rules.value.sheep, sites.value);
+    if (!sheep.ok) return sheep;
+    const initial = initialState(
+      rules.value,
+      setup,
+      map.value,
+      sites.value,
+      woodPiles,
+      veins,
+      sheep.value,
+    );
     if (!initial.ok) return initial;
     return ok(new Run(rules.value, random, map.value, initial.value, sites.value, resources.value));
   }
@@ -237,11 +262,15 @@ export class Run {
     const n = this.tickCount + 1;
     this.player = this.player.move(input, TICK_SECONDS, this.arena, this.terrain);
     const { x, y } = this.player.position;
+    this.flock.step(n, x, y, this.terrain, this.arena);
     this.field.retarget(this.terrain.colAt(x), this.terrain.rowAt(y));
     this.horde.act(n, x, y, TICK_SECONDS, this.field);
-    const { horde, structures } = this;
-    if (this.arsenal.step(n, x, y, horde.alive, structures.all) > 0) horde.removeDead(this.onDeath);
+    const { horde, structures, flock } = this;
+    if (this.arsenal.step(n, x, y, horde.alive, structures.all, flock.all) > 0) {
+      horde.removeDead(this.onDeath);
+    }
     structures.settle(this.onRuin);
+    flock.settle(n, this.onSheepDeath);
     this.stepHazards(n, x, y);
     if (this.applyHit(n) || this.reachedEnd(n)) {
       this.tickCount = n;
@@ -250,13 +279,14 @@ export class Run {
     this.collect(x, y);
     this.director.step(n, horde.alive.length, this.place);
     structures.spawnGuards(n, horde, this.rules.spawn.maxAlive);
+    this.flock.respawn(n, x, y);
     this.tickCount = n;
     this.openNextOffer();
   }
 
   /**
-   * Paso 7 (spec simulation-loop): 7.1 recogibles de los tres tipos en una pasada, en orden de
-   * creación; la XP sube de nivel y el oro y la madera van a sus contadores; 7.2 vetas en el orden
+   * Paso 7 (spec simulation-loop): 7.1 recogibles de los cuatro tipos en una pasada, en orden de
+   * creación; la XP sube de nivel, el oro y la madera van a sus contadores y la carne cura; 7.2 vetas en el orden
    * de su lista: cada una activa en contacto suma su oro y queda agotada.
    */
   private collect(x: number, y: number): void {
@@ -264,7 +294,19 @@ export class Run {
     this.pickups.step(x, y, this.player.radius, this.player.pickupRadius, gain);
     if (gain.xp > 0) this.experience.gain(gain.xp);
     this.stock.add(gain.gold, gain.wood);
+    if (gain.meat > 0) this.heal(gain.meat);
     for (const v of this.veins) this.stock.add(v.tap(x, y, this.player.radius), 0);
+  }
+
+  /**
+   * Curación por carne (spec player-health 0023): `valor × max(1, ⌊% × máx / 100⌋)` con la vida
+   * máxima efectiva de este momento y tope en ella. Sumar las piezas del paso y curar una vez es lo
+   * mismo que curar pieza a pieza (el tope es monótono). No consume azar.
+   */
+  private heal(meat: number): void {
+    const max = this.player.health.max;
+    const perUnit = Math.max(1, Math.floor((this.rules.resources.meat.healPercent * max) / 100));
+    this.player = this.player.heal(meat * perUnit);
   }
 
   /**
@@ -286,9 +328,12 @@ export class Run {
    * dinamitas), bajas con su gema tras las de las armas y lanzamientos con el jugador ya movido.
    */
   private stepHazards(n: number, x: number, y: number): void {
-    const { hazards, horde } = this;
+    const { hazards, horde, flock } = this;
     hazards.expire(n);
-    if (hazards.explode(n, horde.alive, x, y, this.player.radius)) horde.removeDead(this.onDeath);
+    if (hazards.explode(n, horde.alive, flock.all, x, y, this.player.radius)) {
+      horde.removeDead(this.onDeath);
+    }
+    flock.settle(n, this.onSheepDeath);
     hazards.launch(n, horde.alive, x, y);
   }
 
@@ -337,6 +382,11 @@ export class Run {
     if (gold > 0) this.pickups.drop('gold', ruin.x, ruin.y, gold);
   };
 
+  /** Una oveja muerta suelta su carne en su posición (spec resources 0023), sin gema ni baja. */
+  private readonly onSheepDeath = (dead: Sheep): void => {
+    this.pickups.drop('meat', dead.x, dead.y, this.rules.resources.meat.perSheep);
+  };
+
   /** Los enemigos nuevos van al final de la lista y no se mueven en el tick en que aparecen. */
   private readonly place: SpawnAttempt = (type) => {
     const at = placeSpawn(
@@ -376,6 +426,7 @@ export class Run {
         invulnerable: this.player.isInvulnerableAfter(k),
       }),
       enemies: Object.freeze(enemies),
+      sheep: Object.freeze(this.flock.all.map((o) => toSheepSnapshot(o, o.damagedAt(k, flash)))),
       projectiles: Object.freeze(this.arsenal.projectiles.map(toProjectileSnapshot)),
       pulses: Object.freeze(this.arsenal.pulses.map(toPulseSnapshot)),
       dynamites: Object.freeze(

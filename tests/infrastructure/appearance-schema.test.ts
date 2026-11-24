@@ -32,21 +32,23 @@ function failure(change: (raw: RawAppearance) => void): string {
 }
 
 describe('Aspectos de los recogibles y de las vetas (sprite-rendering)', () => {
-  it('Scenario: Datos del repositorio (xp, gold, wood, veta activa y agotada; colores distintos)', () => {
+  it('Scenario: Datos del repositorio (xp, gold, wood, meat, veta activa y agotada; colores distintos)', () => {
     const a = repository();
-    expect(Object.keys(a.pickups)).toEqual(['xp', 'gold', 'wood']);
+    expect(Object.keys(a.pickups)).toEqual(['xp', 'gold', 'wood', 'meat']);
     expect(Object.keys(a.veins)).toEqual(['active', 'depleted']);
     const colors = [
       a.pickups.xp.placeholderColor,
       a.pickups.gold.placeholderColor,
       a.pickups.wood.placeholderColor,
+      a.pickups.meat.placeholderColor,
       a.veinColor,
     ];
-    expect(new Set(colors).size).toBe(4);
+    expect(new Set(colors).size).toBe(5);
     const elsewhere = new Set([...Object.values(a.terrain), ...Object.values(a.structureColors)]);
     expect(colors.some((c) => elsewhere.has(c))).toBe(false);
     expect(a.pickups.gold.sheet.file.endsWith('G_Idle.png')).toBe(true);
     expect(a.pickups.wood.sheet.file.endsWith('W_Idle.png')).toBe(true);
+    expect(a.pickups.meat.sheet.file.endsWith('M_Idle.png')).toBe(true);
     // La gema no tiene hoja en el repositorio: forma de color (design §5).
     expect('sheet' in a.pickups.xp).toBe(false);
   });
@@ -57,7 +59,12 @@ describe('Aspectos de los recogibles y de las vetas (sprite-rendering)', () => {
       (r: RawAppearance) => Reflect.deleteProperty(r.pickups, 'wood'),
       /^pickups\.wood/,
     ],
-    ['aspecto extra meat', (r: RawAppearance) => (r.pickups.meat = {}), /^pickups\.meat$/],
+    [
+      'sin aspecto meat',
+      (r: RawAppearance) => Reflect.deleteProperty(r.pickups, 'meat'),
+      /^pickups\.meat/,
+    ],
+    ['aspecto extra potion', (r: RawAppearance) => (r.pickups.potion = {}), /^pickups\.potion$/],
     [
       'sin veta agotada',
       (r: RawAppearance) => Reflect.deleteProperty(r.veins, 'depleted'),
@@ -78,6 +85,14 @@ describe('Aspectos de los recogibles y de las vetas (sprite-rendering)', () => {
         if (gold && wood) wood.placeholderColor = gold.placeholderColor;
       },
       /^pickups\.wood\.placeholderColor$/,
+    ],
+    [
+      'color de meat igual al de la veta',
+      (r: RawAppearance) => {
+        const meat = r.pickups.meat;
+        if (meat) meat.placeholderColor = r.veinColor;
+      },
+      /^pickups\.meat\.placeholderColor$/,
     ],
     [
       'color de la veta "amarillo"',
@@ -120,9 +135,9 @@ describe('Arte de Update 010 de los recursos (sprite-rendering)', () => {
     }
   });
 
-  it('Scenario: Solo las hojas usadas (sin GoldMine_Destroyed, M_Idle, M_Spawn ni HappySheep)', () => {
+  it('Scenario: Solo las hojas usadas (sin GoldMine_Destroyed, M_Spawn, NoShadow ni HappySheep_All)', () => {
     const files = execFileSync('git', ['ls-files'], { cwd: root, encoding: 'utf8' }).split('\n');
-    const forbidden = /GoldMine_Destroyed|M_Idle|M_Spawn|HappySheep|Fire|Rocks/;
+    const forbidden = /GoldMine_Destroyed|M_Spawn|NoShadow|HappySheep_All|Fire|Rocks/;
     expect(files.filter((f) => forbidden.test(f) && !f.startsWith('openspec/'))).toEqual([]);
   });
 });

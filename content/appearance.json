@@ -99,6 +99,40 @@
       "facing": "right",
       "placeholderColor": "#9c6b3c",
       "idle": { "frames": [0], "fps": 1, "loop": true }
+    },
+    "meat": {
+      "sheet": { "file": "Resources/Resources/M_Idle.png", "frameWidth": 128, "frameHeight": 128 },
+      "scale": 0.3,
+      "origin": { "x": 0.5, "y": 0.5 },
+      "facing": "right",
+      "placeholderColor": "#c8504a",
+      "idle": { "frames": [0], "fps": 1, "loop": true }
+    }
+  },
+  "sheep": {
+    "scale": 0.6,
+    "origin": { "x": 0.5, "y": 0.5 },
+    "facing": "right",
+    "placeholderColor": "#f0ead6",
+    "idle": {
+      "sheet": {
+        "file": "Resources/Sheep/HappySheep_Idle.png",
+        "frameWidth": 128,
+        "frameHeight": 128
+      },
+      "frames": [0, 1, 2, 3, 4, 5, 6, 7],
+      "fps": 8,
+      "loop": true
+    },
+    "bounce": {
+      "sheet": {
+        "file": "Resources/Sheep/HappySheep_Bouncing.png",
+        "frameWidth": 128,
+        "frameHeight": 128
+      },
+      "frames": [0, 1, 2, 3, 4, 5],
+      "fps": 10,
+      "loop": true
     }
   },
   "ground": {

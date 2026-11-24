@@ -1,0 +1,10 @@
+{
+  "maxAlive": 5,
+  "radius": 18,
+  "health": 12,
+  "graze": { "ticks": 180, "radius": 240 },
+  "wander": { "speed": 40, "ticks": 60 },
+  "flee": { "radius": 200, "speed": 150 },
+  "respawn": { "everyTicks": 1800, "minPlayerDistance": 600 },
+  "placement": { "minStartCells": 9, "minCastleCells": 3, "minGapCells": 6 }
+}

@@ -110,6 +110,19 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   Sondas `sprites.pickups`/`veins`, `map.veins`/`woodPiles` y `hud`. Balance **idéntico** a la línea base M0 semilla a
   semilla (`tests/support/balanceBaseline.ts`, 27/50, 26,88 mechas, 0 quietos) y huella del contenido de combate;
   M1: bench tres topes 0,27 ms, lote 28–32 s local; M2: 701/784 objetos del mapa en 42/123.
+  Ovejas y carne (change 0023, ADR-0022): entidad neutral `Sheep` en un `Flock` propiedad de `Run`, fuera de
+  `Horde`, del director y de `kills` (`content/sheep.json`, tope 5 en el mapa generado; los mapas declarados
+  solo tienen las suyas). Paso 1, tras el jugador: huida estricta en recta (radio 200) o pasto/paseo con vuelta al
+  origen, con el barrido por ejes del jugador. Las armas las apuntan como **tercer nivel** (enemigos → estructuras
+  → ovejas; `Projectile.tier`) y las explosiones las dañan. Al morir (pasos 3.5 y 4.2) sueltan un recogible `meat`
+  (cuarto tipo, `maxMeat` 8) que cura `valor × max(1, ⌊healPercent × máx / 100⌋)` (`resources.meat`, 20 %) y
+  reaparecen en 9.2 tras `respawn.everyTicks` en otra celda a ≥ `minPlayerDistance`. Todo su azar sale de un quinto
+  flujo `SHEEP_STREAM` 5 en orden fijo (colocación, primer pasto, paseos, reapariciones); `SHEEP_GOLDEN` nueva y las
+  demás firmas intactas. Arte `HappySheep_Idle` + `HappySheep_Bouncing` (una hoja por animación) y `M_Idle`;
+  sonda `sprites.sheep` (visibles, reserva y por estado) y `sprites.pickups.meat`. Balance M1 sin recalibrar:
+  **28/50** con ovejas, **27/50** idéntico a la base con tope 0 (segundo lote del bot en `verify`) y 0 quietos.
+  Escenarios con la oveja de prueba: `TEST_SHEEP`, `withSheep`, `declaredSheep` y `aSheepConfig`
+  (`tests/support/sheep.ts`); `aRunConfig` lleva tope 0.
   Fuente de verdad del comportamiento: `openspec/specs/`.
 
 ## 2. Comandos
