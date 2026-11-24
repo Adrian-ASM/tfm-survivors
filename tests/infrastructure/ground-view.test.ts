@@ -81,6 +81,7 @@ function setup(missing: string[] = []) {
         sprite: () => undefined,
         rect: () => undefined,
         foam: () => undefined,
+        show: () => undefined,
       }),
     },
   );

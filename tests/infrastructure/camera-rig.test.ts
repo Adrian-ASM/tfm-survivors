@@ -4,6 +4,7 @@ import type { Run } from '../../src/domain/run/Run';
 import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
 import {
   CameraRig,
+  followView,
   type CameraView,
   type FollowCamera,
   type WorldSize,
@@ -32,6 +33,8 @@ class FakeCamera implements FollowCamera {
   sizes: number[][] = [];
   follows: { target: { x: number; y: number }; args: unknown[] }[] = [];
   readonly worldView = { x: 0, y: 0, width: 1, height: 1 };
+  width = 1;
+  height = 1;
 
   setBounds(x: number, y: number, w: number, h: number): this {
     this.bounds.push([x, y, w, h]);
@@ -40,6 +43,8 @@ class FakeCamera implements FollowCamera {
 
   setSize(width: number, height: number): this {
     this.sizes.push([width, height]);
+    this.width = width;
+    this.height = height;
     this.worldView.width = width;
     this.worldView.height = height;
     return this;
@@ -189,6 +194,84 @@ describe('CameraRig (spec world-camera 0017)', () => {
     paint(rig, camera, 16, 16);
 
     expect(view).toEqual({ x: 1280, y: 720, width: 1280, height: 720 });
+  });
+});
+
+// Spec sprite-rendering (0018), rectángulo visible del frame que se va a pintar (design D1): la
+// misma fórmula que aplica la cámara en su preRender, calculada antes de él.
+const corners = (v: CameraView): number[] => [v.x, v.y, v.x + v.width, v.y + v.height];
+const size = (w: number, h: number) => ({ width: w, height: h });
+
+describe('followView (0018, design D1)', () => {
+  it('centrada: jugador en (1.920, 1.080) a 1.280 × 720 → (1.280, 720)–(2.560, 1.440)', () => {
+    const view = followView({ x: 1920, y: 1080 }, size(1280, 720), WORLD);
+
+    expect(view).toEqual({ x: 1280, y: 720, width: 1280, height: 720 });
+  });
+
+  it.each([
+    [16, 16, [0, 0, 1280, 720]],
+    [3824, 16, [2560, 0, 3840, 720]],
+    [16, 2144, [0, 1440, 1280, 2160]],
+    [3824, 2144, [2560, 1440, 3840, 2160]],
+  ])('Scenario: Vista recortada al mundo en una esquina (jugador en (%s, %s))', (x, y, rect) => {
+    expect(corners(followView({ x, y }, size(1280, 720), WORLD))).toEqual(rect);
+  });
+
+  it.each([
+    [960, 540, [1440, 810, 2400, 1350]],
+    [1280, 720, [1280, 720, 2560, 1440]],
+    [2560, 1440, [640, 360, 3200, 1800]],
+  ])('Scenario: Vista que crece con la ventana (vista %s × %s)', (w, h, rect) => {
+    expect(corners(followView({ x: 1920, y: 1080 }, size(w, h), WORLD))).toEqual(rect);
+  });
+
+  it('Scenario: Vista que cubre el mundo entero (mundo 2.560 × 1.440, vista igual)', () => {
+    const world = size(2560, 1440);
+
+    expect(corners(followView({ x: 16, y: 16 }, size(2560, 1440), world))).toEqual([
+      0, 0, 2560, 1440,
+    ]);
+  });
+
+  it('posición inicial del E2E de Cámara (jugador en (1.950, 1.170) → (1.310, 810))', () => {
+    const view = followView({ x: 1950, y: 1170 }, size(1280, 720), WORLD);
+
+    expect([view.x, view.y]).toEqual([1310, 810]);
+  });
+
+  it('coincide con el worldView que deja el preRender de la cámara', () => {
+    const { camera, rig } = rigOn();
+    const painted = paint(rig, camera, 3000, 400);
+
+    expect(corners(followView({ x: 3000, y: 400 }, size(1280, 720), WORLD))).toEqual(painted);
+  });
+});
+
+describe('CameraRig.nextView (0018)', () => {
+  it('usa el objetivo de track y el tamaño de la cámara tras resize', () => {
+    const { rig } = rigOn();
+    rig.track({ x: 1920, y: 1080 });
+
+    expect(rig.nextView()).toEqual({ x: 1280, y: 720, width: 1280, height: 720 });
+
+    rig.resize(canvasFor(3840, 2160));
+
+    expect(rig.nextView()).toEqual({ x: 640, y: 360, width: 2560, height: 1440 });
+
+    rig.track({ x: 16, y: 16 });
+    rig.resize(canvasFor(960, 540));
+
+    expect(rig.nextView()).toEqual({ x: 0, y: 0, width: 960, height: 540 });
+  });
+
+  it('antes del preRender: el worldView sigue siendo el del frame anterior', () => {
+    const { camera, rig } = rigOn();
+    paint(rig, camera, 1920, 1080);
+    rig.track({ x: 2000, y: 1080 });
+
+    expect(rig.view().x).toBe(1280);
+    expect(rig.nextView().x).toBe(1360);
   });
 });
 

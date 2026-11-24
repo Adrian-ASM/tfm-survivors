@@ -61,6 +61,8 @@ test(
 // de la sonda ≤ 1.000 y fps con el mapa real (mediana de 3 pasadas) frente a la base de rectángulos
 // de 0015. Informativo.
 const MAP_FPS_BASE: Readonly<Record<number, number>> = { 42: 21.6, 123: 21.9 };
+/** Línea base de 0017 (main 35256f6, `CI_LIKE=1`), antes del recorte por cámara de 0018. */
+const MAP_FPS_0017: Readonly<Record<number, number>> = { 42: 14.1, 123: 12.9 };
 const MAX_MAP_OBJECTS = 1000;
 const PASSES = 3;
 
@@ -73,15 +75,24 @@ test(
       await page.goto(gameUrl({ seed, map: 'real' }));
       await focusGame(page);
       await expect.poll(async () => (await snapshotOf(page))?.tick ?? 0).toBeGreaterThan(0);
-      const objects = (await probe(page))?.sprites?.mapArt.objects ?? Infinity;
+      const art = (await probe(page))?.sprites?.mapArt;
+      const objects = art?.objects ?? Infinity;
+      const drawn = art?.drawn ?? 0;
       expect(objects).toBeLessThanOrEqual(MAX_MAP_OBJECTS);
+      // 0018, "Objetos del mapa [realtime]": el recorte por cámara deja 0 < drawn < objects.
+      expect(drawn).toBeGreaterThan(0);
+      expect(drawn).toBeLessThan(objects);
       const fps: number[] = [];
       for (let i = 0; i < PASSES; i++) fps.push((await measureFrames(page, FRAMES)).fps);
       const median = [...fps].sort((a, b) => a - b)[Math.floor(PASSES / 2)] ?? 0;
       const base = MAP_FPS_BASE[seed] ?? 1;
+      const before = MAP_FPS_0017[seed] ?? 0;
+      const diff = median - before;
       const line =
         `[map] seed=${String(seed)} throttle=${String(cpuThrottle)} objects=${String(objects)} ` +
-        `fps=${median.toFixed(1)} (${((100 * median) / base).toFixed(0)} % de ${String(base)})`;
+        `drawn=${String(drawn)} fps=${median.toFixed(1)} ` +
+        `(${((100 * median) / base).toFixed(0)} % de ${String(base)}; ` +
+        `${diff >= 0 ? '+' : ''}${diff.toFixed(1)} frente a ${String(before)} de 0017)`;
       console.log(line);
       test.info().annotations.push({ type: 'map-fps', description: line });
       expect(median).toBeGreaterThan(0);

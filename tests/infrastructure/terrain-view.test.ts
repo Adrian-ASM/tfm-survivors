@@ -25,6 +25,7 @@ const quietCanvas = (): MapArtCanvas => ({
   sprite: () => undefined,
   rect: () => undefined,
   foam: () => undefined,
+  show: () => undefined,
 });
 
 /** Área de juego con fábricas falsas que registran el orden de creación (= orden de pintado). */
@@ -97,7 +98,12 @@ describe('Capas del mapa en el área de juego', () => {
     const plan = planFor(toMapSnapshot(mapForSeed(aDefaultConfig(), 42)));
     layers.paintMap(mapArt, plan);
     expect(layers.counts.cells).toEqual(plan.cells);
-    expect(layers.counts.mapArt).toEqual({ ...plan.counts, objects: plan.objects });
+    // 0018: antes del primer recorte todo lo pintado está visible (drawn = objects).
+    expect(layers.counts.mapArt).toEqual({
+      ...plan.counts,
+      objects: plan.objects,
+      drawn: plan.objects,
+    });
     expect(layers.counts.ground).toEqual({ visible: 1, placeholder: 0 });
   });
 
@@ -110,7 +116,7 @@ describe('Capas del mapa en el área de juego', () => {
     expect(layers.counts.mapArt.objects).toBe(0);
   });
 
-  it('Scenario: Sonda en el menú (celdas, elementos y objetos del mapa a 0)', () => {
+  it('Scenario: Sonda en el menú (celdas, elementos, objetos del mapa y drawn a 0)', () => {
     const counts = emptyCounts(['goblin-torch']);
     expect(counts.cells).toEqual({ trunk: 0, water: 0, bridge: 0, castle: 0 });
     const none = { painted: 0, fallback: 0 };
@@ -123,6 +129,7 @@ describe('Capas del mapa en el área de juego', () => {
       bridge: none,
       castle: none,
       objects: 0,
+      drawn: 0,
     });
   });
 });

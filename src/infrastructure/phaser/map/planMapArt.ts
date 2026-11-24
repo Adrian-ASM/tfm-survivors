@@ -9,6 +9,14 @@ import { treeModels } from './treeChoices';
 // aspectos resueltos en la lista de objetos de cada capa, en orden de pintado. Puro: sin motor.
 // Capa baja: agua, espuma, orillas, puentes, troncos y fachada. Capa alta: copas y tejado.
 
+/** Caja en px de mundo de lo que pinta un objeto del mapa (0018, design §3; error ≤ 1 px). */
+export interface Box {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
 /** Recorte en px del frame (relativo a él), como `setCrop`. */
 export interface Crop {
   readonly x: number;
@@ -27,6 +35,8 @@ export interface TileDraw {
   readonly width: number;
   readonly height: number;
   readonly scale: number;
+  /** Su propio rectángulo (0018). */
+  readonly bounds: Box;
 }
 
 /** Sprite del mapa: frame (índice o marco con nombre), posición de su origen, volteo y recorte. */
@@ -41,7 +51,48 @@ export interface SpriteDraw {
   readonly origin: { readonly x: number; readonly y: number };
   readonly flipX: boolean;
   readonly crop: Crop | null;
+  /** Caja del recorte dibujado (0018, design §3). */
+  readonly bounds: Box;
 }
+
+/**
+ * Redondeo a 1/1024 px (exacto en binario): quita el ruido de coma flotante del origen y la escala
+ * (p. ej. una copa de la fila 0 que acaba en y = −1e-14 en vez de 0) sin pasar del error de 1 px.
+ */
+const BOX_GRID = 1024;
+const snap = (v: number): number => Math.round(v * BOX_GRID) / BOX_GRID + 0;
+
+/** Lo que fija la caja de un sprite: posición del origen, escala, volteo y recorte. */
+export type SpritePlacement = Pick<SpriteDraw, 'x' | 'y' | 'scale' | 'origin' | 'flipX' | 'crop'>;
+
+/**
+ * Caja en mundo de un sprite con frame de `fw × fh` (design §3). Con `flipX`, la unión del recorte y
+ * de su espejo `fw − c.x − c.width` (conservador: el motor refleja el recorte).
+ */
+export function spriteBounds(s: SpritePlacement, fw: number, fh: number): Box {
+  const c = s.crop ?? { x: 0, y: 0, width: fw, height: fh };
+  const x0 = s.flipX ? Math.min(c.x, fw - c.x - c.width) : c.x;
+  const x1 = s.flipX ? Math.max(c.x + c.width, fw - c.x) : c.x + c.width;
+  const left = snap(s.x + (x0 - s.origin.x * fw) * s.scale);
+  const top = snap(s.y + (c.y - s.origin.y * fh) * s.scale);
+  const right = snap(s.x + (x1 - s.origin.x * fw) * s.scale);
+  const bottom = snap(s.y + (c.y + c.height - s.origin.y * fh) * s.scale);
+  return { x: left, y: top, width: right - left, height: bottom - top };
+}
+
+/** Sprite del plan con su caja calculada. */
+function placed(
+  draw: Omit<SpriteDraw, 'bounds'>,
+  frame: { readonly width: number; readonly height: number },
+): SpriteDraw {
+  return { ...draw, bounds: spriteBounds(draw, frame.width, frame.height) };
+}
+
+/** Tamaño del frame de una hoja regular. */
+const frameOf = (sheet: { readonly frameWidth: number; readonly frameHeight: number }) => ({
+  width: sheet.frameWidth,
+  height: sheet.frameHeight,
+});
 
 /** Rectángulo de reserva en px de mundo. */
 export interface RectDraw {
@@ -51,6 +102,8 @@ export interface RectDraw {
   readonly width: number;
   readonly height: number;
   readonly color: number;
+  /** Su propio rectángulo (0018). */
+  readonly bounds: Box;
 }
 
 export type LowDraw = TileDraw | SpriteDraw | RectDraw;
@@ -89,6 +142,8 @@ export interface MapArtPlan {
   readonly cells: MapCellCounts;
   /** Objetos de escena del plan (uno por entrada de cada capa). */
   readonly objects: number;
+  /** Lado de la celda en px (`map.cellSize`): de él sale el margen del recorte (0018). */
+  readonly cellSize: number;
 }
 
 export interface PlanContext {
@@ -153,21 +208,24 @@ class Grid {
     const y = run.row * this.s;
     const width = this.right(run.col + run.cols - 1) - x;
     const height = this.bottom(run.row + run.rows - 1) - y;
-    return { kind: 'rect', x, y, width, height, color };
+    return { kind: 'rect', x, y, width, height, color, bounds: { x, y, width, height } };
   }
 
   tiles(run: TileRun, texture: string, frame: number, scale: number): TileDraw {
     const x = run.col * this.s;
     const y = run.row * this.s;
+    const width = this.right(run.col + run.cols - 1) - x;
+    const height = this.bottom(run.row + run.rows - 1) - y;
     return {
       kind: 'tiles',
       texture,
       frame,
       x,
       y,
-      width: this.right(run.col + run.cols - 1) - x,
-      height: this.bottom(run.row + run.rows - 1) - y,
+      width,
+      height,
       scale,
+      bounds: { x, y, width, height },
     };
   }
 }
@@ -184,18 +242,24 @@ function foamDraws(g: Grid, looks: MapLooks): SpriteDraw[] {
   const { texture, aspect } = looks.foam;
   const frame = aspect.idle.frames[0] ?? 0;
   const tile = g.s / aspect.scale;
-  return shoreCells(g.map).map(({ col, row }) => ({
-    kind: 'sprite',
-    role: 'foam',
-    texture,
-    frame,
-    x: g.centerX(col),
-    y: g.centerY(row),
-    scale: aspect.scale,
-    origin: aspect.origin,
-    flipX: false,
-    crop: foamCrop(riverSides(g.map, col, row), aspect.sheet.frameWidth, tile),
-  }));
+  const size = frameOf(aspect.sheet);
+  return shoreCells(g.map).map(({ col, row }) =>
+    placed(
+      {
+        kind: 'sprite',
+        role: 'foam',
+        texture,
+        frame,
+        x: g.centerX(col),
+        y: g.centerY(row),
+        scale: aspect.scale,
+        origin: aspect.origin,
+        flipX: false,
+        crop: foamCrop(riverSides(g.map, col, row), aspect.sheet.frameWidth, tile),
+      },
+      size,
+    ),
+  );
 }
 
 function shoreDraws(g: Grid, looks: MapLooks): TileDraw[] {
@@ -208,24 +272,26 @@ function shoreDraws(g: Grid, looks: MapLooks): TileDraw[] {
 
 function bridgeDraws(g: Grid, looks: MapLooks): LowDraw[] {
   if (!looks.bridges.art) return g.fallback('bridge', looks.colors.bridge);
-  const { texture, aspect, frames } = looks.bridges;
+  const { texture, aspect, frames, rects } = looks.bridges;
   const out: SpriteDraw[] = [];
   g.map.cells.forEach((t, i) => {
     if (t !== 'bridge') return;
     const col = i % g.map.cols;
     const row = (i - col) / g.map.cols;
-    out.push({
+    const orientation = bridgeOrientation(g.map, col, row);
+    const draw = {
       kind: 'sprite',
       role: 'bridge',
       texture,
-      frame: frames[bridgeOrientation(g.map, col, row)],
+      frame: frames[orientation],
       x: g.centerX(col),
       y: g.centerY(row),
       scale: aspect.scale,
       origin: aspect.origin,
       flipX: false,
       crop: null,
-    });
+    } as const;
+    out.push(placed(draw, rects[orientation]));
   });
   return out;
 }
@@ -251,8 +317,12 @@ function treeDraws(g: Grid, looks: MapLooks, decorSeed: number) {
       origin: aspect.origin,
       flipX,
     } as const;
-    trunks.push({ ...base, role: 'trunk', crop: { x: 0, y: cut, width: w, height: h - cut } });
-    canopies.push({ ...base, role: 'canopy', crop: { x: 0, y: 0, width: w, height: cut } });
+    const size = frameOf(aspect.sheet);
+    const trunkCrop = { x: 0, y: cut, width: w, height: h - cut };
+    trunks.push(placed({ ...base, role: 'trunk', crop: trunkCrop }, size));
+    canopies.push(
+      placed({ ...base, role: 'canopy', crop: { x: 0, y: 0, width: w, height: cut } }, size),
+    );
   }
   return { trunks, canopies };
 }
@@ -274,6 +344,7 @@ function castleDraws(g: Grid, looks: MapLooks): { facade: LowDraw[]; roof: Sprit
   const { texture, aspect } = looks.castle;
   const { frameWidth: w, frameHeight: h } = aspect.sheet;
   const cut = aspect.origin.y * h - g.s / aspect.scale;
+  const size = frameOf(aspect.sheet);
   const base = {
     kind: 'sprite',
     texture,
@@ -285,8 +356,10 @@ function castleDraws(g: Grid, looks: MapLooks): { facade: LowDraw[]; roof: Sprit
     flipX: false,
   } as const;
   return {
-    facade: [{ ...base, role: 'castle', crop: { x: 0, y: cut, width: w, height: h - cut } }],
-    roof: [{ ...base, role: 'roof', crop: { x: 0, y: 0, width: w, height: cut } }],
+    facade: [
+      placed({ ...base, role: 'castle', crop: { x: 0, y: cut, width: w, height: h - cut } }, size),
+    ],
+    roof: [placed({ ...base, role: 'roof', crop: { x: 0, y: 0, width: w, height: cut } }, size)],
   };
 }
 
@@ -335,5 +408,6 @@ export function planMapArt(map: MapSnapshot, looks: MapLooks, ctx: PlanContext):
     counts: countsOf(map, looks),
     cells: { trunk, water, bridge, castle },
     objects: low.length + high.length,
+    cellSize: map.cellSize,
   };
 }

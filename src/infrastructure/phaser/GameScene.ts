@@ -342,6 +342,8 @@ export class GameScene extends Phaser.Scene {
     w.layers.render(snapshot);
     // El motor centra y recorta la cámara en su preRender, en este mismo frame (design D2).
     this.rig?.track(snapshot.player);
+    // Recorte del mapa con la vista que pintará ese preRender (0018, design D1 y §8).
+    if (this.rig) w.layers.cullMap(this.rig.nextView());
     w.hud.sync(snapshot);
     w.offer.sync(snapshot.offer);
     w.results.sync(snapshot);

@@ -134,7 +134,11 @@ export interface ElementCountView {
 export type MapArtView = Record<
   'water' | 'shore' | 'foam' | 'tree' | 'canopy' | 'bridge' | 'castle',
   ElementCountView
-> & { objects: number };
+> & {
+  objects: number;
+  /** Objetos del mapa dibujados en el último frame tras el recorte por cámara (0018). */
+  drawn: number;
+};
 
 /** Rectángulo visible del último frame pintado, en coordenadas de mundo (change 0013). */
 export interface CameraViewData {
@@ -287,7 +291,7 @@ export async function startSpriteSampler(page: Page, placeholderType?: string): 
           if (s.cells.trunk + s.cells.water + s.cells.bridge + s.cells.castle !== 0) {
             result.cellMisses += 1;
           }
-          if (s.mapArt.objects !== 0) result.cellMisses += 1;
+          if (s.mapArt.objects !== 0 || s.mapArt.drawn !== 0) result.cellMisses += 1;
         } else {
           result.frames += 1;
           const t = snap.tick;

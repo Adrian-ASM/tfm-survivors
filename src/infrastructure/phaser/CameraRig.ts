@@ -23,6 +23,30 @@ export interface FollowCamera {
   setSize(width: number, height: number): unknown;
   startFollow(target: object, roundPixels: boolean, lerpX: number, lerpY: number): unknown;
   readonly worldView: CameraView;
+  /** Tamaño de la vista (BaseCamera `width`/`height`), ya el de este frame tras `setSize`. */
+  readonly width: number;
+  readonly height: number;
+}
+
+const clamp = (v: number, min: number, max: number): number => Math.min(Math.max(v, min), max);
+
+/**
+ * Rectángulo visible del frame que se va a pintar (0018, design D1): la fórmula del `preRender` de
+ * la cámara con origen 0,5, zoom 1 y límites (0, 0, W, H). Se calcula en `update`, antes del
+ * `preRender`, cuando el `worldView` aún es el del frame anterior.
+ */
+export function followView(
+  target: { readonly x: number; readonly y: number },
+  size: { readonly width: number; readonly height: number },
+  world: WorldSize,
+): CameraView {
+  const { width, height } = size;
+  return {
+    x: clamp(target.x - width / 2, 0, Math.max(0, world.width - width)),
+    y: clamp(target.y - height / 2, 0, Math.max(0, world.height - height)),
+    width,
+    height,
+  };
 }
 
 /** Sin redondeo a píxel entero: como hasta 0013 (sin `pixelArt`; riesgo R4 del design). */
@@ -41,7 +65,7 @@ export class CameraRig {
 
   constructor(
     private readonly camera: FollowCamera,
-    world: WorldSize,
+    private readonly world: WorldSize,
   ) {
     camera.setBounds(0, 0, world.width, world.height);
     camera.startFollow(this.target, ROUND_PIXELS, DIRECT_FOLLOW, DIRECT_FOLLOW);
@@ -62,6 +86,11 @@ export class CameraRig {
   track(player: { readonly x: number; readonly y: number }): void {
     this.target.x = player.x;
     this.target.y = player.y;
+  }
+
+  /** Rectángulo visible que pintará el próximo `preRender` (objetivo de `track`, tamaño actual). */
+  nextView(): CameraView {
+    return followView(this.target, this.camera, this.world);
   }
 
   /** Copia del rectángulo visible del último frame pintado (para la sonda E2E). */
