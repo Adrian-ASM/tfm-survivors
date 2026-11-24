@@ -83,7 +83,7 @@ function setup(maxCorpses = 64) {
         enemies: 200,
         projectiles: 32,
         pulses: 4,
-        gems: 300,
+        pickups: 396,
         corpses: maxCorpses,
         visualTicks: new Map([['tests', 8]]),
         hazards: FAKE_HAZARD_CAPACITY,
@@ -222,6 +222,7 @@ describe('RenderLayers · espuma animada', () => {
       tiles: () => undefined,
       sprite: () => undefined,
       rect: () => undefined,
+      circle: () => undefined,
       foam: (f) => calls.push(f),
       show: () => undefined,
     };
@@ -258,6 +259,7 @@ describe('RenderLayers · espuma animada', () => {
       tiles: () => undefined,
       sprite: () => undefined,
       rect: () => undefined,
+      circle: () => undefined,
       foam: (f) => calls.push(f),
       show: () => undefined,
     };
@@ -309,6 +311,9 @@ function mapCanvas() {
     },
     rect: (r) => {
       add(`low:rect:${String(r.x)},${String(r.y)}`);
+    },
+    circle: (c) => {
+      add(`low:circle:${String(c.x)},${String(c.y)}`);
     },
     foam: (f) => {
       for (const o of objects) if (o.foam) o.frame = f;
@@ -611,10 +616,13 @@ describe('RenderLayers · recuentos para la sonda', () => {
     const s = snap(3, {
       enemies: [foe(1, 10, 10), foe(2, 20, 20)],
       projectiles: [{ id: 1, x: 1, y: 1, radius: 4 }],
-      gems: [
-        { id: 1, x: 5, y: 5, radius: 5 },
-        { id: 2, x: 6, y: 6, radius: 5 },
-        { id: 3, x: 7, y: 7, radius: 5 },
+      // 0022: recogibles de los tres tipos; `gems` es el alias de los `xp`.
+      pickups: [
+        { id: 1, kind: 'xp', value: 1, x: 5, y: 5, radius: 5 },
+        { id: 2, kind: 'xp', value: 1, x: 6, y: 6, radius: 5 },
+        { id: 3, kind: 'xp', value: 1, x: 7, y: 7, radius: 5 },
+        { id: 4, kind: 'gold', value: 5, x: 8, y: 8, radius: 5 },
+        { id: 5, kind: 'wood', value: 3, x: 9, y: 9, radius: 5 },
       ],
     });
     frame(s);
@@ -622,6 +630,8 @@ describe('RenderLayers · recuentos para la sonda', () => {
     expect([c.enemies.visible, c.projectiles.visible, c.gems.visible, c.player.visible]).toEqual([
       2, 1, 3, 1,
     ]);
+    expect([c.pickups.gold.visible, c.pickups.wood.visible]).toEqual([1, 1]);
+    expect(c.gems).toBe(c.pickups.xp);
     expect(c.ground).toEqual({ visible: 1, placeholder: 0 });
     expect(c.enemyPlaceholders).toEqual({ 'goblin-torch': 0, 'goblin-tnt': 0, 'goblin-barrel': 0 });
   });

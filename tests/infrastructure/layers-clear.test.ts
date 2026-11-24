@@ -42,7 +42,7 @@ function view() {
         enemies: 200,
         projectiles: 32,
         pulses: 4,
-        gems: 300,
+        pickups: 396,
         corpses: 64,
         visualTicks: new Map([['tests', 8]]),
         hazards: FAKE_HAZARD_CAPACITY,
@@ -60,7 +60,7 @@ function view() {
     c.enemies.visible,
     c.projectiles.visible,
     c.pulses.visible,
-    c.gems.visible,
+    c.pickups.xp.visible + c.pickups.gold.visible + c.pickups.wood.visible,
   ];
   return { layers, paint, visible };
 }
@@ -69,7 +69,7 @@ const counts = (s: RunSnapshot) => [
   s.enemies.length,
   s.projectiles.length,
   s.pulses.length,
-  s.gems.length,
+  s.pickups.length,
 ];
 
 /** Partida por defecto (vida inalcanzable) jugada `n` ticks con la política de elección fija. */
@@ -102,7 +102,7 @@ describe('Vista limpia tras reiniciar (spec run-results y sprite-rendering)', ()
       })),
       projectiles: Array.from({ length: 32 }, (_, i) => at(i)),
       pulses: [{ weapon: 'tests', firedAt: 898, x: 480, y: 270, radius: 90 }],
-      gems: Array.from({ length: 300 }, (_, i) => at(i)),
+      pickups: Array.from({ length: 300 }, (_, i) => ({ ...at(i), kind: 'xp' as const, value: 1 })),
     };
     v.paint(ended);
     const before = v.visible();
@@ -115,7 +115,7 @@ describe('Vista limpia tras reiniciar (spec run-results y sprite-rendering)', ()
     expect(v.layers.counts.player.visible).toBe(1);
   });
 
-  it('Scenario: R con cadáveres en curso (10 cadáveres, 15 enemigos y 40 gemas → 0 en 61 frames)', () => {
+  it('Scenario: R con cadáveres en curso (10 cadáveres, 15 enemigos, 40 gemas, 5 gold y 6 wood → 0 en 61 frames)', () => {
     const v = view();
     const fresh = startRun(aDefaultConfig()).snapshot();
     const foes = (n: number) =>
@@ -132,7 +132,12 @@ describe('Vista limpia tras reiniciar (spec run-results y sprite-rendering)', ()
       ...fresh,
       tick: 501,
       enemies: foes(25).slice(10),
-      gems: Array.from({ length: 40 }, (_, i) => at(i)),
+      // 0022: recogibles de los tres tipos.
+      pickups: Array.from({ length: 51 }, (_, i) => ({
+        ...at(i),
+        kind: i < 40 ? ('xp' as const) : i < 45 ? ('gold' as const) : ('wood' as const),
+        value: 1,
+      })),
       dynamites: [0, 1].map((id) => ({
         ...at(id),
         targetX: 0,

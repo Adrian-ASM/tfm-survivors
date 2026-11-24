@@ -74,6 +74,10 @@ export interface SnapshotView {
   pulses: { weapon: string; firedAt: number }[];
   weapons: { id: string; ready: boolean }[];
   gems: { id: number; x: number; y: number }[];
+  /** Recogibles de los tres tipos (0022), contadores y vetas. */
+  pickups: { id: number; kind: 'xp' | 'gold' | 'wood'; value: number; x: number; y: number }[];
+  resources: { gold: number; wood: number };
+  veins: { id: number; x: number; y: number; radius: number; gold: number; depleted: boolean }[];
   /** Peligros (0020): dinamitas en vuelo, avisos y explosiones visibles. */
   dynamites: { id: number; x: number; y: number }[];
   warnings: { x: number; y: number; radius: number; source: 'fuse' | 'dynamite' }[];
@@ -126,6 +130,10 @@ export interface SpritesView {
   projectiles: SpriteCountView;
   pulses: SpriteCountView;
   gems: SpriteCountView;
+  /** Recogibles por tipo (0022); `gems` es el mismo objeto que `pickups.xp`. */
+  pickups: Record<'xp' | 'gold' | 'wood', SpriteCountView>;
+  /** Vetas pintadas (0022): activas, agotadas y con reserva. */
+  veins: { active: number; depleted: number; fallback: number };
   enemyPlaceholders: Record<string, number>;
   /** Peligros pintados (0020): avisos (nunca reserva), dinamitas y explosiones. */
   warnings: SpriteCountView;
@@ -206,6 +214,9 @@ export interface MapView {
   castle: { firstCol: number; lastCol: number; firstRow: number; lastRow: number } | null;
   /** Casas y torres del mapa (0021): huella, centro, radio y puerta (null en la torre). */
   structures: MapStructureView[];
+  /** Vetas y montones iniciales (0022), en el orden de colocación. */
+  veins: { id: number; x: number; y: number; col: number; row: number; radius: number }[];
+  woodPiles: { x: number; y: number }[];
   emptyForced: boolean;
 }
 
@@ -232,6 +243,8 @@ interface Probe {
     /** Modo de avance manual (`?e2e&manual`) y su avance exacto de ticks (change 0014). */
     manual?: boolean;
     step?: (n: unknown) => Promise<number>;
+    /** Oro y madera que muestra el HUD (0022); null en el menú. */
+    hud?: { gold: string; wood: string } | null;
   };
 }
 
@@ -254,6 +267,7 @@ export const probe = (page: Page) =>
           viewport: p.viewport ?? null,
           manual: p.manual ?? null,
           map: p.map ?? null,
+          hud: p.hud ?? null,
         }
       : null;
   });
@@ -316,7 +330,8 @@ export async function startSpriteSampler(page: Page, placeholderType?: string): 
       if (s) {
         result.maxCorpses = Math.max(result.maxCorpses, s.corpses.visible);
         if (s.corpses.visible > 64) miss(`cadáveres ${String(s.corpses.visible)}`);
-        const kinds = [s.player, s.enemies, s.corpses, s.projectiles, s.pulses, s.gems];
+        const { xp, gold, wood } = s.pickups;
+        const kinds = [s.player, s.enemies, s.corpses, s.projectiles, s.pulses, xp, gold, wood];
         if (!snap) {
           result.menuFrames += 1;
           if (kinds.some((k) => k.visible !== 0)) miss('menú con sprites visibles');
@@ -324,6 +339,7 @@ export async function startSpriteSampler(page: Page, placeholderType?: string): 
             result.cellMisses += 1;
           }
           if (s.mapArt.objects !== 0 || s.mapArt.drawn !== 0) result.cellMisses += 1;
+          if (s.veins.active + s.veins.depleted !== 0) miss('menú con vetas');
         } else {
           result.frames += 1;
           const t = snap.tick;
@@ -332,6 +348,11 @@ export async function startSpriteSampler(page: Page, placeholderType?: string): 
             ['proyectiles', s.projectiles.visible, snap.projectiles.length],
             ['pulsos', s.pulses.visible, snap.pulses.length],
             ['gemas', s.gems.visible, snap.gems.length],
+            // 0022: recogibles por tipo y vetas por estado, iguales a los del snapshot.
+            ['oro', gold.visible, snap.pickups.filter((x) => x.kind === 'gold').length],
+            ['madera', wood.visible, snap.pickups.filter((x) => x.kind === 'wood').length],
+            ['vetas activas', s.veins.active, snap.veins.filter((v) => !v.depleted).length],
+            ['vetas agotadas', s.veins.depleted, snap.veins.filter((v) => v.depleted).length],
           ];
           for (const [name, got, want] of pairs) {
             if (got !== want) miss(`tick ${String(t)}: ${name} ${String(got)} ≠ ${String(want)}`);

@@ -4,11 +4,13 @@ import { Hud, type HudPlacement } from './Hud';
 import { ResultsOverlay, type ResultsTexts } from './ResultsOverlay';
 import { UpgradeOverlay, type CardBox, type CardParts, type CardText } from './UpgradeOverlay';
 import { XpBar } from './XpBar';
+import type { PickupLook } from './art/looks';
 import type { ScreenFrame } from './ui/screenFrame';
 import {
   hudLayout,
   veilLayout,
   type BarAnchor,
+  type CounterAnchor,
   type HudLayout,
   type TextAnchor,
 } from './ui/uiLayout';
@@ -62,6 +64,38 @@ interface HudObjects {
   readonly level: Txt;
   readonly clock: Txt;
   readonly kills: Txt;
+  readonly gold: Counter;
+  readonly wood: Counter;
+}
+
+/** Contador del HUD (0022): icono (imagen o cuadrado de reserva) y número. */
+interface Counter {
+  readonly icon: Phaser.GameObjects.Image | Rect;
+  readonly label: Txt;
+}
+
+/** Icono de un contador: hoja y frame del aspecto del recogible, o `null` y su color de reserva. */
+export interface CounterIcon {
+  readonly texture: string | null;
+  readonly frame: number;
+  readonly color: number;
+}
+
+/** Icono de un contador a partir del aspecto de su recogible: su hoja o, sin ella, su reserva. */
+export const counterIcon = (look: PickupLook): CounterIcon => ({
+  texture: look.placeholder ? null : look.texture,
+  frame: look.idle.frames[0] ?? 0,
+  color: look.color,
+});
+
+/** Icono y número de un contador, creados una vez (sin errores si la hoja no cargó: reserva). */
+function counter(scene: Scene, l: HudLayout, at: CounterAnchor, look: CounterIcon): Counter {
+  const { x, y, size } = at.icon;
+  const icon = look.texture
+    ? scene.add.image(x, y, look.texture, look.frame).setDisplaySize(size, size)
+    : scene.add.rectangle(x, y, size, size, look.color);
+  icon.setScrollFactor(0).setDepth(HUD_DEPTH);
+  return { icon, label: hudText(scene, l, at.label) };
 }
 
 function placement(o: HudObjects): HudPlacement {
@@ -74,6 +108,12 @@ function placement(o: HudObjects): HudPlacement {
     [o.level, (l) => l.xp.label],
     [o.clock, (l) => l.clock],
     [o.kills, (l) => l.kills],
+    [o.gold.label, (l) => l.gold.label],
+    [o.wood.label, (l) => l.wood.label],
+  ];
+  const icons: [Counter, (l: HudLayout) => CounterAnchor][] = [
+    [o.gold, (l) => l.gold],
+    [o.wood, (l) => l.wood],
   ];
   return {
     place(l, rescale) {
@@ -84,12 +124,20 @@ function placement(o: HudObjects): HudPlacement {
         t.setPosition(a.x, a.y);
         if (rescale) t.setFontSize(l.fontSize);
       }
+      for (const [c, at] of icons) {
+        const { x, y, size } = at(l).icon;
+        c.icon.setPosition(x, y).setDisplaySize(size, size);
+      }
     },
   };
 }
 
 /** HUD (spec hud): vida y XP arriba a la izquierda, tiempo arriba en el centro y bajas a la derecha. */
-export function createHud(scene: Scene, frame: ScreenFrame): Hud {
+export function createHud(
+  scene: Scene,
+  frame: ScreenFrame,
+  icons: { readonly gold: CounterIcon; readonly wood: CounterIcon },
+): Hud {
   const l = hudLayout(frame);
   const o: HudObjects = {
     health: bar(scene, l, l.health.bar, HEALTH_FILL),
@@ -98,6 +146,8 @@ export function createHud(scene: Scene, frame: ScreenFrame): Hud {
     level: hudText(scene, l, l.xp.label),
     clock: hudText(scene, l, l.clock),
     kills: hudText(scene, l, l.kills),
+    gold: counter(scene, l, l.gold, icons.gold),
+    wood: counter(scene, l, l.wood, icons.wood),
   };
   const xpBar = new XpBar(o.xp.fill, o.level, l.barWidth, l.barHeight);
   const parts = {
@@ -106,6 +156,8 @@ export function createHud(scene: Scene, frame: ScreenFrame): Hud {
     healthLabel: o.healthLabel,
     clock: o.clock,
     kills: o.kills,
+    gold: o.gold.label,
+    wood: o.wood.label,
     placement: placement(o),
   };
   const hud = new Hud(parts, l.barWidth, l.barHeight);

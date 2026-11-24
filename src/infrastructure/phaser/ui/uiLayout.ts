@@ -12,6 +12,10 @@ export const HUD_BASE = {
   xpY: 34,
   labelGap: 8,
   fontSize: 14,
+  /** 0022: contadores de oro (fila de la XP) y madera bajo las bajas, a la derecha. */
+  woodY: 52,
+  iconSize: 16,
+  iconGap: 4,
 } as const;
 
 /** Ancho de un carácter de la fuente monoespaciada del HUD, en múltiplos del tamaño de fuente. */
@@ -40,6 +44,33 @@ export interface HudLayout {
   readonly xp: { readonly bar: BarAnchor; readonly label: TextAnchor };
   readonly clock: TextAnchor;
   readonly kills: TextAnchor;
+  /** Contadores de oro y de madera (0022): icono + número, un solo elemento. */
+  readonly gold: CounterAnchor;
+  readonly wood: CounterAnchor;
+}
+
+/** Icono cuadrado centrado en (x, y), de lado `size`. */
+export interface IconAnchor {
+  readonly x: number;
+  readonly y: number;
+  readonly size: number;
+}
+
+/** Contador del HUD: icono fijo junto al margen y número alineado a la derecha a su izquierda. */
+export interface CounterAnchor {
+  readonly icon: IconAnchor;
+  readonly label: TextAnchor;
+}
+
+/** Contador anclado al borde derecho en la fila `y` (todo ×uiScale). */
+function counterAt(frame: ScreenFrame, y: number): CounterAnchor {
+  const k = frame.uiScale;
+  const size = HUD_BASE.iconSize * k;
+  const right = frame.width - HUD_BASE.margin * k;
+  return {
+    icon: { x: right - size / 2, y, size },
+    label: { x: right - size - HUD_BASE.iconGap * k, y, originX: 1 },
+  };
 }
 
 /** Vida y XP arriba a la izquierda, reloj arriba en el centro y bajas arriba a la derecha. */
@@ -60,6 +91,8 @@ export function hudLayout(frame: ScreenFrame): HudLayout {
     xp: { bar: { x: margin, y: xpY }, label: { x: labelX, y: xpY, originX: 0 } },
     clock: { x: frame.width / 2, y: healthY, originX: 0.5 },
     kills: { x: frame.width - margin, y: healthY, originX: 1 },
+    gold: counterAt(frame, xpY),
+    wood: counterAt(frame, HUD_BASE.woodY * k),
   };
 }
 
@@ -89,12 +122,25 @@ const barBox = (bar: BarAnchor, l: HudLayout): Box => ({
   height: l.barHeight,
 });
 
+/** Caja de un contador: la unión del icono y del texto (un solo elemento, spec hud 0022). */
+function counterBox(c: CounterAnchor, text: string, fontSize: number): Box {
+  const t = textBox(c.label, text, fontSize);
+  const half = c.icon.size / 2;
+  const x0 = Math.min(t.x, c.icon.x - half);
+  const y0 = Math.min(t.y, c.icon.y - half);
+  const x1 = Math.max(t.x + t.width, c.icon.x + half);
+  const y1 = Math.max(t.y + t.height, c.icon.y + half);
+  return { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
+}
+
 /** Textos del HUD con los que se reservan las cajas. */
 export interface HudTexts {
   readonly health: string;
   readonly clock: string;
   readonly level: string;
   readonly kills: string;
+  readonly gold: string;
+  readonly wood: string;
 }
 
 /** Cajas de los elementos del HUD con los textos dados (comprobación de solapes y contención). */
@@ -106,6 +152,8 @@ export function hudBoxes(l: HudLayout, texts: HudTexts): Record<string, Box> {
     xpLabel: textBox(l.xp.label, texts.level, l.fontSize),
     clock: textBox(l.clock, texts.clock, l.fontSize),
     kills: textBox(l.kills, texts.kills, l.fontSize),
+    gold: counterBox(l.gold, texts.gold, l.fontSize),
+    wood: counterBox(l.wood, texts.wood, l.fontSize),
   };
 }
 

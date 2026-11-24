@@ -3,5 +3,7 @@
   "xpGrowth": 4,
   "gemRadius": 5,
   "magnetSpeed": 360,
-  "maxGems": 300
+  "maxGems": 300,
+  "maxGold": 32,
+  "maxWood": 64
 }

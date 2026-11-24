@@ -51,8 +51,8 @@ describe('Datos de aspecto validados · forma y rangos', () => {
 
   it('color de reserva que no es #rrggbb', () => {
     const raw = rawAppearance();
-    raw.gem.placeholderColor = 'azul';
-    expect(failure(raw)).toBe('gem.placeholderColor');
+    raw.projectile.placeholderColor = 'azul';
+    expect(failure(raw)).toBe('projectile.placeholderColor');
   });
 
   it('orientación desconocida', () => {
@@ -115,13 +115,15 @@ describe('Datos de aspecto validados · animaciones obligatorias y campos descon
     expect(failure(raw)).toBe('corpse.death.loop');
   });
 
-  it('Scenario: Campos desconocidos (rotation: 90 en la gema)', () => {
+  it('Scenario: Campos desconocidos (rotation: 90 en el oro)', () => {
     const raw = rawAppearance();
-    raw.gem.rotation = 90;
-    expect(failure(raw)).toMatch(/^gem/);
+    const gold = raw.pickups.gold;
+    if (!gold) throw new Error('falta el aspecto del oro');
+    gold.rotation = 90;
+    expect(failure(raw)).toMatch(/^pickups.gold/);
   });
 
-  it.each(['projectile', 'gem', 'ground'] as const)('%s sin idle', (key) => {
+  it.each(['projectile', 'ground'] as const)('%s sin idle', (key) => {
     const raw = rawAppearance();
     Reflect.deleteProperty(raw[key], 'idle');
     expect(failure(raw)).toBe(`${key}.idle`);

@@ -2,7 +2,8 @@ import type { Enemy } from '../enemy/Enemy';
 import type { Blast } from '../hazard/Blast';
 import type { Dynamite } from '../hazard/Dynamite';
 import type { Experience } from '../progression/Experience';
-import type { XpGem } from '../progression/XpGem';
+import type { Pickup } from '../pickup/Pickup';
+import type { GoldVein } from '../resource/GoldVein';
 import type { Structure } from '../structure/Structure';
 import type { UpgradeBoard } from '../upgrade/UpgradeBoard';
 import type { UpgradeCatalog } from '../upgrade/UpgradeCatalog';
@@ -13,12 +14,14 @@ import type {
   DynamiteSnapshot,
   EnemySnapshot,
   GemSnapshot,
+  PickupSnapshot,
   OfferSnapshot,
   ProgressionSnapshot,
   ProjectileSnapshot,
   StructureSnapshot,
   PulseSnapshot,
   UpgradeLevelSnapshot,
+  VeinSnapshot,
   WarningSnapshot,
 } from './RunSnapshot';
 
@@ -98,8 +101,29 @@ export function toStructureSnapshot(s: Structure): StructureSnapshot {
   });
 }
 
-export function toGemSnapshot(g: XpGem, radius: number): GemSnapshot {
-  return Object.freeze({ id: g.id, x: g.x, y: g.y, radius });
+export function toVeinSnapshot(v: GoldVein): VeinSnapshot {
+  const { id, x, y, radius, gold, depleted } = v;
+  return Object.freeze({ id, x, y, radius, gold, depleted });
+}
+
+/**
+ * Recogibles del suelo en orden de creación y, en el mismo recorrido, la vista `gems` (solo los
+ * `xp`; design §3). La vista es "un array más": comparte los objetos congelados de `pickups`
+ * (una gema trae además `kind` y `value`), así el snapshot no copia dos veces cada gema (M1).
+ */
+export function toPickupSnapshots(
+  list: readonly Pickup[],
+  radius: number,
+): { pickups: readonly PickupSnapshot[]; gems: readonly GemSnapshot[] } {
+  const pickups: PickupSnapshot[] = [];
+  const gems: GemSnapshot[] = [];
+  for (const p of list) {
+    const { id, kind, value, x, y } = p;
+    const snap = Object.freeze({ id, kind, value, x, y, radius });
+    pickups.push(snap);
+    if (kind === 'xp') gems.push(snap);
+  }
+  return { pickups: Object.freeze(pickups), gems: Object.freeze(gems) };
 }
 
 export function toProjectileSnapshot(p: Projectile): ProjectileSnapshot {

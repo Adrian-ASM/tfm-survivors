@@ -48,8 +48,9 @@ describe('Procedencia de las hojas de las estructuras (asset-provenance)', () =>
     expect(
       checkAssets({ files: versioned(), provenance: provenanceJson, digest: digestOf }),
     ).toEqual([]);
-    expect(files).toHaveLength(ENTRIES_BEFORE + 4);
-    const added = files.slice(ENTRIES_BEFORE);
+    // 0022 añade 3 entradas de recursos al final: estas 4 siguen en su sitio, sin cambios.
+    expect(files.length).toBeGreaterThanOrEqual(ENTRIES_BEFORE + 4);
+    const added = files.slice(ENTRIES_BEFORE, ENTRIES_BEFORE + 4);
     expect(added.map((f) => f.source)).toEqual(SOURCES);
     for (const entry of added) {
       expect(entry.path).toBe(ASSET_DIR + entry.source.replace('Tiny Swords (Update 010)/', ''));
@@ -76,9 +77,10 @@ describe('Procedencia de las hojas de las estructuras (asset-provenance)', () =>
 
   it('Scenario: Hojas de edificios no usadas', () => {
     const list = versioned().filter((f) => !f.startsWith('openspec/'));
-    expect(list.filter((f) => /Wood_Tower_InConstruction|Fire\.png|W_Idle\.png/.test(f))).toEqual(
-      [],
-    );
+    expect(list.filter((f) => /Wood_Tower_InConstruction|Fire\.png/.test(f))).toEqual([]);
+    // 0022: las únicas hojas de la carpeta `Gold Mine` son la veta activa y la agotada.
+    const mine = list.filter((f) => f.includes('/Gold Mine/')).map((f) => f.split('/').pop());
+    expect(mine.sort()).toEqual(['GoldMine_Active.png', 'GoldMine_Inactive.png']);
     const colors = /Wood_Tower_(Red|Blue|Purple|Yellow)\.png$/;
     expect(list.filter((f) => colors.test(f))).toHaveLength(1);
   });

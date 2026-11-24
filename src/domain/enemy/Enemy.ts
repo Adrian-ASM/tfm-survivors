@@ -74,9 +74,18 @@ export class Enemy {
     this.nextPoint = 0;
   }
 
+  /** Ha explotado por su propia mecha (solo lo marca `explode`; spec enemy-hazards 0022). */
+  private exploded = false;
+
   /** El barril que explota queda dado de baja (vida 0) sin destello de daño. */
   explode(): void {
     this.life = 0;
+    this.exploded = true;
+  }
+
+  /** ¿Ha explotado por su mecha? Un barril detonado no suelta madera (spec enemy-hazards). */
+  get detonated(): boolean {
+    return this.exploded;
   }
 
   get hp(): number {

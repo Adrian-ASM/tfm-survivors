@@ -172,8 +172,9 @@ describe('Procedencia de las hojas de los peligros (asset-provenance)', () => {
   const bySource = (source: string) => files.find((f) => f.source === source);
 
   it('Scenario: Hojas nuevas registradas', () => {
-    // 0021: 15 de antes más las 4 hojas de casas, torres y ruinas.
-    expect(files).toHaveLength(19);
+    // 0021: 15 de antes más las 4 hojas de casas, torres y ruinas; 0022: más las 3 de recursos.
+    expect(files).toHaveLength(22);
+
     expect(bySource(DYNAMITE_SOURCE)?.path).toBe(
       `${ASSET_DIR}Factions/Goblins/Troops/TNT/Dynamite/Dynamite.png`,
     );
@@ -207,9 +208,11 @@ describe('Procedencia de las hojas de los peligros (asset-provenance)', () => {
       '\n',
     );
     const outsideSpecs = versioned.filter((f) => !f.startsWith('openspec/'));
-    // 0021: se retira la prohibición de casas y torres; siguen fuera el fuego, W_Idle y la obra.
-    const forbidden = /Fire\.png|W_Idle\.png|Wood_Tower_InConstruction/;
+    // 0021: se retira la prohibición de casas y torres; siguen fuera el fuego y la obra. 0022:
+    // W_Idle.png se versiona exactamente una vez (recogible de madera), sin sus variantes.
+    const forbidden = /Fire\.png|W_Idle_\(NoShadow\)\.png|W_Spawn\.png|Wood_Tower_InConstruction/;
     expect(outsideSpecs.filter((f) => forbidden.test(f))).toEqual([]);
+    expect(outsideSpecs.filter((f) => /W_Idle\.png$/.test(f))).toHaveLength(1);
     const buildings = outsideSpecs.filter((f) => /Goblin_House|Wood_Tower/.test(f)).sort();
     expect(buildings).toEqual(
       [

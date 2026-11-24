@@ -27,13 +27,21 @@ export function zeroStructureCounts(types: Iterable<string>): Record<string, Str
  * una estructura figura destruida en el snapshot, cambia a su ruina (O(k), sin asignar). La ruina es
  * permanente hasta el siguiente plan. Mantiene los recuentos por tipo de la sonda.
  */
-export class StructureArt {
+export class StructureArt<T = StructureSnapshot> {
   readonly counts: Record<string, StructureCount>;
   private planned: readonly PlannedStructure[] = [];
   private ruined = new Uint8Array(0);
   private mask: StructureMask | null = null;
 
-  constructor(types: Iterable<string>) {
+  /**
+   * `second` lee si un elemento del snapshot está en su segundo aspecto (0022: parametrizado para las
+   * vetas, `depleted`; por defecto, la ruina de una estructura, `destroyed`).
+   */
+  constructor(
+    types: Iterable<string>,
+    private readonly second: (item: T) => boolean = (s) =>
+      (s as unknown as StructureSnapshot).destroyed,
+  ) {
     this.counts = zeroStructureCounts(types);
   }
 
@@ -54,12 +62,13 @@ export class StructureArt {
   }
 
   /** Cambia a ruina las estructuras que el snapshot da por destruidas por primera vez. */
-  sync(structures: readonly StructureSnapshot[]): void {
+  sync(structures: readonly T[]): void {
     const mask = this.mask;
     if (!mask) return;
     const n = Math.min(structures.length, this.planned.length);
     for (let k = 0; k < n; k++) {
-      if (this.ruined[k] === 1 || structures[k]?.destroyed !== true) continue;
+      const item = structures[k];
+      if (this.ruined[k] === 1 || item === undefined || !this.second(item)) continue;
       const s = this.planned[k];
       if (!s) continue;
       this.ruined[k] = 1;

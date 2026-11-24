@@ -9,12 +9,16 @@ import { toMapSnapshot, type MapSnapshot } from '../map/MapSnapshot';
 import { OPEN_TERRAIN, resolveTerrain, type TerrainSource } from '../map/TerrainSource';
 import { resolveStructures } from '../structure/resolveStructures';
 import { StructureField } from '../structure/StructureField';
+import type { Structure } from '../structure/Structure';
 import type { StructureSite } from '../structure/StructureSite';
 import type { Player } from '../player/Player';
 import type { PlayerInput } from '../player/PlayerInput';
 import type { RandomGenerator } from '../shared/RandomGenerator';
 import type { Experience } from '../progression/Experience';
-import type { GemField } from '../progression/GemField';
+import { PickupGain, type PickupField } from '../pickup/PickupField';
+import type { Stockpile } from '../resource/Stockpile';
+import type { GoldVein } from '../resource/GoldVein';
+import { resolveResources, type ResourceSites } from '../resource/resolveResources';
 import type { PlayerRules } from '../player/PlayerRules';
 import { err, ok, type DomainError, type Result } from '../shared/Result';
 import type { UpgradeChoiceError } from '../upgrade/UpgradeChoiceError';
@@ -37,7 +41,8 @@ import {
   toBlastSnapshot,
   toDynamiteSnapshot,
   toEnemySnapshot,
-  toGemSnapshot,
+  toPickupSnapshots,
+  toVeinSnapshot,
   toOfferSnapshot,
   toProgressionSnapshot,
   toProjectileSnapshot,
@@ -95,13 +100,18 @@ export class Run {
   private readonly arsenal: Arsenal;
   private player: Player;
   private readonly horde: Horde;
-  private readonly gems: GemField;
+  private readonly pickups: PickupField;
+  /** Lo recogido en el paso 7.1 (reutilizado: sin asignar por tick). */
+  private readonly gain = new PickupGain();
+  private readonly stock: Stockpile;
   private readonly experience: Experience;
   private readonly board: UpgradeBoard;
   private readonly mapView: MapSnapshot;
   private readonly field: FlowField;
   private readonly hazards: HazardField;
   private readonly structures: StructureField;
+  /** Vetas en su orden fijo (ADR-0021): ni se crean ni se retiran durante la partida. */
+  private readonly veins: readonly GoldVein[];
 
   private constructor(
     private readonly rules: RunRules,
@@ -109,22 +119,26 @@ export class Run {
     private readonly terrain: GameMap,
     initial: InitialState,
     sites: readonly StructureSite[],
+    resources: ResourceSites,
   ) {
     this.arena = rules.arena;
     this.mapView = toMapSnapshot(
       terrain,
       sites.map((s) => ({ ...s, type: s.type.id })),
+      { ...resources, veinRadius: rules.resources.goldVeins.radius },
     );
     this.field = new FlowField(terrain);
     this.player = initial.player;
     this.horde = new Horde(initial.enemies, rules.arena, initial.kills);
-    this.gems = initial.gems;
+    this.pickups = initial.pickups;
+    this.stock = initial.stock;
     this.experience = initial.experience;
     this.board = initial.board;
     this.director = new WaveDirector(rules.table, rules.spawn, random);
     this.arsenal = new Arsenal(rules.loadout, rules.pulseCapacity);
     this.hazards = new HazardField(rules.hazards, initial.dynamites);
     this.structures = new StructureField(initial.structures);
+    this.veins = initial.veins;
     for (const w of rules.loadout.weapons) this.retune(w.id);
     const bonus = maxHealthBonus(rules.upgrades, this.board.levels);
     this.player = this.player.withRules(this.effectivePlayer(), bonus);
@@ -147,9 +161,12 @@ export class Run {
     if (!map.ok) return map;
     const sites = resolveStructures(terrain, map.value, rules.value.structures);
     if (!sites.ok) return sites;
-    const initial = initialState(rules.value, setup, map.value, sites.value);
+    const resources = resolveResources(terrain, map.value, rules.value.resources, sites.value);
+    if (!resources.ok) return resources;
+    const { veins, woodPiles } = resources.value;
+    const initial = initialState(rules.value, setup, map.value, sites.value, woodPiles, veins);
     if (!initial.ok) return initial;
-    return ok(new Run(rules.value, random, map.value, initial.value, sites.value));
+    return ok(new Run(rules.value, random, map.value, initial.value, sites.value, resources.value));
   }
 
   /** Mapa de la partida (spec procedural-map): la misma vista congelada durante toda la partida. */
@@ -223,19 +240,31 @@ export class Run {
     this.field.retarget(this.terrain.colAt(x), this.terrain.rowAt(y));
     this.horde.act(n, x, y, TICK_SECONDS, this.field);
     const { horde, structures } = this;
-    if (this.arsenal.step(n, x, y, horde.alive, structures.all) > 0) horde.removeDead(this.dropGem);
-    structures.settle();
+    if (this.arsenal.step(n, x, y, horde.alive, structures.all) > 0) horde.removeDead(this.onDeath);
+    structures.settle(this.onRuin);
     this.stepHazards(n, x, y);
     if (this.applyHit(n) || this.reachedEnd(n)) {
       this.tickCount = n;
       return;
     }
-    const xp = this.gems.step(x, y, this.player.radius, this.player.pickupRadius);
-    if (xp > 0) this.experience.gain(xp);
+    this.collect(x, y);
     this.director.step(n, horde.alive.length, this.place);
     structures.spawnGuards(n, horde, this.rules.spawn.maxAlive);
     this.tickCount = n;
     this.openNextOffer();
+  }
+
+  /**
+   * Paso 7 (spec simulation-loop): 7.1 recogibles de los tres tipos en una pasada, en orden de
+   * creación; la XP sube de nivel y el oro y la madera van a sus contadores; 7.2 vetas en el orden
+   * de su lista: cada una activa en contacto suma su oro y queda agotada.
+   */
+  private collect(x: number, y: number): void {
+    const { gain } = this;
+    this.pickups.step(x, y, this.player.radius, this.player.pickupRadius, gain);
+    if (gain.xp > 0) this.experience.gain(gain.xp);
+    this.stock.add(gain.gold, gain.wood);
+    for (const v of this.veins) this.stock.add(v.tap(x, y, this.player.radius), 0);
   }
 
   /**
@@ -259,7 +288,7 @@ export class Run {
   private stepHazards(n: number, x: number, y: number): void {
     const { hazards, horde } = this;
     hazards.expire(n);
-    if (hazards.explode(n, horde.alive, x, y, this.player.radius)) horde.removeDead(this.dropGem);
+    if (hazards.explode(n, horde.alive, x, y, this.player.radius)) horde.removeDead(this.onDeath);
     hazards.launch(n, horde.alive, x, y);
   }
 
@@ -290,13 +319,22 @@ export class Run {
   }
 
   /**
-   * Cada muerto suelta su gema en su posición, en orden de la lista (spec xp-gems), y un guardia
-   * deja libre su hueco en el tope de su casa. Se crea una
-   * sola vez: no asigna por tick.
+   * Cada muerto suelta su gema en su posición, en orden de la lista (spec xp-gems), y después su
+   * madera si su tipo la suelta y no ha explotado por su mecha (spec enemy-hazards 0022); un
+   * guardia deja libre su hueco en el tope de su casa. Se crea una sola vez: no asigna por tick.
    */
-  private readonly dropGem = (dead: Enemy): void => {
-    this.gems.drop(dead.x, dead.y, dead.type.xp);
+  private readonly onDeath = (dead: Enemy): void => {
+    const { x, y, type } = dead;
+    this.pickups.drop('xp', x, y, type.xp);
+    const wood = dead.detonated ? 0 : this.rules.resources.woodFor(type.id);
+    if (wood > 0) this.pickups.drop('wood', x, y, wood);
     dead.post?.release();
+  };
+
+  /** Una estructura que queda en ruina suelta su oro en su posición (spec goblin-structures). */
+  private readonly onRuin = (ruin: Structure): void => {
+    const gold = this.rules.resources.goldFor(ruin.site.type.id);
+    if (gold > 0) this.pickups.drop('gold', ruin.x, ruin.y, gold);
   };
 
   /** Los enemigos nuevos van al final de la lista y no se mueven en el tick en que aparecen. */
@@ -323,6 +361,7 @@ export class Run {
     const k = this.tickCount;
     const flash = this.rules.loadout.hitFlashTicks;
     const enemies = this.horde.alive.map((e) => toEnemySnapshot(e, e.damagedAt(k, flash)));
+    const { pickups, gems } = toPickupSnapshots(this.pickups.pickups, this.pickups.radius);
     return Object.freeze({
       tick: this.tickCount,
       ...this.phase,
@@ -350,7 +389,10 @@ export class Run {
       weapons: Object.freeze(
         this.arsenal.weapons.map((w) => Object.freeze({ id: w.type.id, ready: w.isChargedAt(k) })),
       ),
-      gems: Object.freeze(this.gems.gems.map((g) => toGemSnapshot(g, this.gems.radius))),
+      pickups,
+      gems,
+      resources: Object.freeze({ gold: this.stock.gold, wood: this.stock.wood }),
+      veins: Object.freeze(this.veins.map(toVeinSnapshot)),
       progression: toProgressionSnapshot(this.experience),
       offer: toOfferSnapshot(this.board),
       upgrades: toUpgradeLevels(this.rules.upgrades, this.board),

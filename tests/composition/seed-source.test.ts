@@ -1,6 +1,13 @@
+import { resourceRandomFor } from '../support/camps';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { restartRandoms, seededRun } from '../../src/composition/seedSource';
-import { MAP_STREAM, STRUCT_STREAM, deriveSeed } from '../../src/infrastructure/random/deriveSeed';
+import {
+  DECOR_STREAM,
+  MAP_STREAM,
+  RESOURCE_STREAM,
+  STRUCT_STREAM,
+  deriveSeed,
+} from '../../src/infrastructure/random/deriveSeed';
 import { RestartRun } from '../../src/application/RestartRun';
 import { StartRun, type StartedRun } from '../../src/application/StartRun';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
@@ -67,6 +74,16 @@ describe('seededRun', () => {
     expect(sequence(seeding.terrain.structureRandom, 5)).toEqual(sequence(structureRandom, 5));
   });
 
+  // ADR-0021 (0022): vetas y montones con su propio flujo, RESOURCE_STREAM = 4, distinto de los demás.
+  it('recursos con Mulberry32(deriveSeed(seed, RESOURCE_STREAM)), RESOURCE_STREAM = 4', () => {
+    expect(RESOURCE_STREAM).toBe(4);
+    expect(new Set([MAP_STREAM, DECOR_STREAM, STRUCT_STREAM, RESOURCE_STREAM]).size).toBe(4);
+    const seeding = seededRun(42, 'generated');
+    if (seeding.terrain.kind !== 'generated') throw new Error('se esperaba un mapa generado');
+    const resourceRandom = new Mulberry32RandomGenerator(deriveSeed(42, RESOURCE_STREAM));
+    expect(sequence(seeding.terrain.resourceRandom, 5)).toEqual(sequence(resourceRandom, 5));
+  });
+
   it('con el modo vacío el mapa es el abierto', () => {
     expect(seededRun(42, 'empty').terrain).toEqual({ kind: 'open' });
   });
@@ -80,6 +97,7 @@ describe('restartRandoms con el mapa', () => {
       kind: 'generated',
       random: new Mulberry32RandomGenerator(deriveSeed(42, MAP_STREAM)),
       structureRandom: new Mulberry32RandomGenerator(deriveSeed(42, STRUCT_STREAM)),
+      resourceRandom: resourceRandomFor(42),
     });
     if (!first.ok) throw new Error(first.error.message);
     play(first.value, 36_000);

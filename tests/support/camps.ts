@@ -1,5 +1,10 @@
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
-import { MAP_STREAM, STRUCT_STREAM, deriveSeed } from '../../src/infrastructure/random/deriveSeed';
+import {
+  MAP_STREAM,
+  RESOURCE_STREAM,
+  STRUCT_STREAM,
+  deriveSeed,
+} from '../../src/infrastructure/random/deriveSeed';
 import type { DeclaredStructure, TerrainSource } from '../../src/domain/map/TerrainSource';
 import { aBehaviorConfig, aProbeType } from './runs';
 import { Run, type RunSetup } from '../../src/domain/run/Run';
@@ -148,6 +153,10 @@ export const aStructuresConfig = (
 /** Valores de partida de las estructuras (design §2.1). */
 export const DEFAULT_STRUCTURES: StructuresConfig = aStructuresConfig();
 
+/** Generador de vetas y montones de la semilla, como en producción (`RESOURCE_STREAM`, ADR-0021). */
+export const resourceRandomFor = (seed: number): Mulberry32RandomGenerator =>
+  new Mulberry32RandomGenerator(deriveSeed(seed, RESOURCE_STREAM));
+
 /** Generador de la colocación de la semilla, como en producción (`STRUCT_STREAM`, ADR-0020). */
 export const structureRandomFor = (seed: number): Mulberry32RandomGenerator =>
   new Mulberry32RandomGenerator(deriveSeed(seed, STRUCT_STREAM));
@@ -160,6 +169,7 @@ export const campTerrain = (seed: number): TerrainSource => ({
   kind: 'generated',
   random: new Mulberry32RandomGenerator(deriveSeed(seed, MAP_STREAM)),
   structureRandom: structureRandomFor(seed),
+  resourceRandom: resourceRandomFor(seed),
 });
 
 /** Partida de la semilla con el mapa generado y sus estructuras (azar de la partida: `seed`). */

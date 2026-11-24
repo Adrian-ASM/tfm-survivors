@@ -29,8 +29,8 @@ describe('Nivel y XP iniciales', () => {
     });
     const snap = run.snapshot();
     expect(snap.gems).toEqual([
-      { id: 0, x: 100, y: 100, radius: 5 },
-      { id: 1, x: 200, y: 50, radius: 5 },
+      { id: 0, kind: 'xp', value: 3, x: 100, y: 100, radius: 5 },
+      { id: 1, kind: 'xp', value: 1, x: 200, y: 50, radius: 5 },
     ]);
     expect(snap.progression).toEqual({ level: 3, xp: 14, xpToNext: 15, pendingLevelUps: 0 });
   });

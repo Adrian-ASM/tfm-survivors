@@ -12,6 +12,9 @@ const LONGEST = {
   clock: formatClock(600),
   level: levelLabel(99),
   kills: killsLabel(12345),
+  // 0022: oro 123.456 y madera 12.345, enteros completos.
+  gold: String(123456),
+  wood: String(12345),
 };
 
 const inside = (b: Box, w: number, h: number): boolean =>
@@ -79,6 +82,7 @@ describe('hudLayout (0017)', () => {
     [1280, 720],
     [1920, 1080],
     [2560, 1440],
+    [3840, 2160],
   ])('Scenario: HUD entero y sin solapes (%i × %i, textos más largos)', (w, h) => {
     const boxes = hudBoxes(hudLayout(frame(w, h)), LONGEST);
     const all = Object.values(boxes);
@@ -87,5 +91,49 @@ describe('hudLayout (0017)', () => {
     expect(all.every((b) => [b.x, b.y, b.width, b.height].every(Number.isFinite))).toBe(true);
     const pairs = all.flatMap((a, i) => all.slice(i + 1).map((b) => overlap(a, b)));
     expect(pairs.some(Boolean)).toBe(false);
+  });
+});
+
+// Spec hud (0022): contadores de oro y madera, icono + número como un solo elemento.
+describe('hudLayout · oro y madera (0022)', () => {
+  /** Igualdad con error ≤ 1 px (spec hud). */
+  const near = (a: number[][], b: number[][]) => {
+    expect(a.flat().every((v, i) => Math.abs(v - (b.flat()[i] ?? NaN)) <= 1)).toBe(true);
+  };
+
+  /** Distancia al borde derecho y al superior de la caja de cada contador. */
+  const anchors = (w: number, h: number) => {
+    const boxes = hudBoxes(hudLayout(frame(w, h)), LONGEST);
+    return (['gold', 'wood'] as const).map((k) => {
+      const b = boxes[k];
+      return b ? [w - (b.x + b.width), b.y, b.width, b.height] : [];
+    });
+  };
+
+  it('Scenario: Mismo anclaje con dos ventanas (contadores, 960 × 540 y 1.280 × 720)', () => {
+    near(anchors(1280, 720), anchors(960, 540));
+  });
+
+  it('Scenario: Esquina opuesta que sigue a la ventana (contadores: 280 px a la izquierda)', () => {
+    const at = (w: number, h: number) => hudLayout(frame(w, h)).gold.icon.x;
+    expect(at(1280, 720) - at(1000, 600)).toBe(280);
+  });
+
+  it('Scenario: Ventana menor que 960 × 540 (contadores a ×1, mismas distancias)', () => {
+    near(anchors(640, 360), anchors(960, 540));
+  });
+
+  it('Scenario: Contadores reubicados al redimensionar (1.280 → 960 → 2.560: distancia por factor)', () => {
+    const [ref] = anchors(960, 540);
+    const [big] = anchors(2560, 1440);
+    near(anchors(1280, 720), anchors(960, 540));
+    near([big ?? []], [(ref ?? []).map((v) => 2 * v)]);
+  });
+
+  it('icono a la derecha del número, en la fila de la XP (oro) y bajo él (madera)', () => {
+    const l = hudLayout(frame(960, 540));
+    expect(l.gold.label.x).toBeLessThan(l.gold.icon.x - l.gold.icon.size / 2);
+    expect([l.gold.icon.y, l.wood.icon.y]).toEqual([l.xp.bar.y, 52]);
+    expect(l.gold.label.originX).toBe(1);
   });
 });

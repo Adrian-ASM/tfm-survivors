@@ -1,5 +1,5 @@
 import type { CellType } from '../../../domain/map/CellType';
-import type { MapSnapshot, MapStructure } from '../../../domain/map/MapSnapshot';
+import type { MapSnapshot, MapStructure, MapVein } from '../../../domain/map/MapSnapshot';
 import type { MapLooks, StructureLook } from './mapLooks';
 import { bridgeOrientation, riverSides, shoreCells, type RiverSides } from './shoreTiles';
 import { bestRuns, shoreTileCells, waterTileCells, type KeyedCell, type TileRun } from './tileRuns';
@@ -44,7 +44,15 @@ export interface TileDraw {
 export interface SpriteDraw {
   readonly kind: 'sprite';
   readonly role:
-    'foam' | 'bridge' | 'trunk' | 'canopy' | 'castle' | 'roof' | 'structure' | 'structure-top';
+    | 'foam'
+    | 'bridge'
+    | 'trunk'
+    | 'canopy'
+    | 'castle'
+    | 'roof'
+    | 'structure'
+    | 'structure-top'
+    | 'vein';
   readonly texture: string;
   readonly frame: number | string;
   readonly x: number;
@@ -108,7 +116,18 @@ export interface RectDraw {
   readonly bounds: Box;
 }
 
-export type LowDraw = TileDraw | SpriteDraw | RectDraw;
+/** Círculo de reserva de una veta (0022): centrado en su posición, de su radio de contacto. */
+export interface CircleDraw {
+  readonly kind: 'circle';
+  readonly x: number;
+  readonly y: number;
+  readonly radius: number;
+  readonly color: number;
+  /** Su cuadrado envolvente (recorte por cámara, 0018). */
+  readonly bounds: Box;
+}
+
+export type LowDraw = TileDraw | SpriteDraw | RectDraw | CircleDraw;
 
 /** Elementos de un tipo pintados y cuántos de ellos con reserva (sonda `sprites.mapArt`, B9). */
 export interface ElementCount {
@@ -148,6 +167,8 @@ export interface MapArtPlan {
   readonly cellSize: number;
   /** Casas y torres del mapa (0021), en el orden del snapshot, con los índices de sus objetos. */
   readonly structures: readonly PlannedStructure[];
+  /** Vetas del mapa (0022), en el orden del snapshot: `intact` = activa y `ruin` = agotada. */
+  readonly veins: readonly PlannedStructure[];
 }
 
 export interface PlanContext {
@@ -471,6 +492,51 @@ function structureDraws(g: Grid, looks: MapLooks) {
   return { low, high, number };
 }
 
+/**
+ * Un aspecto de una veta (0022): 1 sprite con el origen de su aspecto en la posición de la veta o,
+ * sin arte, 1 círculo del color de la veta de su radio de contacto.
+ */
+function veinAspect(v: MapVein, look: StructureLook, color: number): LowDraw {
+  if (!look.art) {
+    const r = v.radius;
+    const bounds = { x: v.x - r, y: v.y - r, width: 2 * r, height: 2 * r };
+    return { kind: 'circle', x: v.x, y: v.y, radius: r, color, bounds };
+  }
+  const { texture, aspect } = look;
+  const draw = {
+    kind: 'sprite',
+    role: 'vein',
+    texture,
+    frame: aspect.idle.frames[0] ?? 0,
+    x: v.x,
+    y: v.y,
+    scale: aspect.scale,
+    origin: aspect.origin,
+    flipX: false,
+    crop: null,
+  } as const;
+  return placed(draw, frameOf(aspect.sheet));
+}
+
+/** Vetas del mapa en la capa baja (0022): activa y agotada por veta, numeradas desde `start`. */
+function veinDraws(map: MapSnapshot, looks: MapLooks, start: number) {
+  const low: LowDraw[] = [];
+  const planned: PlannedStructure[] = [];
+  const { active, depleted, color } = looks.veins;
+  for (const v of map.veins) {
+    const i = start + low.length;
+    low.push(veinAspect(v, active, color), veinAspect(v, depleted, color));
+    planned.push({
+      id: v.id,
+      type: 'vein',
+      intact: [i],
+      ruin: [i + 1],
+      fallback: { intact: !active.art, ruin: !depleted.art },
+    });
+  }
+  return { low, planned };
+}
+
 const count = (painted: number, fallback = 0): ElementCount => ({ painted, fallback });
 
 /** Recuentos de la sonda: celdas por elemento, con arte o con reserva (B9). */
@@ -507,8 +573,10 @@ export function planMapArt(map: MapSnapshot, looks: MapLooks, ctx: PlanContext):
     ...trunks,
     ...facade,
   ];
-  // 0021: las estructuras tras la fachada (capa baja) y tras el tejado (capa alta).
-  const low = [...ground, ...built.low];
+  // 0021: las estructuras tras la fachada (capa baja) y tras el tejado (capa alta). 0022: las vetas,
+  // tras las estructuras en la capa baja.
+  const veins = veinDraws(map, looks, ground.length + built.low.length);
+  const low = [...ground, ...built.low, ...veins.low];
   const above = [...canopies, ...roof];
   const high = [...above, ...built.high];
   const foam = looks.foam.art && shoreCells(map).length > 0 ? looks.foam.aspect.idle : null;
@@ -522,5 +590,6 @@ export function planMapArt(map: MapSnapshot, looks: MapLooks, ctx: PlanContext):
     objects: low.length + high.length,
     cellSize: map.cellSize,
     structures: built.number(ground.length, low.length + above.length),
+    veins: veins.planned,
   };
 }

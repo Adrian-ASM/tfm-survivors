@@ -58,12 +58,16 @@ export function playBotTraced(
   let lastBlast = -1;
   let barrelBlasts = 0;
   let w3Damage = 0;
+  let last: RunSnapshot | null = null;
   for (let t = 0; t < maxTicks && run.status !== 'over'; t++) {
-    chooseWhileOpen(run, (offer) => bot.pick(offer));
-    const before = run.snapshot();
+    const chosen = chooseWhileOpen(run, (offer) => bot.pick(offer));
+    // Sin elección entre ticks el estado no cambia: el `after` del tick anterior es el `before` de
+    // este (0022, M1: la mitad de snapshots por tick; los resultados son los mismos).
+    const before = chosen > 0 || !last ? run.snapshot() : last;
     const input = bot.input(before);
     run.tick(input);
     const after = run.snapshot();
+    last = after;
     for (const e of after.enemies) if (e.stateKind === 'fuse') fused.add(e.id);
     for (const d of after.dynamites) {
       if (seenDynamites.has(d.id)) continue;

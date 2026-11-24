@@ -24,6 +24,7 @@ const quietCanvas = (): MapArtCanvas => ({
   tiles: () => undefined,
   sprite: () => undefined,
   rect: () => undefined,
+  circle: () => undefined,
   foam: () => undefined,
   show: () => undefined,
 });
@@ -67,7 +68,7 @@ function playfield() {
         enemies: 1,
         projectiles: 1,
         pulses: 1,
-        gems: 1,
+        pickups: 1,
         corpses: 1,
         visualTicks: new Map(),
         hazards: FAKE_HAZARD_CAPACITY,

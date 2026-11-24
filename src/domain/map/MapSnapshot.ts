@@ -20,6 +20,24 @@ export interface MapSnapshot {
   readonly castle: CastleFootprint | null;
   /** Casas y torres de la partida en su orden fijo (estático: la vida va en `RunSnapshot`). */
   readonly structures: readonly MapStructure[];
+  /** Vetas en su orden de colocación o declaración (estático: el estado va en `RunSnapshot`). */
+  readonly veins: readonly MapVein[];
+  /** Montones de madera iniciales en su orden (posición inicial; los recogibles, en `RunSnapshot`). */
+  readonly woodPiles: readonly MapPoint[];
+}
+
+/** Punto del mapa en px. */
+export interface MapPoint {
+  readonly x: number;
+  readonly y: number;
+}
+
+/** Veta del mapa (spec procedural-map 0022): id, posición, celda y radio de contacto. */
+export interface MapVein extends MapPoint {
+  readonly id: number;
+  readonly col: number;
+  readonly row: number;
+  readonly radius: number;
 }
 
 /**
@@ -44,8 +62,16 @@ export interface MapStructure {
   } | null;
 }
 
-/** Vista del mapa con sus estructuras (por defecto, ninguna); copia y congela cada estructura. */
-export function toMapSnapshot(map: GameMap, structures: readonly MapStructure[] = []): MapSnapshot {
+/** Vista del mapa con sus estructuras, vetas y montones (por defecto, ninguno); copia y congela. */
+export function toMapSnapshot(
+  map: GameMap,
+  structures: readonly MapStructure[] = [],
+  resources: {
+    readonly veins: readonly MapPoint[];
+    readonly woodPiles: readonly MapPoint[];
+    readonly veinRadius: number;
+  } = { veins: [], woodPiles: [], veinRadius: 0 },
+): MapSnapshot {
   const cells: CellType[] = [];
   const counts = Object.fromEntries(CELL_TYPES.map((t) => [t, 0])) as Record<CellType, number>;
   for (let r = 0; r < map.rows; r++) {
@@ -79,5 +105,18 @@ export function toMapSnapshot(map: GameMap, structures: readonly MapStructure[] 
         }),
       ),
     ),
+    veins: Object.freeze(
+      resources.veins.map((v, id) =>
+        Object.freeze({
+          id,
+          x: v.x,
+          y: v.y,
+          col: map.colAt(v.x),
+          row: map.rowAt(v.y),
+          radius: resources.veinRadius,
+        }),
+      ),
+    ),
+    woodPiles: Object.freeze(resources.woodPiles.map((p) => Object.freeze({ x: p.x, y: p.y }))),
   });
 }

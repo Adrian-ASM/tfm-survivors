@@ -54,10 +54,13 @@ export const SHEET_NOT_REGISTERED =
 /** Carpeta versionada del arte: la ruta en la nota es esta carpeta + `file`. */
 export const ASSET_DIR = 'public/assets/tiny-swords/';
 
-/** Ruta de la hoja (design D2); `parseAppearance` comprueba además que figura en la nota. */
+/**
+ * Ruta de la hoja (design D2); `parseAppearance` comprueba además que figura en la nota. Admite
+ * espacios dentro de la ruta (0022: carpeta `Gold Mine` del pack); `assetUrl` codifica cada segmento.
+ */
 const SheetFile = z
   .string()
-  .regex(/^(?!.*\.\.)[A-Za-z0-9_][A-Za-z0-9_./-]*\.png$/, { error: SHEET_FILE_FORMAT });
+  .regex(/^(?!.*\.\.)[A-Za-z0-9_][A-Za-z0-9_ ./-]*\.png$/, { error: SHEET_FILE_FORMAT });
 
 const BaseShape = {
   sheet: z.strictObject({ file: SheetFile, frameWidth: FrameSize, frameHeight: FrameSize }),
@@ -268,6 +271,63 @@ function checkStructureColors(
   }
 }
 
+/**
+ * Gema (`xp`) sin hoja (0022, design §5): forma de color con el pintado de reserva. Nunca cuenta como
+ * reserva en la sonda y no exige `idle`.
+ */
+const XpShapeSchema = z.strictObject({ shape: z.literal(true), placeholderColor: Hex });
+
+/**
+ * Aspectos de los recogibles (0022): exactamente los tipos de la unión `xp | gold | wood`. La gema
+ * puede tener hoja (distinta de las de oro y madera) o ser una forma de color.
+ */
+const PickupLooksSchema = z.strictObject({
+  xp: z.union([StillSchema, XpShapeSchema]),
+  gold: StillSchema,
+  wood: StillSchema,
+});
+
+/** Aspectos de la veta (0022): activa y agotada, sin color propio (la reserva usa `veinColor`). */
+const VeinLooksSchema = z.strictObject({
+  active: StructureAspectSchema,
+  depleted: StructureAspectSchema,
+});
+
+export const XP_SHEET_MUST_DIFFER =
+  'La hoja de la gema (xp) debe ser distinta de las del oro y la madera.';
+export const RESOURCE_COLORS_MUST_DIFFER =
+  'Los colores de reserva de los recogibles y de la veta son distintos dos a dos, de los del mapa y ' +
+  'de los de las estructuras.';
+
+/**
+ * Colores de reserva de los recogibles (xp, gold, wood) y de la veta (0022): distintos dos a dos y
+ * de los del mapa y de las estructuras. El error nombra el primero, en ese orden, que repite uno.
+ */
+function checkResourceColors(a: z.output<typeof AppearanceShape>, ctx: z.RefinementCtx): void {
+  const seen = new Set<number>([...Object.values(a.terrain), ...Object.values(a.structureColors)]);
+  const colors: [string[], number][] = [
+    [['pickups', 'xp', 'placeholderColor'], a.pickups.xp.placeholderColor],
+    [['pickups', 'gold', 'placeholderColor'], a.pickups.gold.placeholderColor],
+    [['pickups', 'wood', 'placeholderColor'], a.pickups.wood.placeholderColor],
+    [['veinColor'], a.veinColor],
+  ];
+  for (const [path, color] of colors) {
+    if (seen.has(color)) {
+      ctx.addIssue({ code: 'custom', path, message: RESOURCE_COLORS_MUST_DIFFER });
+      return;
+    }
+    seen.add(color);
+  }
+  const { xp, gold, wood } = a.pickups;
+  if ('sheet' in xp && [gold.sheet.file, wood.sheet.file].includes(xp.sheet.file)) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['pickups', 'xp', 'sheet', 'file'],
+      message: XP_SHEET_MUST_DIFFER,
+    });
+  }
+}
+
 const AppearanceShape = z.strictObject({
   maxCorpses: z
     .number()
@@ -280,7 +340,8 @@ const AppearanceShape = z.strictObject({
     .min(1, { error: MAX_BLAST_SPRITES_MUST_BE_INTEGER }),
   enemies: z.record(z.string(), EnemyAspectSchema),
   projectile: StillSchema,
-  gem: StillSchema,
+  /** Por tipo de recogible (0022): `xp` (la gema), `gold` y `wood`. */
+  pickups: PickupLooksSchema,
   ground: StillSchema,
   corpse: CorpseSchema,
   dynamite: StillSchema,
@@ -291,10 +352,15 @@ const AppearanceShape = z.strictObject({
   /** Por tipo de estructura del contenido (0021); el cruce con el contenido lo hace el arranque. */
   structures: z.record(z.string(), StructureLooksSchema),
   structureColors: z.record(z.string(), Hex),
+  /** Veta activa y agotada (0022), en el plan del mapa. */
+  veins: VeinLooksSchema,
+  /** Color de reserva de la veta: círculo de su radio de contacto. */
+  veinColor: Hex,
 });
 
 export const AppearanceSchema = AppearanceShape.superRefine((a, ctx) => {
   checkStructureColors(a.structureColors, a.terrain, ctx);
+  checkResourceColors(a, ctx);
 });
 
 export type Appearance = z.output<typeof AppearanceSchema>;
@@ -306,6 +372,10 @@ export type SheetRect = z.output<typeof RectSchema>;
 export type Anim =
   z.output<typeof AnimSchema> | z.output<typeof DeathSchema> | ExplosionAspect['explode'];
 export type StillAspect = z.output<typeof StillSchema>;
+/** Gema sin hoja (0022): forma de color. */
+export type XpShapeAspect = z.output<typeof XpShapeSchema>;
+export type PickupLooksAppearance = z.output<typeof PickupLooksSchema>;
+export type VeinLooksAppearance = z.output<typeof VeinLooksSchema>;
 export type MovingAspect = z.output<typeof MovingSchema>;
 export type CorpseAspect = z.output<typeof CorpseSchema>;
 export type EnemyAspect = z.output<typeof EnemyAspectSchema>;

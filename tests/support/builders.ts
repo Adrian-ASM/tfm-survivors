@@ -6,6 +6,7 @@ import enemiesJson from '../../content/enemies.json';
 import progressionJson from '../../content/progression.json';
 import upgradesJson from '../../content/upgrades.json';
 import structuresJson from '../../content/structures.json';
+import resourcesJson from '../../content/resources.json';
 import type { EnemyTypeConfig } from '../../src/domain/enemy/EnemyType';
 import type { BehaviorConfig } from '../../src/domain/enemy/behavior/BehaviorConfig';
 import type { HazardRulesConfig } from '../../src/domain/hazard/HazardRules';
@@ -14,6 +15,7 @@ import type { WeaponsConfig } from '../../src/domain/weapon/WeaponLoadout';
 import type { WeaponTypeConfig } from '../../src/domain/weapon/WeaponType';
 import type { UpgradeTypeConfig } from '../../src/domain/upgrade/UpgradeType';
 import type { StructuresConfig } from '../../src/domain/structure/StructureType';
+import type { ResourcesConfig } from '../../src/domain/resource/ResourceRules';
 
 /** Copia profunda congelada de un valor de content/ (los tests no pueden alterar el JSON). */
 function frozen<T>(value: T): T {
@@ -124,6 +126,46 @@ export const NO_STRUCTURES: StructuresConfig = Object.freeze({
   types: Object.freeze({}),
 });
 
+/** Fuentes de oro y madera por defecto, leídas de content/resources.json (0022). */
+export const CONTENT_RESOURCES: ResourcesConfig = frozen(resourcesJson);
+
+/**
+ * Sin fuentes de recursos (spec resources, "Recursos sin efecto en el combate"): 0 montones, 0 vetas
+ * y mapas de drops vacíos, con las cantidades del contenido (que no pueden ser 0). Por defecto en
+ * `aRunConfig`: los escenarios de 0001–0021 siguen sin oro ni madera.
+ */
+export const NO_RESOURCES: ResourcesConfig = Object.freeze({
+  ...CONTENT_RESOURCES,
+  drops: Object.freeze({ enemies: Object.freeze({}), structures: Object.freeze({}) }),
+  woodPiles: Object.freeze({ ...CONTENT_RESOURCES.woodPiles, count: 0 }),
+  goldVeins: Object.freeze({ ...CONTENT_RESOURCES.goldVeins, count: 0 }),
+});
+
+/** El mismo contenido con otras fuentes de recursos. */
+export const withResources = (config: RunConfig, resources: ResourcesConfig): RunConfig => ({
+  ...config,
+  resources,
+});
+
+/**
+ * El mismo contenido con estos drops y ningún otro (escenarios de 0022): madera por
+ * `goblin-barrel` abatido y oro por casa y por torre destruidas.
+ */
+export const withDrops = (
+  config: RunConfig,
+  o: { readonly wood?: number; readonly house?: number; readonly tower?: number },
+): RunConfig => {
+  const structures: Record<string, { gold: number }> = {};
+  if (o.house !== undefined) structures['goblin-house'] = { gold: o.house };
+  if (o.tower !== undefined) structures['goblin-tower'] = { gold: o.tower };
+  const enemies = o.wood === undefined ? {} : { 'goblin-barrel': { wood: o.wood } };
+  return withResources(config, { ...config.resources, drops: { enemies, structures } });
+};
+
+/** El mismo contenido sin fuentes de recursos (design 0022 §10). */
+export const withoutResourceSources = (config: RunConfig): RunConfig =>
+  withResources(config, NO_RESOURCES);
+
 /** Globales de los peligros por defecto (content/enemies.json, `hazards`; 0020). */
 export const DEFAULT_HAZARDS: HazardRulesConfig = frozen(enemiesJson.hazards);
 
@@ -216,6 +258,7 @@ export const aRunConfig = (overrides: Partial<PlayerConfig> = {}): RunConfig => 
   run: DEFAULT_RUN,
   map: DEFAULT_MAP,
   structures: NO_STRUCTURES,
+  resources: NO_RESOURCES,
 });
 
 /** El mismo contenido con otra duración objetivo en segundos (p. ej. 2 ⇒ 120 ticks). */
@@ -250,6 +293,7 @@ export const aDefaultConfig = (): RunConfig =>
         progression: DEFAULT_PROGRESSION,
         enemies: { hazards: DEFAULT_HAZARDS, types: DEFAULT_ENEMY_TYPES },
         structures: CONTENT_STRUCTURES,
+        resources: CONTENT_RESOURCES,
       },
       DEFAULT_WEAPONS,
     ),
@@ -353,6 +397,9 @@ export interface RawContent {
     gemRadius: number;
     magnetSpeed: number;
     maxGems: number;
+    maxGold: number;
+    maxWood: number;
+    [extra: string]: unknown;
   };
   upgrades: { upgrades: [MutableUpgrade, MutableUpgrade, ...MutableUpgrade[]] };
   run: { durationSeconds: number };
@@ -369,6 +416,17 @@ export interface RawContent {
   structures: {
     placement: Record<string, number>;
     types: { 'goblin-house': MutableStructureType; 'goblin-tower': MutableStructureType };
+  };
+  resources: {
+    drops: {
+      enemies: Record<string, { wood: number; [extra: string]: unknown }>;
+      structures: Record<string, { gold: number; [extra: string]: unknown }>;
+      [extra: string]: unknown;
+    };
+    woodPiles: { count: number; wood: number };
+    goldVeins: { count: number; gold: number; radius: number; [extra: string]: unknown };
+    placement: { minStartCells: number; minCastleCells: number; minGapCells: number };
+    [extra: string]: unknown;
   };
 }
 interface MutableStructureType {

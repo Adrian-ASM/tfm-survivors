@@ -1,14 +1,14 @@
-import type { RunSnapshot } from '../../domain/run/RunSnapshot';
+import type { RunSnapshot, VeinSnapshot } from '../../domain/run/RunSnapshot';
 import { AnimClock, frameAt, type AnimSpec } from './art/animation';
 import type { Looks } from './art/looks';
 import { CorpseLayer } from './CorpseLayer';
 import { EnemyLayer } from './EnemyLayer';
-import { GemLayer } from './GemLayer';
+import { PickupLayer } from './PickupLayer';
 import { HazardLayer, type HazardCapacity, type WarningCanvas } from './HazardLayer';
 import { PlayerView, type SpriteCount } from './PlayerView';
 import { ProjectileLayer } from './ProjectileLayer';
 import { PulseLayer, type RingSprite } from './PulseLayer';
-import type { SpriteCounts } from './renderCounts';
+import { VEIN_KEY, veinCounts, type SpriteCounts } from './renderCounts';
 import type { SpriteKit } from './SpriteLike';
 import { MapCuller } from './map/mapCulling';
 import type { Box, MapArtPlan } from './map/planMapArt';
@@ -20,7 +20,8 @@ export interface LayerCapacity {
   readonly enemies: number;
   readonly projectiles: number;
   readonly pulses: number;
-  readonly gems: number;
+  /** Recogibles de los tres tipos: la suma de los topes (0022). */
+  readonly pickups: number;
   readonly corpses: number;
   readonly visualTicks: ReadonlyMap<string, number>;
   /** Tope de dinamitas del contenido y de explosiones pintadas de los datos de aspecto (0020). */
@@ -40,7 +41,7 @@ export interface RenderParts {
 
 /**
  * Capas de la partida sobre el reloj de render (design "Flujo de un frame"), sin Phaser como valor.
- * El orden de creación es el de pintado: anillos, gemas, cadáveres, enemigos, proyectiles y jugador
+ * El orden de creación es el de pintado: anillos, recogibles, cadáveres, enemigos, proyectiles y jugador
  * (el suelo, debajo, lo crea la escena). Una baja (salida del snapshot) deja un cadáver; `clear()`
  * (R o Volver al menú) no.
  */
@@ -48,7 +49,7 @@ export class RenderLayers {
   readonly counts: SpriteCounts;
   private readonly clock = new AnimClock();
   private readonly pulses: PulseLayer;
-  private readonly gems: GemLayer;
+  private readonly pickups: PickupLayer;
   private readonly corpses: CorpseLayer;
   private readonly enemies: EnemyLayer;
   private readonly projectiles: ProjectileLayer;
@@ -63,6 +64,8 @@ export class RenderLayers {
   private readonly culler = new MapCuller();
   /** Aspecto vigente (intacto o ruina) de cada estructura del mapa pintado (0021). */
   private readonly structureArt: StructureArt;
+  /** Aspecto vigente (activa o agotada) de cada veta del mapa pintado (0022). */
+  private readonly veinArt = new StructureArt<VeinSnapshot>([VEIN_KEY], (v) => v.depleted);
   private foamAnim: AnimSpec | null = null;
   private foamFrame = -1;
 
@@ -70,7 +73,7 @@ export class RenderLayers {
     const { kit, looks, capacity } = parts;
     this.parts = parts;
     this.pulses = new PulseLayer(capacity.pulses, capacity.visualTicks, parts.ring);
-    this.gems = new GemLayer(capacity.gems, kit, looks.gem);
+    this.pickups = new PickupLayer(capacity.pickups, kit, looks.pickups);
     this.corpses = new CorpseLayer(capacity.corpses, kit, looks.corpse);
     this.enemies = new EnemyLayer(capacity.enemies, kit, looks.enemies, this.corpses);
     this.projectiles = new ProjectileLayer(capacity.projectiles, kit, looks.projectile);
@@ -83,7 +86,8 @@ export class RenderLayers {
       corpses: this.corpses.counts,
       projectiles: this.projectiles.counts,
       pulses: this.pulses.counts,
-      gems: this.gems.counts,
+      pickups: this.pickups.counts,
+      gems: this.pickups.counts.xp,
       enemyPlaceholders: this.enemies.placeholdersByType,
       enemyStates: this.enemies.states,
       warnings: { visible: 0, placeholder: 0 },
@@ -92,6 +96,7 @@ export class RenderLayers {
       cells: zeroCells(),
       mapArt: zeroMapArt(),
       structures: this.structureArt.counts,
+      veins: veinCounts(this.veinArt.counts[VEIN_KEY]),
     };
   }
 
@@ -123,7 +128,7 @@ export class RenderLayers {
     const ms = this.clock.ms;
     this.status = snapshot.status;
     this.pulses.sync(snapshot.pulses, snapshot.tick);
-    this.gems.sync(snapshot.gems);
+    this.pickups.sync(snapshot.pickups);
     this.enemies.sync(snapshot.enemies, snapshot.tick, ms);
     this.corpses.sync(ms);
     this.projectiles.sync(snapshot.projectiles);
@@ -131,6 +136,7 @@ export class RenderLayers {
     this.hazards?.sync(snapshot.warnings, snapshot.dynamites, snapshot.blasts, ms);
     // Antes del recorte del frame (`cullMap`): la ruina se ve desde el frame en que figura destruida.
     this.structureArt.sync(snapshot.structures);
+    this.veinArt.sync(snapshot.veins);
     this.animateFoam(ms);
   }
 
@@ -158,6 +164,7 @@ export class RenderLayers {
     this.mapCanvas = canvas;
     this.culler.reset(plan);
     this.structureArt.reset(plan.structures, this.culler);
+    this.veinArt.reset(plan.veins, this.culler);
     mapArt.drawn = this.culler.drawn;
     this.foamAnim = plan.foam ? { frames: plan.foam.frames, fps: plan.foam.fps, loop: true } : null;
     this.foamFrame = -1;
@@ -180,7 +187,7 @@ export class RenderLayers {
     this.corpses.clear();
     this.projectiles.clear();
     this.pulses.clear();
-    this.gems.clear();
+    this.pickups.clear();
     this.hazards?.clear();
     this.player.reset();
     this.status = 'running';

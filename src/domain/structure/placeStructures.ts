@@ -1,48 +1,13 @@
 import type { GameMap } from '../map/GameMap';
+import { chebyshevFrom, inCastle } from '../map/chebyshev';
 import type { RandomGenerator } from '../shared/RandomGenerator';
 import type { StructureRules } from './StructureRules';
 import { structureSite, type StructureSite } from './StructureSite';
 import type { StructurePlacementConfig, StructureType } from './StructureType';
 
-/** Distancia de una celda sin fuentes (mayor que cualquier distancia de la rejilla). */
-const FAR = 0x7fffffff;
-
 /** Entero uniforme en [lo, hi] (un valor del generador). */
 const pickInt = (random: RandomGenerator, lo: number, hi: number): number =>
   lo + Math.floor(random.next() * (hi - lo + 1));
-
-/**
- * Distancia de Chebyshev en celdas de cada celda al conjunto `isSource` (BFS de 8 vecinos desde
- * todas las fuentes a la vez; `FAR` si no hay ninguna). O(celdas).
- */
-function chebyshevFrom(map: GameMap, isSource: (c: number, r: number) => boolean): Int32Array {
-  const { cols, rows } = map;
-  const dist = new Int32Array(cols * rows).fill(FAR);
-  const queue = new Int32Array(cols * rows);
-  let tail = 0;
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      if (!isSource(c, r)) continue;
-      dist[r * cols + c] = 0;
-      queue[tail++] = r * cols + c;
-    }
-  }
-  for (let head = 0; head < tail; head++) {
-    const i = queue[head] ?? 0;
-    const c = i % cols;
-    const r = (i - c) / cols;
-    const d = (dist[i] ?? 0) + 1;
-    for (let rr = Math.max(0, r - 1); rr <= Math.min(rows - 1, r + 1); rr++) {
-      for (let cc = Math.max(0, c - 1); cc <= Math.min(cols - 1, c + 1); cc++) {
-        const j = rr * cols + cc;
-        if ((dist[j] ?? 0) !== FAR) continue;
-        dist[j] = d;
-        queue[tail++] = j;
-      }
-    }
-  }
-  return dist;
-}
 
 /**
  * Rejillas de la colocación (design 0021 §3.2): distancias a la zona de inicio, a la huella del
@@ -59,17 +24,8 @@ class PlacementGrid {
     private readonly map: GameMap,
     private readonly p: StructurePlacementConfig,
   ) {
-    const castle = map.castle;
     this.toStart = chebyshevFrom(map, (c, r) => map.rules.inStartZone(c, r));
-    this.toCastle = chebyshevFrom(
-      map,
-      (c, r) =>
-        castle !== null &&
-        c >= castle.firstCol &&
-        c <= castle.lastCol &&
-        r >= castle.firstRow &&
-        r <= castle.lastRow,
-    );
+    this.toCastle = chebyshevFrom(map, (c, r) => inCastle(map, c, r));
     this.toWater = chebyshevFrom(map, (c, r) => {
       const t = map.typeAt(c, r);
       return t === 'water' || t === 'bridge';

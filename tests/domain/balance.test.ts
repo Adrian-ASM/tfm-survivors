@@ -14,6 +14,7 @@ import {
   withPlayer,
 } from '../support/builders';
 import { perRun, traceBotBatch, type BotTrace } from '../support/balanceMeasure';
+import { BALANCE_BASELINE, BASELINE_FUSES_PER_RUN } from '../support/balanceBaseline';
 import { referenceBot } from '../support/policies';
 import { play, playReferenceBot, startSeededRun, stillSurvivors } from '../support/runs';
 
@@ -189,6 +190,32 @@ describe('Balance con el contenido por defecto (0010)', () => {
 
     expect(finals).toHaveLength(BALANCE_SEEDS.length);
     expect(unfinished).toEqual([]);
+  });
+
+  // Spec resources (0022), "Balance sin recalibrar con los recursos": misma semilla, mismo resultado,
+  // tick y bajas que la línea base M0 (`balanceBaseline.ts`). Una diferencia es un fallo de
+  // determinismo, no un balance que recalibrar.
+  it('Scenario: Victorias del bot de referencia (27, cada semilla igual que antes del change)', () => {
+    const rows = finals.map((s, i) => [BALANCE_SEEDS[i], s.outcome, s.tick, s.kills]);
+    const wins = finals.filter((s) => s.outcome === 'won' && s.tick === TEN_MINUTES).length;
+
+    expect(rows).toEqual(BALANCE_BASELINE.map((r) => [...r]));
+    expect(wins).toBe(27);
+  });
+
+  it('Scenario: Mechas por partida intactas (26,9 como antes del change, > 16,3)', () => {
+    const fuses = perRun(traces, (t) => t.fuses);
+
+    expect(fuses).toBe(BASELINE_FUSES_PER_RUN);
+    expect(fuses.toFixed(1)).toBe('26.9');
+    expect(fuses).toBeGreaterThan(BARREL_FUSE_BASELINE);
+  });
+
+  it('oro y madera medios por partida del bot v3 (informativo, sin umbral)', () => {
+    const gold = perRun(traces, (t) => t.final.resources.gold);
+    const wood = perRun(traces, (t) => t.final.resources.wood);
+    console.info(`oro medio ${gold.toFixed(1)} · madera media ${wood.toFixed(1)} por partida`);
+    expect(Number.isFinite(gold + wood)).toBe(true);
   });
 
   it('Scenario: Tasa de victoria del bot de referencia', () => {

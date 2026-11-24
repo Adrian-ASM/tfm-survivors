@@ -9,6 +9,7 @@ import {
   BRIDGE_FRAME_NAMES,
   resolveMapLooks,
   resolveStructureLooks,
+  resolveVeinLooks,
   type HasFrame,
   type MapLooks,
 } from '../../src/infrastructure/phaser/map/mapLooks';
@@ -43,6 +44,8 @@ const FRAME_COUNTS: Readonly<Record<string, number>> = {
   'Factions/Goblins/Buildings/Wood_House/Goblin_House_Destroyed.png': 1,
   'Factions/Goblins/Buildings/Wood_Tower/Wood_Tower_Red.png': 4,
   'Factions/Goblins/Buildings/Wood_Tower/Wood_Tower_Destroyed.png': 1,
+  'Resources/Gold Mine/GoldMine_Active.png': 1,
+  'Resources/Gold Mine/GoldMine_Inactive.png': 1,
 };
 
 /** Texturas cargadas salvo las de `missing` (doble de `textureFrames`). */
@@ -68,6 +71,7 @@ export function repoMapLooks(missing: readonly string[] = []): MapLooks {
     loadedExcept(missing),
     bridgeFrames(),
     resolveStructureLooks(a, loadedExcept(missing)),
+    resolveVeinLooks(a, loadedExcept(missing)),
   );
 }
 

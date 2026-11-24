@@ -64,8 +64,13 @@ export class Structure implements WeaponTarget {
     return !this.alive;
   }
 
-  /** Paso 3.4 del tick: si su vida ha llegado a 0, queda destruida. */
-  settle(): void {
-    if (this.life <= 0) this.ruined = true;
+  /**
+   * Paso 3.4 del tick: si su vida ha llegado a 0, queda destruida. Devuelve true solo en el tick en
+   * que pasa a ruina (una ruina ya destruida, también la de `RunSetup`, devuelve false).
+   */
+  settle(): boolean {
+    if (this.ruined || this.life > 0) return false;
+    this.ruined = true;
+    return true;
   }
 }

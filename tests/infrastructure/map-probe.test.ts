@@ -8,7 +8,12 @@ import { TICK_MS, aDefaultConfig } from '../support/builders';
 import { planFor, spritesOf } from '../support/mapArt';
 import { mapForSeed, typesOf } from '../support/mapStats';
 import { startSeededRun } from '../support/runs';
-import { STRUCTURE_GOLDEN, structureSignatureOf } from '../support/mapGolden';
+import {
+  RESOURCE_GOLDEN,
+  STRUCTURE_GOLDEN,
+  resourceSignatureOf,
+  structureSignatureOf,
+} from '../support/mapGolden';
 
 // Spec procedural-map (0016), "Sonda del mapa para E2E", y sprite-rendering, "Variedad de árboles
 // por semilla" y "Sonda de render" (parte sin navegador).
@@ -64,12 +69,16 @@ describe('Sonda del mapa (snapshot del núcleo)', () => {
     // 0021: la lista de estructuras es la que coloca el núcleo, una a una (firma dorada).
     expect(structureSignatureOf(map.structures)).toEqual(STRUCTURE_GOLDEN[42]);
     expect(map.structures.map((s) => s.id)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    // 0022: vetas y montones, uno a uno, los que coloca el núcleo (firma de recursos).
+    expect(resourceSignatureOf(map)).toEqual(RESOURCE_GOLDEN[42]);
+    expect(map.veins.map((v) => v.id)).toEqual([0, 1, 2]);
   });
 
   it('Scenario: Sonda con el mapa vacío (2.304 grass, 0 castle, huella null, salida (1.920, 1.080))', () => {
     const map = startSeededRun(CONFIG, 42, 'empty').map;
     expect([map.counts.grass, map.counts.castle, map.castle]).toEqual([2304, 0, null]);
     expect(map.structures).toEqual([]);
+    expect([map.veins, map.woodPiles]).toEqual([[], []]);
     expect(map.start).toEqual({ x: 1920, y: 1080, radius: 180 });
   });
 });

@@ -145,6 +145,25 @@ describe('RestartRun · partida nueva desde una terminada (spec run-results)', (
     });
   });
 
+  // Spec resources (0022), "Contadores de oro y madera de la partida".
+  it('Scenario: Partida nueva tras R (oro 40 y madera 12 al terminar; 0 y 0 en el tick 0)', () => {
+    const s = started(lethal(), {
+      player: CENTER,
+      enemies: [{ type: 'goblin-torch', ...CENTER }],
+      resources: { gold: 40, wood: 12 },
+    });
+    s.tickRun.execute(TICK_MS, PlayerInput.NONE);
+    const ended = s.tickRun.snapshot();
+
+    const r = new RestartRun(withScenarioCurve(aDefaultConfig()), nextRandomSpy().next).execute(
+      s.tickRun,
+    );
+    const fresh = r.ok ? r.value.tickRun.snapshot() : null;
+
+    expect(ended).toMatchObject({ status: 'over', resources: { gold: 40, wood: 12 } });
+    expect(fresh).toMatchObject({ tick: 0, resources: { gold: 0, wood: 0 }, pickups: [] });
+  });
+
   it('reinicia también tras una victoria, con un generador nuevo por reinicio', () => {
     const spy = nextRandomSpy();
     const restart = new RestartRun(withScenarioCurve(aDefaultConfig()), spy.next);

@@ -22,6 +22,7 @@ function fakeCanvas() {
     tiles: (t) => visible.push(`low:tiles:${t.texture}`),
     sprite: (layer, s: SpriteDraw) => visible.push(`${layer}:${s.role}`),
     rect: () => visible.push('low:rect'),
+    circle: () => visible.push('low:circle'),
     foam: (frame) => log.push(`foam ${String(frame)}`),
     show: () => undefined,
   };

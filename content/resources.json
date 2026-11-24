@@ -1,0 +1,9 @@
+{
+  "drops": {
+    "enemies": { "goblin-barrel": { "wood": 1 } },
+    "structures": { "goblin-house": { "gold": 5 }, "goblin-tower": { "gold": 8 } }
+  },
+  "woodPiles": { "count": 8, "wood": 3 },
+  "goldVeins": { "count": 3, "gold": 10, "radius": 30 },
+  "placement": { "minStartCells": 6, "minCastleCells": 3, "minGapCells": 4 }
+}

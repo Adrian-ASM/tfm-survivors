@@ -124,7 +124,9 @@ describe('Paso de gemas en el tick (tras el contacto)', () => {
     const withGem = ticks(run(c, { enemies, gems: [{ x: 700, y: 270, value: 1 }] }), 150);
     const without = ticks(run(c, { enemies }), 150);
     expect(withGem.map((s) => s.enemies)).toEqual(without.map((s) => s.enemies));
-    expect(withGem.at(-1)?.gems).toEqual([{ id: 0, x: 700, y: 270, radius: 5 }]);
+    expect(withGem.at(-1)?.gems).toEqual([
+      { id: 0, kind: 'xp', value: 1, x: 700, y: 270, radius: 5 },
+    ]);
   });
 
   it('Scenario: Muerte y subida de nivel en el mismo tick (terminada, nivel 1, XP 4, gema)', () => {

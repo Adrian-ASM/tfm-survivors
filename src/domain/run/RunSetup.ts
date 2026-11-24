@@ -6,7 +6,10 @@ import type { EnemyType } from '../enemy/EnemyType';
 import { GuardPost } from '../enemy/GuardPost';
 import { Player } from '../player/Player';
 import { Experience } from '../progression/Experience';
-import { GemField } from '../progression/GemField';
+import { PickupField } from '../pickup/PickupField';
+import type { PickupKind } from '../pickup/PickupKind';
+import { Stockpile } from '../resource/Stockpile';
+import { GoldVein } from '../resource/GoldVein';
 import { err, invalidConfig, ok, type DomainError, type Result } from '../shared/Result';
 import { Vector2 } from '../shared/Vector2';
 import { UpgradeBoard } from '../upgrade/UpgradeBoard';
@@ -20,7 +23,12 @@ export const SETUP_HEALTH_OUT_OF_RANGE =
   'La vida inicial de un enemigo debe ser finita, positiva y no mayor que la de su tipo.';
 export const SETUP_GEM_VALUE_MUST_BE_INTEGER =
   'El valor de una gema inicial debe ser un entero ≥ 1.';
-export const SETUP_TOO_MANY_GEMS = 'Hay más gemas iniciales que el tope de gemas en el suelo.';
+export const SETUP_TOO_MANY_GEMS =
+  'Hay más recogibles iniciales de un tipo que el tope de ese tipo en el suelo.';
+export const SETUP_RESOURCES_MUST_BE_INTEGER =
+  'El oro y la madera iniciales deben ser enteros ≥ 0.';
+export const SETUP_TOO_MANY_VEINS = 'Hay más vetas iniciales que vetas en el mapa.';
+export const SETUP_VEIN_GOLD_MUST_BE_INTEGER = 'El oro de una veta inicial debe ser un entero ≥ 1.';
 export const SETUP_EXPERIENCE_OUT_OF_RANGE =
   'La experiencia inicial necesita un nivel entero ≥ 1 y una XP entera en [0, xpToNext).';
 export const SETUP_UNKNOWN_UPGRADE = 'Mejora inicial desconocida en el catálogo.';
@@ -77,8 +85,22 @@ export interface RunSetup {
    * (targetX, targetY); explotan en el tick `ticksLeft` con su radio y daño.
    */
   readonly dynamites?: readonly SetupDynamite[];
-  /** Gemas en el suelo, en orden de creación (ids desde 0); `attracted` por defecto false. */
-  readonly gems?: readonly (Point & { readonly value: number; readonly attracted?: boolean })[];
+  /**
+   * Recogibles en el suelo, en orden de creación (ids tras los montones del mapa); `kind` por
+   * defecto `xp` (gemas) y `attracted` por defecto false.
+   */
+  readonly gems?: readonly (Point & {
+    readonly value: number;
+    readonly attracted?: boolean;
+    readonly kind?: PickupKind;
+  })[];
+  /** Oro y madera ya acumulados al empezar (enteros ≥ 0; por defecto, 0). */
+  readonly resources?: { readonly gold: number; readonly wood: number };
+  /**
+   * Por índice de la lista de vetas de la partida (tests): oro (entero ≥ 1; por defecto, el del
+   * contenido) y si ya está agotada (por defecto, activa). Como mucho tantas entradas como vetas.
+   */
+  readonly veins?: readonly { readonly gold?: number; readonly depleted?: boolean }[];
   /** Nivel y XP iniciales (por defecto, nivel 1 con XP 0), sin subidas pendientes. */
   readonly experience?: { readonly level: number; readonly xp: number };
   /**
@@ -228,25 +250,63 @@ export function initialDynamites(
   return ok(entries);
 }
 
-export function initialGems(
+/**
+ * Recogibles iniciales: primero un `wood` por montón del mapa (`piles`, en su orden y con la madera
+ * por montón), después los de `RunSetup.gems`. Cada tipo, como mucho su tope.
+ */
+export function initialPickups(
   rules: RunRules,
   setup: RunSetup,
   map: GameMap,
-): Result<GemField, DomainError> {
+  piles: readonly Point[] = [],
+): Result<PickupField, DomainError> {
   const entries = setup.gems ?? [];
-  if (entries.length > rules.gems.maxGems) {
-    return err(invalidConfig('setup.gems', SETUP_TOO_MANY_GEMS));
-  }
-  const field = new GemField(rules.gems, map);
+  const field = new PickupField(rules.pickups, map);
+  for (const p of piles) field.drop('wood', p.x, p.y, rules.resources.woodPiles.wood);
   for (const [i, g] of entries.entries()) {
     const path = `setup.gems.${String(i)}`;
     if (!isFinitePoint(g)) return err(invalidConfig(path, SETUP_POSITION_MUST_BE_FINITE));
     if (!Number.isInteger(g.value) || g.value < 1) {
       return err(invalidConfig(`${path}.value`, SETUP_GEM_VALUE_MUST_BE_INTEGER));
     }
-    field.drop(g.x, g.y, g.value, g.attracted ?? false);
+    const kind = g.kind ?? 'xp';
+    if (field.count(kind) >= rules.pickups.max(kind)) {
+      return err(invalidConfig('setup.gems', SETUP_TOO_MANY_GEMS));
+    }
+    field.drop(kind, g.x, g.y, g.value, g.attracted ?? false);
   }
   return ok(field);
+}
+
+/** Vetas de la partida en su orden, con el oro y el radio del contenido o los de `RunSetup`. */
+export function initialVeins(
+  rules: RunRules,
+  setup: RunSetup,
+  sites: readonly Point[],
+): Result<GoldVein[], DomainError> {
+  const entries = setup.veins ?? [];
+  if (entries.length > sites.length) {
+    return err(invalidConfig('setup.veins', SETUP_TOO_MANY_VEINS));
+  }
+  const { gold, radius } = rules.resources.goldVeins;
+  const veins: GoldVein[] = [];
+  for (const [i, p] of sites.entries()) {
+    const entry = entries[i] ?? {};
+    const value = entry.gold ?? gold;
+    if (!Number.isInteger(value) || value < 1) {
+      return err(invalidConfig(`setup.veins.${String(i)}.gold`, SETUP_VEIN_GOLD_MUST_BE_INTEGER));
+    }
+    veins.push(new GoldVein(i, p.x, p.y, radius, value, entry.depleted ?? false));
+  }
+  return ok(veins);
+}
+
+/** Oro y madera iniciales (por defecto, 0). */
+export function initialStockpile(setup: RunSetup): Result<Stockpile, DomainError> {
+  const { gold, wood } = setup.resources ?? { gold: 0, wood: 0 };
+  const valid = [gold, wood].every((v) => Number.isInteger(v) && v >= 0);
+  if (!valid) return err(invalidConfig('setup.resources', SETUP_RESOURCES_MUST_BE_INTEGER));
+  return ok(new Stockpile(gold, wood));
 }
 
 export function initialBoard(rules: RunRules, setup: RunSetup): Result<UpgradeBoard, DomainError> {
@@ -317,7 +377,10 @@ export function initialStructures(
 export interface InitialState {
   readonly player: Player;
   readonly enemies: Enemy[];
-  readonly gems: GemField;
+  readonly pickups: PickupField;
+  readonly stock: Stockpile;
+  /** Vetas en su orden fijo (agotadas incluidas). */
+  readonly veins: GoldVein[];
   readonly experience: Experience;
   readonly board: UpgradeBoard;
   /** Bajas ya acumuladas (por defecto, 0). */
@@ -334,6 +397,8 @@ export function initialState(
   setup: RunSetup,
   map: GameMap,
   sites: readonly StructureSite[] = [],
+  piles: readonly Point[] = [],
+  veinSites: readonly Point[] = [],
 ): Result<InitialState, DomainError> {
   const player = initialPlayer(rules, setup, map);
   if (!player.ok) return player;
@@ -341,8 +406,12 @@ export function initialState(
   if (!structures.ok) return structures;
   const enemies = initialEnemies(setup, rules.catalog, rules.arena, map, structures.value);
   if (!enemies.ok) return enemies;
-  const gems = initialGems(rules, setup, map);
-  if (!gems.ok) return gems;
+  const pickups = initialPickups(rules, setup, map, piles);
+  if (!pickups.ok) return pickups;
+  const stock = initialStockpile(setup);
+  if (!stock.ok) return stock;
+  const veins = initialVeins(rules, setup, veinSites);
+  if (!veins.ok) return veins;
   const experience = initialExperience(rules, setup);
   if (!experience.ok) return experience;
   const board = initialBoard(rules, setup);
@@ -356,7 +425,9 @@ export function initialState(
   return ok({
     player: player.value,
     enemies: enemies.value,
-    gems: gems.value,
+    pickups: pickups.value,
+    stock: stock.value,
+    veins: veins.value,
     experience: experience.value,
     board: board.value,
     kills,

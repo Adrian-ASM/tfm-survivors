@@ -31,9 +31,10 @@ describe('BootScene · plan de carga', () => {
   it('una carga por hoja distinta, con la clave = file y el tamaño de frame del aspecto', () => {
     const sheets = sheetsToLoad(appearance());
     // 8 de entidades y fondo + dinamita y explosión (0020) + agua, espuma, árbol y castillo (la orilla
-    // comparte la del fondo) + casa y torre, intactas y en ruina (0021).
-    expect(sheets).toHaveLength(18);
-    expect(new Set(sheets.map((s) => s.key)).size).toBe(18);
+    // comparte la del fondo) + casa y torre, intactas y en ruina (0021). 0022: la gema pasa a forma de
+    // color (sin hoja), su bolsa es la del oro y se suman la madera y las dos vetas: 18 + 3 = 21.
+    expect(sheets).toHaveLength(21);
+    expect(new Set(sheets.map((s) => s.key)).size).toBe(21);
     expect(sheets.find((s) => s.key === TOWER_FILE)).toMatchObject({
       frameWidth: 256,
       frameHeight: 192,

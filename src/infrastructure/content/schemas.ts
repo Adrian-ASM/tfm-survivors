@@ -41,7 +41,15 @@ import {
   GEM_RADIUS_MUST_BE_POSITIVE,
   MAGNET_SPEED_MUST_BE_POSITIVE,
   MAX_GEMS_MUST_BE_INTEGER,
-} from '../../domain/progression/GemRules';
+  MAX_GOLD_MUST_BE_INTEGER,
+  MAX_WOOD_MUST_BE_INTEGER,
+} from '../../domain/pickup/PickupRules';
+import {
+  RESOURCE_AMOUNT_MUST_BE_INTEGER,
+  RESOURCE_COUNT_MUST_BE_INTEGER,
+  RESOURCE_PLACEMENT_MUST_BE_INTEGER,
+  VEIN_RADIUS_MUST_BE_POSITIVE,
+} from '../../domain/resource/ResourceRules';
 import {
   BASE_XP_MUST_BE_INTEGER,
   XP_GROWTH_MUST_BE_INTEGER,
@@ -306,6 +314,8 @@ export const ProgressionSchema = z.strictObject({
   gemRadius: Positive(GEM_RADIUS_MUST_BE_POSITIVE),
   magnetSpeed: Positive(MAGNET_SPEED_MUST_BE_POSITIVE),
   maxGems: Count(MAX_GEMS_MUST_BE_INTEGER),
+  maxGold: RequiredCount(MAX_GOLD_MUST_BE_INTEGER),
+  maxWood: RequiredCount(MAX_WOOD_MUST_BE_INTEGER),
 });
 
 export const UPGRADES_REQUIRED = 'El contenido debe definir al menos una mejora.';
@@ -456,5 +466,34 @@ export const StructuresSchema = z.strictObject({
       }),
     }),
     'goblin-tower': z.strictObject(structureFields),
+  }),
+});
+
+const ResourceAmount = RequiredCount(RESOURCE_AMOUNT_MUST_BE_INTEGER);
+const ResourceCount = NonNegativeInt(RESOURCE_COUNT_MUST_BE_INTEGER);
+const ResourceDistance = NonNegativeInt(RESOURCE_PLACEMENT_MUST_BE_INTEGER);
+
+// Fuentes de oro y madera (content/resources.json, spec resources, ADR-0021). Estricto en todos los
+// niveles: un tipo de recogible que no sea `gold` o `wood` (p. ej. `meat`) es un campo desconocido
+// y el error lo nombra. Que las claves de los drops existan en el catálogo de enemigos y en los
+// tipos de estructura lo comprueba `ResourceRules` desde `buildRunRules`, igual que el cruce
+// `progression.maxWood ≥ woodPiles.count`.
+export const ResourcesSchema = z.strictObject({
+  drops: z.strictObject({
+    enemies: z.record(z.string(), z.strictObject({ wood: ResourceAmount })),
+    structures: z.record(z.string(), z.strictObject({ gold: ResourceAmount })),
+  }),
+  woodPiles: z.strictObject({ count: ResourceCount, wood: ResourceAmount }),
+  goldVeins: z.strictObject({
+    count: ResourceCount,
+    gold: ResourceAmount,
+    radius: z
+      .number({ error: VEIN_RADIUS_MUST_BE_POSITIVE })
+      .positive({ error: VEIN_RADIUS_MUST_BE_POSITIVE }),
+  }),
+  placement: z.strictObject({
+    minStartCells: ResourceDistance,
+    minCastleCells: ResourceDistance,
+    minGapCells: ResourceDistance,
   }),
 });

@@ -13,6 +13,12 @@ export const DECOR_STREAM = 2;
  */
 export const STRUCT_STREAM = 3;
 
+/**
+ * Flujo de la colocación de vetas y montones de madera (ADR-0021): independiente del mapa, de las
+ * estructuras y de la partida. Cambiarlo cambia todos los recursos (`RESOURCE_GOLDEN`).
+ */
+export const RESOURCE_STREAM = 4;
+
 /** Sal de los flujos (constante áurea de 32 bits, como en las mezclas de hash habituales). */
 const STREAM_SALT = 0x9e3779b9;
 
