@@ -45,7 +45,7 @@
   valor, `long-run.test.ts` (200 → 300). Escenarios ES: "Tope por defecto" y "Se alcanza el tope por defecto".
   Escenario EB: "Partida larga" (≤ 300 vivos). Escenario RO: "Presupuesto de oleadas intacto" (literal de los tramos,
   `maxBudget`, `ringRadius` y `player.speed` de antes del change).
-- [ ] 3.2 Barridos sobre las semillas 1..50 en `tests/domain/map-navigation-sweep.test.ts` (un `beforeAll` por
+- [x] 3.2 Barridos sobre las semillas 1..50 en `tests/domain/map-navigation-sweep.test.ts` (un `beforeAll` por
   barrido y *timeout* propio, design §9). Escenarios EB: "Semillas del conjunto" (7.200 ticks, input aleatorio) y
   "Jugador quieto junto al castillo". Escenarios ES: "Recolocación con castillo y río", "Jugador ante la puerta del
   castillo" (vistas de 1.280 × 720 y 960 × 540 para todas; tope `maxView` solo para las no recolocadas) y "Partida

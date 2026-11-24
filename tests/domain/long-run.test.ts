@@ -34,6 +34,8 @@ interface Violations {
   outside: number;
   playerOutside: number;
   tooClose: number;
+  /** Apariciones con el centro en una celda no caminable de su mapa (0019). */
+  bornOnBlocked: number;
   births: number;
   maxAlive: number;
   /** Ticks en que el círculo del jugador solapa una celda no caminable de su mapa. */
@@ -78,6 +80,7 @@ function audit(
     outside: 0,
     playerOutside: 0,
     tooClose: 0,
+    bornOnBlocked: 0,
     births: 0,
     maxAlive: 0,
     overlaps: 0,
@@ -107,6 +110,8 @@ function audit(
       v.births += 1;
       nextId = e.id + 1;
       if (Math.hypot(e.x - player.x, e.y - player.y) < 200) v.tooClose += 1;
+      const cell = map.value.cellAt(e.x, e.y);
+      if (!map.value.isWalkable(cell.col, cell.row)) v.bornOnBlocked += 1;
     }
   }
   return { final: run.snapshot(), v };
@@ -135,6 +140,7 @@ describe('Partidas largas (10 min)', () => {
     expect(audited.v.births).toBeGreaterThan(0);
     expect(audited.v.tooClose).toBe(0);
     expect(audited.v.outside).toBe(0);
+    expect(audited.v.bornOnBlocked).toBe(0);
   });
 
   it('Scenario: Partida larga (enemigos dentro del mundo en todos los ticks)', () => {
