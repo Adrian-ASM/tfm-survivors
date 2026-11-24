@@ -105,7 +105,7 @@
     `RESOURCE_GOLDEN` intacta. Las celdas base solo admiten centros legales para la oveja (ver 2.1).
 
 ## 4. Infraestructura · contenido validado (test-after)
-- [ ] 4.1 zod completo y cruces: `sheep.json` (rangos de design §2, `maxAlive` ≥ 0 sin máximo), `resources.meat`
+- [x] 4.1 zod completo y cruces: `sheep.json` (rangos de design §2, `maxAlive` ≥ 0 sin máximo), `resources.meat`
   (`perSheep` ≥ 1, `healPercent` en [1, 100]), `progression.maxMeat` ≥ 1, cruce `sheep.radius ≤ cellSize / 2` en
   `buildRunRules`, carga de `sheep.json` en `contentBoot`/`loadRunConfig`. Escenarios:
   - sheep · "Contenido por defecto", "Valores fuera de rango", "Límites válidos", "Campos ausentes o desconocidos";
@@ -114,6 +114,9 @@
   - xp-gems · "Contenido por defecto", "Valores no positivos", "Tope de gemas no entero", "Campo desconocido o
     ausente", "Tope mínimo válido", "Tope de madera menor que los montones".
   Tests: ampliar `tests/infrastructure/content-*.test.ts` (o los ficheros de schema existentes).
+  - Apply: escenarios en `content-schemas.test.ts` (recursos y gemas) y `content-sheep.test.ts` (nuevo). Sin el
+    cruce `sheep.radius ≤ cellSize / 2` (ver 2.1). El escenario de recursos "tipo no admitido" pasa de `meat` a
+    `potion` y el de campo desconocido de `meatPerSheep` a `meatPerHouse`, como en la spec.
 
 ## 5. Dominio · ovejas en el mapa generado y balance (gate M1)
 - [ ] 5.1 Colocación inicial y primer pasto (TDD). `candidateCells` extraído de `placeResources` (`RESOURCE_GOLDEN`
