@@ -40,7 +40,7 @@ interface Violations {
   maxAlive: number;
   /** Ticks en que el círculo del jugador solapa una celda no caminable de su mapa. */
   overlaps: number;
-  /** Gemas en reposo (misma posición en dos ticks seguidos) sobre una celda no caminable. */
+  /** Recogibles de cualquier tipo en reposo (misma posición dos ticks) en celda no caminable. */
   restingOnBlocked: number;
 }
 
@@ -93,11 +93,11 @@ function audit(
   for (const input of inputs) {
     chooseFirstWhileOpen(run);
     run.tick(input);
-    const { enemies, player, gems } = run.snapshot();
+    const { enemies, player, pickups } = run.snapshot();
     v.maxAlive = Math.max(v.maxAlive, enemies.length);
     if (!inside(config.arena, player, config.player.radius)) v.playerOutside += 1;
     if (map.value.overlapsBlocked(player.x, player.y, player.radius)) v.overlaps += 1;
-    for (const g of gems) {
+    for (const g of pickups) {
       const here = `${String(g.x)},${String(g.y)}`;
       const before = lastSeen.get(g.id);
       lastSeen.set(g.id, here);
@@ -161,8 +161,10 @@ describe('Partidas largas (10 min)', () => {
     expect(audited.v.playerOutside).toBe(0);
   });
 
+  // 0022: recogibles de los tres tipos, con montones y vetas en el mapa de la semilla 7.
   it('Scenario: Ninguna gema en reposo en celda no caminable', () => {
     expect(audited.final.kills).toBeGreaterThan(0);
+    expect(audited.final.veins.length).toBeGreaterThan(0);
     expect(audited.v.restingOnBlocked).toBe(0);
   });
 
@@ -173,6 +175,8 @@ describe('Partidas largas (10 min)', () => {
 
   it('Partida larga reproducible', () => {
     expect(audited.final).toMatchObject({ tick: TEN_MINUTES, status: 'over', outcome: 'won' });
+    // 0022: oro y madera incluidos en la comparación estricta.
+    expect(audited.final.resources.gold + audited.final.resources.wood).toBeGreaterThan(0);
     expect(finalSnapshot(SPAWN_AUDIT, SEED, inputs)).toStrictEqual(audited.final);
   });
 

@@ -4,7 +4,7 @@ import { Run } from '../../../src/domain/run/Run';
 import { MAP_STRUCTURE_OUT_OF_GRID } from '../../../src/domain/structure/resolveStructures';
 import { Mulberry32RandomGenerator } from '../../../src/infrastructure/random/Mulberry32RandomGenerator';
 import { MAP_STREAM, deriveSeed } from '../../../src/infrastructure/random/deriveSeed';
-import { aCampsConfig, structureRandomFor } from '../../support/camps';
+import { aCampsConfig, resourceRandomFor, structureRandomFor } from '../../support/camps';
 import { NO_RESOURCES, NO_STRUCTURES } from '../../support/builders';
 
 const CONFIG = aCampsConfig();
@@ -24,6 +24,7 @@ const generated = (seed: number): TerrainSource => ({
   kind: 'generated',
   random: new Mulberry32RandomGenerator(deriveSeed(seed, MAP_STREAM)),
   structureRandom: structureRandomFor(seed),
+  resourceRandom: resourceRandomFor(seed),
 });
 
 describe('Estructuras del mapa de la partida (procedural-map, goblin-structures)', () => {

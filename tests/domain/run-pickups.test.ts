@@ -83,7 +83,7 @@ describe('Recogida según el tipo (spec xp-gems, resources)', () => {
       { id: 1, kind: 'gold', value: 8, x: 1100, y: 900, radius: 5 },
       { id: 2, kind: 'wood', value: 3, x: 1200, y: 900, radius: 5 },
     ]);
-    expect(run.snapshot().gems).toEqual([{ id: 0, x: 1000, y: 900, radius: 5 }]);
+    expect(run.snapshot().gems).toMatchObject([{ id: 0, x: 1000, y: 900, radius: 5 }]);
   });
 
   it('Scenario: Recogibles de varios tipos en el snapshot (g1 recogida: w1, o1, w2)', () => {

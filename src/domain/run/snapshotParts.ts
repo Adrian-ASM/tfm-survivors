@@ -108,7 +108,8 @@ export function toVeinSnapshot(v: GoldVein): VeinSnapshot {
 
 /**
  * Recogibles del suelo en orden de creación y, en el mismo recorrido, la vista `gems` (solo los
- * `xp`, con la forma de antes de 0022; design §3). Ambas listas congeladas.
+ * `xp`; design §3). La vista es "un array más": comparte los objetos congelados de `pickups`
+ * (una gema trae además `kind` y `value`), así el snapshot no copia dos veces cada gema (M1).
  */
 export function toPickupSnapshots(
   list: readonly Pickup[],
@@ -118,8 +119,9 @@ export function toPickupSnapshots(
   const gems: GemSnapshot[] = [];
   for (const p of list) {
     const { id, kind, value, x, y } = p;
-    pickups.push(Object.freeze({ id, kind, value, x, y, radius }));
-    if (kind === 'xp') gems.push(Object.freeze({ id, x, y, radius }));
+    const snap = Object.freeze({ id, kind, value, x, y, radius });
+    pickups.push(snap);
+    if (kind === 'xp') gems.push(snap);
   }
   return { pickups: Object.freeze(pickups), gems: Object.freeze(gems) };
 }

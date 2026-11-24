@@ -62,7 +62,7 @@
 
 ## 3. Dominio · colocación, determinismo y balance
 
-- [ ] 3.1 **Colocación (TDD).** Extraer `chebyshevFrom` a `map/chebyshev.ts`; `placeResources` (candidatas, 1 valor
+- [x] 3.1 **Colocación (TDD).** Extraer `chebyshevFrom` a `map/chebyshev.ts`; `placeResources` (candidatas, 1 valor
   por recurso), `resolveResources`, `TerrainSource.resourceRandom` y recursos declarados, `MapSnapshot.veins` y
   `woodPiles`, y montones como `wood` en el tick 0 antes que cualquier otro recogible. `RESOURCE_GOLDEN` en
   `tests/support/mapGolden.ts`. Rojo: `tests/domain/resource/place-resources.test.ts`,
@@ -72,21 +72,21 @@
   "Recurso declarado fuera del mundo"; `resources` · "Montones de madera…" (sus 3); "Contadores" › "Partida recién
   creada"; `simulation-loop` · "Snapshot" › "Partida recién creada" (con el mapa generado); `xp-gems` ·
   "Recolocación" › "Ninguna gema en reposo en celda no caminable".
-- [ ] 3.2 **Combate intacto y determinismo** (test-after: el comportamiento ya está en 1–3.1; si alguno sale en verde a
+- [x] 3.2 **Combate intacto y determinismo** *(todos en verde a la primera, como se esperaba; sensibilidad comprobada rompiendo `Run.collect`)* (test-after: el comportamiento ya está en 1–3.1; si alguno sale en verde a
   la primera, se anota). `withoutResourceSources(config)` en `tests/support`.
   Escenarios: `resources` · "Recursos sin efecto en el combate" › "Mismo combate con y sin recursos", "Los recursos no
   consumen azar"; `simulation-loop` · "Determinismo" › "Partida con recursos reproducible", "Dos partidas idénticas",
   "Partida larga reproducible" (oro y madera); `procedural-map` · "Azar del mapa independiente…" (vivos, en verde);
   "Los recursos no cambian celdas ni estructuras"; `simulation-loop` · "Mapa intacto" (`MAP_GOLDEN`,
   `STRUCTURE_GOLDEN` sin cambios). Tests: `tests/domain/determinism-resources.test.ts`, `tests/support/map-golden.test.ts`.
-- [ ] 3.3 **Balance y M1.** `balance.test.ts` compara con `balanceBaseline.ts` semilla a semilla (resultado, tick y
+- [x] 3.3 **Balance y M1.** *M1: balance idéntico semilla a semilla (27/50, 26,88 mechas, 0 quietos en 100). Lote con el arnés de M0: 34,3–35,2 s frente a 31,8–32,7 s de `main` en la misma sesión (+8 %); con el arnés que reutiliza el snapshot `after` como `before` (sin cambiar resultados): 27,7–32,2 s. Bench tres topes 0,2672 ms (≤ 2 ms); gemas 0,2178 ms (M0 0,2154 / 0,1744). Informativo: oro 1,5 y madera 113,8 por partida.* `balance.test.ts` compara con `balanceBaseline.ts` semilla a semilla (resultado, tick y
   bajas), 100 quietos y mechas 26,9; test de contenido de combate contra la huella de M0; línea informativa de oro y
   madera medios. Caso de bench "tres topes llenos" en `tests/bench/run.bench.ts`. **M1**: lote ≤ 35 s local, bench
   ≤ 2 ms (anotar frente a 0,25 ms) y comparación con M0 en `docs/ai-log/`. Si el balance difiere en una sola semilla,
   parar: es un fallo de determinismo.
   Escenarios: `resources` · "Balance sin recalibrar…" (sus 4); `simulation-loop` · "Rendimiento con recogibles por
   tipo" › "Peor caso con los tres topes llenos".
-- [ ] 3.4 **Escenarios vivos sin cambio de comportamiento.** Mantener en verde, adaptando solo los ids de gemas que se
+- [x] 3.4 **Escenarios vivos sin cambio de comportamiento.** *Primera oferta (semilla 7, quieto): 2.082 con el mapa generado y 2.057 con el vacío con salida. Sin ids de gemas que adaptar: ningún test vivo con mapa generado fijaba ids de gemas.* Mantener en verde, adaptando solo los ids de gemas que se
   desplazan en mapas generados (montones con ids 0..N−1): `xp-gems` (todos los escenarios vivos de suelta, suelo,
   imán, recogida, tope, pintado y recolocación), `simulation-loop` (orden del tick, snapshot y determinismo vivos),
   `goblin-structures` "Destrucción sin XP ni baja", "Ruina hasta el final", `procedural-map` "Mismos spawns…",

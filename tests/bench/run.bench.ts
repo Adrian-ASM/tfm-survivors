@@ -348,6 +348,63 @@ test('Peor caso con gemas: 300 vivos, 32 proyectiles y 300 gemas atraídas (60 t
   expect(result.latency.mean).toBeLessThanOrEqual(MAX_MEAN_MS);
 });
 
+/**
+ * Peor caso con los tres topes llenos (spec simulation-loop 0022): el de gemas sobre el mapa
+ * generado de la semilla (estructuras, vetas y montones) con el jugador en su salida, y en el suelo
+ * `maxGems` gemas, el tope de oro y el de madera (los montones del mapa más los que faltan),
+ * atraídos en las esquinas inferiores, a ≥ 400 px del jugador. Los montones del mapa, a > 308 px de
+ * la salida, no se atraen ni se recogen en los 100 ticks.
+ */
+function runWorstCaseThreeTopes(): Run {
+  const config = benchConfig(BENCH_WEAPONS);
+  const { maxGems, maxGold, maxWood } = config.progression;
+  const piles = config.resources.woodPiles.count;
+  const corners = [
+    [5, WORLD.height - 5],
+    [WORLD.width - 5, WORLD.height - 5],
+  ] as const;
+  const at = (i: number) => {
+    const [cx, cy] = corners[i % 2] ?? corners[0];
+    const k = Math.floor(i / 2);
+    return {
+      x: cx + (cx < WORLD.width / 2 ? 1 : -1) * (k % 20) * 4,
+      y: cy - Math.floor(k / 20) * 2,
+    };
+  };
+  const kinds = [
+    ...Array<'xp'>(maxGems).fill('xp'),
+    ...Array<'gold'>(maxGold).fill('gold'),
+    ...Array<'wood'>(maxWood - piles).fill('wood'),
+  ];
+  const gems = kinds.map((kind, i) => ({ kind, ...at(i), value: 1, attracted: true }));
+  const run = start(
+    { enemies: edgeEnemies(), gems },
+    BENCH_WEAPONS,
+    seededRun(SEED).terrain,
+    config,
+  );
+  for (let n = 0; n < 40; n++) step(run);
+  return run;
+}
+
+test('Peor caso con los tres topes llenos: 300 vivos, 32 proyectiles y 396 recogibles', async ({
+  bench,
+}) => {
+  const run = runWorstCaseThreeTopes();
+  const { maxGems, maxGold, maxWood } = benchConfig().progression;
+  const topes = maxGems + maxGold + maxWood;
+  const before = run.snapshot();
+  const result = await bench('Run.tick · 300 vivos + 32 proyectiles + tres topes llenos', () => {
+    step(run);
+  }).run({ ...OPTIONS, iterations: GEM_MEASURED_TICKS, warmupIterations: GEM_WARMUP_TICKS });
+  report(result.name, result.latency);
+  const snap = run.snapshot();
+  expect(snap.status).toBe('running');
+  expect([before.pickups.length, snap.pickups.length]).toEqual([topes, topes]);
+  expect([snap.enemies.length, snap.projectiles.length, snap.veins.length]).toEqual([CAP, 32, 3]);
+  expect(result.latency.mean).toBeLessThanOrEqual(MAX_MEAN_MS);
+});
+
 test('Run.snapshot con 300 vivos (informativo, presupuesto ≤ 0,3 ms)', async ({ bench }) => {
   const run = runAtCap();
   const result = await bench('Run.snapshot · 300 vivos', () => {

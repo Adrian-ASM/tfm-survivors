@@ -137,3 +137,50 @@ export const STRUCTURE_GOLDEN: Readonly<Record<42 | 123, readonly string[]>> = {
     'goblin-tower@4,11,2,3',
   ],
 };
+
+/** Vetas y montones de un mapa para su firma (los de `map.veins`/`map.woodPiles` y de la sonda). */
+export interface ResourceLayout {
+  readonly veins: readonly { readonly x: number; readonly y: number }[];
+  readonly woodPiles: readonly { readonly x: number; readonly y: number }[];
+}
+
+/** Firma de los recursos: `vein@col,row` y luego `wood@col,row`, en su orden (celdas de 60 px). */
+export const resourceSignatureOf = (map: ResourceLayout, cellSize = 60): string[] => {
+  const at = (p: { x: number; y: number }) =>
+    `${String(Math.floor(p.x / cellSize))},${String(Math.floor(p.y / cellSize))}`;
+  return [...map.veins.map((v) => `vein@${at(v)}`), ...map.woodPiles.map((p) => `wood@${at(p)}`)];
+};
+
+/**
+ * Vetas y montones del contenido por defecto (0022) para las semillas 42 y 123, colocados con
+ * `RESOURCE_STREAM` tras las estructuras. Cambia con content/resources.json o con la colocación: se
+ * regenera con `map-golden.test.ts`. `MAP_GOLDEN` y `STRUCTURE_GOLDEN` no cambian con ellos.
+ */
+export const RESOURCE_GOLDEN: Readonly<Record<42 | 123, readonly string[]>> = {
+  42: [
+    'vein@0,14',
+    'vein@30,29',
+    'vein@42,18',
+    'wood@8,18',
+    'wood@12,26',
+    'wood@48,24',
+    'wood@51,17',
+    'wood@48,6',
+    'wood@50,34',
+    'wood@59,25',
+    'wood@63,2',
+  ],
+  123: [
+    'vein@16,14',
+    'vein@18,22',
+    'vein@11,16',
+    'wood@3,1',
+    'wood@48,6',
+    'wood@12,34',
+    'wood@6,6',
+    'wood@16,6',
+    'wood@61,16',
+    'wood@5,18',
+    'wood@44,13',
+  ],
+};

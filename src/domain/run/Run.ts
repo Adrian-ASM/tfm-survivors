@@ -18,7 +18,7 @@ import type { Experience } from '../progression/Experience';
 import { PickupGain, type PickupField } from '../pickup/PickupField';
 import type { Stockpile } from '../resource/Stockpile';
 import type { GoldVein } from '../resource/GoldVein';
-import { resolveResources } from '../resource/resolveResources';
+import { resolveResources, type ResourceSites } from '../resource/resolveResources';
 import type { PlayerRules } from '../player/PlayerRules';
 import { err, ok, type DomainError, type Result } from '../shared/Result';
 import type { UpgradeChoiceError } from '../upgrade/UpgradeChoiceError';
@@ -119,11 +119,13 @@ export class Run {
     private readonly terrain: GameMap,
     initial: InitialState,
     sites: readonly StructureSite[],
+    resources: ResourceSites,
   ) {
     this.arena = rules.arena;
     this.mapView = toMapSnapshot(
       terrain,
       sites.map((s) => ({ ...s, type: s.type.id })),
+      resources,
     );
     this.field = new FlowField(terrain);
     this.player = initial.player;
@@ -159,12 +161,12 @@ export class Run {
     if (!map.ok) return map;
     const sites = resolveStructures(terrain, map.value, rules.value.structures);
     if (!sites.ok) return sites;
-    const resources = resolveResources(terrain);
+    const resources = resolveResources(terrain, map.value, rules.value.resources, sites.value);
     if (!resources.ok) return resources;
     const { veins, woodPiles } = resources.value;
     const initial = initialState(rules.value, setup, map.value, sites.value, woodPiles, veins);
     if (!initial.ok) return initial;
-    return ok(new Run(rules.value, random, map.value, initial.value, sites.value));
+    return ok(new Run(rules.value, random, map.value, initial.value, sites.value, resources.value));
   }
 
   /** Mapa de la partida (spec procedural-map): la misma vista congelada durante toda la partida. */

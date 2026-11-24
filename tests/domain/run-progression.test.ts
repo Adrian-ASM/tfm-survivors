@@ -28,7 +28,7 @@ describe('Nivel y XP iniciales', () => {
       experience: { level: 3, xp: 14 },
     });
     const snap = run.snapshot();
-    expect(snap.gems).toEqual([
+    expect(snap.gems).toMatchObject([
       { id: 0, x: 100, y: 100, radius: 5 },
       { id: 1, x: 200, y: 50, radius: 5 },
     ]);
