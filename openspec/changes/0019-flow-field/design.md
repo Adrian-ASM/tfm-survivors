@@ -204,6 +204,22 @@ fuera del margen 27–33: aceptado como la configuración más cercana a 30 que 
 - Render: con 300 sprites animados (el spike medía 200 a ~165 fps) el riesgo es bajo. Se comprueba a demanda con el
   proyecto `realtime`, no en el gate (chore `e2e-lite`).
 
+### Resultado del bench (apply, 2026-11-24, máquina local; informativo)
+Media por tick, en ms:
+| Escenario | Media (ms) |
+|---|---|
+| Tope de 300 vivos con mapa generado (`run.bench`) | 0,023 |
+| Tope de 300 vivos con mapa generado (`map.bench`) | 0,023 |
+| 300 encima del jugador | 0,006 |
+| 300 vivos + 32 proyectiles | 0,185 |
+| 300 vivos + 32 proyectiles + 300 gemas | 0,170 |
+| 300 sin línea libre | 0,113 |
+| Jugador que cambia de celda en cada tick | 0,172 |
+| `Run.snapshot` con 300 vivos | 0,013 |
+
+Cálculo completo del campo (BFS, mapas 1..50, hacia la salida y hacia (0, 0)): **0,059 ms** de media (p99 0,073).
+Todo por debajo de 2 ms por tick y 0,1 ms por campo.
+
 ## 8. Seguridad y datos
 No cambian los datos persistidos (récords e historial) ni las entradas externas. El contenido modificado sigue
 pasando por el mismo esquema zod; `maxAlive` 300 es un `Count` válido.

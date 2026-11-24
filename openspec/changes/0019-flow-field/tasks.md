@@ -74,7 +74,7 @@
   jugador quieto con el contenido final" (test nuevo con la semilla 7 para el primer golpe). Escenarios SL "Partida
   con contactos/armas/progresión reproducible" (revalidar los plazos). Escenario PM "Primera oferta en plazo con y
   sin mapa". La tabla de lotes y los ticks medidos van al diario de IA (`docs/ai-log/`) y al design (§6, resultado).
-- [ ] 4.2 Bench a 300 (design §7): `CAP` 300 en `run.bench.ts`, "Tope de vivos alcanzado" con mapa generado, "300
+- [x] 4.2 Bench a 300 (design §7): `CAP` 300 en `run.bench.ts`, "Tope de vivos alcanzado" con mapa generado, "300
   enemigos encima del jugador", "Peor caso con proyectiles/gemas", "300 enemigos sin línea libre" y "Jugador que
   cambia de celda en cada tick". En `map.bench.ts`: "Cálculo del campo" (1..50, salida y (0, 0)). Escenarios SL de
   "Rendimiento con el tope de enemigos". El test sin navegador de "Contacto con cualquier tamaño de mundo"
