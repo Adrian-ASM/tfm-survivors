@@ -15,7 +15,7 @@
   unitarios sobre `GameMap.fromCells`. Escenarios EB: "Obstáculo que corta el segmento", "Agua y castillo también
   cortan la línea" y "Sin cortar por una esquina", más un caso unitario de "Segmento sobre el borde de una celda
   bloqueada" (sin línea libre para y = 300) y "Con el mapa vacío todo enemigo tiene siempre línea libre".
-- [ ] 1.3 `FlowField.steer` (celda del jugador → jugador; línea libre → jugador; primer vecino con distancia − 1 en
+- [x] 1.3 `FlowField.steer` (celda del jugador → jugador; línea libre → jugador; primer vecino con distancia − 1 en
   el orden fijo → centro del rectángulo recortado; sin distancia → jugador; atajo sin celdas bloqueadas), en tests
   unitarios con `out` reutilizado. Escenarios EB: el empate de "Empate resuelto igual siempre" (unitario: desde
   (32, 14) gana el vecino izquierdo) y "Celda sin distancia en el campo" (objetivo = jugador).

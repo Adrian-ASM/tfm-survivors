@@ -1,3 +1,4 @@
+import { isWalkableCode } from './CellType';
 import type { GameMap } from './GameMap';
 import { codesOf, distancesFrom } from './connectivity';
 
@@ -21,6 +22,8 @@ export class FlowField {
   private readonly queue: Int32Array;
   private readonly cols: number;
   private readonly rows: number;
+  /** ¿Tiene el mapa alguna celda no caminable? Sin ninguna, `steer` es la persecución recta. */
+  private readonly blocked: boolean;
   private targetCol = -1;
   private targetRow = -1;
   private dirty = true;
@@ -32,6 +35,7 @@ export class FlowField {
     this.rows = map.rows;
     this.dist = new Int32Array(this.cells.length);
     this.queue = new Int32Array(this.cells.length);
+    this.blocked = this.cells.some((code) => !isWalkableCode(code));
   }
 
   /** BFS hechas desde la creación (observabilidad del cálculo perezoso, tests y bench). */
@@ -52,6 +56,35 @@ export class FlowField {
     if (col < 0 || row < 0 || col >= this.cols || row >= this.rows) return -1;
     this.ensure();
     return this.dist[row * this.cols + col] ?? -1;
+  }
+
+  /**
+   * Objetivo del tick para un enemigo en (ex, ey) con el jugador en (px, py) (design §2.3), escrito
+   * en `out` sin asignar: el centro del jugador si el mapa no tiene celdas bloqueadas, si comparten
+   * celda, si hay línea libre o si la celda del enemigo no tiene distancia (reserva); si no, el
+   * centro (del rectángulo recortado) del primer vecino, en el orden izquierda, derecha, arriba,
+   * abajo, con distancia una menos que la suya.
+   */
+  steer(ex: number, ey: number, px: number, py: number, out: { x: number; y: number }): void {
+    out.x = px;
+    out.y = py;
+    if (!this.blocked) return;
+    const map = this.map;
+    const c = map.colAt(ex);
+    const r = map.rowAt(ey);
+    if (c === map.colAt(px) && r === map.rowAt(py)) return;
+    if (this.hasClearLine(ex, ey, px, py)) return;
+    const d = this.distanceAt(c, r);
+    if (d <= 0) return;
+    let nc = c;
+    let nr = r;
+    if (this.distanceAt(c - 1, r) === d - 1) nc = c - 1;
+    else if (this.distanceAt(c + 1, r) === d - 1) nc = c + 1;
+    else if (this.distanceAt(c, r - 1) === d - 1) nr = r - 1;
+    else nr = r + 1;
+    const s = map.cellSize;
+    out.x = (nc * s + Math.min((nc + 1) * s, map.width)) / 2;
+    out.y = (nr * s + Math.min((nr + 1) * s, map.height)) / 2;
   }
 
   /**
