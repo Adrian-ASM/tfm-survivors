@@ -65,6 +65,11 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   (`ScreenFrame`, escala de UI ×1/×2, `hudLayout`/`cardLayout`) recolocados por `watchScreen` en cada RESIZE;
   menú (título en `h1`), pausa, diálogo y resultados (5 líneas DOM) centrados y escalados con `--ui-scale`.
   Sonda E2E `window.__sprint.viewport` (ventana y `uiScale`, también en el menú); Playwright a 1.280 × 720.
+  Recorte del arte del mapa por cámara (change 0018): en cada frame, cada caja del plan (`bounds`) se compara con
+  la vista del frame que se va a pintar (`rig.nextView()`, sin el desfase de `worldView`) más 1 celda
+  (`CULL_MARGIN_CELLS`); `MapCuller` solo llama a `setVisible` donde cambia el estado. Solo infraestructura.
+  Sonda `sprites.mapArt.drawn` (0 en el menú; totales sin cambios): 106/667 y 67/750 en 42 y 123. Los tres E2E del
+  mapa real conservan `test.slow()` (38,5 / 27,8 / 42,1 s en CI).
   Fuente de verdad del comportamiento: `openspec/specs/`.
 
 ## 2. Comandos
