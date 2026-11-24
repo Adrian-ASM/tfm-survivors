@@ -1,3 +1,4 @@
+import type { StateCounts } from './EnemyLayer';
 import type { SpriteCount } from './PlayerView';
 import { zeroCells, zeroMapArt, type CellCounts, type MapArtProbe } from './TerrainView';
 
@@ -14,6 +15,12 @@ export interface SpriteCounts {
   readonly pulses: SpriteCount;
   readonly gems: SpriteCount;
   readonly enemyPlaceholders: Record<string, number>;
+  /** Sprites de enemigo vivo por clase de estado de comportamiento (0020). */
+  readonly enemyStates: StateCounts;
+  /** Avisos en el suelo pintados (nunca reserva), dinamitas y explosiones (0020). */
+  readonly warnings: SpriteCount;
+  readonly dynamites: SpriteCount;
+  readonly explosions: SpriteCount;
   /** Celdas del mapa pintadas por tipo (0015, `castle` desde 0016); no son fondo ni reserva. */
   readonly cells: CellCounts;
   /** Elementos del mapa pintados, con su reserva, y objetos de escena del mapa (0016). */
@@ -35,6 +42,10 @@ export function emptyCounts(enemyIds: Iterable<string>): SpriteCounts {
     pulses: zero(),
     gems: zero(),
     enemyPlaceholders,
+    enemyStates: { chase: 0, fuse: 0, charge: 0, wait: 0 },
+    warnings: zero(),
+    dynamites: zero(),
+    explosions: zero(),
     cells: zeroCells(),
     mapArt: zeroMapArt(),
   };

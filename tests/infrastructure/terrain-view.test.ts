@@ -9,7 +9,7 @@ import type { RingSprite } from '../../src/infrastructure/phaser/PulseLayer';
 import { emptyCounts } from '../../src/infrastructure/phaser/renderCounts';
 import type { MapArtCanvas } from '../../src/infrastructure/phaser/TerrainView';
 import { aDefaultConfig } from '../support/builders';
-import { fakeKit } from '../support/FakeSprite';
+import { FAKE_HAZARD_CAPACITY, FakeGraphics, fakeKit } from '../support/FakeSprite';
 import { someLooks } from '../support/looks';
 import { planFor } from '../support/mapArt';
 import { mapRules, mapWith } from '../support/mapLayouts';
@@ -57,6 +57,10 @@ function playfield() {
           return create();
         },
       },
+      warnings: () => {
+        log.push('warnings');
+        return new FakeGraphics();
+      },
       ring,
       looks: someLooks(() => undefined),
       capacity: {
@@ -66,6 +70,7 @@ function playfield() {
         gems: 1,
         corpses: 1,
         visualTicks: new Map(),
+        hazards: FAKE_HAZARD_CAPACITY,
       },
     },
     ground,
@@ -79,8 +84,8 @@ describe('Capas del mapa en el área de juego', () => {
   it('Scenario: Tronco y copa (capa baja tras el fondo y antes de las entidades; alta después)', () => {
     const { log } = playfield();
     expect(log.slice(0, 2)).toEqual(['ground', 'map-low']);
-    expect(log.at(-1)).toBe('map-high');
-    const entities = log.slice(2, -1);
+    const high = log.indexOf('map-high');
+    const entities = log.slice(2, high);
     expect(entities.length).toBeGreaterThan(0);
     expect(entities.every((m) => m === 'ring' || m === 'sprite')).toBe(true);
   });
@@ -88,9 +93,24 @@ describe('Capas del mapa en el área de juego', () => {
   it('Scenario: Proyectiles y gemas bajo las copas (todas las entidades entre las dos capas)', () => {
     const { log } = playfield();
     const high = log.indexOf('map-high');
-    expect(log.lastIndexOf('sprite')).toBeLessThan(high);
+    expect(log.slice(0, high).lastIndexOf('sprite')).toBeGreaterThan(log.indexOf('map-low'));
     expect(log.lastIndexOf('ring')).toBeLessThan(high);
     expect(log.indexOf('map-low')).toBeLessThan(log.indexOf('sprite'));
+  });
+
+  it('Scenario: Peligros sobre las copas y bajo el HUD · Capas tras redimensionar (orden de creación: alta, avisos, dinamitas, explosiones; un RESIZE no recrea)', () => {
+    const { log } = playfield();
+    const high = log.indexOf('map-high');
+    const hazards = log.slice(high + 1);
+    // Lo último que crea el área de juego: el Graphics de los avisos y luego los sprites de las
+    // dinamitas y de las explosiones (el HUD lo crea la escena después, encima de todo).
+    expect(hazards[0]).toBe('warnings');
+    expect(hazards.slice(1)).toEqual(
+      Array.from(
+        { length: FAKE_HAZARD_CAPACITY.dynamites + FAKE_HAZARD_CAPACITY.blasts },
+        () => 'sprite',
+      ),
+    );
   });
 
   it('la sonda cuenta las celdas y los elementos del mapa, no como fondo ni reserva', () => {

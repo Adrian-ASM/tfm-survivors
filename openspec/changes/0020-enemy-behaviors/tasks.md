@@ -93,15 +93,15 @@
   elemento" y "Solo las hojas usadas".
 
 ## 4. Infraestructura · render y sonda
-- [ ] 4.1 `HazardLayer`: un `Graphics` para los avisos (color por origen), un pool de dinamitas y un pool de
+- [x] 4.1 `HazardLayer`: un `Graphics` para los avisos (color por origen), un pool de dinamitas y un pool de
   explosiones (`SlotPool` por id, `explode` sin bucle que se queda en el último frame) y `clear()`. Test con
   `FakeSprite` y un `Graphics` falso que comprueba que no se crea nada por frame. Escenarios SR: "Peligros del
   snapshot", "Fin de un aviso", "Explosión más larga que su animación" y "Peligros con el mundo detenido".
-- [ ] 4.2 Reservas de dinamita y explosión (diámetro 2r) y frame de `fuse` fuera de la hoja: el tipo entero va con
+- [x] 4.2 Reservas de dinamita y explosión (diámetro 2r) y frame de `fuse` fuera de la hoja: el tipo entero va con
   reserva. Escenarios SR: "Reserva de la dinamita y la explosión" y "Frame de mecha fuera de la hoja".
-- [ ] 4.3 `EnemyLayer`: `fuse` para `stateKind` `fuse` y `throw` para `charge`, desde su primer frame al entrar.
+- [x] 4.3 `EnemyLayer`: `fuse` para `stateKind` `fuse` y `throw` para `charge`, desde su primer frame al entrar.
   Contador por clase de estado. Escenarios SR: "Mecha y lanzamiento" y "Mundo detenido" (barril en `fuse`).
-- [ ] 4.4 `RenderLayers`, `GameScene` y `renderCounts`: crear `HazardLayer` tras la capa alta del mapa y antes del
+- [x] 4.4 `RenderLayers`, `GameScene` y `renderCounts`: crear `HazardLayer` tras la capa alta del mapa y antes del
   HUD. Añadir a la sonda `warnings`, `dynamites`, `explosions` y `enemyStates`, a 0 en el menú y tras `clear()`.
   Test sin navegador del orden de creación y de la sonda. Escenarios SR: "Peligros sobre las copas y bajo el HUD",
   "Capas tras redimensionar" (orden por creación), "R con cadáveres en curso" (peligros a 0), "Sonda en el menú" y

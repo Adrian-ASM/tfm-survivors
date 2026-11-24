@@ -28,14 +28,31 @@ export interface MovingLook extends StillLook {
 export interface CorpseLook extends LookBase {
   readonly death: AnimSpec;
 }
+/** Enemigo (0020): además, `fuse` (mecha) y `throw` (carga) si su comportamiento las tiene. */
+export interface EnemyLook extends MovingLook {
+  readonly fuse?: AnimSpec | undefined;
+  readonly throw?: AnimSpec | undefined;
+}
+/** Explosión (0020): `explode` una vez, quieta en su último frame. */
+export interface ExplosionLook extends LookBase {
+  readonly explode: AnimSpec;
+}
+/** Color y opacidad de un aviso en el suelo (sin hoja: nunca es reserva). */
+export interface WarningLook {
+  readonly color: number;
+  readonly alpha: number;
+}
 
 export interface Looks {
   readonly player: MovingLook;
-  readonly enemies: ReadonlyMap<string, MovingLook>;
+  readonly enemies: ReadonlyMap<string, EnemyLook>;
   readonly projectile: StillLook;
   readonly gem: StillLook;
   readonly ground: StillLook;
   readonly corpse: CorpseLook;
+  readonly dynamite: StillLook;
+  readonly explosion: ExplosionLook;
+  readonly warnings: { readonly fuse: WarningLook; readonly dynamite: WarningLook };
 }
 
 /** Nº de frames de una textura cargada o `null` si no está (en Phaser: `exists` y `frameTotal − 1`). */
@@ -79,11 +96,19 @@ export function resolveLooks(appearance: Appearance, frames: FrameCount): Looks 
   const still = (a: Appearance['gem']): StillLook => ({ ...base(a, frames), idle: a.idle });
   return {
     player: moving(appearance.player),
-    enemies: new Map(Object.entries(appearance.enemies).map(([id, a]) => [id, moving(a)])),
+    enemies: new Map(
+      Object.entries(appearance.enemies).map(([id, a]) => [
+        id,
+        { ...moving(a), fuse: a.fuse, throw: a.throw },
+      ]),
+    ),
     projectile: still(appearance.projectile),
     gem: still(appearance.gem),
     ground: still(appearance.ground),
     corpse: { ...base(appearance.corpse, frames), death: appearance.corpse.death },
+    dynamite: still(appearance.dynamite),
+    explosion: { ...base(appearance.explosion, frames), explode: appearance.explosion.explode },
+    warnings: appearance.warnings,
   };
 }
 

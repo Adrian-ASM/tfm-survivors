@@ -81,10 +81,10 @@ const randomSeed = (): number => crypto.getRandomValues(new Uint32Array(1))[0] ?
  * Tamaño de los pools de la escena desde el contenido ya validado: `pulseCapacity` del peor caso
  * de las mejoras (ADR-0008) y `maxGems`.
  */
-function sceneCapacity(config: RunConfig, corpses: number): SceneCapacity {
+function sceneCapacity(config: RunConfig, corpses: number, blasts: number): SceneCapacity {
   const rules = buildRunRules(config);
   if (!rules.ok) throw new Error(rules.error.message);
-  const { loadout, pulseCapacity, gems } = rules.value;
+  const { loadout, pulseCapacity, gems, hazards } = rules.value;
   const visualTicks = new Map<string, number>();
   for (const w of loadout.weapons) {
     if (w.attack.type === 'pulse') visualTicks.set(w.id, w.attack.visualTicks);
@@ -96,6 +96,7 @@ function sceneCapacity(config: RunConfig, corpses: number): SceneCapacity {
     gems: gems.maxGems,
     corpses,
     visualTicks,
+    hazards: { dynamites: hazards.maxDynamites, blasts },
   };
 }
 
@@ -198,7 +199,7 @@ function bootstrap(): void {
   const game = new GameScene({
     launcher,
     restartRun: new RestartRun(config.value, nextSeeding),
-    capacity: sceneCapacity(config.value, appearance.maxCorpses),
+    capacity: sceneCapacity(config.value, appearance.maxCorpses, appearance.maxBlastSprites),
     world,
     appearance,
     // Variedad de árboles de la partida en curso (0016): `probe.seed` ya es la de esa partida.

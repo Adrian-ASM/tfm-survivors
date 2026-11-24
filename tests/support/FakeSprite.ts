@@ -85,3 +85,30 @@ export function fakeKit(): SpriteKit & { readonly created: FakeSprite[] } {
     },
   };
 }
+
+/** Doble de `Phaser.GameObjects.Graphics` para los avisos: guarda los comandos del último frame. */
+export class FakeGraphics {
+  /** Círculos rellenos desde el último `clear()`, con el estilo vigente al pintarlos. */
+  circles: { x: number; y: number; radius: number; color: number; alpha: number }[] = [];
+  clears = 0;
+  private color = 0;
+  private alpha = 1;
+
+  clear(): this {
+    this.circles = [];
+    this.clears += 1;
+    return this;
+  }
+  fillStyle(color: number, alpha: number): this {
+    this.color = color;
+    this.alpha = alpha;
+    return this;
+  }
+  fillCircle(x: number, y: number, radius: number): this {
+    this.circles.push({ x, y, radius, color: this.color, alpha: this.alpha });
+    return this;
+  }
+}
+
+/** Capacidad de la capa de peligros en los tests de capas (tope por defecto y de aspecto). */
+export const FAKE_HAZARD_CAPACITY = { dynamites: 24, blasts: 64 } as const;

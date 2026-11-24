@@ -4,6 +4,7 @@ import type { Looks } from './art/looks';
 import { CorpseLayer } from './CorpseLayer';
 import { EnemyLayer } from './EnemyLayer';
 import { GemLayer } from './GemLayer';
+import { HazardLayer, type HazardCapacity, type WarningCanvas } from './HazardLayer';
 import { PlayerView, type SpriteCount } from './PlayerView';
 import { ProjectileLayer } from './ProjectileLayer';
 import { PulseLayer, type RingSprite } from './PulseLayer';
@@ -21,11 +22,15 @@ export interface LayerCapacity {
   readonly gems: number;
   readonly corpses: number;
   readonly visualTicks: ReadonlyMap<string, number>;
+  /** Tope de dinamitas del contenido y de explosiones pintadas de los datos de aspecto (0020). */
+  readonly hazards: HazardCapacity;
 }
 
 export interface RenderParts {
   readonly kit: SpriteKit;
   readonly ring: () => RingSprite;
+  /** `Graphics` de los avisos (se crea al crear la capa de peligros, tras la capa alta del mapa). */
+  readonly warnings: () => WarningCanvas;
   readonly looks: Looks;
   readonly capacity: LayerCapacity;
 }
@@ -45,6 +50,9 @@ export class RenderLayers {
   private readonly enemies: EnemyLayer;
   private readonly projectiles: ProjectileLayer;
   private readonly player: PlayerView;
+  /** Capa de peligros (0020): se crea después de la capa alta del mapa con `createHazards`. */
+  private hazards: HazardLayer | null = null;
+  private readonly parts: RenderParts;
   private status: RunSnapshot['status'] = 'running';
   /** Lienzo del mapa pintado, animación de la espuma (0016) y último frame aplicado. */
   private mapCanvas: MapArtCanvas | null = null;
@@ -55,6 +63,7 @@ export class RenderLayers {
 
   constructor(parts: RenderParts, ground: SpriteCount) {
     const { kit, looks, capacity } = parts;
+    this.parts = parts;
     this.pulses = new PulseLayer(capacity.pulses, capacity.visualTicks, parts.ring);
     this.gems = new GemLayer(capacity.gems, kit, looks.gem);
     this.corpses = new CorpseLayer(capacity.corpses, kit, looks.corpse);
@@ -70,9 +79,29 @@ export class RenderLayers {
       pulses: this.pulses.counts,
       gems: this.gems.counts,
       enemyPlaceholders: this.enemies.placeholdersByType,
+      enemyStates: this.enemies.states,
+      warnings: { visible: 0, placeholder: 0 },
+      dynamites: { visible: 0, placeholder: 0 },
+      explosions: { visible: 0, placeholder: 0 },
       cells: zeroCells(),
       mapArt: zeroMapArt(),
     };
+  }
+
+  /**
+   * Crea la capa de peligros (capa 8 de sprite-rendering): avisos, dinamitas y explosiones, en ese
+   * orden, encima de la capa alta del mapa y debajo del HUD porque se crea entre ambos. Una vez.
+   */
+  createHazards(): void {
+    if (this.hazards) return;
+    const { kit, looks, capacity, warnings } = this.parts;
+    const layer = new HazardLayer(kit, warnings(), looks, capacity.hazards);
+    this.hazards = layer;
+    Object.assign(this.counts, {
+      warnings: layer.counts.warnings,
+      dynamites: layer.counts.dynamites,
+      explosions: layer.counts.explosions,
+    });
   }
 
   /**
@@ -92,6 +121,7 @@ export class RenderLayers {
     this.corpses.sync(ms);
     this.projectiles.sync(snapshot.projectiles);
     this.player.render(snapshot, ms);
+    this.hazards?.sync(snapshot.warnings, snapshot.dynamites, snapshot.blasts, ms);
     this.animateFoam(ms);
   }
 
@@ -141,6 +171,7 @@ export class RenderLayers {
     this.projectiles.clear();
     this.pulses.clear();
     this.gems.clear();
+    this.hazards?.clear();
     this.player.reset();
     this.status = 'running';
   }

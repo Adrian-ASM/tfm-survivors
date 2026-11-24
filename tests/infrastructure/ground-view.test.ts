@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createPlayfield, type GroundFactory } from '../../src/infrastructure/phaser/GroundView';
 import type { RingSprite } from '../../src/infrastructure/phaser/PulseLayer';
 import { GROUND_FILE } from '../support/appearance';
-import { fakeKit } from '../support/FakeSprite';
+import { FAKE_HAZARD_CAPACITY, FakeGraphics, fakeKit } from '../support/FakeSprite';
 import { someLooks } from '../support/looks';
 import { aDefaultConfig } from '../support/builders';
 import { startRun } from '../support/runs';
@@ -60,6 +60,7 @@ function setup(missing: string[] = []) {
           return create();
         },
       },
+      warnings: () => new FakeGraphics(),
       ring,
       looks: someLooks(() => undefined, missing),
       capacity: {
@@ -69,6 +70,7 @@ function setup(missing: string[] = []) {
         gems: 1,
         corpses: 1,
         visualTicks: new Map(),
+        hazards: FAKE_HAZARD_CAPACITY,
       },
     },
     ground,

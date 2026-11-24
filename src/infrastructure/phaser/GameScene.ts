@@ -55,6 +55,8 @@ export interface SceneCapacity {
   /** Tope de cadáveres visibles a la vez (datos de aspecto, design D6). */
   readonly corpses: number;
   readonly visualTicks: ReadonlyMap<string, number>;
+  /** Tope de dinamitas (contenido) y de explosiones pintadas a la vez (datos de aspecto, 0020). */
+  readonly hazards: { readonly dynamites: number; readonly blasts: number };
 }
 
 /**
@@ -168,7 +170,7 @@ export class GameScene extends Phaser.Scene {
       this.leave();
     });
     // Orden de creación = orden de pintado: suelo, mapa (0015), anillos, gemas, cadáveres, enemigos,
-    // proyectiles, jugador, HUD y overlays encima de todo (design 0012).
+    // proyectiles, jugador, capa alta del mapa, peligros (0020), HUD y overlays encima de todo.
     ensurePlaceholderTexture(this);
     const ring = (): RingSprite =>
       this.add.circle(0, 0, 1).setStrokeStyle(PULSE_LINE_WIDTH, PULSE_COLOR).setVisible(false);
@@ -192,7 +194,13 @@ export class GameScene extends Phaser.Scene {
       textureHasFrame(this),
     );
     const { layers, mapArt } = createPlayfield(
-      { kit: spriteKit(this), ring, looks, capacity: this.deps.capacity },
+      {
+        kit: spriteKit(this),
+        ring,
+        warnings: () => this.add.graphics(),
+        looks,
+        capacity: this.deps.capacity,
+      },
       ground,
       this.deps.world,
       mapArtLayers(this),
