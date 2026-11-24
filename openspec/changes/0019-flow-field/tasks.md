@@ -33,7 +33,7 @@
   juntan en el commit de 2.1). Escenarios EB: "Empate resuelto igual siempre" (tres partidas), "El campo solo depende
   de la celda del jugador" y "La navegación no consume azar". Escenarios SL: "La persecución usa la celda del jugador
   ya movido" y "La persecución por el mapa no consume azar".
-- [ ] 2.3 Recolocación en `placeSpawn(…, map, random)`: `nearestWalkable`, comprobación de celda caminable y luego
+- [x] 2.3 Recolocación en `placeSpawn(…, map, random)`: `nearestWalkable`, comprobación de celda caminable y luego
   `minDistance`, 1 valor por intento (design §4). `Run.place` pasa el mapa. Tests en `place-spawn.test.ts` y en uno
   nuevo, `run-spawn-map.test.ts`. Escenarios ES: "Aparición sobre agua recolocada", "1 valor de azar por intento con y sin
   recolocación", "Recolocación que queda demasiado cerca" y "Mapa sin celdas caminables". Escenario EB "Aparición

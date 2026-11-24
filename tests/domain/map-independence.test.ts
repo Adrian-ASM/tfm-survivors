@@ -1,6 +1,10 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { Run } from '../../src/domain/run/Run';
 import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
+import type { GameMap } from '../../src/domain/map/GameMap';
+import { resolveTerrain } from '../../src/domain/map/TerrainSource';
+import { seededRun } from '../../src/composition/seedSource';
+import { mapRules } from '../support/mapLayouts';
 import { play, startEmptyWithExit, startSeededRun } from '../support/runs';
 import { aDefaultConfig } from '../support/builders';
 
@@ -10,27 +14,45 @@ import { aDefaultConfig } from '../support/builders';
 const CONFIG = aDefaultConfig();
 const TICKS = 1200;
 
-/** Snapshots de los `n` ticks con la política fija (sin ofertas en este plazo, ver más abajo). */
+/**
+ * Snapshots de hasta `n` ticks con la política fija; para tras el tick en que se abre la primera
+ * oferta (spec: "hasta que una de las dos abre su primera oferta o termina").
+ */
 function snaps(run: Run, n: number): RunSnapshot[] {
   const out: RunSnapshot[] = [];
   play(run, n, (_t, r) => {
     out.push(r.snapshot());
-    return false;
+    return r.status === 'choosing';
   });
   return out;
 }
 
-/** Enemigos que aparecen en cada tick: id, tipo y posición de aparición. */
-function spawnsPerTick(list: readonly RunSnapshot[]): string[][] {
+/** Aparición: id, tipo y posición en el snapshot de su tick. */
+interface Spawn {
+  readonly id: number;
+  readonly type: string;
+  readonly x: number;
+  readonly y: number;
+}
+
+/** Enemigos que aparecen en cada tick. */
+function spawnsPerTick(list: readonly RunSnapshot[]): Spawn[][] {
   const seen = new Set<number>();
   return list.map((s) =>
     s.enemies
       .filter((e) => !seen.has(e.id))
       .map((e) => {
         seen.add(e.id);
-        return `${String(e.id)}:${e.type}:${String(e.x)},${String(e.y)}`;
+        return { id: e.id, type: e.type, x: e.x, y: e.y };
       }),
   );
+}
+
+/** Mapa generado por la semilla 7 (el de `startSeededRun`). */
+function generatedMap(): GameMap {
+  const map = resolveTerrain(seededRun(7).terrain, mapRules());
+  if (!map.ok) throw new Error(map.error.message);
+  return map.value;
 }
 
 describe('Mapa generado frente a mapa vacío (semilla 7, quieto)', () => {
@@ -47,11 +69,28 @@ describe('Mapa generado frente a mapa vacío (semilla 7, quieto)', () => {
     expect(startSeededRun(CONFIG, 7, 'empty').map.counts.grass).toBe(2304);
   });
 
-  it('Scenario: Mismos spawns con y sin mapa (1.200 ticks: id, tipo y posición)', () => {
-    expect(generated).toHaveLength(TICKS);
-    expect(generated.some((s) => s.enemies.length > 0)).toBe(true);
-    expect(generated.every((s) => s.offer.length === 0)).toBe(true);
-    expect(spawnsPerTick(generated)).toEqual(spawnsPerTick(empty));
+  // 0019: las apariciones que caen en una celda no caminable del mapa generado están en la
+  // recolocación (nearestWalkable) de la posición del mapa vacío.
+  it('Scenario: Mismos spawns con y sin mapa (id, tipo, tick y posición o su recolocación)', () => {
+    const n = Math.min(generated.length, empty.length);
+    expect(n).toBeGreaterThan(600);
+    const map = generatedMap();
+    const at = { x: 0, y: 0 };
+    const raw = spawnsPerTick(empty.slice(0, n));
+    const expected = raw.map((list) =>
+      list.map((e) => {
+        map.nearestWalkable(e.x, e.y, at);
+        return { ...e, x: at.x, y: at.y };
+      }),
+    );
+    const got = spawnsPerTick(generated.slice(0, n));
+    expect(got.flat().length).toBeGreaterThan(0);
+    expect(got).toEqual(expected);
+    const moved = expected.flat().filter((e, i) => {
+      const before = raw.flat()[i];
+      return before !== undefined && (before.x !== e.x || before.y !== e.y);
+    });
+    expect(moved.length).toBeGreaterThan(0);
   });
 });
 

@@ -261,6 +261,7 @@ export class Run {
       type.radius,
       this.rules.spawn,
       this.arena,
+      this.terrain,
       this.random,
     );
     if (!at) return false;
