@@ -118,6 +118,10 @@ test('Cámara: centrada al empezar y sigue al jugador hacia la derecha sin salir
   });
   expect([first?.camera?.x, first?.camera?.y]).toEqual([1310, 810]);
 
+  // Spec sprite-rendering (0018), "Objetos dibujados con la cámara": 0 < drawn < objetos del mapa en
+  // cada lectura, objetos constantes y drawn que cambia al moverse.
+  const art0 = first?.sprites?.mapArt;
+  const drawnReads = [`${String(art0?.drawn)}/${String(art0?.objects)}`];
   const problems: string[] = [];
   for (let i = 0; i < 20; i++) {
     if ((await snapshotOf(page))?.offer.length) await page.keyboard.press('1');
@@ -125,6 +129,8 @@ test('Cámara: centrada al empezar y sigue al jugador hacia la derecha sin salir
     const p = await probe(page);
     const cam = p?.camera;
     const s = p?.snapshot;
+    const art = p?.sprites?.mapArt;
+    drawnReads.push(`${String(art?.drawn)}/${String(art?.objects)}`);
     if (!cam || !s) {
       problems.push(`lectura ${String(i)} sin cámara`);
       continue;
@@ -141,6 +147,13 @@ test('Cámara: centrada al empezar y sigue al jugador hacia la derecha sin salir
     }
   }
   expect(problems).toEqual([]);
+  const objects = art0?.objects ?? 0;
+  const badDrawn = drawnReads.filter((r) => {
+    const [drawn = NaN, total = NaN] = r.split('/').map(Number);
+    return !(drawn > 0 && drawn < total && total === objects);
+  });
+  expect(badDrawn).toEqual([]);
+  expect(new Set(drawnReads.map((r) => r.split('/')[0])).size).toBeGreaterThan(1);
 });
 
 // Spec sprite-rendering: sonda de sprites coherente con el snapshot en cada frame pintado y
@@ -262,7 +275,7 @@ test('Mapa real: sonda igual a la firma de la semilla 42, castillo y salida, y s
   const shores = shoreCount(m);
   const art = first.sprites?.mapArt;
   const ok = (painted: number) => ({ painted, fallback: 0 });
-  expect(art && { ...art, objects: undefined }).toEqual({
+  expect(art && { ...art, objects: undefined, drawn: undefined }).toEqual({
     water: ok(m.counts.water),
     shore: ok(shores),
     foam: ok(shores),
@@ -271,6 +284,7 @@ test('Mapa real: sonda igual a la firma de la semilla 42, castillo y salida, y s
     bridge: ok(m.counts.bridge),
     castle: ok(1),
     objects: undefined,
+    drawn: undefined,
   });
   expect(shores).toBeGreaterThan(0);
 

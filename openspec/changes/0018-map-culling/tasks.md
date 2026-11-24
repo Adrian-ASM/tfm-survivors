@@ -87,7 +87,7 @@ Sin tareas: el change no toca `src/domain` ni `src/application` (design §1).
   reserva".
 
 ## 4. Adaptador, escena y E2E
-- [ ] 4.1 E2E primero (rojo): ampliar "Cámara" de `tests/e2e/gameplay.spec.ts` con `?e2e&manual&seed=7`, mapa
+- [x] 4.1 E2E primero (rojo): ampliar "Cámara" de `tests/e2e/gameplay.spec.ts` con `?e2e&manual&seed=7`, mapa
   real, 1.280 × 720 y la flecha derecha: lectura al arrancar y tras cada uno de 20 `step(60)` (opción 0 si hay
   oferta) → `0 < drawn < objects`, `objects` constante y ≥ 1 lectura con `drawn` distinto de la primera. Ajustar
   `tests/e2e/probe.ts` (`MapArtView.drawn`; en el menú también `drawn === 0`, junto a `objects`) y el `toEqual` de
