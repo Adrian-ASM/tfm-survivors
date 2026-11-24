@@ -8,6 +8,8 @@ import type { GameMap } from '../map/GameMap';
 import { toMapSnapshot, type MapSnapshot } from '../map/MapSnapshot';
 import { OPEN_TERRAIN, resolveTerrain, type TerrainSource } from '../map/TerrainSource';
 import { resolveStructures } from '../structure/resolveStructures';
+import { resolveSheep } from '../sheep/resolveSheep';
+import type { Flock } from '../sheep/Flock';
 import { StructureField } from '../structure/StructureField';
 import type { Structure } from '../structure/Structure';
 import type { StructureSite } from '../structure/StructureSite';
@@ -48,6 +50,7 @@ import {
   toProjectileSnapshot,
   toStructureSnapshot,
   toPulseSnapshot,
+  toSheepSnapshot,
   toUpgradeLevels,
   toWarnings,
 } from './snapshotParts';
@@ -112,6 +115,8 @@ export class Run {
   private readonly structures: StructureField;
   /** Vetas en su orden fijo (ADR-0021): ni se crean ni se retiran durante la partida. */
   private readonly veins: readonly GoldVein[];
+  /** Ovejas neutrales (ADR-0022): fuera de `Horde`, del director y de las bajas. */
+  private readonly flock: Flock;
 
   private constructor(
     private readonly rules: RunRules,
@@ -139,6 +144,7 @@ export class Run {
     this.hazards = new HazardField(rules.hazards, initial.dynamites);
     this.structures = new StructureField(initial.structures);
     this.veins = initial.veins;
+    this.flock = initial.flock;
     for (const w of rules.loadout.weapons) this.retune(w.id);
     const bonus = maxHealthBonus(rules.upgrades, this.board.levels);
     this.player = this.player.withRules(this.effectivePlayer(), bonus);
@@ -165,7 +171,17 @@ export class Run {
     const resources = resolveResources(terrain, map.value, rules.value.resources, sites.value);
     if (!resources.ok) return resources;
     const { veins, woodPiles } = resources.value;
-    const initial = initialState(rules.value, setup, map.value, sites.value, woodPiles, veins);
+    const sheep = resolveSheep(terrain, map.value, rules.value.sheep);
+    if (!sheep.ok) return sheep;
+    const initial = initialState(
+      rules.value,
+      setup,
+      map.value,
+      sites.value,
+      woodPiles,
+      veins,
+      sheep.value,
+    );
     if (!initial.ok) return initial;
     return ok(new Run(rules.value, random, map.value, initial.value, sites.value, resources.value));
   }
@@ -238,6 +254,7 @@ export class Run {
     const n = this.tickCount + 1;
     this.player = this.player.move(input, TICK_SECONDS, this.arena, this.terrain);
     const { x, y } = this.player.position;
+    this.flock.step(n, x, y, this.terrain, this.arena);
     this.field.retarget(this.terrain.colAt(x), this.terrain.rowAt(y));
     this.horde.act(n, x, y, TICK_SECONDS, this.field);
     const { horde, structures } = this;
@@ -389,6 +406,7 @@ export class Run {
         invulnerable: this.player.isInvulnerableAfter(k),
       }),
       enemies: Object.freeze(enemies),
+      sheep: Object.freeze(this.flock.all.map((o) => toSheepSnapshot(o, o.damagedAt(k, flash)))),
       projectiles: Object.freeze(this.arsenal.projectiles.map(toProjectileSnapshot)),
       pulses: Object.freeze(this.arsenal.pulses.map(toPulseSnapshot)),
       dynamites: Object.freeze(

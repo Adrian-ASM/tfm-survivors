@@ -53,6 +53,16 @@ import {
   VEIN_RADIUS_MUST_BE_POSITIVE,
 } from '../../domain/resource/ResourceRules';
 import {
+  SHEEP_DISTANCE_MUST_BE_NON_NEGATIVE,
+  SHEEP_HEALTH_MUST_BE_INTEGER,
+  SHEEP_MAX_ALIVE_MUST_BE_INTEGER,
+  SHEEP_PLACEMENT_MUST_BE_INTEGER,
+  SHEEP_RADIUS_FIELD_MUST_BE_POSITIVE,
+  SHEEP_RADIUS_MUST_BE_POSITIVE,
+  SHEEP_SPEED_MUST_BE_POSITIVE,
+  SHEEP_TICKS_MUST_BE_INTEGER,
+} from '../../domain/sheep/SheepRules';
+import {
   BASE_XP_MUST_BE_INTEGER,
   XP_GROWTH_MUST_BE_INTEGER,
 } from '../../domain/progression/XpCurve';
@@ -506,5 +516,39 @@ export const ResourcesSchema = z.strictObject({
       .int({ error: MEAT_HEAL_PERCENT_OUT_OF_RANGE })
       .min(1, { error: MEAT_HEAL_PERCENT_OUT_OF_RANGE })
       .max(100, { error: MEAT_HEAL_PERCENT_OUT_OF_RANGE }),
+  }),
+});
+
+const SheepTicks = RequiredCount(SHEEP_TICKS_MUST_BE_INTEGER);
+const SheepPositive = (error: string) => z.number({ error }).positive({ error });
+const SheepPlacement = NonNegativeInt(SHEEP_PLACEMENT_MUST_BE_INTEGER);
+
+// Ovejas neutrales (content/sheep.json, spec sheep 0023, ADR-0022). Estricto en todos los niveles:
+// un campo extra (p. ej. `contactDamage`) o ausente falla nombrándolo. `maxAlive` ≥ 0 sin máximo
+// (0 = sin ovejas). El cruce `radius ≤ map.cellSize / 2` lo comprueba `SheepRules` desde
+// `buildRunRules`.
+export const SheepSchema = z.strictObject({
+  maxAlive: NonNegativeInt(SHEEP_MAX_ALIVE_MUST_BE_INTEGER),
+  radius: SheepPositive(SHEEP_RADIUS_MUST_BE_POSITIVE),
+  health: RequiredCount(SHEEP_HEALTH_MUST_BE_INTEGER),
+  graze: z.strictObject({
+    ticks: SheepTicks,
+    radius: SheepPositive(SHEEP_RADIUS_FIELD_MUST_BE_POSITIVE),
+  }),
+  wander: z.strictObject({ speed: SheepPositive(SHEEP_SPEED_MUST_BE_POSITIVE), ticks: SheepTicks }),
+  flee: z.strictObject({
+    radius: SheepPositive(SHEEP_RADIUS_FIELD_MUST_BE_POSITIVE),
+    speed: SheepPositive(SHEEP_SPEED_MUST_BE_POSITIVE),
+  }),
+  respawn: z.strictObject({
+    everyTicks: SheepTicks,
+    minPlayerDistance: z
+      .number({ error: SHEEP_DISTANCE_MUST_BE_NON_NEGATIVE })
+      .nonnegative({ error: SHEEP_DISTANCE_MUST_BE_NON_NEGATIVE }),
+  }),
+  placement: z.strictObject({
+    minStartCells: SheepPlacement,
+    minCastleCells: SheepPlacement,
+    minGapCells: SheepPlacement,
   }),
 });

@@ -24,6 +24,7 @@ import { MapRules, type MapConfig } from '../map/MapRules';
 import { HazardRules, type HazardRulesConfig } from '../hazard/HazardRules';
 import { StructureRules } from '../structure/StructureRules';
 import type { StructuresConfig } from '../structure/StructureType';
+import { SheepRules, type SheepConfig } from '../sheep/SheepRules';
 
 export type { WeaponsConfig, PlayerRules };
 export {
@@ -81,8 +82,10 @@ export interface RunConfig {
    * el dominio, no en el fichero), ningún mapa tiene estructuras ni se pueden declarar.
    */
   readonly structures: StructuresConfig;
-  /** Fuentes de oro y madera (content/resources.json, spec resources, 0022). */
+  /** Fuentes de oro, madera y carne (content/resources.json, spec resources, 0022 y 0023). */
   readonly resources: ResourcesConfig;
+  /** Ovejas neutrales (content/sheep.json, spec sheep, 0023). */
+  readonly sheep: SheepConfig;
 }
 
 /** Forma del contenido de mejoras (content/upgrades.json). */
@@ -114,8 +117,10 @@ export interface RunRules {
   readonly map: MapRules;
   /** Tipos de estructura y su colocación. */
   readonly structures: StructureRules;
-  /** Drops, montones, vetas y su colocación. */
+  /** Drops, montones, vetas, carne y su colocación. */
   readonly resources: ResourceRules;
+  /** Ovejas: tope, movimiento, vida, reaparición y colocación. */
+  readonly sheep: SheepRules;
 }
 
 function checkBudgetCoversCatalog(spawn: SpawnRules, catalog: EnemyCatalog): DomainError | null {
@@ -169,6 +174,8 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
   if (pickups.value.maxWood < resources.value.woodPiles.count) {
     return err(invalidConfig('progression.maxWood', MAX_WOOD_BELOW_WOOD_PILES));
   }
+  const sheep = SheepRules.create(config.sheep);
+  if (!sheep.ok) return sheep;
   return ok({
     arena: arena.value,
     player: config.player,
@@ -185,5 +192,6 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
     map: map.value,
     structures: structures.value,
     resources: resources.value,
+    sheep: sheep.value,
   });
 }

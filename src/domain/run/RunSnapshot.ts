@@ -1,8 +1,24 @@
 import type { StateKind } from '../enemy/behavior/BehaviorConfig';
 import type { PickupKind } from '../pickup/PickupKind';
+import type { SheepState } from '../sheep/Sheep';
 import type { RunPhase } from './RunPhase';
 
-export type { StateKind };
+export type { StateKind, SheepState };
+
+/** Oveja viva (spec sheep 0023): copia de escalares, con su punto de origen. */
+export interface SheepSnapshot {
+  /** De la secuencia de las ovejas (desde 0, nunca se reutiliza); no cambia mientras vive. */
+  readonly id: number;
+  readonly x: number;
+  readonly y: number;
+  readonly radius: number;
+  /** Vida actual (> 0: solo se listan ovejas vivas). */
+  readonly health: number;
+  readonly state: SheepState;
+  /** Ha recibido daño en los últimos `hitFlashTicks` ticks (misma regla que los enemigos). */
+  readonly damaged: boolean;
+  readonly origin: { readonly x: number; readonly y: number };
+}
 
 /** Enemigo vivo tal y como lo ve el adaptador de render (copia de escalares). */
 export interface EnemySnapshot {
@@ -175,6 +191,8 @@ export interface RunSnapshotBody {
   };
   /** Enemigos vivos en orden de aparición. */
   readonly enemies: readonly EnemySnapshot[];
+  /** Ovejas vivas en orden de creación (0023). */
+  readonly sheep: readonly SheepSnapshot[];
   /** Proyectiles vivos en orden de creación. */
   readonly projectiles: readonly ProjectileSnapshot[];
   /** Pulsos visibles en orden de disparo. */

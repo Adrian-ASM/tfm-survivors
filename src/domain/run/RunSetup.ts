@@ -18,6 +18,8 @@ import { UNKNOWN_ENEMY_TYPE } from '../wave/WaveTable';
 import type { RunRules } from './RunConfig';
 import { Structure } from '../structure/Structure';
 import type { StructureSite } from '../structure/StructureSite';
+import { Flock } from '../sheep/Flock';
+import type { SheepSites } from '../sheep/resolveSheep';
 
 export const SETUP_POSITION_MUST_BE_FINITE = 'La posición inicial debe ser finita.';
 export const SETUP_HEALTH_OUT_OF_RANGE =
@@ -37,6 +39,9 @@ export const SETUP_PLAYER_ON_BLOCKED_CELL =
   'El jugador inicial no puede solapar una celda no caminable del mapa.';
 export const SETUP_PLAYER_HEALTH_OUT_OF_RANGE =
   'La vida inicial del jugador debe ser un entero entre 1 y su vida máxima efectiva.';
+export const SETUP_TOO_MANY_SHEEP = 'Hay más ovejas iniciales que ovejas en el mapa.';
+export const SETUP_SHEEP_HEALTH_OUT_OF_RANGE =
+  'La vida inicial de una oveja debe ser un entero entre 1 y la del contenido.';
 export const SETUP_KILLS_MUST_BE_INTEGER = 'Las bajas iniciales deben ser un entero ≥ 0.';
 export const SETUP_STATE_UNKNOWN = 'Estado de comportamiento inicial que el tipo no declara.';
 export const SETUP_ELAPSED_OUT_OF_RANGE =
@@ -122,6 +127,11 @@ export interface RunSetup {
    * (0 = ya destruida). Como mucho tantas entradas como estructuras.
    */
   readonly structures?: readonly { readonly health?: number }[];
+  /**
+   * Por índice de la lista de ovejas del tick 0 (tests, 0023): vida inicial (entero en [1, la del
+   * contenido]) y punto de origen (por defecto, su posición). Como mucho tantas entradas como ovejas.
+   */
+  readonly sheep?: readonly { readonly health?: number; readonly origin?: Point }[];
 }
 
 /** Dinamita inicial de `RunSetup` (tests y bench). */
@@ -396,6 +406,8 @@ export interface InitialState {
   readonly dynamites: readonly SetupDynamite[];
   /** Casas y torres en el orden de la lista (ruinas incluidas). */
   readonly structures: Structure[];
+  /** Ovejas de la partida (lista del tick 0, pool y azar). */
+  readonly flock: Flock;
   /** Vida actual del jugador al empezar (ya validada), o null si empieza llena. */
   readonly playerHealth: number | null;
 }
@@ -408,6 +420,7 @@ export function initialState(
   sites: readonly StructureSite[] = [],
   piles: readonly Point[] = [],
   veinSites: readonly Point[] = [],
+  sheepSites: SheepSites = { at: [], capacity: 0, random: null },
 ): Result<InitialState, DomainError> {
   const player = initialPlayer(rules, setup, map);
   if (!player.ok) return player;
@@ -427,6 +440,8 @@ export function initialState(
   if (!board.ok) return board;
   const dynamites = initialDynamites(rules, setup);
   if (!dynamites.ok) return dynamites;
+  const flock = initialFlock(rules, setup, sheepSites);
+  if (!flock.ok) return flock;
   const playerHealth = initialPlayerHealth(rules, setup, board.value);
   if (!playerHealth.ok) return playerHealth;
   const kills = setup.kills ?? 0;
@@ -444,8 +459,33 @@ export function initialState(
     kills,
     dynamites: dynamites.value,
     structures: structures.value,
+    flock: flock.value,
     playerHealth: playerHealth.value,
   });
+}
+
+/** Ovejas del tick 0 con la vida y el origen del contenido o los de `RunSetup.sheep`. */
+function initialFlock(
+  rules: RunRules,
+  setup: RunSetup,
+  sites: SheepSites,
+): Result<Flock, DomainError> {
+  const entries = setup.sheep ?? [];
+  if (entries.length > sites.at.length) {
+    return err(invalidConfig('setup.sheep', SETUP_TOO_MANY_SHEEP));
+  }
+  const max = rules.sheep.health;
+  for (const [i, e] of entries.entries()) {
+    const h = e.health;
+    if (h !== undefined && !(Number.isInteger(h) && h >= 1 && h <= max)) {
+      return err(invalidConfig(`setup.sheep.${String(i)}.health`, SETUP_SHEEP_HEALTH_OUT_OF_RANGE));
+    }
+    if (e.origin && !isFinitePoint(e.origin)) {
+      return err(invalidConfig(`setup.sheep.${String(i)}.origin`, SETUP_POSITION_MUST_BE_FINITE));
+    }
+  }
+  const spawns = sites.at.map((p, i) => ({ ...p, ...entries[i] }));
+  return ok(new Flock(rules.sheep, spawns, sites.capacity, sites.random));
 }
 
 /** Vida inicial del jugador de `RunSetup`: entero en [1, vida máxima con las mejoras iniciales]. */

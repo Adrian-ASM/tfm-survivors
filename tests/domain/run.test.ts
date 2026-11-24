@@ -27,6 +27,7 @@ describe('Run', () => {
       kills: 0,
       player: { x: 480, y: 270, radius: 16, health: 100, maxHealth: 100, invulnerable: false },
       enemies: [],
+      sheep: [],
       projectiles: [],
       pulses: [],
       dynamites: [],

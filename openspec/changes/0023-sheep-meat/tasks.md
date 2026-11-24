@@ -43,7 +43,7 @@
     `pickup-field.test.ts`.
 
 ## 2. Dominio · ovejas declaradas y movimiento
-- [ ] 2.1 Entidad, flota y ovejas declaradas (TDD). `Sheep`, `Flock`, `SheepRules`, `RunConfig.sheep`,
+- [x] 2.1 Entidad, flota y ovejas declaradas (TDD). `Sheep`, `Flock`, `SheepRules`, `RunConfig.sheep`,
   `content/sheep.json` provisional (design §2) con su zod mínimo; `TerrainSource` `open`/`cells` con
   `sheep: { at, random }` y validación de posición legal (`map.sheep[i]`); `RunSetup.sheep[i]: { health?, origin? }`;
   `snapshot.sheep` con `origin`; helpers `TEST_SHEEP`, `withSheep` y `declaredSheep`. Escenarios:
@@ -53,7 +53,12 @@
   - sheep · "Mapa vacío sin ovejas", "Ovejas solapadas", "El jugador atraviesa una oveja sin daño", "Un enemigo cruza
     una oveja", "El contacto de un enemigo no la daña".
   Tests: `tests/domain/sheep-flock.test.ts`, `run-sheep.test.ts`.
-- [ ] 2.2 Huida y deambular en el paso 1 (TDD). Máquina `graze`/`wander`/`flee` (design §5) con el barrido por ejes,
+  - Apply: **sin el cruce `sheep.radius ≤ map.cellSize / 2`** de design §2. Rompía el escenario vivo "Celda en el
+    límite del radio del jugador" (`procedural-map`: `cellSize` 32 carga con el contenido por defecto, y 16 < 18).
+    El invariante se mantiene de otra forma: las celdas base de colocación y de reaparición (5.1 y 3.3) solo
+    admiten centros que son posición legal del círculo de la oveja. `SheepSchema` (zod) ya entra aquí completo
+    (lo exige `RunConfig.sheep` para compilar); sus escenarios se prueban en 4.1.
+- [x] 2.2 Huida y deambular en el paso 1 (TDD). Máquina `graze`/`wander`/`flee` (design §5) con el barrido por ejes,
   `DIRS` de 8 unitarios y 1 valor del flujo por paseo aleatorio. Escenarios:
   - sheep · "Huida en línea recta", "Tangencia con el radio de huida", "Huida con la posición del jugador ya movido",
     "Jugador sobre la oveja", "Un enemigo no la espanta", "Huida contra un tronco", "El puente es caminable para la
