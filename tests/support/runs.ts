@@ -52,7 +52,8 @@ export function aContactConfig(
 
 /**
  * Contenido de los escenarios de comportamiento y peligros (0020): `aContactConfig` en el mundo del
- * contenido (3.840 × 2.160, las posiciones de la spec llegan a (1.300, 1.000)), jugador a 210 px/s
+ * contenido (3.840 × 2.160, las posiciones de la spec llegan a (1.300, 1.000)), jugador a 210 px/s,
+ * radio de recogida 1 (las gemas de las bajas quedan en el suelo salvo que solapen al jugador)
  * y radio 16, sin armas ni presupuesto salvo que se pidan, y los globales de peligros dados.
  */
 export function aBehaviorConfig(
@@ -67,7 +68,7 @@ export function aBehaviorConfig(
 ): RunConfig {
   const base = aContactConfig({
     types,
-    player: { speed: 210, ...options.player },
+    player: { speed: 210, pickupRadius: 1, ...options.player },
     ...(options.segments ? { segments: options.segments } : {}),
     ...(options.maxAlive === undefined ? {} : { maxAlive: options.maxAlive }),
     ...(options.maxBudget === undefined ? {} : { maxBudget: options.maxBudget }),

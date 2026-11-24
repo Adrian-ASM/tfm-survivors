@@ -469,6 +469,24 @@ export const aWaitType = (
   },
 });
 
+/**
+ * Enemigo de prueba quieto ("quieto en …" de los escenarios de peligros): una espera que no acaba
+ * en la partida. Sin daño por contacto salvo que se pida; radio 10, vida 50 y xp 1 por defecto.
+ */
+export const aStillType = (o: BehaviorTypeOptions = {}): EnemyTypeConfig => ({
+  id: o.id ?? 'still',
+  speed: o.speed ?? 60,
+  radius: o.radius ?? 10,
+  cost: 1,
+  ...(o.damage === undefined ? {} : { damage: o.damage }),
+  health: o.health ?? 50,
+  xp: o.xp ?? 1,
+  behavior: {
+    initial: 'still',
+    states: [{ name: 'still', kind: 'wait', ticks: 1_000_000, to: 'still' }],
+  },
+});
+
 /** Estado inicial de un enemigo de `RunSetup`: `elapsed` ticks ya pasados en él (0020). */
 export const inState = (state: string, elapsed = 0) => ({ state, elapsed });
 

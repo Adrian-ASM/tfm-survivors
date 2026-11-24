@@ -77,10 +77,8 @@ describe('RunSetup · estado de comportamiento y dinamitas (0020)', () => {
     const s0 = run.value.snapshot();
     expect(s0.enemies.map((e) => e.stateKind)).toEqual(['fuse', 'charge']);
     const [s1] = ticks(run.value, 1);
-    // Quietos: mecha y carga no se mueven.
-    expect(s1?.enemies.map((e) => [e.x, e.y])).toEqual([
-      [1500, 1000],
-      [500, 500],
-    ]);
+    // La mecha de 30 ticks con 29 ya pasados explota en el tick 1; la carga sigue quieta.
+    expect(s1?.enemies.map((e) => [e.type, e.x, e.y])).toEqual([['goblin-tnt', 500, 500]]);
+    expect(s1?.blasts.map((b) => b.tick)).toEqual([1]);
   });
 });

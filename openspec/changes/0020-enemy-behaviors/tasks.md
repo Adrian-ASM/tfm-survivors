@@ -31,39 +31,39 @@
   de comportamiento en el snapshot", y EB "Estado inicial al aparecer".
 
 ## 2. Dominio · peligros y orden del tick
-- [ ] 2.1 `HazardField` con dinamitas: pool `maxDynamites`, lanzamientos en orden de lista mientras haya sitio
+- [x] 2.1 `HazardField` con dinamitas: pool `maxDynamites`, lanzamientos en orden de lista mientras haya sitio
   (paso 4.4), TNT lista que espera sitio y entra en `wait` al lanzar. Interpolación en el snapshot. Escenarios: EB
   "Ciclo completo de lanzamiento", "Objetivo fijado al lanzar" y "Lanza aunque el jugador se aleje durante la
   carga", y EH "Posiciones del vuelo" y "Vuelo de 1 tick".
-- [ ] 2.2 Explosiones de dinamita (paso 4.2b): daño al jugador como golpe candidato (`playerHit`), fuego amigo con
+- [x] 2.2 Explosiones de dinamita (paso 4.2b): daño al jugador como golpe candidato (`playerHit`), fuego amigo con
   solape estricto, daño acumulado entre explosiones, `Blast` visible `blastTicks` y `expire`. Escenarios: EH
   "Jugador dentro del radio", "Tangencia y justo dentro", "Fuego amigo que no mata", "Goblin fuera del radio", "Dos
   explosiones sobre el mismo goblin" y "Explosión visible varios ticks", y EB "La explosión no empuja".
-- [ ] 2.3 `Run.tick` con el orden nuevo: `removeDead` tras las armas, explosiones, segundo `removeDead` con gemas
+- [x] 2.3 `Run.tick` con el orden nuevo: `removeDead` tras las armas, explosiones, segundo `removeDead` con gemas
   y bajas, lanzamientos y `applyHit` = max(contacto con daño, `playerHit`). Escenarios: EH "Fuego amigo que mata" y
   "La dinamita sigue tras morir su lanzador"; ES "Baja por explosión ajena" y "Armas y explosión en el mismo tick";
   XG "Bajas por armas y por explosión en el mismo tick" (los dos órdenes); SL "Un enemigo muerto por explosión no
   golpea en ese tick", "Lanzamiento con la posición del jugador ya movido" y "La explosión de la victoria"; EB "TNT
   abatido durante la carga no lanza".
-- [ ] 2.4 Golpe único y la invulnerabilidad frente a las explosiones. Escenarios PH: "Contacto y explosión en el
+- [x] 2.4 Golpe único y la invulnerabilidad frente a las explosiones. Escenarios PH: "Contacto y explosión en el
   mismo tick", "Dos explosiones en el mismo tick", "Explosión que no alcanza no es candidata", "Explosión durante la
   invulnerabilidad", "Explosión justo al expirar", "La explosión inicia la invulnerabilidad" y "Un tipo sin daño por
   contacto no golpea"; ES "Daño ausente".
-- [ ] 2.5 Mecha del barril (paso 4.2a): se marcan todos los barriles del tick, cada uno explota sin dañarse a sí
+- [x] 2.5 Mecha del barril (paso 4.2a): se marcan todos los barriles del tick, cada uno explota sin dañarse a sí
   mismo y después `explode()`. Gema y baja. El aviso de mecha se deriva en `warnings`, ordenados por `explodesAt`
   con las mechas primero. Escenarios: EB "Mecha y explosión con el jugador quieto", "Esquiva de la explosión del
   barril" y "El barril no golpea por contacto"; EH "Aviso de mecha", "Aviso de dinamita", "Barril que explota con
   otro goblin dentro" y "Dos barriles que explotan a la vez"; XG "El barril que explota suelta su gema"; SL "Peligros
   en el snapshot".
-- [ ] 2.6 Bajas antes del estallido y ausencia de cadenas. Escenarios: EB "Barril abatido durante la mecha no
+- [x] 2.6 Bajas antes del estallido y ausencia de cadenas. Escenarios: EB "Barril abatido durante la mecha no
   explota" y "Barril abatido en el mismo tick en que terminaría la mecha"; SL "Las armas actúan antes que la mecha";
   EH "Explosión sobre una dinamita en vuelo", "Explosión sobre un barril en mecha que sobrevive", "Explosión que
   abate a un barril en mecha", "Dos lanzadores con tope 1" y "Tope por defecto alcanzado" (con el contenido por
   defecto en 2.9).
-- [ ] 2.7 Bajas y hueco del director. Escenarios: RO "Explosión letal para el jugador y para el barril" y "Una
+- [x] 2.7 Bajas y hueco del director. Escenarios: RO "Explosión letal para el jugador y para el barril" y "Una
   explosión que mata a varios"; SL "La explosión libera hueco para el director"; ES "El hueco del barril que explota
   se repone en el mismo tick".
-- [ ] 2.8 Congelación y determinismo. Escenarios: RS "Peligros congelados al terminar" y "Peligros en pausa durante
+- [x] 2.8 Congelación y determinismo. Escenarios: RS "Peligros congelados al terminar" y "Peligros en pausa durante
   la oferta"; EH "Los peligros no consumen azar"; SL "Los comportamientos no consumen azar" y "Snapshot no mutable
   desde fuera" (dinamitas, avisos, explosiones y estado). Si algún escenario pasa en verde sin tocar `src/`, se
   marca y se junta con la tarea anterior (ver nota al final).
