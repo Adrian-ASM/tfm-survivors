@@ -94,9 +94,13 @@ Local `CI_LIKE=1` (mapa 64x36), mismo comando antes y después:
 
 | Métrica | Antes (main) | Después |
 |---|---|---|
-| fps mediana semilla 42 / 123 | 14,1 / 12,9 (65 % / 59 % de la base de rectángulos 21,6 / 21,9); ~71 / ~78 ms por frame | _hueco_ |
-| Calibración (escena cargada): fps / p95 de frame / ticks por frame | 16,5 / 133,3 ms / 12,25 | _hueco_ |
-| `objects` / `drawn` semilla 42 / 123 | 667 / 750 (hoy se pintan todos) | _hueco_ |
+| fps mediana semilla 42 / 123 | 14,1 / 12,9 (65 % / 59 % de la base de rectángulos 21,6 / 21,9); ~71 / ~78 ms por frame | 19,8 / 22,8 (91 % / 104 % de la base de rectángulos; +5,7 / +9,9 frente a 0017); ~51 / ~44 ms por frame |
+| Calibración (escena cargada): fps / p95 de frame / ticks por frame | 16,5 / 133,3 ms / 12,25 | 18,0 / 83,4 ms / 12,25 |
+| `objects` / `drawn` semilla 42 / 123 | 667 / 750 (hoy se pintan todos) | 667 / 106 y 750 / 67 (16 % y 9 % dibujados) |
+
+Después: medido por el implementer el 2026-11-24 en `change/0018-map-culling` (859c5d0 + `[map]` con `drawn`),
+misma máquina y comando, `CI_LIKE=1`, `CPU_THROTTLE` 25; 2 passed (1,8 min). Supera la base de 0017 y el objetivo
+orientativo de ≥ 85 % de la base de rectángulos (≥ 18,4 / ≥ 18,6) en ambas semillas.
 
 Medido por el orquestador el 2026-11-23 en `main` (35256f6), PC local, `CI_LIKE=1`, `CPU_THROTTLE` 25 (por
 defecto), Chromium con SwiftShader; log del proyecto `realtime`, 2 passed (2,6 min).

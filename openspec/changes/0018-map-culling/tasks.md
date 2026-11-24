@@ -100,7 +100,7 @@ Sin tareas: el change no toca `src/domain` ni `src/application` (design §1).
   (sin cambios), "Recuento coherente con el snapshot" (sin cambios), "Sin sonda fuera de E2E" (sin cambios).
 
 ## 5. Medición y documentación
-- [ ] 5.1 `tests/e2e/realtime.spec.ts` `[map]`: imprimir `drawn` junto a `objects` y exigir `0 < drawn < objects`
+- [x] 5.1 `tests/e2e/realtime.spec.ts` `[map]`: imprimir `drawn` junto a `objects` y exigir `0 < drawn < objects`
   (a demanda, fuera del CI). Medir con el mismo comando y máquina que la base:
   `CI_LIKE=1 npx playwright test --project=realtime --grep "calibration|\[map\]"`; rellenar la columna/tabla
   "Después" de `exploration.md` §Mediciones (fps mediana 42/123, % sobre 21,6/21,9, diferencia con 14,1/12,9,
