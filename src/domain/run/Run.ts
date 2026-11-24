@@ -65,10 +65,15 @@ export {
 
 /**
  * Partida en curso (aggregate root). Único punto de entrada para cambiar el estado de la
- * simulación. Contrato de determinismo: el orden del tick (jugador → campo de flujo hacia su celda
- * → persecución → armas, con un único removeDead() si hay bajas que suelta sus gemas → contacto con
- * los vivos → victoria en el tick de la duración objetivo → gemas y XP → director → apertura de
- * oferta) y el consumo de azar son fijos (colisión con el mapa, campo, línea libre, navegación,
+ * simulación. Contrato de determinismo (spec simulation-loop, "Orden de los pasos del tick"): el
+ * orden del tick (1 jugador → 2 comportamiento en orden de lista: esperas que terminan, persecución
+ * por el campo de flujo hacia la celda del jugador y salidas por distancia tras moverse → 3 armas y,
+ * si hay bajas, removeDead() con sus gemas → 4 peligros (ADR-0018): explosiones caducadas, barriles
+ * cuya mecha termina (marcados todos antes, sin dañarse a sí mismos) y dinamitas que llegan, en ese
+ * orden, otro removeDead() y lanzamientos en orden de lista bajo el tope → 5 un solo golpe al
+ * jugador, el mayor entre contactos de tipos con daño y explosiones que le alcanzan → victoria en el
+ * tick de la duración objetivo → gemas y XP → director → apertura de oferta) y el consumo de azar
+ * son fijos (colisión con el mapa, campo, línea libre, navegación, comportamientos, peligros,
  * recolocación de apariciones, armas, gemas, XP y fin de partida no consumen azar; la oferta y cada
  * intento de aparición sí); cambiarlos cambia las partidas de una semilla. El mapa es parte del
  * estado inicial y sale de un flujo de azar propio (ADR-0013); no cambia durante la partida. La

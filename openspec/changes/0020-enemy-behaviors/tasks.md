@@ -134,13 +134,13 @@
   reproducible" y "Partida con progresión reproducible".
 
 ## 7. E2E y documentación
-- [ ] 7.1 **E2E único** (proyecto `logic`, ampliando `tests/e2e/gameplay.spec.ts`): `?e2e&manual&map=empty&seed=s`
+- [x] 7.1 **E2E único** (proyecto `logic`, ampliando `tests/e2e/gameplay.spec.ts`): `?e2e&manual&map=empty&seed=s`
   (semilla fijada tras 6.2), jugador quieto, `step(120)` hasta que la partida termina, política de elección fija y
   lectura de la sonda tras cada llamada. Debe haber ≥ 1 lectura con aviso y barril en mecha y una posterior con
   explosión, sin reserva. En cada lectura los recuentos de aviso, dinamita y explosión coinciden con el snapshot.
   Sin esperas de reloj ni umbrales de fps. Escenarios SR: "Barril en mecha y su explosión en el navegador [E2E]" y
   "Recuento coherente con el snapshot" (parte de peligros).
-- [ ] 7.2 Documentación: estado del proyecto en `AGENTS.md` (§1, change 0020), JSDoc del contrato del tick en
+- [x] 7.2 Documentación: estado del proyecto en `AGENTS.md` (§1, change 0020), JSDoc del contrato del tick en
   `Run`, la entrada del GDD (comportamientos de la parte A hechos y la B pendiente) y el diario de IA
   (`docs/ai-log/`). `npm run verify` y `npm run test:e2e -- gameplay.spec` en verde.
 

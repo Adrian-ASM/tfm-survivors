@@ -302,3 +302,55 @@ test('Mapa real: sonda igual a la firma de la semilla 42, castillo y salida, y s
   }
   expect(overlaps).toEqual([]);
 });
+
+// Spec sprite-rendering (0020), "Barril en mecha y su explosión en el navegador" y "Recuento
+// coherente con el snapshot" (parte de peligros): semilla 7 con el mapa vacío, jugador quieto,
+// step(120) hasta que la partida termina (antes del tick 10.800) y política de elección fija.
+const HAZARD_SEED = 7;
+const HAZARD_STEP = 120;
+
+test('Peligros: barril en mecha con su aviso y después su explosión, sin reserva y como el snapshot', async ({
+  page,
+}) => {
+  const problems = collect(page, ['pageerror', 'error']);
+  await openGame(page, gameUrl({ seed: HAZARD_SEED, manual: true }));
+  const misses: string[] = [];
+  let fuseRead = -1;
+  let blastRead = -1;
+  for (let read = 0; read < 10_800 / HAZARD_STEP; read++) {
+    const p = await probe(page);
+    const s = p?.snapshot;
+    const sprites = p?.sprites;
+    if (!s || !sprites) throw new Error('sin sonda');
+    const pairs: [string, number, number][] = [
+      ['avisos', sprites.warnings.visible, s.warnings.length],
+      ['dinamitas', sprites.dynamites.visible, s.dynamites.length],
+      ['explosiones', sprites.explosions.visible, s.blasts.length],
+    ];
+    for (const [name, got, want] of pairs) {
+      if (got !== want)
+        misses.push(`tick ${String(s.tick)}: ${name} ${String(got)} ≠ ${String(want)}`);
+    }
+    const clean =
+      sprites.enemies.placeholder +
+        sprites.dynamites.placeholder +
+        sprites.explosions.placeholder ===
+      0;
+    if (fuseRead < 0 && clean && sprites.warnings.visible > 0 && sprites.enemyStates.fuse > 0) {
+      fuseRead = read;
+    }
+    if (fuseRead >= 0 && read > fuseRead && clean && sprites.explosions.visible > 0) {
+      blastRead = read;
+    }
+    if (s.status === 'over') break;
+    if (s.offer.length > 0) await page.keyboard.press('1');
+    await step(page, HAZARD_STEP);
+  }
+  const end = await snapshotOf(page);
+  expect(end?.status).toBe('over');
+  expect(end?.tick ?? 10_800).toBeLessThan(10_800);
+  expect(fuseRead).toBeGreaterThanOrEqual(0);
+  expect(blastRead).toBeGreaterThan(fuseRead);
+  expect(misses).toEqual([]);
+  expect(problems).toEqual([]);
+});

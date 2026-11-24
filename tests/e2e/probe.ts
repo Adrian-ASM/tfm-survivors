@@ -58,6 +58,8 @@ export interface EnemyView {
   x: number;
   y: number;
   radius: number;
+  /** Clase del estado de comportamiento (0020). */
+  stateKind: 'chase' | 'fuse' | 'charge' | 'wait';
 }
 
 export interface SnapshotView {
@@ -72,6 +74,10 @@ export interface SnapshotView {
   pulses: { weapon: string; firedAt: number }[];
   weapons: { id: string; ready: boolean }[];
   gems: { id: number; x: number; y: number }[];
+  /** Peligros (0020): dinamitas en vuelo, avisos y explosiones visibles. */
+  dynamites: { id: number; x: number; y: number }[];
+  warnings: { x: number; y: number; radius: number; source: 'fuse' | 'dynamite' }[];
+  blasts: { id: number; x: number; y: number; radius: number }[];
   progression: { level: number; xp: number; xpToNext: number; pendingLevelUps: number };
   offer: { id: string; name: string; level: number; nextLevel: number }[];
   upgrades: { id: string; level: number }[];
@@ -119,6 +125,12 @@ export interface SpritesView {
   pulses: SpriteCountView;
   gems: SpriteCountView;
   enemyPlaceholders: Record<string, number>;
+  /** Peligros pintados (0020): avisos (nunca reserva), dinamitas y explosiones. */
+  warnings: SpriteCountView;
+  dynamites: SpriteCountView;
+  explosions: SpriteCountView;
+  /** Sprites de enemigo vivo por clase de estado (0020). */
+  enemyStates: Record<'chase' | 'fuse' | 'charge' | 'wait', number>;
   /** Celdas del mapa pintadas por tipo (change 0015, castle desde 0016); a 0 en el menú. */
   cells: { trunk: number; water: number; bridge: number; castle: number };
   /** Elementos del mapa pintados y cuántos con reserva, y objetos del mapa (change 0016). */

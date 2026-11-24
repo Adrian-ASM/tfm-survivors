@@ -79,6 +79,15 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   enemigos con el mapa (aplazadas). Balance recalibrado **solo con la curva de XP** (`baseXp` 9, `xpGrowth` 3;
   oleadas y `player.speed` intactos): **26/50** victorias y 0 quietos. Los tests con cifras de XP usan la curva
   de escenario 5/5 (`SCENARIO_PROGRESSION`, `withScenarioCurve`). GDD renumerado: Should 0020–0024.
+  Comportamientos de enemigos, parte A (change 0020, ADR-0018): cada tipo declara en `enemies.json` un
+  `behavior` con estados de clase cerrada (`chase` con salida por distancia, `fuse`, `charge`, `wait`) y los
+  globales `hazards` (`maxDynamites` 24, `dynamiteRadius`, `blastTicks`); `damage` de contacto opcional (el barril
+  no tiene). Barril kamikaze (mecha de 40 con aviso, explosión 64/25) y TNT artillero (carga a 100 px, dinamita con
+  aviso en el objetivo, espera). `HazardField` en el núcleo: tick con armas → explosiones → segundo `removeDead` →
+  lanzamientos → golpe único `max(contacto, explosión)`; fuego amigo, sin cadenas ni azar. Snapshot con
+  `state`/`stateKind`, `dynamites`, `warnings` y `blasts`; capa de peligros sobre la capa alta del mapa (un
+  `Graphics` y pools) y sonda `warnings`/`dynamites`/`explosions`/`enemyStates`. Arte `Dynamite.png` y
+  `Explosions.png` (Update 010). Bot v3 (esquiva avisos) y balance **27/50**, 0 quietos, con curva **9/4**.
   Fuente de verdad del comportamiento: `openspec/specs/`.
 
 ## 2. Comandos

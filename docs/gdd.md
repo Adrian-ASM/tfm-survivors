@@ -204,7 +204,7 @@ Pendientes:
 | 0017 fullscreen-view | **Hecho (PR #41)**: la vista ocupa toda la ventana (tope 2.560 × 1.440); aparición de enemigos desacoplada del tamaño de pantalla (anillo 1.500); mundo 3.840 × 2.160 (64 × 36); HUD y overlays anclados y escalados ×1/×2; balance recalibrado por oleadas (25/50) | Must | |
 | 0018 map-culling | **Hecho (PR #43)**: recorte del arte del mapa fuera de cámara | Must | |
 | 0019 flow-field | Navegación por campo de flujo (4 vecinos + línea libre, recolocación de apariciones, `maxAlive` 300) | Must | Con cientos de enemigos |
-| 0020 enemy-behaviors | Comportamientos, casas goblin y campamentos | Should | |
+| 0020 enemy-behaviors | **Parte A hecha**: comportamiento por tipo en contenido (persecución, mecha, carga y espera), barril kamikaze con aviso y explosión de área, TNT artillero provisional con dinamita y aviso, fuego amigo, bot v3 que esquiva y balance 27/50 (ADR-0018). **Parte B pendiente** (change propio): casas y torres goblin destruibles, TNT de guardia con patrulla y alerta, campamentos | Should | |
 | 0021 characters | Elección de personaje y Guerrero | Should | ¿Es divertido el Guerrero? |
 | 0022 resources-sheep | Recursos recogibles con tipo y ovejas | Should | |
 | 0023 split-progression-castle | Progresión separada + castillo-tienda (castillo ya en el mapa) | Should | |
