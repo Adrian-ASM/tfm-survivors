@@ -88,7 +88,7 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
 | Comando | Qué hace |
 |---|---|
 | `npm run dev` | Servidor de desarrollo (`http://localhost:5173/tfm-survivors/`) |
-| `npm run verify` | lint + typecheck + guardarraíl sobre todo el repo + tests unitarios. **Ejecútalo al cerrar cada tarea y antes de cada commit. No cierres una tarea en rojo.** |
+| `npm run verify` | lint + typecheck + guardarraíl sobre todo el repo + tests unitarios. **Ejecútalo al cerrar cada grupo de tareas y antes de cada commit. No cierres un grupo en rojo.** |
 | `npm run verify:fast` | Bucle rojo → verde: lint con caché + typecheck + solo los tests afectados por los cambios sin commitear (`vitest --changed`), sin el test de balance. No sustituye a `verify` |
 | `npm run test:e2e` | Build + `vite preview` + Playwright (chromium), solo el proyecto `logic`: la suite de humo (`smoke`, `progress` y `gameplay`.spec), la misma que el CI. Para una sola: `npm run test:e2e -- gameplay.spec` (filtro por ruta: con `.spec`, porque el nombre del worktree también casa) o `-- --grep "<título>"` |
 | `npm run test:e2e:realtime` | Proyecto `realtime` (calibración de fps y `speed`). A demanda: fuera de `test:e2e` y del CI; en Actions, workflow `e2e-realtime` (`workflow_dispatch`). Diagnóstico opcional, nunca obligatorio antes de push: `CI_LIKE=1` (sin GPU, CPU frenada por CDP con `CPU_THROTTLE`, 25 por defecto, sin reintentos) |
@@ -143,6 +143,10 @@ Nivel **Spec-Anchored**: las specs viven y evolucionan con el código.
 | Grande y confuso ("hazlo más divertido") | Volver al GDD (`docs/gdd.md`) antes de especificar |
 
 Fases: `explore → propose → [gate humano] → spec ∥ design → tasks → apply (TDD) → verify → [gate humano] → archive`.
+
+**TDD por capa** (ADR-0018): TDD estricto (rojo comprobado) en `domain` y `application`; *test-after* en
+infraestructura, composición y contenido. Tareas por escenario, agrupadas por capa; `verify:fast` por tarea y
+`verify` completo + commit por grupo. Todo escenario sigue necesitando su test (el verifier lo exige).
 Cada change trabaja en **su propio git worktree y rama** (`change/<id>`). Ver skill `worktree-flow`.
 
 Gates humanos: **nunca** avances de *propose* a *spec/design* ni de *verify* a *archive* sin aprobación explícita del usuario.
