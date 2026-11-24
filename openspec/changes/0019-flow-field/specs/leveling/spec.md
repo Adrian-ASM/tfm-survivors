@@ -1,8 +1,8 @@
 # Spec delta · leveling
 
 <!-- Change 0019-flow-field. Calibración del balance (decisión del usuario, 2026-11-24: solo la curva de XP).
-     Con la navegación por el mapa el bot de referencia bajó a 18/50. Sin tocar el presupuesto de oleadas ni
-     `player.speed` (gate de la propuesta), la curva pasa de baseXp 5 / xpGrowth 5 a baseXp 9 / xpGrowth 3: más XP para
+     Con la navegación por el mapa el bot de referencia bajó a 12/50 (18/50 en el prototipo). Sin
+     tocar el presupuesto de oleadas ni `player.speed` (gate de la propuesta), la curva pasa de baseXp 5 / xpGrowth 5 a baseXp 9 / xpGrowth 3: más XP para
      la primera subida y subidas más baratas después, que favorecen a quien recoge gemas (el bot) frente al quieto.
      Medido en apply: 26/50 victorias del bot v2 (semillas 1..50), 0 quietos supervivientes con el mapa generado y con
      el vacío, plazos del quieto intactos. -->

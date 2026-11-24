@@ -123,8 +123,9 @@ Phaser: el diseño no usa ninguna API nueva del motor. El render no cambia y el 
 Vía de documentación: no se ha consultado porque no aplica.
 
 ## 6. Calibración del balance (sin oleadas ni `player.speed`)
-Punto de partida medido: **18/50** (banda 25–35). Hay que subir unas 7–12 victorias del bot sin que ningún jugador
-quieto sobreviva 180 s.
+Punto de partida medido: **18/50** en el prototipo; **12/50** con la implementación real (banda 25–35).
+Hay que subir unas 7–12 victorias del bot (13–14 desde la base real) sin que ningún jugador quieto
+sobreviva 180 s.
 
 **Palancas, por orden de preferencia** (todas en `content/`, una cada vez y por pasos). **Todas las fija alguna spec
 viva**, y la columna "Delta necesario" dice cuál habría que actualizar (spec run-outcome: "todo valor de contenido que
