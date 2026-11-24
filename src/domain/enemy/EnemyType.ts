@@ -26,7 +26,7 @@ export interface EnemyTypeConfig {
   readonly health: number;
   /** XP de la gema que suelta al morir (spec xp-gems). */
   readonly xp: number;
-  /** Comportamiento por estados (spec enemy-behavior, ADR-0018). */
+  /** Comportamiento por estados (spec enemy-behavior, ADR-0019). */
   readonly behavior: BehaviorConfig;
 }
 

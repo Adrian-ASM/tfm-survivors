@@ -1,4 +1,4 @@
-# ADR-0018 · Comportamiento de enemigos como estados de clase cerrada en contenido y peligros de área en el núcleo
+# ADR-0019 · Comportamiento de enemigos como estados de clase cerrada en contenido y peligros de área en el núcleo
 
 - **Estado**: propuesta (change 0020-enemy-behaviors)
 - **Fecha**: 2026-11-24

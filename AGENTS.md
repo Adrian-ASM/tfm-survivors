@@ -79,7 +79,7 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   enemigos con el mapa (aplazadas). Balance recalibrado **solo con la curva de XP** (`baseXp` 9, `xpGrowth` 3;
   oleadas y `player.speed` intactos): **26/50** victorias y 0 quietos. Los tests con cifras de XP usan la curva
   de escenario 5/5 (`SCENARIO_PROGRESSION`, `withScenarioCurve`). GDD renumerado: Should 0020–0024.
-  Comportamientos de enemigos, parte A (change 0020, ADR-0018): cada tipo declara en `enemies.json` un
+  Comportamientos de enemigos, parte A (change 0020, ADR-0019): cada tipo declara en `enemies.json` un
   `behavior` con estados de clase cerrada (`chase` con salida por distancia, `fuse`, `charge`, `wait`) y los
   globales `hazards` (`maxDynamites` 24, `dynamiteRadius`, `blastTicks`); `damage` de contacto opcional (el barril
   no tiene). Barril kamikaze (mecha de 40 con aviso, explosión 64/25) y TNT artillero (carga a 100 px, dinamita con

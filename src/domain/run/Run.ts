@@ -68,7 +68,7 @@ export {
  * simulación. Contrato de determinismo (spec simulation-loop, "Orden de los pasos del tick"): el
  * orden del tick (1 jugador → 2 comportamiento en orden de lista: esperas que terminan, persecución
  * por el campo de flujo hacia la celda del jugador y salidas por distancia tras moverse → 3 armas y,
- * si hay bajas, removeDead() con sus gemas → 4 peligros (ADR-0018): explosiones caducadas, barriles
+ * si hay bajas, removeDead() con sus gemas → 4 peligros (ADR-0019): explosiones caducadas, barriles
  * cuya mecha termina (marcados todos antes, sin dañarse a sí mismos) y dinamitas que llegan, en ese
  * orden, otro removeDead() y lanzamientos en orden de lista bajo el tope → 5 un solo golpe al
  * jugador, el mayor entre contactos de tipos con daño y explosiones que le alcanzan → victoria en el

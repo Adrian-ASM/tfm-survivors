@@ -61,7 +61,7 @@ barriles en mecha y de las dinamitas. Nada consume azar ni toca el mapa.
 No hay puertos nuevos. `HazardField` no depende de `Horde`: recibe `horde.alive` como lista de solo lectura, igual que
 `Arsenal`.
 
-## 1. Modelo de comportamiento (ADR-0018)
+## 1. Modelo de comportamiento (ADR-0019)
 
 ```jsonc
 "behavior": {
@@ -264,5 +264,5 @@ flowchart LR
     origen y `Graphics` para los avisos en lugar de un `Arc` por aviso.
 
 ## ADRs
-- `docs/adr/0018-comportamientos-en-contenido-y-peligros-de-area.md`, actualizado a esta revisión.
+- `docs/adr/0019-comportamientos-en-contenido-y-peligros-de-area.md`, actualizado a esta revisión.
 - Se rozan sin cambios: ADR-0003, ADR-0006, ADR-0007, ADR-0012, ADR-0013 y ADR-0017.

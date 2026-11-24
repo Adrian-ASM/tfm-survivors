@@ -145,7 +145,7 @@ const BehaviorValue = z.number({ error: BEHAVIOR_VALUE_MUST_BE_POSITIVE }).posit
 });
 const BehaviorTicks = RequiredCount(BEHAVIOR_TICKS_MUST_BE_INTEGER);
 
-// Clases cerradas de estado (spec enemy-behavior, ADR-0018). Las referencias entre estados
+// Clases cerradas de estado (spec enemy-behavior, ADR-0019). Las referencias entre estados
 // (inicial, destinos, nombres repetidos) las resuelve `Behavior.create` desde `buildRunRules`.
 const StateSchema = z.discriminatedUnion(
   'kind',

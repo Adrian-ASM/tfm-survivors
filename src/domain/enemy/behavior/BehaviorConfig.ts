@@ -1,4 +1,4 @@
-/** Clases cerradas de estado de comportamiento (spec enemy-behavior, ADR-0018). */
+/** Clases cerradas de estado de comportamiento (spec enemy-behavior, ADR-0019). */
 export const STATE_KINDS = ['chase', 'fuse', 'charge', 'wait'] as const;
 export type StateKind = (typeof STATE_KINDS)[number];
 

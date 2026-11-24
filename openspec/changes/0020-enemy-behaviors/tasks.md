@@ -127,7 +127,7 @@
   curva de XP. Objetivo: 25–35 victorias, 0 quietos con el mapa generado y con el vacío, y los plazos de la semilla
   7 (primer golpe, primer pulso y primera oferta ≤ 4.800, primera baja ≤ 900). Si ninguna combinación lo consigue,
   **parar y volver al usuario**. Actualizar en las specs delta todo valor fijado que cambie. Registrar la tabla de
-  lotes y los ticks medidos en el addendum del ADR-0018. Escenarios RO: "Tasa de victoria del bot de referencia",
+  lotes y los ticks medidos en el addendum del ADR-0019. Escenarios RO: "Tasa de victoria del bot de referencia",
   "Toda partida del bot termina", "Jugador quieto pierde con todas las semillas", "Jugador quieto pierde también con
   el mapa vacío", "Muerte quieta en el límite de 180 s" y "Plazos del jugador quieto con el contenido final"; PH
   "Primer golpe en el núcleo con armas activas"; SL "Partida con contactos reproducible", "Partida con armas

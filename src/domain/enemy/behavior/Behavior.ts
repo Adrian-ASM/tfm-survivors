@@ -36,7 +36,7 @@ interface Tables {
 }
 
 /**
- * Comportamiento de un tipo de enemigo (value object, ADR-0018): estados de una clase cerrada
+ * Comportamiento de un tipo de enemigo (value object, ADR-0019): estados de una clase cerrada
  * compilados a arrays por índice para el camino caliente (ninguna búsqueda por nombre por tick).
  * `to` es el índice del destino (−1 si no hay); `exitDistSq` la distancia de salida al cuadrado
  * (−1 sin salida); `blastRadius`/`blastDamage` los de la mecha o los de la dinamita de la carga;
