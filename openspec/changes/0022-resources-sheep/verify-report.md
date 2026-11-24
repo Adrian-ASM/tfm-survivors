@@ -50,3 +50,19 @@ Ninguno.
 C: 0 · W: 3 · S: 4
 
 Veredicto: listo para PR. Los Warning se pueden resolver o registrar en la retro, y no bloquean el archivado.
+
+## Re-verify (dad939b)
+
+Alcance: diff `1ed3338..HEAD`. `npm run verify`: 227 ficheros, 2648 tests en verde. `npm run test:e2e -- smoke.spec`: 5/5 en verde.
+
+| Hallazgo | Estado |
+|---|---|
+| W1 Sin HUD en el menú | Resuelto. El E2E "Jugar desde el menú" comprueba `hud` null en el menú (tras 60 frames) y `{gold:'0',wood:'0'}` en el tick 0. `hudView()` devuelve null si la escena no está activa. Sin umbrales de tiempo, y es una ampliación de un test existente. |
+| W2 Balance +8 % | Registrado como deuda en `docs/ai-log/2026-11-24-0022-apply.md`. Aceptado. |
+| W3 `MapVein.radius` test-after | Registrado como deuda en el mismo diario. Aceptado. |
+| S1 `toMatchObject` en `gems` | Resuelto. Los 4 tests usan `toEqual` con `kind` y `value`. |
+| S2, S3, S4 | Sin cambios. Son opcionales y siguen abiertos. |
+
+C: 0 · W: 0 (2 registrados) · S: 3
+
+Veredicto: aprobado. Listo para PR y archivado.
