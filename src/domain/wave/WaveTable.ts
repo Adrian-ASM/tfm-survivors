@@ -14,6 +14,8 @@ export const SEGMENTS_MUST_INCREASE =
 export const BUDGET_MUST_BE_NON_NEGATIVE = 'El budgetPerSecond de un tramo no puede ser negativo.';
 export const SEGMENT_NEEDS_TYPES = 'Cada tramo necesita al menos un tipo de enemigo.';
 export const UNKNOWN_ENEMY_TYPE = 'Tipo de enemigo desconocido';
+export const GUARD_IN_WAVES =
+  'Un tipo que empieza en patrulla es un guardia de las casas y no puede ir en las oleadas';
 
 const PATH = 'waves.segments';
 
@@ -43,6 +45,9 @@ function resolveTypes(
     if (!type) {
       return err(invalidConfig(`${path}.types.${String(i)}`, `${UNKNOWN_ENEMY_TYPE}: ${id}`));
     }
+    if (type.behavior.isGuard) {
+      return err(invalidConfig(`${path}.types.${String(i)}`, `${GUARD_IN_WAVES}: ${id}`));
+    }
     types.push(type);
   }
   return ok(Object.freeze(types));
@@ -61,7 +66,7 @@ function checkStart(fromSecond: number, previous: number | null, path: string): 
 /**
  * Tabla de oleadas por tramos de tiempo (value object).
  * Invariantes: ≥ 1 tramo; el primero empieza en 0 s; inicios estrictamente crecientes;
- * presupuesto ≥ 0; ≥ 1 tipo por tramo y todos en el catálogo.
+ * presupuesto ≥ 0; ≥ 1 tipo por tramo, todos en el catálogo y ninguno de guardia (0021).
  */
 export class WaveTable {
   private constructor(readonly segments: readonly WaveSegment[]) {

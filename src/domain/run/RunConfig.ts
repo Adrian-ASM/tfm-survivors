@@ -21,6 +21,8 @@ import type { UpgradeTypeConfig } from '../upgrade/UpgradeType';
 import { RunDuration } from './RunDuration';
 import { MapRules, type MapConfig } from '../map/MapRules';
 import { HazardRules, type HazardRulesConfig } from '../hazard/HazardRules';
+import { StructureRules } from '../structure/StructureRules';
+import type { StructuresConfig } from '../structure/StructureType';
 
 export type { WeaponsConfig, PlayerRules };
 export {
@@ -69,6 +71,11 @@ export interface RunConfig {
   readonly run: { readonly durationSeconds: number };
   /** Parámetros del mapa (content/map.json, spec procedural-map). */
   readonly map: MapConfig;
+  /**
+   * Casas y torres goblin (content/structures.json, spec goblin-structures). Sin ellas, ningún mapa
+   * tiene estructuras ni se pueden declarar.
+   */
+  readonly structures?: StructuresConfig | undefined;
 }
 
 /** Forma del contenido de mejoras (content/upgrades.json). */
@@ -97,6 +104,8 @@ export interface RunRules {
   readonly duration: RunDuration;
   /** Rejilla del mapa y parámetros de su generación. */
   readonly map: MapRules;
+  /** Tipos de estructura y su colocación; `null` sin contenido de estructuras. */
+  readonly structures: StructureRules | null;
 }
 
 function checkBudgetCoversCatalog(spawn: SpawnRules, catalog: EnemyCatalog): DomainError | null {
@@ -143,6 +152,10 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
   if (!duration.ok) return duration;
   const map = MapRules.create(config.map, arena.value, config.player.radius);
   if (!map.ok) return map;
+  const structures = config.structures
+    ? StructureRules.create(config.structures, map.value, catalog.value)
+    : ok(null);
+  if (!structures.ok) return structures;
   return ok({
     arena: arena.value,
     player: config.player,
@@ -157,5 +170,6 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
     pulseCapacity: upgrades.value.pulseCapacity,
     duration: duration.value,
     map: map.value,
+    structures: structures.value,
   });
 }

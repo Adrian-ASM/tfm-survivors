@@ -91,11 +91,35 @@ describe('EnemyLayer · mecha y lanzamiento', () => {
       1,
       0,
     );
-    expect(l.states).toEqual({ chase: 1, fuse: 1, charge: 1, wait: 1 });
+    expect(l.states).toEqual({
+      chase: 1,
+      fuse: 1,
+      charge: 1,
+      wait: 1,
+      patrol: 0,
+      alert: 0,
+      return: 0,
+    });
     l.sync([enemy(1, 'goblin-tnt', 2, 'wait')], 2, 0);
-    expect(l.states).toEqual({ chase: 0, fuse: 0, charge: 0, wait: 1 });
+    expect(l.states).toEqual({
+      chase: 0,
+      fuse: 0,
+      charge: 0,
+      wait: 1,
+      patrol: 0,
+      alert: 0,
+      return: 0,
+    });
     l.clear();
-    expect(l.states).toEqual({ chase: 0, fuse: 0, charge: 0, wait: 0 });
+    expect(l.states).toEqual({
+      chase: 0,
+      fuse: 0,
+      charge: 0,
+      wait: 0,
+      patrol: 0,
+      alert: 0,
+      return: 0,
+    });
   });
 });
 

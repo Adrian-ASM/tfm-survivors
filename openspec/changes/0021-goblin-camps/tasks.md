@@ -10,15 +10,15 @@
      SR sprite-rendering · AP asset-provenance. Referencia de diseño: design.md (§n). -->
 
 ## 1. Dominio · contenido de estructuras y comportamiento de guardia (TDD estricto)
-- [ ] 1.1 `StructureType`/`StructureRules.create` con sus invariantes (§2.4): huella entera ≥ 1 que cabe en la
+- [x] 1.1 `StructureType`/`StructureRules.create` con sus invariantes (§2.4): huella entera ≥ 1 que cabe en la
   rejilla, vida y radio > 0, `count` entero ≥ 0, `max`/`everyTicks` enteros ≥ 1, distancias de colocación enteras
   ≥ 0, y el guardia existe en el catálogo con inicial `patrol`. Los errores nombran el tipo y el campo.
   — GS: "Valores fuera de rango", "Límites válidos", "Guardia inválido" (con el dominio; la forma la cubre 5.1).
-- [ ] 1.2 Clases `patrol`, `alert` y `return` en `BehaviorConfig`/`Behavior` (arrays `patrolRadius`, `detect*`,
+- [x] 1.2 Clases `patrol`, `alert` y `return` en `BehaviorConfig`/`Behavior` (arrays `patrolRadius`, `detect*`,
   `lose*`, `arriveTo`) con `assertNever`. Validación: valores > 0, destinos existentes, inicial `patrol` si hay estados
   de guardia y abandono mayor que todas las detecciones del tipo.
   — EB: "Parámetros de guardia inválidos", "Estados de guardia sin patrulla inicial".
-- [ ] 1.3 `WaveTable` rechaza los tipos cuyo inicial es `patrol`, con un error que nombra el tipo.
+- [x] 1.3 `WaveTable` rechaza los tipos cuyo inicial es `patrol`, con un error que nombra el tipo.
   — ES: "Guardia citado en una oleada".
 
 ## 2. Dominio · colocación y mapa (TDD estricto)

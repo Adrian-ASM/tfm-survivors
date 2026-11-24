@@ -192,7 +192,15 @@ describe('Vista limpia tras reiniciar (spec run-results y sprite-rendering)', ()
     const c = emptyCounts(['goblin-torch', 'goblin-tnt', 'goblin-barrel']);
     const kinds = [c.player, c.enemies, c.corpses, c.projectiles, c.pulses, c.gems];
     kinds.push(c.dynamites, c.warnings, c.explosions);
-    expect(c.enemyStates).toEqual({ chase: 0, fuse: 0, charge: 0, wait: 0 });
+    expect(c.enemyStates).toEqual({
+      chase: 0,
+      fuse: 0,
+      charge: 0,
+      wait: 0,
+      patrol: 0,
+      alert: 0,
+      return: 0,
+    });
     expect(kinds.every((k) => k.visible === 0 && k.placeholder === 0)).toBe(true);
     expect(c.enemyPlaceholders).toEqual({ 'goblin-torch': 0, 'goblin-tnt': 0, 'goblin-barrel': 0 });
   });

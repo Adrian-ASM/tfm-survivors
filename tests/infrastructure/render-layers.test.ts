@@ -645,7 +645,15 @@ describe('RenderLayers · recuentos para la sonda', () => {
     frame(s);
     const c = layers.counts;
     expect([c.dynamites.visible, c.warnings.visible, c.explosions.visible]).toEqual([1, 2, 1]);
-    expect(c.enemyStates).toEqual({ chase: 1, fuse: 1, charge: 1, wait: 0 });
+    expect(c.enemyStates).toEqual({
+      chase: 1,
+      fuse: 1,
+      charge: 1,
+      wait: 0,
+      patrol: 0,
+      alert: 0,
+      return: 0,
+    });
     expect([c.dynamites.placeholder, c.warnings.placeholder, c.explosions.placeholder]).toEqual([
       0, 0, 0,
     ]);

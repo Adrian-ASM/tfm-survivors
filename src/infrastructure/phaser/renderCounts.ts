@@ -42,7 +42,7 @@ export function emptyCounts(enemyIds: Iterable<string>): SpriteCounts {
     pulses: zero(),
     gems: zero(),
     enemyPlaceholders,
-    enemyStates: { chase: 0, fuse: 0, charge: 0, wait: 0 },
+    enemyStates: { chase: 0, fuse: 0, charge: 0, wait: 0, patrol: 0, alert: 0, return: 0 },
     warnings: zero(),
     dynamites: zero(),
     explosions: zero(),

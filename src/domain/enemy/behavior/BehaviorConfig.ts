@@ -1,5 +1,13 @@
-/** Clases cerradas de estado de comportamiento (spec enemy-behavior, ADR-0019). */
-export const STATE_KINDS = ['chase', 'fuse', 'charge', 'wait'] as const;
+/** Clases cerradas de estado de comportamiento (spec enemy-behavior, ADR-0019 y ADR-0020). */
+export const STATE_KINDS = [
+  'chase',
+  'fuse',
+  'charge',
+  'wait',
+  'patrol',
+  'alert',
+  'return',
+] as const;
 export type StateKind = (typeof STATE_KINDS)[number];
 
 /** Salida por distancia de una persecución: d ≤ `distance` tras moverse ⇒ entra en `to`. */
@@ -47,7 +55,42 @@ export interface WaitStateConfig {
   readonly to: string;
 }
 
-export type StateConfig = ChaseStateConfig | FuseStateConfig | ChargeStateConfig | WaitStateConfig;
+/** Patrulla (guardia, ADR-0020): recorre las esquinas de su puesto con radio `radius`. */
+export interface PatrolStateConfig {
+  readonly name: string;
+  readonly kind: 'patrol';
+  readonly radius: number;
+  /** Detección: d ≤ `distance` tras moverse ⇒ entra en `to`. */
+  readonly detect: ExitConfig;
+}
+
+/** Alerta: persigue; `exit` (lanzamiento) por distancia y `lose` (abandono) si d > `distance`. */
+export interface AlertStateConfig {
+  readonly name: string;
+  readonly kind: 'alert';
+  readonly exit: ExitConfig;
+  readonly lose: ExitConfig;
+}
+
+/** Vuelta: va al puesto; `detect` como la patrulla y `to` al llegar exactamente al puesto. */
+export interface ReturnStateConfig {
+  readonly name: string;
+  readonly kind: 'return';
+  readonly detect: ExitConfig;
+  readonly to: string;
+}
+
+export type StateConfig =
+  | ChaseStateConfig
+  | FuseStateConfig
+  | ChargeStateConfig
+  | WaitStateConfig
+  | PatrolStateConfig
+  | AlertStateConfig
+  | ReturnStateConfig;
+
+/** Clases de guardia: un tipo que las usa necesita un puesto y empezar en patrulla. */
+export const GUARD_KINDS: readonly StateKind[] = ['patrol', 'alert', 'return'];
 
 /** Forma del comportamiento de un tipo en content/enemies.json (validada antes con zod). */
 export interface BehaviorConfig {
