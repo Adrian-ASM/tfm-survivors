@@ -12,7 +12,7 @@ const gems = (from: number, n: number) =>
 
 function layer(capacity: number) {
   const kit = fakeKit();
-  const l = new GemLayer(capacity, kit, someLooks().gem);
+  const l = new GemLayer(capacity, kit, someLooks().pickups.gold);
   return { l, created: kit.created };
 }
 

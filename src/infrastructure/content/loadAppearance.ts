@@ -5,8 +5,25 @@ import {
   SHEET_NOT_REGISTERED,
   type Appearance,
   type Aspect,
+  type StillAspect,
   type StructureAspect,
 } from './appearanceSchema';
+
+/** Aspectos con hoja de los recogibles (0022): la gema solo si tiene hoja; luego oro y madera. */
+export function pickupAspectsOf(appearance: Appearance): [string[], StillAspect][] {
+  const { xp, gold, wood } = appearance.pickups;
+  const out: [string[], StillAspect][] = 'sheet' in xp ? [[['pickups', 'xp'], xp]] : [];
+  out.push([['pickups', 'gold'], gold], [['pickups', 'wood'], wood]);
+  return out;
+}
+
+/** Aspectos de la veta (0022) con su ruta de campo: activa y agotada. */
+export function veinAspectsOf(appearance: Appearance): [string[], StructureAspect][] {
+  return [
+    [['veins', 'active'], appearance.veins.active],
+    [['veins', 'depleted'], appearance.veins.depleted],
+  ];
+}
 
 /** Cada aspecto con su ruta de campo, en el orden del fichero (el error nombra el primero). */
 export function aspectsOf(appearance: Appearance): [string[], Aspect][] {
@@ -17,7 +34,7 @@ export function aspectsOf(appearance: Appearance): [string[], Aspect][] {
       a,
     ]),
     [['projectile'], appearance.projectile],
-    [['gem'], appearance.gem],
+    ...pickupAspectsOf(appearance),
     [['ground'], appearance.ground],
     [['corpse'], appearance.corpse],
     [['dynamite'], appearance.dynamite],
@@ -95,6 +112,10 @@ export function parseAppearance(
       ]),
       ...mapSheetsOf(appearance),
       ...structureAspectsOf(appearance).map(([path, a]): [string[], string] => [
+        [...path, 'sheet', 'file'],
+        a.sheet.file,
+      ]),
+      ...veinAspectsOf(appearance).map(([path, a]): [string[], string] => [
         [...path, 'sheet', 'file'],
         a.sheet.file,
       ]),

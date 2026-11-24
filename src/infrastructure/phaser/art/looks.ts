@@ -1,4 +1,10 @@
-import type { Appearance, Aspect } from '../../content/appearanceSchema';
+import type {
+  Appearance,
+  Aspect,
+  PickupLooksAppearance,
+  StillAspect,
+} from '../../content/appearanceSchema';
+import type { PickupKind } from '../../../domain/pickup/PickupKind';
 import type { AnimSpec, Facing } from './animation';
 
 /** Textura generada por el juego para el aspecto de reserva: disco blanco, sin ficheros. */
@@ -37,6 +43,13 @@ export interface EnemyLook extends MovingLook {
 export interface ExplosionLook extends LookBase {
   readonly explode: AnimSpec;
 }
+/**
+ * Aspecto de un recogible (0022). `shape`: la gema sin hoja, pintada como forma de color con la
+ * textura de reserva y su color, que nunca cuenta como reserva en la sonda.
+ */
+export interface PickupLook extends StillLook {
+  readonly shape: boolean;
+}
 /** Color y opacidad de un aviso en el suelo (sin hoja: nunca es reserva). */
 export interface WarningLook {
   readonly color: number;
@@ -47,7 +60,8 @@ export interface Looks {
   readonly player: MovingLook;
   readonly enemies: ReadonlyMap<string, EnemyLook>;
   readonly projectile: StillLook;
-  readonly gem: StillLook;
+  /** Por tipo de recogible (0022): la gema, el oro y la madera. */
+  readonly pickups: Readonly<Record<PickupKind, PickupLook>>;
   readonly ground: StillLook;
   readonly corpse: CorpseLook;
   readonly dynamite: StillLook;
@@ -83,6 +97,35 @@ function base(aspect: Aspect, frames: FrameCount): LookBase {
   };
 }
 
+/** `idle` de la gema sin hoja: el único frame de la textura de reserva. */
+const SHAPE_IDLE: AnimSpec = Object.freeze({ frames: Object.freeze([0]), fps: 1, loop: true });
+
+/**
+ * Aspectos de los recogibles (0022): `gold` y `wood` con su hoja (o reserva si no cargó); la gema,
+ * con hoja como ellos o, sin hoja, como forma de color sobre la textura de reserva (`shape`).
+ */
+function pickupLooks(
+  p: PickupLooksAppearance,
+  still: (a: StillAspect) => StillLook,
+): Record<PickupKind, PickupLook> {
+  const sheet = (a: StillAspect): PickupLook => ({ ...still(a), shape: false });
+  const xp: PickupLook =
+    'sheet' in p.xp
+      ? sheet(p.xp)
+      : {
+          texture: PLACEHOLDER_TEXTURE,
+          placeholder: true,
+          scale: 1,
+          origin: CENTER,
+          facing: 'right',
+          color: p.xp.placeholderColor,
+          flips: false,
+          idle: SHAPE_IDLE,
+          shape: true,
+        };
+  return { xp, gold: sheet(p.gold), wood: sheet(p.wood) };
+}
+
 /**
  * Resuelve los aspectos contra las texturas cargadas (design "Fallback"): si la hoja falta o algún
  * índice usado no existe, el aspecto usa el disco de reserva. Puro: sin motor.
@@ -93,7 +136,7 @@ export function resolveLooks(appearance: Appearance, frames: FrameCount): Looks 
     idle: a.idle,
     walk: a.walk,
   });
-  const still = (a: Appearance['gem']): StillLook => ({ ...base(a, frames), idle: a.idle });
+  const still = (a: StillAspect): StillLook => ({ ...base(a, frames), idle: a.idle });
   return {
     player: moving(appearance.player),
     enemies: new Map(
@@ -103,7 +146,7 @@ export function resolveLooks(appearance: Appearance, frames: FrameCount): Looks 
       ]),
     ),
     projectile: still(appearance.projectile),
-    gem: still(appearance.gem),
+    pickups: pickupLooks(appearance.pickups, still),
     ground: still(appearance.ground),
     corpse: { ...base(appearance.corpse, frames), death: appearance.corpse.death },
     dynamite: still(appearance.dynamite),

@@ -1,5 +1,5 @@
 import type { Appearance, SheetRect } from '../content/appearanceSchema';
-import { aspectsOf, structureAspectsOf } from '../content/loadAppearance';
+import { aspectsOf, structureAspectsOf, veinAspectsOf } from '../content/loadAppearance';
 import { BRIDGE_FRAME_NAMES } from './map/mapLooks';
 import { GAME_SCENE_KEY, MENU_SCENE_KEY } from './sceneKeys';
 
@@ -30,6 +30,7 @@ export function sheetsToLoad(appearance: Appearance): SheetLoad[] {
     ...aspectsOf(appearance).map(([, a]) => a.sheet),
     ...mapSheets(appearance),
     ...structureAspectsOf(appearance).map(([, a]) => a.sheet),
+    ...veinAspectsOf(appearance).map(([, a]) => a.sheet),
   ];
   for (const { file, frameWidth, frameHeight } of sheets) {
     if (!byFile.has(file)) byFile.set(file, { key: file, file, frameWidth, frameHeight });

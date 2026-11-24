@@ -7,6 +7,11 @@ export const ARCHER_FILE = 'Factions/Knights/Troops/Archer/Blue/Archer_Blue.png'
 export const ARROW_FILE = 'Factions/Knights/Troops/Archer/Arrow/Arrow.png';
 export const DEAD_FILE = 'Factions/Knights/Troops/Dead/Dead.png';
 export const GEM_FILE = 'Resources/Resources/G_Idle.png';
+/** Oro (0022): la bolsa de `G_Idle` pasa del aspecto de la gema al del oro. */
+export const GOLD_FILE = GEM_FILE;
+export const WOOD_FILE = 'Resources/Resources/W_Idle.png';
+export const VEIN_FILE = 'Resources/Gold Mine/GoldMine_Active.png';
+export const VEIN_DEPLETED_FILE = 'Resources/Gold Mine/GoldMine_Inactive.png';
 export const GROUND_FILE = 'Terrain/Ground/Tilemap_Flat.png';
 export const WATER_FILE = 'Terrain/Water/Water.png';
 export const FOAM_FILE = 'Terrain/Water/Foam/Foam.png';
@@ -40,6 +45,9 @@ const FILES = [
   HOUSE_RUIN_FILE,
   TOWER_FILE,
   TOWER_RUIN_FILE,
+  WOOD_FILE,
+  VEIN_FILE,
+  VEIN_DEPLETED_FILE,
 ];
 
 /** Los 15 casos de orilla (lados de río, letras en orden N-E-S-W; design 0016 §12.2 B2). */
@@ -97,7 +105,9 @@ export interface RawAppearance {
   player: Json;
   enemies: Record<string, Json>;
   projectile: Json;
-  gem: Json;
+  pickups: Record<string, Json>;
+  veins: Record<string, Json>;
+  veinColor: unknown;
   ground: Json;
   corpse: Json;
   dynamite: Json;
@@ -185,7 +195,11 @@ export function rawAppearance(): RawAppearance {
       },
     },
     projectile: still(ARROW_FILE, 64, '#ffd60a'),
-    gem: still(GEM_FILE, 128, '#3e9bff'),
+    pickups: {
+      xp: { shape: true, placeholderColor: '#3e9bff' },
+      gold: still(GOLD_FILE, 128, '#e8c547'),
+      wood: still(WOOD_FILE, 128, '#9c6b3c'),
+    },
     ground: still(GROUND_FILE, 64, '#2f6b3a'),
     corpse: { ...base(DEAD_FILE, 128, '#b0b4ba'), death: anim([1, 2, 3, 4, 5, 6], 15, false) },
     dynamite: still(DYNAMITE_FILE, 64, '#c0392b'),
@@ -199,5 +213,14 @@ export function rawAppearance(): RawAppearance {
     map: rawMapAppearance(),
     structures: rawStructureAppearance(),
     structureColors: { 'goblin-house': '#a33b2b', 'goblin-tower': '#7a5230', ruin: '#3d3a36' },
+    veins: {
+      active: { ...structureLook(VEIN_FILE, 192, 128), scale: 0.6, origin: { x: 0.5, y: 0.5 } },
+      depleted: {
+        ...structureLook(VEIN_DEPLETED_FILE, 192, 128),
+        scale: 0.6,
+        origin: { x: 0.5, y: 0.5 },
+      },
+    },
+    veinColor: '#d4a017',
   };
 }

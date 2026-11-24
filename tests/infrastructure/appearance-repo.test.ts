@@ -8,6 +8,7 @@ import {
   aspectsOf,
   mapSheetsOf,
   structureAspectsOf,
+  veinAspectsOf,
   parseAppearance,
 } from '../../src/infrastructure/content/loadAppearance';
 
@@ -69,6 +70,7 @@ describe('Datos de aspecto del repositorio', () => {
       ...aspects.map(([, a]) => ASSET_DIR + a.sheet.file),
       ...mapSheetsOf(appearance).map(([, file]) => ASSET_DIR + file),
       ...structureAspectsOf(appearance).map(([, a]) => ASSET_DIR + a.sheet.file),
+      ...veinAspectsOf(appearance).map(([, a]) => ASSET_DIR + a.sheet.file),
     ]);
     expect([...used].every((p) => registered.includes(p))).toBe(true);
     expect([...registered].sort()).toEqual([...used].sort());

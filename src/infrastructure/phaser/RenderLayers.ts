@@ -70,7 +70,7 @@ export class RenderLayers {
     const { kit, looks, capacity } = parts;
     this.parts = parts;
     this.pulses = new PulseLayer(capacity.pulses, capacity.visualTicks, parts.ring);
-    this.gems = new GemLayer(capacity.gems, kit, looks.gem);
+    this.gems = new GemLayer(capacity.gems, kit, looks.pickups.xp);
     this.corpses = new CorpseLayer(capacity.corpses, kit, looks.corpse);
     this.enemies = new EnemyLayer(capacity.enemies, kit, looks.enemies, this.corpses);
     this.projectiles = new ProjectileLayer(capacity.projectiles, kit, looks.projectile);

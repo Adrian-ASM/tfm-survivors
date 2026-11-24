@@ -82,13 +82,24 @@
     "placeholderColor": "#f5d90a",
     "idle": { "frames": [0], "fps": 1, "loop": true }
   },
-  "gem": {
-    "sheet": { "file": "Resources/Resources/G_Idle.png", "frameWidth": 128, "frameHeight": 128 },
-    "scale": 0.3,
-    "origin": { "x": 0.5, "y": 0.5 },
-    "facing": "right",
-    "placeholderColor": "#4fd1c5",
-    "idle": { "frames": [0], "fps": 1, "loop": true }
+  "pickups": {
+    "xp": { "shape": true, "placeholderColor": "#4fd1c5" },
+    "gold": {
+      "sheet": { "file": "Resources/Resources/G_Idle.png", "frameWidth": 128, "frameHeight": 128 },
+      "scale": 0.3,
+      "origin": { "x": 0.5, "y": 0.5 },
+      "facing": "right",
+      "placeholderColor": "#e8c547",
+      "idle": { "frames": [0], "fps": 1, "loop": true }
+    },
+    "wood": {
+      "sheet": { "file": "Resources/Resources/W_Idle.png", "frameWidth": 128, "frameHeight": 128 },
+      "scale": 0.3,
+      "origin": { "x": 0.5, "y": 0.5 },
+      "facing": "right",
+      "placeholderColor": "#9c6b3c",
+      "idle": { "frames": [0], "fps": 1, "loop": true }
+    }
   },
   "ground": {
     "sheet": { "file": "Terrain/Ground/Tilemap_Flat.png", "frameWidth": 64, "frameHeight": 64 },
@@ -259,5 +270,30 @@
       }
     }
   },
-  "structureColors": { "goblin-house": "#a33b2b", "goblin-tower": "#7a5230", "ruin": "#3d3a36" }
+  "structureColors": { "goblin-house": "#a33b2b", "goblin-tower": "#7a5230", "ruin": "#3d3a36" },
+  "veins": {
+    "active": {
+      "sheet": {
+        "file": "Resources/Gold Mine/GoldMine_Active.png",
+        "frameWidth": 192,
+        "frameHeight": 128
+      },
+      "scale": 0.6,
+      "origin": { "x": 0.5, "y": 0.5 },
+      "facing": "right",
+      "idle": { "frames": [0], "fps": 1, "loop": true }
+    },
+    "depleted": {
+      "sheet": {
+        "file": "Resources/Gold Mine/GoldMine_Inactive.png",
+        "frameWidth": 192,
+        "frameHeight": 128
+      },
+      "scale": 0.6,
+      "origin": { "x": 0.5, "y": 0.5 },
+      "facing": "right",
+      "idle": { "frames": [0], "fps": 1, "loop": true }
+    }
+  },
+  "veinColor": "#d4a017"
 }

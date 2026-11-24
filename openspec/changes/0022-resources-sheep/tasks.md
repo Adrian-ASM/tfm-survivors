@@ -94,13 +94,13 @@
 
 ## 4. Infraestructura · contenido, arte y composición (test-after)
 
-- [ ] 4.1 **Contenido y siembra.** zod de `content/resources.json` (nuevo, con los valores del design §2),
+- [x] 4.1 **Contenido y siembra.** zod de `content/resources.json` (nuevo, con los valores del design §2),
   `progression.json` (`maxGold` 32, `maxWood` 64) y el cruce `maxWood ≥ woodPiles.count` en `parseContent`;
   `RESOURCE_STREAM = 4`; `seedSource` con `resourceRandom`; `main.ts` carga el fichero nuevo. Tests:
   `tests/infrastructure/content-schemas.test.ts`, `tests/composition/seed-source.test.ts`.
   Escenarios: `xp-gems` · "Contenido de gemas validado" (sus 6, parte zod); `resources` · "Contenido de recursos
   validado" (sus 4, `meat` incluido).
-- [ ] 4.2 **Aspectos y PNG con procedencia (misma tarea, mismo commit).** Copiar `W_Idle.png`, `GoldMine_Active.png` y
+- [x] 4.2 **Aspectos y PNG con procedencia (misma tarea, mismo commit).** Copiar `W_Idle.png`, `GoldMine_Active.png` y
   `GoldMine_Inactive.png` a `public/assets/tiny-swords/…` con sus entradas en `content/asset-provenance.json`
   (sha256, bytes); medir las hojas al copiar. `appearance.json`: `pickups.{xp (forma), gold, wood}`, `veins`, colores
   de reserva distintos; zod. Tests: `tests/infrastructure/appearance-schema.test.ts`, guardarraíl

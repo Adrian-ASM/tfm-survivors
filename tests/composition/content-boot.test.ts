@@ -165,7 +165,7 @@ describe('bootContent', () => {
       player: { scale: number };
       enemies: Record<string, { scale: number }>;
       projectile: { scale: number };
-      gem: { scale: number };
+      pickups: Record<'gold' | 'wood', { scale: number }>;
       corpse: { scale: number };
       dynamite: { scale: number };
       explosion: { scale: number };
@@ -173,7 +173,14 @@ describe('bootContent', () => {
       warnings: Record<string, { color: string }>;
     };
     // 0016: el fondo ya no se dobla (su baldosa debe medir la celda); la spec habla de entidades.
-    const entities = [a.player, ...Object.values(a.enemies), a.projectile, a.gem, a.corpse];
+    const entities = [
+      a.player,
+      ...Object.values(a.enemies),
+      a.projectile,
+      a.pickups.gold,
+      a.pickups.wood,
+      a.corpse,
+    ];
     for (const look of [...entities, a.dynamite, a.explosion]) look.scale *= 2;
     // 0020: también los colores de los avisos.
     for (const w of Object.values(a.warnings)) w.color = '#0a0b0c';

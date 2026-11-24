@@ -139,6 +139,27 @@
       "version": "Update 010",
       "sha256": "beca37f966313c58310cb4475688494ac2f54dfd056051a6dc74e607c01359d7",
       "bytes": 4631
+    },
+    {
+      "path": "public/assets/tiny-swords/Resources/Resources/W_Idle.png",
+      "source": "Tiny Swords (Update 010)/Resources/Resources/W_Idle.png",
+      "version": "Update 010",
+      "sha256": "23738d5fe80f20eb8320fa00925193d747067b537106289ac024d09c73b71999",
+      "bytes": 775
+    },
+    {
+      "path": "public/assets/tiny-swords/Resources/Gold Mine/GoldMine_Active.png",
+      "source": "Tiny Swords (Update 010)/Resources/Gold Mine/GoldMine_Active.png",
+      "version": "Update 010",
+      "sha256": "c5205d8181d488adce612f8cf5b1546d4bd793d0ab1dd2956aa86d22c861d37f",
+      "bytes": 6913
+    },
+    {
+      "path": "public/assets/tiny-swords/Resources/Gold Mine/GoldMine_Inactive.png",
+      "source": "Tiny Swords (Update 010)/Resources/Gold Mine/GoldMine_Inactive.png",
+      "version": "Update 010",
+      "sha256": "83b6d5d74b84c565950f01b325bd93b0517ac6c19e719921095b71628065270a",
+      "bytes": 6546
     }
   ]
 }
