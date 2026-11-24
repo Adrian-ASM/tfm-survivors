@@ -54,7 +54,7 @@ Teclado (WASD / flechas). Pausa con Esc. Táctil y gamepad: *Should/Could*.
 - Mundo de varias pantallas, cámara que sigue al jugador, **límites duros** (borde de agua). **Sin desniveles.**
 - Colisión del jugador contra troncos (no contra la copa) y agua.
 - **El castillo ya viene en el mapa**, uno por partida, en el punto de inicio del jugador: el generador reserva la
-  zona de inicio con el castillo (0015 reserva la zona; el castillo sólido llega con 0016 y la tienda con 0024).
+  zona de inicio con el castillo (0015 reserva la zona; el castillo sólido llega con 0016 y la tienda con 0023).
 - Genera también: zonas ricas en recursos con campamentos de guardianes, casas goblin, torres goblin, solares de obra
   y montones de leña aleatorios.
 
@@ -79,6 +79,7 @@ Máquina de estados por tipo, definida en contenido:
 - **Campamentos de guardianes** en zonas ricas en recursos (generados con el mapa).
 - **Casas y torres de madera goblin**: generadores/defensas **destruibles** (única excepción a "edificios
   indestructibles"). Destruirlas da recompensa: oro por objetivos.
+  Llevan barra de vida y, desde 0025, cada torre lleva un arquero goblin que dispara al jugador en su radio.
 
 **Bestiario solo con el pack** (no se dibujan enemigos nuevos con IA; el Enemy Pack de pago queda descartado por
 licencia): caballeros rivales de otro color (arqueros, guerreros, peones), variantes de élite por color de goblin,
@@ -116,13 +117,13 @@ Should.
 |---|---|
 | **Must** (hecho) | Movimiento · 2 armas automáticas · oleadas · colisiones y vida · gemas de XP · subida de nivel con 3 opciones · temporizador, victoria y derrota · HUD · menú · guardado local + exportar/importar · despliegue público (0001–0011) |
 | **Must** (nuevo) | Arte con sprites del pack CC0 y tema medieval (0012) · mundo grande con cámara y límites (0013) · mapa procedural por semilla con colisión (0015) · arte del mapa (0016) · vista a pantalla completa (0017) · recorte del arte del mapa fuera de cámara (0018) · navegación por campo de flujo (0019) |
-| **Should** | Comportamientos de enemigos (0020, parte A hecha) · casas y torres goblin con TNT de guardia (0021) · elección de personaje y Guerrero (0022) · recursos y ovejas (0023) · progresión separada y castillo-tienda (0024) · solares de obra: casa y torre (0025) · pasada de equilibrio como diseño (balance-pass-2, número al empezar) · campamentos de guardianes en zonas ricas (sin número, tras 0023) ·
+| **Should** | Comportamientos de enemigos (0020, parte A hecha) · casas y torres goblin con TNT de guardia (0021) · recursos y ovejas (0022) · progresión separada y castillo-tienda (0023) · solares de obra: casa y torre (0024) · barras de vida y arqueros en las torres goblin (0025) · elección de personaje y Guerrero (0026, aplazado hasta cerrar 0023) · pasada de equilibrio como diseño (balance-pass-2, número al empezar) · campamentos de guardianes en zonas ricas (sin número, tras 0022) ·
 modo Objetivos · meta-progresión guardada · un jefe final · opciones de audio y accesibilidad · controles táctiles |
 | **Could** | UI del pack · ciclo día/noche · minimapa/niebla de guerra · modo Infinito · victoria "defender el castillo" · talar árboles · colocación libre de edificios · jefes por escala · audio · login con Google + Supabase · reto diario con semilla compartida · i18n ES/EN · PWA |
 | **Won't** | Multijugador · desniveles/terreno multinivel · monetización · leaderboard con re-simulación · enemigos dibujados con IA |
 
 Nota: v1 tenía "mapas procedurales complejos" en Won't. Se acota a un mapa de rejilla sin desniveles y entra como
-Must (0015); lo que baja a Should es todo el bloque de contenido 0020–0025.
+Must (0015); lo que baja a Should es todo el bloque de contenido 0020–0026.
 
 Renumeración (2026-11-23): 0014 acabó siendo `e2e-manual-step` (infraestructura de tests), así que el mapa
 procedural pasa a 0015. Al aprobar 0015 se partió en mapa puro (0015) y arte del mapa (0016), y se añadió la vista
@@ -134,6 +135,13 @@ campo de flujo pasa a 0019 y el bloque Should, a 0020–0024.
 Renumeración (2026-11-24): el change 0020 `enemy-behaviors` cerró solo su parte A; la parte B (casas y torres
 goblin, TNT de guardia y campamentos) pasa a ser el change propio 0021 `goblin-camps` y el bloque Should pasa a
 0021–0025.
+
+Renumeración (2026-11-24): 0020 y 0021 están hechos y archivados. El autor aplaza el Guerrero (antes 0022
+`characters`) hasta tener cerradas más mecánicas: 0023 separa `upgrades.json` en mejoras de personaje (XP) y de arma
+(oro), y el Guerrero necesita ese formato; así no se rehacen sus mejoras ni se recalibra el balance dos veces.
+Además entra el change nuevo 0025 `goblin-tower-archers`. El bloque Should queda: 0022 `resources-sheep` (antes
+0023), 0023 `split-progression-castle` (antes 0024), 0024 `build-sites` (antes 0025), 0025 `goblin-tower-archers`
+(nuevo) y 0026 `characters` (antes 0022).
 
 ### Historias Must nuevas (criterios clave)
 
@@ -177,18 +185,47 @@ atascada.**
 - Given un río con un puente, When el jugador está al otro lado, Then los enemigos cruzan por el puente.
 - Given 300 enemigos, When se simula el campo de flujo, Then el tick se mantiene dentro del presupuesto fijado en el
   spike previo.
-- Nota: el criterio del recálculo por edificios nuevos pasa a 0025 build-sites (en 0019 el mapa no cambia durante
+- Nota: el criterio del recálculo por edificios nuevos pasa a 0024 build-sites (en 0019 el mapa no cambia durante
   la partida). Se acepta el apilamiento en los puentes (sin separación entre enemigos).
 
-**0025 · build-sites (criterio movido desde el campo de flujo).**
+**0024 · build-sites (criterio movido desde el campo de flujo).**
 - Given un edificio nuevo, When se construye, Then el campo se recalcula y los enemigos lo rodean.
+
+### Historias Should con detalle
+
+**0025 · goblin-tower-archers · Como jugador quiero ver cuánta vida le queda a cada casa y torre goblin y que las
+torres me disparen, para que atacar un campamento sea una decisión de riesgo y no un paseo.**
+- Motivo: hoy las torres son estructuras destruibles sin comportamiento (decisión D4 de 0021) y no hay forma de
+  saber cuánto falta para destruir una casa o torre.
+- Given una casa o torre goblin con vida completa o dañada, When se renderiza, Then lleva una barra de vida sobre
+  ella que refleja su vida actual.
+- Given una casa o torre goblin destruida (en ruina), When se renderiza, Then la barra ya no se muestra.
+- Given una torre goblin intacta con su arquero y el jugador fuera de su radio, When pasan ticks, Then el arquero
+  no dispara.
+- Given el jugador que entra en el radio de la torre, When transcurre su cadencia, Then el arquero dispara una
+  flecha al jugador y, si impacta, resta el daño de contenido.
+- Given la misma semilla y los mismos movimientos del jugador, When se simula dos veces, Then los disparos de las
+  torres son idénticos (sin `Math.random`).
+- Preguntas abiertas: radio, cadencia y daño de la flecha (todo en `content/`); si el arquero muere con la torre al
+  destruirse (propuesta: sí, sin cadáver propio); si la flecha tiene aviso o es esquivable (propuesta: proyectil
+  visible y lento, esquivable, sin aviso en el suelo); si las flechas golpean a otros enemigos (propuesta: no).
+- Riesgo de procedencia: hay que comprobar en explore si Tiny Swords Update 010 trae un goblin arquero. Si no, se
+  usa el arquero de otro color del pack (bestiario "caballeros rivales") o se deja la torre sin figura visible; no se
+  dibuja ningún enemigo con IA. Cualquier sprite nuevo exige su entrada en `content/asset-provenance.json`.
+- Efecto en balance: las torres con disparo cambian el riesgo de explorar; se vuelve a medir la banda del bot y se
+  comprueba que el bot v3 sigue siendo representativo (deuda W3 de 0020).
+
+**0026 · characters · Como jugador quiero elegir entre Arquero y Guerrero para poder jugar de forma distinta.**
+- Nota de orden: era 0022. Se movió al final del bloque porque el Guerrero necesita el formato de mejoras separado
+  de 0023 (personaje por XP, arma por oro) y el balance ya estable con recursos, castillo y solares; así sus mejoras
+  y su equilibrio se hacen una sola vez. Los criterios se redactan al proponer el change.
 
 **balance-pass-2 (número al empezar) · Como jugador quiero que cada enemigo y cada personaje se sienta distinto y
 justo para que la partida sea divertida y no solo "dentro de la banda".**
 - Motivo: desde 0010 cada change solo recalibra para mantener el gate (25–35/50 victorias del bot, quieto pierde
   antes de 180 s); es una red de seguridad, no diseño. En 0020 el gate cuadró pero el Goblin Barril casi nunca llega
-  a encender la mecha en partida real porque el arco lo mata antes. Se hace después de 0024 porque personajes,
-  recursos, castillo-tienda y solares mueven los números; hacerlo antes no compensa.
+  a encender la mecha en partida real porque el arco lo mata antes. Se hace después de 0026 porque recursos,
+  castillo-tienda, solares, arqueros de torre y personajes mueven los números; hacerlo antes no compensa.
 - Mientras tanto, los changes pueden hacer ajustes puntuales cuando una mecánica no se percibe (p. ej. el barril,
   que ya mide 0020b).
 - Given los stats (vida, daño, velocidad) de cada tipo de enemigo y de cada personaje (Arquero y Guerrero), When
@@ -229,12 +266,13 @@ Pendientes:
 | 0019 flow-field | Navegación por campo de flujo (4 vecinos + línea libre, recolocación de apariciones, `maxAlive` 300) | Must | Con cientos de enemigos |
 | 0020 enemy-behaviors | **Parte A hecha**: comportamiento por tipo en contenido (persecución, mecha, carga y espera), barril kamikaze con aviso y explosión de área, TNT artillero provisional con dinamita y aviso, fuego amigo, bot v3 que esquiva y balance 27/50 (ADR-0019). La parte B sigue en 0021 | Should | |
 | 0021 goblin-camps | Parte B de 0020: casas y torres goblin destruibles generadas con el mapa, Goblin TNT de guardia que nace en ellas y patrulla, alerta y vuelve a su puesto, ajuste del barril. Los campamentos salen del alcance (decisión D8) | Should | |
-| 0022 characters | Elección de personaje y Guerrero | Should | ¿Es divertido el Guerrero? |
-| 0023 resources-sheep | Recursos recogibles con tipo y ovejas | Should | |
-| 0024 split-progression-castle | Progresión separada + castillo-tienda (castillo ya en el mapa) | Should | |
-| 0025 build-sites | Solares de obra: casa y torre (incluye el recálculo del campo de flujo por edificios) | Should | |
+| 0022 resources-sheep | Recursos recogibles con tipo y ovejas | Should | |
+| 0023 split-progression-castle | Progresión separada + castillo-tienda (castillo ya en el mapa) | Should | |
+| 0024 build-sites | Solares de obra: casa y torre (incluye el recálculo del campo de flujo por edificios) | Should | |
+| 0025 goblin-tower-archers | Barra de vida sobre casas y torres goblin (desaparece en ruina) y un arquero goblin en cada torre que dispara al jugador dentro de su radio (decisión D4 de 0021 superada) | Should | ¿Hay goblin arquero en Update 010? (procedencia) |
+| 0026 characters | Elección de personaje y Guerrero. Aplazado desde 0022 hasta tener el formato de mejoras de 0023 | Should | ¿Es divertido el Guerrero? |
 | balance-pass-2 (número al empezar) | Pasada de equilibrio como diseño, no como red de seguridad: stats por tipo de enemigo y de personaje, métricas más allá de la tasa de victoria, revisión del bot de referencia y playtest humano con notas | Should | |
-| goblin-guard-camps (sin número, tras 0023) | Campamentos de guardianes en zonas ricas en recursos (sacados de 0021, D8) | Should | |
+| goblin-guard-camps (sin número, tras 0022 resources-sheep) | Campamentos de guardianes en zonas ricas en recursos (sacados de 0021, D8) | Should | |
 | Resto | UI del pack, día/noche, minimapa, jefes, audio | Could | |
 
 Notas:
@@ -278,7 +316,7 @@ Siguen abiertas:
 | 0010 · W2 | Margen estrecho de la tasa: 30/50 en una banda 25–35, con ±3–4 victorias de ruido entre factores contiguos. Un ajuste pequeño de contenido puede sacarla de la banda: hay que volver a medir. | Cualquier change que toque `content/` (todos los de 0015 en adelante) |
 | 0009 · S5 | El test de "Primer frame tras Jugar" declara 601 frames de menú que no llega a pasar al bucle; la garantía es estructural (bucle nuevo por partida). | Con 0010 si se toca `run-launcher.test.ts` |
 | v2.0 | Sin separación entre enemigos la horda se amontona. | Pendiente, change propio (0019 la mantiene: apilamiento en puentes aceptado) |
-| v2.0 | `upgrades.json` mezcla mejoras de personaje y de arma. | Con 0024 |
+| v2.0 | `upgrades.json` mezcla mejoras de personaje y de arma. | Con 0023 |
 
 ## Historial de changes hechos (resumen)
 
