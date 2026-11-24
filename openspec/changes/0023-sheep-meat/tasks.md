@@ -119,7 +119,7 @@
     `potion` y el de campo desconocido de `meatPerSheep` a `meatPerHouse`, como en la spec.
 
 ## 5. Dominio · ovejas en el mapa generado y balance (gate M1)
-- [ ] 5.1 Colocación inicial y primer pasto (TDD). `candidateCells` extraído de `placeResources` (`RESOURCE_GOLDEN`
+- [x] 5.1 Colocación inicial y primer pasto (TDD). `candidateCells` extraído de `placeResources` (`RESOURCE_GOLDEN`
   intacta), `placeSheep`, `resolveSheep`, fase 2 del flujo (primer pasto) y, en composición, `SHEEP_STREAM = 5` y
   `sheepRandom` en `seededRun` (3 líneas, necesarias para los tests sembrados); `SHEEP_GOLDEN` en `mapGolden.ts`.
   Escenarios:
@@ -137,7 +137,13 @@
   - xp-gems · "Ningún enemigo ni estructura suelta carne" (tope 0).
   Las propiedades que ya pasen en verde al escribirlas se quedan en esta tarea (no son tareas aparte). Tests:
   `tests/domain/sheep-placement.test.ts`, `determinism-sheep.test.ts`, `tests/support/map-golden.test.ts`.
-- [ ] 5.2 Balance M1 y tests de balance (test-after sobre contenido). En `balance.test.ts`: el lote actual queda con
+  - Apply: `placeSheep(base, map, rules, random)` y `sheepCells(map, sites, rules)` (celdas base con centro legal,
+    las mismas para colocar y reaparecer); `legalPosition.ts` separa `isLegalSheepAt`/`legalCells` para evitar un
+    import circular. `SHEEP_GOLDEN` (42: `59,32 · 35,4 · 47,1 · 12,4 · 59,7`; 123: `2,4 · 2,20 · 14,26 · 5,33 ·
+    15,15`); `MAP_`/`STRUCTURE_`/`RESOURCE_GOLDEN` intactas. "Ninguna oveja solapa el mapa" se comprueba con 0,001 px
+    de tolerancia (al deslizar por una esquina la distancia queda en 18 − 1e−14, como el jugador). "Mismo combate con
+    y sin recursos" compara además ovejas y carne, y "Los recursos no consumen azar" el azar de las ovejas.
+- [x] 5.2 Balance M1 y tests de balance (test-after sobre contenido). En `balance.test.ts`: el lote actual queda con
   ovejas (banda, mechas > 16,3, toda partida termina) y se añade un lote con `withoutSheep` (igualdad con
   `BALANCE_BASELINE`, 27, y 26,9 mechas), cada uno con su `beforeAll` y timeout de 180 s; quieto con ovejas y con
   tope 0 en el mapa generado, y el del mapa vacío una vez; huella de combate con `resources.json` sin `meat`
@@ -156,6 +162,23 @@
   propio de 60 s. Revisar y anotar cualquier test existente cuyo valor exacto cambie por las ovejas (sin tocar
   expectativas que la spec no respalde). Anotar M1 aquí: victorias y delta semilla a semilla, tiempos de lote (local y
   ×2,8 frente a 90 s), bench frente a 0,27 / 0,25 ms.
+  - **M1 (2026-11-24, contenido provisional de design §2 sin ningún ajuste: `maxAlive` 5, `healPercent` 20)**:
+    - Con ovejas: **28/50** victorias (base 27; delta semilla a semilla: la 9 pasa a derrota, la 10 y la 50 a
+      victoria), 26,76 mechas (> 16,3), las 50 partidas terminan; curación media del bot 4,2 de vida por partida y
+      0,30 ovejas muertas por partida.
+    - Quieto: 0 supervivientes con mapa generado (con ovejas y con tope 0) y con mapa vacío; muerte máxima en el
+      tick 6.802 (generado) y 7.948 (vacío), iguales a M0; curación media del quieto 0,0.
+    - Con tope 0: **27/50**, cada semilla igual a `BALANCE_BASELINE` (resultado, tick y bajas), 26,88 mechas (26,9).
+    - Tiempos (local): lote con ovejas 28,8–29,1 s (×2,8 ≈ 81 s < 90), lote con tope 0 26,7–26,8 s (≈ 75 s);
+      `balance.test.ts` completo 63 s (31,5 s en M0: el segundo lote lo pide la spec `resources`). Las ovejas
+      suben el lote un 7,5 % frente al mismo código sin ovejas (paso 1 de la flota y nivel 2 de las armas en cada
+      tick sin enemigos ni estructuras en el criterio); los tests del quieto, 3,0 s y 1,1 s (< 10 s, sin timeout
+      propio).
+    - Bench: "cuatro topes llenos + ovejas en huida" 0,252 ms/tick (p99 0,363; 0,27 ms en 0022 con tres topes, 0,263
+      en M0), "Peor caso con gemas" 0,187 ms (≤ 0,25), "tres topes" 0,254 ms. El bench fija la vida de las ovejas a la
+      de bench (el pulso de bench alcanza toda la arena).
+    - Ningún test existente cambia de valor exacto por las ovejas (el contenido de escenario de `aRunConfig` lleva
+      tope 0; los del contenido por defecto que fijaban cifras de 0022 se movieron al lote con tope 0).
 
 ## 6. Infraestructura · render, arte y sonda (test-after)
 - [ ] 6.1 Arte, procedencia y aspectos. Copiar `HappySheep_Idle.png`, `HappySheep_Bouncing.png` y `M_Idle.png`

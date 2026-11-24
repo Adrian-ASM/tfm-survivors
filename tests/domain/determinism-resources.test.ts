@@ -19,6 +19,7 @@ import { startOn } from '../support/camps';
 import { randomInputs } from '../support/inputs';
 import { CountingRandom } from '../support/random';
 import { aBehaviorConfig, chooseFirstWhileOpen, startSeededRun } from '../support/runs';
+import { sheepRandom } from '../support/sheep';
 import { aPulse, weaponsOf } from '../support/weapons';
 
 // Spec resources "Recursos sin efecto en el combate" y simulation-loop "Determinismo" (0022).
@@ -35,6 +36,9 @@ function combat(s: RunSnapshot): string {
     s.kills,
     s.player,
     s.enemies.map((e) => [e.id, e.type, e.x, e.y, e.health, e.state, e.stateKind, e.damaged]),
+    // 0023: ovejas (id, posición, vida y estado) y carne, aparte de los ids de los recogibles.
+    s.sheep.map((o) => [o.id, o.x, o.y, o.health, o.state]),
+    s.pickups.filter((p) => p.kind === 'meat').map((p) => [p.x, p.y, p.value]),
     s.projectiles,
     s.pulses,
     s.dynamites,
@@ -68,12 +72,13 @@ function lockstep(
 
 describe('Recursos sin efecto en el combate (resources)', () => {
   it.each([7, 42])(
-    'Scenario: Mismo combate con y sin recursos (semilla %i, 14.400 ticks)',
+    'Scenario: Mismo combate con y sin recursos (semilla %i, 14.400 ticks, ovejas incluidas)',
     (seed) => {
       const inputs = randomInputs(LONG, 2026);
       const withRes = startSeededRun(TOUGH, seed);
       const without = startSeededRun(withoutResourceSources(TOUGH), seed);
       expect(without.snapshot().veins).toEqual([]);
+      expect(withRes.snapshot().sheep.length).toBeGreaterThan(0);
       const diverged = lockstep(withRes, without, inputs, (x, y) => combat(x) === combat(y));
       expect(diverged).toBe(-1);
       const { gold, wood } = withRes.snapshot().resources;
@@ -93,9 +98,13 @@ describe('Recursos sin efecto en el combate (resources)', () => {
     const P = { x: 1000, y: 1000 };
     const busy = new CountingRandom(new Mulberry32RandomGenerator(7));
     const idle = new CountingRandom(new Mulberry32RandomGenerator(7));
+    // 0023: el azar de las ovejas (una oveja declarada lejos en cada partida) tampoco cambia.
+    const busySheep = new CountingRandom(sheepRandom(7));
+    const idleSheep = new CountingRandom(sheepRandom(7));
+    const far = [{ x: 3000, y: 300 }];
     const a = startOn(
       config,
-      { kind: 'open', resources: { veins: [P] } },
+      { kind: 'open', resources: { veins: [P] }, sheep: { at: far, random: busySheep } },
       {
         player: P,
         enemies: [{ type: 'goblin-barrel', x: 1040, y: 1000, health: 4 }],
@@ -108,7 +117,11 @@ describe('Recursos sin efecto en el combate (resources)', () => {
     );
     const b = startOn(
       config,
-      { kind: 'open', resources: { veins: [{ x: 3000, y: 2000 }] } },
+      {
+        kind: 'open',
+        resources: { veins: [{ x: 3000, y: 2000 }] },
+        sheep: { at: far, random: idleSheep },
+      },
       { player: P, enemies: [{ type: 'goblin-barrel', x: 1040, y: 1000 }] },
       idle,
     );
@@ -122,6 +135,8 @@ describe('Recursos sin efecto en el combate (resources)', () => {
     expect(b.snapshot().resources).toEqual({ gold: 0, wood: 0 });
     expect(busy.calls).toBe(idle.calls);
     expect(busy.next()).toBe(idle.next());
+    expect(busySheep.calls).toBe(idleSheep.calls);
+    expect(busySheep.next()).toBe(idleSheep.next());
   });
 });
 

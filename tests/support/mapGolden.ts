@@ -184,3 +184,25 @@ export const RESOURCE_GOLDEN: Readonly<Record<42 | 123, readonly string[]>> = {
     'wood@44,13',
   ],
 };
+
+/** Ovejas de un mapa para su firma (las del snapshot del tick 0 y de la sonda). */
+export interface SheepLayout {
+  readonly sheep: readonly { readonly x: number; readonly y: number }[];
+}
+
+/** Firma de las ovejas iniciales: `sheep@col,row` en el orden de la lista (celdas de 60 px). */
+export const sheepSignatureOf = (map: SheepLayout, cellSize = 60): string[] =>
+  map.sheep.map(
+    (o) => `sheep@${String(Math.floor(o.x / cellSize))},${String(Math.floor(o.y / cellSize))}`,
+  );
+
+/**
+ * Ovejas iniciales del contenido por defecto (0023) para las semillas 42 y 123, colocadas con
+ * `SHEEP_STREAM` tras las estructuras (fase 1 del azar de las ovejas). Cambia con content/sheep.json
+ * (`maxAlive` o `placement`) o con la colocación: se regenera con `map-golden.test.ts`.
+ * `MAP_GOLDEN`, `STRUCTURE_GOLDEN` y `RESOURCE_GOLDEN` no cambian con ellas.
+ */
+export const SHEEP_GOLDEN: Readonly<Record<42 | 123, readonly string[]>> = {
+  42: ['sheep@59,32', 'sheep@35,4', 'sheep@47,1', 'sheep@12,4', 'sheep@59,7'],
+  123: ['sheep@2,4', 'sheep@2,20', 'sheep@14,26', 'sheep@5,33', 'sheep@15,15'],
+};

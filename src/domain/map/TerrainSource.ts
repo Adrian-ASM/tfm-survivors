@@ -73,6 +73,8 @@ export type TerrainSource =
       readonly structureRandom: RandomGenerator;
       /** Vetas y montones (ADR-0021), con su propio flujo. */
       readonly resourceRandom: RandomGenerator;
+      /** Azar de las ovejas (ADR-0022): colocación, primer pasto, paseos y reapariciones. */
+      readonly sheepRandom: RandomGenerator;
     }
   | {
       readonly kind: 'cells';

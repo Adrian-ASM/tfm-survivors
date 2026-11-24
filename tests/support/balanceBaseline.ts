@@ -62,7 +62,8 @@ export const BASELINE_FUSES_PER_RUN = 26.88;
 
 /**
  * Huella (sha256 de JSON canónico, claves ordenadas) de los campos de combate del contenido de
- * `main` (spec resources, "Contenido de combate intacto"). Progresión: solo los campos de XP.
+ * `main` (spec resources, "Contenido de combate intacto"; spec sheep 0023, ídem). Progresión: solo los
+ * campos de XP; recursos: sin la carne (los campos que añade 0023).
  */
 export const COMBAT_CONTENT_SHA256 = {
   waves: 'ad7b9a6c23c3dce1f8d80473273e7e481ee83fd11fff41c3393db968f846ecc7',
@@ -72,4 +73,6 @@ export const COMBAT_CONTENT_SHA256 = {
   player: '625622ed673953ac1cce75e60c9effecc1fecdf3c5174685e21ede1175ff88f0',
   progression: 'd794f9130929587446e03b8052c1a8d0ba7b86876548c90e34303e6fd464133b',
   structures: '2ebda39bdcf9091295b115fb84b4e8569184dfd9fed3fa0b400cbc36bfbfa105',
+  /** 0023 (M0, tasks 0.1): content/resources.json de `main` antes del change, sin el campo `meat`. */
+  resources: 'c09e42573541d9b138d4a843eeea5f65717ecc70f203ecd9387c92716805787d',
 } as const;

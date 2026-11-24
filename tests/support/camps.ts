@@ -2,6 +2,7 @@ import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulbe
 import {
   MAP_STREAM,
   RESOURCE_STREAM,
+  SHEEP_STREAM,
   STRUCT_STREAM,
   deriveSeed,
 } from '../../src/infrastructure/random/deriveSeed';
@@ -157,6 +158,10 @@ export const DEFAULT_STRUCTURES: StructuresConfig = aStructuresConfig();
 export const resourceRandomFor = (seed: number): Mulberry32RandomGenerator =>
   new Mulberry32RandomGenerator(deriveSeed(seed, RESOURCE_STREAM));
 
+/** Azar de las ovejas de la semilla, como en producción (`SHEEP_STREAM`, ADR-0022). */
+export const sheepRandomFor = (seed: number): Mulberry32RandomGenerator =>
+  new Mulberry32RandomGenerator(deriveSeed(seed, SHEEP_STREAM));
+
 /** Generador de la colocación de la semilla, como en producción (`STRUCT_STREAM`, ADR-0020). */
 export const structureRandomFor = (seed: number): Mulberry32RandomGenerator =>
   new Mulberry32RandomGenerator(deriveSeed(seed, STRUCT_STREAM));
@@ -170,6 +175,7 @@ export const campTerrain = (seed: number): TerrainSource => ({
   random: new Mulberry32RandomGenerator(deriveSeed(seed, MAP_STREAM)),
   structureRandom: structureRandomFor(seed),
   resourceRandom: resourceRandomFor(seed),
+  sheepRandom: sheepRandomFor(seed),
 });
 
 /** Partida de la semilla con el mapa generado y sus estructuras (azar de la partida: `seed`). */

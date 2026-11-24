@@ -485,7 +485,7 @@ function initialFlock(
       return err(invalidConfig(`setup.sheep.${String(i)}.origin`, SETUP_POSITION_MUST_BE_FINITE));
     }
   }
-  const spawns = sites.at.map((p, i) => ({ ...p, ...entries[i] }));
+  const spawns = sites.at.map((p, i) => ({ ...p, phaseEnd: sites.phaseEnds?.[i], ...entries[i] }));
   const ground = { map, cells: sites.respawnCells };
   return ok(new Flock(rules.sheep, spawns, sites.capacity, sites.random, ground));
 }

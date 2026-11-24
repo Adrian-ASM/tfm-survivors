@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import enemiesJson from '../../content/enemies.json';
 import playerJson from '../../content/player.json';
 import progressionJson from '../../content/progression.json';
+import resourcesJson from '../../content/resources.json';
 import structuresJson from '../../content/structures.json';
 import upgradesJson from '../../content/upgrades.json';
 import wavesJson from '../../content/waves.json';
@@ -24,8 +25,11 @@ const sha = (v: unknown): string => createHash('sha256').update(canon(v)).digest
 // Spec resources (0022), "Balance sin recalibrar con los recursos": los campos de combate del
 // contenido son los de `main` antes del change (huella congelada en M0, tasks 0.1).
 describe('Contenido de combate intacto (resources)', () => {
-  it('Scenario: Contenido de combate intacto (huella de M0 campo a campo)', () => {
+  // Spec sheep (0023), "Contenido de combate intacto": lo mismo sin los campos de ovejas y carne.
+  it('Scenario: Contenido de combate intacto (huella de M0 campo a campo, sin ovejas ni carne)', () => {
     const { baseXp, xpGrowth, gemRadius, magnetSpeed, maxGems } = progressionJson;
+    const resources: Partial<typeof resourcesJson> = { ...resourcesJson };
+    delete resources.meat;
     const now = {
       waves: sha(wavesJson),
       enemies: sha(enemiesJson),
@@ -34,6 +38,7 @@ describe('Contenido de combate intacto (resources)', () => {
       player: sha(playerJson),
       progression: sha({ baseXp, xpGrowth, gemRadius, magnetSpeed, maxGems }),
       structures: sha(structuresJson),
+      resources: sha(resources),
     };
     expect(now).toEqual(COMBAT_CONTENT_SHA256);
   });

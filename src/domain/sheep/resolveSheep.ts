@@ -5,6 +5,8 @@ import type { DeclaredStart, TerrainSource } from '../map/TerrainSource';
 import type { RandomGenerator } from '../shared/RandomGenerator';
 import { assertNever } from '../shared/assertNever';
 import { err, invalidConfig, ok, type DomainError, type Result } from '../shared/Result';
+import { isLegalSheepAt, legalCells } from './legalPosition';
+import { placeSheep, sheepCells } from './placeSheep';
 import type { SheepRules } from './SheepRules';
 
 export const MAP_SHEEP_ILLEGAL =
@@ -21,6 +23,8 @@ export interface SheepSites {
   readonly random: RandomGenerator | null;
   /** Celdas base de reaparición (orden de filas, centros legales para la oveja). */
   readonly respawnCells: readonly number[];
+  /** Último tick del primer pasto de cada oveja (mapa generado); sin él, pasto completo. */
+  readonly phaseEnds?: readonly number[];
 }
 
 const NONE: SheepSites = Object.freeze({
@@ -30,25 +34,21 @@ const NONE: SheepSites = Object.freeze({
   respawnCells: Object.freeze([]),
 });
 
-/** Las celdas de `cells` cuyo centro es posición legal del círculo de radio r. */
-export function legalCells(map: GameMap, cells: readonly number[], r: number): number[] {
-  return cells.filter((i) => {
-    const c = i % map.cols;
-    const rect = map.cellRect(c, (i - c) / map.cols);
-    return isLegalSheepAt(map, (rect.left + rect.right) / 2, (rect.top + rect.bottom) / 2, r);
-  });
-}
-
-/** ¿Es (x, y) una posición legal del círculo de radio r? La tangencia es legal. */
-export function isLegalSheepAt(map: GameMap, x: number, y: number, r: number): boolean {
-  const inside = x >= r && x <= map.width - r && y >= r && y <= map.height - r;
-  return inside && !map.overlapsBlocked(x, y, r);
+/**
+ * Primer pasto de las ovejas colocadas (fase 2 del azar de las ovejas, design 0023 §4): 1 valor
+ * por oveja, en orden de lista; dura `1 + ⌊next · graze.ticks⌋` ticks desde el tick 1.
+ */
+function firstGrazes(count: number, rules: SheepRules, random: RandomGenerator): number[] {
+  const g = rules.config.graze.ticks;
+  return Array.from({ length: count }, () => 1 + Math.floor(random.next() * g));
 }
 
 /**
- * Ovejas de la partida según el origen de su mapa: las declaradas por un mapa dado (cada una en una
- * posición legal, si no el error nombra `map.sheep.<i>`), sin tope, o ninguna. En un mapa dado
- * reaparecen en `grass` fuera de huellas y puertas, sin distancias (design 0023 §4.2).
+ * Ovejas de la partida según el origen de su mapa: en un mapa generado, las que coloca su azar de
+ * las ovejas (fase 1) y su primer pasto (fase 2), con tope `maxAlive`; las declaradas por un mapa
+ * dado (cada una en una posición legal, si no el error nombra `map.sheep.<i>`), sin tope, o
+ * ninguna. En un mapa dado reaparecen en `grass` fuera de huellas y puertas, sin distancias
+ * (design 0023 §4.2); en el generado, en las celdas de colocación.
  */
 export function resolveSheep(
   source: TerrainSource,
@@ -57,8 +57,13 @@ export function resolveSheep(
   sites: readonly StructureSite[] = [],
 ): Result<SheepSites, DomainError> {
   switch (source.kind) {
-    case 'generated':
-      return ok(NONE);
+    case 'generated': {
+      const random = source.sheepRandom;
+      const base = sheepCells(map, sites, rules);
+      const at = placeSheep(base, map, rules, random);
+      const phaseEnds = firstGrazes(at.length, rules, random);
+      return ok({ at, capacity: rules.maxAlive, random, respawnCells: base, phaseEnds });
+    }
     case 'open':
     case 'cells': {
       const declared = source.sheep;
