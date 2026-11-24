@@ -35,6 +35,8 @@ export interface TileDraw {
   readonly width: number;
   readonly height: number;
   readonly scale: number;
+  /** Su propio rectángulo (0018). */
+  readonly bounds: Box;
 }
 
 /** Sprite del mapa: frame (índice o marco con nombre), posición de su origen, volteo y recorte. */
@@ -59,6 +61,8 @@ export interface RectDraw {
   readonly width: number;
   readonly height: number;
   readonly color: number;
+  /** Su propio rectángulo (0018). */
+  readonly bounds: Box;
 }
 
 export type LowDraw = TileDraw | SpriteDraw | RectDraw;
@@ -97,6 +101,8 @@ export interface MapArtPlan {
   readonly cells: MapCellCounts;
   /** Objetos de escena del plan (uno por entrada de cada capa). */
   readonly objects: number;
+  /** Lado de la celda en px (`map.cellSize`): de él sale el margen del recorte (0018). */
+  readonly cellSize: number;
 }
 
 export interface PlanContext {
@@ -161,21 +167,24 @@ class Grid {
     const y = run.row * this.s;
     const width = this.right(run.col + run.cols - 1) - x;
     const height = this.bottom(run.row + run.rows - 1) - y;
-    return { kind: 'rect', x, y, width, height, color };
+    return { kind: 'rect', x, y, width, height, color, bounds: { x, y, width, height } };
   }
 
   tiles(run: TileRun, texture: string, frame: number, scale: number): TileDraw {
     const x = run.col * this.s;
     const y = run.row * this.s;
+    const width = this.right(run.col + run.cols - 1) - x;
+    const height = this.bottom(run.row + run.rows - 1) - y;
     return {
       kind: 'tiles',
       texture,
       frame,
       x,
       y,
-      width: this.right(run.col + run.cols - 1) - x,
-      height: this.bottom(run.row + run.rows - 1) - y,
+      width,
+      height,
       scale,
+      bounds: { x, y, width, height },
     };
   }
 }
@@ -343,5 +352,6 @@ export function planMapArt(map: MapSnapshot, looks: MapLooks, ctx: PlanContext):
     counts: countsOf(map, looks),
     cells: { trunk, water, bridge, castle },
     objects: low.length + high.length,
+    cellSize: map.cellSize,
   };
 }

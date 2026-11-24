@@ -29,7 +29,7 @@ Sin tareas: el change no toca `src/domain` ni `src/application` (design §1).
   Los rectángulos visibles salen de `followView` (2.1).
   — escenarios: "Objeto dentro, fuera y en parte", "Caja que toca el borde", "Vista que crece con la ventana",
   "Vista recortada al mundo en una esquina", "Vista que cubre el mundo entero".
-- [ ] 2.3 `bounds` en `TileDraw` y `RectDraw` (tramos de baldosas y rectángulos de reserva) y
+- [x] 2.3 `bounds` en `TileDraw` y `RectDraw` (tramos de baldosas y rectángulos de reserva) y
   `MapArtPlan.cellSize` (design §3). Test en `tests/infrastructure/plan-map-art.test.ts` y
   `plan-map-fallback.test.ts` (rojo por tipos/aserción): con el mapa de "Elementos en su sitio", el tramo de agua
   cubre su rectángulo de celdas; con reserva de agua, árbol, puente y castillo, cada `rect` tiene por `bounds` su

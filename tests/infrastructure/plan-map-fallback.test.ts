@@ -95,6 +95,19 @@ describe('planMapArt · reserva por elemento', () => {
     expect(plan.counts.castle).toEqual({ painted: 0, fallback: 0 });
   });
 
+  it('Scenario: Recorte con aspecto de reserva (0018: cada rect tiene por caja su rectángulo)', () => {
+    const missing = [MAP.water.sheet.file, MAP.trees.sheet.file, MAP.bridges.image];
+    const plan = planFor(snap(PLACES), 42, missing);
+    const fallback = plan.low.filter((d): d is RectDraw => d.kind === 'rect');
+    expect(fallback.map((r) => r.bounds)).toEqual(
+      fallback.map(({ x, y, width, height }) => ({ x, y, width, height })),
+    );
+    expect(fallback).toHaveLength(5);
+    const castle = planFor(SEED_42(), 42, [MAP.castle.sheet.file]);
+    const [hut] = castle.low.filter((d): d is RectDraw => d.kind === 'rect');
+    expect(hut?.bounds).toEqual({ x: 1800, y: 900, width: 300, height: 240 });
+  });
+
   it('Scenario: Mapa vacío (plan vacío, 0 objetos y recuentos a 0)', () => {
     const plan = planFor(snap({}));
     expect([plan.low, plan.high, plan.objects]).toEqual([[], [], 0]);

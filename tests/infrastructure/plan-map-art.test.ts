@@ -133,6 +133,19 @@ describe('planMapArt · arte en su sitio', () => {
     });
   });
 
+  it('Recorte del arte del mapa por cámara (0018): cada tramo tiene por caja su rectángulo', () => {
+    const plan = planFor(snap(PLACES));
+    const tiles = plan.low.filter((d): d is TileDraw => d.kind === 'tiles');
+    expect(tiles.length).toBeGreaterThan(0);
+    expect(tiles.map((t) => t.bounds)).toEqual(
+      tiles.map(({ x, y, width, height }) => ({ x, y, width, height })),
+    );
+    const water = tiles.filter((t) => t.texture === APPEARANCE.map.water.sheet.file);
+    const boxes = water.map(({ bounds: b }) => [b.x, b.y, b.x + b.width, b.y + b.height]);
+    expect(covers(boxes, [240, 180, 300, 240])).toBe(true);
+    expect(plan.cellSize).toBe(60);
+  });
+
   it('puentes con el marco de su orientación (norte-sur en un río horizontal)', () => {
     const plan = planFor(snap(PLACES));
     const [bridge] = spritesOf(plan, 'bridge');
