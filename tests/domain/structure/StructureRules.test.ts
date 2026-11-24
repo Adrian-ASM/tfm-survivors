@@ -11,7 +11,7 @@ import {
 } from '../../../src/domain/structure/StructureType';
 import type { StructuresConfig } from '../../../src/domain/structure/StructureType';
 import { aCampsConfig, aStructuresConfig } from '../../support/camps';
-import { NO_STRUCTURES } from '../../support/builders';
+import { NO_RESOURCES, NO_STRUCTURES } from '../../support/builders';
 
 const rulesOf = (structures: StructuresConfig) => buildRunRules(aCampsConfig(structures));
 
@@ -44,7 +44,11 @@ describe('StructureRules (goblin-structures, invariantes del dominio)', () => {
   });
 
   it('sin tipos de estructura, las reglas no tienen ninguno (mapas sin estructuras)', () => {
-    const r = buildRunRules({ ...aCampsConfig(), structures: NO_STRUCTURES });
+    const r = buildRunRules({
+      ...aCampsConfig(),
+      structures: NO_STRUCTURES,
+      resources: NO_RESOURCES,
+    });
     expect(r.ok && r.value.structures.types).toEqual([]);
   });
 

@@ -23,7 +23,9 @@ import {
   GEM_RADIUS_MUST_BE_POSITIVE,
   MAGNET_SPEED_MUST_BE_POSITIVE,
   MAX_GEMS_MUST_BE_INTEGER,
-} from '../../src/domain/progression/GemRules';
+  MAX_GOLD_MUST_BE_INTEGER,
+  MAX_WOOD_MUST_BE_INTEGER,
+} from '../../src/domain/pickup/PickupRules';
 import {
   BASE_XP_MUST_BE_INTEGER,
   XP_GROWTH_MUST_BE_INTEGER,
@@ -231,7 +233,7 @@ describe('buildRunRules · progresión y mejoras', () => {
     const r = buildRunRules(aRunConfig());
     if (!r.ok) throw new Error(r.error.message);
     expect(r.value.curve.toNext(1)).toBe(5);
-    expect(r.value.gems).toMatchObject({ gemRadius: 5, magnetSpeed: 360, maxGems: 300 });
+    expect(r.value.pickups).toMatchObject({ gemRadius: 5, magnetSpeed: 360, maxGems: 300 });
     expect(r.value.upgrades.size).toBe(0);
   });
 
@@ -241,6 +243,8 @@ describe('buildRunRules · progresión y mejoras', () => {
     ['gemRadius', 0, GEM_RADIUS_MUST_BE_POSITIVE],
     ['magnetSpeed', -1, MAGNET_SPEED_MUST_BE_POSITIVE],
     ['maxGems', 12.5, MAX_GEMS_MUST_BE_INTEGER],
+    ['maxGold', 0, MAX_GOLD_MUST_BE_INTEGER],
+    ['maxWood', 1.5, MAX_WOOD_MUST_BE_INTEGER],
   ] as const)('propaga los errores de progresión (%s %s)', (key, value, message) => {
     expect(failure(withProgression({ [key]: value }))).toEqual({
       code: 'invalid-config',

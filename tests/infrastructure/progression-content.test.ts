@@ -3,7 +3,7 @@ import {
   GEM_RADIUS_MUST_BE_POSITIVE,
   MAGNET_SPEED_MUST_BE_POSITIVE,
   MAX_GEMS_MUST_BE_INTEGER,
-} from '../../src/domain/progression/GemRules';
+} from '../../src/domain/pickup/PickupRules';
 import {
   BASE_XP_MUST_BE_INTEGER,
   XP_GROWTH_MUST_BE_INTEGER,
@@ -49,7 +49,10 @@ describe('Contenido de progresión (content/progression.json)', () => {
       gemRadius: 5,
       magnetSpeed: 360,
       maxGems: 300,
+      maxGold: 32,
+      maxWood: 64,
     });
+    expect(r.value.progression.maxWood).toBeGreaterThanOrEqual(r.value.resources.woodPiles.count);
     expect(r.value.player.pickupRadius).toBe(128);
   });
 

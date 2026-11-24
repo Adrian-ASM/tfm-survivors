@@ -84,7 +84,7 @@ const randomSeed = (): number => crypto.getRandomValues(new Uint32Array(1))[0] ?
 function sceneCapacity(config: RunConfig, corpses: number, blasts: number): SceneCapacity {
   const rules = buildRunRules(config);
   if (!rules.ok) throw new Error(rules.error.message);
-  const { loadout, pulseCapacity, gems, hazards } = rules.value;
+  const { loadout, pulseCapacity, pickups, hazards } = rules.value;
   const visualTicks = new Map<string, number>();
   for (const w of loadout.weapons) {
     if (w.attack.type === 'pulse') visualTicks.set(w.id, w.attack.visualTicks);
@@ -93,7 +93,7 @@ function sceneCapacity(config: RunConfig, corpses: number, blasts: number): Scen
     enemies: config.waves.maxAlive,
     projectiles: loadout.maxProjectiles,
     pulses: pulseCapacity,
-    gems: gems.maxGems,
+    gems: pickups.maxGems,
     corpses,
     visualTicks,
     hazards: { dynamites: hazards.maxDynamites, blasts },

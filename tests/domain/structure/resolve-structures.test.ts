@@ -5,7 +5,7 @@ import { MAP_STRUCTURE_OUT_OF_GRID } from '../../../src/domain/structure/resolve
 import { Mulberry32RandomGenerator } from '../../../src/infrastructure/random/Mulberry32RandomGenerator';
 import { MAP_STREAM, deriveSeed } from '../../../src/infrastructure/random/deriveSeed';
 import { aCampsConfig, structureRandomFor } from '../../support/camps';
-import { NO_STRUCTURES } from '../../support/builders';
+import { NO_RESOURCES, NO_STRUCTURES } from '../../support/builders';
 
 const CONFIG = aCampsConfig();
 const HOUSE = { type: 'goblin-house', col: 20, row: 10, cols: 2, rows: 3 } as const;
@@ -99,7 +99,7 @@ describe('Estructuras del mapa de la partida (procedural-map, goblin-structures)
   });
 
   it('sin tipos de estructura, el mapa generado no tiene ninguna', () => {
-    const config = { ...CONFIG, structures: NO_STRUCTURES };
+    const config = { ...CONFIG, structures: NO_STRUCTURES, resources: NO_RESOURCES };
     expect(started(generated(42), config).map.structures).toEqual([]);
   });
 });

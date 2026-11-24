@@ -19,21 +19,21 @@
 
 ## 1. Dominio · recogibles con tipo y contadores (TDD)
 
-- [ ] 1.1 **Reglas.** `PickupKind`, `PickupRules` (ex `GemRules`, con `maxGold`/`maxWood`), `ResourceRules` (drops
+- [x] 1.1 **Reglas.** `PickupKind`, `PickupRules` (ex `GemRules`, con `maxGold`/`maxWood`), `ResourceRules` (drops
   por id resueltos contra catálogo y tipos de estructura, montones, vetas, colocación) y `maxWood ≥ woodPiles.count`
   en `buildRunRules`, con mensajes compartidos con zod. Rojo: `tests/domain/resource-rules.test.ts`,
   `tests/domain/run-config.test.ts`.
   Escenarios (parte de dominio): `xp-gems` · "Contenido de gemas validado" › "Valores no positivos", "Tope de gemas no
   entero", "Tope mínimo válido", "Tope de madera menor que los montones"; `resources` · "Contenido de recursos
   validado" › "Valores fuera de rango", "Límites válidos".
-- [ ] 1.2 **`PickupField`** (ex `GemField`): lista única, una secuencia de ids, pool libre `Σ topes`, tope y relleno
+- [x] 1.2 **`PickupField`** (ex `GemField`): lista única, una secuencia de ids, pool libre `Σ topes`, tope y relleno
   por tipo, imán y recogida comunes, totales por tipo. Rojo: `tests/domain/pickup-field.test.ts` (migra
   `gem-field.test.ts`).
   Escenarios: `xp-gems` · "Recogibles con tipo" › "Tipos del snapshot" (a nivel de campo); "Gemas en el suelo" ›
   "Montón fuera del radio"; "Imán de gemas" › "Mismo imán para los tres tipos"; "Tope de gemas en el suelo" › "Tope de
   XP lleno con otros tipos en el suelo", "Tope de madera lleno", "Recoger otro tipo no libera plaza de XP";
   "Recolocación…" (todos los tipos).
-- [ ] 1.3 **`Stockpile`, paso 7.1 y snapshot.** `Run` con `pickups`, `resources`, vista `gems`; `RunSetup.gems[i].kind`
+- [x] 1.3 **`Stockpile`, paso 7.1 y snapshot.** `Run` con `pickups`, `resources`, vista `gems`; `RunSetup.gems[i].kind`
   y `RunSetup.resources`; no se recoge en el tick de victoria o derrota. Rojo: `tests/domain/run-pickups.test.ts`,
   `tests/domain/run-snapshot.test.ts`.
   Escenarios: `xp-gems` · "Recogida de gemas" › "Efecto según el tipo"; "Recogibles con tipo" › "Tipos del snapshot";

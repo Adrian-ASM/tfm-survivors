@@ -1,4 +1,5 @@
 import type { StateKind } from '../enemy/behavior/BehaviorConfig';
+import type { PickupKind } from '../pickup/PickupKind';
 import type { RunPhase } from './RunPhase';
 
 export type { StateKind };
@@ -101,6 +102,36 @@ export interface GemSnapshot {
   readonly radius: number;
 }
 
+/**
+ * Recogible en el suelo (spec xp-gems, "Recogibles con tipo"): id de una sola secuencia para los
+ * tres tipos, nunca reutilizado.
+ */
+export interface PickupSnapshot {
+  readonly id: number;
+  readonly kind: PickupKind;
+  readonly value: number;
+  readonly x: number;
+  readonly y: number;
+  readonly radius: number;
+}
+
+/** Contadores de la partida (spec resources). */
+export interface ResourcesSnapshot {
+  readonly gold: number;
+  readonly wood: number;
+}
+
+/** Veta de oro (spec resources, "Vetas de oro al pasar"): fija, activa o agotada. */
+export interface VeinSnapshot {
+  readonly id: number;
+  readonly x: number;
+  readonly y: number;
+  /** Radio de contacto. */
+  readonly radius: number;
+  readonly gold: number;
+  readonly depleted: boolean;
+}
+
 /** Nivel y XP del jugador (spec leveling); `xp` es la XP dentro del nivel actual. */
 export interface ProgressionSnapshot {
   readonly level: number;
@@ -158,8 +189,18 @@ export interface RunSnapshotBody {
   readonly structures: readonly StructureSnapshot[];
   /** Armas equipadas en el orden del contenido. */
   readonly weapons: readonly WeaponSnapshot[];
-  /** Gemas en el suelo en orden de creación. */
+  /** Recogibles de los tres tipos en el suelo, en orden de creación sin agrupar por tipo. */
+  readonly pickups: readonly PickupSnapshot[];
+  /**
+   * Gemas (recogibles `xp`) en el suelo en orden de creación: vista de `pickups` con la forma de
+   * antes de 0022 (design §3). Obsoleta: la retira un chore posterior (sin la etiqueta
+   * `deprecated`, que `no-deprecated` convierte en ~70 errores de lint en los usos vivos).
+   */
   readonly gems: readonly GemSnapshot[];
+  /** Oro y madera de la partida (spec resources). */
+  readonly resources: ResourcesSnapshot;
+  /** Vetas de la partida en su orden fijo, agotadas incluidas (misma longitud toda la partida). */
+  readonly veins: readonly VeinSnapshot[];
   readonly progression: ProgressionSnapshot;
   /** Oferta abierta ([] si no hay). */
   readonly offer: readonly OfferSnapshot[];

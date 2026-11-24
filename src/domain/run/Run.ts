@@ -14,7 +14,8 @@ import type { Player } from '../player/Player';
 import type { PlayerInput } from '../player/PlayerInput';
 import type { RandomGenerator } from '../shared/RandomGenerator';
 import type { Experience } from '../progression/Experience';
-import type { GemField } from '../progression/GemField';
+import { PickupGain, type PickupField } from '../pickup/PickupField';
+import type { Stockpile } from '../resource/Stockpile';
 import type { PlayerRules } from '../player/PlayerRules';
 import { err, ok, type DomainError, type Result } from '../shared/Result';
 import type { UpgradeChoiceError } from '../upgrade/UpgradeChoiceError';
@@ -37,7 +38,7 @@ import {
   toBlastSnapshot,
   toDynamiteSnapshot,
   toEnemySnapshot,
-  toGemSnapshot,
+  toPickupSnapshots,
   toOfferSnapshot,
   toProgressionSnapshot,
   toProjectileSnapshot,
@@ -87,6 +88,9 @@ export {
  * (ADR-0017): BFS 4-vecina con orden izquierda, derecha, arriba, abajo, campo solo función de (mapa,
  * celda del jugador) y empates por ese orden.
  */
+/** Sin vetas hasta 2.2 (lista congelada compartida). */
+const NO_VEINS: RunSnapshot['veins'] = Object.freeze([]);
+
 export class Run {
   private tickCount = 0;
   private phase: RunPhase = RUNNING;
@@ -95,7 +99,10 @@ export class Run {
   private readonly arsenal: Arsenal;
   private player: Player;
   private readonly horde: Horde;
-  private readonly gems: GemField;
+  private readonly pickups: PickupField;
+  /** Lo recogido en el paso 7.1 (reutilizado: sin asignar por tick). */
+  private readonly gain = new PickupGain();
+  private readonly stock: Stockpile;
   private readonly experience: Experience;
   private readonly board: UpgradeBoard;
   private readonly mapView: MapSnapshot;
@@ -118,7 +125,8 @@ export class Run {
     this.field = new FlowField(terrain);
     this.player = initial.player;
     this.horde = new Horde(initial.enemies, rules.arena, initial.kills);
-    this.gems = initial.gems;
+    this.pickups = initial.pickups;
+    this.stock = initial.stock;
     this.experience = initial.experience;
     this.board = initial.board;
     this.director = new WaveDirector(rules.table, rules.spawn, random);
@@ -230,12 +238,22 @@ export class Run {
       this.tickCount = n;
       return;
     }
-    const xp = this.gems.step(x, y, this.player.radius, this.player.pickupRadius);
-    if (xp > 0) this.experience.gain(xp);
+    this.collect(x, y);
     this.director.step(n, horde.alive.length, this.place);
     structures.spawnGuards(n, horde, this.rules.spawn.maxAlive);
     this.tickCount = n;
     this.openNextOffer();
+  }
+
+  /**
+   * Paso 7 (spec simulation-loop): 7.1 recogibles de los tres tipos en una pasada, en orden de
+   * creación; la XP sube de nivel y el oro y la madera van a sus contadores.
+   */
+  private collect(x: number, y: number): void {
+    const { gain } = this;
+    this.pickups.step(x, y, this.player.radius, this.player.pickupRadius, gain);
+    if (gain.xp > 0) this.experience.gain(gain.xp);
+    this.stock.add(gain.gold, gain.wood);
   }
 
   /**
@@ -295,7 +313,7 @@ export class Run {
    * sola vez: no asigna por tick.
    */
   private readonly dropGem = (dead: Enemy): void => {
-    this.gems.drop(dead.x, dead.y, dead.type.xp);
+    this.pickups.drop('xp', dead.x, dead.y, dead.type.xp);
     dead.post?.release();
   };
 
@@ -323,6 +341,7 @@ export class Run {
     const k = this.tickCount;
     const flash = this.rules.loadout.hitFlashTicks;
     const enemies = this.horde.alive.map((e) => toEnemySnapshot(e, e.damagedAt(k, flash)));
+    const { pickups, gems } = toPickupSnapshots(this.pickups.pickups, this.pickups.radius);
     return Object.freeze({
       tick: this.tickCount,
       ...this.phase,
@@ -350,7 +369,10 @@ export class Run {
       weapons: Object.freeze(
         this.arsenal.weapons.map((w) => Object.freeze({ id: w.type.id, ready: w.isChargedAt(k) })),
       ),
-      gems: Object.freeze(this.gems.gems.map((g) => toGemSnapshot(g, this.gems.radius))),
+      pickups,
+      gems,
+      resources: Object.freeze({ gold: this.stock.gold, wood: this.stock.wood }),
+      veins: NO_VEINS,
       progression: toProgressionSnapshot(this.experience),
       offer: toOfferSnapshot(this.board),
       upgrades: toUpgradeLevels(this.rules.upgrades, this.board),

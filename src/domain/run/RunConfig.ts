@@ -14,7 +14,8 @@ import {
   checkPlayer,
   type PlayerRules,
 } from '../player/PlayerRules';
-import { GemRules, type GemRulesConfig } from '../progression/GemRules';
+import { PickupRules, type PickupRulesConfig } from '../pickup/PickupRules';
+import { ResourceRules, type ResourcesConfig } from '../resource/ResourceRules';
 import { XpCurve, type XpCurveConfig } from '../progression/XpCurve';
 import { UpgradeCatalog } from '../upgrade/UpgradeCatalog';
 import type { UpgradeTypeConfig } from '../upgrade/UpgradeType';
@@ -33,6 +34,10 @@ export {
   SPEED_MUST_BE_POSITIVE,
   checkPlayer,
 };
+
+/** Regla cruzada (spec xp-gems): ningún montón de madera se funde con otro al crear la partida. */
+export const MAX_WOOD_BELOW_WOOD_PILES =
+  'El tope de recogibles de madera debe ser ≥ el número de montones de madera por mapa.';
 
 /** Regla cruzada: con un máximo menor, el tipo más caro nunca reuniría su coste. */
 export const MAX_BUDGET_BELOW_MAX_COST =
@@ -64,8 +69,8 @@ export interface RunConfig {
     readonly segments: readonly WaveSegmentConfig[];
   };
   readonly weapons: WeaponsConfig;
-  /** Curva de XP y gemas (fichero de progresión, plano). */
-  readonly progression: XpCurveConfig & GemRulesConfig;
+  /** Curva de XP y recogibles (fichero de progresión, plano). */
+  readonly progression: XpCurveConfig & PickupRulesConfig;
   readonly upgrades: UpgradesConfig;
   /** Duración objetivo de la partida (content/run.json). */
   readonly run: { readonly durationSeconds: number };
@@ -76,6 +81,8 @@ export interface RunConfig {
    * el dominio, no en el fichero), ningún mapa tiene estructuras ni se pueden declarar.
    */
   readonly structures: StructuresConfig;
+  /** Fuentes de oro y madera (content/resources.json, spec resources, 0022). */
+  readonly resources: ResourcesConfig;
 }
 
 /** Forma del contenido de mejoras (content/upgrades.json). */
@@ -95,7 +102,8 @@ export interface RunRules {
   /** Armas equipadas al empezar, en el orden en que actúan. */
   readonly loadout: WeaponLoadout;
   readonly curve: XpCurve;
-  readonly gems: GemRules;
+  /** Radio, imán y topes por tipo de los recogibles. */
+  readonly pickups: PickupRules;
   /** Catálogo de mejoras en el orden del contenido (ya validado con su build de peor caso). */
   readonly upgrades: UpgradeCatalog;
   /** Cota de pulsos visibles a la vez con la cadencia mínima alcanzable (ADR-0008). */
@@ -106,6 +114,8 @@ export interface RunRules {
   readonly map: MapRules;
   /** Tipos de estructura y su colocación. */
   readonly structures: StructureRules;
+  /** Drops, montones, vetas y su colocación. */
+  readonly resources: ResourceRules;
 }
 
 function checkBudgetCoversCatalog(spawn: SpawnRules, catalog: EnemyCatalog): DomainError | null {
@@ -139,8 +149,8 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
   if (!loadout.ok) return loadout;
   const curve = XpCurve.create(config.progression);
   if (!curve.ok) return curve;
-  const gems = GemRules.create(config.progression);
-  if (!gems.ok) return gems;
+  const pickups = PickupRules.create(config.progression);
+  if (!pickups.ok) return pickups;
   const upgrades = UpgradeCatalog.create(
     config.upgrades.upgrades,
     loadout.value,
@@ -154,6 +164,11 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
   if (!map.ok) return map;
   const structures = StructureRules.create(config.structures, map.value, catalog.value);
   if (!structures.ok) return structures;
+  const resources = ResourceRules.create(config.resources, catalog.value, structures.value);
+  if (!resources.ok) return resources;
+  if (pickups.value.maxWood < resources.value.woodPiles.count) {
+    return err(invalidConfig('progression.maxWood', MAX_WOOD_BELOW_WOOD_PILES));
+  }
   return ok({
     arena: arena.value,
     player: config.player,
@@ -163,11 +178,12 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
     spawn: spawn.value,
     loadout: loadout.value,
     curve: curve.value,
-    gems: gems.value,
+    pickups: pickups.value,
     upgrades: upgrades.value,
     pulseCapacity: upgrades.value.pulseCapacity,
     duration: duration.value,
     map: map.value,
     structures: structures.value,
+    resources: resources.value,
   });
 }
