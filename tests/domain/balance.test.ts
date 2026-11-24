@@ -156,7 +156,8 @@ const TEN_MINUTES = 36_000;
 
 // Spec run-outcome (0010), "Partida ganable y perdible": requisito "Ganable" sobre 1..50. Las 50
 // partidas se juegan una vez (timeout propio: el global es de 20 s y en CI puede doblarse).
-const BOT_BATCH_TIMEOUT_MS = 60_000;
+// 0020: con el bot v3 y los peligros el lote pasó de 60 s en el runner de CI (≈ 70 s; ~25 s en local).
+const BOT_BATCH_TIMEOUT_MS = 180_000;
 
 describe('Balance con el contenido por defecto (0010)', () => {
   let finals: RunSnapshot[] = [];
