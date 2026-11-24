@@ -391,12 +391,13 @@ El sistema SHALL hacer que, con el contenido por defecto, las armas maten enemig
 jugador pulse nada más que las elecciones de mejora.
 
 #### Scenario: Jugador quieto con el contenido por defecto
-- **GIVEN** el contenido por defecto (mundo de 1.920 × 1.080), semilla 7, input (0, 0) en todos los ticks y la
-  política de elección fija
-- **WHEN** se ejecutan 600 ticks (10 s)
-- **THEN** se ha creado ≥ 1 proyectil y ≥ 1 enemigo ha quedado dado de baja por armas
+- **GIVEN** el contenido por defecto (mundo de 3.840 × 2.160, anillo de aparición 1.500), semilla 7, input (0, 0) en
+  todos los ticks y la política de elección fija
+- **WHEN** se ejecutan 900 ticks (15 s)
+- **THEN** se ha creado ≥ 1 proyectil y ≥ 1 enemigo ha quedado dado de baja por armas (medido en apply de 0017:
+  primer proyectil en el tick 590 y primera baja en el 656)
 - **AND** al seguir hasta el tick 4.800 (80 s), se ha disparado ≥ 1 pulso de Tests en algún tick ≤ 4.800 (medido en
-  apply de 0013: tick 4.161)
+  apply de 0017: tick 1.434)
 
 #### Scenario: Comprobación en el navegador
 - **GIVEN** la build de producción servida con `?seed=7` y sin input de movimiento del jugador
@@ -409,3 +410,4 @@ jugador pulse nada más que las elecciones de mejora.
 <!-- historial: 0006-run-lifecycle-hud (2026-11-20) -->
 <!-- historial: 0012-sprite-rendering (2026-11-22) -->
 <!-- historial: 0013-world-camera (2026-11-23) -->
+<!-- historial: 0017-fullscreen-view (2026-11-24) -->

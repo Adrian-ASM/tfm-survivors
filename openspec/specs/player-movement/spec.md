@@ -71,18 +71,19 @@ sea más rápido que moverse en un eje. Cada componente del input MUST limitarse
 
 ### Requirement: Límites de la arena
 El sistema SHALL mantener el círculo del jugador entero dentro de la arena (el mundo, ver `world-camera`): su centro
-MUST quedar en [radio, ancho − radio] × [radio, alto − radio]. Con el contenido por defecto (mundo de 1.920 × 1.080 y
-radio 16) ese rango es [16, 1.904] × [16, 1.064]. El tamaño de la vista MUST NOT limitar el movimiento.
+MUST quedar en [radio, ancho − radio] × [radio, alto − radio]. Con el contenido por defecto (mundo de 3.840 × 2.160 y
+radio 16) ese rango es [16, 3.824] × [16, 2.144]. Ni el tamaño de la vista ni el de la ventana MUST limitar el
+movimiento.
 
 #### Scenario: Choque con el borde derecho
-- **GIVEN** un jugador en (1.900, 540) con radio 16 en una arena de 1.920 × 1.080
+- **GIVEN** un jugador en (3.820, 1.080) con radio 16 en una arena de 3.840 × 2.160
 - **WHEN** se ejecutan 60 ticks con input (1, 0)
-- **THEN** el jugador está en (1.904, 540)
+- **THEN** el jugador está en (3.824, 1.080)
 
 #### Scenario: Choque con el borde inferior
-- **GIVEN** un jugador en (960, 1.060) con radio 16 en una arena de 1.920 × 1.080
+- **GIVEN** un jugador en (1.920, 2.140) con radio 16 en una arena de 3.840 × 2.160
 - **WHEN** se ejecutan 60 ticks con input (0, 1)
-- **THEN** el jugador está en (960, 1.064)
+- **THEN** el jugador está en (1.920, 2.144)
 
 #### Scenario: Esquina superior izquierda
 - **GIVEN** un jugador en (20, 20) con radio 16
@@ -90,25 +91,26 @@ radio 16) ese rango es [16, 1.904] × [16, 1.064]. El tamaño de la vista MUST N
 - **THEN** el jugador está en (16, 16)
 
 #### Scenario: Esquina inferior derecha
-- **GIVEN** un jugador en (1.900, 1.060) con radio 16 en una arena de 1.920 × 1.080
+- **GIVEN** un jugador en (3.820, 2.140) con radio 16 en una arena de 3.840 × 2.160
 - **WHEN** se ejecutan 60 ticks con input (1, 1)
-- **THEN** el jugador está en (1.904, 1.064)
+- **THEN** el jugador está en (3.824, 2.144)
 
 #### Scenario: Deslizar por la pared
-- **GIVEN** un jugador en (1.904, 540) con radio 16 pegado al borde derecho de una arena de 1.920 × 1.080
+- **GIVEN** un jugador en (3.824, 1.080) con radio 16 pegado al borde derecho de una arena de 3.840 × 2.160
 - **WHEN** se ejecutan 30 ticks con input (1, 1)
-- **THEN** x sigue en 1.904 y y ha aumentado 70,711 px (error ≤ 0,001 px)
+- **THEN** x sigue en 3.824 y y ha aumentado 70,711 px (error ≤ 0,001 px)
 
 #### Scenario: El borde de la vista no es una pared
-- **GIVEN** el contenido por defecto (velocidad 200 px/s, radio 16) y un jugador en (940, 270)
+- **GIVEN** el mundo por defecto, velocidad 200 px/s, radio 16 y un jugador en (1.270, 270) (junto al borde derecho
+  de una vista de 1.280 × 720 anclada en (0, 0))
 - **WHEN** se ejecutan 60 ticks con input (1, 0)
-- **THEN** el jugador está en (1.140, 270) con un error ≤ 0,001 px
+- **THEN** el jugador está en (1.470, 270) con un error ≤ 0,001 px
 
 #### Scenario: Partida larga dentro del mundo
 - **GIVEN** el contenido por defecto salvo una vida máxima suficiente para no llegar a 0 en 36.000 ticks, semilla 7 y
   un input aleatorio generado por una semilla fija
 - **WHEN** se ejecutan 36.000 ticks
-- **THEN** en ningún tick el centro del jugador queda fuera de [16, 1.904] × [16, 1.064]
+- **THEN** en ningún tick el centro del jugador queda fuera de [16, 3.824] × [16, 2.144]
 
 ### Requirement: Contenido del jugador validado
 El sistema SHALL leer velocidad, radio, vida máxima y radio de recogida (`pickupRadius`) del jugador y el tamaño de
@@ -127,7 +129,7 @@ MUST ser > 0. Un contenido inválido MUST impedir que la partida arranque con un
 - **AND** no se crea ninguna partida
 
 #### Scenario: Radio que no cabe en la arena
-- **GIVEN** radio 300 y arena de 960 × 540
+- **GIVEN** radio 1.081 y la arena por defecto de 3.840 × 2.160
 - **WHEN** se carga el contenido
 - **THEN** la carga falla con un error que menciona `radius`
 
@@ -156,37 +158,39 @@ MUST ser > 0. Un contenido inválido MUST impedir que la partida arranque con un
 #### Scenario: Radio de recogida por defecto
 - **GIVEN** el contenido por defecto del repositorio
 - **WHEN** se carga el contenido
-- **THEN** el radio de recogida base vale 128 (medido en apply de 0005: primera oferta ≤ 3.600 ticks con la arena
-  de 960 × 540; con el mundo de 1.920 × 1.080 de 0013 llega en el tick 4.346, plazo ≤ 4.800)
+- **THEN** el radio de recogida base vale 128 (con el mundo de 3.840 × 2.160 de 0017, la primera oferta del jugador
+  quieto llega en un tick ≤ 4.800; medido en apply: tick 1.527 con la semilla 7)
 
 ### Requirement: Posición inicial en el punto de salida del mapa
 El sistema SHALL crear cada partida nueva con el jugador en el punto de salida de su mapa (ver `procedural-map`),
 también tras R y tras `Volver al menú` + `Jugar`:
-- con el mapa generado, la salida ante la puerta del castillo ((990, 630) con el contenido por defecto);
-- con el mapa vacío y con un mapa explícito sin salida declarada, el centro del mundo (ancho / 2, alto / 2), como
-  antes de este change;
+- con el mapa generado, la salida ante la puerta del castillo ((1.950, 1.170) con el contenido por defecto);
+- con el mapa vacío y con un mapa explícito sin salida declarada, el centro del mundo (ancho / 2, alto / 2)
+  ((1.920, 1.080) con el contenido por defecto);
 - con un mapa explícito con salida declarada, esa salida.
+
+La posición inicial MUST NOT depender del tamaño de la ventana.
 
 #### Scenario: Partida nueva con el mapa generado
 - **GIVEN** el contenido por defecto
 - **WHEN** se crea una partida con cada semilla de 1 a 50 y se lee el snapshot del tick 0
-- **THEN** en las 50 el jugador está exactamente en (990, 630)
+- **THEN** en las 50 el jugador está exactamente en (1.950, 1.170)
 
 #### Scenario: Partida nueva con el mapa vacío
 - **GIVEN** el contenido por defecto, la semilla 42 y el mapa vacío
 - **WHEN** se crea la partida y se lee el snapshot del tick 0
-- **THEN** el jugador está exactamente en (960, 540)
+- **THEN** el jugador está exactamente en (1.920, 1.080)
 
 #### Scenario: Mapa explícito con y sin salida declarada
 - **GIVEN** el contenido por defecto y un mapa de hierba con un tronco en (3, 3), primero sin salida declarada y
   después con la salida (300, 900)
 - **WHEN** se crea cada partida y se lee el snapshot del tick 0
-- **THEN** el jugador está en (960, 540) en la primera y en (300, 900) en la segunda
+- **THEN** el jugador está en (1.920, 1.080) en la primera y en (300, 900) en la segunda
 
 #### Scenario: Partida nueva tras acabar en una esquina
 - **GIVEN** el contenido por defecto, la semilla 42 y una partida terminada con el jugador en (16, 16)
 - **WHEN** se pulsa R con la semilla 123 y se lee el snapshot del tick 0 de la partida nueva
-- **THEN** el jugador está exactamente en (990, 630)
+- **THEN** el jugador está exactamente en (1.950, 1.170)
 
 ### Requirement: Colisión con el mapa
 El sistema SHALL impedir que el círculo del jugador solape una celda no caminable (`trunk`, `water` o `castle`, ver
@@ -246,24 +250,24 @@ arena"), y MUST NOT consumir azar. El castillo bloquea al jugador como un tronco
 - **THEN** el jugador está en (950, 524) (error ≤ 0,001), tangente a la celda de agua (15, 9)
 
 #### Scenario: Choque con la fachada del castillo
-- **GIVEN** el contenido por defecto y la semilla 42 (huella en x [840, 1.140], y [360, 600]; jugador en la salida
-  (990, 630))
+- **GIVEN** el contenido por defecto y la semilla 42 (huella en x [1.800, 2.100], y [900, 1.140]; jugador en la salida
+  (1.950, 1.170))
 - **WHEN** se ejecutan 60 ticks con input (0, −1)
-- **THEN** el jugador está en (990, 616) (error ≤ 0,001), tangente a la cara inferior del castillo, y en ningún tick
-  lo solapa
+- **THEN** el jugador está en (1.950, 1.156) (error ≤ 0,001), tangente a la cara inferior del castillo, y en ningún
+  tick lo solapa
 
 #### Scenario: Deslizar por la fachada del castillo
-- **GIVEN** un mapa de hierba con las celdas de columnas 14–18 y filas 6–9 `castle`, velocidad 200 px/s y el jugador en
-  (990, 616)
+- **GIVEN** un mapa de hierba con las celdas de columnas 30–34 y filas 15–18 `castle`, velocidad 200 px/s y el
+  jugador en (1.950, 1.156)
 - **WHEN** se ejecutan 30 ticks con input (1, −1)
-- **THEN** y sigue en 616 y x ha aumentado 70,711 px (error ≤ 0,001)
+- **THEN** y sigue en 1.156 y x ha aumentado 70,711 px (error ≤ 0,001)
 
 #### Scenario: Partida larga sin solapes
 - **GIVEN** el contenido por defecto salvo una vida máxima suficiente para no llegar a 0 en 36.000 ticks, semilla 7,
   el mapa generado para esa semilla y un input aleatorio generado por una semilla fija
 - **WHEN** se ejecutan 36.000 ticks
 - **THEN** en ningún tick el círculo del jugador solapa una celda no caminable de su mapa, incluidas las `castle`
-- **AND** en ningún tick su centro queda fuera de [16, 1.904] × [16, 1.064]
+- **AND** en ningún tick su centro queda fuera de [16, 3.824] × [16, 2.144]
 
 #### Scenario: Sin solapes en la build con el mapa real
 - **GIVEN** la build de producción con `?e2e&manual&seed=42` (mapa real) y la política de elección fija
@@ -277,3 +281,4 @@ arena"), y MUST NOT consumir azar. El castillo bloquea al jugador como un tronco
 <!-- historial: 0013-world-camera (2026-11-23) -->
 <!-- historial: 0015-procedural-map (2026-11-23) -->
 <!-- historial: 0016-map-art (2026-11-23) -->
+<!-- historial: 0017-fullscreen-view (2026-11-24) -->

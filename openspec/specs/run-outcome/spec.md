@@ -194,12 +194,15 @@ mapa que genera su semilla, castillo incluido, y el jugador en su punto de salid
   semillas, tanto con el mapa generado como con el mapa vacío. Un jugador quieto MUST NOT ganar con ninguna semilla
   del conjunto.
 
-Los números de contenido que producen esta dificultad viven en `content/*.json` y no se fijan en esta spec. La banda
-manda sobre cualquier valor concreto: si la huella definitiva del castillo o la velocidad del jugador cambian en apply,
-el balance MUST volver a medirse con el contenido final antes de verify.
+La dificultad MUST ser la misma con cualquier tamaño de ventana: los tests de balance no reciben ventana ni vista.
+Los números de contenido que producen esta dificultad viven en `content/*.json` y no se fijan en esta spec. En este
+change el ajuste se hace en la tabla de oleadas (`content/waves.json`), que MUST seguir cumpliendo "Oleadas que
+crecen con el contenido por defecto" de `enemy-spawning`; `player.speed` sigue en 215. La banda manda sobre cualquier
+valor concreto: si el mundo, el anillo de aparición, la huella del castillo o la tabla de oleadas cambian en apply, el
+balance MUST volver a medirse con el contenido final antes de verify.
 
 #### Scenario: Tasa de victoria del bot de referencia
-- **GIVEN** el contenido por defecto y el bot de referencia
+- **GIVEN** el contenido por defecto (mundo de 3.840 × 2.160, `ringRadius` 1.500) y el bot de referencia
 - **WHEN** se juega una partida con cada semilla de 1 a 50, con su mapa generado (castillo incluido) y el jugador en
   su salida, cada una hasta que termina o hasta el tick 36.000
 - **THEN** el número de partidas terminadas con resultado victoria en el tick 36.000 es ≥ 25 y ≤ 35
@@ -211,12 +214,12 @@ el balance MUST volver a medirse con el contenido final antes de verify.
 
 #### Scenario: Jugador quieto pierde con todas las semillas
 - **GIVEN** el contenido por defecto, input (0, 0) en todos los ticks y la política de elección fija
-- **WHEN** se juega una partida con cada semilla de 1 a 50, con su mapa generado y el jugador quieto en (990, 630),
-  cada una hasta que termina o hasta el tick 10.800
+- **WHEN** se juega una partida con cada semilla de 1 a 50, con su mapa generado y el jugador quieto en
+  (1.950, 1.170), cada una hasta que termina o hasta el tick 10.800
 - **THEN** las 50 partidas están terminadas con resultado derrota, cada una en un tick < 10.800
 
 #### Scenario: Jugador quieto pierde también con el mapa vacío
-- **GIVEN** el contenido por defecto, el mapa vacío (jugador en (960, 540)), input (0, 0) en todos los ticks y la
+- **GIVEN** el contenido por defecto, el mapa vacío (jugador en (1.920, 1.080)), input (0, 0) en todos los ticks y la
   política de elección fija
 - **WHEN** se juega una partida con cada semilla de 1 a 50, cada una hasta que termina o hasta el tick 10.800
 - **THEN** las 50 partidas están terminadas con resultado derrota, cada una en un tick < 10.800
@@ -236,7 +239,7 @@ determinista, que es la única referencia de dificultad de los tests de balance.
      cada celda no caminable (`trunk`, `water` o `castle`) a menos de 64 px. La distancia a una pared se mide desde el
      centro del jugador; la distancia a una celda, desde el centro del jugador hasta el punto más cercano del
      rectángulo cerrado de la celda, y su repulsión apunta de ese punto al centro del jugador. Las paredes son los
-     bordes del mundo del contenido con el que se juega la partida (1.920 × 1.080 por defecto) y las celdas, las del
+     bordes del mundo del contenido con el que se juega la partida (3.840 × 2.160 por defecto) y las celdas, las del
      mapa de esa partida, nunca un tamaño ni un mapa fijos del bot;
   2. cuantiza la suma a una de las 8 direcciones; si la suma es el vector nulo, el input es (0, 0);
   3. si la dirección elegida está bloqueada, prueba en este orden la dirección girada +45°, −45°, +90°, −90°, +135° y
@@ -248,11 +251,11 @@ determinista, que es la única referencia de dificultad de los tests de balance.
   la lista de prioridad `guardrail` > `strict-rules` > `fast-ci` > `hard-asserts` > `watch-mode`, sea cual sea su
   posición en la oferta; si la oferta no contiene ninguno de esos ids, elige la opción de índice 0.
 
-El castillo no añade lógica al bot: sus celdas cuentan como cualquier otra celda no caminable. El bot de referencia
-es un concepto aparte de la "política de elección fija" de `simulation-loop`, que sigue valiendo para los escenarios
-que no dicen nada de elecciones. Cualquier cambio de su movimiento o de su lista de prioridad MUST hacerse con un
-change que revise los requisitos de balance de esta spec. Los escenarios de este requisito con posiciones explícitas
-y sin mapa declarado usan el mapa vacío.
+El castillo no añade lógica al bot: sus celdas cuentan como cualquier otra celda no caminable. El bot no recibe la
+vista ni la ventana. El bot de referencia es un concepto aparte de la "política de elección fija" de
+`simulation-loop`, que sigue valiendo para los escenarios que no dicen nada de elecciones. Cualquier cambio de su
+movimiento o de su lista de prioridad MUST hacerse con un change que revise los requisitos de balance de esta spec. Los
+escenarios de este requisito con posiciones explícitas y sin mapa declarado usan el mapa vacío.
 
 #### Scenario: Elige por prioridad, no por posición
 - **GIVEN** una oferta abierta con las opciones `watch-mode`, `fast-ci` y una tercera que no está en la lista de
@@ -277,49 +280,49 @@ y sin mapa declarado usan el mapa vacío.
 - **THEN** elige el índice 0
 
 #### Scenario: Huida sin amenazas
-- **GIVEN** un snapshot con el jugador en (960, 540) en el mundo de 1.920 × 1.080 y ningún enemigo vivo
+- **GIVEN** un snapshot con el jugador en (1.920, 1.080) en el mundo de 3.840 × 2.160 y ningún enemigo vivo
 - **WHEN** el bot de referencia calcula el input
 - **THEN** el input es (0, 0)
 
 #### Scenario: Salida ante la puerta con el mapa generado
 - **GIVEN** el contenido por defecto y, para cada semilla de 1 a 50, su mapa generado y el snapshot del tick 0
-  (jugador en la salida (990, 630), a 30 px de la celda `castle` (16, 9) y a 42,426 px de las esquinas de la (15, 9)
-  y la (17, 9); sin enemigos)
+  (jugador en la salida (1.950, 1.170), a 30 px de la celda `castle` (32, 18) y a 42,426 px de las esquinas de la
+  (31, 18) y la (33, 18); sin enemigos)
 - **WHEN** el bot de referencia calcula el input
 - **THEN** el input es (0, 1) con las 50 semillas: la repulsión de la fachada apunta hacia +y y sus componentes x se
   anulan
 
 #### Scenario: Huida de un enemigo
-- **GIVEN** un snapshot con el jugador en (960, 540) en el mundo de 1.920 × 1.080 y un único enemigo vivo en
-  (1.060, 540) (a 100 px, dentro de 150)
+- **GIVEN** un snapshot con el jugador en (1.920, 1.080) en el mundo de 3.840 × 2.160 y un único enemigo vivo en
+  (2.020, 1.080) (a 100 px, dentro de 150)
 - **WHEN** el bot de referencia calcula el input
 - **THEN** el input es (−1, 0)
 
 #### Scenario: Enemigo fuera de rango
-- **GIVEN** un snapshot con el jugador en (960, 540) en el mundo de 1.920 × 1.080 y un único enemigo vivo en
-  (1.110, 540) (a 150 px, no menos de 150)
+- **GIVEN** un snapshot con el jugador en (1.920, 1.080) en el mundo de 3.840 × 2.160 y un único enemigo vivo en
+  (2.070, 1.080) (a 150 px, no menos de 150)
 - **WHEN** el bot de referencia calcula el input
 - **THEN** el input es (0, 0)
 
 #### Scenario: Repulsión de la pared derecha del mundo
-- **GIVEN** un snapshot con el jugador en (1.900, 540) en el mundo de 1.920 × 1.080 (a 20 px de la pared derecha) y
+- **GIVEN** un snapshot con el jugador en (3.820, 1.080) en el mundo de 3.840 × 2.160 (a 20 px de la pared derecha) y
   ningún enemigo vivo
 - **WHEN** el bot de referencia calcula el input
 - **THEN** el input es (−1, 0)
 
 #### Scenario: El borde de la vista no es una pared
-- **GIVEN** un snapshot con el jugador en (940, 270) en el mundo de 1.920 × 1.080 (a ≥ 270 px de cada pared) y
-  ningún enemigo vivo
+- **GIVEN** un snapshot con el jugador en (1.270, 270) en el mundo de 3.840 × 2.160 (junto al borde derecho de una
+  vista de 1.280 × 720 anclada en (0, 0) y a ≥ 270 px de cada pared) y ningún enemigo vivo
 - **WHEN** el bot de referencia calcula el input
 - **THEN** el input es (0, 0)
 
 #### Scenario: Pared a exactamente 64 px
-- **GIVEN** un snapshot con el jugador en (64, 540) en el mundo de 1.920 × 1.080 y ningún enemigo vivo
+- **GIVEN** un snapshot con el jugador en (64, 1.080) en el mundo de 3.840 × 2.160 y ningún enemigo vivo
 - **WHEN** el bot de referencia calcula el input
 - **THEN** el input es (0, 0)
 
 #### Scenario: Esquina del mundo
-- **GIVEN** un snapshot con el jugador en (1.904, 1.064) en el mundo de 1.920 × 1.080 y ningún enemigo vivo
+- **GIVEN** un snapshot con el jugador en (3.824, 2.144) en el mundo de 3.840 × 2.160 y ningún enemigo vivo
 - **WHEN** el bot de referencia calcula el input
 - **THEN** el input apunta en la diagonal hacia −x y −y (componentes negativas y del mismo módulo)
 
@@ -349,9 +352,9 @@ y sin mapa declarado usan el mapa vacío.
 - **THEN** la dirección cuantizada (1, 0) está bloqueada, también la girada +45° y −45°, y el input es (0, 1) (+90°)
 
 #### Scenario: Dirección bloqueada por el castillo
-- **GIVEN** un mapa de hierba con las celdas de columnas 14–18 y filas 6–9 `castle`, velocidad 200 px/s y un snapshot
-  con el jugador en (990, 616), tangente a la fachada, y un único enemigo vivo en (990, 626) (repulsión 1/100 hacia −y
-  frente a 1/256 de la celda (16, 9) hacia +y)
+- **GIVEN** un mapa de hierba con las celdas de columnas 30–34 y filas 15–18 `castle`, velocidad 200 px/s y un
+  snapshot con el jugador en (1.950, 1.156), tangente a la fachada, y un único enemigo vivo en (1.950, 1.166)
+  (repulsión 1/100 hacia −y frente a 1/256 de la celda (32, 18) hacia +y)
 - **WHEN** el bot de referencia calcula el input
 - **THEN** la dirección cuantizada (0, −1) está bloqueada, también la girada +45° y −45°, y el input es (1, 0)
   (+90° en sentido horario desde (0, −1))
@@ -369,9 +372,9 @@ el conjunto completo. Ningún test (unitario ni E2E) MUST afirmar que una semill
 esa semilla pertenece al conjunto y la afirmación se deduce de un requisito que vale para todo el conjunto (por
 ejemplo, "Jugador quieto pierde"). Los tests MUST NOT fijar la semilla 2 como semilla ganadora ni la semilla 90 como
 semilla de derrota rápida. Los tests de balance MUST medir con el mismo contenido que carga el juego desde
-`content/*.json`, incluidos el tamaño del mundo y de la vista y los parámetros del mapa: si usan una copia en código,
-la copia MUST ser igual campo a campo al JSON validado. Los tests de balance de esta spec MUST ejecutarse dentro de
-la suite unitaria de `npm run verify`.
+`content/*.json`, incluidos el tamaño del mundo, el tope de vista, el radio del anillo de aparición y los parámetros
+del mapa: si usan una copia en código, la copia MUST ser igual campo a campo al JSON validado. Los tests de balance de
+esta spec MUST ejecutarse dentro de la suite unitaria de `npm run verify`.
 
 #### Scenario: Sin semillas sueltas de balance
 - **GIVEN** el directorio `tests/` tras el change
@@ -380,8 +383,9 @@ la suite unitaria de `npm run verify`.
 - **THEN** no hay ninguna coincidencia
 
 #### Scenario: Contenido de los tests igual al del juego
-- **GIVEN** el contenido de oleadas, enemigos, armas, mejoras, progresión, jugador, arena (mundo y vista) y mapa
-  cargado y validado desde `content/*.json` y la configuración por defecto que usan los tests de balance
+- **GIVEN** el contenido de oleadas (con `ringRadius`), enemigos, armas, mejoras, progresión, jugador, arena (mundo y
+  tope de vista) y mapa cargado y validado desde `content/*.json` y la configuración por defecto que usan los tests de
+  balance
 - **WHEN** se comparan campo a campo, sin tener en cuenta el orden de las claves
 - **THEN** son iguales
 
@@ -393,13 +397,19 @@ la suite unitaria de `npm run verify`.
 
 ### Requirement: Una sola fuente del tamaño del mundo en los tests
 Los tests unitarios, los E2E, los helpers de `tests/support/` y los benchmarks SHALL obtener el tamaño del mundo, el
-de la vista y los parámetros del mapa de `content/*.json` (o del contenido ya validado), sin escribirlos por su
-cuenta. Un test que necesite otro tamaño u otro mapa para un caso concreto MUST declararlo en el propio escenario
-como arena o mapa explícitos.
+tope de vista, el radio del anillo de aparición y los parámetros del mapa de `content/*.json` (o del contenido ya
+validado), sin escribirlos por su cuenta. Un test que necesite otro tamaño u otro mapa para un caso concreto MUST
+declararlo en el propio escenario como arena o mapa explícitos. Los E2E que necesitan un tamaño de ventana lo toman de
+la configuración de Playwright (1.280 × 720) o lo declaran en el escenario.
 
 #### Scenario: Sin arena por defecto duplicada
 - **GIVEN** el directorio `tests/` tras el change
 - **WHEN** se busca `DEFAULT_ARENA`
+- **THEN** no hay ninguna coincidencia
+
+#### Scenario: Sin radio del anillo derivado de la vista
+- **GIVEN** el directorio `tests/` tras el change
+- **WHEN** se buscan los literales `582.7` y `582.727`
 - **THEN** no hay ninguna coincidencia
 
 #### Scenario: El bot huye de las paredes del mundo real
@@ -414,3 +424,4 @@ como arena o mapa explícitos.
 <!-- historial: 0013-world-camera (2026-11-23) -->
 <!-- historial: 0015-procedural-map (2026-11-23) -->
 <!-- historial: 0016-map-art (2026-11-23) -->
+<!-- historial: 0017-fullscreen-view (2026-11-24) -->
