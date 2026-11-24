@@ -100,8 +100,10 @@ El sistema SHALL resolver cada explosión del tick, en el paso de peligros, con 
   El daño al jugador sigue "Daño discreto por contacto y explosiones" en `player-health` (un solo golpe por tick,
   invulnerabilidad).
 - **Enemigos (fuego amigo)**: a cada enemigo vivo cuya distancia de su centro a C es estrictamente menor que R + su
-  radio le resta D de vida, sin bajar de 0, sea cual sea su tipo o su estado. El barril que explota no recibe daño de
-  su propia explosión.
+  radio le resta D de vida, sin bajar de 0, sea cual sea su tipo (guardias incluidos) o su estado. El barril que
+  explota no recibe daño de su propia explosión.
+- **Estructuras**: ninguna explosión daña a una casa ni a una torre, viva o destruida, sea cual sea la distancia (ver
+  "Vida, destrucción y ruina" en `goblin-structures`).
 
 Las explosiones de un tick son las de los barriles vivos al empezar el paso de peligros cuya mecha termina en ese
 tick y las de las dinamitas cuyo vuelo termina en ese tick. Todas ellas explotan, aunque otra explosión del mismo tick
@@ -174,6 +176,20 @@ hace daño en su tick. La lista de explosiones va ordenada por orden de creació
 - **THEN** la explosión figura de n a n + 11, con tick n, y no en n + 12
 - **AND** solo hace daño en el tick n: un enemigo que entra en su radio en el tick n + 1 no pierde vida
 
+#### Scenario: Explosión sobre una casa y una torre
+- **GIVEN** una casa explícita con vida 30 y una torre explícita con vida 10, ambas con su centro a 0 px del centro de
+  una dinamita de radio 48 y daño 20 que explota en el tick n, y un barril de radio de explosión 80 y daño 25 cuya
+  mecha termina en el tick n a 10 px de ambos centros
+- **WHEN** se ejecuta el tick n
+- **THEN** la casa sigue con vida 30 y la torre con vida 10, ninguna figura destruida y hay 2 explosiones en el
+  snapshot del tick n
+
+#### Scenario: Guardia alcanzado por una explosión
+- **GIVEN** un `goblin-tnt-guard` de radio 22 y vida 45 a 30 px del centro de una dinamita de radio 48 y daño 20 que
+  explota en el tick n
+- **WHEN** se ejecuta el tick n
+- **THEN** su vida vale 25 y su estado de comportamiento no cambia
+
 ### Requirement: Sin reacciones en cadena
 El sistema SHALL hacer que una explosión solo quite vida: MUST NOT detonar, adelantar ni retrasar ninguna dinamita en
 vuelo ni ninguna mecha en curso. Un barril en mecha que sobrevive a una explosión sigue en mecha y explota en su tick;
@@ -236,3 +252,4 @@ la ventana ni de la velocidad de simulación, y sin cambiar el mapa de la partid
 - **THEN** en cada tick sus listas de dinamitas, avisos y explosiones son iguales campo a campo
 
 <!-- historial: 0020-enemy-behaviors (2026-11-24) -->
+<!-- historial: 0021-goblin-camps (2026-11-24) -->
