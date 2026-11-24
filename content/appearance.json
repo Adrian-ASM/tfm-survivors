@@ -54,6 +54,20 @@
       "idle": { "frames": [0], "fps": 1, "loop": true },
       "walk": { "frames": [24, 25, 26], "fps": 10, "loop": true },
       "fuse": { "frames": [30, 31, 32], "fps": 10, "loop": true }
+    },
+    "goblin-tnt-guard": {
+      "sheet": {
+        "file": "Factions/Goblins/Troops/TNT/Red/TNT_Red.png",
+        "frameWidth": 192,
+        "frameHeight": 192
+      },
+      "scale": 0.75,
+      "origin": { "x": 0.5, "y": 0.5 },
+      "facing": "right",
+      "placeholderColor": "#8e4ec6",
+      "idle": { "frames": [0, 1, 2, 3, 4, 5], "fps": 8, "loop": true },
+      "walk": { "frames": [7, 8, 9, 10, 11, 12], "fps": 10, "loop": true },
+      "throw": { "frames": [14, 15, 16, 17, 18, 19, 20], "fps": 14, "loop": false }
     }
   },
   "projectile": {
@@ -194,5 +208,56 @@
       "origin": { "x": 0.5, "y": 1 },
       "frame": 0
     }
-  }
+  },
+  "structures": {
+    "goblin-house": {
+      "intact": {
+        "sheet": {
+          "file": "Factions/Goblins/Buildings/Wood_House/Goblin_House.png",
+          "frameWidth": 128,
+          "frameHeight": 192
+        },
+        "scale": 0.9375,
+        "origin": { "x": 0.5, "y": 1 },
+        "facing": "right",
+        "idle": { "frames": [0], "fps": 1, "loop": true }
+      },
+      "ruin": {
+        "sheet": {
+          "file": "Factions/Goblins/Buildings/Wood_House/Goblin_House_Destroyed.png",
+          "frameWidth": 128,
+          "frameHeight": 192
+        },
+        "scale": 0.9375,
+        "origin": { "x": 0.5, "y": 1 },
+        "facing": "right",
+        "idle": { "frames": [0], "fps": 1, "loop": true }
+      }
+    },
+    "goblin-tower": {
+      "intact": {
+        "sheet": {
+          "file": "Factions/Goblins/Buildings/Wood_Tower/Wood_Tower_Red.png",
+          "frameWidth": 256,
+          "frameHeight": 192
+        },
+        "scale": 0.9375,
+        "origin": { "x": 0.5, "y": 1 },
+        "facing": "right",
+        "idle": { "frames": [0], "fps": 1, "loop": true }
+      },
+      "ruin": {
+        "sheet": {
+          "file": "Factions/Goblins/Buildings/Wood_Tower/Wood_Tower_Destroyed.png",
+          "frameWidth": 256,
+          "frameHeight": 192
+        },
+        "scale": 0.9375,
+        "origin": { "x": 0.5, "y": 1 },
+        "facing": "right",
+        "idle": { "frames": [0], "fps": 1, "loop": true }
+      }
+    }
+  },
+  "structureColors": { "goblin-house": "#a33b2b", "goblin-tower": "#7a5230", "ruin": "#3d3a36" }
 }

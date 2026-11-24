@@ -54,6 +54,11 @@ const barrelChase = only(stateOf(barrel, barrel.behavior.initial), 'chase');
 const tntChase = only(stateOf(tnt, tnt.behavior.initial), 'chase');
 const fuse = only(stateOf(barrel, barrelChase.exit?.to ?? ''), 'fuse');
 const charge = only(stateOf(tnt, tntChase.exit?.to ?? ''), 'charge');
+const guard = typeOf('goblin-tnt-guard');
+const patrol = only(stateOf(guard, guard.behavior.initial), 'patrol');
+const alert = only(stateOf(guard, patrol.detect.to), 'alert');
+const guardCharge = only(stateOf(guard, alert.exit.to), 'charge');
+const back = only(stateOf(guard, alert.lose.to), 'return');
 const step = config.player.speed / 60;
 const r = config.player.radius;
 
@@ -65,6 +70,16 @@ describe('Comportamientos del contenido por defecto', () => {
     expect(kindOfState(tnt, tntChase.exit?.to)).toBe('charge');
     const wait = only(stateOf(tnt, charge.to), 'wait');
     expect(wait.to).toBe(tnt.behavior.initial);
+    // 0021: patrulla → alerta → carga → espera → alerta; pérdida → vuelta → alerta o patrulla.
+    expect(only(stateOf(guard, guardCharge.to), 'wait').to).toBe(alert.name);
+    expect(back.detect.to).toBe(alert.name);
+    expect(back.to).toBe(guard.behavior.initial);
+  });
+
+  it('Scenario: Parámetros del barril por defecto (activación 60, radio 80, mecha 40)', () => {
+    expect([barrelChase.exit?.distance, fuse.radius, fuse.ticks]).toEqual([60, 80, 40]);
+    expect(Math.ceil((80 + 16 - 60) / (215 / 60))).toBe(11);
+    expect(fuse.ticks).toBeGreaterThanOrEqual(11);
   });
 
   it('Scenario: Sin contacto del barril por defecto', () => {
@@ -80,6 +95,15 @@ describe('Comportamientos del contenido por defecto', () => {
     expect(launch).toBeLessThanOrEqual(360);
     const { flightTicks, radius } = charge.dynamite;
     expect(flightTicks).toBeGreaterThanOrEqual(Math.ceil((radius + r) / step));
+    // Guardia (0021): lanzamiento, vuelo y detecciones ≤ 360 y < abandono.
+    expect(alert.exit.distance).toBeGreaterThan(guard.radius + r);
+    expect(alert.exit.distance).toBeLessThanOrEqual(360);
+    const flight = guardCharge.dynamite;
+    expect(flight.flightTicks).toBeGreaterThanOrEqual(Math.ceil((flight.radius + r) / step));
+    for (const d of [patrol.detect.distance, back.detect.distance]) {
+      expect(d).toBeLessThanOrEqual(360);
+      expect(d).toBeLessThan(alert.lose.distance);
+    }
   });
 
   it('Scenario: Esquiva con el contenido por defecto (dinamita y barril)', () => {
@@ -119,6 +143,25 @@ describe('Comportamientos del contenido por defecto', () => {
     const run = ticks(lit, fuse.ticks, PlayerInput.of(-1, 0));
     expect(run.at(-1)?.blasts).toHaveLength(1);
     expect(run.every((s) => s.player.health === 1e6)).toBe(true);
+    // Dinamita de un guardia (0021), con su puesto en el mapa vacío; huye desde el tick 2.
+    const y = 1000 - alert.exit.distance;
+    const guarded = startRun(base, {
+      player: P,
+      enemies: [
+        {
+          type: 'goblin-tnt-guard',
+          x: 1000,
+          y,
+          post: { x: 1000, y },
+          ...inState(guardCharge.name, guardCharge.ticks - 1),
+        },
+      ],
+    });
+    expect(ticks(guarded, 1)[0]?.dynamites).toHaveLength(1);
+    const fled = ticks(guarded, guardCharge.dynamite.flightTicks, PlayerInput.of(0, 1));
+    const landed = guardCharge.dynamite.flightTicks + 1;
+    expect(fled.at(-1)?.blasts.some((b) => b.tick === landed)).toBe(true);
+    expect(fled.every((s) => s.player.health === 1e6)).toBe(true);
   });
 
   it('Scenario: Velocidad por tipo · Dos tipos, dos velocidades (el TNT sigue en persecución)', () => {
@@ -167,10 +210,18 @@ describe('Presupuesto y stats intactos (run-outcome)', () => {
       health,
       xp,
     }));
-    expect(stats).toEqual([
+    // 0021: del barril solo puede cambiar la vida; el único tipo nuevo es el guardia, con los stats
+    // del TNT; la distancia de lanzamiento del TNT de oleada no cambia.
+    const { health: barrelHealth, ...barrelStats } = stats[2] ?? { health: 0 };
+    expect(barrelHealth).toBeGreaterThan(0);
+    expect([stats[0], stats[1], barrelStats, stats[3]]).toEqual([
       { id: 'goblin-torch', speed: 90, radius: 10, cost: 1, damage: 5, health: 10, xp: 1 },
       { id: 'goblin-tnt', speed: 45, radius: 22, cost: 3, damage: 15, health: 45, xp: 4 },
-      { id: 'goblin-barrel', speed: 70, radius: 16, cost: 2, damage: undefined, health: 20, xp: 2 },
+      { id: 'goblin-barrel', speed: 70, radius: 16, cost: 2, damage: undefined, xp: 2 },
+      { ...stats[1], id: 'goblin-tnt-guard' },
     ]);
+    expect(stats).toHaveLength(4);
+    expect(tntChase.exit?.distance).toBe(100);
+    expect([config.progression.baseXp, config.progression.xpGrowth]).toEqual([9, 4]);
   });
 });

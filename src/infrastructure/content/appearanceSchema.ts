@@ -208,7 +208,67 @@ const MapAppearanceSchema = z.strictObject({
   castle: z.strictObject({ ...MapShape, frame: FrameIndex }),
 });
 
-export const AppearanceSchema = z.strictObject({
+/**
+ * Aspecto de una estructura (0021): hoja regular, escala, origen, orientación e `idle` (frame 0 en
+ * el plan). Sin color propio: la reserva usa los de `structureColors`.
+ */
+export const StructureAspectSchema = z.strictObject({
+  sheet: BaseShape.sheet,
+  scale: BaseShape.scale,
+  origin: BaseShape.origin,
+  facing: BaseShape.facing,
+  idle: AnimSchema,
+});
+
+/** Aspectos de un tipo de estructura: intacto y ruina, los dos obligatorios. */
+const StructureLooksSchema = z.strictObject({
+  intact: StructureAspectSchema,
+  ruin: StructureAspectSchema,
+});
+
+/** Clave del color de reserva de las ruinas en `structureColors` (uno para todos los tipos). */
+export const RUIN_COLOR_KEY = 'ruin';
+export const RUIN_COLOR_REQUIRED =
+  'Falta el color de reserva de las ruinas (structureColors.ruin).';
+export const STRUCTURE_COLORS_MUST_DIFFER =
+  'Los colores de reserva de las estructuras son distintos entre sí y de los del mapa.';
+
+/**
+ * Colores de reserva de las estructuras (0021): uno por tipo y el de ruina, distintos dos a dos y
+ * de los del mapa. El error de un color repetido nombra el primero en el orden del fichero que
+ * repite uno anterior o uno del mapa; el de ruina se compara primero.
+ */
+function checkStructureColors(
+  colors: Readonly<Record<string, number>>,
+  terrain: Readonly<Record<string, number>>,
+  ctx: z.RefinementCtx,
+): void {
+  const ruin = colors[RUIN_COLOR_KEY];
+  if (ruin === undefined) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['structureColors', RUIN_COLOR_KEY],
+      message: RUIN_COLOR_REQUIRED,
+    });
+    return;
+  }
+  const seen = new Set<number>(Object.values(terrain));
+  const keys = [RUIN_COLOR_KEY, ...Object.keys(colors).filter((k) => k !== RUIN_COLOR_KEY)];
+  for (const key of keys) {
+    const color = colors[key] ?? 0;
+    if (seen.has(color)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['structureColors', key],
+        message: STRUCTURE_COLORS_MUST_DIFFER,
+      });
+      return;
+    }
+    seen.add(color);
+  }
+}
+
+const AppearanceShape = z.strictObject({
   maxCorpses: z
     .number()
     .int({ error: MAX_CORPSES_MUST_BE_INTEGER })
@@ -228,9 +288,18 @@ export const AppearanceSchema = z.strictObject({
   warnings: WarningsSchema,
   terrain: TerrainSchema,
   map: MapAppearanceSchema,
+  /** Por tipo de estructura del contenido (0021); el cruce con el contenido lo hace el arranque. */
+  structures: z.record(z.string(), StructureLooksSchema),
+  structureColors: z.record(z.string(), Hex),
+});
+
+export const AppearanceSchema = AppearanceShape.superRefine((a, ctx) => {
+  checkStructureColors(a.structureColors, a.terrain, ctx);
 });
 
 export type Appearance = z.output<typeof AppearanceSchema>;
+export type StructureAspect = z.output<typeof StructureAspectSchema>;
+export type StructureLooksAppearance = z.output<typeof StructureLooksSchema>;
 export type MapAppearance = z.output<typeof MapAppearanceSchema>;
 /** Recorte en px de una hoja no regular (marcos del puente). */
 export type SheetRect = z.output<typeof RectSchema>;

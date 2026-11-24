@@ -116,7 +116,10 @@ function bootstrap(): void {
   if (!booted) return;
   const config = { value: booted.config };
   const { appearance } = booted;
-  const menuSprites = emptyCounts(Object.keys(appearance.enemies));
+  const menuSprites = emptyCounts(
+    Object.keys(appearance.enemies),
+    Object.keys(appearance.structures),
+  );
   const { seed, warning } = resolveSeed(window.location.search, randomSeed);
   if (warning) console.warn(warning);
   // Una sola vez por carga: los reinicios no releen la URL ni avisan (spec simulation-loop).

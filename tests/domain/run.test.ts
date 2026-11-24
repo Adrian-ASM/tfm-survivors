@@ -32,6 +32,7 @@ describe('Run', () => {
       dynamites: [],
       warnings: [],
       blasts: [],
+      structures: [],
       weapons: [],
       gems: [],
       progression: { level: 1, xp: 0, xpToNext: 5, pendingLevelUps: 0 },

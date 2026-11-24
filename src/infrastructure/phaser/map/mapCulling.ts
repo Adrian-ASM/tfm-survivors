@@ -28,14 +28,17 @@ export interface MapVisibility {
 }
 
 /**
- * Aplica la regla en cada frame a todas las entradas del plan (design D3) y llama a `show` solo
- * donde cambia la visibilidad. Índices en el orden de pintado, `[...low, ...high]`. No guarda la vista
- * anterior: cada `apply` decide con la vista que recibe.
+ * Aplica la regla en cada frame a todas las entradas del plan (design D3), combinada con la máscara
+ * de habilitado (0021), y llama a `show` solo donde cambia la visibilidad. Índices en el orden de
+ * pintado, `[...low, ...high]`. No guarda la vista anterior: cada `apply` decide con la vista que
+ * recibe.
  */
 export class MapCuller {
   /** x0, y0, x1, y1 de cada entrada. */
   private edges = new Float64Array(0);
   private visible = new Uint8Array(0);
+  /** Máscara de "habilitado" (0021): un objeto deshabilitado no se dibuja aunque caiga en la vista. */
+  private enabled = new Uint8Array(0);
   private margin = 0;
   private count = 0;
 
@@ -44,7 +47,7 @@ export class MapCuller {
     return this.count;
   }
 
-  /** Plan nuevo (al pintarlo): todo visible, como lo deja `paintMapArt`. */
+  /** Plan nuevo (al pintarlo): todo visible y habilitado, como lo deja `paintMapArt`. */
   reset(plan: MapArtPlan): void {
     const draws = [...plan.low, ...plan.high];
     this.edges = new Float64Array(draws.length * 4);
@@ -52,8 +55,17 @@ export class MapCuller {
       this.edges.set([b.x, b.y, b.x + b.width, b.y + b.height], i * 4);
     });
     this.visible = new Uint8Array(draws.length).fill(1);
+    this.enabled = new Uint8Array(draws.length).fill(1);
     this.margin = cullMargin(plan.cellSize);
     this.count = draws.length;
+  }
+
+  /**
+   * Habilita o deshabilita la entrada `index` (aspecto vigente de una estructura, 0021). Se aplica en
+   * el siguiente `apply`: visible = habilitada y dentro del recorte.
+   */
+  setEnabled(index: number, on: boolean): void {
+    if (index >= 0 && index < this.enabled.length) this.enabled[index] = on ? 1 : 0;
   }
 
   /** Recorte del frame con su rectángulo visible `view`. */
@@ -67,6 +79,7 @@ export class MapCuller {
     for (let i = 0; i < this.visible.length; i++) {
       const k = i * 4;
       const on =
+        this.enabled[i] === 1 &&
         (e[k] ?? 0) <= right &&
         (e[k + 2] ?? 0) >= left &&
         (e[k + 1] ?? 0) <= bottom &&

@@ -1,13 +1,14 @@
 import type { CellType } from '../../../domain/map/CellType';
-import type { MapSnapshot } from '../../../domain/map/MapSnapshot';
-import type { MapLooks } from './mapLooks';
+import type { MapSnapshot, MapStructure } from '../../../domain/map/MapSnapshot';
+import type { MapLooks, StructureLook } from './mapLooks';
 import { bridgeOrientation, riverSides, shoreCells, type RiverSides } from './shoreTiles';
 import { bestRuns, shoreTileCells, waterTileCells, type KeyedCell, type TileRun } from './tileRuns';
 import { treeModels } from './treeChoices';
 
 // Plan del pintado del mapa (design 0016 §5.2 y §12.2): convierte el snapshot del mapa y los
 // aspectos resueltos en la lista de objetos de cada capa, en orden de pintado. Puro: sin motor.
-// Capa baja: agua, espuma, orillas, puentes, troncos y fachada. Capa alta: copas y tejado.
+// Capa baja: agua, espuma, orillas, puentes, troncos, fachada y parte baja de las estructuras.
+// Capa alta: copas, tejado y parte alta de las estructuras (0021).
 
 /** Caja en px de mundo de lo que pinta un objeto del mapa (0018, design §3; error ≤ 1 px). */
 export interface Box {
@@ -42,7 +43,8 @@ export interface TileDraw {
 /** Sprite del mapa: frame (índice o marco con nombre), posición de su origen, volteo y recorte. */
 export interface SpriteDraw {
   readonly kind: 'sprite';
-  readonly role: 'foam' | 'bridge' | 'trunk' | 'canopy' | 'castle' | 'roof';
+  readonly role:
+    'foam' | 'bridge' | 'trunk' | 'canopy' | 'castle' | 'roof' | 'structure' | 'structure-top';
   readonly texture: string;
   readonly frame: number | string;
   readonly x: number;
@@ -144,6 +146,8 @@ export interface MapArtPlan {
   readonly objects: number;
   /** Lado de la celda en px (`map.cellSize`): de él sale el margen del recorte (0018). */
   readonly cellSize: number;
+  /** Casas y torres del mapa (0021), en el orden del snapshot, con los índices de sus objetos. */
+  readonly structures: readonly PlannedStructure[];
 }
 
 export interface PlanContext {
@@ -363,6 +367,110 @@ function castleDraws(g: Grid, looks: MapLooks): { facade: LowDraw[]; roof: Sprit
   };
 }
 
+/** Piezas de un aspecto de estructura en el plan, antes de numerarlas. */
+interface AspectDraws {
+  readonly low: LowDraw[];
+  readonly high: SpriteDraw[];
+  readonly fallback: boolean;
+}
+
+/**
+ * Parte baja (bajo el borde superior de la fila inferior de la huella) y alta (el resto) de un
+ * aspecto de estructura, con el origen en el punto medio del borde inferior de la huella (0021). Sin
+ * arte, 1 rectángulo del color dado sobre la huella, sin parte alta.
+ */
+function structureAspect(
+  g: Grid,
+  s: MapStructure,
+  look: StructureLook | undefined,
+  color: number,
+): AspectDraws {
+  if (!look?.art) {
+    const rect = g.rect({ col: s.col, row: s.row, cols: s.cols, rows: s.rows }, color);
+    return { low: [rect], high: [], fallback: true };
+  }
+  const { texture, aspect } = look;
+  const { frameWidth: w, frameHeight: h } = aspect.sheet;
+  const cut = Math.min(Math.max(aspect.origin.y * h - g.s / aspect.scale, 0), h);
+  const size = frameOf(aspect.sheet);
+  const base = {
+    kind: 'sprite',
+    texture,
+    frame: aspect.idle.frames[0] ?? 0,
+    x: (s.col * g.s + g.right(s.col + s.cols - 1)) / 2,
+    y: g.bottom(s.row + s.rows - 1),
+    scale: aspect.scale,
+    origin: aspect.origin,
+    flipX: false,
+  } as const;
+  const low =
+    h - cut > 0
+      ? [
+          placed(
+            { ...base, role: 'structure', crop: { x: 0, y: cut, width: w, height: h - cut } },
+            size,
+          ),
+        ]
+      : [];
+  const high =
+    cut > 0
+      ? [
+          placed(
+            { ...base, role: 'structure-top', crop: { x: 0, y: 0, width: w, height: cut } },
+            size,
+          ),
+        ]
+      : [];
+  return { low, high, fallback: false };
+}
+
+/** Estructura en el plan (0021): índices de sus objetos por aspecto, en `[...low, ...high]`. */
+export interface PlannedStructure {
+  readonly id: number;
+  readonly type: string;
+  readonly intact: readonly number[];
+  readonly ruin: readonly number[];
+  /** ¿Se pinta cada aspecto con su rectángulo de reserva? */
+  readonly fallback: { readonly intact: boolean; readonly ruin: boolean };
+}
+
+/** Piezas de todas las estructuras del mapa, con sus índices relativos a cada lista. */
+function structureDraws(g: Grid, looks: MapLooks) {
+  const low: LowDraw[] = [];
+  const high: SpriteDraw[] = [];
+  const parts: { s: MapStructure; low: number[][]; high: number[][]; fallback: boolean[] }[] = [];
+  const { types, colors, ruinColor } = looks.structures;
+  for (const s of g.map.structures) {
+    const aspects = [
+      structureAspect(g, s, types[s.type]?.intact, colors[s.type] ?? ruinColor),
+      structureAspect(g, s, types[s.type]?.ruin, ruinColor),
+    ];
+    const entry = { s, low: [] as number[][], high: [] as number[][], fallback: [] as boolean[] };
+    for (const a of aspects) {
+      entry.low.push(a.low.map((d) => low.push(d) - 1));
+      entry.high.push(a.high.map((d) => high.push(d) - 1));
+      entry.fallback.push(a.fallback);
+    }
+    parts.push(entry);
+  }
+  /** Numeración final con las longitudes de las dos capas. */
+  const number = (lowStart: number, highStart: number): PlannedStructure[] =>
+    parts.map(({ s, low: l, high: h, fallback }) => {
+      const at = (k: number) => [
+        ...(l[k] ?? []).map((i) => lowStart + i),
+        ...(h[k] ?? []).map((i) => highStart + i),
+      ];
+      return {
+        id: s.id,
+        type: s.type,
+        intact: at(0),
+        ruin: at(1),
+        fallback: { intact: fallback[0] ?? true, ruin: fallback[1] ?? true },
+      };
+    });
+  return { low, high, number };
+}
+
 const count = (painted: number, fallback = 0): ElementCount => ({ painted, fallback });
 
 /** Recuentos de la sonda: celdas por elemento, con arte o con reserva (B9). */
@@ -390,7 +498,8 @@ export function planMapArt(map: MapSnapshot, looks: MapLooks, ctx: PlanContext):
   const g = new Grid(map, ctx.world);
   const { trunks, canopies } = treeDraws(g, looks, ctx.decorSeed);
   const { facade, roof } = castleDraws(g, looks);
-  const low: LowDraw[] = [
+  const built = structureDraws(g, looks);
+  const ground: LowDraw[] = [
     ...waterDraws(g, looks),
     ...foamDraws(g, looks),
     ...shoreDraws(g, looks),
@@ -398,7 +507,10 @@ export function planMapArt(map: MapSnapshot, looks: MapLooks, ctx: PlanContext):
     ...trunks,
     ...facade,
   ];
-  const high = [...canopies, ...roof];
+  // 0021: las estructuras tras la fachada (capa baja) y tras el tejado (capa alta).
+  const low = [...ground, ...built.low];
+  const above = [...canopies, ...roof];
+  const high = [...above, ...built.high];
   const foam = looks.foam.art && shoreCells(map).length > 0 ? looks.foam.aspect.idle : null;
   const { trunk, water, bridge, castle } = map.counts;
   return {
@@ -409,5 +521,6 @@ export function planMapArt(map: MapSnapshot, looks: MapLooks, ctx: PlanContext):
     cells: { trunk, water, bridge, castle },
     objects: low.length + high.length,
     cellSize: map.cellSize,
+    structures: built.number(ground.length, low.length + above.length),
   };
 }

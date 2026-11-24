@@ -1,6 +1,7 @@
 import { type Page } from '@playwright/test';
 import arena from '../../content/arena.json' with { type: 'json' };
 import player from '../../content/player.json' with { type: 'json' };
+import structures from '../../content/structures.json' with { type: 'json' };
 import { MAP_GOLDEN, signatureOf } from '../support/mapGolden';
 import { expect, test } from './fixtures';
 import {
@@ -246,12 +247,31 @@ function shoreCount(m: MapView): number {
   return n;
 }
 
+type ProbeRead = Awaited<ReturnType<typeof probe>>;
+
+/** Tipos de estructura en los que la sonda de render no casa con el snapshot (0021). */
+function structureMisses(p: ProbeRead): string[] {
+  const counts = p?.sprites?.structures ?? {};
+  const list = p?.snapshot?.structures ?? [];
+  const types = new Set([...Object.keys(counts), ...list.map((s) => s.type)]);
+  return [...types].flatMap((type) => {
+    const got = counts[type] ?? { intact: -1, ruin: -1, fallback: -1 };
+    const mine = list.filter((s) => s.type === type);
+    const want = { intact: mine.filter((s) => !s.destroyed).length, ruin: 0, fallback: 0 };
+    want.ruin = mine.length - want.intact;
+    const same = got.intact === want.intact && got.ruin === want.ruin && got.fallback === 0;
+    return same ? [] : [`${type}: ${JSON.stringify(got)} ≠ ${JSON.stringify(want)}`];
+  });
+}
+
 // Spec procedural-map, "Sonda coherente con el núcleo", y player-movement, "Sin solapes en la
 // build con el mapa real". Los E2E no importan `src/`: la firma dorada se fija en un unitario.
+// 0021, sprite-rendering "Estructuras y guardias en el navegador" (ampliación, sin input).
 test('Mapa real: sonda igual a la firma de la semilla 42, castillo y salida, y sin atravesar troncos, agua ni castillo', async ({
   page,
 }) => {
   slowMapRealOnCi();
+  const problems = collect(page, ['pageerror', 'error']);
   await openGame(page, gameUrl({ seed: 42, manual: true, map: 'real' }));
   const first = await probe(page);
   const m = first?.map;
@@ -287,6 +307,18 @@ test('Mapa real: sonda igual a la firma de la semilla 42, castillo y salida, y s
     drawn: undefined,
   });
   expect(shores).toBeGreaterThan(0);
+
+  // 0021, "Estructuras y guardias en el navegador": sin input, al arrancar y tras el intervalo de
+  // nacimiento de la casa + 1 tick, pintadas intactas/ruina por tipo = snapshot y sin reserva.
+  expect(m.structures.length).toBeGreaterThan(0);
+  expect(structureMisses(first)).toEqual([]);
+  await step(page, structures.types['goblin-house'].guards.everyTicks + 1);
+  const later = await probe(page);
+  expect(later?.snapshot?.status).toBe('running');
+  expect(structureMisses(later)).toEqual([]);
+  expect(later?.sprites?.enemyStates.patrol ?? 0).toBeGreaterThanOrEqual(1);
+  expect(later?.sprites?.enemies.placeholder).toBe(0);
+  expect(problems).toEqual([]);
 
   const overlaps: string[] = [];
   for (const key of [

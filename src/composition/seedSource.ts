@@ -1,7 +1,12 @@
 import type { RunSeeding } from '../application/StartRun';
 import { OPEN_TERRAIN } from '../domain/map/TerrainSource';
 import { Mulberry32RandomGenerator } from '../infrastructure/random/Mulberry32RandomGenerator';
-import { DECOR_STREAM, MAP_STREAM, deriveSeed } from '../infrastructure/random/deriveSeed';
+import {
+  DECOR_STREAM,
+  MAP_STREAM,
+  STRUCT_STREAM,
+  deriveSeed,
+} from '../infrastructure/random/deriveSeed';
 
 /** Mapa de las partidas de una carga: el generado por la semilla o el vacío (`?e2e&map=empty`). */
 export type MapMode = 'generated' | 'empty';
@@ -11,15 +16,17 @@ export const mapModeOf = (resolved: { readonly emptyForced: boolean }): MapMode 
   resolved.emptyForced ? 'empty' : 'generated';
 
 /**
- * Siembra de una partida (ADR-0013), única ruta de la composición: oleadas y ofertas con
- * `Mulberry32(seed)` y el mapa con su propio flujo, `Mulberry32(deriveSeed(seed, MAP_STREAM))`, o
- * el mapa vacío si se fuerza.
+ * Siembra de una partida (ADR-0013 y ADR-0020), única ruta de la composición: oleadas y ofertas con
+ * `Mulberry32(seed)`, el mapa con su propio flujo, `Mulberry32(deriveSeed(seed, MAP_STREAM))`, y
+ * sus casas y torres con otro, `Mulberry32(deriveSeed(seed, STRUCT_STREAM))`; o el mapa vacío (sin
+ * estructuras) si se fuerza.
  */
 export function seededRun(seed: number, mode: MapMode = 'generated'): RunSeeding {
   const random = new Mulberry32RandomGenerator(seed);
   if (mode === 'empty') return { random, terrain: OPEN_TERRAIN };
   const mapRandom = new Mulberry32RandomGenerator(deriveSeed(seed, MAP_STREAM));
-  return { random, terrain: { kind: 'generated', random: mapRandom } };
+  const structureRandom = new Mulberry32RandomGenerator(deriveSeed(seed, STRUCT_STREAM));
+  return { random, terrain: { kind: 'generated', random: mapRandom, structureRandom } };
 }
 
 /**

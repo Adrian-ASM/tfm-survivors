@@ -3,6 +3,7 @@ import type { Blast } from '../hazard/Blast';
 import type { Dynamite } from '../hazard/Dynamite';
 import type { Experience } from '../progression/Experience';
 import type { XpGem } from '../progression/XpGem';
+import type { Structure } from '../structure/Structure';
 import type { UpgradeBoard } from '../upgrade/UpgradeBoard';
 import type { UpgradeCatalog } from '../upgrade/UpgradeCatalog';
 import type { Projectile } from '../weapon/Projectile';
@@ -15,6 +16,7 @@ import type {
   OfferSnapshot,
   ProgressionSnapshot,
   ProjectileSnapshot,
+  StructureSnapshot,
   PulseSnapshot,
   UpgradeLevelSnapshot,
   WarningSnapshot,
@@ -77,6 +79,23 @@ export function toWarnings(
   }
   out.sort((a, b) => a.explodesAt - b.explodesAt);
   return Object.freeze(out);
+}
+
+export function toStructureSnapshot(s: Structure): StructureSnapshot {
+  const { id, type, x, y, radius, col, row, cols, rows } = s.site;
+  return Object.freeze({
+    id,
+    type: type.id,
+    x,
+    y,
+    radius,
+    col,
+    row,
+    cols,
+    rows,
+    health: s.hp,
+    destroyed: s.destroyed,
+  });
 }
 
 export function toGemSnapshot(g: XpGem, radius: number): GemSnapshot {

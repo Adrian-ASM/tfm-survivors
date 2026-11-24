@@ -69,6 +69,45 @@ describe('EnemyLayer · mecha y lanzamiento', () => {
     expect([0, 1]).toContain(tnt?.frame);
   });
 
+  // 0021: el guardia usa la hoja de goblin-tnt; walk en patrulla y alerta, throw al cargar.
+  it('Scenario: Guardia que patrulla y lanza', () => {
+    const looks = someLooks((raw) => {
+      raw.enemies['goblin-tnt-guard'] = structuredClone(raw.enemies['goblin-tnt'] ?? {});
+    });
+    const { l, sprites } = layer(looks);
+    const [guard] = sprites;
+    const WALK = [6, 7, 8, 9];
+    const n = 20;
+    const at = (t: number, kind: StateKind) => [enemy(0, 'goblin-tnt-guard', 100 + t, kind)];
+    for (let t = n - 10; t < n; t++) {
+      l.sync(at(t, 'patrol'), t, t * FRAME_MS);
+      if (t > n - 10) expect(WALK).toContain(guard?.frame);
+    }
+    expect(l.states.patrol).toBe(1);
+    for (let t = n; t <= n + 4; t++) {
+      l.sync(at(t, 'alert'), t, t * FRAME_MS);
+      expect(WALK).toContain(guard?.frame);
+    }
+    expect([l.states.patrol, l.states.alert]).toEqual([0, 1]);
+    l.sync([enemy(0, 'goblin-tnt-guard', 100 + n + 4, 'charge')], n + 5, (n + 5) * FRAME_MS);
+    expect(guard?.frame).toBe(THROW[0]);
+    expect(guard?.texture).toBe(looks.enemies.get('goblin-tnt')?.texture);
+  });
+
+  it('cuenta los guardias por clase de estado (patrulla, alerta y vuelta)', () => {
+    const looks = someLooks((raw) => {
+      raw.enemies['goblin-tnt-guard'] = structuredClone(raw.enemies['goblin-tnt'] ?? {});
+    });
+    const { l } = layer(looks);
+    const kinds: StateKind[] = ['patrol', 'alert', 'return', 'return'];
+    l.sync(
+      kinds.map((k, i) => enemy(i, 'goblin-tnt-guard', 10 * i, k)),
+      1,
+      0,
+    );
+    expect([l.states.patrol, l.states.alert, l.states.return]).toEqual([1, 1, 2]);
+  });
+
   it('Scenario: Mundo detenido (barril en mecha: mismo frame de hoja en 300 frames)', () => {
     const { l, sprites } = layer();
     l.sync([enemy(0, 'goblin-barrel', 100, 'fuse')], 500, 1234);
@@ -91,11 +130,35 @@ describe('EnemyLayer · mecha y lanzamiento', () => {
       1,
       0,
     );
-    expect(l.states).toEqual({ chase: 1, fuse: 1, charge: 1, wait: 1 });
+    expect(l.states).toEqual({
+      chase: 1,
+      fuse: 1,
+      charge: 1,
+      wait: 1,
+      patrol: 0,
+      alert: 0,
+      return: 0,
+    });
     l.sync([enemy(1, 'goblin-tnt', 2, 'wait')], 2, 0);
-    expect(l.states).toEqual({ chase: 0, fuse: 0, charge: 0, wait: 1 });
+    expect(l.states).toEqual({
+      chase: 0,
+      fuse: 0,
+      charge: 0,
+      wait: 1,
+      patrol: 0,
+      alert: 0,
+      return: 0,
+    });
     l.clear();
-    expect(l.states).toEqual({ chase: 0, fuse: 0, charge: 0, wait: 0 });
+    expect(l.states).toEqual({
+      chase: 0,
+      fuse: 0,
+      charge: 0,
+      wait: 0,
+      patrol: 0,
+      alert: 0,
+      return: 0,
+    });
   });
 });
 

@@ -1,6 +1,6 @@
 import type { RunConfig } from '../domain/run/RunConfig';
 import { err, invalidConfig, ok, type DomainError, type Result } from '../domain/shared/Result';
-import type { Appearance } from '../infrastructure/content/appearanceSchema';
+import { RUIN_COLOR_KEY, type Appearance } from '../infrastructure/content/appearanceSchema';
 import { checkTileScales, parseAppearance } from '../infrastructure/content/loadAppearance';
 import {
   parseContent,
@@ -14,6 +14,10 @@ export const APPEARANCE_FUSE_REQUIRED =
   'El aspecto de un tipo con un estado de mecha necesita la animación fuse.';
 export const APPEARANCE_THROW_REQUIRED =
   'El aspecto de un tipo con un estado de carga necesita la animación throw.';
+export const STRUCTURE_APPEARANCE_MISSING =
+  'Falta el aspecto o el color de reserva de este tipo de estructura.';
+export const STRUCTURE_APPEARANCE_UNKNOWN =
+  'Aspecto o color de un tipo de estructura que no existe en structures.json.';
 
 /** Contenido crudo del arranque: el de juego (`content/*.json`) y los datos de aspecto. */
 export interface RawBoot {
@@ -50,6 +54,34 @@ export function checkAppearanceRefs(
     }
     if (kinds.has('charge') && !aspect?.throw) {
       return err(invalidConfig(`enemies.${id}.throw`, `${APPEARANCE_THROW_REQUIRED} (${id})`));
+    }
+  }
+  return checkStructureRefs(appearance, config);
+}
+
+/**
+ * Los tipos de estructura con aspecto y con color de reserva son exactamente los del contenido de
+ * estructuras (spec sprite-rendering 0021); el error nombra el id que falta o sobra.
+ */
+function checkStructureRefs(appearance: Appearance, config: RunConfig): Result<true, DomainError> {
+  const ids = Object.keys(config.structures.types);
+  const groups = [
+    ['structures', Object.keys(appearance.structures)],
+    [
+      'structureColors',
+      Object.keys(appearance.structureColors).filter((k) => k !== RUIN_COLOR_KEY),
+    ],
+  ] as const;
+  for (const [field, keys] of groups) {
+    const missing = ids.find((id) => !keys.includes(id));
+    if (missing !== undefined) {
+      return err(
+        invalidConfig(`${field}.${missing}`, `${STRUCTURE_APPEARANCE_MISSING} (${missing})`),
+      );
+    }
+    const extra = keys.find((id) => !ids.includes(id));
+    if (extra !== undefined) {
+      return err(invalidConfig(`${field}.${extra}`, `${STRUCTURE_APPEARANCE_UNKNOWN} (${extra})`));
     }
   }
   return ok(true);

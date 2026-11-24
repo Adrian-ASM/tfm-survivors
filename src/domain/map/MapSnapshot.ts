@@ -18,9 +18,34 @@ export interface MapSnapshot {
   readonly start: StartZone;
   /** Huella del castillo del mapa generado; `null` en el vacío y en los explícitos. */
   readonly castle: CastleFootprint | null;
+  /** Casas y torres de la partida en su orden fijo (estático: la vida va en `RunSnapshot`). */
+  readonly structures: readonly MapStructure[];
 }
 
-export function toMapSnapshot(map: GameMap): MapSnapshot {
+/**
+ * Estructura del mapa (spec procedural-map 0021): id, tipo, huella, posición, radio de impacto y
+ * puerta (solo las casas; `null` en las torres).
+ */
+export interface MapStructure {
+  readonly id: number;
+  readonly type: string;
+  readonly col: number;
+  readonly row: number;
+  readonly cols: number;
+  readonly rows: number;
+  readonly x: number;
+  readonly y: number;
+  readonly radius: number;
+  readonly door: {
+    readonly col: number;
+    readonly row: number;
+    readonly x: number;
+    readonly y: number;
+  } | null;
+}
+
+/** Vista del mapa con sus estructuras (por defecto, ninguna); copia y congela cada estructura. */
+export function toMapSnapshot(map: GameMap, structures: readonly MapStructure[] = []): MapSnapshot {
   const cells: CellType[] = [];
   const counts = Object.fromEntries(CELL_TYPES.map((t) => [t, 0])) as Record<CellType, number>;
   for (let r = 0; r < map.rows; r++) {
@@ -38,5 +63,21 @@ export function toMapSnapshot(map: GameMap): MapSnapshot {
     counts: Object.freeze(counts),
     start: Object.freeze({ ...map.start }),
     castle: map.castle ? Object.freeze({ ...map.castle }) : null,
+    structures: Object.freeze(
+      structures.map((s) =>
+        Object.freeze({
+          id: s.id,
+          type: s.type,
+          col: s.col,
+          row: s.row,
+          cols: s.cols,
+          rows: s.rows,
+          x: s.x,
+          y: s.y,
+          radius: s.radius,
+          door: s.door ? Object.freeze({ ...s.door }) : null,
+        }),
+      ),
+    ),
   });
 }

@@ -7,6 +7,7 @@ import type { UpgradeTypeConfig } from '../../src/domain/upgrade/UpgradeType';
 import type { WeaponTypeConfig } from '../../src/domain/weapon/WeaponType';
 import {
   DEFAULT_UPGRADE_LIST,
+  NO_STRUCTURES,
   LINTER,
   TESTS,
   aDefaultConfig,
@@ -39,6 +40,7 @@ function weaponRun(
   const config: RunConfig = {
     ...base,
     enemies: { ...base.enemies, types: STILL },
+    structures: NO_STRUCTURES,
     waves: aWavesConfig({ types: STILL, segments: [aSegment(['goblin-torch'], 0)] }).waves,
     weapons: weaponsOf(weapons),
     upgrades: { upgrades: list.filter((u) => fitsLoadout(u, weapons)) },
@@ -190,6 +192,7 @@ describe('Efectos de las mejoras del jugador', () => {
     const config: RunConfig = {
       ...base,
       enemies: { ...base.enemies, types },
+      structures: NO_STRUCTURES,
       waves: aWavesConfig({ types, segments: [aSegment(['goblin-torch'], 0)] }).waves,
       upgrades: { upgrades: list },
     };

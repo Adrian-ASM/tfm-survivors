@@ -1,6 +1,7 @@
 import type { StateCounts } from './EnemyLayer';
 import type { SpriteCount } from './PlayerView';
 import { zeroCells, zeroMapArt, type CellCounts, type MapArtProbe } from './TerrainView';
+import { zeroStructureCounts, type StructureCount } from './StructureArt';
 
 /**
  * Sonda de sprites para E2E (design D7, cierra 0009 · W2): visibles y con aspecto de reserva por
@@ -25,12 +26,17 @@ export interface SpriteCounts {
   readonly cells: CellCounts;
   /** Elementos del mapa pintados, con su reserva, y objetos de escena del mapa (0016). */
   readonly mapArt: MapArtProbe;
+  /** Por tipo de estructura (0021): intactas, ruinas y cuántas con reserva; del plan y del estado. */
+  readonly structures: Record<string, StructureCount>;
 }
 
 const zero = (): SpriteCount => ({ visible: 0, placeholder: 0 });
 
-/** Recuentos a 0 (modo menú) con las claves de enemigo preasignadas. */
-export function emptyCounts(enemyIds: Iterable<string>): SpriteCounts {
+/** Recuentos a 0 (modo menú) con las claves de enemigo y de estructura preasignadas. */
+export function emptyCounts(
+  enemyIds: Iterable<string>,
+  structureTypes: Iterable<string> = [],
+): SpriteCounts {
   const enemyPlaceholders: Record<string, number> = {};
   for (const id of enemyIds) enemyPlaceholders[id] = 0;
   return {
@@ -42,11 +48,12 @@ export function emptyCounts(enemyIds: Iterable<string>): SpriteCounts {
     pulses: zero(),
     gems: zero(),
     enemyPlaceholders,
-    enemyStates: { chase: 0, fuse: 0, charge: 0, wait: 0 },
+    enemyStates: { chase: 0, fuse: 0, charge: 0, wait: 0, patrol: 0, alert: 0, return: 0 },
     warnings: zero(),
     dynamites: zero(),
     explosions: zero(),
     cells: zeroCells(),
     mapArt: zeroMapArt(),
+    structures: zeroStructureCounts(structureTypes),
   };
 }

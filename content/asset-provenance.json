@@ -111,6 +111,34 @@
       "version": "Update 010",
       "sha256": "fa3bcfbf05c3c1cef0e5f06976e2431c24c4ad05cdd71d7242e0b436f4e5ec8e",
       "bytes": 12547
+    },
+    {
+      "path": "public/assets/tiny-swords/Factions/Goblins/Buildings/Wood_House/Goblin_House.png",
+      "source": "Tiny Swords (Update 010)/Factions/Goblins/Buildings/Wood_House/Goblin_House.png",
+      "version": "Update 010",
+      "sha256": "5e25c872df37f63e4432230e9c5d762b4de2f34956799d1127cce1963f60e1a9",
+      "bytes": 5320
+    },
+    {
+      "path": "public/assets/tiny-swords/Factions/Goblins/Buildings/Wood_House/Goblin_House_Destroyed.png",
+      "source": "Tiny Swords (Update 010)/Factions/Goblins/Buildings/Wood_House/Goblin_House_Destroyed.png",
+      "version": "Update 010",
+      "sha256": "75998fbb9dff099c55410bf1cd3a7e0eeb61b0d309942beccdf56a5a756b7c62",
+      "bytes": 3743
+    },
+    {
+      "path": "public/assets/tiny-swords/Factions/Goblins/Buildings/Wood_Tower/Wood_Tower_Red.png",
+      "source": "Tiny Swords (Update 010)/Factions/Goblins/Buildings/Wood_Tower/Wood_Tower_Red.png",
+      "version": "Update 010",
+      "sha256": "4e422cfd3a0975ef16763839810ff5c14c38d10aedf84e0a035e7a7e139e59cc",
+      "bytes": 12084
+    },
+    {
+      "path": "public/assets/tiny-swords/Factions/Goblins/Buildings/Wood_Tower/Wood_Tower_Destroyed.png",
+      "source": "Tiny Swords (Update 010)/Factions/Goblins/Buildings/Wood_Tower/Wood_Tower_Destroyed.png",
+      "version": "Update 010",
+      "sha256": "beca37f966313c58310cb4475688494ac2f54dfd056051a6dc74e607c01359d7",
+      "bytes": 4631
     }
   ]
 }

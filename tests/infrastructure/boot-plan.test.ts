@@ -12,6 +12,7 @@ import { GAME_SCENE_KEY, MENU_SCENE_KEY } from '../../src/infrastructure/phaser/
 import {
   BRIDGE_FILE,
   CASTLE_FILE,
+  TOWER_FILE,
   REGISTERED,
   TORCH_FILE,
   rawAppearance,
@@ -30,9 +31,13 @@ describe('BootScene · plan de carga', () => {
   it('una carga por hoja distinta, con la clave = file y el tamaño de frame del aspecto', () => {
     const sheets = sheetsToLoad(appearance());
     // 8 de entidades y fondo + dinamita y explosión (0020) + agua, espuma, árbol y castillo (la orilla
-    // comparte la del fondo).
-    expect(sheets).toHaveLength(14);
-    expect(new Set(sheets.map((s) => s.key)).size).toBe(14);
+    // comparte la del fondo) + casa y torre, intactas y en ruina (0021).
+    expect(sheets).toHaveLength(18);
+    expect(new Set(sheets.map((s) => s.key)).size).toBe(18);
+    expect(sheets.find((s) => s.key === TOWER_FILE)).toMatchObject({
+      frameWidth: 256,
+      frameHeight: 192,
+    });
     expect(sheets.find((s) => s.key === CASTLE_FILE)).toEqual({
       key: CASTLE_FILE,
       file: CASTLE_FILE,

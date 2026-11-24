@@ -59,7 +59,7 @@ export interface EnemyView {
   y: number;
   radius: number;
   /** Clase del estado de comportamiento (0020). */
-  stateKind: 'chase' | 'fuse' | 'charge' | 'wait';
+  stateKind: 'chase' | 'fuse' | 'charge' | 'wait' | 'patrol' | 'alert' | 'return';
 }
 
 export interface SnapshotView {
@@ -78,6 +78,8 @@ export interface SnapshotView {
   dynamites: { id: number; x: number; y: number }[];
   warnings: { x: number; y: number; radius: number; source: 'fuse' | 'dynamite' }[];
   blasts: { id: number; x: number; y: number; radius: number }[];
+  /** Casas y torres (0021), ruinas incluidas, en su orden fijo. */
+  structures: { id: number; type: string; health: number; destroyed: boolean }[];
   progression: { level: number; xp: number; xpToNext: number; pendingLevelUps: number };
   offer: { id: string; name: string; level: number; nextLevel: number }[];
   upgrades: { id: string; level: number }[];
@@ -129,8 +131,10 @@ export interface SpritesView {
   warnings: SpriteCountView;
   dynamites: SpriteCountView;
   explosions: SpriteCountView;
-  /** Sprites de enemigo vivo por clase de estado (0020). */
-  enemyStates: Record<'chase' | 'fuse' | 'charge' | 'wait', number>;
+  /** Sprites de enemigo vivo por clase de estado (0020; patrulla, alerta y vuelta desde 0021). */
+  enemyStates: Record<'chase' | 'fuse' | 'charge' | 'wait' | 'patrol' | 'alert' | 'return', number>;
+  /** Por tipo de estructura (0021): intactas, ruinas y cuántas con reserva; a 0 en el menú. */
+  structures: Record<string, { intact: number; ruin: number; fallback: number }>;
   /** Celdas del mapa pintadas por tipo (change 0015, castle desde 0016); a 0 en el menú. */
   cells: { trunk: number; water: number; bridge: number; castle: number };
   /** Elementos del mapa pintados y cuántos con reserva, y objetos del mapa (change 0016). */
@@ -175,6 +179,20 @@ export interface WorldView {
 
 export type CellTypeView = 'grass' | 'trunk' | 'water' | 'bridge' | 'castle';
 
+/** Estructura del mapa en la sonda (0021), como `MapSnapshot.structures`. */
+export interface MapStructureView {
+  id: number;
+  type: string;
+  col: number;
+  row: number;
+  cols: number;
+  rows: number;
+  x: number;
+  y: number;
+  radius: number;
+  door: { col: number; row: number; x: number; y: number } | null;
+}
+
 /** Sonda del mapa (change 0015): null en el menú. */
 export interface MapView {
   cols: number;
@@ -186,6 +204,8 @@ export interface MapView {
   start: { x: number; y: number; radius: number };
   /** Huella del castillo (change 0016); null con el mapa vacío. */
   castle: { firstCol: number; lastCol: number; firstRow: number; lastRow: number } | null;
+  /** Casas y torres del mapa (0021): huella, centro, radio y puerta (null en la torre). */
+  structures: MapStructureView[];
   emptyForced: boolean;
 }
 

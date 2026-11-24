@@ -77,6 +77,13 @@ import {
   WEAPON_COOLDOWN_MUST_BE_INTEGER,
   WEAPON_DAMAGE_MUST_BE_INTEGER,
 } from '../../domain/weapon/WeaponType';
+import {
+  STRUCTURE_COUNT_MUST_BE_INTEGER,
+  STRUCTURE_FOOTPRINT_MUST_FIT,
+  STRUCTURE_GUARDS_MUST_BE_INTEGER,
+  STRUCTURE_PLACEMENT_MUST_BE_INTEGER,
+  STRUCTURE_VALUE_MUST_BE_POSITIVE,
+} from '../../domain/structure/StructureType';
 
 // Forma y rangos por campo de cada fichero de content/ (AGENTS.md §3.5-6). Todos estrictos: un
 // campo desconocido es un error. Los mensajes son los del dominio; las reglas cruzadas (encaje del
@@ -144,6 +151,8 @@ const BehaviorValue = z.number({ error: BEHAVIOR_VALUE_MUST_BE_POSITIVE }).posit
   error: BEHAVIOR_VALUE_MUST_BE_POSITIVE,
 });
 const BehaviorTicks = RequiredCount(BEHAVIOR_TICKS_MUST_BE_INTEGER);
+/** Salida por distancia (`exit`, `detect`, `lose`): distancia > 0 y estado de destino. */
+const DistanceTo = z.strictObject({ distance: BehaviorValue, to: StateName });
 
 // Clases cerradas de estado (spec enemy-behavior, ADR-0019). Las referencias entre estados
 // (inicial, destinos, nombres repetidos) las resuelve `Behavior.create` desde `buildRunRules`.
@@ -177,6 +186,26 @@ const StateSchema = z.discriminatedUnion(
       name: StateName,
       kind: z.literal('wait'),
       ticks: BehaviorTicks,
+      to: StateName,
+    }),
+    // Clases de guardia (0021, ADR-0020): el inicial de patrulla y el abandono mayor que las
+    // detecciones los comprueba `Behavior.create`.
+    z.strictObject({
+      name: StateName,
+      kind: z.literal('patrol'),
+      radius: BehaviorValue,
+      detect: DistanceTo,
+    }),
+    z.strictObject({
+      name: StateName,
+      kind: z.literal('alert'),
+      exit: DistanceTo,
+      lose: DistanceTo,
+    }),
+    z.strictObject({
+      name: StateName,
+      kind: z.literal('return'),
+      detect: DistanceTo,
       to: StateName,
     }),
   ],
@@ -389,4 +418,43 @@ export const MapSchema = z.strictObject({
 // regla en el dominio como defensa en `Run.start`.
 export const RunSchema = z.strictObject({
   durationSeconds: Count(RUN_DURATION_MUST_BE_INTEGER),
+});
+
+const NonNegativeInt = (error: string) => z.number({ error }).int({ error }).min(0, { error });
+const StructureValue = z
+  .number({ error: STRUCTURE_VALUE_MUST_BE_POSITIVE })
+  .positive({ error: STRUCTURE_VALUE_MUST_BE_POSITIVE });
+const FootprintSide = RequiredCount(STRUCTURE_FOOTPRINT_MUST_FIT);
+
+/** Campos comunes de un tipo de estructura; la casa añade `guards` y la torre no lo admite (D4). */
+const structureFields = {
+  count: NonNegativeInt(STRUCTURE_COUNT_MUST_BE_INTEGER),
+  footprint: z.strictObject({ cols: FootprintSide, rows: FootprintSide }),
+  radius: StructureValue,
+  health: StructureValue,
+};
+
+// Casas y torres goblin (content/structures.json, spec goblin-structures, ADR-0020). `types` es un
+// objeto estricto por id: exactamente `goblin-house` y `goblin-tower`, en el orden de colocación.
+// El encaje de la huella en la rejilla y el tipo de guardia (existe y empieza en patrulla) los
+// comprueba `StructureRules` desde `buildRunRules`, en el superRefine del loader.
+export const StructuresSchema = z.strictObject({
+  placement: z.strictObject({
+    minStartCells: NonNegativeInt(STRUCTURE_PLACEMENT_MUST_BE_INTEGER),
+    minCastleCells: NonNegativeInt(STRUCTURE_PLACEMENT_MUST_BE_INTEGER),
+    minWaterCells: NonNegativeInt(STRUCTURE_PLACEMENT_MUST_BE_INTEGER),
+    minGapCells: NonNegativeInt(STRUCTURE_PLACEMENT_MUST_BE_INTEGER),
+    maxAttempts: RequiredCount(STRUCTURE_PLACEMENT_MUST_BE_INTEGER),
+  }),
+  types: z.strictObject({
+    'goblin-house': z.strictObject({
+      ...structureFields,
+      guards: z.strictObject({
+        type: EnemyId,
+        max: RequiredCount(STRUCTURE_GUARDS_MUST_BE_INTEGER),
+        everyTicks: RequiredCount(STRUCTURE_GUARDS_MUST_BE_INTEGER),
+      }),
+    }),
+    'goblin-tower': z.strictObject(structureFields),
+  }),
 });

@@ -7,6 +7,7 @@ import { framesUsed } from '../../src/infrastructure/phaser/art/looks';
 import {
   aspectsOf,
   mapSheetsOf,
+  structureAspectsOf,
   parseAppearance,
 } from '../../src/infrastructure/content/loadAppearance';
 
@@ -41,12 +42,13 @@ const sourceOfFile = (file: string): string =>
 const sourceOf = (aspect: Aspect): string => sourceOfFile(aspect.sheet.file);
 
 describe('Datos de aspecto del repositorio', () => {
-  it('Scenario: Datos del repositorio (válidos, tope 64 y los tres goblins)', () => {
+  it('Scenario: Datos del repositorio (válidos, tope 64, los tres goblins y el guardia)', () => {
     expect(appearance.maxCorpses).toBe(64);
     expect(Object.keys(appearance.enemies)).toEqual([
       'goblin-torch',
       'goblin-tnt',
       'goblin-barrel',
+      'goblin-tnt-guard',
     ]);
     expect(Object.keys(appearance.enemies)).toEqual(enemyIds);
   });
@@ -66,6 +68,7 @@ describe('Datos de aspecto del repositorio', () => {
     const used = new Set([
       ...aspects.map(([, a]) => ASSET_DIR + a.sheet.file),
       ...mapSheetsOf(appearance).map(([, file]) => ASSET_DIR + file),
+      ...structureAspectsOf(appearance).map(([, a]) => ASSET_DIR + a.sheet.file),
     ]);
     expect([...used].every((p) => registered.includes(p))).toBe(true);
     expect([...registered].sort()).toEqual([...used].sort());
@@ -143,5 +146,58 @@ describe('Datos de aspecto del repositorio', () => {
     expect(sourceOfFile(map.shore.sheet.file).startsWith('Tiny Swords (Update 010)/Terrain/')).toBe(
       true,
     );
+  });
+
+  // 0021 (spec sprite-rendering y asset-provenance): casas, torres y ruinas.
+  it('Scenario: Datos del repositorio (estructuras y colores de reserva)', () => {
+    expect(Object.keys(appearance.structures)).toEqual(['goblin-house', 'goblin-tower']);
+    for (const looks of Object.values(appearance.structures)) {
+      expect(looks.intact.idle.frames.length).toBeGreaterThanOrEqual(1);
+      expect(looks.ruin.idle.frames.length).toBeGreaterThanOrEqual(1);
+    }
+    expect(Object.keys(appearance.structureColors).sort()).toEqual([
+      'goblin-house',
+      'goblin-tower',
+      'ruin',
+    ]);
+    const enemies = appearance.enemies;
+    expect(enemies['goblin-tnt-guard']?.sheet.file).toBe(enemies['goblin-tnt']?.sheet.file);
+    expect(enemies['goblin-tnt-guard']?.throw?.frames).toEqual([14, 15, 16, 17, 18, 19, 20]);
+  });
+
+  it.each(structureAspectsOf(appearance).map(([p, a]) => [p.join('.'), a] as const))(
+    'rejilla exacta e índices dentro de la hoja (%s)',
+    (_name, aspect) => {
+      const { width, height } = grid(aspect.sheet.file);
+      const { frameWidth, frameHeight } = aspect.sheet;
+      expect([width % frameWidth, height % frameHeight]).toEqual([0, 0]);
+      const last = (width / frameWidth) * (height / frameHeight) - 1;
+      expect(Math.max(...aspect.idle.frames)).toBeLessThanOrEqual(last);
+    },
+  );
+
+  it('Scenario: Hoja de cada elemento (casa, torre y sus ruinas)', () => {
+    const house = appearance.structures['goblin-house'];
+    const tower = appearance.structures['goblin-tower'];
+    if (!house || !tower) throw new Error('faltan aspectos de estructura');
+    expect(sourceOfFile(house.intact.sheet.file).endsWith('/Goblin_House.png')).toBe(true);
+    expect(sourceOfFile(house.ruin.sheet.file).endsWith('/Goblin_House_Destroyed.png')).toBe(true);
+    expect(sourceOfFile(tower.intact.sheet.file)).toMatch(
+      /\/Wood_Tower_(Red|Blue|Purple|Yellow)\.png$/,
+    );
+    expect(sourceOfFile(tower.ruin.sheet.file).endsWith('/Wood_Tower_Destroyed.png')).toBe(true);
+    for (const [, aspect] of structureAspectsOf(appearance)) {
+      expect(sourceOfFile(aspect.sheet.file).startsWith('Tiny Swords (Update 010)/')).toBe(true);
+    }
+  });
+
+  it('Scenario: Solo las hojas usadas (un único color de torre versionado)', () => {
+    const files = execFileSync('git', ['ls-files'], { cwd: root, encoding: 'utf8' }).split('\n');
+    const towers = files.filter(
+      (f) => /Wood_Tower_(Red|Blue|Purple|Yellow)\.png$/.test(f) && !f.startsWith('openspec/'),
+    );
+    expect(towers).toHaveLength(1);
+    const forbidden = /Fire|Wood_Tower_InConstruction/;
+    expect(files.filter((f) => forbidden.test(f) && !f.startsWith('openspec/'))).toEqual([]);
   });
 });

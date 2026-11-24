@@ -27,24 +27,29 @@ function snaps(run: Run, n: number): RunSnapshot[] {
   return out;
 }
 
-/** Aparición: id, tipo y posición en el snapshot de su tick. */
+/**
+ * Aparición del director: tipo y posición en el snapshot de su tick. Sin id: los guardias toman
+ * identificadores de la misma secuencia (0021).
+ */
 interface Spawn {
-  readonly id: number;
   readonly type: string;
   readonly x: number;
   readonly y: number;
 }
 
-/** Enemigos que aparecen en cada tick. */
-function spawnsPerTick(list: readonly RunSnapshot[]): Spawn[][] {
+const GUARD = 'goblin-tnt-guard';
+
+/** Enemigos que aparecen en cada tick: los del director o, con `guards`, solo los guardias. */
+function spawnsPerTick(list: readonly RunSnapshot[], guards = false): Spawn[][] {
   const seen = new Set<number>();
   return list.map((s) =>
     s.enemies
       .filter((e) => !seen.has(e.id))
       .map((e) => {
         seen.add(e.id);
-        return { id: e.id, type: e.type, x: e.x, y: e.y };
-      }),
+        return { type: e.type, x: e.x, y: e.y };
+      })
+      .filter((e) => (e.type === GUARD) === guards),
   );
 }
 
@@ -71,7 +76,8 @@ describe('Mapa generado frente a mapa vacío (semilla 7, quieto)', () => {
 
   // 0019: las apariciones que caen en una celda no caminable del mapa generado están en la
   // recolocación (nearestWalkable) de la posición del mapa vacío.
-  it('Scenario: Mismos spawns con y sin mapa (id, tipo, tick y posición o su recolocación)', () => {
+  // 0021: solo las apariciones del director (tipo, tick y posición), sin los guardias de las casas.
+  it('Scenario: Mismos spawns con y sin mapa (tipo, tick y posición o su recolocación)', () => {
     const n = Math.min(generated.length, empty.length);
     expect(n).toBeGreaterThan(600);
     const map = generatedMap();
@@ -91,6 +97,7 @@ describe('Mapa generado frente a mapa vacío (semilla 7, quieto)', () => {
       return before !== undefined && (before.x !== e.x || before.y !== e.y);
     });
     expect(moved.length).toBeGreaterThan(0);
+    expect(spawnsPerTick(empty.slice(0, n), true).flat()).toEqual([]);
   });
 });
 
@@ -106,6 +113,7 @@ describe('Primera oferta con y sin mapa (semilla 7, quieto)', () => {
   }
 
   // 0017: se exige el plazo de primera subida en ambas, no el mismo tick ni las mismas opciones.
+  // 0021 (casas, guardias y barril A3): medida en el tick 2.082 con el generado y 2.057 con el vacío.
   it('Scenario: Primera oferta en plazo con y sin mapa (ambas ≤ 4.800 ticks)', () => {
     const generated = firstOffer(startSeededRun(CONFIG, 7));
     const empty = firstOffer(startEmptyWithExit(CONFIG, 7));

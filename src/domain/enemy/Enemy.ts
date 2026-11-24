@@ -1,5 +1,6 @@
 import type { Arena } from '../arena/Arena';
 import type { EnemyType } from './EnemyType';
+import type { GuardPost } from './GuardPost';
 
 /**
  * Enemigo (entidad). A diferencia de `Player`, su posición es estado escalar **mutable e interno**
@@ -17,6 +18,8 @@ export class Enemy {
   private stateIndex: number;
   /** Tick en que entró en su estado (0 = antes del tick 1; `RunSetup` lo adelanta). */
   private enteredAt: number;
+  /** Punto de patrulla al que se dirige (0..3; escalar mutable, solo en patrulla). */
+  private nextPoint = 0;
 
   private constructor(
     readonly id: number,
@@ -26,12 +29,24 @@ export class Enemy {
     health: number,
     state: number,
     since: number,
+    /** Puesto de un guardia (ADR-0020); `null` en los demás. No cambia durante su vida. */
+    readonly post: GuardPost | null,
   ) {
     this.px = x;
     this.py = y;
     this.life = health;
     this.stateIndex = state;
     this.enteredAt = since;
+  }
+
+  /** Punto de patrulla al que se dirige (0..3). */
+  get waypoint(): number {
+    return this.nextPoint;
+  }
+
+  /** Llega a su punto de patrulla: el siguiente en el bucle de 4. */
+  advanceWaypoint(): void {
+    this.nextPoint = (this.nextPoint + 1) % 4;
   }
 
   /** Estado de comportamiento actual (índice en `type.behavior`). */
@@ -49,10 +64,14 @@ export class Enemy {
     return this.enteredAt + (this.type.behavior.ticks[this.stateIndex] ?? 0);
   }
 
-  /** Entra en el estado `state` en el tick n (spec enemy-behavior). No toca la vida. */
+  /**
+   * Entra en el estado `state` en el tick n (spec enemy-behavior). No toca la vida. Al entrar en
+   * cualquier estado, la patrulla vuelve a empezar por el primer punto.
+   */
   enter(state: number, n: number): void {
     this.stateIndex = state;
     this.enteredAt = n;
+    this.nextPoint = 0;
   }
 
   /** El barril que explota queda dado de baja (vida 0) sin destello de daño. */
@@ -95,6 +114,7 @@ export class Enemy {
   /**
    * Crea un enemigo con el centro recortado a la arena. `health` (vida inicial), `state` y `since`
    * solo los fija `RunSetup`; por defecto, la vida del tipo y su estado inicial desde el tick `since`.
+   * `post`: el puesto de un guardia.
    */
   static spawn(
     id: number,
@@ -105,9 +125,10 @@ export class Enemy {
     health: number = type.health,
     state: number = type.behavior.initial,
     since = 0,
+    post: GuardPost | null = null,
   ): Enemy {
     const cx = arena.clampX(x, type.radius);
-    return new Enemy(id, type, cx, arena.clampY(y, type.radius), health, state, since);
+    return new Enemy(id, type, cx, arena.clampY(y, type.radius), health, state, since, post);
   }
 
   get x(): number {

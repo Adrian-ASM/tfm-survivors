@@ -51,7 +51,15 @@ export class EnemyLayer {
   readonly counts: SpriteCount = { visible: 0, placeholder: 0 };
   /** Sprites con aspecto de reserva por tipo (claves preasignadas con los tipos con aspecto). */
   readonly placeholdersByType: Record<string, number> = {};
-  readonly states: StateCounts = { chase: 0, fuse: 0, charge: 0, wait: 0 };
+  readonly states: StateCounts = {
+    chase: 0,
+    fuse: 0,
+    charge: 0,
+    wait: 0,
+    patrol: 0,
+    alert: 0,
+    return: 0,
+  };
   private readonly pool: SlotPool<EnemySnapshot, EnemySlot>;
   private tick = 0;
   private clockMs = 0;

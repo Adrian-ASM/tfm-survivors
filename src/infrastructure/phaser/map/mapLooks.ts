@@ -1,4 +1,10 @@
-import type { Appearance, MapAppearance, SheetRect } from '../../content/appearanceSchema';
+import {
+  RUIN_COLOR_KEY,
+  type Appearance,
+  type MapAppearance,
+  type SheetRect,
+  type StructureAspect,
+} from '../../content/appearanceSchema';
 import type { FrameCount } from '../art/looks';
 
 // Aspectos del mapa resueltos contra las texturas cargadas (design 0016 §5.3 y §12.2 B6): arte o
@@ -34,6 +40,8 @@ export interface MapLooks {
     | Off;
   readonly castle: On<{ readonly aspect: MapAppearance['castle'] }> | Off;
   readonly colors: MapColors;
+  /** Casas y torres (0021): arte o reserva por tipo y aspecto, y sus colores de reserva. */
+  readonly structures: StructureLooks;
 }
 
 const OFF: Off = Object.freeze({ art: false });
@@ -63,6 +71,7 @@ export function resolveMapLooks(
   colors: MapColors,
   frames: FrameCount,
   hasFrame: HasFrame,
+  structures: StructureLooks,
 ): MapLooks {
   const { image } = map.bridges;
   const bridgesOk =
@@ -89,5 +98,37 @@ export function resolveMapLooks(
       : OFF,
     castle: regular(map.castle, frames, [map.castle.frame]),
     colors,
+    structures,
   };
+}
+
+/** Arte de un aspecto de estructura (0021) o su reserva. */
+export type StructureLook = On<{ readonly aspect: StructureAspect }> | Off;
+
+/**
+ * Aspectos de las estructuras resueltos (0021): por tipo, el intacto y el de ruina, cada uno con
+ * arte o reserva por separado; y los colores de reserva por tipo y de ruina.
+ */
+export interface StructureLooks {
+  readonly types: Readonly<
+    Record<string, { readonly intact: StructureLook; readonly ruin: StructureLook }>
+  >;
+  /** Color de reserva de cada tipo intacto. */
+  readonly colors: Readonly<Record<string, number>>;
+  /** Color de reserva de las ruinas. */
+  readonly ruinColor: number;
+}
+
+/** Arte o reserva de cada aspecto de estructura: hoja cargada y su frame `idle[0]` dentro. */
+export function resolveStructureLooks(appearance: Appearance, frames: FrameCount): StructureLooks {
+  const look = (aspect: StructureAspect): StructureLook =>
+    regular(aspect, frames, aspect.idle.frames.slice(0, 1));
+  const types = Object.fromEntries(
+    Object.entries(appearance.structures).map(([id, a]) => [
+      id,
+      { intact: look(a.intact), ruin: look(a.ruin) },
+    ]),
+  );
+  const { [RUIN_COLOR_KEY]: ruinColor = 0, ...colors } = appearance.structureColors;
+  return { types, colors, ruinColor };
 }

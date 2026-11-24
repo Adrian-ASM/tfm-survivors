@@ -13,7 +13,7 @@ import { Run } from '../../src/domain/run/Run';
 import { SETUP_PLAYER_ON_BLOCKED_CELL } from '../../src/domain/run/RunSetup';
 import type { RandomGenerator } from '../../src/domain/shared/RandomGenerator';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
-import { MAP_STREAM, deriveSeed } from '../../src/infrastructure/random/deriveSeed';
+import { MAP_STREAM, STRUCT_STREAM, deriveSeed } from '../../src/infrastructure/random/deriveSeed';
 import { aDefaultConfig } from '../support/builders';
 import { cellsWith, emptyWithExit, mapRules, type Layout } from '../support/mapLayouts';
 import { mapForSeed, typesOf } from '../support/mapStats';
@@ -26,6 +26,7 @@ const RULES = mapRules();
 const generated = (seed: number): TerrainSource => ({
   kind: 'generated',
   random: new Mulberry32RandomGenerator(deriveSeed(seed, MAP_STREAM)),
+  structureRandom: new Mulberry32RandomGenerator(deriveSeed(seed, STRUCT_STREAM)),
 });
 
 function start(

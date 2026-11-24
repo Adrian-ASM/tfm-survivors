@@ -5,6 +5,7 @@ import mapJson from '../../../content/map.json';
 import playerJson from '../../../content/player.json';
 import progressionJson from '../../../content/progression.json';
 import runJson from '../../../content/run.json';
+import structuresJson from '../../../content/structures.json';
 import upgradesJson from '../../../content/upgrades.json';
 import wavesJson from '../../../content/waves.json';
 import weaponsJson from '../../../content/weapons.json';
@@ -18,6 +19,7 @@ import {
   PlayerSchema,
   ProgressionSchema,
   RunSchema,
+  StructuresSchema,
   UpgradesSchema,
   WavesSchema,
   WeaponsSchema,
@@ -37,6 +39,7 @@ const RunConfigSchema = z
     upgrades: UpgradesSchema,
     run: RunSchema,
     map: MapSchema,
+    structures: StructuresSchema,
   })
   .superRefine((config, ctx) => {
     // Estricto: un punto del anillo sin recorte nunca cae en una vista centrada en el jugador.
@@ -70,6 +73,7 @@ export interface RawContentFiles {
   upgrades: unknown;
   run: unknown;
   map: unknown;
+  structures: unknown;
 }
 
 /** Tamaño en píxeles CSS (presentación): nunca llega al núcleo. */
@@ -98,7 +102,17 @@ export function parseContent(raw: RawContentFiles): Result<ParsedContent, Domain
   // Un campo desconocido se nombra a sí mismo (spec procedural-map: "nombra `lakes`").
   if (issue?.code === 'unrecognized_keys' && issue.keys[0] !== undefined) path.push(issue.keys[0]);
   const message = issue?.message ?? 'Contenido inválido';
-  return err(invalidConfig(path.join('.'), namingEnemyType(message, path, raw)));
+  const named = namingStructureType(namingEnemyType(message, path, raw), path);
+  return err(invalidConfig(path.join('.'), named));
+}
+
+/**
+ * Un error dentro de un tipo de estructura nombra el tipo también en el mensaje (spec
+ * goblin-structures: "un error que nombre el tipo de estructura y el campo"), como los del dominio.
+ */
+function namingStructureType(message: string, path: readonly string[]): string {
+  const id = path[0] === 'structures' && path[1] === 'types' ? path[2] : undefined;
+  return id === undefined || message.includes(id) ? message : `${message} (${id})`;
 }
 
 /**
@@ -137,5 +151,6 @@ export function repositoryContent(): RawContentFiles {
     upgrades: upgradesJson,
     run: runJson,
     map: mapJson,
+    structures: structuresJson,
   };
 }

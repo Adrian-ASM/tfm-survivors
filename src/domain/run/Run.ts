@@ -7,6 +7,9 @@ import { FlowField } from '../map/FlowField';
 import type { GameMap } from '../map/GameMap';
 import { toMapSnapshot, type MapSnapshot } from '../map/MapSnapshot';
 import { OPEN_TERRAIN, resolveTerrain, type TerrainSource } from '../map/TerrainSource';
+import { resolveStructures } from '../structure/resolveStructures';
+import { StructureField } from '../structure/StructureField';
+import type { StructureSite } from '../structure/StructureSite';
 import type { Player } from '../player/Player';
 import type { PlayerInput } from '../player/PlayerInput';
 import type { RandomGenerator } from '../shared/RandomGenerator';
@@ -38,6 +41,7 @@ import {
   toOfferSnapshot,
   toProgressionSnapshot,
   toProjectileSnapshot,
+  toStructureSnapshot,
   toPulseSnapshot,
   toUpgradeLevels,
   toWarnings,
@@ -67,18 +71,21 @@ export {
  * Partida en curso (aggregate root). Único punto de entrada para cambiar el estado de la
  * simulación. Contrato de determinismo (spec simulation-loop, "Orden de los pasos del tick"): el
  * orden del tick (1 jugador → 2 comportamiento en orden de lista: esperas que terminan, persecución
- * por el campo de flujo hacia la celda del jugador y salidas por distancia tras moverse → 3 armas y,
- * si hay bajas, removeDead() con sus gemas → 4 peligros (ADR-0019): explosiones caducadas, barriles
- * cuya mecha termina (marcados todos antes, sin dañarse a sí mismos) y dinamitas que llegan, en ese
- * orden, otro removeDead() y lanzamientos en orden de lista bajo el tope → 5 un solo golpe al
- * jugador, el mayor entre contactos de tipos con daño y explosiones que le alcanzan → victoria en el
- * tick de la duración objetivo → gemas y XP → director → apertura de oferta) y el consumo de azar
- * son fijos (colisión con el mapa, campo, línea libre, navegación, comportamientos, peligros,
- * recolocación de apariciones, armas, gemas, XP y fin de partida no consumen azar; la oferta y cada
- * intento de aparición sí); cambiarlos cambia las partidas de una semilla. El mapa es parte del
- * estado inicial y sale de un flujo de azar propio (ADR-0013); no cambia durante la partida. La
- * navegación (ADR-0017): BFS 4-vecina con orden izquierda, derecha, arriba, abajo, campo solo
- * función de (mapa, celda del jugador) y empates por ese orden.
+ * y alerta por el campo de flujo hacia la celda del jugador, patrulla y vuelta hacia su punto fijo, y
+ * transiciones tras moverse → 3 armas (estructuras solo como reserva sin enemigos en el criterio) y,
+ * si hay bajas, removeDead() con sus gemas, y después las estructuras a vida 0 quedan destruidas →
+ * 4 peligros (ADR-0019): explosiones caducadas, barriles cuya mecha termina (marcados todos antes,
+ * sin dañarse a sí mismos) y dinamitas que llegan, en ese orden, otro removeDead() y lanzamientos en
+ * orden de lista bajo el tope → 5 un solo golpe al jugador, el mayor entre contactos de tipos con
+ * daño y explosiones que le alcanzan → victoria en el tick de la duración objetivo → gemas y XP →
+ * director → nacimiento de guardias en las casas, en orden de lista (ADR-0020) → apertura de oferta)
+ * y el consumo de azar son fijos (colisión con el mapa, campo, línea libre, navegación,
+ * comportamientos, peligros, estructuras, nacimientos, recolocación de apariciones, armas, gemas, XP
+ * y fin de partida no consumen azar; la oferta y cada intento de aparición sí); cambiarlos cambia las
+ * partidas de una semilla. El mapa es parte del estado inicial y sale de un flujo de azar propio
+ * (ADR-0013), y sus casas y torres de otro (ADR-0020); no cambia durante la partida. La navegación
+ * (ADR-0017): BFS 4-vecina con orden izquierda, derecha, arriba, abajo, campo solo función de (mapa,
+ * celda del jugador) y empates por ese orden.
  */
 export class Run {
   private tickCount = 0;
@@ -94,15 +101,20 @@ export class Run {
   private readonly mapView: MapSnapshot;
   private readonly field: FlowField;
   private readonly hazards: HazardField;
+  private readonly structures: StructureField;
 
   private constructor(
     private readonly rules: RunRules,
     private readonly random: RandomGenerator,
     private readonly terrain: GameMap,
     initial: InitialState,
+    sites: readonly StructureSite[],
   ) {
     this.arena = rules.arena;
-    this.mapView = toMapSnapshot(terrain);
+    this.mapView = toMapSnapshot(
+      terrain,
+      sites.map((s) => ({ ...s, type: s.type.id })),
+    );
     this.field = new FlowField(terrain);
     this.player = initial.player;
     this.horde = new Horde(initial.enemies, rules.arena, initial.kills);
@@ -112,6 +124,7 @@ export class Run {
     this.director = new WaveDirector(rules.table, rules.spawn, random);
     this.arsenal = new Arsenal(rules.loadout, rules.pulseCapacity);
     this.hazards = new HazardField(rules.hazards, initial.dynamites);
+    this.structures = new StructureField(initial.structures);
     for (const w of rules.loadout.weapons) this.retune(w.id);
     const bonus = maxHealthBonus(rules.upgrades, this.board.levels);
     this.player = this.player.withRules(this.effectivePlayer(), bonus);
@@ -132,9 +145,11 @@ export class Run {
     if (!rules.ok) return rules;
     const map = resolveTerrain(terrain, rules.value.map);
     if (!map.ok) return map;
-    const initial = initialState(rules.value, setup, map.value);
+    const sites = resolveStructures(terrain, map.value, rules.value.structures);
+    if (!sites.ok) return sites;
+    const initial = initialState(rules.value, setup, map.value, sites.value);
     if (!initial.ok) return initial;
-    return ok(new Run(rules.value, random, map.value, initial.value));
+    return ok(new Run(rules.value, random, map.value, initial.value, sites.value));
   }
 
   /** Mapa de la partida (spec procedural-map): la misma vista congelada durante toda la partida. */
@@ -207,7 +222,9 @@ export class Run {
     const { x, y } = this.player.position;
     this.field.retarget(this.terrain.colAt(x), this.terrain.rowAt(y));
     this.horde.act(n, x, y, TICK_SECONDS, this.field);
-    if (this.arsenal.step(n, x, y, this.horde.alive) > 0) this.horde.removeDead(this.dropGem);
+    const { horde, structures } = this;
+    if (this.arsenal.step(n, x, y, horde.alive, structures.all) > 0) horde.removeDead(this.dropGem);
+    structures.settle();
     this.stepHazards(n, x, y);
     if (this.applyHit(n) || this.reachedEnd(n)) {
       this.tickCount = n;
@@ -215,7 +232,8 @@ export class Run {
     }
     const xp = this.gems.step(x, y, this.player.radius, this.player.pickupRadius);
     if (xp > 0) this.experience.gain(xp);
-    this.director.step(n, this.horde.alive.length, this.place);
+    this.director.step(n, horde.alive.length, this.place);
+    structures.spawnGuards(n, horde, this.rules.spawn.maxAlive);
     this.tickCount = n;
     this.openNextOffer();
   }
@@ -272,11 +290,13 @@ export class Run {
   }
 
   /**
-   * Cada muerto suelta su gema en su posición, en orden de la lista (spec xp-gems). Se crea una
+   * Cada muerto suelta su gema en su posición, en orden de la lista (spec xp-gems), y un guardia
+   * deja libre su hueco en el tope de su casa. Se crea una
    * sola vez: no asigna por tick.
    */
   private readonly dropGem = (dead: Enemy): void => {
     this.gems.drop(dead.x, dead.y, dead.type.xp);
+    dead.post?.release();
   };
 
   /** Los enemigos nuevos van al final de la lista y no se mueven en el tick en que aparecen. */
@@ -326,6 +346,7 @@ export class Run {
       ),
       warnings: toWarnings(this.horde.alive, this.hazards.dynamites),
       blasts: Object.freeze(this.hazards.blasts.map(toBlastSnapshot)),
+      structures: Object.freeze(this.structures.all.map(toStructureSnapshot)),
       weapons: Object.freeze(
         this.arsenal.weapons.map((w) => Object.freeze({ id: w.type.id, ready: w.isChargedAt(k) })),
       ),

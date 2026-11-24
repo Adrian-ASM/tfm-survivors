@@ -46,13 +46,53 @@
       "speed": 70,
       "radius": 16,
       "cost": 2,
-      "health": 20,
+      "health": 25,
       "xp": 2,
       "behavior": {
         "initial": "approach",
         "states": [
-          { "name": "approach", "kind": "chase", "exit": { "distance": 40, "to": "fuse" } },
-          { "name": "fuse", "kind": "fuse", "ticks": 40, "radius": 64, "damage": 25 }
+          { "name": "approach", "kind": "chase", "exit": { "distance": 60, "to": "fuse" } },
+          { "name": "fuse", "kind": "fuse", "ticks": 40, "radius": 80, "damage": 25 }
+        ]
+      }
+    },
+    {
+      "id": "goblin-tnt-guard",
+      "speed": 45,
+      "radius": 22,
+      "cost": 3,
+      "damage": 15,
+      "health": 45,
+      "xp": 4,
+      "behavior": {
+        "initial": "patrol",
+        "states": [
+          {
+            "name": "patrol",
+            "kind": "patrol",
+            "radius": 120,
+            "detect": { "distance": 240, "to": "alert" }
+          },
+          {
+            "name": "alert",
+            "kind": "alert",
+            "exit": { "distance": 100, "to": "aim" },
+            "lose": { "distance": 360, "to": "return" }
+          },
+          {
+            "name": "aim",
+            "kind": "charge",
+            "ticks": 30,
+            "to": "reload",
+            "dynamite": { "flightTicks": 45, "radius": 56, "damage": 15 }
+          },
+          { "name": "reload", "kind": "wait", "ticks": 90, "to": "alert" },
+          {
+            "name": "return",
+            "kind": "return",
+            "detect": { "distance": 240, "to": "alert" },
+            "to": "patrol"
+          }
         ]
       }
     }

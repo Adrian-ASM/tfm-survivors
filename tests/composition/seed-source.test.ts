@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { restartRandoms, seededRun } from '../../src/composition/seedSource';
-import { MAP_STREAM, deriveSeed } from '../../src/infrastructure/random/deriveSeed';
+import { MAP_STREAM, STRUCT_STREAM, deriveSeed } from '../../src/infrastructure/random/deriveSeed';
 import { RestartRun } from '../../src/application/RestartRun';
 import { StartRun, type StartedRun } from '../../src/application/StartRun';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
@@ -58,6 +58,15 @@ describe('seededRun', () => {
     expect(sequence(seeding.terrain.random, 5)).toEqual(sequence(mapRandom, 5));
   });
 
+  // ADR-0020 (0021): las casas y torres con su propio flujo, STRUCT_STREAM = 3.
+  it('estructuras con Mulberry32(deriveSeed(seed, STRUCT_STREAM)), STRUCT_STREAM = 3', () => {
+    expect(STRUCT_STREAM).toBe(3);
+    const seeding = seededRun(42, 'generated');
+    if (seeding.terrain.kind !== 'generated') throw new Error('se esperaba un mapa generado');
+    const structureRandom = new Mulberry32RandomGenerator(deriveSeed(42, STRUCT_STREAM));
+    expect(sequence(seeding.terrain.structureRandom, 5)).toEqual(sequence(structureRandom, 5));
+  });
+
   it('con el modo vacío el mapa es el abierto', () => {
     expect(seededRun(42, 'empty').terrain).toEqual({ kind: 'open' });
   });
@@ -70,6 +79,7 @@ describe('restartRandoms con el mapa', () => {
     const first = new StartRun().execute(config, new Mulberry32RandomGenerator(42), undefined, {
       kind: 'generated',
       random: new Mulberry32RandomGenerator(deriveSeed(42, MAP_STREAM)),
+      structureRandom: new Mulberry32RandomGenerator(deriveSeed(42, STRUCT_STREAM)),
     });
     if (!first.ok) throw new Error(first.error.message);
     play(first.value, 36_000);
