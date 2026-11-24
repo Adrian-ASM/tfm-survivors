@@ -63,7 +63,7 @@ Decisiones:
 
 Consecuencias: cambian todos los mapas generados (bandas del río) y la firma dorada; el balance se re-mide
 (`player.speed` 215). Revertir el castillo es quitar el tipo y la huella; la salida por mapa puede quedarse.
-Los enemigos siguen ignorando el mapa, castillo incluido (deuda para 0018 flow-field).
+Los enemigos siguen ignorando el mapa, castillo incluido (deuda para 0018 flow-field; saldada en 0019 por ADR-0017).
 
 Resultado en apply: balance 27/50 con 215 (banda 25..35) y 0 quietos vivos; 196 y 245 objetos del mapa con las
 semillas 42 y 123 (máximo 258 en 1..50), sin necesidad del `Blitter`; puerta visual aprobada por el usuario.
