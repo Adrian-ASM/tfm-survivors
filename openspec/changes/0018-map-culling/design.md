@@ -89,6 +89,10 @@ partida):
 - Castillo de la semilla 42 (escenario "Partes del castillo por separado"): tejado (1.800, 900)–(2.100, 1.080) y
   fachada (1.800, 1.080)–(2.100, 1.140), por el corte `cut` de `castleDraws`.
 
+- Redondeo (añadido en apply, W1 del verify-report): las cajas de los sprites se redondean a 1/1024 px. Sin él,
+  la copa de un árbol de la fila 0 acababa en y = −1,4e-14 en lugar de 0 y fallaba "toda caja toca el mundo". El
+  error (≈ 0,0005 px) queda muy por debajo del ≤ 1 px que permite la spec.
+
 `MapArtPlan.cellSize` = `map.cellSize` del snapshot (60 px con `content/map.json`). Se añade al plan porque es lo
 único que falta al recorte y el plan ya se construye desde el snapshot.
 
