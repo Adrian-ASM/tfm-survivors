@@ -52,3 +52,15 @@ puentes, con hasta 300 vivos. Hay que tener en cuenta varias fuerzas:
   `Run` y `placeSpawn`, pero obliga a recalibrar. El paso a 8 vecinos o a Dijkstra se queda dentro de `FlowField`
   (misma API `retarget`/`steer`). Los edificios (build-sites, 0024) solo añadirán el disparador de recálculo por cambio
   del mapa.
+
+## Addendum · resultados del apply (2026-11-24)
+- **Balance**: con la implementación real y `maxAlive` 300, la base cae a **12/50**, no a 18 como en el prototipo.
+  Se recalibra solo con la curva de XP (`content/progression.json`: `baseXp` 5 → 9, `xpGrowth` 5 → 3; delta de la
+  spec `leveling`), por decisión del usuario. Resultado: **26/50** victorias del bot v2 y 0 quietos supervivientes
+  con el mapa generado y con el vacío. Plazos del quieto con la semilla 7: primer golpe 2.276, pulso 1.524, oferta
+  2.082 y baja 728. Primer golpe con la 42: 2.442. Tabla de 18 lotes en el design (§6, resultado).
+- **Palancas descartadas**: vida y daño del `goblin-tnt` (máximo 16/50). `strict-rules` (31–33, pero deja vivos a
+  jugadores quietos). `xpGrowth` sin `baseXp` (37–38, por encima de la banda; con 4 sobrevive un quieto).
+- **Bench** (local, informativo): tick con 300 vivos y mapa generado, 0,023 ms. Con 300 sin línea libre, 0,113 ms.
+  Con el jugador cambiando de celda en cada tick, 0,172 ms. BFS completa, 0,059 ms de media (p99 0,073).
+- **Estado**: pasa a "aceptada" al archivar el change.

@@ -82,7 +82,7 @@
   `npm run bench` y sus medias se anotan en el design.
 
 ## 5. E2E y documentación
-- [ ] 5.1 E2E: no hay ninguno nuevo (ningún escenario exige navegador; regla `e2e-lite`). Se ejecuta
+- [x] 5.1 E2E: no hay ninguno nuevo (ningún escenario exige navegador; regla `e2e-lite`). Se ejecuta
   `npm run test:e2e` una vez. Si falla un test con `map: 'real'` por tiempos o posiciones (los enemigos ya no
   atraviesan el mapa), se ajusta su número de ticks en modo manual, sin añadir esperas de reloj.
 - [x] 5.2 Renumeración del GDD (`docs/gdd.md`, design §10): 0018 map-culling como hecho; flow-field de 0018 a 0019;
@@ -90,6 +90,6 @@
   el criterio "Given un edificio nuevo…" pasa a build-sites (0024); la deuda "sin separación" pasa a "pendiente,
   change propio". Antes de editar se buscan "0018"–"0023". Comprobación: `grep` sin números antiguos fuera de su
   sitio y `npm run verify` en verde.
-- [ ] 5.3 Cierre de documentación: addendum de resultados en ADR-0017 (balance final, palancas usadas, medias del
+- [x] 5.3 Cierre de documentación: addendum de resultados en ADR-0017 (balance final, palancas usadas, medias del
   bench) y pasar su estado a "aceptada" al archivar; entrada en el diario de IA de la apply. AGENTS.md se toca solo
   al archivar. Comprobación: `npm run verify` en verde.
