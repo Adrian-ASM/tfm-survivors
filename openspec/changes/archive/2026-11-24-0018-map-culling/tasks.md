@@ -107,7 +107,7 @@ Sin tareas: el change no toca `src/domain` ni `src/application` (design §1).
   calibración fps/p95/ticks por frame, `objects`/`drawn`). Si no se supera la base de 0017, anotarlo para el
   verify-report (informativo, sin gate). `npm run verify` en verde.
   — escenarios: "Objetos del mapa [realtime]", "Fps con el mapa real [realtime]".
-- [ ] 5.2 Tras abrir el PR: leer **una vez**, al terminar el run, la duración de Cámara, Sprites, Mapa real y la
+- [x] 5.2 Tras abrir el PR: leer **una vez**, al terminar el run, la duración de Cámara, Sprites, Mapa real y la
   suite total del job `e2e` (sin lanzar workflows ni hacer polling) y rellenar la columna "0018 después" de
   `exploration.md`; anotar si los tres E2E del mapa real quedan ≤ 30 s (criterio de G1 para el chore posterior).
   Actualizar el estado de `AGENTS.md` §1 (recorte por cámara del arte del mapa, sonda `sprites.mapArt.drawn`) y la

@@ -82,12 +82,14 @@ Qué mide: efecto del recorte en el coste por frame y en los E2E del mapa real. 
 
 CI (Actions, proyecto `logic`), duración por test:
 
-| Test | 0016 (run 45256417145) | 0017 con `test.slow()` (run 45279626178) | 0018 después |
+| Test | 0016 (run 45256417145) | 0017 con `test.slow()` (run 45279626178) | 0018 (run 45356704791, PR #43) |
 |---|---|---|---|
-| Cámara | 29,0 s | 56,2 s | _hueco_ |
-| Sprites | 17,5 s | 33,7 s | _hueco_ |
-| Mapa real | 20,7 s | 55,4 s | _hueco_ |
-| Suite total | 54,9 s | 1,8 min | _hueco_ |
+| Cámara | 29,0 s | 56,2 s | 38,5 s |
+| Sprites | 17,5 s | 33,7 s | 27,8 s |
+| Mapa real | 20,7 s | 55,4 s | 42,1 s |
+| Suite total | 54,9 s | 1,8 min | 1,4 min |
+
+G1 (≤ 30 s en los tres) no se cumple: Cámara y Mapa real siguen por encima, `test.slow()` se mantiene.
 
 Local `CI_LIKE=1` (mapa 64x36), mismo comando antes y después:
 `CI_LIKE=1 npx playwright test --project=realtime --grep "calibration|\[map\]"`
