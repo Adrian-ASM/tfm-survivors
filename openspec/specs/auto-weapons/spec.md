@@ -156,8 +156,11 @@ paso de armas del tick. Si hay varios a la misma distancia mínima, MUST elegirs
 de enemigos (orden de aparición). Solo si no hay ningún enemigo vivo a ≤ `range` efectivo, el objetivo es la
 estructura **no destruida** (ver `goblin-structures`) cuyo centro está a distancia mínima del jugador entre las que
 están a ≤ `range` efectivo; a igual distancia, la primera en el orden de la lista de estructuras. Una ruina nunca es
-objetivo. Sin enemigos vivos ni estructuras no destruidas a ≤ `range` efectivo no hay objetivo. La selección MUST NOT
-consumir azar.
+objetivo. Solo si tampoco hay ninguna estructura no destruida a ≤ `range` efectivo, el objetivo es la **oveja viva**
+(ver `sheep`) cuyo centro está a distancia mínima del jugador entre las que están a ≤ `range` efectivo; a igual
+distancia, la primera en el orden de la lista de ovejas. Una estructura gana a una oveja aunque esté más lejos, y un
+enemigo gana a ambas. Sin enemigos vivos, estructuras no destruidas ni ovejas vivas a ≤ `range` efectivo no hay
+objetivo. La selección usa las posiciones de las ovejas tras su movimiento de ese tick y MUST NOT consumir azar.
 
 #### Scenario: Elige el más cercano
 - **GIVEN** un jugador en (480, 270) y enemigos vivos en (780, 270), (480, 120) y (380, 270)
@@ -210,30 +213,64 @@ consumir azar.
 - **THEN** el objetivo es s1
 
 #### Scenario: Una ruina no es objetivo
-- **GIVEN** la casa de prueba destruida, un jugador en (1.260, 1.000) y ningún enemigo vivo durante 120 ticks
+- **GIVEN** la casa de prueba destruida, un jugador en (1.260, 1.000) y ningún enemigo vivo ni oveja durante 120 ticks
 - **WHEN** se ejecutan 120 ticks
 - **THEN** el Linter no crea ningún proyectil y sigue cargado
+
+#### Scenario: Oveja sin enemigos ni estructuras en alcance
+- **GIVEN** la oveja de prueba en (1.000, 1.000), un jugador quieto en (1.300, 1.000) (distancia 300), ningún enemigo
+  vivo ni estructura
+- **WHEN** el Linter cargado actúa en el tick T
+- **THEN** el objetivo es la oveja y se crea 1 proyectil con dirección (−1, 0)
+
+#### Scenario: La estructura gana a la oveja aunque esté más lejos
+- **GIVEN** la casa de prueba, la oveja quieta de prueba en (1.260, 1.200), un jugador en (1.260, 1.000) (casa a 310,
+  oveja a 200) y ningún enemigo vivo
+- **WHEN** el Linter cargado actúa
+- **THEN** el objetivo es la casa y el proyectil tiene dirección (0, −1)
+- **AND** con la casa destruida, el objetivo es la oveja y el proyectil tiene dirección (0, 1)
+
+#### Scenario: El enemigo gana a la oveja
+- **GIVEN** la oveja quieta de prueba en (1.000, 1.050), un jugador en (1.000, 1.000) (oveja a 50) y un único enemigo
+  vivo en (1.000, 650) (distancia 350)
+- **WHEN** el Linter cargado actúa
+- **THEN** el objetivo es el enemigo y el proyectil tiene dirección (0, −1)
+
+#### Scenario: Límite del alcance con una oveja
+- **GIVEN** la oveja de prueba en (1.000, 1.000), ningún enemigo vivo ni estructura y el jugador quieto en
+  (1.400, 1.000) (distancia 400), y en otro caso en (1.401, 1.000) (distancia 401)
+- **WHEN** el Linter cargado actúa
+- **THEN** en el primer caso el objetivo es la oveja; en el segundo no hay objetivo y el Linter sigue cargado
+
+#### Scenario: Empate entre ovejas
+- **GIVEN** ningún enemigo vivo ni estructura, un jugador en (1.000, 1.000) y dos ovejas de prueba o1 (antes en la
+  lista) en (1.000, 700) y o2 en (1.000, 1.300), en pasto
+- **WHEN** el Linter cargado actúa
+- **THEN** el objetivo es o1
 
 ### Requirement: Proyectiles
 El sistema SHALL, cuando un arma con ataque `projectile` dispara en el tick T, crear un proyectil en la posición
 del jugador en ese paso, con el `radius` del arma, el `damage` efectivo del arma en el tick T y una dirección
 unitaria fija hacia la posición que tenía el objetivo en ese momento (si la distancia es 0, la dirección es (1, 0)).
 El proyectil conserva ese daño aunque después se elija una mejora de daño. El proyectil no persigue al objetivo. El
-proyectil recuerda si su objetivo al dispararse era un enemigo o una estructura. En el tick de creación no se mueve ni
-colisiona. En cada tick T + k (k ≥ 1):
+proyectil recuerda si su objetivo al dispararse era un enemigo, una estructura o una oveja. En el tick de creación no
+se mueve ni colisiona. En cada tick T + k (k ≥ 1):
 1. avanza `speed / 60` en su dirección;
 2. si su círculo solapa (distancia < suma de radios) el de algún enemigo vivo, daña al primero de ellos en el orden
    de la lista de enemigos con el daño del proyectil y desaparece;
 3. si no ha impactado en un enemigo y su objetivo era una estructura, y su círculo solapa el círculo de impacto de
    alguna estructura no destruida, daña a la primera de ellas en el orden de la lista de estructuras con el daño del
-   proyectil y desaparece. Un proyectil cuyo objetivo era un enemigo MUST NOT colisionar con estructuras: las
-   atraviesa;
-4. si no ha impactado y k = `lifetimeTicks`, desaparece.
+   proyectil y desaparece;
+4. si no ha impactado en un enemigo y su objetivo era una oveja, y su círculo solapa el de alguna oveja viva, daña a
+   la primera de ellas en el orden de la lista de ovejas con el daño del proyectil y desaparece;
+5. si no ha impactado y k = `lifetimeTicks`, desaparece.
 
-Los proyectiles se procesan en orden de creación; un enemigo cuya vida llega a 0 por un proyectil deja de ser
-alcanzable por los siguientes en ese mismo tick, y una estructura cuya vida llega a 0 por un proyectil también. Los
-proyectiles no están limitados por la arena. Cada proyectil tiene un identificador único en la partida que no se
-reutiliza. Los ticks pedidos mientras se elige mejora no cuentan para k (ver `run-state`).
+Un proyectil cuyo objetivo era un enemigo MUST NOT colisionar con estructuras ni con ovejas, uno cuyo objetivo era una
+estructura MUST NOT colisionar con ovejas y uno cuyo objetivo era una oveja MUST NOT colisionar con estructuras: los
+atraviesan. Los proyectiles se procesan en orden de creación; un enemigo, una estructura o una oveja cuya vida llega a
+0 por un proyectil deja de ser alcanzable por los siguientes en ese mismo tick. Los proyectiles no están limitados por
+la arena. Cada proyectil tiene un identificador único en la partida que no se reutiliza. Los ticks pedidos mientras se
+elige mejora no cuentan para k (ver `run-state`).
 
 #### Scenario: Impacto en vuelo
 - **GIVEN** un proyectil del Linter creado en el tick T en (480, 270) hacia un `goblin-torch` de radio 10 y vida 10 que
@@ -292,6 +329,35 @@ reutiliza. Los ticks pedidos mientras se elige mejora no cuentan para k (ver `ru
 - **WHEN** se ejecutan los ticks T + 1 a T + 34
 - **THEN** el enemigo recibe el impacto en T + 24 (vida 4), el proyectil desaparece y la casa conserva vida 30
 
+#### Scenario: Impacto en una oveja
+- **GIVEN** la oveja de prueba en pasto en (1.000, 1.000), un jugador quieto en (1.300, 1.000), ningún enemigo vivo
+  ni estructura y un proyectil del Linter creado en el tick T hacia la oveja
+- **WHEN** se ejecutan los ticks T + 1 a T + 35
+- **THEN** en el snapshot de T + 34 el proyectil está en (1.028, 1.000) y la oveja tiene vida 12
+- **AND** en el snapshot de T + 35 el proyectil ya no está y la oveja tiene vida 6
+
+#### Scenario: Un proyectil dirigido a un enemigo atraviesa una oveja
+- **GIVEN** la oveja de prueba en pasto en (1.000, 1.000), un jugador quieto en (1.300, 1.000) y un único enemigo vivo
+  de radio 10 y vida 10 que permanece en (900, 1.000) (distancia 400), objetivo de un proyectil del Linter creado en el
+  tick T
+- **WHEN** se ejecutan los ticks T + 1 a T + 49
+- **THEN** la oveja conserva vida 12 en todos ellos y el enemigo recibe el impacto en T + 49 (vida 4)
+
+#### Scenario: Un proyectil dirigido a una oveja da antes a un enemigo
+- **GIVEN** la oveja de prueba en pasto en (1.000, 1.000), un jugador quieto en (1.300, 1.000), un proyectil del
+  Linter creado en el tick T hacia la oveja sin ningún enemigo ni estructura en alcance, y un enemigo de radio 10 y
+  vida 10 que el escenario coloca en (1.150, 1.000) en el tick T + 1 y que permanece allí
+- **WHEN** se ejecutan los ticks T + 1 a T + 35
+- **THEN** el enemigo recibe el impacto en T + 18 (vida 4), el proyectil desaparece y la oveja conserva vida 12
+
+#### Scenario: Proyectiles entre estructuras y ovejas
+- **GIVEN** la casa de prueba y la oveja quieta de prueba en (1.260, 690), en el centro de la casa, sin enemigos, y en
+  dos partidas un proyectil del Linter creado en el tick T desde (1.260, 1.000) hacia la casa, y otro creado en el tick
+  T desde (1.260, 1.000) hacia la oveja con la casa destruida antes del tick T
+- **WHEN** cada proyectil llega al centro de la casa
+- **THEN** el dirigido a la casa resta 6 a la casa y la oveja conserva vida 12, y el dirigido a la oveja resta 6 a la
+  oveja y la ruina sigue con vida 0
+
 ### Requirement: Tope de proyectiles
 El sistema SHALL impedir que haya más de `maxProjectiles` proyectiles vivos. Un arma de proyectiles cargada, con
 objetivo y con el tope lleno MUST NOT disparar y MUST conservar la carga. Los proyectiles que desaparecen en un tick
@@ -308,9 +374,11 @@ liberan su plaza para los disparos de ese mismo tick.
 El sistema SHALL, para un arma con criterio `any-in-radius`, considerar que hay objetivo cuando al menos un enemigo
 vivo tiene su círculo solapando (distancia < `radius` efectivo + radio del enemigo) el círculo de radio `radius`
 efectivo centrado en el jugador (ver `upgrades`), o, aunque no haya ninguno, cuando al menos una estructura no
-destruida tiene su círculo de impacto solapándolo (distancia < `radius` efectivo + radio de impacto). Cuando un arma
-con ataque `pulse` dispara, MUST restar el `damage` efectivo del arma, en ese mismo paso, a todos los enemigos vivos y
-a todas las estructuras no destruidas que cumplen esa condición, y a ningún otro. El pulso no crea entidades que dañen
+destruida tiene su círculo de impacto solapándolo (distancia < `radius` efectivo + radio de impacto), o, aunque no haya
+enemigos ni estructuras, cuando al menos una oveja viva tiene su círculo solapándolo (distancia < `radius` efectivo +
+radio de la oveja). Cuando un arma con ataque `pulse` dispara, MUST restar el `damage` efectivo del arma, en ese mismo
+paso, a todos los enemigos vivos, a todas las estructuras no destruidas y a todas las ovejas vivas que cumplen esa
+condición, y a ningún otro, sea cual sea el que ha hecho disparar el pulso. El pulso no crea entidades que dañen
 después.
 
 #### Scenario: Tres dentro y uno fuera
@@ -325,8 +393,8 @@ después.
 - **THEN** no hay pulso y el `goblin-torch` conserva su vida
 
 #### Scenario: Sin enemigos en el radio, sin pulso
-- **GIVEN** Tests cargado, ningún enemigo vivo a distancia < 100 (radio 90 + radio 10 del `goblin-torch`) y ninguna
-  estructura
+- **GIVEN** Tests cargado, ningún enemigo vivo a distancia < 100 (radio 90 + radio 10 del `goblin-torch`), ninguna
+  estructura y ninguna oveja
 - **WHEN** se ejecutan 300 ticks en esas condiciones
 - **THEN** no se dispara ningún pulso y Tests sigue cargado
 
@@ -349,9 +417,21 @@ después.
 - **THEN** el `goblin-torch` queda con vida 6 y la casa con vida 26
 
 #### Scenario: Pulso sobre una ruina
-- **GIVEN** la casa de prueba destruida, Tests cargado, ningún enemigo vivo y el jugador en (1.260, 690)
+- **GIVEN** la casa de prueba destruida, Tests cargado, ningún enemigo vivo ni oveja y el jugador en (1.260, 690)
 - **WHEN** se ejecutan 300 ticks
 - **THEN** no se dispara ningún pulso y la casa sigue con vida 0
+
+#### Scenario: Pulso sobre una oveja sola
+- **GIVEN** la oveja quieta de prueba en (1.000, 1.000), Tests cargado, ningún enemigo vivo ni estructura y el jugador
+  quieto en (1.109, 1.000) (distancia 109 < 90 + 20), y en otro caso en (1.110, 1.000) (distancia 110)
+- **WHEN** Tests actúa
+- **THEN** en el primer caso dispara y la oveja queda con vida 8; en el segundo no hay pulso y Tests sigue cargado
+
+#### Scenario: Pulso disparado por un enemigo que alcanza a una oveja
+- **GIVEN** Tests cargado, el jugador en (1.000, 1.000), un `goblin-torch` de radio 10 y vida 10 a 50 px y la oveja
+  quieta de prueba a 100 px del jugador
+- **WHEN** Tests dispara
+- **THEN** el `goblin-torch` queda con vida 6 y la oveja con vida 8
 
 ### Requirement: Daño acumulado y bajas por armas
 El sistema SHALL restar a la vida de un enemigo, en cada impacto de proyectil, el daño del proyectil (ver
@@ -489,3 +569,4 @@ jugador pulse nada más que las elecciones de mejora.
 <!-- historial: 0013-world-camera (2026-11-23) -->
 <!-- historial: 0017-fullscreen-view (2026-11-24) -->
 <!-- historial: 0021-goblin-camps (2026-11-24) -->
+<!-- historial: 0023-sheep-meat (2026-11-24) -->

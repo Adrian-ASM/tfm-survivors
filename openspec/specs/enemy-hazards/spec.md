@@ -102,16 +102,20 @@ El sistema SHALL resolver cada explosión del tick, en el paso de peligros, con 
 - **Enemigos (fuego amigo)**: a cada enemigo vivo cuya distancia de su centro a C es estrictamente menor que R + su
   radio le resta D de vida, sin bajar de 0, sea cual sea su tipo (guardias incluidos) o su estado. El barril que
   explota no recibe daño de su propia explosión.
+- **Ovejas**: a cada oveja viva (ver `sheep`) cuya distancia de su centro a C es estrictamente menor que R + su radio
+  le resta D de vida, sin bajar de 0, sea cual sea su estado. Alcanzar a una oveja no cambia su estado ni la hace huir.
 - **Estructuras**: ninguna explosión daña a una casa ni a una torre, viva o destruida, sea cual sea la distancia (ver
   "Vida, destrucción y ruina" en `goblin-structures`).
 
 Las explosiones de un tick son las de los barriles vivos al empezar el paso de peligros cuya mecha termina en ese
 tick y las de las dinamitas cuyo vuelo termina en ese tick. Todas ellas explotan, aunque otra explosión del mismo tick
-deje a 0 la vida de uno de esos barriles. El daño de varias explosiones a un mismo enemigo se acumula. Los enemigos
-que quedan a vida 0 por explosiones quedan dados de baja en ese paso (ver `enemy-spawning`): suman 1 cada uno a las
-bajas y sueltan su gema, igual que una baja por armas. Una explosión figura en el snapshot (identificador único que
-no se reutiliza, centro, radio y tick en que ocurrió) desde su tick durante la duración visible de explosión; solo
-hace daño en su tick. La lista de explosiones va ordenada por orden de creación.
+deje a 0 la vida de uno de esos barriles. El daño de varias explosiones a un mismo enemigo o a una misma oveja se
+acumula. Los enemigos que quedan a vida 0 por explosiones quedan dados de baja en ese paso (ver `enemy-spawning`):
+suman 1 cada uno a las bajas y sueltan su gema, igual que una baja por armas. Las ovejas que quedan a vida 0 por
+explosiones mueren en ese paso, después de las bajas de los enemigos: no suman bajas ni sueltan gema, y sueltan su carne
+(ver "Carne de las ovejas abatidas" en `resources`). Una explosión figura en el snapshot (identificador único que no se
+reutiliza, centro, radio y tick en que ocurrió) desde su tick durante la duración visible de explosión; solo hace daño
+en su tick. La lista de explosiones va ordenada por orden de creación.
 
 #### Scenario: Jugador dentro del radio
 - **GIVEN** un jugador quieto en (1.000, 1.000), no invulnerable, con vida 100, y una dinamita con objetivo
@@ -189,6 +193,19 @@ hace daño en su tick. La lista de explosiones va ordenada por orden de creació
   explota en el tick n
 - **WHEN** se ejecuta el tick n
 - **THEN** su vida vale 25 y su estado de comportamiento no cambia
+
+#### Scenario: Oveja alcanzada que sobrevive
+- **GIVEN** la oveja de prueba con vida 30 (valor de escenario) en pasto a 60 px del centro de una dinamita de radio 48
+  y daño 20 que explota en el tick n (60 < 48 + 20), con el jugador a más de 200 px
+- **WHEN** se ejecuta el tick n
+- **THEN** la oveja tiene vida 10, sigue en pasto en la misma posición y no hay ningún recogible nuevo
+
+#### Scenario: Barril que explota junto a una oveja y un goblin
+- **GIVEN** el barril de "Mecha y explosión con el jugador quieto" (`enemy-behavior`), una partida con 0 bajas, un
+  `goblin-torch` de vida 10 y la oveja de prueba (vida 12) con sus centros a 30 px del centro del barril en el tick 82
+- **WHEN** se ejecuta el tick 82
+- **THEN** las bajas valen 2 (barril y `goblin-torch`), la oveja no figura en el snapshot del tick 82 y se crean en este
+  orden: la gema del barril, la del `goblin-torch` y el `meat` de la oveja
 
 ### Requirement: Sin reacciones en cadena
 El sistema SHALL hacer que una explosión solo quite vida: MUST NOT detonar, adelantar ni retrasar ninguna dinamita en
@@ -312,3 +329,4 @@ otro tipo de enemigo suelta madera.
 <!-- historial: 0020-enemy-behaviors (2026-11-24) -->
 <!-- historial: 0021-goblin-camps (2026-11-24) -->
 <!-- historial: 0022-resources-sheep (2026-11-24) -->
+<!-- historial: 0023-sheep-meat (2026-11-24) -->
