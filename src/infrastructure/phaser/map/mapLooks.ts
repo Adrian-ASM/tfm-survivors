@@ -42,6 +42,8 @@ export interface MapLooks {
   readonly colors: MapColors;
   /** Casas y torres (0021): arte o reserva por tipo y aspecto, y sus colores de reserva. */
   readonly structures: StructureLooks;
+  /** Vetas (0022): arte o reserva de la activa y de la agotada, y su color de reserva. */
+  readonly veins: VeinLooks;
 }
 
 const OFF: Off = Object.freeze({ art: false });
@@ -72,6 +74,7 @@ export function resolveMapLooks(
   frames: FrameCount,
   hasFrame: HasFrame,
   structures: StructureLooks,
+  veins: VeinLooks = NO_VEIN_ART,
 ): MapLooks {
   const { image } = map.bridges;
   const bridgesOk =
@@ -99,6 +102,7 @@ export function resolveMapLooks(
     castle: regular(map.castle, frames, [map.castle.frame]),
     colors,
     structures,
+    veins,
   };
 }
 
@@ -131,4 +135,26 @@ export function resolveStructureLooks(appearance: Appearance, frames: FrameCount
   );
   const { [RUIN_COLOR_KEY]: ruinColor = 0, ...colors } = appearance.structureColors;
   return { types, colors, ruinColor };
+}
+
+/** Vetas resueltas (0022): la activa y la agotada, cada una con arte o reserva, y su color. */
+export interface VeinLooks {
+  readonly active: StructureLook;
+  readonly depleted: StructureLook;
+  /** Color del círculo de reserva (radio de contacto de la veta). */
+  readonly color: number;
+}
+
+/** Sin arte de vetas (planes de tests anteriores a 0022): reserva con color 0. */
+export const NO_VEIN_ART: VeinLooks = Object.freeze({ active: OFF, depleted: OFF, color: 0 });
+
+/** Arte o reserva de cada aspecto de veta: hoja cargada y su frame `idle[0]` dentro. */
+export function resolveVeinLooks(appearance: Appearance, frames: FrameCount): VeinLooks {
+  const look = (aspect: StructureAspect): StructureLook =>
+    regular(aspect, frames, aspect.idle.frames.slice(0, 1));
+  return {
+    active: look(appearance.veins.active),
+    depleted: look(appearance.veins.depleted),
+    color: appearance.veinColor,
+  };
 }

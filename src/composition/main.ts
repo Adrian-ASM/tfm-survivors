@@ -64,6 +64,8 @@ interface E2EProbe {
   readonly world: WorldSize;
   /** Ventana y escala de UI del último frame (0017); también en el menú. */
   readonly viewport: ViewportView | null;
+  /** Oro y madera que muestra el HUD (0022); null en el menú. */
+  readonly hud: { readonly gold: string; readonly wood: string } | null;
 }
 
 function showContentError(root: HTMLElement, error: DomainError): void {
@@ -79,7 +81,7 @@ const randomSeed = (): number => crypto.getRandomValues(new Uint32Array(1))[0] ?
 
 /**
  * Tamaño de los pools de la escena desde el contenido ya validado: `pulseCapacity` del peor caso
- * de las mejoras (ADR-0008) y `maxGems`.
+ * de las mejoras (ADR-0008) y la suma de los topes de recogibles (0022).
  */
 function sceneCapacity(config: RunConfig, corpses: number, blasts: number): SceneCapacity {
   const rules = buildRunRules(config);
@@ -93,7 +95,7 @@ function sceneCapacity(config: RunConfig, corpses: number, blasts: number): Scen
     enemies: config.waves.maxAlive,
     projectiles: loadout.maxProjectiles,
     pulses: pulseCapacity,
-    gems: pickups.maxGems,
+    pickups: pickups.capacity,
     corpses,
     visualTicks,
     hazards: { dynamites: hazards.maxDynamites, blasts },
@@ -142,6 +144,7 @@ function bootstrap(): void {
   let cameraView = (): CameraView | null => null;
   let mapView = (): MapSnapshot | null => null;
   let viewportView = (): ViewportView | null => null;
+  let hudView = (): { readonly gold: string; readonly wood: string } | null => null;
   const probe: E2EProbe = {
     seed,
     speed: advance.speed,
@@ -170,6 +173,9 @@ function bootstrap(): void {
     world,
     get viewport() {
       return viewportView();
+    },
+    get hud() {
+      return probe.screen === 'menu' ? null : hudView();
     },
   };
   const started = (s: number): void => {
@@ -223,6 +229,10 @@ function bootstrap(): void {
   });
   cameraView = () => game.cameraView();
   mapView = () => game.mapView();
+  hudView = () => {
+    const shown = game.hudView();
+    return shown ? { gold: shown.gold, wood: shown.wood } : null;
+  };
   const menu = new MenuScene({
     ...progress.menu,
     show: () => {

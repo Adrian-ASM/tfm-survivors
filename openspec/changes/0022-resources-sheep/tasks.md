@@ -111,24 +111,24 @@
 
 ## 5. Infraestructura · render, HUD y sonda (test-after)
 
-- [ ] 5.1 **`PickupLayer`** (ex `GemLayer`): `SlotPool` de `Σ topes`, aspecto por tipo al aparecer, XP como forma de
+- [x] 5.1 **`PickupLayer`** (ex `GemLayer`): `SlotPool` de `Σ topes`, aspecto por tipo al aparecer, XP como forma de
   color sin contar como reserva; sonda `sprites.pickups` y alias `gems`; limpieza al cambiar de partida. Tests:
   `tests/infrastructure/pickup-layer.test.ts`, `layers-clear.test.ts`, `render-layers.test.ts`.
   Escenarios: `xp-gems` · "Pintado de las gemas" (sus 5); `sprite-rendering` · "Aspectos…" › "Reserva de un tipo de
   recogible"; "Proyectiles, gemas, pulso y fondo" › "Flechas y gemas", "Recogibles de los tres tipos"; "Limpieza de la
   vista…" › "R con cadáveres en curso", "R con el mapa real"; `resources` · "Contadores" › "Partida nueva tras R"
   (con `tests/application/restart-run.test.ts`).
-- [ ] 5.2 **Vetas en el plan y recorte; M2.** Sprites activo/agotado y `CircleDraw` de reserva en `planMapArt`,
+- [x] 5.2 **Vetas en el plan y recorte; M2.** *M2: 701 (42) y 784 (123) objetos del mapa = 695/778 + 6 de las 3 vetas (≤ 1.000); `drawn` 0 en el menú (`emptyCounts`).* Sprites activo/agotado y `CircleDraw` de reserva en `planMapArt`,
   pintado en `TerrainView`, `StructureArt` parametrizado para vetas, `sprites.veins` y `mapArt.objects`. **M2**:
   objetos del mapa en 42/123 ≤ 1.000 (695/778 + vetas) y `drawn` 0 en el menú. Tests:
   `tests/infrastructure/plan-map-art.test.ts`, `structure-art.test.ts`, `map-culling.test.ts`.
   Escenarios: `sprite-rendering` · "Pintado de las vetas" (sus 4); "Sonda de render" › "Totales del mapa con
   estructuras y vetas", "`drawn` igual al recorte", "Sonda en el menú".
-- [ ] 5.3 **HUD.** `hudLayout`/`hudBoxes` con oro y madera, iconos con reserva, `Hud.sync` y sonda `hud`. Tests:
+- [x] 5.3 **HUD.** `hudLayout`/`hudBoxes` con oro y madera, iconos con reserva, `Hud.sync` y sonda `hud`. Tests:
   `tests/infrastructure/hud.test.ts`, `ui-layout.test.ts`.
   Escenarios: `hud` · "Oro y madera en el HUD" (sus 4); "Contenido y visibilidad del HUD" (sus 6 no E2E); "HUD
   anclado a la ventana" (sus 5).
-- [ ] 5.4 **Sonda del mapa y escena.** `map.veins`/`map.woodPiles` en la sonda, cableado de `GameScene` y
+- [x] 5.4 **Sonda del mapa y escena.** `map.veins`/`map.woodPiles` en la sonda, cableado de `GameScene` y
   `RenderLayers`, y el sampler de `tests/e2e/probe.ts` (recogibles por tipo y vetas). Tests:
   `tests/infrastructure/map-probe.test.ts`.
   Escenarios: `procedural-map` · "Sonda del mapa para E2E" › "Sonda coherente con el núcleo", "Sonda con el mapa

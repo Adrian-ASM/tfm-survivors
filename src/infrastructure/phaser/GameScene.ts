@@ -17,14 +17,19 @@ import { GAME_SCENE_KEY, MENU_SCENE_KEY } from './sceneKeys';
 import type { ResultsOverlay, ResultsTexts } from './ResultsOverlay';
 import type { ResultsView } from './resultsText';
 import type { RunLauncher } from './RunLauncher';
-import { createHud, createResultsOverlay, createUpgradeOverlay } from './sceneWidgets';
+import { counterIcon, createHud, createResultsOverlay, createUpgradeOverlay } from './sceneWidgets';
 import { screenFrame, type ScreenFrame } from './ui/screenFrame';
 import { hudLayout, veilLayout } from './ui/uiLayout';
 import { watchScreen } from './ui/watchScreen';
 import type { UpgradeOverlay } from './UpgradeOverlay';
 import type { Appearance } from '../content/appearanceSchema';
 import { resolveLooks } from './art/looks';
-import { resolveMapLooks, resolveStructureLooks, type MapLooks } from './map/mapLooks';
+import {
+  resolveMapLooks,
+  resolveStructureLooks,
+  resolveVeinLooks,
+  type MapLooks,
+} from './map/mapLooks';
 import { planMapArt } from './map/planMapArt';
 import {
   ensurePlaceholderTexture,
@@ -51,7 +56,8 @@ export interface SceneCapacity {
   readonly enemies: number;
   readonly projectiles: number;
   readonly pulses: number;
-  readonly gems: number;
+  /** Recogibles de los tres tipos: suma de los topes (0022). */
+  readonly pickups: number;
   /** Tope de cadáveres visibles a la vez (datos de aspecto, design D6). */
   readonly corpses: number;
   readonly visualTicks: ReadonlyMap<string, number>;
@@ -193,6 +199,7 @@ export class GameScene extends Phaser.Scene {
       textureFrames(this),
       textureHasFrame(this),
       resolveStructureLooks(appearance, textureFrames(this)),
+      resolveVeinLooks(appearance, textureFrames(this)),
     );
     const { layers, mapArt } = createPlayfield(
       {
@@ -217,7 +224,10 @@ export class GameScene extends Phaser.Scene {
       mapArt,
       mapLooks,
       layers,
-      hud: createHud(this, frame),
+      hud: createHud(this, frame, {
+        gold: counterIcon(looks.pickups.gold),
+        wood: counterIcon(looks.pickups.wood),
+      }),
       offer: createUpgradeOverlay(this, frame),
       results: results.overlay,
       resultsVeil: results.veil,
@@ -332,6 +342,11 @@ export class GameScene extends Phaser.Scene {
   /** Mapa de la partida en curso (null sin partida, p. ej. en el menú), para la sonda E2E. */
   mapView(): MapSnapshot | null {
     return this.started?.tickRun.map() ?? null;
+  }
+
+  /** Números de oro y madera que muestra el HUD (0022; null sin partida), para la sonda E2E. */
+  hudView(): { readonly gold: string; readonly wood: string } | null {
+    return this.started ? (this.w?.hud.shown ?? null) : null;
   }
 
   /** Rectángulo visible del último frame pintado (null sin partida), para la sonda E2E. */

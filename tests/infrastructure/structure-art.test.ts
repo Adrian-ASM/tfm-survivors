@@ -14,7 +14,7 @@ import type {
 } from '../../src/infrastructure/phaser/map/planMapArt';
 import { emptyCounts } from '../../src/infrastructure/phaser/renderCounts';
 import { aDefaultConfig } from '../support/builders';
-import { HOUSE_AT_20_10, aCampsConfig, startDeclared } from '../support/camps';
+import { HOUSE_AT_20_10, aCampsConfig, startDeclared, startOn } from '../support/camps';
 import { FAKE_HAZARD_CAPACITY, FakeGraphics, fakeKit } from '../support/FakeSprite';
 import { someLooks } from '../support/looks';
 import { planFor, visibleByRule } from '../support/mapArt';
@@ -60,6 +60,7 @@ function canvasDouble() {
     tiles: () => add('low', 'tiles'),
     sprite: (layer, s) => add(layer, s.role),
     rect: () => add('low', 'rect'),
+    circle: () => add('low', 'circle'),
     foam: () => undefined,
     show: (i, v) => {
       const o = objects[i];
@@ -81,7 +82,7 @@ function layersFor(plan: MapArtPlan) {
         enemies: 8,
         projectiles: 8,
         pulses: 2,
-        gems: 8,
+        pickups: 8,
         corpses: 8,
         visualTicks: new Map(),
         hazards: FAKE_HAZARD_CAPACITY,
@@ -187,9 +188,11 @@ describe('StructureArt · ruina con máscara', () => {
 describe('StructureArt · recorte y cambio de partida', () => {
   /** Visibles según la regla de recorte, sin los aspectos deshabilitados (ruinas intactas). */
   const expectedVisible = (plan: MapArtPlan, view: Box, ruined: readonly number[] = []) => {
-    const off = new Set(
-      plan.structures.flatMap((s) => (ruined.includes(s.id) ? s.intact : s.ruin)),
-    );
+    const off = new Set([
+      ...plan.structures.flatMap((s) => (ruined.includes(s.id) ? s.intact : s.ruin)),
+      // 0022: las vetas activas, con su aspecto agotado deshabilitado.
+      ...plan.veins.flatMap((v) => v.ruin),
+    ]);
     return visibleByRule(plan, view).map((v, i) => v && !off.has(i));
   };
 
@@ -317,5 +320,83 @@ describe('El pintado de las estructuras no cambia la simulación', () => {
     const withSheets = play([]);
     expect(play(STRUCTURE_SHEETS)).toStrictEqual(withSheets);
     expect(play(null)).toStrictEqual(withSheets);
+  });
+});
+
+// Spec sprite-rendering (0022): "Pintado de las vetas" (parte sin motor), sonda `sprites.veins` y
+// "R con el mapa real" (vetas y montones de la partida nueva).
+describe('Vetas pintadas con máscara (StructureArt parametrizado)', () => {
+  const V = { x: 1000, y: 1000 };
+  const veinRun = () => startOn(aCampsConfig(), { kind: 'open', resources: { veins: [V] } });
+  const depleted = (s: RunSnapshot): RunSnapshot => ({
+    ...s,
+    veins: s.veins.map((v) => ({ ...v, depleted: true })),
+  });
+
+  it('Scenario: Veta agotada (desde el frame del tick n, nunca la hoja activa)', () => {
+    const run = veinRun();
+    const plan = planFor(run.map);
+    const [vein] = plan.veins;
+    const { frame, objects, layers } = layersFor(plan);
+    const base = { ...run.snapshot(), player: { ...run.snapshot().player, ...V } };
+    const visibleOf = (ids: readonly number[]) => ids.map((i) => objects[i]?.visible);
+    frame({ ...base, tick: 49 });
+    expect(visibleOf(vein?.intact ?? [])).toEqual([true]);
+    expect(visibleOf(vein?.ruin ?? [])).toEqual([false]);
+    expect({ ...layers.counts.veins }).toEqual({ active: 1, depleted: 0, fallback: 0 });
+    for (let t = 50; t <= 110; t++) {
+      frame({ ...depleted(base), tick: t });
+      expect(visibleOf(vein?.ruin ?? [])).toEqual([true]);
+      expect(visibleOf(vein?.intact ?? [])).toEqual([false]);
+    }
+    expect({ ...layers.counts.veins }).toEqual({ active: 0, depleted: 1, fallback: 0 });
+  });
+
+  it('Scenario: Vetas recortadas por cámara (semilla 42, 1.280 × 720, jugador en (16, 16))', () => {
+    const run = startSeededRun(aDefaultConfig(), 42);
+    const plan = planFor(run.map, 42);
+    const { frame, objects, layers, viewOf } = layersFor(plan);
+    const s = { ...run.snapshot(), player: { ...run.snapshot().player, x: 16, y: 16 } };
+    frame(s);
+    const rule = visibleByRule(plan, viewOf(s.player));
+    for (const v of plan.veins) {
+      expect(objects[v.intact[0] ?? -1]?.visible).toBe(rule[v.intact[0] ?? -1]);
+      expect(objects[v.ruin[0] ?? -1]?.visible).toBe(false);
+    }
+    const off = new Set([
+      ...plan.structures.flatMap((x) => x.ruin),
+      ...plan.veins.flatMap((v) => v.ruin),
+    ]);
+    expect(layers.counts.mapArt.drawn).toBe(rule.filter((v, i) => v && !off.has(i)).length);
+  });
+
+  it('Scenario: R con el mapa real (42 con vetas agotadas y oro en el suelo → 43: las suyas, activas)', () => {
+    const first = startSeededRun(aDefaultConfig(), 42);
+    const { frame, objects, layers, canvas } = layersFor(planFor(first.map, 42));
+    const ended = depleted(first.snapshot());
+    frame({
+      ...ended,
+      tick: 900,
+      pickups: [{ id: 99, kind: 'gold', value: 5, x: 500, y: 500, radius: 5 }],
+    });
+    expect({ ...layers.counts.veins }).toMatchObject({ depleted: first.map.veins.length });
+    const next = startSeededRun(aDefaultConfig(), 43);
+    const plan43 = planFor(next.map, 43);
+    layers.clear();
+    layers.paintMap(canvas, plan43);
+    const s = next.snapshot();
+    frame(s);
+    expect({ ...layers.counts.veins }).toEqual({
+      active: next.map.veins.length,
+      depleted: 0,
+      fallback: 0,
+    });
+    expect(layers.counts.pickups.gold.visible).toBe(0);
+    expect(layers.counts.pickups.wood.visible).toBe(next.map.woodPiles.length);
+    for (const v of plan43.veins) expect(objects[v.ruin[0] ?? -1]?.visible).toBe(false);
+  });
+
+  it('Scenario: Sonda en el menú (vetas a 0)', () => {
+    expect(emptyCounts([], TYPES).veins).toEqual({ active: 0, depleted: 0, fallback: 0 });
   });
 });

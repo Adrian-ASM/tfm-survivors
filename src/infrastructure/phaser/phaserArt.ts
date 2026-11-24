@@ -100,6 +100,8 @@ function mapArtCanvas(
   const rects = new LayerPool(low, () =>
     scene.add.rectangle(0, 0, 1, 1, 0).setOrigin(0, 0).setVisible(false),
   );
+  // 0022: círculos de reserva de las vetas (`Phaser.GameObjects.Arc`, `scene.add.circle`).
+  const circles = new LayerPool(low, () => scene.add.circle(0, 0, 1, 0).setVisible(false));
   const sprites = { low: new LayerPool(low, sprite), high: new LayerPool(high, sprite) };
   /** Todas las espumas pintadas, visibles u ocultas por el recorte: siempre con el frame vigente. */
   const foams: Phaser.GameObjects.Sprite[] = [];
@@ -109,6 +111,7 @@ function mapArtCanvas(
     clear: () => {
       tiles.hide();
       rects.hide();
+      circles.hide();
       sprites.low.hide();
       sprites.high.hide();
       foams.length = 0;
@@ -145,6 +148,15 @@ function mapArtCanvas(
         .setPosition(r.x, r.y)
         .setSize(r.width, r.height)
         .setFillStyle(r.color)
+        .setVisible(true);
+      painted.push(obj);
+    },
+    circle: (c) => {
+      const obj = circles
+        .next()
+        .setPosition(c.x, c.y)
+        .setRadius(c.radius)
+        .setFillStyle(c.color)
         .setVisible(true);
       painted.push(obj);
     },

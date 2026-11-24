@@ -125,7 +125,7 @@ export class Run {
     this.mapView = toMapSnapshot(
       terrain,
       sites.map((s) => ({ ...s, type: s.type.id })),
-      resources,
+      { ...resources, veinRadius: rules.resources.goldVeins.radius },
     );
     this.field = new FlowField(terrain);
     this.player = initial.player;

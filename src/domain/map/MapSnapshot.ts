@@ -32,11 +32,12 @@ export interface MapPoint {
   readonly y: number;
 }
 
-/** Veta del mapa (spec procedural-map 0022): id, posición y celda. */
+/** Veta del mapa (spec procedural-map 0022): id, posición, celda y radio de contacto. */
 export interface MapVein extends MapPoint {
   readonly id: number;
   readonly col: number;
   readonly row: number;
+  readonly radius: number;
 }
 
 /**
@@ -65,10 +66,11 @@ export interface MapStructure {
 export function toMapSnapshot(
   map: GameMap,
   structures: readonly MapStructure[] = [],
-  resources: { readonly veins: readonly MapPoint[]; readonly woodPiles: readonly MapPoint[] } = {
-    veins: [],
-    woodPiles: [],
-  },
+  resources: {
+    readonly veins: readonly MapPoint[];
+    readonly woodPiles: readonly MapPoint[];
+    readonly veinRadius: number;
+  } = { veins: [], woodPiles: [], veinRadius: 0 },
 ): MapSnapshot {
   const cells: CellType[] = [];
   const counts = Object.fromEntries(CELL_TYPES.map((t) => [t, 0])) as Record<CellType, number>;
@@ -105,7 +107,14 @@ export function toMapSnapshot(
     ),
     veins: Object.freeze(
       resources.veins.map((v, id) =>
-        Object.freeze({ id, x: v.x, y: v.y, col: map.colAt(v.x), row: map.rowAt(v.y) }),
+        Object.freeze({
+          id,
+          x: v.x,
+          y: v.y,
+          col: map.colAt(v.x),
+          row: map.rowAt(v.y),
+          radius: resources.veinRadius,
+        }),
       ),
     ),
     woodPiles: Object.freeze(resources.woodPiles.map((p) => Object.freeze({ x: p.x, y: p.y }))),

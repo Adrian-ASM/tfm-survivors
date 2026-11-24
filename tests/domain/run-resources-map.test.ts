@@ -64,6 +64,7 @@ describe('Montones y vetas del mapa generado en la partida', () => {
     expect(map.veins.map((v) => v.id)).toEqual([0, 1, 2]);
     for (const v of map.veins) {
       expect([v.col, v.row]).toEqual([Math.floor(v.x / 60), Math.floor(v.y / 60)]);
+      expect(v.radius).toBe(CONFIG.resources.goldVeins.radius);
     }
     expect(map.woodPiles).toHaveLength(CONFIG.resources.woodPiles.count);
     expect(Object.isFrozen(map.veins) && Object.isFrozen(map.woodPiles)).toBe(true);

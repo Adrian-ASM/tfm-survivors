@@ -22,6 +22,12 @@ const BAR_HEIGHT = 8;
 
 const fresh = (): RunSnapshot => startRun(aDefaultConfig()).snapshot();
 
+/** Iconos de los contadores: oro con hoja y madera de reserva (0022). */
+const ICONS = {
+  gold: { texture: 'Resources/Resources/G_Idle.png', frame: 0, color: 0xe8c547 },
+  wood: { texture: null, frame: 0, color: 0x9c6b3c },
+};
+
 /** Snapshot por defecto con cambios (vida, bajas, tick, progresión, estado). */
 function snap(
   patch: {
@@ -69,6 +75,8 @@ function hud() {
     kills: new FakeLabel(),
     xpFill: new FakeBar(),
     level: new FakeLabel(),
+    gold: new FakeLabel(),
+    wood: new FakeLabel(),
   };
   const xpBar = new XpBar(parts.xpFill, parts.level, XP_WIDTH, BAR_HEIGHT);
   const view = new Hud(
@@ -78,6 +86,8 @@ function hud() {
       healthLabel: parts.healthLabel,
       clock: parts.clock,
       kills: parts.kills,
+      gold: parts.gold,
+      wood: parts.wood,
     },
     HEALTH_WIDTH,
     BAR_HEIGHT,
@@ -178,8 +188,10 @@ describe('HUD (spec hud)', () => {
 describe('El HUD solo lee el snapshot', () => {
   it('Scenario: El HUD no altera la simulación (pintada y sin pintar: snapshots iguales)', () => {
     const config = withPlayer(aDefaultConfig(), { maxHealth: 1e9 });
-    const painted = startRun(config, {}, new Mulberry32RandomGenerator(42));
-    const plain = startRun(config, {}, new Mulberry32RandomGenerator(42));
+    // 0022: con ≥ 1 recogida de madera (un recogible en la salida).
+    const setup = { gems: [{ kind: 'wood' as const, x: 1920, y: 1080, value: 2 }] };
+    const painted = startRun(config, setup, new Mulberry32RandomGenerator(42));
+    const plain = startRun(config, setup, new Mulberry32RandomGenerator(42));
     const h = hud();
     const pairs = Array.from({ length: 4800 }, () => {
       for (const r of [painted, plain]) {
@@ -193,6 +205,7 @@ describe('El HUD solo lee el snapshot', () => {
     const last = pairs.at(-1)?.[0];
 
     expect(last?.kills).toBeGreaterThan(0);
+    expect(last?.resources.wood).toBeGreaterThan(0);
     expect(pairs.some(([s]) => s.player.health < s.player.maxHealth)).toBe(true);
     expect(pairs.every(([a, b]) => JSON.stringify(a) === JSON.stringify(b))).toBe(true);
   });
@@ -238,6 +251,7 @@ function fakeScene(view: { width: number; height: number }) {
     add: {
       rectangle: (x: number, y: number) => make('rectangle', x, y),
       text: (x: number, y: number) => make('text', x, y),
+      image: (x: number, y: number) => make('image', x, y),
     },
   };
   return { scene: scene as unknown as Phaser.Scene, made };
@@ -250,7 +264,7 @@ describe('Widgets fijos en pantalla (0013)', () => {
     const view = { width: 960, height: 540 };
     const { scene, made } = fakeScene(view);
 
-    createHud(scene, screenFrame(view.width, view.height));
+    createHud(scene, screenFrame(view.width, view.height), ICONS);
     const offer = createUpgradeOverlay(scene, screenFrame(view.width, view.height));
     const results = createResultsOverlay(scene, screenFrame(view.width, view.height), {
       title: aLine(),
@@ -298,6 +312,8 @@ function placedHud(frame = screenFrame(960, 540)) {
       healthLabel: new FakeLabel(),
       clock: new FakeLabel(),
       kills: new FakeLabel(),
+      gold: new FakeLabel(),
+      wood: new FakeLabel(),
       placement,
     },
     layout.barWidth,
@@ -343,7 +359,7 @@ describe('Hud.relayout (0017)', () => {
 describe('createHud con relayout (0017)', () => {
   it('Scenario: Muchos cambios seguidos (50 relayouts: ningún objeto nuevo, último frame)', () => {
     const { scene, made } = fakeScene({ width: 1280, height: 720 });
-    const h = createHud(scene, screenFrame(1280, 720));
+    const h = createHud(scene, screenFrame(1280, 720), ICONS);
     const created = made.length;
     const frames = [screenFrame(1280, 720), screenFrame(1000, 600), screenFrame(2560, 1440)];
 
@@ -356,5 +372,104 @@ describe('createHud con relayout (0017)', () => {
     expect(made.filter((m) => m.kind === 'text').every((m) => m.fontSize === last.fontSize)).toBe(
       true,
     );
+  });
+});
+
+// Spec hud (0022): "Oro y madera en el HUD" y los escenarios de "Contenido y visibilidad del HUD"
+// con oro y madera.
+describe('HUD · oro y madera (0022)', () => {
+  const withResources = (s: RunSnapshot, gold: number, wood: number): RunSnapshot => ({
+    ...s,
+    resources: { gold, wood },
+  });
+  const counters = (h: ReturnType<typeof hud>) => [h.gold.text, h.wood.text];
+
+  it('Scenario: Contadores al empezar (oro 0 y madera 0)', () => {
+    const h = hud();
+    h.view.sync(fresh());
+    expect(counters(h)).toEqual(['0', '0']);
+    expect(h.view.shown).toEqual({ gold: '0', wood: '0' });
+  });
+
+  it('Scenario: HUD al empezar (con oro 0 y madera 0)', () => {
+    const h = hud();
+    h.view.sync(fresh());
+    expect([...shown(h), ...counters(h)]).toEqual([
+      '100/100',
+      1,
+      '10:00',
+      'Nv 1',
+      0,
+      'Bajas: 0',
+      '0',
+      '0',
+    ]);
+  });
+
+  it('Scenario: Contadores que cambian entre snapshots (10/2 ⇒ 35/5)', () => {
+    const h = hud();
+    h.view.sync(withResources(fresh(), 10, 2));
+    h.view.sync(withResources(fresh(), 35, 5));
+    expect(counters(h)).toEqual(['35', '5']);
+  });
+
+  it('Scenario: Números grandes (123456 y 12345 completos)', () => {
+    const h = hud();
+    h.view.sync(withResources(fresh(), 123_456, 12_345));
+    expect(counters(h)).toEqual(['123456', '12345']);
+  });
+
+  it('Scenario: HUD con la partida terminada (oro 25 y madera 4; 60 frames más sin reescribir)', () => {
+    const h = hud();
+    const ended = withResources(
+      snap({ tick: 1259, health: 0, level: 3, xpToNext: 15, kills: 41, over: true }),
+      25,
+      4,
+    );
+    h.view.sync(ended);
+    const writes = h.gold.writes + h.wood.writes;
+    for (let i = 0; i < 60; i++) h.view.sync(ended);
+    expect([...shown(h), ...counters(h)]).toEqual([
+      '0/100',
+      0,
+      '09:40',
+      'Nv 3',
+      0,
+      'Bajas: 41',
+      '25',
+      '4',
+    ]);
+    expect(h.gold.writes + h.wood.writes).toBe(writes);
+  });
+
+  it('Scenario: HUD en pausa (oro 15 y madera 3: 600 frames con el mismo snapshot)', () => {
+    const h = hud();
+    const paused = withResources(snap({ tick: 600, health: 75, level: 2, kills: 9 }), 15, 3);
+    for (let i = 0; i < 600; i++) h.view.sync(paused);
+    expect([h.clock.text, h.kills.text, ...counters(h)]).toEqual(['09:50', 'Bajas: 9', '15', '3']);
+  });
+
+  it('Scenario: HUD tras volver al menú y jugar (partida nueva: oro 0 y madera 0)', () => {
+    const h = hud();
+    h.view.sync(withResources(snap({ tick: 3000, level: 5, kills: 200 }), 60, 9));
+    h.view.sync(fresh());
+    expect([h.clock.text, h.kills.text, ...counters(h)]).toEqual(['10:00', 'Bajas: 0', '0', '0']);
+  });
+
+  it('Scenario: Icono que no carga (oro sin hoja: cuadrado de reserva; madera con su imagen)', () => {
+    const { scene, made } = fakeScene({ width: 960, height: 540 });
+    const icons = {
+      gold: { texture: null, frame: 0, color: 0xe8c547 },
+      wood: { texture: 'Resources/Resources/W_Idle.png', frame: 0, color: 0x9c6b3c },
+    };
+    const h = createHud(scene, screenFrame(960, 540), icons);
+    const l = hudLayout(screenFrame(960, 540));
+    const at = (p: { x: number; y: number }) => made.filter((m) => m.x === p.x && m.y === p.y);
+    expect(at(l.gold.icon).map((m) => m.kind)).toEqual(['rectangle']);
+    expect(at(l.wood.icon).map((m) => m.kind)).toEqual(['image']);
+    expect(() => {
+      h.sync(fresh());
+    }).not.toThrow();
+    expect(h.shown).toEqual({ gold: '0', wood: '0' });
   });
 });

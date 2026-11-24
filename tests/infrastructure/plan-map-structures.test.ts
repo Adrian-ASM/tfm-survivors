@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { toMapSnapshot, type MapSnapshot } from '../../src/domain/map/MapSnapshot';
 import type { RectDraw, SpriteDraw } from '../../src/infrastructure/phaser/map/planMapArt';
 import { aDefaultConfig } from '../support/builders';
-import { HOUSE_AT_20_10, aCampsConfig, startDeclared } from '../support/camps';
+import { HOUSE_AT_20_10, aCampsConfig, startDeclared, startOn } from '../support/camps';
 import { planFor, repoAppearance } from '../support/mapArt';
 import { mapForSeed } from '../support/mapStats';
 import { startSeededRun } from '../support/runs';
@@ -146,7 +146,59 @@ describe('planMapArt · totales con estructuras (semillas 42 y 123)', () => {
       0,
     );
     expect(pieces).toBe(4 * withStructures.structures.length);
-    expect(withStructures.objects).toBe(OBJECTS_BEFORE[seed] + pieces);
-    expect(withStructures.objects).toBe(seed === 42 ? 695 : 778);
+    // 0022: más 2 objetos por veta (activa y agotada).
+    const veins = withStructures.veins.reduce((n, v) => n + v.intact.length + v.ruin.length, 0);
+    expect(veins).toBe(2 * withStructures.veins.length);
+    expect(withStructures.objects).toBe(OBJECTS_BEFORE[seed] + pieces + veins);
+    expect(withStructures.objects - veins).toBe(seed === 42 ? 695 : 778);
+  });
+});
+
+// Spec sprite-rendering (0022): "Pintado de las vetas" y "Sonda de render" (parte sin motor).
+describe('planMapArt · vetas', () => {
+  const veinMap = (veins: readonly { x: number; y: number }[]) =>
+    startOn(aCampsConfig(), { kind: 'open', resources: { veins } }).map;
+
+  it('Scenario: Veta activa en su sitio (origen (1.000, 1.000), GoldMine_Active, capa baja)', () => {
+    const map = veinMap([{ x: 1000, y: 1000 }]);
+    const plan = planFor(map);
+    const [vein] = plan.veins;
+    expect(vein).toMatchObject({ id: 0, type: 'vein', fallback: { intact: false, ruin: false } });
+    const [active] = drawsAt(map, [], vein?.intact ?? []) as SpriteDraw[];
+    const [depleted] = drawsAt(map, [], vein?.ruin ?? []) as SpriteDraw[];
+    expect(active).toMatchObject({ kind: 'sprite', role: 'vein', x: 1000, y: 1000 });
+    expect(active?.texture).toBe(APPEARANCE.veins.active.sheet.file);
+    expect(depleted).toMatchObject({ kind: 'sprite', x: 1000, y: 1000 });
+    expect(depleted?.texture).toBe(APPEARANCE.veins.depleted.sheet.file);
+    // En la capa baja: bajo las entidades (las pinta la escena después).
+    expect((vein?.intact[0] ?? Infinity) < plan.low.length).toBe(true);
+  });
+
+  it('reserva: sin hoja, un círculo del color de la veta de su radio de contacto', () => {
+    const map = veinMap([{ x: 1000, y: 1000 }]);
+    const missing = [APPEARANCE.veins.active.sheet.file];
+    const plan = planFor(map, 42, missing);
+    const [vein] = plan.veins;
+    const [circle] = drawsAt(map, missing, vein?.intact ?? []);
+    const r = aCampsConfig().resources.goldVeins.radius;
+    expect(circle).toMatchObject({ kind: 'circle', x: 1000, y: 1000, radius: r });
+    expect(circle?.bounds).toEqual({ x: 1000 - r, y: 1000 - r, width: 2 * r, height: 2 * r });
+    expect(vein?.fallback).toEqual({ intact: true, ruin: false });
+  });
+
+  it.each([42, 123] as const)(
+    'Scenario: Tope de objetos con las vetas (%i: los de antes más los de las vetas, ≤ 1.000)',
+    (seed) => {
+      const map = startSeededRun(aDefaultConfig(), seed).map;
+      const plan = planFor(map, seed);
+      expect(plan.veins).toHaveLength(map.veins.length);
+      expect(plan.objects).toBe((seed === 42 ? 695 : 778) + 2 * map.veins.length);
+      expect(plan.objects).toBeLessThanOrEqual(MAX_MAP_OBJECTS);
+    },
+  );
+
+  it('Scenario: Totales del mapa con estructuras y vetas (mapa vacío: ninguna veta)', () => {
+    const plan = planFor(startDeclared(aCampsConfig(), []).map);
+    expect(plan.veins).toEqual([]);
   });
 });

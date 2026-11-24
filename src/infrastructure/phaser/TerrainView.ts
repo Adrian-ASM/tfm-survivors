@@ -3,6 +3,7 @@ import type {
   MapArtCounts,
   MapArtPlan,
   MapCellCounts,
+  CircleDraw,
   RectDraw,
   SpriteDraw,
   TileDraw,
@@ -21,11 +22,13 @@ export interface MapArtCanvas {
   sprite(layer: 'low' | 'high', s: SpriteDraw): void;
   /** Rectángulo de reserva en la capa baja. */
   rect(r: RectDraw): void;
+  /** Círculo de reserva de una veta en la capa baja (0022). */
+  circle(c: CircleDraw): void;
   /** Pone el frame dado a todas las espumas pintadas, ocultas incluidas (animación de render). */
   foam(frame: number): void;
   /**
    * Muestra u oculta el objeto `index` del mapa pintado, en el orden de llamada de `tiles`, `sprite` y
-   * `rect` desde el último `clear` (recorte por cámara, 0018).
+   * `rect` (y `circle`, 0022) desde el último `clear` (recorte por cámara, 0018).
    */
   show(index: number, visible: boolean): void;
 }
@@ -68,6 +71,7 @@ export function paintMapArt(canvas: MapArtCanvas, plan: MapArtPlan): PaintedMap 
   for (const d of plan.low) {
     if (d.kind === 'tiles') canvas.tiles(d);
     else if (d.kind === 'sprite') canvas.sprite('low', d);
+    else if (d.kind === 'circle') canvas.circle(d);
     else canvas.rect(d);
   }
   for (const s of plan.high) canvas.sprite('high', s);

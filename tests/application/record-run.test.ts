@@ -154,3 +154,20 @@ describe('RecordRun (spec progress-persistence, "Registro" y "Guardado automáti
     expect(s.corruptPending).toBe(false);
   });
 });
+
+// Spec resources (0022), "Contadores de oro y madera" › "Sin rastro en resultados ni en el guardado":
+// el récord y el historial no ganan ningún campo de oro ni de madera (sin cambios de código).
+describe('RecordRun sin oro ni madera (0022)', () => {
+  it('Scenario: Sin rastro en resultados ni en el guardado (oro 30 y madera 8)', () => {
+    const { repo, record } = recorder();
+    const rich: RunSnapshot = { ...firstDefeat(), resources: { gold: 30, wood: 8 } };
+
+    record.execute(aRunSource(rich));
+
+    const stored = JSON.stringify(repo.stored);
+    expect(stored).not.toMatch(/gold|wood|oro|madera/i);
+    expect(Object.keys(repo.stored?.history[0] ?? {}).sort()).toEqual(
+      ['kills', 'level', 'outcome', 'playedAt', 'seed', 'timeSeconds'].sort(),
+    );
+  });
+});
