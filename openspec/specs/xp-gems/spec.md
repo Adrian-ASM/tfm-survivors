@@ -3,54 +3,67 @@
 > Fuente de verdad del comportamiento actual. Solo se modifica al archivar un change (skill `sdd-archive`).
 
 ## Purpose
-Las gemas de XP que sueltan las bajas, el imán que las atrae y su recogida.
+Los recogibles con tipo (XP, oro y madera) que sueltan las bajas, las estructuras destruidas y el mapa, el imán que los atrae y su recogida.
 
 ## Requirements
 
 ### Requirement: Contenido de gemas validado
 El sistema SHALL leer de `content/*.json`, validados con zod antes de llegar al dominio, el radio de recogida base
-del jugador (`pickupRadius`, en `content/player.json`) y, en el fichero de progresión, el radio de las gemas
-(`gemRadius`), la velocidad del imán en px/s (`magnetSpeed`) y el tope de gemas en el suelo (`maxGems`). Las reglas
-son: `pickupRadius`, `gemRadius` y `magnetSpeed` > 0; `maxGems` entero ≥ 1. Un campo ausente, fuera de rango o
-desconocido MUST impedir que la partida arranque con un error que nombre el campo.
+del jugador (`pickupRadius`, en `content/player.json`) y, en el fichero de progresión, el radio de los recogibles
+(`gemRadius`, el mismo para los tres tipos), la velocidad del imán en px/s (`magnetSpeed`), el tope de gemas (`xp`) en
+el suelo (`maxGems`) y el tope de recogibles de oro y el de madera en el suelo. Las reglas son: `pickupRadius`,
+`gemRadius` y `magnetSpeed` > 0; `maxGems` y los topes de oro y de madera, enteros ≥ 1; el tope de madera MUST ser ≥
+el número de montones de madera por mapa (ver `resources`), para que ningún montón se funda con otro al crear la
+partida. Un campo ausente, fuera de rango o desconocido MUST impedir que la partida arranque con un error que nombre el
+campo.
 
 #### Scenario: Contenido por defecto
 - **GIVEN** el contenido por defecto del repositorio
 - **WHEN** se carga el contenido
 - **THEN** `pickupRadius` vale 128, `gemRadius` 5, `magnetSpeed` 360 y `maxGems` 300 (provisional, a medir en apply)
+- **AND** los topes de oro y de madera son enteros ≥ 1 y el de madera es ≥ el número de montones por mapa
 
 #### Scenario: Valores no positivos
 - **GIVEN** un contenido con, en un caso cada vez, `pickupRadius` 0, `gemRadius` 0, `magnetSpeed` 0,
-  `magnetSpeed` −1 o `maxGems` 0
+  `magnetSpeed` −1, `maxGems` 0, el tope de oro 0 o el tope de madera 0
 - **WHEN** se carga el contenido
 - **THEN** la carga falla con un error que nombra ese campo
 - **AND** no se crea ninguna partida
 
 #### Scenario: Tope de gemas no entero
-- **GIVEN** un contenido con `maxGems` 12,5
+- **GIVEN** un contenido con `maxGems` 12,5, y en otro caso el tope de oro 2,5
 - **WHEN** se carga el contenido
-- **THEN** la carga falla con un error que nombra `maxGems`
+- **THEN** la carga falla con un error que nombra `maxGems` y el tope de oro respectivamente
 
 #### Scenario: Campo desconocido o ausente
-- **GIVEN** un fichero de progresión con un campo extra `gemLifetime: 600`, y en otro caso sin `magnetSpeed`
+- **GIVEN** un fichero de progresión con un campo extra `gemLifetime: 600`, en otro caso sin `magnetSpeed` y en otro
+  sin el tope de madera
 - **WHEN** se carga el contenido
 - **THEN** la carga falla con un error explícito que nombra el campo
 
 #### Scenario: Tope mínimo válido
-- **GIVEN** el contenido por defecto con `maxGems` 1
+- **GIVEN** el contenido por defecto con `maxGems` 1 y el tope de oro 1
 - **WHEN** se carga el contenido
 - **THEN** la carga tiene éxito
+
+#### Scenario: Tope de madera menor que los montones
+- **GIVEN** el contenido por defecto con 6 montones por mapa y el tope de madera 5, y en otro caso 6
+- **WHEN** se carga el contenido
+- **THEN** con 5 la carga falla con un error que nombra el tope de madera, y con 6 tiene éxito
 
 ### Requirement: Suelta de gema por baja
 El sistema SHALL crear, por cada enemigo dado de baja en un tick, por armas o por explosión (la del propio barril que
 explota o una ajena, ver `enemy-hazards`), exactamente una gema en la posición que tenía el enemigo en el paso en que
 queda dado de baja (paso de armas o paso de peligros, ver "Orden de los pasos del tick" en `simulation-loop`), o en
 la que fije "Recolocación de gemas en celdas no caminables" si esa posición está en una celda no caminable, con un
-valor de XP igual al `xp` de su tipo (ver `enemy-spawning`) y el radio `gemRadius`. Las gemas de las bajas de un mismo
-paso se crean en el orden de la lista de enemigos; las del paso de armas, antes que las del paso de peligros. Cada
-gema tiene un identificador único en la partida que no se reutiliza. Crear gemas MUST NOT consumir azar. Una gema
-creada en un tick participa en el paso de gemas de ese mismo tick (ver `simulation-loop`). Una baja suelta una sola
-gema aunque reciba daño de armas y de explosiones en el mismo tick.
+valor de XP igual al `xp` de su tipo (ver `enemy-spawning`) y el radio `gemRadius`. Los recogibles de las bajas de un
+mismo paso se crean en el orden de la lista de enemigos y, para cada baja, primero su gema y después su madera si la
+suelta (ver "Madera del barril abatido" en `enemy-hazards`); los del paso de armas, antes que los del paso de
+peligros; en el paso de armas, el oro de las estructuras destruidas se crea después de los recogibles de todas las
+bajas de ese paso (ver `goblin-structures`). Cada recogible tiene un identificador único en la partida que no se
+reutiliza (ver "Recogibles con tipo"). Crear recogibles MUST NOT consumir azar. Un recogible creado en un tick participa
+en el paso de recogibles de ese mismo tick (ver `simulation-loop`). Una baja suelta una sola gema (y como mucho un
+recogible de madera) aunque reciba daño de armas y de explosiones en el mismo tick.
 
 #### Scenario: Un goblin-torch abatido suelta una gema
 - **GIVEN** un jugador quieto en (480, 270) y un `goblin-torch` con vida 4 en (780, 270) que permanece ahí
@@ -83,7 +96,8 @@ gema aunque reciba daño de armas y de explosiones en el mismo tick.
 - **THEN** no hay ninguna gema nueva
 
 #### Scenario: Las gemas no consumen azar
-- **GIVEN** dos partidas con la misma semilla y el mismo estado salvo que en una hay 10 gemas en el suelo más
+- **GIVEN** dos partidas con la misma semilla y el mismo estado salvo que en una hay 10 gemas, 5 recogibles `gold` y
+  5 `wood` en el suelo más
 - **WHEN** ambas ejecutan el mismo tick sin oferta de mejora
 - **THEN** el estado del `RandomGenerator` es el mismo en las dos tras el tick
 
@@ -100,10 +114,17 @@ gema aunque reciba daño de armas y de explosiones en el mismo tick.
 - **THEN** hay 2 gemas nuevas y la de A tiene un identificador creado antes que la de B
 - **AND** si en otra partida A muere por la explosión y B por el Linter, la de B se crea antes que la de A
 
+#### Scenario: Gema y madera intercaladas por baja
+- **GIVEN** un `goblin-barrel` B1, un `goblin-torch` T y un `goblin-barrel` B2, en ese orden de la lista, que mueren
+  en el mismo pulso de Tests
+- **WHEN** se ejecuta ese tick
+- **THEN** los 5 recogibles nuevos se crean en este orden: `xp` de B1, `wood` de B1, `xp` de T, `xp` de B2 y `wood` de
+  B2
+
 ### Requirement: Gemas en el suelo
-El sistema SHALL mantener cada gema no atraída quieta en su posición, sin caducidad, mientras su distancia al
-jugador sea mayor que el radio de recogida efectivo (ver `upgrades`). Las gemas no colisionan con enemigos,
-proyectiles ni entre sí, y no impiden el movimiento de nada.
+El sistema SHALL mantener cada recogible no atraído, de cualquier tipo, quieto en su posición, sin caducidad, mientras
+su distancia al jugador sea mayor que el radio de recogida efectivo (ver `upgrades`). Los recogibles no colisionan con
+enemigos, proyectiles, vetas, estructuras ni entre sí, y no impiden el movimiento de nada.
 
 #### Scenario: Gema fuera del radio
 - **GIVEN** un jugador quieto en (480, 270) y una gema en (545, 270) (distancia 65 > 64)
@@ -115,12 +136,19 @@ proyectiles ni entre sí, y no impiden el movimiento de nada.
 - **WHEN** se ejecutan los ticks en que se solapan
 - **THEN** la gema no se mueve ni desaparece y el enemigo sigue su persecución sin cambios
 
+#### Scenario: Montón fuera del radio
+- **GIVEN** `pickupRadius` 64, un jugador quieto en (480, 270) y un recogible `wood` en (545, 270) y otro `gold` en
+  (480, 335) (ambos a distancia 65)
+- **WHEN** se ejecutan 36.000 ticks
+- **THEN** ambos siguen en su posición y el oro y la madera siguen en 0
+
 ### Requirement: Imán de gemas
-El sistema SHALL marcar como atraída, en el paso de gemas, toda gema cuya distancia al jugador (ya movido en ese
-tick) sea ≤ el radio de recogida efectivo. Una gema atraída lo sigue siendo hasta que se recoge, aunque el jugador se
-aleje. En cada tick, empezando por el tick en que pasa a atraída, una gema atraída avanza hacia la posición actual
-del jugador una distancia de `magnetSpeed / 60` (6 px con el valor por defecto) o la distancia que la separa del
-jugador si es menor. Las gemas se procesan en orden de creación. El imán MUST NOT consumir azar.
+El sistema SHALL marcar como atraído, en el paso de recogibles, todo recogible de cualquier tipo cuya distancia al
+jugador (ya movido en ese tick) sea ≤ el radio de recogida efectivo. Un recogible atraído lo sigue siendo hasta que se
+recoge, aunque el jugador se aleje. En cada tick, empezando por el tick en que pasa a atraído, un recogible atraído
+avanza hacia la posición actual del jugador una distancia de `magnetSpeed / 60` (6 px con el valor por defecto) o la
+distancia que lo separa del jugador si es menor. Los recogibles se procesan en orden de creación, sin distinguir tipo.
+El imán MUST NOT consumir azar.
 
 #### Scenario: Límite exacto del radio
 - **GIVEN** un jugador quieto en (480, 270) y una gema en (544, 270) (distancia 64)
@@ -145,11 +173,19 @@ jugador si es menor. Las gemas se procesan en orden de creación. El imán MUST 
 - **WHEN** se ejecuta 1 tick
 - **THEN** la gema se recoge en ese tick
 
+#### Scenario: Mismo imán para los tres tipos
+- **GIVEN** `pickupRadius` 64, un jugador quieto en (480, 270) y, en tres partidas, un recogible `xp`, `gold` o `wood`
+  en (544, 270)
+- **WHEN** se ejecutan 8 ticks
+- **THEN** en las tres el recogible está en (538, 270) tras el tick 1, en (502, 270) tras el tick 7 y se recoge en el
+  tick 8
+
 ### Requirement: Recogida de gemas
-El sistema SHALL recoger en el paso de gemas, tras el movimiento del imán, toda gema cuyo círculo solape el del
-jugador (distancia < radio del jugador + `gemRadius`, 21 con los valores por defecto), atraída o no. Una gema
-recogida desaparece de forma irreversible y su XP se suma al jugador en ese mismo tick (ver `leveling`). Varias
-gemas recogidas en el mismo tick suman todas su XP en ese tick.
+El sistema SHALL recoger en el paso de recogibles, tras el movimiento del imán, todo recogible cuyo círculo solape el
+del jugador (distancia < radio del jugador + `gemRadius`, 21 con los valores por defecto), atraído o no, sea cual sea
+su tipo. Un recogible recogido desaparece de forma irreversible en ese mismo tick y su valor se suma según su tipo: la
+de `xp`, a la XP del jugador (ver `leveling`); la de `gold`, al oro; la de `wood`, a la madera (ver "Contadores de oro y
+madera de la partida" en `resources`). Varios recogibles recogidos en el mismo tick suman todos su valor en ese tick.
 
 #### Scenario: Recogida de una gema
 - **GIVEN** un jugador quieto en (480, 270) con 0 XP en nivel 1 y una gema de valor 1 en (500, 270)
@@ -174,11 +210,26 @@ gemas recogidas en el mismo tick suman todas su XP en ese tick.
 - **WHEN** se ejecuta 1 tick
 - **THEN** desaparecen las 4 y la XP actual vale 4
 
+#### Scenario: Efecto según el tipo
+- **GIVEN** un jugador quieto en (480, 270) con XP 0, oro 0 y madera 0, y en (500, 270) un recogible `gold` de valor 12
+  y uno `wood` de valor 3
+- **WHEN** se ejecuta 1 tick
+- **THEN** desaparecen los dos, el oro vale 12, la madera 3 y la XP sigue en 0 sin ninguna subida de nivel
+
+#### Scenario: Madera del barril recogida en su tick
+- **GIVEN** un jugador quieto en (480, 270) con madera 0 y un `goblin-barrel` con vida 4 que muere por armas en el tick
+  n en (490, 270), con madera por barril 2
+- **WHEN** se ejecuta el tick n
+- **THEN** su gema y su madera se recogen en el tick n: la XP incluye 2 y la madera vale 2
+
 ### Requirement: Tope de gemas en el suelo
-El sistema SHALL impedir que haya más de `maxGems` gemas en el suelo. Si al soltarse una gema ya hay `maxGems` en
-el suelo, no se crea una nueva: su valor de XP MUST sumarse al de la gema más antigua que siga en el suelo (la de
-creación más temprana), sin que se pierda XP. Las gemas recogidas en un tick liberan su plaza para las bajas de los
-ticks siguientes (las bajas de un tick ocurren antes del paso de gemas de ese tick).
+El sistema SHALL impedir, **por tipo**, que haya en el suelo más recogibles de ese tipo que su tope: `maxGems` para
+`xp`, el tope de oro para `gold` y el de madera para `wood`. Si al crearse un recogible ya hay en el suelo tantos de su
+tipo como su tope, no se crea uno nuevo: su valor MUST sumarse al del recogible **más antiguo de su mismo tipo** que
+siga en el suelo (el de creación más temprana), sin que se pierda valor. Los recogibles de un tipo nunca reciben el
+valor de otro tipo, y los de otros tipos no ocupan plaza en el tope de un tipo. Los recogidos en un tick liberan su
+plaza para los ticks siguientes (las bajas y destrucciones de un tick ocurren antes del paso de recogibles de ese
+tick). Los montones de madera ocupan plaza de madera desde el tick 0.
 
 #### Scenario: Tope lleno
 - **GIVEN** `maxGems` 300, 300 gemas de valor 1 en el suelo lejos del jugador y un `goblin-torch` con vida 4
@@ -197,11 +248,37 @@ ticks siguientes (las bajas de un tick ocurren antes del paso de gemas de ese ti
 - **WHEN** en el tick n + 1 muere un `goblin-torch` por armas lejos del jugador
 - **THEN** el snapshot del tick n + 1 contiene exactamente 1 gema, nueva y distinta de g1
 
+#### Scenario: Tope de XP lleno con otros tipos en el suelo
+- **GIVEN** `maxGems` 300, 300 gemas de valor 1, 10 recogibles `wood` y 4 `gold`, todos lejos del jugador, y un
+  `goblin-torch` con vida 4 que muere por armas
+- **WHEN** se ejecuta ese tick
+- **THEN** hay 300 gemas con los mismos identificadores, la más antigua vale 2, y los 10 `wood` y los 4 `gold` siguen
+  con sus valores
+
+#### Scenario: Tope de madera lleno
+- **GIVEN** el tope de madera 2, 2 recogibles `wood` w1 (más antiguo) y w2 de valor 4 en el suelo lejos del jugador,
+  0 gemas y un `goblin-barrel` con vida 4 que muere por armas lejos del jugador, con madera por barril 3
+- **WHEN** se ejecuta ese tick
+- **THEN** hay exactamente 2 recogibles `wood`, w1 con valor 7 y w2 con valor 4, y 1 gema nueva del barril
+
+#### Scenario: Tope de oro lleno
+- **GIVEN** el tope de oro 1, un recogible `gold` de valor 10 en el suelo lejos del jugador y una casa con oro 25 que
+  queda destruida en el tick n
+- **WHEN** se ejecuta el tick n
+- **THEN** sigue habiendo exactamente 1 recogible `gold`, con valor 35
+
+#### Scenario: Recoger otro tipo no libera plaza de XP
+- **GIVEN** `maxGems` 1, una gema g1 lejos del jugador y un recogible `wood` que se recoge en el tick n
+- **WHEN** en el tick n + 1 muere un `goblin-torch` por armas lejos del jugador
+- **THEN** sigue habiendo exactamente 1 gema, g1, con su valor más 1
+
 ### Requirement: Pintado de las gemas
-El adaptador de render SHALL mostrar en cada frame exactamente un sprite visible por cada gema del último snapshot,
-en su posición (error ≤ 0,001) y con el aspecto de la gema (ver `sprite-rendering`), asociado por identificador, sin
-crear sprites durante la partida más allá de una reserva de `maxGems`. El tamaño en pantalla lo fija el aspecto, no
-`gemRadius`. MUST NOT quedar visible ningún sprite de una gema recogida.
+El adaptador de render SHALL mostrar en cada frame exactamente un sprite visible por cada recogible del último
+snapshot, en su posición (error ≤ 0,001) y con el aspecto de su tipo (ver "Aspectos de los recogibles y de las
+vetas" en `sprite-rendering`), asociado por identificador, sin crear sprites durante la partida más allá de una
+reserva igual a la suma de los topes de los tres tipos. El tamaño en pantalla lo fija el aspecto de su tipo, no
+`gemRadius`. MUST NOT quedar visible ningún sprite de un recogible recogido, y un sprite reutilizado MUST tomar el
+aspecto del tipo del recogible que pinta en ese frame.
 
 #### Scenario: Recogidas y nuevas
 - **GIVEN** un snapshot con 10 gemas ya pintado
@@ -218,23 +295,37 @@ crear sprites durante la partida más allá de una reserva de `maxGems`. El tama
 - **WHEN** se pinta un snapshot sin gemas
 - **THEN** no hay ningún sprite de gema visible
 
-### Requirement: Recolocación de gemas en celdas no caminables
-El sistema SHALL, cuando una gema se crea en un punto cuya celda (ver "Rejilla de celdas tipadas" en
-`procedural-map`) es no caminable (`trunk`, `water` o `castle`), crearla en el centro de la celda caminable más
-cercana en vez de en ese punto. La más cercana es la de menor distancia euclídea entre el punto de la baja y el centro
-de la celda (en una celda recortada del borde, el centro de su rectángulo recortado); a igual distancia gana la de
-fila menor y, a igual fila, la de columna menor. Una gema creada en una celda caminable conserva exactamente su punto.
-Recolocar MUST NOT consumir azar y no cambia el valor, el radio, el identificador ni el orden de creación de la gema;
-la gema recolocada participa en el paso de gemas de ese mismo tick como cualquier otra.
+#### Scenario: Topes de los tres tipos pintados
+- **GIVEN** un snapshot con `maxGems` gemas, tantos recogibles `gold` como el tope de oro y tantos `wood` como el de
+  madera
+- **WHEN** se pinta
+- **THEN** hay exactamente un sprite visible por recogible, cada uno con el aspecto de su tipo, y ninguno de reserva
 
-Una gema no atraída MUST NOT estar en ningún tick en una celda no caminable. Una gema atraída sigue la regla de "Imán
-de gemas" en línea recta hacia el jugador y puede cruzar celdas no caminables, también las del castillo. Si la XP de
-la baja se suma a la gema más antigua por el tope (ver "Tope de gemas en el suelo"), no se crea ni se recoloca
-ninguna gema. Con el mapa generado los enemigos vivos mantienen el centro en celdas caminables (ver "Enemigos fuera de
-celdas no caminables en el mapa generado" en `enemy-behavior`), así que sus bajas no caen en celdas no caminables; aun
-así, un enemigo colocado directamente por un escenario o que persigue en línea recta como reserva (celda sin distancia
-en el campo) puede morir en una celda no caminable, también dentro de una celda `castle`, y su gema se recoloca con esta
-misma regla.
+#### Scenario: Sprite reutilizado con otro tipo
+- **GIVEN** un snapshot pintado con 1 gema y 0 recogibles de otro tipo
+- **WHEN** se pinta un snapshot en el que la gema se ha recogido y hay 1 recogible `gold` nuevo
+- **THEN** hay exactamente 1 sprite de recogible visible, con el aspecto del oro, en la posición del recogible `gold`
+
+### Requirement: Recolocación de gemas en celdas no caminables
+El sistema SHALL, cuando un recogible de cualquier tipo se crea en un punto cuya celda (ver "Rejilla de celdas tipadas"
+en `procedural-map`) es no caminable (`trunk`, `water` o `castle`), crearlo en el centro de la celda caminable más
+cercana en vez de en ese punto. La más cercana es la de menor distancia euclídea entre el punto de creación y el centro
+de la celda (en una celda recortada del borde, el centro de su rectángulo recortado); a igual distancia gana la de
+fila menor y, a igual fila, la de columna menor. Un recogible creado en una celda caminable conserva exactamente su
+punto. Recolocar MUST NOT consumir azar y no cambia el tipo, el valor, el radio, el identificador ni el orden de
+creación del recogible; el recogible recolocado participa en el paso de recogibles de ese mismo tick como cualquier
+otro. La gema y la madera de una misma baja se recolocan a la misma celda.
+
+Un recogible no atraído MUST NOT estar en ningún tick en una celda no caminable. Un recogible atraído sigue la regla de
+"Imán de gemas" en línea recta hacia el jugador y puede cruzar celdas no caminables, también las del castillo. Si el
+valor se suma al recogible más antiguo de su tipo por el tope (ver "Tope de gemas en el suelo"), no se crea ni se
+recoloca ningún recogible. Con el mapa generado los enemigos vivos mantienen el centro en celdas caminables (ver
+"Enemigos fuera de celdas no caminables en el mapa generado" en `enemy-behavior`), así que sus bajas no caen en celdas
+no caminables; aun así, un enemigo colocado directamente por un escenario o que persigue en línea recta como reserva
+(celda sin distancia en el campo) puede morir en una celda no caminable, también dentro de una celda `castle`, y sus
+recogibles se recolocan con esta misma regla. El oro de una estructura se crea en su posición (centro de su huella),
+que con el mapa generado está en `grass`; en un mapa explícito se recoloca con esta regla si cae en una celda no
+caminable.
 
 #### Scenario: Baja sobre un tronco
 - **GIVEN** un mapa de hierba con un tronco en (10, 4) (x en [600, 660], y en [240, 300]), un jugador quieto en
@@ -282,11 +373,45 @@ misma regla.
 - **WHEN** se ejecuta ese tick
 - **THEN** la gema se crea en (690, 270) (distancia 15 < 21), se recoge en ese tick y la XP ya incluye su valor
 
+#### Scenario: Barril abatido sobre un tronco
+- **GIVEN** el mapa de hierba con el tronco en (10, 4), un jugador quieto en (1.500, 1.000) y un `goblin-barrel` con
+  vida 4 que muere por armas en (650, 270)
+- **WHEN** se ejecuta ese tick
+- **THEN** su gema y su madera están ambas en (690, 270), con la gema creada antes
+
 #### Scenario: Ninguna gema en reposo en celda no caminable
 - **GIVEN** el contenido por defecto salvo una vida máxima suficiente para no llegar a 0 en 36.000 ticks, semilla 7,
-  el mapa generado para esa semilla (castillo incluido) y un input aleatorio generado por una semilla fija
+  el mapa generado para esa semilla (castillo, estructuras, montones y vetas incluidos) y un input aleatorio generado
+  por una semilla fija
 - **WHEN** se ejecutan 36.000 ticks
-- **THEN** en ningún snapshot hay una gema no atraída cuya celda sea `trunk`, `water` o `castle`
+- **THEN** en ningún snapshot hay un recogible no atraído, de ningún tipo, cuya celda sea `trunk`, `water` o `castle`
+
+### Requirement: Recogibles con tipo
+El sistema SHALL representar todo lo que el jugador recoge del suelo como **recogibles**, cada uno con un tipo de la
+unión cerrada `xp | gold | wood`, un valor entero ≥ 1, una posición, el radio `gemRadius` (común a los tres tipos) y un
+identificador único en la partida que no se reutiliza, tomado de **una sola secuencia** para los tres tipos. Los
+recogibles se crean por:
+- `xp`: la baja de un enemigo (ver "Suelta de gema por baja");
+- `wood`: la baja de un `goblin-barrel` que no ha explotado (ver "Madera del barril abatido" en `enemy-hazards`) y los
+  montones del mapa generado (ver "Montones de madera recogibles desde el inicio" en `resources`);
+- `gold`: la destrucción de una casa o una torre (ver "Vida, destrucción y ruina" en `goblin-structures`).
+
+Los tres tipos comparten las reglas de suelo, imán, recogida, recolocación y pintado de esta spec; solo difieren en el
+efecto de la recogida (ver "Recogida de gemas") y en su tope (ver "Tope de gemas en el suelo"). Ningún tipo caduca.
+Crear, mover o recoger un recogible MUST NOT consumir azar.
+
+#### Scenario: Una secuencia de identificadores
+- **GIVEN** el mapa vacío sin montones y, en el tick n, un `goblin-torch` (antes en la lista) y un `goblin-barrel` que
+  mueren por armas, y una torre que queda destruida en el mismo paso de armas
+- **WHEN** se ejecuta el tick n
+- **THEN** hay 4 recogibles nuevos con identificadores distintos creados en este orden: `xp` del `goblin-torch`, `xp`
+  del barril, `wood` del barril y `gold` de la torre
+
+#### Scenario: Tipos del snapshot
+- **GIVEN** una partida con 1 recogible de cada tipo en el suelo
+- **WHEN** se lee el snapshot
+- **THEN** cada recogible figura con su tipo (`xp`, `gold` o `wood`), su valor, su posición, radio 5 y su
+  identificador
 
 <!-- historial: 0005-xp-and-level-up (2026-11-19) -->
 <!-- historial: 0012-sprite-rendering (2026-11-22) -->
@@ -294,3 +419,4 @@ misma regla.
 <!-- historial: 0016-map-art (2026-11-23) -->
 <!-- historial: 0019-flow-field (2026-11-24) -->
 <!-- historial: 0020-enemy-behaviors (2026-11-24) -->
+<!-- historial: 0022-resources-sheep (2026-11-24) -->
