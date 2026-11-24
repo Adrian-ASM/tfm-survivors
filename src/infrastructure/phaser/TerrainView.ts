@@ -21,8 +21,13 @@ export interface MapArtCanvas {
   sprite(layer: 'low' | 'high', s: SpriteDraw): void;
   /** Rectángulo de reserva en la capa baja. */
   rect(r: RectDraw): void;
-  /** Pone el frame dado a todas las espumas visibles (animación en tiempo de render). */
+  /** Pone el frame dado a todas las espumas pintadas, ocultas incluidas (animación de render). */
   foam(frame: number): void;
+  /**
+   * Muestra u oculta el objeto `index` del mapa pintado, en el orden de llamada de `tiles`, `sprite` y
+   * `rect` desde el último `clear` (recorte por cámara, 0018).
+   */
+  show(index: number, visible: boolean): void;
 }
 
 /** Celdas pintadas por tipo (sonda `sprites.cells`), mutable para las capas. */

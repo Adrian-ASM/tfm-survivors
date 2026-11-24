@@ -11,8 +11,10 @@ import {
   type HasFrame,
   type MapLooks,
 } from '../../src/infrastructure/phaser/map/mapLooks';
+import { clipRect, cullMargin, touches } from '../../src/infrastructure/phaser/map/mapCulling';
 import {
   planMapArt,
+  type Box,
   type MapArtPlan,
   type SpriteDraw,
 } from '../../src/infrastructure/phaser/map/planMapArt';
@@ -68,6 +70,19 @@ export function planFor(map: MapSnapshot, seed = 42, missing: readonly string[] 
     world: WORLD,
   });
 }
+
+/**
+ * Visibilidad que da la regla de recorte (0018) a cada entrada del plan, en orden `[...low, ...high]`,
+ * con el rectángulo visible `view` y el margen del juego.
+ */
+export const visibleByRule = (plan: MapArtPlan, view: Box): boolean[] => {
+  const rect = clipRect(view, cullMargin(plan.cellSize));
+  return [...plan.low, ...plan.high].map((d) => touches(d.bounds, rect));
+};
+
+/** Número de entradas que dibuja la regla de recorte con la vista dada. */
+export const drawnByRule = (plan: MapArtPlan, view: Box): number =>
+  visibleByRule(plan, view).filter(Boolean).length;
 
 /** Sprites de un papel en las dos capas del plan. */
 export const spritesOf = (plan: MapArtPlan, role: SpriteDraw['role']): SpriteDraw[] =>

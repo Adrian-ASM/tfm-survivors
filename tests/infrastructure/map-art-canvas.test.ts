@@ -23,6 +23,7 @@ function fakeCanvas() {
     sprite: (layer, s: SpriteDraw) => visible.push(`${layer}:${s.role}`),
     rect: () => visible.push('low:rect'),
     foam: (frame) => log.push(`foam ${String(frame)}`),
+    show: () => undefined,
   };
   return { canvas, visible, log };
 }

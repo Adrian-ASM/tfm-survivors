@@ -101,7 +101,10 @@ function mapArtCanvas(
     scene.add.rectangle(0, 0, 1, 1, 0).setOrigin(0, 0).setVisible(false),
   );
   const sprites = { low: new LayerPool(low, sprite), high: new LayerPool(high, sprite) };
+  /** Todas las espumas pintadas, visibles u ocultas por el recorte: siempre con el frame vigente. */
   const foams: Phaser.GameObjects.Sprite[] = [];
+  /** Objetos del mapa pintado en orden de llamada: el índice de `show` (0018). */
+  const painted: { setVisible(value: boolean): unknown }[] = [];
   return {
     clear: () => {
       tiles.hide();
@@ -109,9 +112,10 @@ function mapArtCanvas(
       sprites.low.hide();
       sprites.high.hide();
       foams.length = 0;
+      painted.length = 0;
     },
     tiles: (t) => {
-      tiles
+      const obj = tiles
         .next()
         .setTexture(t.texture, t.frame)
         .setPosition(t.x, t.y)
@@ -119,6 +123,7 @@ function mapArtCanvas(
         .setTileScale(t.scale)
         .setTilePosition(0, 0)
         .setVisible(true);
+      painted.push(obj);
     },
     sprite: (layer, s) => {
       const obj = sprites[layer]
@@ -132,17 +137,22 @@ function mapArtCanvas(
       if (s.crop) obj.setCrop(s.crop.x, s.crop.y, s.crop.width, s.crop.height);
       else obj.setCrop();
       if (s.role === 'foam') foams.push(obj);
+      painted.push(obj);
     },
     rect: (r) => {
-      rects
+      const obj = rects
         .next()
         .setPosition(r.x, r.y)
         .setSize(r.width, r.height)
         .setFillStyle(r.color)
         .setVisible(true);
+      painted.push(obj);
     },
     foam: (frame) => {
       for (const f of foams) f.setFrame(frame);
+    },
+    show: (index, visible) => {
+      painted[index]?.setVisible(visible);
     },
   };
 }

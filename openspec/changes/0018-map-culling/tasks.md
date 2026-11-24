@@ -49,7 +49,7 @@ Sin tareas: el change no toca `src/domain` ni `src/application` (design §1).
   — escenarios: "Partes del castillo por separado", "Todo el plan se puede ver".
 
 ## 3. Infraestructura: culler, capas y sonda (lienzo y cámara dobles)
-- [ ] 3.1 `MapCuller` en `mapCulling.ts` (design D3): `reset(plan)` copia las cajas en orden `[...low, ...high]` a
+- [x] 3.1 `MapCuller` en `mapCulling.ts` (design D3): `reset(plan)` copia las cajas en orden `[...low, ...high]` a
   un `Float64Array`, marca todo visible y `drawn = objects`; `apply(view, canvas)` evalúa `touches` sobre todas las
   entradas con `clipRect(view, cullMargin(plan.cellSize))` y llama a `canvas.show(i, v)` solo donde cambia.
   `MapArtCanvas` gana `show(index, visible)` (ajustar los lienzos dobles existentes de `map-art-canvas.test.ts`,

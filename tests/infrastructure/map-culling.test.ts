@@ -1,13 +1,18 @@
 import { describe, expect, it } from 'vitest';
+import { toMapSnapshot } from '../../src/domain/map/MapSnapshot';
 import { followView } from '../../src/infrastructure/phaser/CameraRig';
 import {
   clipRect,
   cullMargin,
   touches,
   CULL_MARGIN_CELLS,
+  MapCuller,
 } from '../../src/infrastructure/phaser/map/mapCulling';
 import type { Box } from '../../src/infrastructure/phaser/map/planMapArt';
-import { WORLD } from '../support/mapArt';
+import { aDefaultConfig } from '../support/builders';
+import { WORLD, drawnByRule, planFor, visibleByRule } from '../support/mapArt';
+import { mapRules, mapWith } from '../support/mapLayouts';
+import { mapForSeed } from '../support/mapStats';
 
 // Spec sprite-rendering (0018), "Recorte del arte del mapa por cámara": regla pura (design §4).
 // Las cajas se escriben como en la spec, (x1, y1)–(x2, y2).
@@ -101,5 +106,133 @@ describe('mapCulling · regla de recorte (0018)', () => {
     ];
 
     expect(plan.map((b) => touches(b, rect))).toEqual(plan.map(() => true));
+  });
+});
+
+// "Recorte al cambiar de partida, de ventana y de modo" y "`drawn` igual al recorte" (design D3).
+/** Lienzo doble del culler: visibilidad por índice y llamadas a `show`. */
+function showLog(objects: number) {
+  const visible = Array<boolean>(objects).fill(true);
+  const calls: [number, boolean][] = [];
+  const canvas = {
+    show: (i: number, v: boolean) => {
+      calls.push([i, v]);
+      visible[i] = v;
+    },
+  };
+  return { canvas, visible, calls };
+}
+const planOf = (seed: number) => planFor(toMapSnapshot(mapForSeed(aDefaultConfig(), seed)), seed);
+const EMPTY = planFor(toMapSnapshot(mapWith(mapRules(), {})));
+
+describe('MapCuller (0018, design D3)', () => {
+  it('tras reset todo visible y drawn = objects', () => {
+    const plan = planOf(42);
+    const culler = new MapCuller();
+    culler.reset(plan);
+
+    expect(culler.drawn).toBe(plan.objects);
+  });
+
+  it.each([
+    [1920, 1080],
+    [16, 16],
+  ])('Scenario: `drawn` igual al recorte (semilla 42, jugador en (%s, %s))', (x, y) => {
+    const plan = planOf(42);
+    const { canvas, visible } = showLog(plan.objects);
+    const culler = new MapCuller();
+    culler.reset(plan);
+    const view = viewAt(x, y);
+
+    culler.apply(view, canvas);
+
+    expect(culler.drawn).toBe(drawnByRule(plan, view));
+    expect(culler.drawn).toBeGreaterThan(0);
+    expect(culler.drawn).toBeLessThan(plan.objects);
+    expect(visible).toEqual(visibleByRule(plan, view));
+  });
+
+  it('misma vista dos veces: la segunda no llama a show', () => {
+    const plan = planOf(42);
+    const { canvas, calls } = showLog(plan.objects);
+    const culler = new MapCuller();
+    culler.reset(plan);
+    culler.apply(viewAt(1920, 1080), canvas);
+    const first = calls.length;
+
+    culler.apply(viewAt(1920, 1080), canvas);
+
+    expect(first).toBeGreaterThan(0);
+    expect(calls).toHaveLength(first);
+  });
+
+  it('solo llama a show en los índices que cambian, con su visibilidad nueva', () => {
+    const plan = planOf(42);
+    const { canvas, calls } = showLog(plan.objects);
+    const culler = new MapCuller();
+    culler.reset(plan);
+    const a = viewAt(1920, 1080);
+    const b = viewAt(2400, 1300);
+    culler.apply(a, canvas);
+    calls.length = 0;
+
+    culler.apply(b, canvas);
+
+    const before = visibleByRule(plan, a);
+    const after = visibleByRule(plan, b);
+    const changed = after.flatMap((v, i) => (v === before[i] ? [] : [[i, v]]));
+    expect(calls).toEqual(changed);
+    expect(changed.length).toBeGreaterThan(0);
+  });
+
+  it('Scenario: Redimensionado (crece de 1.280 × 720 a 2.560 × 1.440 y encoge a 960 × 540)', () => {
+    const plan = planOf(42);
+    const { canvas, visible } = showLog(plan.objects);
+    const culler = new MapCuller();
+    culler.reset(plan);
+    culler.apply(viewAt(1920, 1080), canvas);
+    const normal = culler.drawn;
+
+    const big = viewAt(1920, 1080, 2560, 1440);
+    culler.apply(big, canvas);
+    const grown = culler.drawn;
+    expect(visible).toEqual(visibleByRule(plan, big));
+    const small = viewAt(1920, 1080, 960, 540);
+    culler.apply(small, canvas);
+
+    expect(grown).toBe(drawnByRule(plan, big));
+    expect(grown).toBeGreaterThan(normal);
+    expect(culler.drawn).toBe(drawnByRule(plan, small));
+    expect(culler.drawn).toBeLessThan(grown);
+    expect(visible).toEqual(visibleByRule(plan, small));
+  });
+
+  it('Scenario: Mapa vacío (drawn 0 y ninguna llamada)', () => {
+    const { canvas, calls } = showLog(0);
+    const culler = new MapCuller();
+    culler.reset(EMPTY);
+
+    culler.apply(viewAt(1920, 1080), canvas);
+
+    expect([culler.drawn, calls]).toEqual([0, []]);
+  });
+
+  it('Scenario: R tras acabar en una esquina (reset con la semilla 43 no hereda nada)', () => {
+    const culler = new MapCuller();
+    const old = planOf(42);
+    culler.reset(old);
+    culler.apply(viewAt(3824, 2144), showLog(old.objects).canvas);
+    const next = planOf(43);
+    // paintMapArt deja visible cada entrada del plan nuevo antes del primer recorte.
+    const { canvas, visible, calls } = showLog(next.objects);
+
+    culler.reset(next);
+    expect(culler.drawn).toBe(next.objects);
+    const view = viewAt(1950, 1170);
+    culler.apply(view, canvas);
+
+    expect(visible).toEqual(visibleByRule(next, view));
+    expect(culler.drawn).toBe(drawnByRule(next, view));
+    expect(calls.every(([, v]) => !v)).toBe(true);
   });
 });

@@ -25,6 +25,7 @@ const quietCanvas = (): MapArtCanvas => ({
   sprite: () => undefined,
   rect: () => undefined,
   foam: () => undefined,
+  show: () => undefined,
 });
 
 /** Área de juego con fábricas falsas que registran el orden de creación (= orden de pintado). */

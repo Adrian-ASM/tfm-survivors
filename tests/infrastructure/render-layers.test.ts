@@ -204,6 +204,7 @@ describe('RenderLayers · espuma animada', () => {
       sprite: () => undefined,
       rect: () => undefined,
       foam: (f) => calls.push(f),
+      show: () => undefined,
     };
     const plan = planFor(toMapSnapshot(mapForSeed(aDefaultConfig(), 123)), 123);
     s.layers.paintMap(canvas, plan);
@@ -239,6 +240,7 @@ describe('RenderLayers · espuma animada', () => {
       sprite: () => undefined,
       rect: () => undefined,
       foam: (f) => calls.push(f),
+      show: () => undefined,
     };
     s.layers.paintMap(
       canvas,
