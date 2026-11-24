@@ -11,6 +11,7 @@ import {
 } from '../../../src/domain/structure/StructureType';
 import type { StructuresConfig } from '../../../src/domain/structure/StructureType';
 import { aCampsConfig, aStructuresConfig } from '../../support/camps';
+import { NO_STRUCTURES } from '../../support/builders';
 
 const rulesOf = (structures: StructuresConfig) => buildRunRules(aCampsConfig(structures));
 
@@ -29,22 +30,22 @@ describe('StructureRules (goblin-structures, invariantes del dominio)', () => {
     const r = rulesOf(aStructuresConfig());
     if (!r.ok) throw new Error(r.error.message);
     const s = r.value.structures;
-    expect(s?.types.map((t) => [t.id, t.kind, t.count])).toEqual([
+    expect(s.types.map((t) => [t.id, t.kind, t.count])).toEqual([
       ['goblin-house', 'house', 4],
       ['goblin-tower', 'tower', 3],
     ]);
-    const house = s?.byId('goblin-house');
+    const house = s.byId('goblin-house');
     expect(house?.guards?.type.id).toBe('goblin-tnt-guard');
     expect([house?.guards?.max, house?.guards?.everyTicks]).toEqual([2, 900]);
     expect([house?.cols, house?.rows, house?.radius, house?.health]).toEqual([2, 3, 48, 60]);
-    expect(s?.byId('goblin-tower')?.guards).toBeNull();
-    expect(s?.placement.minStartCells).toBe(6);
+    expect(s.byId('goblin-tower')?.guards).toBeNull();
+    expect(s.placement.minStartCells).toBe(6);
     expect(Object.isFrozen(s)).toBe(true);
   });
 
-  it('sin contenido de estructuras no hay reglas (mapas sin estructuras)', () => {
-    const r = buildRunRules({ ...aCampsConfig(), structures: undefined });
-    expect(r.ok && r.value.structures).toBeNull();
+  it('sin tipos de estructura, las reglas no tienen ninguno (mapas sin estructuras)', () => {
+    const r = buildRunRules({ ...aCampsConfig(), structures: NO_STRUCTURES });
+    expect(r.ok && r.value.structures.types).toEqual([]);
   });
 
   it.each([

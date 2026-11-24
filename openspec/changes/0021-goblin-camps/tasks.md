@@ -75,18 +75,18 @@
   no consumen azar" (con alerta, vuelta y patrulla).
 
 ## 5. Contenido, validación y composición (test-after)
-- [ ] 5.1 `content/structures.json` y `StructuresSchema` (objeto estricto por id) en `loadRunConfig`; los errores
+- [x] 5.1 `content/structures.json` y `StructuresSchema` (objeto estricto por id) en `loadRunConfig`; los errores
   nombran el tipo de estructura. — GS: "Contenido por defecto", "Campos ausentes o desconocidos", "Valores fuera de
   rango" y "Guardia inválido" (con el cargador).
-- [ ] 5.2 `enemies.json`: `goblin-tnt-guard` (§2.2) y barril A3 (§2.3); clases nuevas en el `discriminatedUnion`
+- [x] 5.2 `enemies.json`: `goblin-tnt-guard` (§2.2) y barril A3 (§2.3); clases nuevas en el `discriminatedUnion`
   de zod. — EB: "Comportamientos del contenido por defecto", "Cotas del contenido por defecto", "Parámetros del barril
   por defecto", "Esquiva con el contenido por defecto"; ES: "Contenido por defecto", "Stats por defecto", "XP por
   defecto de cada tipo", "Vida por defecto de cada tipo", "Oleadas por defecto sin guardias"; RO: "Presupuesto de
   oleadas y stats intactos".
-- [ ] 5.3 `STRUCT_STREAM` 3 y `seededRun` con `structureRandom` (composición). `STRUCTURE_GOLDEN` para 42 y 123 en
+- [x] 5.3 `STRUCT_STREAM` 3 y `seededRun` con `structureRandom` (composición). `STRUCTURE_GOLDEN` para 42 y 123 en
   `tests/support/mapGolden.ts` y su test. — GS: "Firma de referencia de las estructuras"; PM: "Sonda coherente con el
   núcleo" (lista de estructuras, con el núcleo).
-- [ ] 5.4 Tests de integración con el contenido por defecto y el mapa generado. — GS: "Sin casas ni torres"; ES:
+- [x] 5.4 Tests de integración con el contenido por defecto y el mapa generado. — GS: "Sin casas ni torres"; ES:
   "Guardias en el mapa generado", "Guardias junto a la oleada"; PM: "Mismos spawns con y sin mapa" (solo las
   apariciones del director) y "Primera oferta en plazo con y sin mapa" (anotar ticks); EB: "Guardias en celdas
   caminables" (1..50 × 7.200 ticks); SL: "Partida con estructuras y guardias reproducible", "Posiciones de enemigos

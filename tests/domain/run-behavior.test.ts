@@ -105,8 +105,10 @@ describe('Run · estado de comportamiento (enemy-behavior)', () => {
         if (!seen.has(e.type)) seen.set(e.type, { state: e.state, stateKind: e.stateKind });
       }
     }
+    // Los de oleada; el guardia (0021) nace en las casas y su inicial es de patrulla.
+    const waveTypes = DEFAULT_ENEMY_TYPES.filter((t) => t.id !== 'goblin-tnt-guard');
     const initial = Object.fromEntries(
-      DEFAULT_ENEMY_TYPES.map((t) => [t.id, { state: t.behavior.initial, stateKind: 'chase' }]),
+      waveTypes.map((t) => [t.id, { state: t.behavior.initial, stateKind: 'chase' }]),
     );
     expect(Object.fromEntries(seen)).toEqual(initial);
   });

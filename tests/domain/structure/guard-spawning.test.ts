@@ -35,7 +35,7 @@ function aHouseField(max: number, everyTicks: number) {
   const rules = buildRunRules(aCampScenario({ house: houseOf(max, everyTicks) }));
   if (!rules.ok) throw new Error(rules.error.message);
   const { arena, map: grid, structures } = rules.value;
-  const type = structures?.byId('goblin-house');
+  const type = structures.byId('goblin-house');
   if (!type) throw new Error('sin casa');
   const site = structureSite(0, type, 20, 10, 2, 3, grid);
   const built = initialStructures({}, [site], GameMap.open(grid), arena);

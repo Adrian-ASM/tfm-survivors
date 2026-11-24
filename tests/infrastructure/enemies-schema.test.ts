@@ -6,6 +6,8 @@ import {
   BEHAVIOR_TARGET_UNKNOWN,
   BEHAVIOR_TICKS_MUST_BE_INTEGER,
   BEHAVIOR_VALUE_MUST_BE_POSITIVE,
+  BEHAVIOR_GUARD_NEEDS_PATROL,
+  BEHAVIOR_LOSE_NOT_ABOVE_DETECT,
 } from '../../src/domain/enemy/behavior/Behavior';
 import {
   BLAST_TICKS_MUST_BE_INTEGER,
@@ -15,15 +17,18 @@ import {
 import { ENEMY_DAMAGE_MUST_BE_POSITIVE } from '../../src/domain/enemy/EnemyType';
 import { loadRunConfig, parseRunConfig } from '../../src/infrastructure/content/loadRunConfig';
 import { BEHAVIOR_REQUIRED } from '../../src/infrastructure/content/schemas';
+import { GUARD_IN_WAVES } from '../../src/domain/wave/WaveTable';
 import { rawContent, type RawContent } from '../support/builders';
 
 // Validación del comportamiento y de los peligros en content/enemies.json (0020, spec
-// enemy-behavior, enemy-spawning y enemy-hazards). Tipos por defecto: 0 torch, 1 tnt, 2 barrel.
+// enemy-behavior, enemy-spawning y enemy-hazards). Tipos por defecto: 0 torch, 1 tnt, 2 barrel y
+// 3 tnt-guard (0021).
 
 type State = Record<string, unknown>;
 const TORCH = 0;
 const TNT = 1;
 const BARREL = 2;
+const GUARD = 3;
 
 function failure(raw: RawContent): { field: string; message: string } {
   const r = parseRunConfig(raw);
@@ -32,7 +37,7 @@ function failure(raw: RawContent): { field: string; message: string } {
 }
 
 /** Estado `name` del tipo `i` del contenido crudo (mutable). */
-function state(raw: RawContent, i: 0 | 1 | 2, name: string): State {
+function state(raw: RawContent, i: 0 | 1 | 2 | 3, name: string): State {
   const s = raw.enemies.types[i].behavior.states.find((x) => x['name'] === name);
   if (!s) throw new Error(`sin estado ${name}`);
   return s;
@@ -204,5 +209,67 @@ describe('Contenido de peligros validado', () => {
       edited((r) => ((r.enemies.hazards as Record<string, unknown>)['chainReaction'] = true)),
     );
     expect(e.field).toBe('enemies.hazards.chainReaction');
+  });
+});
+
+// 0021 (spec enemy-behavior y enemy-spawning): clases de guardia en el `discriminatedUnion` de zod y
+// sus reglas de dominio desde el cargador. Estados del guardia: 0 patrol, 1 alert, 2 aim, 3 reload
+// y 4 return.
+describe('Clases de guardia en contenido (zod + buildRunRules)', () => {
+  const at = (i: number, field: string) => `enemies.types.3.behavior.states.${String(i)}.${field}`;
+
+  it.each([
+    ['radio de patrulla 0', 'patrol', 0, 'radius', 0],
+    ['detección de la patrulla −1', 'patrol', 0, 'detect.distance', -1],
+    ['lanzamiento de la alerta ausente', 'alert', 1, 'exit.distance', undefined],
+    ['abandono 0', 'alert', 1, 'lose.distance', 0],
+    ['detección de la vuelta 0', 'return', 4, 'detect.distance', 0],
+  ] as const)('Scenario: Parámetros de guardia inválidos (%s)', (_l, name, i, field, value) => {
+    const e = failure(
+      edited((r) => {
+        setField(state(r, GUARD, name), field, value);
+      }),
+    );
+    expect(e.field).toBe(at(i, field));
+    expect(e.message).toContain(BEHAVIOR_VALUE_MUST_BE_POSITIVE);
+    expect(e.message).toContain('goblin-tnt-guard');
+  });
+
+  it('Scenario: Parámetros de guardia inválidos (abandono 240, igual a la detección)', () => {
+    const e = failure(
+      edited((r) => {
+        setField(state(r, GUARD, 'alert'), 'lose.distance', 240);
+      }),
+    );
+    expect(e.message).toContain(BEHAVIOR_LOSE_NOT_ABOVE_DETECT);
+    expect(e.message).toContain('goblin-tnt-guard');
+  });
+
+  it('Scenario: Estados de guardia sin patrulla inicial (inicial alert)', () => {
+    const e = failure(edited((r) => (r.enemies.types[GUARD].behavior.initial = 'alert')));
+    expect(e.message).toContain(BEHAVIOR_GUARD_NEEDS_PATROL);
+    expect(e.message).toContain('goblin-tnt-guard');
+  });
+
+  it('un campo desconocido en un estado de guardia falla y se nombra', () => {
+    const e = failure(edited((r) => (state(r, GUARD, 'return')['speed'] = 3)));
+    expect(e.field).toBe(at(4, 'speed'));
+  });
+
+  it('Scenario: Guardia citado en una oleada', () => {
+    const e = failure(
+      edited((r) => {
+        const first = r.waves.segments[0];
+        first.types = ['goblin-torch', 'goblin-tnt-guard'];
+      }),
+    );
+    expect(e.message).toContain(GUARD_IN_WAVES);
+    expect(e.message).toContain('goblin-tnt-guard');
+  });
+
+  it('Scenario: Oleadas por defecto sin guardias', () => {
+    const r = loadRunConfig();
+    if (!r.ok) throw new Error(r.error.message);
+    expect(r.value.waves.segments.flatMap((s) => s.types)).not.toContain('goblin-tnt-guard');
   });
 });

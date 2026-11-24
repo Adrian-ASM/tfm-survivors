@@ -5,6 +5,7 @@ import wavesJson from '../../content/waves.json';
 import enemiesJson from '../../content/enemies.json';
 import progressionJson from '../../content/progression.json';
 import upgradesJson from '../../content/upgrades.json';
+import structuresJson from '../../content/structures.json';
 import type { EnemyTypeConfig } from '../../src/domain/enemy/EnemyType';
 import type { BehaviorConfig } from '../../src/domain/enemy/behavior/BehaviorConfig';
 import type { HazardRulesConfig } from '../../src/domain/hazard/HazardRules';
@@ -12,6 +13,7 @@ import type { RunConfig, UpgradesConfig } from '../../src/domain/run/RunConfig';
 import type { WeaponsConfig } from '../../src/domain/weapon/WeaponLoadout';
 import type { WeaponTypeConfig } from '../../src/domain/weapon/WeaponType';
 import type { UpgradeTypeConfig } from '../../src/domain/upgrade/UpgradeType';
+import type { StructuresConfig } from '../../src/domain/structure/StructureType';
 
 /** Copia profunda congelada de un valor de content/ (los tests no pueden alterar el JSON). */
 function frozen<T>(value: T): T {
@@ -98,10 +100,29 @@ export const DEFAULT_WEAPONS: WeaponsConfig = {
  */
 export const NO_WEAPONS: WeaponsConfig = { maxProjectiles: 32, hitFlashTicks: 4, weapons: [] };
 
-/** Tipos de enemigo por defecto (torch, tnt, barrel), leídos de content/enemies.json (0019). */
+/**
+ * Tipos de enemigo por defecto (torch, tnt, barrel y, desde 0021, tnt-guard), leídos de
+ * content/enemies.json (0019).
+ */
 export const DEFAULT_ENEMY_TYPES: readonly EnemyTypeConfig[] = frozen(
   enemiesJson.types as EnemyTypeConfig[],
 );
+
+/** ¿Es un tipo de guardia (empieza en patrulla, spec enemy-behavior 0021)? */
+const isGuardType = (t: EnemyTypeConfig): boolean =>
+  t.behavior.states.find((s) => s.name === t.behavior.initial)?.kind === 'patrol';
+
+/** Casas y torres por defecto, leídas de content/structures.json (0021, una sola fuente). */
+export const CONTENT_STRUCTURES: StructuresConfig = frozen(structuresJson);
+
+/**
+ * Sin tipos de estructura: válido en el dominio (no en el fichero). Por defecto en `aRunConfig`,
+ * para que los escenarios de 0001–0020 sigan sin casas ni torres en cualquier mapa.
+ */
+export const NO_STRUCTURES: StructuresConfig = Object.freeze({
+  placement: CONTENT_STRUCTURES.placement,
+  types: Object.freeze({}),
+});
 
 /** Globales de los peligros por defecto (content/enemies.json, `hazards`; 0020). */
 export const DEFAULT_HAZARDS: HazardRulesConfig = frozen(enemiesJson.hazards);
@@ -117,10 +138,13 @@ export const CHASE_BEHAVIOR: BehaviorConfig = Object.freeze({
 
 /**
  * Tipos de escenario: los stats por defecto con `CHASE_BEHAVIOR` (los escenarios de 0001–0019 no
- * conocen mechas ni cargas). El contenido por defecto (`aDefaultConfig`) usa los de content/.
+ * conocen mechas ni cargas), sin los guardias (solo nacen en casas, 0021). El contenido por
+ * defecto (`aDefaultConfig`) usa los de content/.
  */
 export const SCENARIO_ENEMY_TYPES: readonly EnemyTypeConfig[] = Object.freeze(
-  DEFAULT_ENEMY_TYPES.map((t) => Object.freeze({ ...t, behavior: CHASE_BEHAVIOR })),
+  DEFAULT_ENEMY_TYPES.filter((t) => !isGuardType(t)).map((t) =>
+    Object.freeze({ ...t, behavior: CHASE_BEHAVIOR }),
+  ),
 );
 
 /**
@@ -191,6 +215,7 @@ export const aRunConfig = (overrides: Partial<PlayerConfig> = {}): RunConfig => 
   upgrades: NO_UPGRADES,
   run: DEFAULT_RUN,
   map: DEFAULT_MAP,
+  structures: NO_STRUCTURES,
 });
 
 /** El mismo contenido con otra duración objetivo en segundos (p. ej. 2 ⇒ 120 ticks). */
@@ -213,7 +238,8 @@ export const withUpgrades = (config: RunConfig, upgrades: UpgradesConfig): RunCo
 
 /**
  * Contenido por defecto completo: armas y mejoras de content/ (lo que carga el juego). La velocidad
- * del jugador se lee de content/player.json (210 desde el gate de balance de 0015).
+ * del jugador se lee de content/player.json (210 desde el gate de balance de 0015). Desde 0021,
+ * con las casas y torres de content/structures.json.
  */
 export const aDefaultConfig = (): RunConfig =>
   withUpgrades(
@@ -223,6 +249,7 @@ export const aDefaultConfig = (): RunConfig =>
         arena: CONTENT_ARENA,
         progression: DEFAULT_PROGRESSION,
         enemies: { hazards: DEFAULT_HAZARDS, types: DEFAULT_ENEMY_TYPES },
+        structures: CONTENT_STRUCTURES,
       },
       DEFAULT_WEAPONS,
     ),
@@ -307,7 +334,7 @@ export interface RawContent {
   arena: { width: number; height: number; maxView: { width: number; height: number } };
   enemies: {
     hazards: { maxDynamites: number; dynamiteRadius: number; blastTicks: number };
-    types: [MutableType, MutableType, MutableType];
+    types: [MutableType, MutableType, MutableType, MutableType];
   };
   waves: {
     maxAlive: number;
@@ -339,6 +366,18 @@ export interface RawContent {
     castle: { cols: number; rows: number };
     tuning: { riverVerticalChance: number; riverMeander: number; patchAttempts: number };
   };
+  structures: {
+    placement: Record<string, number>;
+    types: { 'goblin-house': MutableStructureType; 'goblin-tower': MutableStructureType };
+  };
+}
+interface MutableStructureType {
+  count: number;
+  footprint: { cols: number; rows: number };
+  radius: number;
+  health: number;
+  guards?: { type: string; max: number; everyTicks: number };
+  [extra: string]: unknown;
 }
 
 /** Copia nueva del contenido por defecto en forma de ficheros (cada llamada es independiente). */

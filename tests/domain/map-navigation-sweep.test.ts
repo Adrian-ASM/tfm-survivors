@@ -18,6 +18,7 @@ const MOVING_TICKS = 7200;
 const STILL_TICKS = 3600;
 const INPUT_SEED = 2026;
 const SWEEP_TIMEOUT = 300_000;
+const GUARD = 'goblin-tnt-guard';
 
 interface Audit {
   /** Enemigos vivos (por tick) con el centro en una celda no caminable. */
@@ -27,6 +28,9 @@ interface Audit {
   births: number;
   /** Apariciones en celda no caminable, fuera del mundo o a < 200 del jugador. */
   illegalBirths: number;
+  /** Guardias de las casas (0021) vivos por tick y, de ellos, con el centro en celda no caminable. */
+  guards: number;
+  guardsOnBlocked: number;
   /** Ticks con ≥ 1 enemigo en contacto con el jugador. */
   contactTicks: number;
 }
@@ -43,7 +47,15 @@ function audit(seed: number, n: number, inputs?: readonly PlayerInput[]): Audit 
   const built = GameMap.fromCells(run.map.cells, RULES);
   if (!built.ok) throw new Error(built.error.message);
   const map = built.value;
-  const a: Audit = { onBlocked: 0, inCastle: 0, births: 0, illegalBirths: 0, contactTicks: 0 };
+  const a: Audit = {
+    onBlocked: 0,
+    inCastle: 0,
+    births: 0,
+    illegalBirths: 0,
+    guards: 0,
+    guardsOnBlocked: 0,
+    contactTicks: 0,
+  };
   let nextId = 0;
   for (let t = 0; t < n; t++) {
     chooseFirstWhileOpen(run);
@@ -55,6 +67,10 @@ function audit(seed: number, n: number, inputs?: readonly PlayerInput[]): Audit 
       const row = map.rowAt(e.y);
       const walkable = map.isWalkable(col, row);
       if (!walkable) a.onBlocked += 1;
+      if (e.type === GUARD) {
+        a.guards += 1;
+        if (!walkable) a.guardsOnBlocked += 1;
+      }
       if (map.typeAt(col, row) === 'castle') a.inCastle += 1;
       const d = Math.hypot(e.x - s.player.x, e.y - s.player.y);
       if (d <= e.radius + s.player.radius) contact = true;
@@ -79,6 +95,13 @@ describe('Enemigos fuera de celdas no caminables con el mapa generado (semillas 
     const offenders = BALANCE_SEEDS.filter((seed) => (moving.get(seed)?.onBlocked ?? 1) > 0);
     expect(offenders).toEqual([]);
     expect(BALANCE_SEEDS.every((seed) => (moving.get(seed)?.births ?? 0) > 0)).toBe(true);
+  });
+
+  // Spec enemy-behavior (0021): ningún guardia vivo con el centro en `trunk`, `water` o `castle`.
+  it('Scenario: Guardias en celdas caminables (7.200 ticks, input aleatorio)', () => {
+    const offenders = BALANCE_SEEDS.filter((seed) => (moving.get(seed)?.guardsOnBlocked ?? 1) > 0);
+    expect(offenders).toEqual([]);
+    expect(BALANCE_SEEDS.every((seed) => (moving.get(seed)?.guards ?? 0) > 0)).toBe(true);
   });
 });
 
@@ -125,6 +148,8 @@ describe('Posiciones de enemigos reproducibles con el mapa generado (semilla 42)
     };
     const a = enemies();
     expect(a.some((s) => s.length > 0)).toBe(true);
+    // 0021: la lista incluye los guardias nacidos en las casas del mapa generado.
+    expect(a.some((s) => s.includes(`:${GUARD}:`))).toBe(true);
     expect(enemies()).toEqual(a);
   });
 });

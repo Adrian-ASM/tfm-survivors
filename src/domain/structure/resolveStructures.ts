@@ -16,12 +16,12 @@ const isInt = (v: number, min: number): boolean => Number.isInteger(v) && v >= m
 function declared(
   entries: readonly DeclaredStructure[],
   map: GameMap,
-  rules: StructureRules | null,
+  rules: StructureRules,
 ): Result<StructureSite[], DomainError> {
   const sites: StructureSite[] = [];
   for (const [i, d] of entries.entries()) {
     const at = `map.structures.${String(i)}`;
-    const type = rules?.byId(d.type);
+    const type = rules.byId(d.type);
     if (!type) return err(invalidConfig(`${at}.type`, `${MAP_STRUCTURE_UNKNOWN}: ${d.type}`));
     const door = type.kind === 'house' ? 1 : 0;
     const fits =
@@ -44,13 +44,11 @@ function declared(
 export function resolveStructures(
   source: TerrainSource,
   map: GameMap,
-  rules: StructureRules | null,
+  rules: StructureRules,
 ): Result<readonly StructureSite[], DomainError> {
   switch (source.kind) {
     case 'generated':
-      return ok(
-        rules && source.structureRandom ? placeStructures(map, rules, source.structureRandom) : [],
-      );
+      return ok(placeStructures(map, rules, source.structureRandom));
     case 'open':
     case 'cells':
       return declared(source.structures ?? [], map, rules);

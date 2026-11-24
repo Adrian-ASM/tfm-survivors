@@ -71,7 +71,8 @@ describe('Run · daño acumulado con las armas por defecto', () => {
   });
 
   it('Scenario: Enemigos más resistentes (goblin-barrel 4 impactos; goblin-tnt 8)', () => {
-    const merge = history(play(weaponsOf([LINTER]), one('goblin-barrel'), 30 * 4));
+    // La spec fija la vida 20 del barril (la de antes de 0021; el contenido tiene 25).
+    const merge = history(play(weaponsOf([LINTER]), one('goblin-barrel', 20), 30 * 4));
     expect(merge).toEqual({ lives: [20, 14, 8, 2], gone: true });
     const leak = history(play(weaponsOf([LINTER]), one('goblin-tnt'), 30 * 8));
     expect(leak).toEqual({ lives: [45, 39, 33, 27, 21, 15, 9, 3], gone: true });

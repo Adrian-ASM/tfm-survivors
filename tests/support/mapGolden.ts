@@ -96,3 +96,44 @@ export const MAP_GOLDEN: Readonly<Record<42 | 123, string>> = {
     '......T................TTTT.TTT.................................',
   ].join(''),
 };
+
+/** Huella de una estructura para su firma (la de `map.structures` del núcleo y de la sonda). */
+export interface StructureFootprint {
+  readonly type: string;
+  readonly col: number;
+  readonly row: number;
+  readonly cols: number;
+  readonly rows: number;
+}
+
+/** Firma de las estructuras: `tipo@col,row,cols,rows` en orden de id (design 0021 §10). */
+export const structureSignatureOf = (list: readonly StructureFootprint[]): string[] =>
+  list.map(
+    (s) => `${s.type}@${String(s.col)},${String(s.row)},${String(s.cols)},${String(s.rows)}`,
+  );
+
+/**
+ * Estructuras del contenido por defecto (0021) para las semillas 42 y 123, colocadas con
+ * `STRUCT_STREAM`. Cambia con content/structures.json o con la colocación: se regenera con
+ * `map-golden.test.ts` (y se vuelve a medir el balance). `MAP_GOLDEN` no cambia con ellas.
+ */
+export const STRUCTURE_GOLDEN: Readonly<Record<42 | 123, readonly string[]>> = {
+  42: [
+    'goblin-house@18,14,2,3',
+    'goblin-house@28,31,2,3',
+    'goblin-house@59,27,2,3',
+    'goblin-house@34,5,2,3',
+    'goblin-tower@41,27,2,3',
+    'goblin-tower@53,23,2,3',
+    'goblin-tower@3,24,2,3',
+  ],
+  123: [
+    'goblin-house@33,28,2,3',
+    'goblin-house@6,23,2,3',
+    'goblin-house@52,23,2,3',
+    'goblin-house@27,3,2,3',
+    'goblin-tower@45,26,2,3',
+    'goblin-tower@22,13,2,3',
+    'goblin-tower@4,11,2,3',
+  ],
+};

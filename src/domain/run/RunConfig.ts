@@ -72,10 +72,10 @@ export interface RunConfig {
   /** Parámetros del mapa (content/map.json, spec procedural-map). */
   readonly map: MapConfig;
   /**
-   * Casas y torres goblin (content/structures.json, spec goblin-structures). Sin ellas, ningún mapa
-   * tiene estructuras ni se pueden declarar.
+   * Casas y torres goblin (content/structures.json, spec goblin-structures). Sin tipos (válido en
+   * el dominio, no en el fichero), ningún mapa tiene estructuras ni se pueden declarar.
    */
-  readonly structures?: StructuresConfig | undefined;
+  readonly structures: StructuresConfig;
 }
 
 /** Forma del contenido de mejoras (content/upgrades.json). */
@@ -104,8 +104,8 @@ export interface RunRules {
   readonly duration: RunDuration;
   /** Rejilla del mapa y parámetros de su generación. */
   readonly map: MapRules;
-  /** Tipos de estructura y su colocación; `null` sin contenido de estructuras. */
-  readonly structures: StructureRules | null;
+  /** Tipos de estructura y su colocación. */
+  readonly structures: StructureRules;
 }
 
 function checkBudgetCoversCatalog(spawn: SpawnRules, catalog: EnemyCatalog): DomainError | null {
@@ -152,9 +152,7 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
   if (!duration.ok) return duration;
   const map = MapRules.create(config.map, arena.value, config.player.radius);
   if (!map.ok) return map;
-  const structures = config.structures
-    ? StructureRules.create(config.structures, map.value, catalog.value)
-    : ok(null);
+  const structures = StructureRules.create(config.structures, map.value, catalog.value);
   if (!structures.ok) return structures;
   return ok({
     arena: arena.value,

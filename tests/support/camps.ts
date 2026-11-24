@@ -70,8 +70,8 @@ export const aGuardType = (
 
 /**
  * `goblin-tnt-guard` del design §2.2: los stats de `goblin-tnt` y el comportamiento de guardia por
- * defecto (patrulla 120, detección 240, lanzamiento 100, abandono 360). Mientras no esté en
- * content/enemies.json (tarea 5.2), lo añaden los escenarios que lo necesitan.
+ * defecto (patrulla 120, detección 240, lanzamiento 100, abandono 360), el mismo que el de
+ * content/enemies.json (lo comprueba builders-content.test.ts).
  */
 export const TNT_GUARD: EnemyTypeConfig = Object.freeze<EnemyTypeConfig>({
   id: 'goblin-tnt-guard',
@@ -124,7 +124,7 @@ export const aTowerType = (o: Partial<StructureTypeConfig> = {}): StructureTypeC
 });
 
 /**
- * Estructuras del design §2.1 (valores de partida; content/structures.json en la tarea 5.1), con
+ * Estructuras del design §2.1 (los valores de content/structures.json), con
  * la casa y la torre cambiadas si se pide.
  */
 export const aStructuresConfig = (
@@ -153,7 +153,7 @@ export const structureRandomFor = (seed: number): Mulberry32RandomGenerator =>
   new Mulberry32RandomGenerator(deriveSeed(seed, STRUCT_STREAM));
 
 /**
- * Mapa generado de la semilla con sus casas y torres, como lo sembrará `seededRun` (tarea 5.3):
+ * Mapa generado de la semilla con sus casas y torres, como lo siembra `seededRun`:
  * celdas con `MAP_STREAM` y estructuras con `STRUCT_STREAM`.
  */
 export const campTerrain = (seed: number): TerrainSource => ({
@@ -175,15 +175,13 @@ export function startCampRun(
 }
 
 /**
- * Reglas de partida de `aCampsConfig(structures)` con sus reglas de estructuras (o excepción, para
+ * Reglas de partida de `aCampsConfig(structures)` (o excepción, para
  * preparar escenarios).
  */
 export function campRules(structures: StructuresConfig = DEFAULT_STRUCTURES) {
   const r = buildRunRules(aCampsConfig(structures));
   if (!r.ok) throw new Error(r.error.message);
-  const s = r.value.structures;
-  if (!s) throw new Error('sin reglas de estructuras');
-  return { ...r.value, structures: s };
+  return r.value;
 }
 
 /**

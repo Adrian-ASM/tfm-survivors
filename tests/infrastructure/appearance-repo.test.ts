@@ -41,12 +41,13 @@ const sourceOfFile = (file: string): string =>
 const sourceOf = (aspect: Aspect): string => sourceOfFile(aspect.sheet.file);
 
 describe('Datos de aspecto del repositorio', () => {
-  it('Scenario: Datos del repositorio (válidos, tope 64 y los tres goblins)', () => {
+  it('Scenario: Datos del repositorio (válidos, tope 64, los tres goblins y el guardia)', () => {
     expect(appearance.maxCorpses).toBe(64);
     expect(Object.keys(appearance.enemies)).toEqual([
       'goblin-torch',
       'goblin-tnt',
       'goblin-barrel',
+      'goblin-tnt-guard',
     ]);
     expect(Object.keys(appearance.enemies)).toEqual(enemyIds);
   });

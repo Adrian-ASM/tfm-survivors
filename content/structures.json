@@ -1,0 +1,24 @@
+{
+  "placement": {
+    "minStartCells": 6,
+    "minCastleCells": 6,
+    "minWaterCells": 2,
+    "minGapCells": 4,
+    "maxAttempts": 2000
+  },
+  "types": {
+    "goblin-house": {
+      "count": 4,
+      "footprint": { "cols": 2, "rows": 3 },
+      "radius": 48,
+      "health": 60,
+      "guards": { "type": "goblin-tnt-guard", "max": 2, "everyTicks": 900 }
+    },
+    "goblin-tower": {
+      "count": 3,
+      "footprint": { "cols": 2, "rows": 3 },
+      "radius": 48,
+      "health": 90
+    }
+  }
+}

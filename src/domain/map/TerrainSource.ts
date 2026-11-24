@@ -33,7 +33,7 @@ export interface DeclaredStructure {
  * resuelve junto con la semilla y el dominio nunca la conoce.
  * - `open`: mapa vacío, todo hierba (escenarios sin mapa declarado y `?e2e&map=empty`).
  * - `generated`: `generateMap` con un generador propio, distinto del de la partida, y casas y
- *   torres con otro (`structureRandom`, ADR-0020); sin él, el mapa no tiene estructuras.
+ *   torres con otro (`structureRandom`, ADR-0020).
  * - `cells`: mapa dado en orden de filas (tests); solo se le exigen las dimensiones.
  * `open` y `cells` pueden declarar su salida (`start`); sin ella, el centro del mundo. También sus
  * estructuras (`structures`); sin ellas, ninguna.
@@ -47,7 +47,7 @@ export type TerrainSource =
   | {
       readonly kind: 'generated';
       readonly random: RandomGenerator;
-      readonly structureRandom?: RandomGenerator;
+      readonly structureRandom: RandomGenerator;
     }
   | {
       readonly kind: 'cells';
