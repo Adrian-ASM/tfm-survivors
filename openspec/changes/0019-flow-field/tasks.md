@@ -11,7 +11,7 @@
   y buffers preasignados (design §2). Test `tests/domain/map/flow-field.test.ts`. Escenarios PM: "Mapa vacío",
   "Río con un único puente", "Celda encerrada", "Objetivo no caminable", "Toda celda caminable con distancia en el
   mapa generado" y "Mismo campo, misma celda" (los dos últimos se juntan aquí porque pasan en verde con la BFS).
-- [ ] 1.2 `FlowField.hasClearLine` con recorrido de rejilla, regla floor y esquinas exactas (design §2.4). Tests
+- [x] 1.2 `FlowField.hasClearLine` con recorrido de rejilla, regla floor y esquinas exactas (design §2.4). Tests
   unitarios sobre `GameMap.fromCells`. Escenarios EB: "Obstáculo que corta el segmento", "Agua y castillo también
   cortan la línea" y "Sin cortar por una esquina", más un caso unitario de "Segmento sobre el borde de una celda
   bloqueada" (sin línea libre para y = 300) y "Con el mapa vacío todo enemigo tiene siempre línea libre".
