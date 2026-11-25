@@ -33,14 +33,16 @@ según el elemento:
 - **orilla**: tamaño de baldosa y un índice de frame por cada uno de los 15 casos con ≥ 1 lado de río (ver
   "Orillas por autotile de 4 vecinos");
 - **espuma**: tamaño de frame y la animación `idle` en bucle;
-- **árbol**: tamaño de frame y una lista de ≥ 1 modelos, cada uno con su índice de frame;
+- **árbol**: tamaño de frame, si admite volteo y la animación `idle` en bucle (ver "Animación del arte del mapa");
 - **puente**: un recorte por orientación (norte-sur y este-oeste), cada uno con `x` e `y` enteros ≥ 0 y ancho y alto
   enteros ≥ 1 en píxeles de la hoja (la hoja no es regular);
-- **castillo**: tamaño de frame y el índice de su frame.
+- **castillo**: tamaño de frame y el índice de su frame;
+- **decoración**: la lista de aspectos de decoración, el tope y la densidad de "Decoración del mapa generado".
 
 Y los aspectos de las estructuras: por cada tipo de estructura de su contenido (ver `goblin-structures`), un aspecto
 intacto y uno de ruina, con las reglas de los aspectos de entidades, y los colores de reserva de "Pintado de las
-estructuras". Los tipos de estructura con aspecto MUST ser exactamente los del contenido de estructuras.
+estructuras". Los tipos de estructura con aspecto MUST ser exactamente los del contenido de estructuras. La `idle` de
+un aspecto intacto puede tener varios frames (la torre se anima, ver "Animación del arte del mapa").
 
 Un campo desconocido, un campo obligatorio ausente, un valor fuera de rango, un caso de orilla ausente o repetido, un
 tipo de enemigo o de estructura sin aspecto o un aspecto de un tipo inexistente MUST hacer fallar el arranque con un
@@ -58,9 +60,13 @@ empieza ninguna partida. Los datos de aspecto MUST NOT cambiar la simulación.
   en bucle y la explosión `explode` de 9 frames sin bucle
 - **AND** hay color de aviso de mecha y de dinamita, cada uno con opacidad > 0 y < 1
 - **AND** hay aspecto de agua, de orilla con los 15 casos, de espuma con `idle` de 8 frames en bucle, de árbol con
-  ≥ 2 modelos, de puente con sus 2 recortes y de castillo
-- **AND** hay aspecto intacto y de ruina para exactamente `goblin-house` y `goblin-tower`, y colores de reserva de
-  `goblin-house`, `goblin-tower` y ruina
+  `idle` `[0, 1, 2, 3, 4, 5]` a 6 fps en bucle, de puente con sus 2 recortes y de castillo
+- **AND** hay aspecto intacto y de ruina para exactamente `goblin-house` y `goblin-tower`, la `idle` intacta de
+  `goblin-tower` tiene los frames `[0, 1, 2, 3]` a 5 fps en bucle, y hay colores de reserva de `goblin-house`,
+  `goblin-tower` y ruina
+- **AND** hay exactamente 11 aspectos de decoración, uno por hoja `Deco/01`, `02`, `03`, `07`, `08`, `09`, `10`, `11`,
+  `16`, `17` y `18`, cada uno con 1 índice de frame que cabe en su hoja; son altos exactamente los de `16`, `17` y `18`;
+  el tope de decoración vale 120 y la densidad 25
 
 #### Scenario: Valores fuera de rango
 - **GIVEN** los datos del repositorio con, en un caso cada vez en el aspecto de `goblin-torch`: ancho de frame 0,
@@ -71,22 +77,24 @@ empieza ninguna partida. Los datos de aspecto MUST NOT cambiar la simulación.
 - **THEN** la carga falla con un error que nombra ese campo
 
 #### Scenario: Datos del mapa inválidos
-- **GIVEN** los datos del repositorio con, en un caso cada vez: la orilla sin el caso { norte }; el árbol con la lista
-  de modelos `[]`; el recorte norte-sur del puente con ancho 0, con `x` −1 o con `y` 2,5; la espuma sin `idle` o con
-  `idle` sin bucle; el castillo sin hoja; o un campo extra `rocks` en los aspectos del mapa
+- **GIVEN** los datos del repositorio con, en un caso cada vez: la orilla sin el caso { norte }; el árbol sin `idle`,
+  con `idle` sin bucle o con frames de `idle` `[]`; un campo extra `models` en el árbol; el recorte norte-sur del puente
+  con ancho 0, con `x` −1 o con `y` 2,5; la espuma sin `idle` o con `idle` sin bucle; el castillo sin hoja; o un campo
+  extra `rocks` en los aspectos del mapa
 - **WHEN** se carga el contenido
-- **THEN** la carga falla con un error que nombra el caso { norte }, la lista de modelos, el ancho, `x`, `y`, `idle`,
-  `idle`, la hoja del castillo y `rocks` respectivamente
+- **THEN** la carga falla con un error que nombra el caso { norte }, la `idle` del árbol (en los tres casos),
+  `models`, el ancho, `x`, `y`, `idle`, `idle`, la hoja del castillo y `rocks` respectivamente
 - **AND** no se muestra el menú ni empieza ninguna partida
 
 #### Scenario: Rutas de hoja no admitidas
 - **GIVEN** los datos del repositorio con la hoja de `goblin-torch` igual, en un caso cada vez, a `""`,
   `"../secreto.png"`, `"/torch.png"`, `"https://ejemplo.com/torch.png"`, `"data:image/png;base64,AAAA"`,
   `"torch.gif"` o una ruta `.png` que no figura en la nota de procedencia; y en otro caso la hoja del castillo, en
-  otro la de la explosión y en otro la de la torre intacta, igual a una ruta `.png` que no figura en la nota
+  otro la de la explosión, en otro la de la torre intacta y en otro la del aspecto de decoración de `Deco/09`, igual a
+  una ruta `.png` que no figura en la nota
 - **WHEN** se carga el contenido
-- **THEN** la carga falla con un error que nombra la hoja de `goblin-torch`, la del castillo, la de la explosión y la
-  de `goblin-tower` respectivamente
+- **THEN** la carga falla con un error que nombra la hoja de `goblin-torch`, la del castillo, la de la explosión, la
+  de `goblin-tower` y la de la decoración respectivamente
 
 #### Scenario: Animaciones obligatorias y campos desconocidos
 - **GIVEN** los datos del repositorio con, en un caso cada vez: el jugador sin `walk`, `goblin-tnt` sin `idle`, el
@@ -124,8 +132,8 @@ empieza ninguna partida. Los datos de aspecto MUST NOT cambiar la simulación.
 #### Scenario: Los aspectos no cambian la simulación
 - **GIVEN** dos partidas con la semilla 42, el mismo contenido de juego, la misma secuencia de 1.200 inputs por tick
   y la política de elección fija, una con los datos de aspecto del repositorio y otra con todas las escalas de los
-  aspectos de entidades y de estructuras multiplicadas por 2 y los colores del mapa, de las estructuras y de los
-  avisos cambiados
+  aspectos de entidades y de estructuras multiplicadas por 2, los colores del mapa, de las estructuras y de los
+  avisos cambiados y el tope de decoración 0
 - **WHEN** se ejecutan 1.200 ticks
 - **THEN** sus snapshots son iguales campo a campo en cada tick
 
@@ -139,7 +147,9 @@ El sistema SHALL pintar, con los datos de aspecto del repositorio, cada elemento
 - el proyectil, con `Arrow.png`;
 - la gema (recogible `xp`), con una hoja del pack distinta de `G_Idle.png` y de `W_Idle.png`, o sin hoja (ver
   "Aspectos de los recogibles y de las vetas");
-- el recogible `gold`, con `G_Idle.png` (bolsa de oro); el recogible `wood`, con `W_Idle.png`;
+- el recogible `gold`, con `G_Idle.png` (bolsa de oro); el recogible `wood`, con `W_Idle.png`; el `meat`, con
+  `M_Idle.png`; el `stone`, con las rocas `Deco/04.png`, `Deco/05.png` y `Deco/06.png`;
+- la oveja, con `HappySheep_Idle.png` y `HappySheep_Bouncing.png` (ver "Pintado de las ovejas");
 - la veta activa, con `GoldMine_Active.png`, y la agotada, con `GoldMine_Inactive.png`;
 - la dinamita, con `Dynamite.png` (de la carpeta de la unidad `TNT`); la explosión, con `Explosions.png`;
 - el fondo, con un suelo de hierba del pack;
@@ -147,13 +157,19 @@ El sistema SHALL pintar, con los datos de aspecto del repositorio, cada elemento
   `Bridge_All.png`; el castillo, con `Castle_Blue.png` (castillo azul, como el arquero); la orilla, con una hoja de
   terreno del pack;
 - la casa, con `Goblin_House.png`, y su ruina, con `Goblin_House_Destroyed.png`; la torre, con un único
-  `Wood_Tower_<color>.png`, y su ruina, con `Wood_Tower_Destroyed.png`.
+  `Wood_Tower_<color>.png`, y su ruina, con `Wood_Tower_Destroyed.png`;
+- el solar libre, con `House_Construction.png`; la casa construida, con `House_Blue.png`, y la torre construida, con
+  `Tower_Blue.png` (ver "Pintado de los solares y de los edificios");
+- la decoración, con las hojas `Deco/01.png`, `Deco/02.png`, `Deco/03.png` (setas), `Deco/07.png`, `Deco/08.png`,
+  `Deco/09.png` (arbustos), `Deco/10.png`, `Deco/11.png` (matas), `Deco/16.png` (cartel), `Deco/17.png` (poste) y
+  `Deco/18.png` (espantapájaros), una hoja por aspecto de decoración.
 
 Los avisos no usan hoja. La unidad o el elemento de cada hoja se comprueba con la ruta de origen que registra la nota
 de procedencia (ver `asset-provenance`). Del pack solo se versionan las hojas que usan los datos de aspecto (ningún
 otro color de castillo ni de torre, ni `Rocks`, ni `Fire.png`, ni `Wood_Tower_InConstruction`, ni
-`GoldMine_Destroyed.png`, ni las hojas de carne `M_*`, ni las de ovejas). Cambiar el arte de un elemento MUST requerir
-solo cambios de datos y de assets, no de código.
+`GoldMine_Destroyed.png`, ni `M_Spawn`, ni `HappySheep_All`, ni `Deco/12`–`Deco/15`). Las rocas `Deco/04`–`06` son
+solo de la piedra recogible: ningún aspecto de decoración las usa. Cambiar el arte de un elemento MUST requerir solo
+cambios de datos y de assets, no de código.
 
 #### Scenario: Hoja de cada elemento
 - **GIVEN** los datos de aspecto del repositorio y la nota de procedencia
@@ -169,6 +185,9 @@ solo cambios de datos y de assets, no de código.
   `Bridge_All.png` y `Castle_Blue.png` respectivamente
 - **AND** las de la casa y su ruina terminan en `Goblin_House.png` y `Goblin_House_Destroyed.png`, y las de la torre y
   su ruina en `Wood_Tower_<color>.png` y `Wood_Tower_Destroyed.png`
+- **AND** las de los 11 aspectos de decoración terminan en `Deco/01.png`, `Deco/02.png`, `Deco/03.png`, `Deco/07.png`,
+  `Deco/08.png`, `Deco/09.png`, `Deco/10.png`, `Deco/11.png`, `Deco/16.png`, `Deco/17.png` y `Deco/18.png`, una cada
+  una, y ninguna es la hoja de una roca de la piedra
 - **AND** todas las rutas de origen pertenecen a Tiny Swords Update 010
 
 #### Scenario: Solo las hojas usadas
@@ -176,9 +195,11 @@ solo cambios de datos y de assets, no de código.
 - **WHEN** se compara cada asset gráfico de la nota de procedencia con las hojas de los datos de aspecto
 - **THEN** cada asset de la nota es la hoja de ≥ 1 aspecto y ningún fichero versionado contiene `Castle_Red`,
   `Castle_Yellow`, `Castle_Purple`, `Castle_Black`, `Rocks`, `Fire`, `Wood_Tower_InConstruction`,
-  `GoldMine_Destroyed`, `M_Idle`, `M_Spawn` ni `HappySheep`
+  `GoldMine_Destroyed`, `M_Spawn` ni `HappySheep_All`
 - **AND** de `Wood_Tower_Red`, `Wood_Tower_Blue`, `Wood_Tower_Purple` y `Wood_Tower_Yellow` hay exactamente 1 fichero
   versionado, el de la hoja de la torre
+- **AND** los ficheros versionados de la carpeta `Deco/` de los assets son exactamente `01`–`11` y `16`–`18` (`.png`),
+  cada uno 1 vez, y ninguno de `12`–`15`
 
 #### Scenario: Partida con arte
 - **GIVEN** la build de producción servida con `?e2e&seed=42`
@@ -299,8 +320,9 @@ Un frame que repite el tick del anterior MUST conservar el estado y la orientaci
 primer frame pintado (recién aparecido, recién nacido o en un hueco reutilizado) y el jugador en el primer frame de
 una partida nueva MUST NOT heredar estado ni orientación de otro elemento o de una partida anterior: se pintan en
 `idle` y sin voltear (o en `fuse` o `throw` si su estado de comportamiento lo pide). Con el mundo detenido ninguna
-animación avanza. Con la partida terminada, el jugador se pinta en `idle` (el jugador no tiene animación de muerte).
-La animación no cambia la simulación.
+animación del jugador ni de los enemigos avanza, y tampoco la de la espuma, los árboles ni las torres goblin
+intactas (ver "Animación del arte del mapa"). Con la partida terminada, el jugador se pinta en `idle` (el jugador no
+tiene animación de muerte). La animación no cambia la simulación.
 
 #### Scenario: Quieto y andando
 - **GIVEN** un aspecto del jugador con `idle` (frames `[0, 1]`, 2 fps, bucle) y `walk` (frames `[6, 7, 8, 9]`,
@@ -351,7 +373,7 @@ La animación no cambia la simulación.
 - **GIVEN** un jugador y 3 enemigos que reproducen `walk`, 1 `goblin-barrel` que reproduce `fuse` y la partida en
   pausa en el tick 500
 - **WHEN** se pintan 300 frames en pausa
-- **THEN** en los 300 cada sprite muestra el mismo frame de hoja que en el primer frame de la pausa
+- **THEN** en los 300 cada uno de esos sprites muestra el mismo frame de hoja que en el primer frame de la pausa
 - **AND** lo mismo ocurre durante 300 frames con la partida eligiendo mejora y durante 300 con la partida terminada
 
 #### Scenario: Partida terminada
@@ -565,22 +587,26 @@ El sistema SHALL exponer, solo con `?e2e` y como parte de la sonda `window.__spr
 - por elemento del mapa, cuántos se pintan y cuántos de ellos con reserva: agua (celdas `water`), orilla (celdas de
   orilla con su pieza), espuma (celdas de orilla con espuma), árbol (celdas `trunk`), copa (árboles con copa), puente
   (celdas `bridge`) y castillo (0 o 1);
+- de la decoración, `sprites.mapArt.decor` con `planned` (decoraciones del plan), `painted` (pintadas con su arte) y
+  `unpainted` (no pintadas por fallo de su hoja), con `painted` + `unpainted` = `planned`;
 - por tipo de estructura, cuántas se pintan intactas, cuántas como ruina y cuántas de ellas con reserva;
 - cuántas vetas se pintan activas, cuántas agotadas y cuántas de ellas con reserva;
-- el número de objetos de escena usados para pintar el mapa, estructuras y vetas incluidas;
+- el número de objetos de escena usados para pintar el mapa, estructuras, vetas, solares y decoración incluidos;
 - el número de esos objetos **dibujados** en el último frame (`drawn`, ver "Recorte del arte del mapa por cámara"),
   con 0 ≤ `drawn` ≤ objetos del mapa.
 
-Los recuentos de celdas pintadas, de elementos del mapa, de estructuras y de vetas (pintados y con reserva) y de
-objetos del mapa son del plan entero de la partida: MUST NOT depender de la cámara, de la ventana ni del recorte. Los de
-celdas, de elementos del mapa, de estructuras, de vetas y de objetos del mapa conservan el significado y el valor que
-tenían antes de este change para la misma semilla y el mismo contenido. Solo `drawn` depende del recorte. Los peligros,
-los recogibles (montones, carne y piedras incluidos) y las ovejas no forman parte del plan del mapa ni de sus objetos.
+Los recuentos de celdas pintadas, de elementos del mapa, de decoración, de estructuras y de vetas (pintados y con
+reserva) y de objetos del mapa son del plan entero de la partida: MUST NOT depender de la cámara, de la ventana, del
+recorte ni del reloj de render. Los de celdas, de elementos del mapa, de estructuras y de vetas conservan el
+significado y el valor que tenían antes de este change para la misma semilla y el mismo contenido; los objetos del
+mapa valen los de antes de este change más los objetos de escena de la decoración pintada. Solo `drawn` depende del
+recorte. Los peligros, los recogibles (montones, carne y piedras incluidos) y las ovejas no forman parte del plan del
+mapa ni de sus objetos.
 
 Un sprite oculto por el parpadeo cuenta como no visible. En modo menú los recuentos de jugador, enemigo, cadáver, oveja,
 proyectil, pulso, recogibles de cada tipo, dinamita, aviso, explosión, celdas del mapa, elementos del mapa,
-estructuras, vetas, objetos del mapa y `drawn` valen 0. Sin `?e2e` MUST NOT existir. Leer la sonda MUST NOT cambiar la
-simulación ni lo que se pinta.
+decoración, estructuras, vetas, objetos del mapa y `drawn` valen 0. Sin `?e2e` MUST NOT existir. Leer la sonda MUST NOT
+cambiar la simulación ni lo que se pinta.
 
 #### Scenario: Recuento coherente con el snapshot
 - **GIVEN** `?e2e&seed=42` y una partida en curso
@@ -593,8 +619,8 @@ simulación ni lo que se pinta.
   oveja por estado con las ovejas del snapshot en cada estado
 - **AND** las vetas pintadas activas y agotadas coinciden con las del snapshot en cada estado
 - **AND** el recuento de cadáveres es ≤ 64 en todos
-- **AND** las celdas del mapa pintadas por tipo son las mismas en los 600 frames e iguales a los recuentos del mapa
-  de la sonda
+- **AND** las celdas del mapa pintadas por tipo y los recuentos de decoración son los mismos en los 600 frames, y las
+  celdas, iguales a los recuentos del mapa de la sonda
 
 #### Scenario: Barril en mecha y su explosión en el navegador [E2E]
 - **GIVEN** la build de producción servida con `?e2e&manual&map=empty&seed=s`, con s una semilla de 1..50, sin input
@@ -624,11 +650,12 @@ simulación ni lo que se pinta.
 #### Scenario: Totales del mapa con estructuras y vetas
 - **GIVEN** el contenido por defecto y las semillas 42 y 123
 - **WHEN** se calcula el plan del mapa y los recuentos de la sonda, con una ventana de 960 × 540, de 1.280 × 720 y
-  de 3.840 × 2.160, y con el jugador en el centro del mundo y en (16, 16)
-- **THEN** en todos los casos las celdas pintadas por tipo, los elementos del mapa pintados y con reserva, las
-  estructuras pintadas, las vetas pintadas y los objetos del mapa son iguales entre sí
-- **AND** las celdas pintadas por tipo, los elementos del mapa, las estructuras, las vetas y los objetos del mapa son
-  iguales a los de antes de este change (701 y 784 objetos respectivamente), ≤ 1.000, y ninguno es una piedra
+  de 3.840 × 2.160, con el jugador en el centro del mundo y en (16, 16), y con el reloj de render en 0 y en 10.000 ms
+- **THEN** en todos los casos las celdas pintadas por tipo, los elementos del mapa pintados y con reserva, la
+  decoración, las estructuras pintadas, las vetas pintadas y los objetos del mapa son iguales entre sí
+- **AND** las celdas pintadas por tipo, los elementos del mapa, las estructuras y las vetas son iguales a los de antes
+  de este change; los objetos del mapa son los de antes (737 y 820 respectivamente) más los de la decoración de cada
+  semilla, ≤ 950, y ninguno es una piedra
 
 #### Scenario: Objetos dibujados con la cámara [E2E]
 - **GIVEN** la build de producción con `?e2e&manual&seed=7` (mapa real), una ventana de 1.280 × 720 y la flecha
@@ -642,15 +669,15 @@ simulación ni lo que se pinta.
 #### Scenario: `drawn` igual al recorte
 - **GIVEN** una partida con el mapa real de la semilla 42 y una ventana de 1.280 × 720
 - **WHEN** se pinta un frame con el jugador en (1.920, 1.080) y otro con el jugador en (16, 16)
-- **THEN** en cada frame `drawn` es igual al número de objetos del plan, estructuras y vetas incluidas, que da
-  "Recorte del arte del mapa por cámara" con el rectángulo visible de ese frame
+- **THEN** en cada frame `drawn` es igual al número de objetos del plan, estructuras, vetas, solares y decoración
+  incluidos, que da "Recorte del arte del mapa por cámara" con el rectángulo visible de ese frame
 
 #### Scenario: Sonda en el menú
 - **GIVEN** `?e2e&seed=42` y el menú tras `Volver al menú`
 - **WHEN** se pinta 1 frame y se lee la sonda de render
 - **THEN** los recuentos de jugador, enemigo, cadáver, oveja, proyectil, pulso, gema, `gold`, `wood`, `meat`, `stone`,
-  dinamita, aviso, explosión, celdas del mapa, elementos del mapa, estructuras, vetas, objetos del mapa y `drawn`
-  valen 0
+  dinamita, aviso, explosión, celdas del mapa, elementos del mapa, decoración, estructuras, vetas, objetos del mapa y
+  `drawn` valen 0
 
 #### Scenario: Sin sonda fuera de E2E
 - **GIVEN** la URL `?seed=42`
@@ -664,6 +691,13 @@ simulación ni lo que se pinta.
 - **WHEN** se pinta y se lee la sonda
 - **THEN** `sprites.pickups.stone` informa de 6 visibles y 3 con reserva (`placeholder`)
 
+#### Scenario: Recuento de la decoración sin una hoja
+- **GIVEN** el contenido por defecto, la semilla 42 y la hoja `Deco/18.png` sin cargar
+- **WHEN** se pinta el snapshot del tick 0 y se lee la sonda
+- **THEN** la decoración del plan es la misma que con todas las hojas, las no pintadas son exactamente las del aspecto
+  de `Deco/18.png`, pintadas + no pintadas = las del plan, y los objetos del mapa son los de todas las hojas menos 2
+  por cada espantapájaros no pintado
+
 ### Requirement: Pintado del mapa
 El sistema SHALL pintar, mientras existe una partida, los elementos de su mapa (ver `procedural-map`) con el arte de
 los datos de aspecto, fijos en el mundo como el fondo y en las capas de "Capas del mapa y de las entidades":
@@ -672,31 +706,35 @@ los datos de aspecto, fijos en el mundo como el fondo y en las capas de "Capas d
 - **orilla y espuma**: cada celda de orilla (ver "Orillas por autotile de 4 vecinos") muestra, sobre su celda de
   tierra, la pieza de orilla de su caso, y la espuma en su borde con el río, bajo la pieza, que reproduce en bucle su
   animación `idle` en tiempo de render;
-- **árbol**: cada celda `trunk` muestra un árbol del modelo de su celda (ver "Variedad de árboles por semilla") con
-  su origen en el punto medio del borde inferior de la celda (error ≤ 1 px);
+- **árbol**: cada celda `trunk` muestra un árbol, con el volteo y la fase de su celda (ver "Variedad de árboles por
+  semilla"), que reproduce su animación `idle` (ver "Animación del arte del mapa"), con su origen en el punto medio
+  del borde inferior de la celda (error ≤ 1 px);
 - **puente**: cada celda `bridge` muestra el recorte de su orientación (ver "Orientación de los puentes") centrado en
   la celda (error ≤ 1 px);
 - **castillo**: la huella muestra un castillo con su origen en el punto medio del borde inferior de la huella
   (error ≤ 1 px). Un mapa explícito no tiene huella: sus celdas `castle`, si las hay, se pintan siempre como
-  rectángulos del color `castle` que cubren cada celda.
+  rectángulos del color `castle` que cubren cada celda;
+- **decoración**: en un mapa generado, las decoraciones de su plan (ver "Decoración del mapa generado" y "Pintado de
+  la decoración").
 
 **Pintar y dibujar**: que un elemento se *pinta* significa que forma parte del mapa pintado de la partida (es lo que
-cuentan los recuentos del mapa de la sonda y lo que fija esta spec: sitio, modelo, capa y aspecto). Si en un frame
-concreto se *dibuja* o no lo decide "Recorte del arte del mapa por cámara": un elemento pintado fuera del rectángulo
-de recorte no se dibuja, pero sigue pintado. Los escenarios de este requisito describen el mapa pintado y lo que se ve
-cuando el elemento cae dentro del rectángulo visible.
+cuentan los recuentos del mapa de la sonda y lo que fija esta spec: sitio, volteo, fase, capa y aspecto). Si en un
+frame concreto se *dibuja* o no lo decide "Recorte del arte del mapa por cámara": un elemento pintado fuera del
+rectángulo de recorte no se dibuja, pero sigue pintado. Los escenarios de este requisito describen el mapa pintado y lo
+que se ve cuando el elemento cae dentro del rectángulo visible.
 
-**Reserva por elemento**: si la hoja de un elemento del mapa falla al cargar o no contiene su frame o su recorte,
-ese elemento, y solo ese, se pinta así, sin errores no capturados: agua, árbol y puente, como un rectángulo relleno
-que cubre exactamente cada celda `water`, `trunk` o `bridge` (error ≤ 1 px) con el color de su tipo, y el árbol sin
-copa; castillo, como un rectángulo relleno del color `castle` que cubre exactamente la huella; orilla y espuma no se
-pintan. Los colores viven en los datos de aspecto, uno por tipo (`trunk`, `water`, `bridge`, `castle`), en formato
-`#RRGGBB`, y son distintos dos a dos; se validan con zod en el arranque como el resto de datos de aspecto: un color
-ausente, con otro formato, repetido o de un tipo desconocido MUST hacer fallar el arranque con un error que nombre el
-campo. El pintado del mapa no cuenta como sprite de fondo ni como aspecto de reserva de sprites y MUST NOT cambiar la
-simulación; ningún requisito depende del frame concreto de la espuma, salvo que todas las espumas dibujadas muestran
-el mismo (ver "El recorte no cambia lo que se ve"). Redimensionar la ventana MUST NOT cambiar qué elemento
-corresponde a cada celda, su modelo ni su posición de mundo.
+**Reserva por elemento**: si la hoja de un elemento del mapa falla al cargar o no contiene su frame o su recorte (en el
+árbol, alguno de los frames de su `idle`), ese elemento, y solo ese, se pinta así, sin errores no capturados: agua,
+árbol y puente, como un rectángulo relleno que cubre exactamente cada celda `water`, `trunk` o `bridge` (error ≤ 1 px)
+con el color de su tipo, y el árbol sin copa; castillo, como un rectángulo relleno del color `castle` que cubre
+exactamente la huella; orilla y espuma no se pintan; la decoración no se pinta (ver "Pintado de la decoración"). Los
+colores viven en los datos de aspecto, uno por tipo (`trunk`, `water`, `bridge`, `castle`), en formato `#RRGGBB`, y son
+distintos dos a dos; se validan con zod en el arranque como el resto de datos de aspecto: un color ausente, con otro
+formato, repetido o de un tipo desconocido MUST hacer fallar el arranque con un error que nombre el campo. El pintado
+del mapa no cuenta como sprite de fondo ni como aspecto de reserva de sprites y MUST NOT cambiar la simulación; ningún
+requisito depende del frame concreto que muestran la espuma, un árbol o una torre goblin en un frame de render salvo lo
+que fijan "Animación del arte del mapa" y "El recorte no cambia lo que se ve". Redimensionar la ventana MUST NOT
+cambiar qué elemento corresponde a cada celda, su volteo, su fase, la decoración ni su posición de mundo.
 
 Al empezar una partida nueva (R o `Volver al menú` + `Jugar`) se pinta su mapa y no queda visible ningún elemento del
 mapa anterior. En modo menú no se ve ningún elemento del mapa. Con el mapa vacío no se pinta ningún elemento del mapa.
@@ -720,6 +758,7 @@ mapa anterior. En modo menú no se ve ningún elemento del mapa. Con el mapa vac
 - **WHEN** se pinta el snapshot
 - **THEN** el origen del árbol está en (630, 300), el agua cubre (240, 180)–(300, 240), (900, 540)–(960, 600),
   (960, 540)–(1.020, 600) y (1.020, 540)–(1.080, 600), y el puente está centrado en (990, 570) (error ≤ 1 px)
+- **AND** el plan no tiene decoración (es un mapa explícito)
 
 #### Scenario: Castillo sobre su huella
 - **GIVEN** el contenido por defecto, la semilla 42 y los datos de aspecto del repositorio
@@ -758,8 +797,9 @@ mapa anterior. En modo menú no se ve ningún elemento del mapa. Con el mapa vac
 #### Scenario: Mapa intacto al redimensionar
 - **GIVEN** una partida con el contenido por defecto y la semilla 42 pintada con una ventana de 1.280 × 720
 - **WHEN** la ventana pasa a 2.560 × 1.440 y se pinta 1 frame
-- **THEN** cada elemento del mapa de las celdas visibles en ambos frames tiene el mismo modelo y la misma posición de
-  mundo que antes del cambio (error ≤ 1 px), y el número de objetos de escena del mapa sigue ≤ 1.000
+- **THEN** cada elemento del mapa de las celdas visibles en ambos frames tiene el mismo volteo, la misma fase y la
+  misma posición de mundo que antes del cambio (error ≤ 1 px), la decoración del plan es la misma, y el número de
+  objetos de escena del mapa sigue ≤ 1.000
 
 #### Scenario: Recuentos del mapa pintado [E2E]
 - **GIVEN** la build de producción con `?e2e&manual&seed=42` (mapa real)
@@ -769,21 +809,25 @@ mapa anterior. En modo menú no se ve ningún elemento del mapa. Con el mapa vac
 - **AND** el agua y el puente pintados son iguales a los recuentos de `water` y `bridge`; árbol y copa, al de `trunk`;
   orilla y espuma, al número de celdas `grass`, `trunk` o `castle` del mapa de la sonda con ≥ 1 vecina 4-conexa
   `water` o `bridge` dentro de la rejilla; castillo, 1
+- **AND** la decoración del plan es ≥ 1, toda pintada, 0 sin pintar
 - **AND** ningún elemento del mapa usa reserva
 
 #### Scenario: Hojas del mapa bloqueadas [E2E]
 - **GIVEN** la build de producción con `?e2e&manual&seed=42` y una prueba que hace fallar las peticiones de
-  `Water.png`, `Foam.png`, `Tree.png`, `Bridge_All.png` y `Castle_Blue.png`
+  `Water.png`, `Foam.png`, `Tree.png`, `Bridge_All.png`, `Castle_Blue.png` y `Deco/18.png`
 - **WHEN** arranca la partida, se llama a `step(60)` y se leen la sonda de render y la del mapa
 - **THEN** agua, árbol y puente se pintan todos con reserva, en número igual a los recuentos de `water`, `trunk` y
   `bridge` del mapa; el castillo, 1 con reserva; espuma y copa, 0
+- **AND** las decoraciones sin pintar son exactamente las del aspecto de `Deco/18.png` (0 si el plan no tiene
+  ninguna) y las demás decoraciones se pintan con su arte
 - **AND** la partida está en el tick 60, los sprites de entidades cuya hoja no se bloquea no usan aspecto de reserva
   y no hay errores no capturados
 
 #### Scenario: Mapa vacío
 - **GIVEN** la build de producción con `?e2e&map=empty&seed=42`
 - **WHEN** se pinta 1 frame de la partida
-- **THEN** la sonda informa de 0 celdas pintadas de cada tipo, 0 elementos del mapa, `drawn` 0 y 1 sprite de fondo
+- **THEN** la sonda informa de 0 celdas pintadas de cada tipo, 0 elementos del mapa, 0 decoraciones, `drawn` 0 y 1
+  sprite de fondo
 
 #### Scenario: Partida nueva con otro mapa
 - **GIVEN** la build de producción con `?e2e&manual&seed=42` y la partida terminada
@@ -868,45 +912,52 @@ con su propio marco de los datos de aspecto.
 - **THEN** cada puente tiene tierra en los dos lados de su orientación
 
 ### Requirement: Variedad de árboles por semilla
-El sistema SHALL pintar cada celda `trunk` con uno de los modelos de árbol de los datos de aspecto, elegido por una
-función determinista de la semilla de la partida y de la celda. Elegir los modelos MUST NOT consumir el azar de la
-partida ni el del mapa, MUST NOT cambiar el snapshot ni el mapa y no depende del tick, del número de frames pintados
-ni de las partidas anteriores de la carga: la misma semilla y el mismo mapa dan siempre los mismos modelos.
-
-#### Scenario: Mismos modelos con la misma semilla
-- **GIVEN** el contenido por defecto, la semilla 42 y su mapa generado
-- **WHEN** se calculan los modelos de sus celdas `trunk` dos veces, y una tercera tras pintar 600 frames y pulsar R
-  con la misma semilla
-- **THEN** las tres listas de modelos son iguales celda a celda
+El sistema SHALL dar a cada celda `trunk` un volteo (si el aspecto del árbol lo admite) y una fase de su animación
+`idle` (ver "Animación del arte del mapa"), elegidos por una función determinista de la semilla de la partida y de la
+celda. Los árboles ya no tienen modelos fijos: todos reproducen la misma animación y la variedad dentro de un mapa la
+dan la fase y el volteo. Elegirlos MUST NOT consumir el azar de la partida ni el del mapa ni ningún otro
+`RandomGenerator`, MUST NOT usar un flujo de azar nuevo, MUST NOT cambiar el snapshot ni el mapa y no depende del
+tick, del número de frames pintados ni de las partidas anteriores de la carga: la misma semilla y el mismo mapa dan
+siempre las mismas fases y volteos.
 
 #### Scenario: Variedad dentro de un mapa
-- **GIVEN** los datos de aspecto del repositorio (≥ 2 modelos de árbol) y el contenido por defecto
-- **WHEN** se calculan los modelos de las celdas `trunk` del mapa de cada semilla de 1 a 50
-- **THEN** en cada mapa se usan ≥ 2 modelos distintos
-
-#### Scenario: Otra semilla, otros modelos
-- **GIVEN** un mapa explícito de hierba con troncos en las 20 celdas de columnas 2–6 y filas 2–5
-- **WHEN** se calculan sus modelos con la semilla 42 y con la semilla 43
-- **THEN** las dos listas difieren en ≥ 1 celda
+- **GIVEN** los datos de aspecto del repositorio (`idle` del árbol de 6 frames) y el contenido por defecto
+- **WHEN** se calculan las fases de las celdas `trunk` del mapa de cada semilla de 1 a 50
+- **THEN** en cada mapa hay ≥ 2 fases distintas
 
 #### Scenario: La variedad no toca la simulación
 - **GIVEN** dos partidas con la semilla 42, el mismo contenido de juego, la misma secuencia de 1.200 inputs por tick
-  y la política de elección fija, una con los datos de aspecto del repositorio y otra con un único modelo de árbol
+  y la política de elección fija, una con los datos de aspecto del repositorio y otra con la `idle` del árbol de un
+  único frame y sin volteo
 - **WHEN** se ejecutan 1.200 ticks
 - **THEN** sus snapshots y sus mapas son iguales campo a campo en cada tick
 
+#### Scenario: Mismas fases con la misma semilla
+- **GIVEN** el contenido por defecto, la semilla 42 y su mapa generado
+- **WHEN** se calculan la fase y el volteo de sus celdas `trunk` dos veces, y una tercera tras pintar 600 frames y
+  pulsar R con la misma semilla
+- **THEN** las tres listas de fases y volteos son iguales celda a celda
+
+#### Scenario: Otra semilla, otras fases
+- **GIVEN** un mapa explícito de hierba con troncos en las 20 celdas de columnas 2–6 y filas 2–5
+- **WHEN** se calculan sus fases con la semilla 42 y con la semilla 43
+- **THEN** las dos listas difieren en ≥ 1 celda
+
 ### Requirement: Capas del mapa y de las entidades
 El sistema SHALL pintar, de abajo arriba: (1) el fondo; (2) el agua; (3) las orillas y la espuma; (4) los puentes;
-(5) el tronco de cada árbol, la fachada del castillo y la parte baja de cada estructura (o su rectángulo de reserva);
-(6) cadáveres, gemas, pulsos, jugador, enemigos y proyectiles, con su orden relativo de antes de este change; (7) las
-copas de los árboles, el tejado del castillo y la parte alta de cada estructura; (8) la **capa de peligros**: avisos,
-dinamitas y explosiones, en ese orden; (9) el HUD y los overlays, fijos en pantalla (ver `world-camera`). La **copa**
-es la parte del dibujo del árbol situada por encima del borde superior de su celda y el **tronco**, el resto. El
-**tejado** es la parte del dibujo del castillo situada por encima del borde superior de la fila inferior de la huella
-y la **fachada**, el resto. Las partes baja y alta de una estructura son las de "Pintado de las estructuras". Las
-partes se separan con un error ≤ 1 px. Así, una entidad al sur de un árbol, ante la puerta del castillo o ante una
-casa se ve delante, y una que pasa detrás de una copa, sobre el tejado o detrás de una casa queda tapada; un aviso,
-una dinamita o una explosión se ven siempre sobre el mapa, las estructuras y las entidades y bajo el HUD. El orden de
+(5) el tronco de cada árbol, la fachada del castillo, la parte baja de cada estructura (o su rectángulo de reserva) y
+la decoración baja y la base de cada decoración alta; (6) cadáveres, gemas, pulsos, jugador, enemigos y proyectiles,
+con su orden relativo de antes de este change; (7) las copas de los árboles, el tejado del castillo, la parte alta de
+cada estructura y la parte alta de cada decoración alta; (8) la **capa de peligros**: avisos, dinamitas y
+explosiones, en ese orden; (9) el HUD y los overlays, fijos en pantalla (ver `world-camera`). La **copa** es la parte
+del dibujo del árbol situada por encima del borde superior de su celda y el **tronco**, el resto. El **tejado** es la
+parte del dibujo del castillo situada por encima del borde superior de la fila inferior de la huella y la
+**fachada**, el resto. Las partes baja y alta de una estructura son las de "Pintado de las estructuras"; la base y la
+parte alta de una decoración alta, las de "Decoración del mapa generado". Las partes se separan con un error ≤ 1 px.
+Así, una entidad al sur de un árbol, ante la puerta del castillo, ante una casa o ante un espantapájaros se ve
+delante, y una que pasa detrás de una copa, sobre el tejado, detrás de una casa o detrás de la parte alta de una
+decoración alta queda tapada; una decoración baja nunca tapa a una entidad ni a un recogible; un aviso, una dinamita o
+una explosión se ven siempre sobre el mapa, las estructuras, la decoración y las entidades y bajo el HUD. El orden de
 capas MUST mantenerse tras cualquier redimensionado de la ventana.
 
 #### Scenario: Tronco y copa
@@ -952,6 +1003,15 @@ capas MUST mantenerse tras cualquier redimensionado de la ventana.
 - **THEN** la fachada sigue por debajo del jugador, el tejado por encima, el aviso por encima del tejado, y el HUD y
   el overlay de pausa por encima del aviso
 
+#### Scenario: Decoración baja y alta
+- **GIVEN** un plan de arte del mapa preparado para el test con una decoración baja D de `Deco/08` en la celda c1 y una
+  alta E de `Deco/18` en la celda c2 (y del borde superior de c2 = Y), y un snapshot con un enemigo y una gema sobre
+  el origen de D, y otro enemigo en (x del origen de E, Y − 10)
+- **WHEN** se pinta el snapshot
+- **THEN** D está por debajo de la gema y del enemigo que la pisan
+- **AND** la base de E (y ≥ Y) está por debajo del segundo enemigo y su parte alta (y < Y) por encima de él y por
+  debajo de los avisos y del HUD
+
 ### Requirement: Baldosas del mapa a la escala de la celda
 El sistema SHALL pintar las baldosas del fondo de hierba, del agua y de las orillas con un tamaño en pantalla igual a
 `cellSize`: ancho de baldosa × escala = alto de baldosa × escala = `cellSize`, con error ≤ 0,001. Con las baldosas de
@@ -974,20 +1034,22 @@ los datos del repositorio MUST medir exactamente su huella: `castle.cols` × `ce
 - **AND** no se muestra el menú ni empieza ninguna partida
 
 ### Requirement: Coste de render del mapa (a demanda)
-El sistema SHALL pintar el mapa de las semillas 42 y 123 con ≤ 1.000 objetos de escena del mapa cada una (sin contar
-fondo, entidades, HUD ni overlays), según informe la sonda de render. Con `CI_LIKE=1` (sin GPU, frenado 25, 1 worker,
-mediana de 3 pasadas de la medición de fps del proyecto `realtime`, ventana de 1.280 × 720), se informa, con el mapa
-real de las semillas 42 y 123, de los fps, de su porcentaje sobre la base de rectángulos de 0015 (21,6 y 21,9 fps),
-de su comparación con la línea base de 0017 (14,1 y 12,9 fps) y de los objetos del mapa y los dibujados (`drawn`) al
-empezar la partida. El objetivo orientativo SHOULD ser superar la línea base de 0017 y acercarse a ≥ 85 % de la base
-de rectángulos (≥ 18,4 y ≥ 18,6); no se exige volver a las cifras de 0016. Este requisito se mide a demanda y es
-informativo: no bloquea `verify`, `test:e2e` ni CI; si no se cumple, se anota en el verify-report.
+El sistema SHALL pintar el mapa de las semillas 42 y 123 con ≤ 950 objetos de escena del mapa cada una, decoración
+incluida (sin contar fondo, entidades, HUD ni overlays), según informe la sonda de render; el límite duro sigue
+siendo 1.000 objetos. Con `CI_LIKE=1` (sin GPU, frenado 25, 1 worker, mediana de 3 pasadas de la medición de fps del
+proyecto `realtime`, ventana de 1.280 × 720), se informa, con el mapa real de las semillas 42 y 123, de los fps, de su
+porcentaje sobre la base de rectángulos de 0015 (21,6 y 21,9 fps), de su comparación con la línea base de 0017 (14,1 y
+12,9 fps) y de la última medición anterior a este change si la hay, y de los objetos del mapa y los dibujados
+(`drawn`) al empezar la partida. El objetivo orientativo SHOULD ser superar la línea base de 0017 y acercarse a ≥ 85 %
+de la base de rectángulos (≥ 18,4 y ≥ 18,6), también con árboles y torres animados; no se exige volver a las cifras de
+0016. La medición de fps es a demanda e informativa: no bloquea `verify`, `test:e2e` ni CI; si no se cumple, se anota
+en el verify-report.
 
 #### Scenario: Objetos del mapa [realtime]
 - **GIVEN** la build de producción con `?e2e&manual&seed=42`, y en otra carga `seed=123`, con una ventana de
   1.280 × 720
 - **WHEN** arranca la partida, se pinta 1 frame y se lee la sonda de render
-- **THEN** el número de objetos de escena del mapa es ≤ 1.000 en ambas y se informa de él y de `drawn`, con
+- **THEN** el número de objetos de escena del mapa es ≤ 950 en ambas y se informa de él y de `drawn`, con
   0 < `drawn` < objetos del mapa
 - **AND** el mismo tope lo comprueba además un test sin navegador del plan de pintado con el contenido por defecto y
   las semillas 42 y 123, que entra en `verify`; este escenario `[realtime]` solo lo confirma con la sonda
@@ -998,13 +1060,21 @@ informativo: no bloquea `verify`, `test:e2e` ni CI; si no se cumple, se anota en
 - **THEN** se informa del fps de cada semilla, de su porcentaje sobre 21,6 y 21,9 fps y de su diferencia con 14,1 y
   12,9 fps respectivamente
 
+#### Scenario: Tope de objetos sin navegador
+- **GIVEN** el contenido y los datos de aspecto del repositorio y las semillas 42 y 123
+- **WHEN** un test de `verify` calcula el plan del arte del mapa de cada una
+- **THEN** tiene ≤ 950 objetos, decoración incluida, y el número exacto de objetos de cada semilla se anota en el
+  verify-report
+
 ### Requirement: Recorte del arte del mapa por cámara
 Mientras existe una partida, el sistema SHALL **dibujar** en cada frame solo los objetos de escena del mapa (los que
 cuenta la sonda como objetos del mapa, de las dos capas: agua, orillas, espuma, troncos, copas, puentes, fachada y
-tejado del castillo, y los rectángulos de reserva de cualquiera de ellos) cuya **caja** intersecta el **rectángulo de
+tejado del castillo, partes de estructuras, vetas, solares y edificios, decoración baja y base y parte alta de la
+decoración alta, y los rectángulos de reserva de cualquiera de ellos) cuya **caja** intersecta el **rectángulo de
 recorte** de ese frame, y MUST NOT dibujar ninguno más. Definiciones:
 - **caja** de un objeto: el rectángulo de mundo que ocupa su dibujo (posición, origen, escala y recorte incluidos),
-  con error ≤ 1 px; no cambia mientras dura la partida;
+  con error ≤ 1 px; no cambia mientras dura la partida. En un objeto animado (tronco, copa y partes de una torre
+  goblin intacta) la caja cubre su dibujo con cualquiera de los frames de su animación;
 - **rectángulo de recorte**: el rectángulo visible de la cámara de **ese mismo frame** (ver "Cámara que sigue al
   jugador dentro del mundo" en `world-camera`, ya recortado al mundo y con el tamaño de ventana de ese frame) ampliado
   M px por cada lado. El margen M es ≥ 0, es el mismo para todos los objetos y no depende del snapshot; puede depender
@@ -1012,8 +1082,9 @@ recorte** de ese frame, y MUST NOT dibujar ninguno más. Definiciones:
 - **intersecta**: la caja y el rectángulo de recorte comparten al menos un punto, bordes incluidos (una caja que solo
   toca el borde se dibuja).
 
-Recortar MUST NOT cambiar la simulación, el plan del mapa (qué elemento, modelo, posición, capa y orden corresponde a
-cada celda) ni los recuentos totales de la sonda (ver "Sonda de render para E2E").
+Recortar MUST NOT cambiar la simulación, el plan del mapa (qué elemento, volteo, fase, posición, capa y orden
+corresponde a cada celda, y qué decoración tiene) ni los recuentos totales de la sonda (ver "Sonda de render para
+E2E").
 
 #### Scenario: Objeto dentro, fuera y en parte
 - **GIVEN** el mundo por defecto, una ventana de 1.280 × 720, el jugador en (1.920, 1.080) (rectángulo visible
@@ -1062,8 +1133,8 @@ cada celda) ni los recuentos totales de la sonda (ver "Sonda de render para E2E"
   y 3.840 × 2.160
 - **WHEN** se aplica la regla con el rectángulo visible de cada posición del jugador de una rejilla de paso 60 px que
   cubre el mundo, (0, 0)–(3.840, 2.160) con ambos extremos incluidos
-- **THEN** para cada semilla y ventana, la unión de los objetos dibujados es el plan entero (ningún objeto queda sin
-  dibujarse en todas las posiciones) y cada caja intersecta el mundo
+- **THEN** para cada semilla y ventana, la unión de los objetos dibujados es el plan entero, decoración incluida
+  (ningún objeto queda sin dibujarse en todas las posiciones) y cada caja intersecta el mundo
 
 #### Scenario: Vista que cubre el mundo entero
 - **GIVEN** un mundo de 2.560 × 1.440 con un mapa de ≥ 1 objeto, una ventana de 2.560 × 1.440 y el jugador en
@@ -1071,14 +1142,23 @@ cada celda) ni los recuentos totales de la sonda (ver "Sonda de render para E2E"
 - **WHEN** se aplica la regla de recorte
 - **THEN** se dibujan todos los objetos del plan
 
+#### Scenario: Caja de los objetos animados
+- **GIVEN** el contenido por defecto, la semilla 42 y los datos de aspecto del repositorio
+- **WHEN** se compara la caja del plan de cada tronco, copa y parte de torre goblin intacta con el rectángulo que
+  ocupa su dibujo con cada frame de su `idle` (6 del árbol, 4 de la torre)
+- **THEN** cada uno de esos rectángulos está dentro de la caja (error ≤ 1 px), y la caja es la misma con el reloj de
+  render en 0 y en 10.000 ms
+
 ### Requirement: El recorte no cambia lo que se ve
 El sistema SHALL mostrar dentro del rectángulo visible de cada frame exactamente el mismo arte del mapa que sin
 recorte: todo objeto cuya caja intersecta el rectángulo visible (sin margen) MUST dibujarse en ese mismo frame, con la
-capa, el orden dentro de la capa, la posición, el recorte, el modelo y el aspecto (arte o reserva) que le da el plan
-(ver "Pintado del mapa" y "Capas del mapa y de las entidades"). En particular MUST NOT verse en ningún frame un hueco
-en el borde de la vista mientras la cámara se mueve, ni un objeto que aparece un frame tarde. Una espuma que vuelve a
-dibujarse MUST mostrar, desde su primer frame dibujado, el mismo frame de la animación `idle` que las espumas que
-siguieron dibujadas (todas las espumas van sincronizadas).
+capa, el orden dentro de la capa, la posición, el recorte, el volteo, el frame de hoja y el aspecto (arte o reserva)
+que le dan el plan y "Animación del arte del mapa" (ver también "Pintado del mapa" y "Capas del mapa y de las
+entidades"). En particular MUST NOT verse en ningún frame un hueco en el borde de la vista mientras la cámara se mueve,
+ni un objeto que aparece un frame tarde. Una espuma que vuelve a dibujarse MUST mostrar, desde su primer frame
+dibujado, el mismo frame de la animación `idle` que las espumas que siguieron dibujadas (todas las espumas van
+sincronizadas). Un árbol o una torre goblin intacta que vuelve a dibujarse MUST mostrar, desde su primer frame
+dibujado, el frame que le dan su fase y el reloj de render de ese frame, no el que tenía al dejar de dibujarse.
 
 #### Scenario: Movimiento continuo sin huecos
 - **GIVEN** el contenido por defecto, la semilla 42, una ventana de 1.280 × 720 y una secuencia de 600 snapshots en
@@ -1098,8 +1178,16 @@ siguieron dibujadas (todas las espumas van sincronizadas).
 - **WHEN** se pinta el frame f + 40
 - **THEN** S muestra el mismo frame de `idle` que las espumas que siguieron dibujadas en f + 40
 
-#### Scenario: Pausa, oferta y partida terminada
-- **GIVEN** una partida con el mapa real en pausa en el tick 500, después con una oferta abierta y después terminada
+#### Scenario: Árbol y torre al reaparecer
+- **GIVEN** un árbol de fase φ y una torre goblin intacta de fase ψ dibujados en el frame f, que dejan de dibujarse en
+  el f + 1 porque la cámara se aleja y vuelven a dibujarse en el frame f + 37 (frames de 16,667 ms)
+- **WHEN** se pinta el frame f + 37
+- **THEN** el tronco y la copa del árbol muestran el frame de hoja que dan φ y el reloj de render de f + 37, y las
+  partes de la torre el que dan ψ y ese mismo reloj, con un margen de ±1 frame de render en cada cambio
+
+#### Scenario: Pausa, oferta, tienda, obra y partida terminada
+- **GIVEN** una partida con el mapa real en pausa en el tick 500, después con una oferta abierta, después en la
+  tienda, después en la obra y después terminada
 - **WHEN** se pintan 300 frames en cada estado
 - **THEN** en cada estado el conjunto de objetos dibujados es el mismo en los 300 frames (la cámara no se mueve)
 
@@ -1108,8 +1196,8 @@ El sistema SHALL recalcular qué objetos del mapa se dibujan en el **primer** fr
 heredar nada del frame anterior: al empezar la primera partida, tras R, tras `Volver al menú` + `Jugar` y tras cada
 redimensionado de la ventana. En ese primer frame el conjunto dibujado MUST ser el que da "Recorte del arte del mapa
 por cámara" con el plan del mapa de la partida en curso y el rectángulo visible de ese frame, y MUST NOT dibujarse
-ningún objeto de un mapa anterior. En modo menú MUST NOT dibujarse ningún objeto del mapa. Con el mapa vacío no se
-dibuja ninguno.
+ningún objeto de un mapa anterior, decoración incluida. En modo menú MUST NOT dibujarse ningún objeto del mapa. Con el
+mapa vacío no se dibuja ninguno.
 
 #### Scenario: R tras acabar en una esquina
 - **GIVEN** una partida con el mapa real de la semilla 42 terminada con el jugador en (3.824, 2.144) y una ventana de
@@ -1140,12 +1228,15 @@ dibuja ninguno.
 
 #### Scenario: Recorte con aspecto de reserva
 - **GIVEN** el contenido por defecto, la semilla 42, una ventana de 1.280 × 720 y, en un caso cada vez, sin cargar la
-  hoja del agua, la del árbol, la del puente o la del castillo, y en otro caso sin cargar ninguna de las cinco hojas
-  del mapa
+  hoja del agua, la del árbol, la del puente, la del castillo o la `Deco/18.png`, y en otro caso sin cargar ninguna de
+  las hojas del mapa (`Water.png`, `Foam.png`, `Tree.png`, `Bridge_All.png`, `Castle_Blue.png` ni las 11 de
+  decoración)
 - **WHEN** se pinta el primer frame y, después, el de una posición del jugador a ≥ 1.280 px en x de la inicial
 - **THEN** los rectángulos de reserva se recortan con la misma regla que el arte: en cada frame se dibujan
-  exactamente los objetos del plan (arte y reserva) que da la regla con el rectángulo visible de ese frame
-- **AND** los recuentos de reserva de la sonda son los del plan entero, iguales a los de antes de este change
+  exactamente los objetos del plan (arte y reserva) que da la regla con el rectángulo visible de ese frame, y ninguna
+  decoración sin pintar se dibuja
+- **AND** los recuentos de reserva de la sonda son los del plan entero, iguales a los de antes de este change, y las
+  decoraciones sin pintar son las de las hojas no cargadas
 
 ### Requirement: Pintado de los peligros
 El sistema SHALL pintar, en cada frame de una partida, exactamente:
@@ -1196,27 +1287,30 @@ explosión no avanzan. Pintar los peligros MUST NOT cambiar la simulación.
 El sistema SHALL pintar, mientras existe una partida, cada estructura de su snapshot (ver `goblin-structures`) fija en
 el mundo, con su origen en el punto medio del borde inferior de su huella (error ≤ 1 px):
 - una estructura no destruida, con el aspecto intacto de su tipo (`Goblin_House` en la casa, `Wood_Tower_<color>` en
-  la torre);
+  la torre); la casa intacta es estática y la torre intacta reproduce su `idle` con su fase (ver "Animación del arte
+  del mapa");
 - una estructura destruida, con el aspecto de ruina de su tipo (`Goblin_House_Destroyed`, `Wood_Tower_Destroyed`),
-  desde el primer frame que pinta un snapshot en el que figura destruida y hasta el final de la partida, sin dejar
-  visible su aspecto intacto.
+  estático, desde el primer frame que pinta un snapshot en el que figura destruida y hasta el final de la partida, sin
+  dejar visible su aspecto intacto.
 
 La **parte baja** del dibujo es la situada por debajo del borde superior de la fila inferior de la huella y la **parte
-alta**, el resto; se separan con un error ≤ 1 px y van en las capas de "Capas del mapa y de las entidades".
+alta**, el resto; se separan con un error ≤ 1 px, con cualquier frame de la animación, y van en las capas de "Capas
+del mapa y de las entidades".
 
-**Reserva**: si la hoja de un aspecto de estructura falla al cargar o no contiene su frame, las estructuras con ese
-aspecto, y solo ellas, se pintan como un rectángulo relleno que cubre exactamente su huella (error ≤ 1 px), sin parte
-alta, con el color de su tipo si no está destruida o con el color de ruina si lo está, sin errores no capturados. Los
-datos de aspecto tienen un color `#RRGGBB` para `goblin-house`, otro para `goblin-tower` y otro para la ruina, distintos
-dos a dos y distintos de los colores del mapa (`trunk`, `water`, `bridge`, `castle`); un color ausente, con otro
-formato o repetido MUST hacer fallar el arranque con un error que nombre el campo.
+**Reserva**: si la hoja de un aspecto de estructura falla al cargar o no contiene su frame (en la torre intacta,
+alguno de los frames de su `idle`), las estructuras con ese aspecto, y solo ellas, se pintan como un rectángulo
+relleno que cubre exactamente su huella (error ≤ 1 px), sin parte alta y sin animación, con el color de su tipo si no
+está destruida o con el color de ruina si lo está, sin errores no capturados. Los datos de aspecto tienen un color
+`#RRGGBB` para `goblin-house`, otro para `goblin-tower` y otro para la ruina, distintos dos a dos y distintos de los
+colores del mapa (`trunk`, `water`, `bridge`, `castle`); un color ausente, con otro formato o repetido MUST hacer
+fallar el arranque con un error que nombre el campo.
 
 Los objetos de escena de las estructuras cuentan como objetos del mapa en la sonda (ver "Sonda de render para E2E") y
 se recortan con la regla de "Recorte del arte del mapa por cámara". Con el contenido por defecto y las semillas 42 y
-123, el total de objetos del mapa, estructuras incluidas, MUST ser ≤ 1.000 (comprobado por un test sin navegador del
-plan de pintado). Con el mapa vacío no se pinta ninguna estructura; en modo menú no se ve ninguna; al empezar una
-partida nueva no queda visible ninguna estructura de la anterior. Pintar las estructuras MUST NOT cambiar la
-simulación.
+123, el total de objetos del mapa, estructuras y decoración incluidas, MUST ser ≤ 950 (comprobado por un test sin
+navegador del plan de pintado; límite duro 1.000). Con el mapa vacío no se pinta ninguna estructura; en modo menú no
+se ve ninguna; al empezar una partida nueva no queda visible ninguna estructura de la anterior. Pintar las
+estructuras MUST NOT cambiar la simulación.
 
 #### Scenario: Casa en su sitio
 - **GIVEN** la casa de prueba sin destruir y los datos de aspecto del repositorio con todas las hojas cargadas
@@ -1251,7 +1345,7 @@ simulación.
 #### Scenario: Presupuesto de objetos con estructuras
 - **GIVEN** el contenido por defecto y las semillas 42 y 123
 - **WHEN** se calcula el plan de pintado del mapa sin navegador
-- **THEN** en ambas el número de objetos del mapa, estructuras incluidas, es ≤ 1.000
+- **THEN** en ambas el número de objetos del mapa, estructuras y decoración incluidas, es ≤ 950
 - **AND** cada estructura colocada por el núcleo tiene en el plan sus objetos, con el origen en el punto medio del
   borde inferior de su huella
 
@@ -1267,6 +1361,15 @@ simulación.
   sin cargar
 - **WHEN** se ejecutan 1.200 ticks
 - **THEN** sus snapshots son iguales campo a campo en cada tick
+
+#### Scenario: Torre intacta animada
+- **GIVEN** una torre explícita sin destruir con huella en columnas 40–41 y filas 5–6, todas las hojas cargadas y su
+  fase ψ
+- **WHEN** se pintan 60 frames de 16,667 ms
+- **THEN** su dibujo tiene su origen en (2.460, 420) (error ≤ 1 px), usa la hoja `Wood_Tower_<color>`, muestra en cada
+  frame el frame de hoja que dan ψ y el reloj de render, y pasa por los 4 frames de su `idle`
+- **AND** en cada frame su parte baja es la del dibujo con y ≥ 360 y su parte alta la de y < 360, con el mismo frame
+  de hoja
 
 ### Requirement: Aspectos de los recogibles y de las vetas
 El sistema SHALL definir en los datos de aspecto, validados con zod en el arranque con las reglas de "Datos de aspecto
@@ -1371,17 +1474,17 @@ capturados.
 ### Requirement: Pintado de las vetas
 El sistema SHALL pintar, mientras existe una partida, cada veta del snapshot fija en el mundo, con el origen de su
 aspecto en la posición de la veta (error ≤ 1 px), en la capa (5) de "Capas del mapa y de las entidades" (bajo las
-entidades):
+entidades), estática:
 - una veta activa, con el aspecto de veta activa (`GoldMine_Active`);
 - una veta agotada, con el aspecto de veta agotada (`GoldMine_Inactive`), desde el primer frame que pinta un snapshot
   en el que figura agotada y hasta el final de la partida, sin dejar visible su aspecto activo.
 
 Los objetos de escena de las vetas cuentan como objetos del mapa en la sonda (ver "Sonda de render para E2E") y se
 recortan con la regla de "Recorte del arte del mapa por cámara" (también al cambiar de partida, de ventana y de modo).
-Con el contenido por defecto y las semillas 42 y 123, el total de objetos del mapa, estructuras y vetas incluidas, MUST
-ser ≤ 1.000 (comprobado por un test sin navegador del plan de pintado). Con el mapa vacío no se pinta ninguna veta; en
-modo menú no se ve ninguna; al empezar una partida nueva no queda visible ninguna veta de la anterior. Pintar las vetas
-MUST NOT cambiar la simulación.
+Con el contenido por defecto y las semillas 42 y 123, el total de objetos del mapa, estructuras, vetas y decoración
+incluidas, MUST ser ≤ 950 (comprobado por un test sin navegador del plan de pintado; límite duro 1.000). Con el mapa
+vacío no se pinta ninguna veta; en modo menú no se ve ninguna; al empezar una partida nueva no queda visible ninguna
+veta de la anterior. Pintar las vetas MUST NOT cambiar la simulación.
 
 #### Scenario: Veta activa en su sitio
 - **GIVEN** el mapa vacío con una veta declarada activa en (1.000, 1.000) y todas las hojas cargadas
@@ -1400,13 +1503,13 @@ MUST NOT cambiar la simulación.
 - **GIVEN** el contenido por defecto, la semilla 42, una ventana de 1.280 × 720 y el jugador en (16, 16)
 - **WHEN** se pinta un frame
 - **THEN** cada veta cuya caja intersecta el rectángulo de recorte está dibujada y ninguna otra, y `drawn` es igual al
-  número de objetos del plan, estructuras y vetas incluidas, que da la regla
+  número de objetos del plan, estructuras, vetas, solares y decoración incluidos, que da la regla
 
 #### Scenario: Tope de objetos con las vetas
 - **GIVEN** el contenido por defecto y las semillas 42 y 123
 - **WHEN** se calcula el plan del mapa sin navegador
-- **THEN** los objetos del mapa son los de antes de este change (695 y 778 respectivamente) más los de las vetas de cada
-  semilla, y el total es ≤ 1.000 en ambas
+- **THEN** cada veta de cada semilla tiene en el plan sus objetos, ninguna celda de veta tiene decoración, y el total
+  de objetos del mapa es ≤ 950 en ambas
 
 ### Requirement: Pintado de las ovejas
 El sistema SHALL pintar en cada frame exactamente un sprite visible por cada oveja del último snapshot (ver `sheep`),
@@ -1430,8 +1533,8 @@ ausente, con otro formato o repetido MUST hacer fallar el arranque con un error 
 pintan con la forma rellena de "Aspecto de reserva ante un fallo de carga" (diámetro 2 × su radio) con el color de la
 oveja, sin errores no capturados. Con el mapa vacío sin ovejas declaradas no se pinta ninguna; en modo menú no se ve
 ninguna; al empezar una partida nueva no queda visible ninguna oveja de la anterior. Las ovejas no forman parte del plan
-del mapa ni de sus objetos (`drawn` y los objetos del mapa no cambian por ellas). Pintar las ovejas MUST NOT cambiar la
-simulación.
+del mapa ni de sus objetos (`drawn` y los objetos del mapa no cambian por ellas), y la decoración no cambia porque se
+muevan durante la partida. Pintar las ovejas MUST NOT cambiar la simulación.
 
 #### Scenario: Oveja en pasto y en huida
 - **GIVEN** la oveja de prueba en (1.000, 1.000), los datos de aspecto del repositorio con todas las hojas cargadas y
@@ -1476,8 +1579,12 @@ simulación.
 
 #### Scenario: Ovejas fuera del plan del mapa
 - **GIVEN** el contenido por defecto y las semillas 42 y 123
-- **WHEN** se calcula el plan del mapa sin navegador
-- **THEN** los objetos del mapa son los mismos que antes del change (701 y 784) y ninguno es de una oveja
+- **WHEN** se calcula el plan del mapa sin navegador con el tope de decoración 0, y en otro caso con los datos de
+  aspecto del repositorio al crear la partida y tras 1.200 ticks en los que las ovejas se mueven
+- **THEN** con tope de decoración 0 los objetos del mapa son los de antes de este change (737 y 820 respectivamente)
+  y ningún objeto es de una oveja
+- **AND** con los datos del repositorio la decoración del plan es la misma, celda a celda, al crear la partida y tras
+  los 1.200 ticks
 
 ### Requirement: Pintado de los solares y de los edificios
 El sistema SHALL pintar, mientras existe una partida, cada solar de su snapshot (ver `build-sites`) fijo en el mundo,
@@ -1545,6 +1652,224 @@ render SHALL contarlas aparte (`sprites.towerArrows`, visibles y con reserva), s
 - **THEN** en cada frame `sprites.towerArrows` es igual al número de flechas de torre del snapshot y el recuento de
   proyectiles al de proyectiles del jugador
 
+### Requirement: Decoración del mapa generado
+El sistema SHALL añadir al plan del arte de cada mapa generado un conjunto de decoraciones elegido por una función
+determinista de la semilla de la partida y de cada celda, sin colisión ni efecto sobre la simulación:
+- cada decoración tiene su celda de anclaje en una celda válida para decoración, y el punto de origen de su dibujo
+  dentro del rectángulo de mundo de esa celda (error ≤ 1 px);
+- la **huella de la base** de una decoración es su celda de anclaje (1 celda) salvo en el espantapájaros
+  (`Deco/18`), cuya base ocupa 3 × 1 celdas: la de anclaje y sus vecinas oeste y este; toda celda de la huella de la
+  base es una celda válida para decoración;
+- las huellas de las bases de dos decoraciones distintas no comparten ninguna celda;
+- su hoja es una de las hojas de decoración de los datos de aspecto (con los del repositorio, las 11 de
+  `asset-provenance`: `Deco/01`–`03`, `07`–`11` y `16`–`18`), nunca una hoja de roca de la piedra recogible;
+- el número de objetos de escena de la decoración de un mapa (baja 1, alta 2) MUST ser ≤ el **tope de decoración**
+  de los datos de aspecto (120 con los del repositorio); una pieza alta que no cabe en lo que queda del tope no se
+  coloca;
+- la **densidad** de los datos de aspecto fija el número esperado de celdas válidas por decoración (25 con los del
+  repositorio); el número exacto por mapa lo da la función de elección, siempre dentro del tope.
+
+Elegir la decoración MUST NOT consumir ningún valor de ningún `RandomGenerator` (ni de la partida ni de los flujos del
+mapa, estructuras, recursos, ovejas, piedra o solares) ni usar un flujo de azar nuevo, MUST NOT cambiar el snapshot,
+el mapa, las celdas, la caminabilidad ni ninguna firma dorada, y MUST NOT depender del tick, del número de frames
+pintados, de la ventana, de la cámara ni de las partidas anteriores de la carga. Ni el jugador, ni los enemigos, ni
+las ovejas, ni los proyectiles, ni el campo de flujo la tienen en cuenta. Un mapa explícito (`open`/`cells`) y el mapa
+vacío MUST NOT tener decoración.
+
+Los datos de aspecto tienen, validados con zod en el arranque con las reglas de "Datos de aspecto validados": la
+lista de aspectos de decoración (≥ 1; cada uno con una sola hoja, tamaño de frame, índice de su frame, escala, origen
+y `tall`, si es alta; sin pesos, sin volteo y sin `id`: la hoja identifica la decoración), el tope de decoración
+(entero ≥ 0) y `density` (número > 0). Una lista vacía, un tope negativo o no entero,
+una densidad ≤ 0, dos aspectos de decoración con la misma hoja o un aspecto de decoración con la hoja de una roca de
+la piedra MUST hacer fallar el arranque con un error que nombre el campo o la hoja.
+
+#### Scenario: Decoración de los mapas generados
+- **GIVEN** el contenido y los datos de aspecto del repositorio
+- **WHEN** se calcula el plan del arte del mapa de cada semilla de 1 a 50
+- **THEN** en cada mapa la decoración usa entre 1 y 120 objetos de escena, contando 2 por cada pieza alta
+- **AND** cada decoración usa una de las 11 hojas admitidas, tiene su celda de anclaje en una celda válida para
+  decoración y su origen dentro de esa celda (error ≤ 1 px), y ninguna celda de anclaje se repite
+
+#### Scenario: Zonas excluidas
+- **GIVEN** el contenido por defecto y los mapas de las semillas 1 a 50 con sus estructuras, recursos y solares
+- **WHEN** se comprueba cada decoración de su plan
+- **THEN** ninguna celda de la huella de su base (1 celda, o 3 × 1 en `Deco/18`) es de la zona de inicio, de la
+  huella del castillo ampliada 1 celda, de la huella de un solar o de una estructura goblin, de orilla, de recurso ni
+  de terreno distinto de `grass`
+- **AND** las huellas de las bases de dos decoraciones del mismo mapa no comparten ninguna celda
+
+#### Scenario: Junto a los troncos
+- **GIVEN** el contenido por defecto y los mapas de las semillas 1 a 50
+- **WHEN** se comprueban las celdas de anclaje de su decoración
+- **THEN** en el conjunto de los 50 mapas hay ≥ 1 decoración cuya celda de anclaje tiene una vecina 4-conexa `trunk`
+
+#### Scenario: Misma semilla, misma decoración
+- **GIVEN** el contenido por defecto y la semilla 42
+- **WHEN** se calcula la decoración de su plan dos veces, y una tercera tras pintar 600 frames y pulsar R con la
+  misma semilla
+- **THEN** las tres listas son iguales decoración a decoración (celda de anclaje, hoja y posición del origen)
+
+#### Scenario: Otra semilla, otra decoración
+- **GIVEN** el contenido por defecto
+- **WHEN** se calcula la decoración de las semillas 42 y 43
+- **THEN** las dos listas difieren en ≥ 1 decoración (celda, hoja o posición)
+
+#### Scenario: Sin decoración en los mapas explícitos ni en el vacío
+- **GIVEN** el mapa vacío, y en otros casos un mapa `open` y un mapa `cells` de hierba de 64 × 36 sin troncos
+- **WHEN** se calcula el plan del arte del mapa con la semilla 42
+- **THEN** en los tres casos el plan tiene 0 decoraciones y 0 objetos de decoración
+
+#### Scenario: Tope de decoración
+- **GIVEN** el contenido por defecto, la semilla 42 y los datos de aspecto del repositorio con el tope de decoración
+  igual, en un caso cada vez, a 0, a 1 y a 3
+- **WHEN** se calcula el plan del arte del mapa
+- **THEN** con tope 0 no hay decoración y el plan es igual objeto a objeto al de los datos con tope 120 sin sus
+  objetos de decoración
+- **AND** con tope 1 hay como máximo 1 decoración y ninguna es alta; con tope 3, la decoración usa ≤ 3 objetos
+
+#### Scenario: Elegir la decoración no consume azar
+- **GIVEN** dos partidas con la semilla 42, el mismo contenido de juego, la misma secuencia de 1.200 inputs por tick y
+  la política de elección fija, una con el tope de decoración 120 y otra con tope 0
+- **WHEN** se crean y se ejecutan 1.200 ticks
+- **THEN** al crearse el estado de cada `RandomGenerator` de la partida es el mismo en las dos, y sus snapshots y
+  mapas son iguales campo a campo en cada tick
+
+#### Scenario: Datos de la decoración inválidos
+- **GIVEN** los datos de aspecto del repositorio con, en un caso cada vez: la lista de aspectos de decoración `[]`; el
+  tope −1 o 2,5; la densidad 0; dos aspectos de decoración con la hoja `Deco/07.png`; un aspecto de decoración con la
+  hoja `Deco/05.png` (roca `medium`); o un aspecto de decoración con la hoja `Deco/12.png` (no figura en la nota de
+  procedencia)
+- **WHEN** se carga el contenido
+- **THEN** la carga falla con un error que nombra la lista de decoración, el tope, la densidad, `Deco/07.png`,
+  `Deco/05.png` y `Deco/12.png` respectivamente
+- **AND** no se muestra el menú ni empieza ninguna partida
+
+### Requirement: Pintado de la decoración
+El sistema SHALL pintar, mientras existe una partida con mapa generado, cada decoración de su plan fija en el mundo,
+con el frame de su aspecto (estático: no cambia en toda la partida) y su origen en la posición del plan
+(error ≤ 1 px): una decoración baja, entera en la capa de la decoración baja de "Capas del mapa y de las entidades";
+una alta, con su base en esa capa y su parte alta en la de las partes altas.
+
+**Reserva**: si la hoja de un aspecto de decoración falla al cargar o no contiene su frame, las decoraciones con ese
+aspecto, y solo ellas, MUST NOT pintarse: sin rectángulo ni forma de color, sin objetos de escena (no cuentan como
+objetos del mapa ni en `drawn`) y sin errores no capturados; el resto del arte del mapa, la decoración de otras hojas
+incluida, se pinta con su arte. Una decoración sin pintar no cuenta como sprite con aspecto de reserva.
+
+En modo menú no se ve ninguna decoración; al empezar una partida nueva no queda visible ninguna de la anterior. Pintar
+la decoración MUST NOT cambiar la simulación.
+
+#### Scenario: Decoración en su sitio
+- **GIVEN** el contenido por defecto, la semilla 42, los datos de aspecto del repositorio y todas las hojas cargadas
+- **WHEN** se pinta el snapshot del tick 0
+- **THEN** cada decoración del plan se pinta con la hoja y el frame de su aspecto, con su origen en la posición del
+  plan (error ≤ 1 px)
+- **AND** cada decoración baja usa 1 objeto de escena en la capa baja y cada alta 2, su base en la capa baja y su
+  parte alta en la alta, separadas en el borde superior de su celda de anclaje (error ≤ 1 px)
+
+#### Scenario: Hoja de una decoración que no carga
+- **GIVEN** el contenido por defecto, la semilla 42 y, en un caso, la hoja `Deco/18.png` sin cargar y, en otro, el
+  aspecto de `Deco/08.png` con un índice de frame que la hoja no contiene
+- **WHEN** se pinta el snapshot del tick 0
+- **THEN** en cada caso las decoraciones de ese aspecto no tienen ningún objeto de escena ni ningún rectángulo de
+  color, las demás decoraciones y el resto del mapa se pintan con su arte, y no hay errores no capturados
+- **AND** los objetos del mapa son los del plan con todas las hojas menos los de las decoraciones no pintadas
+
+#### Scenario: Partida nueva y menú
+- **GIVEN** una partida con el mapa real de la semilla 42 con su decoración pintada
+- **WHEN** se pulsa R y se pinta el primer frame de una partida con la semilla 43, y en otro caso se pulsa
+  `Volver al menú` y se pinta 1 frame
+- **THEN** con la semilla 43 se pintan exactamente las decoraciones de su plan, ninguna de la anterior, y en el menú
+  ninguna
+
+#### Scenario: Pintar la decoración no cambia la simulación
+- **GIVEN** dos partidas con la semilla 42, el mismo contenido de juego, la misma secuencia de 1.200 inputs por tick y
+  la política de elección fija, una con todas las hojas cargadas y otra con las 11 hojas de decoración sin cargar
+- **WHEN** se ejecutan 1.200 ticks
+- **THEN** sus snapshots son iguales campo a campo en cada tick
+
+### Requirement: Animación del arte del mapa
+El sistema SHALL animar en el arte del mapa solo la espuma (como antes), los árboles y las torres goblin intactas, con
+el reloj de render R (en ms):
+- **árbol**: cada árbol pintado con arte reproduce en bucle la animación `idle` de su aspecto (con los datos del
+  repositorio, los frames `[0, 1, 2, 3, 4, 5]` de `Tree.png` a 6 fps; el tocón, frame 8, nunca se muestra), con su
+  **fase** φ, un entero en [0, n − 1] (n = número de frames de `idle`): en un frame de render de reloj R muestra el
+  frame de posición (⌊R × fps / 1.000⌋ + φ) mod n de `idle`. El tronco y la copa del mismo árbol muestran siempre el
+  mismo frame de hoja en el mismo frame de render;
+- **torre goblin intacta**: cada torre no destruida pintada con arte reproduce en bucle la animación `idle` de su
+  aspecto intacto (con los datos del repositorio, los 4 frames `[0, 1, 2, 3]` de `Wood_Tower_<color>.png` a 5 fps)
+  con su fase ψ en [0, n − 1], con la misma regla; sus partes baja y alta muestran el mismo frame de hoja;
+- la fase de cada árbol es una función determinista de la semilla de la partida y de su celda; la de cada torre, de
+  la semilla y de la estructura. Calcular las fases MUST NOT consumir ningún `RandomGenerator` ni usar un flujo de
+  azar nuevo, y no depende del tick, del número de frames pintados, de la ventana ni de partidas anteriores;
+- todo lo demás del arte del mapa es **estático** (muestra el mismo frame de hoja en todos los frames de la partida):
+  la torre goblin en ruina, el castillo, la casa goblin intacta y en ruina, la veta activa y la agotada, el solar en
+  obra (`House_Construction`), la casa y la torre de caballeros construidas (`House_Blue`, `Tower_Blue`), los
+  puentes, el agua, las orillas y toda la decoración. Los rectángulos de reserva tampoco cambian.
+
+Espuma, árboles y torres usan el mismo reloj de render: con la partida en pausa, con una oferta de mejora abierta, en
+la tienda, en la obra y con la partida terminada el reloj se congela y todos muestran el mismo frame de hoja en cada
+frame pintado de ese estado; al volver a la partida en curso sin pausa siguen desde ese frame, sin saltos. Con una
+`idle` de 1 frame el elemento queda estático. Animar el arte del mapa MUST
+NOT cambiar la simulación, el plan (elementos, cajas, capas, orden), los recuentos de la sonda ni `drawn`.
+
+#### Scenario: Frame de un árbol según su fase
+- **GIVEN** un árbol de fase 2 con `idle` `[0, 1, 2, 3, 4, 5]` a 6 fps
+- **WHEN** se pinta con el reloj de render R = 0, R = 700 y R = 1.000
+- **THEN** su tronco y su copa muestran el frame de hoja 2, 0 y 2 respectivamente (posiciones 2, (4 + 2) mod 6 y
+  (6 + 2) mod 6), con un margen de ±1 frame de render en cada cambio
+- **AND** en ningún frame de render muestra el frame de hoja 8
+
+#### Scenario: Frame de una torre según su fase
+- **GIVEN** una torre goblin intacta de fase 1 con `idle` `[0, 1, 2, 3]` a 5 fps
+- **WHEN** se pinta con el reloj de render R = 0, R = 650 y R = 800
+- **THEN** sus partes baja y alta muestran el frame de hoja 1, 0 y 1 respectivamente, con un margen de ±1 frame de
+  render en cada cambio
+
+#### Scenario: Fases deterministas
+- **GIVEN** el contenido por defecto y la semilla 42
+- **WHEN** se calculan las fases de sus árboles y de sus torres goblin dos veces, y una tercera tras pintar 600 frames
+  y pulsar R con la misma semilla
+- **THEN** las tres listas de fases son iguales celda a celda y estructura a estructura, y cada fase está en [0, 5]
+  (árbol) o en [0, 3] (torre)
+
+#### Scenario: Árboles y torres congelados en pausa, oferta, tienda, obra y fin
+- **GIVEN** una partida con el mapa real de la semilla 42 y la cámara sobre ≥ 1 árbol, ≥ 1 torre goblin intacta y
+  ≥ 1 espuma, con el reloj de render en R0 al entrar en pausa en el tick 500; después con una oferta de mejora
+  abierta; después en la tienda; después en la obra; y después terminada
+- **WHEN** en cada estado se pintan 60 frames de 16,667 ms
+- **THEN** en cada estado el reloj de render no cambia, y cada árbol, cada torre intacta y cada espuma dibujados
+  muestran en los 60 frames el mismo frame de hoja, el que dan su fase y el reloj al entrar en ese estado
+- **AND** al reanudar la pausa y pintar 1 frame de 16,667 ms el reloj vale R0 + 16,667 (error ≤ 0,001) y cada árbol
+  y torre muestra el frame que dan su fase y ese reloj
+
+#### Scenario: Elementos estáticos
+- **GIVEN** una partida con el mapa real de la semilla 42 en la que, por escenario, una casa goblin y una torre goblin
+  quedan en ruina, una veta se agota y se construyen una casa y una torre en dos solares
+- **WHEN** se pintan 600 frames de 16,667 ms tras esos cambios
+- **THEN** el castillo, la casa goblin intacta y en ruina, la torre goblin en ruina, la veta activa y la agotada, el
+  solar en obra, `House_Blue`, `Tower_Blue` y cada decoración muestran el mismo frame de hoja en los 600
+
+#### Scenario: Torre que cae en ruina
+- **GIVEN** una torre goblin intacta animada en el frame del tick n − 1 y destruida en el snapshot del tick n
+- **WHEN** se pintan los snapshots de n a n + 60
+- **THEN** desde el frame del tick n la torre se pinta con su aspecto de ruina, con el mismo frame de hoja en todos, y
+  en ninguno se ve un frame de su aspecto intacto
+
+#### Scenario: Reserva de árbol y torre
+- **GIVEN** el contenido por defecto, la semilla 42 y, en un caso cada vez, la hoja `Tree.png` sin cargar, una hoja del
+  árbol que no contiene el frame 5 o la hoja de la torre intacta sin cargar
+- **WHEN** se pintan 120 frames de 16,667 ms
+- **THEN** en los dos primeros casos todos los árboles se pintan con el rectángulo del color `trunk`, sin copa, y en el
+  tercero toda torre intacta con su rectángulo de reserva, iguales en los 120 frames y sin errores no capturados
+
+#### Scenario: Animar no cambia la simulación
+- **GIVEN** dos partidas con la semilla 42, el mismo contenido de juego, la misma secuencia de 1.200 inputs por tick y
+  la política de elección fija, una con los datos de aspecto del repositorio y otra con la `idle` del árbol y la de la
+  torre intacta de 1 solo frame
+- **WHEN** se ejecutan 1.200 ticks
+- **THEN** sus snapshots son iguales campo a campo en cada tick, y sus planes del arte del mapa tienen los mismos
+  objetos con las mismas cajas, capas y orden
+
 <!-- historial: 0012-sprite-rendering (2026-11-22) -->
 <!-- historial: 0013-world-camera (2026-11-23) -->
 <!-- historial: 0015-procedural-map (2026-11-23) -->
@@ -1557,3 +1882,4 @@ render SHALL contarlas aparte (`sprites.towerArrows`, visibles y con reserva), s
 <!-- historial: 0023-sheep-meat (2026-11-24) -->
 <!-- historial: 0025-stone-resource (2026-11-25) -->
 <!-- historial: 0026-build-sites (2026-11-25) -->
+<!-- historial: 0029-living-map (2026-11-26) -->
