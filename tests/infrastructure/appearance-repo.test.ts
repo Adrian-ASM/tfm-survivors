@@ -91,7 +91,7 @@ describe('Datos de aspecto del repositorio', () => {
     expect(Object.keys(map.shore.cases)).toHaveLength(15);
     expect(map.foam.idle).toMatchObject({ loop: true });
     expect(map.foam.idle.frames).toHaveLength(8);
-    expect(map.trees.idle).toEqual({ frames: [0, 1, 2, 3, 4, 5], fps: 6, loop: true });
+    expect(map.trees.idle).toEqual({ frames: [0, 1, 2, 3], fps: 4, loop: true });
     expect(Object.keys(map.bridges.frames).sort()).toEqual(['eastWest', 'northSouth']);
     expect(map.castle.sheet.file.endsWith('Castle_Blue.png')).toBe(true);
   });
