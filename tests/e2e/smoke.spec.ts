@@ -161,6 +161,8 @@ test('Pausa con Esc: congela la partida, Esc reanuda y Volver al menú muestra e
   await expect(menuPanel(page)).toBeVisible();
   await expect(pauseOverlay(page)).toBeHidden();
   expect((await probe(page))?.screen).toBe('menu');
+  // 0026, "Sonda de solares en el menú": tras Volver al menú, `sites` vale null.
+  expect((await probe(page))?.sites).toBeNull();
   expect(problems).toEqual([]);
 });
 

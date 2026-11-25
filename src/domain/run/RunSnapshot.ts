@@ -213,6 +213,45 @@ export interface ShopSnapshot {
   readonly products: readonly ShopProductSnapshot[];
 }
 
+/** Huella de un edificio en un solar: primera columna y fila, columnas y filas. */
+export interface FootprintSnapshot {
+  readonly col: number;
+  readonly row: number;
+  readonly cols: number;
+  readonly rows: number;
+}
+
+/**
+ * Solar de obra (spec build-sites 0026): id, estado, si está armado, acceso y huellas de casa y de
+ * torre (iguales con el contenido por defecto, design §1).
+ */
+export interface SiteSnapshot {
+  readonly id: number;
+  readonly state: 'free' | 'house' | 'tower';
+  readonly armed: boolean;
+  readonly access: { readonly x: number; readonly y: number };
+  readonly house: FootprintSnapshot;
+  readonly tower: FootprintSnapshot;
+}
+
+/** Opción de la oferta de obra: tipo de edificio y su coste. */
+export interface BuildOptionSnapshot {
+  readonly kind: 'house' | 'tower';
+  readonly wood: number;
+  readonly stone: number;
+}
+
+/**
+ * Oferta de obra (spec build-sites 0026): abierta si y solo si la partida está en obra, con el solar
+ * abierto y sus opciones asequibles al abrirse (`house` y después `tower`); cerrada, sin solar ni
+ * opciones.
+ */
+export interface BuildSnapshot {
+  readonly open: boolean;
+  readonly siteId: number | null;
+  readonly options: readonly BuildOptionSnapshot[];
+}
+
 /** Todo el snapshot salvo la fase (estado + resultado). */
 export interface RunSnapshotBody {
   readonly tick: number;
@@ -234,8 +273,10 @@ export interface RunSnapshotBody {
   readonly enemies: readonly EnemySnapshot[];
   /** Ovejas vivas en orden de creación (0023). */
   readonly sheep: readonly SheepSnapshot[];
-  /** Proyectiles vivos en orden de creación. */
+  /** Proyectiles vivos del jugador en orden de creación. */
   readonly projectiles: readonly ProjectileSnapshot[];
+  /** Flechas de torre vivas en orden de creación (0026; ids propios, fuera del tope del jugador). */
+  readonly towerProjectiles: readonly ProjectileSnapshot[];
   /** Pulsos visibles en orden de disparo. */
   readonly pulses: readonly PulseSnapshot[];
   /** Dinamitas en vuelo en orden de creación. */
@@ -266,6 +307,10 @@ export interface RunSnapshotBody {
   readonly upgrades: readonly UpgradeLevelSnapshot[];
   /** Tienda del castillo (0024), en todos los estados. */
   readonly shop: ShopSnapshot;
+  /** Solares de obra en su orden fijo, construidos incluidos (0026, misma longitud toda la partida). */
+  readonly sites: readonly SiteSnapshot[];
+  /** Oferta de obra (0026): abierta solo en obra. */
+  readonly build: BuildSnapshot;
 }
 
 /**

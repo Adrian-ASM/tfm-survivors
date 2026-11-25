@@ -15,11 +15,14 @@ import { MapCuller } from './map/mapCulling';
 import type { Box, MapArtPlan } from './map/planMapArt';
 import { paintMapArt, zeroCells, zeroMapArt, type MapArtCanvas } from './TerrainView';
 import { StructureArt } from './StructureArt';
+import { SiteArt } from './SiteArt';
 
 /** Tamaño de los pools: el de la escena más el tope de cadáveres de los datos de aspecto. */
 export interface LayerCapacity {
   readonly enemies: number;
   readonly projectiles: number;
+  /** Flechas de torre vivas como mucho (tope de las torres, 0026); 0 por defecto. */
+  readonly towerProjectiles?: number;
   readonly pulses: number;
   /** Recogibles de los cuatro tipos: la suma de los topes (0022, 0023). */
   readonly pickups: number;
@@ -59,6 +62,8 @@ export class RenderLayers {
   private readonly corpses: CorpseLayer;
   private readonly enemies: EnemyLayer;
   private readonly projectiles: ProjectileLayer;
+  /** Flechas de torre (0026): segunda capa de flechas, con su propio pool. */
+  private readonly towerArrows: ProjectileLayer;
   private readonly player: PlayerView;
   /** Capa de peligros (0020): se crea después de la capa alta del mapa con `createHazards`. */
   private hazards: HazardLayer | null = null;
@@ -72,6 +77,8 @@ export class RenderLayers {
   private readonly structureArt: StructureArt;
   /** Aspecto vigente (activa o agotada) de cada veta del mapa pintado (0022). */
   private readonly veinArt = new StructureArt<VeinSnapshot>([VEIN_KEY], (v) => v.depleted);
+  /** Aspecto vigente (obra, casa o torre) de cada solar del mapa pintado (0026). */
+  private readonly siteArt = new SiteArt();
   private foamAnim: AnimSpec | null = null;
   private foamFrame = -1;
 
@@ -84,6 +91,7 @@ export class RenderLayers {
     this.corpses = new CorpseLayer(capacity.corpses, kit, looks.corpse);
     this.enemies = new EnemyLayer(capacity.enemies, kit, looks.enemies, this.corpses);
     this.projectiles = new ProjectileLayer(capacity.projectiles, kit, looks.projectile);
+    this.towerArrows = new ProjectileLayer(capacity.towerProjectiles ?? 0, kit, looks.projectile);
     this.player = new PlayerView(kit, looks.player);
     this.structureArt = new StructureArt(parts.structureTypes ?? []);
     this.counts = {
@@ -105,6 +113,8 @@ export class RenderLayers {
       mapArt: zeroMapArt(),
       structures: this.structureArt.counts,
       veins: veinCounts(this.veinArt.counts[VEIN_KEY]),
+      sites: this.siteArt.counts,
+      towerArrows: this.towerArrows.counts,
     };
   }
 
@@ -141,11 +151,13 @@ export class RenderLayers {
     this.enemies.sync(snapshot.enemies, snapshot.tick, ms);
     this.corpses.sync(ms);
     this.projectiles.sync(snapshot.projectiles);
+    this.towerArrows.sync(snapshot.towerProjectiles);
     this.player.render(snapshot, ms);
     this.hazards?.sync(snapshot.warnings, snapshot.dynamites, snapshot.blasts, ms);
     // Antes del recorte del frame (`cullMap`): la ruina se ve desde el frame en que figura destruida.
     this.structureArt.sync(snapshot.structures);
     this.veinArt.sync(snapshot.veins);
+    this.siteArt.sync(snapshot.sites);
     this.animateFoam(ms);
   }
 
@@ -174,6 +186,7 @@ export class RenderLayers {
     this.culler.reset(plan);
     this.structureArt.reset(plan.structures, this.culler);
     this.veinArt.reset(plan.veins, this.culler);
+    this.siteArt.reset(plan.sites, this.culler);
     mapArt.drawn = this.culler.drawn;
     this.foamAnim = plan.foam ? { frames: plan.foam.frames, fps: plan.foam.fps, loop: true } : null;
     this.foamFrame = -1;
@@ -195,6 +208,7 @@ export class RenderLayers {
     this.enemies.clear();
     this.corpses.clear();
     this.projectiles.clear();
+    this.towerArrows.clear();
     this.pulses.clear();
     this.pickups.clear();
     this.sheep.clear();

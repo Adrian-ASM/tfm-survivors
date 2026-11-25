@@ -152,6 +152,15 @@ export class Enemy {
     return this.type.radius;
   }
 
+  /**
+   * Recoloca el centro en (x, y) sin cambiar nada más: el despeje de la huella de una obra (spec
+   * build-sites 0026), con un punto ya dentro de la arena (centro de una celda caminable).
+   */
+  relocate(x: number, y: number): void {
+    this.px = x;
+    this.py = y;
+  }
+
   /** Avanza en línea recta hacia (tx, ty) sin sobrepasarlo y sin salir de la arena. */
   chase(tx: number, ty: number, dtSeconds: number, arena: Arena): void {
     const dx = tx - this.px;

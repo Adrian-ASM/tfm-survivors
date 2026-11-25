@@ -7,11 +7,22 @@
       "frameHeight": 192
     },
     "scale": 0.6,
-    "origin": { "x": 0.5, "y": 0.5 },
+    "origin": {
+      "x": 0.5,
+      "y": 0.5
+    },
     "facing": "right",
     "placeholderColor": "#3dd68c",
-    "idle": { "frames": [0, 1, 2, 3, 4, 5], "fps": 8, "loop": true },
-    "walk": { "frames": [8, 9, 10, 11, 12, 13], "fps": 10, "loop": true }
+    "idle": {
+      "frames": [0, 1, 2, 3, 4, 5],
+      "fps": 8,
+      "loop": true
+    },
+    "walk": {
+      "frames": [8, 9, 10, 11, 12, 13],
+      "fps": 10,
+      "loop": true
+    }
   },
   "enemies": {
     "goblin-torch": {
@@ -21,11 +32,22 @@
         "frameHeight": 192
       },
       "scale": 0.45,
-      "origin": { "x": 0.5, "y": 0.5 },
+      "origin": {
+        "x": 0.5,
+        "y": 0.5
+      },
       "facing": "right",
       "placeholderColor": "#e5484d",
-      "idle": { "frames": [0, 1, 2, 3, 4, 5, 6], "fps": 8, "loop": true },
-      "walk": { "frames": [7, 8, 9, 10, 11, 12], "fps": 10, "loop": true },
+      "idle": {
+        "frames": [0, 1, 2, 3, 4, 5, 6],
+        "fps": 8,
+        "loop": true
+      },
+      "walk": {
+        "frames": [7, 8, 9, 10, 11, 12],
+        "fps": 10,
+        "loop": true
+      },
       "rock": "small"
     },
     "goblin-tnt": {
@@ -35,12 +57,27 @@
         "frameHeight": 192
       },
       "scale": 0.75,
-      "origin": { "x": 0.5, "y": 0.5 },
+      "origin": {
+        "x": 0.5,
+        "y": 0.5
+      },
       "facing": "right",
       "placeholderColor": "#8e4ec6",
-      "idle": { "frames": [0, 1, 2, 3, 4, 5], "fps": 8, "loop": true },
-      "walk": { "frames": [7, 8, 9, 10, 11, 12], "fps": 10, "loop": true },
-      "throw": { "frames": [14, 15, 16, 17, 18, 19, 20], "fps": 14, "loop": false },
+      "idle": {
+        "frames": [0, 1, 2, 3, 4, 5],
+        "fps": 8,
+        "loop": true
+      },
+      "walk": {
+        "frames": [7, 8, 9, 10, 11, 12],
+        "fps": 10,
+        "loop": true
+      },
+      "throw": {
+        "frames": [14, 15, 16, 17, 18, 19, 20],
+        "fps": 14,
+        "loop": false
+      },
       "rock": "medium"
     },
     "goblin-barrel": {
@@ -50,12 +87,27 @@
         "frameHeight": 128
       },
       "scale": 0.7,
-      "origin": { "x": 0.5, "y": 0.5 },
+      "origin": {
+        "x": 0.5,
+        "y": 0.5
+      },
       "facing": "right",
       "placeholderColor": "#f76b15",
-      "idle": { "frames": [0], "fps": 1, "loop": true },
-      "walk": { "frames": [24, 25, 26], "fps": 10, "loop": true },
-      "fuse": { "frames": [30, 31, 32], "fps": 10, "loop": true },
+      "idle": {
+        "frames": [0],
+        "fps": 1,
+        "loop": true
+      },
+      "walk": {
+        "frames": [24, 25, 26],
+        "fps": 10,
+        "loop": true
+      },
+      "fuse": {
+        "frames": [30, 31, 32],
+        "fps": 10,
+        "loop": true
+      },
       "rock": "small"
     },
     "goblin-tnt-guard": {
@@ -65,12 +117,27 @@
         "frameHeight": 192
       },
       "scale": 0.75,
-      "origin": { "x": 0.5, "y": 0.5 },
+      "origin": {
+        "x": 0.5,
+        "y": 0.5
+      },
       "facing": "right",
       "placeholderColor": "#8e4ec6",
-      "idle": { "frames": [0, 1, 2, 3, 4, 5], "fps": 8, "loop": true },
-      "walk": { "frames": [7, 8, 9, 10, 11, 12], "fps": 10, "loop": true },
-      "throw": { "frames": [14, 15, 16, 17, 18, 19, 20], "fps": 14, "loop": false },
+      "idle": {
+        "frames": [0, 1, 2, 3, 4, 5],
+        "fps": 8,
+        "loop": true
+      },
+      "walk": {
+        "frames": [7, 8, 9, 10, 11, 12],
+        "fps": 10,
+        "loop": true
+      },
+      "throw": {
+        "frames": [14, 15, 16, 17, 18, 19, 20],
+        "fps": 14,
+        "loop": false
+      },
       "rock": "large"
     }
   },
@@ -81,67 +148,146 @@
       "frameHeight": 64
     },
     "scale": 0.5,
-    "origin": { "x": 0.5, "y": 0.5 },
+    "origin": {
+      "x": 0.5,
+      "y": 0.5
+    },
     "facing": "right",
     "placeholderColor": "#f5d90a",
-    "idle": { "frames": [0], "fps": 1, "loop": true }
+    "idle": {
+      "frames": [0],
+      "fps": 1,
+      "loop": true
+    }
   },
   "pickups": {
-    "xp": { "shape": true, "placeholderColor": "#4fd1c5" },
+    "xp": {
+      "shape": true,
+      "placeholderColor": "#4fd1c5"
+    },
     "gold": {
-      "sheet": { "file": "Resources/Resources/G_Idle.png", "frameWidth": 128, "frameHeight": 128 },
+      "sheet": {
+        "file": "Resources/Resources/G_Idle.png",
+        "frameWidth": 128,
+        "frameHeight": 128
+      },
       "scale": 0.3,
-      "origin": { "x": 0.5, "y": 0.5 },
+      "origin": {
+        "x": 0.5,
+        "y": 0.5
+      },
       "facing": "right",
       "placeholderColor": "#e8c547",
-      "idle": { "frames": [0], "fps": 1, "loop": true }
+      "idle": {
+        "frames": [0],
+        "fps": 1,
+        "loop": true
+      }
     },
     "wood": {
-      "sheet": { "file": "Resources/Resources/W_Idle.png", "frameWidth": 128, "frameHeight": 128 },
+      "sheet": {
+        "file": "Resources/Resources/W_Idle.png",
+        "frameWidth": 128,
+        "frameHeight": 128
+      },
       "scale": 0.3,
-      "origin": { "x": 0.5, "y": 0.5 },
+      "origin": {
+        "x": 0.5,
+        "y": 0.5
+      },
       "facing": "right",
       "placeholderColor": "#9c6b3c",
-      "idle": { "frames": [0], "fps": 1, "loop": true }
+      "idle": {
+        "frames": [0],
+        "fps": 1,
+        "loop": true
+      }
     },
     "meat": {
-      "sheet": { "file": "Resources/Resources/M_Idle.png", "frameWidth": 128, "frameHeight": 128 },
+      "sheet": {
+        "file": "Resources/Resources/M_Idle.png",
+        "frameWidth": 128,
+        "frameHeight": 128
+      },
       "scale": 0.3,
-      "origin": { "x": 0.5, "y": 0.5 },
+      "origin": {
+        "x": 0.5,
+        "y": 0.5
+      },
       "facing": "right",
       "placeholderColor": "#c8504a",
-      "idle": { "frames": [0], "fps": 1, "loop": true }
+      "idle": {
+        "frames": [0],
+        "fps": 1,
+        "loop": true
+      }
     },
     "stone": {
       "placeholderColor": "#9aa0a6",
       "rocks": {
         "small": {
-          "sheet": { "file": "Deco/04.png", "frameWidth": 64, "frameHeight": 64 },
+          "sheet": {
+            "file": "Deco/04.png",
+            "frameWidth": 64,
+            "frameHeight": 64
+          },
           "scale": 0.5,
-          "origin": { "x": 0.5, "y": 0.5 },
+          "origin": {
+            "x": 0.5,
+            "y": 0.5
+          },
           "facing": "right",
-          "idle": { "frames": [0], "fps": 1, "loop": true }
+          "idle": {
+            "frames": [0],
+            "fps": 1,
+            "loop": true
+          }
         },
         "medium": {
-          "sheet": { "file": "Deco/05.png", "frameWidth": 64, "frameHeight": 64 },
+          "sheet": {
+            "file": "Deco/05.png",
+            "frameWidth": 64,
+            "frameHeight": 64
+          },
           "scale": 0.5,
-          "origin": { "x": 0.5, "y": 0.5 },
+          "origin": {
+            "x": 0.5,
+            "y": 0.5
+          },
           "facing": "right",
-          "idle": { "frames": [0], "fps": 1, "loop": true }
+          "idle": {
+            "frames": [0],
+            "fps": 1,
+            "loop": true
+          }
         },
         "large": {
-          "sheet": { "file": "Deco/06.png", "frameWidth": 64, "frameHeight": 64 },
+          "sheet": {
+            "file": "Deco/06.png",
+            "frameWidth": 64,
+            "frameHeight": 64
+          },
           "scale": 0.5,
-          "origin": { "x": 0.5, "y": 0.5 },
+          "origin": {
+            "x": 0.5,
+            "y": 0.5
+          },
           "facing": "right",
-          "idle": { "frames": [0], "fps": 1, "loop": true }
+          "idle": {
+            "frames": [0],
+            "fps": 1,
+            "loop": true
+          }
         }
       }
     }
   },
   "sheep": {
     "scale": 0.6,
-    "origin": { "x": 0.5, "y": 0.5 },
+    "origin": {
+      "x": 0.5,
+      "y": 0.5
+    },
     "facing": "right",
     "placeholderColor": "#f0ead6",
     "idle": {
@@ -166,12 +312,23 @@
     }
   },
   "ground": {
-    "sheet": { "file": "Terrain/Ground/Tilemap_Flat.png", "frameWidth": 64, "frameHeight": 64 },
+    "sheet": {
+      "file": "Terrain/Ground/Tilemap_Flat.png",
+      "frameWidth": 64,
+      "frameHeight": 64
+    },
     "scale": 0.9375,
-    "origin": { "x": 0, "y": 0 },
+    "origin": {
+      "x": 0,
+      "y": 0
+    },
     "facing": "right",
     "placeholderColor": "#4a7a3a",
-    "idle": { "frames": [11], "fps": 1, "loop": true }
+    "idle": {
+      "frames": [11],
+      "fps": 1,
+      "loop": true
+    }
   },
   "corpse": {
     "sheet": {
@@ -180,7 +337,10 @@
       "frameHeight": 128
     },
     "scale": 0.5,
-    "origin": { "x": 0.5, "y": 0.5 },
+    "origin": {
+      "x": 0.5,
+      "y": 0.5
+    },
     "facing": "right",
     "placeholderColor": "#b0b4ba",
     "death": {
@@ -196,36 +356,79 @@
       "frameHeight": 64
     },
     "scale": 0.5,
-    "origin": { "x": 0.5, "y": 0.5 },
+    "origin": {
+      "x": 0.5,
+      "y": 0.5
+    },
     "facing": "right",
     "placeholderColor": "#c0392b",
-    "idle": { "frames": [0, 1, 2, 3, 4, 5], "fps": 12, "loop": true }
+    "idle": {
+      "frames": [0, 1, 2, 3, 4, 5],
+      "fps": 12,
+      "loop": true
+    }
   },
   "explosion": {
-    "sheet": { "file": "Effects/Explosion/Explosions.png", "frameWidth": 192, "frameHeight": 192 },
+    "sheet": {
+      "file": "Effects/Explosion/Explosions.png",
+      "frameWidth": 192,
+      "frameHeight": 192
+    },
     "scale": 0.7,
-    "origin": { "x": 0.5, "y": 0.5 },
+    "origin": {
+      "x": 0.5,
+      "y": 0.5
+    },
     "facing": "right",
     "placeholderColor": "#ffb224",
-    "explode": { "frames": [0, 1, 2, 3, 4, 5, 6, 7, 8], "fps": 18, "loop": false }
+    "explode": {
+      "frames": [0, 1, 2, 3, 4, 5, 6, 7, 8],
+      "fps": 18,
+      "loop": false
+    }
   },
   "warnings": {
-    "fuse": { "color": "#ff8a00", "alpha": 0.35 },
-    "dynamite": { "color": "#e5484d", "alpha": 0.35 }
+    "fuse": {
+      "color": "#ff8a00",
+      "alpha": 0.35
+    },
+    "dynamite": {
+      "color": "#e5484d",
+      "alpha": 0.35
+    }
   },
   "maxBlastSprites": 64,
-  "terrain": { "trunk": "#5b3a1e", "water": "#2f7fc1", "bridge": "#c19a5b", "castle": "#6e7f99" },
+  "terrain": {
+    "trunk": "#5b3a1e",
+    "water": "#2f7fc1",
+    "bridge": "#c19a5b",
+    "castle": "#6e7f99"
+  },
   "map": {
     "water": {
-      "sheet": { "file": "Terrain/Water/Water.png", "frameWidth": 64, "frameHeight": 64 },
+      "sheet": {
+        "file": "Terrain/Water/Water.png",
+        "frameWidth": 64,
+        "frameHeight": 64
+      },
       "scale": 0.9375,
-      "origin": { "x": 0, "y": 0 },
+      "origin": {
+        "x": 0,
+        "y": 0
+      },
       "frame": 0
     },
     "shore": {
-      "sheet": { "file": "Terrain/Ground/Tilemap_Flat.png", "frameWidth": 64, "frameHeight": 64 },
+      "sheet": {
+        "file": "Terrain/Ground/Tilemap_Flat.png",
+        "frameWidth": 64,
+        "frameHeight": 64
+      },
       "scale": 0.9375,
-      "origin": { "x": 0, "y": 0 },
+      "origin": {
+        "x": 0,
+        "y": 0
+      },
       "cases": {
         "N": 1,
         "E": 12,
@@ -245,32 +448,75 @@
       }
     },
     "foam": {
-      "sheet": { "file": "Terrain/Water/Foam/Foam.png", "frameWidth": 192, "frameHeight": 192 },
+      "sheet": {
+        "file": "Terrain/Water/Foam/Foam.png",
+        "frameWidth": 192,
+        "frameHeight": 192
+      },
       "scale": 0.9375,
-      "origin": { "x": 0.5, "y": 0.5 },
-      "idle": { "frames": [0, 1, 2, 3, 4, 5, 6, 7], "fps": 8, "loop": true }
+      "origin": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "idle": {
+        "frames": [0, 1, 2, 3, 4, 5, 6, 7],
+        "fps": 8,
+        "loop": true
+      }
     },
     "trees": {
-      "sheet": { "file": "Resources/Trees/Tree.png", "frameWidth": 192, "frameHeight": 192 },
+      "sheet": {
+        "file": "Resources/Trees/Tree.png",
+        "frameWidth": 192,
+        "frameHeight": 192
+      },
       "scale": 0.9375,
-      "origin": { "x": 0.5, "y": 0.92 },
+      "origin": {
+        "x": 0.5,
+        "y": 0.92
+      },
       "models": [
-        { "frame": 0 },
-        { "frame": 1 },
-        { "frame": 2 },
-        { "frame": 3 },
-        { "frame": 4 },
-        { "frame": 5 }
+        {
+          "frame": 0
+        },
+        {
+          "frame": 1
+        },
+        {
+          "frame": 2
+        },
+        {
+          "frame": 3
+        },
+        {
+          "frame": 4
+        },
+        {
+          "frame": 5
+        }
       ],
       "flip": true
     },
     "bridges": {
       "image": "Terrain/Bridge/Bridge_All.png",
       "scale": 0.9375,
-      "origin": { "x": 0.5, "y": 0.5 },
+      "origin": {
+        "x": 0.5,
+        "y": 0.5
+      },
       "frames": {
-        "northSouth": { "x": 0, "y": 80, "width": 68, "height": 160 },
-        "eastWest": { "x": 16, "y": 0, "width": 160, "height": 64 }
+        "northSouth": {
+          "x": 0,
+          "y": 80,
+          "width": 68,
+          "height": 160
+        },
+        "eastWest": {
+          "x": 16,
+          "y": 0,
+          "width": 160,
+          "height": 64
+        }
       }
     },
     "castle": {
@@ -280,7 +526,10 @@
         "frameHeight": 256
       },
       "scale": 0.9375,
-      "origin": { "x": 0.5, "y": 1 },
+      "origin": {
+        "x": 0.5,
+        "y": 1
+      },
       "frame": 0
     }
   },
@@ -293,9 +542,16 @@
           "frameHeight": 192
         },
         "scale": 0.9375,
-        "origin": { "x": 0.5, "y": 1 },
+        "origin": {
+          "x": 0.5,
+          "y": 1
+        },
         "facing": "right",
-        "idle": { "frames": [0], "fps": 1, "loop": true }
+        "idle": {
+          "frames": [0],
+          "fps": 1,
+          "loop": true
+        }
       },
       "ruin": {
         "sheet": {
@@ -304,9 +560,16 @@
           "frameHeight": 192
         },
         "scale": 0.9375,
-        "origin": { "x": 0.5, "y": 1 },
+        "origin": {
+          "x": 0.5,
+          "y": 1
+        },
         "facing": "right",
-        "idle": { "frames": [0], "fps": 1, "loop": true }
+        "idle": {
+          "frames": [0],
+          "fps": 1,
+          "loop": true
+        }
       }
     },
     "goblin-tower": {
@@ -317,9 +580,16 @@
           "frameHeight": 192
         },
         "scale": 0.9375,
-        "origin": { "x": 0.5, "y": 1 },
+        "origin": {
+          "x": 0.5,
+          "y": 1
+        },
         "facing": "right",
-        "idle": { "frames": [0], "fps": 1, "loop": true }
+        "idle": {
+          "frames": [0],
+          "fps": 1,
+          "loop": true
+        }
       },
       "ruin": {
         "sheet": {
@@ -328,13 +598,24 @@
           "frameHeight": 192
         },
         "scale": 0.9375,
-        "origin": { "x": 0.5, "y": 1 },
+        "origin": {
+          "x": 0.5,
+          "y": 1
+        },
         "facing": "right",
-        "idle": { "frames": [0], "fps": 1, "loop": true }
+        "idle": {
+          "frames": [0],
+          "fps": 1,
+          "loop": true
+        }
       }
     }
   },
-  "structureColors": { "goblin-house": "#a33b2b", "goblin-tower": "#7a5230", "ruin": "#3d3a36" },
+  "structureColors": {
+    "goblin-house": "#a33b2b",
+    "goblin-tower": "#7a5230",
+    "ruin": "#3d3a36"
+  },
   "veins": {
     "active": {
       "sheet": {
@@ -343,9 +624,16 @@
         "frameHeight": 128
       },
       "scale": 0.6,
-      "origin": { "x": 0.5, "y": 0.5 },
+      "origin": {
+        "x": 0.5,
+        "y": 0.5
+      },
       "facing": "right",
-      "idle": { "frames": [0], "fps": 1, "loop": true }
+      "idle": {
+        "frames": [0],
+        "fps": 1,
+        "loop": true
+      }
     },
     "depleted": {
       "sheet": {
@@ -354,10 +642,78 @@
         "frameHeight": 128
       },
       "scale": 0.6,
-      "origin": { "x": 0.5, "y": 0.5 },
+      "origin": {
+        "x": 0.5,
+        "y": 0.5
+      },
       "facing": "right",
-      "idle": { "frames": [0], "fps": 1, "loop": true }
+      "idle": {
+        "frames": [0],
+        "fps": 1,
+        "loop": true
+      }
     }
   },
-  "veinColor": "#d4a017"
+  "veinColor": "#d4a017",
+  "sites": {
+    "construction": {
+      "sheet": {
+        "file": "Factions/Knights/Buildings/House/House_Construction.png",
+        "frameWidth": 128,
+        "frameHeight": 192
+      },
+      "scale": 0.9375,
+      "origin": {
+        "x": 0.5,
+        "y": 1
+      },
+      "facing": "right",
+      "idle": {
+        "frames": [0],
+        "fps": 1,
+        "loop": true
+      }
+    },
+    "house": {
+      "sheet": {
+        "file": "Factions/Knights/Buildings/House/House_Blue.png",
+        "frameWidth": 128,
+        "frameHeight": 192
+      },
+      "scale": 0.9375,
+      "origin": {
+        "x": 0.5,
+        "y": 1
+      },
+      "facing": "right",
+      "idle": {
+        "frames": [0],
+        "fps": 1,
+        "loop": true
+      }
+    },
+    "tower": {
+      "sheet": {
+        "file": "Factions/Knights/Buildings/Tower/Tower_Blue.png",
+        "frameWidth": 128,
+        "frameHeight": 256
+      },
+      "scale": 0.9375,
+      "origin": {
+        "x": 0.5,
+        "y": 1
+      },
+      "facing": "right",
+      "idle": {
+        "frames": [0],
+        "fps": 1,
+        "loop": true
+      }
+    }
+  },
+  "siteColors": {
+    "construction": "#b8a27a",
+    "house": "#3f6fb5",
+    "tower": "#2c4a7d"
+  }
 }

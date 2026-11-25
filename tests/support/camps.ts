@@ -6,6 +6,7 @@ import {
   STRUCT_STREAM,
   deriveSeed,
 } from '../../src/infrastructure/random/deriveSeed';
+import { siteRandomFor } from './sites';
 import type { DeclaredStructure, TerrainSource } from '../../src/domain/map/TerrainSource';
 import { aBehaviorConfig, aProbeType } from './runs';
 import { Run, type RunSetup } from '../../src/domain/run/Run';
@@ -176,6 +177,7 @@ export const campTerrain = (seed: number): TerrainSource => ({
   structureRandom: structureRandomFor(seed),
   resourceRandom: resourceRandomFor(seed),
   sheepRandom: sheepRandomFor(seed),
+  siteRandom: siteRandomFor(seed),
 });
 
 /** Partida de la semilla con el mapa generado y sus estructuras (azar de la partida: `seed`). */

@@ -12,6 +12,8 @@ import type { DomainError } from '../domain/shared/Result';
 import { repositoryContent } from '../infrastructure/content/loadRunConfig';
 import { PausePanel } from '../infrastructure/dom/PausePanel';
 import { ShopPanel, type ShopPanelView } from '../infrastructure/dom/ShopPanel';
+import { BuildPanel, type BuildPanelView } from '../infrastructure/dom/BuildPanel';
+import type { SiteSnapshot } from '../domain/run/RunSnapshot';
 import { GameScene, type SceneCapacity, type Screen } from '../infrastructure/phaser/GameScene';
 import { MenuScene } from '../infrastructure/phaser/MenuScene';
 import { emptyCounts, type SpriteCounts } from '../infrastructure/phaser/renderCounts';
@@ -71,6 +73,23 @@ interface E2EProbe {
   readonly shop: ShopPanelView;
   /** Pantallas vistas desde la carga (0024: el E2E comprueba que Esc en la tienda no pausa). */
   readonly screens: readonly Screen[];
+  /**
+   * Solares de la partida (0026): por solar, en el orden del snapshot, id, estado, armado, acceso y
+   * huellas; recuentos por estado y el panel de obra (visible, solar abierto y opciones). null en
+   * el menú.
+   */
+  readonly sites: SitesProbe | null;
+}
+
+/** Sonda de los solares (0026). */
+interface SitesProbe {
+  readonly list: readonly SiteSnapshot[];
+  readonly total: number;
+  readonly empty: number;
+  readonly house: number;
+  readonly tower: number;
+  readonly armed: number;
+  readonly panel: BuildPanelView;
 }
 
 function showContentError(root: HTMLElement, error: DomainError): void {
@@ -99,6 +118,7 @@ function sceneCapacity(config: RunConfig, corpses: number, blasts: number): Scen
   return {
     enemies: config.waves.maxAlive,
     projectiles: loadout.maxProjectiles,
+    towerProjectiles: rules.value.buildings.maxTowerProjectiles,
     pulses: pulseCapacity,
     pickups: pickups.capacity,
     sheep: rules.value.sheep.maxAlive,
@@ -144,6 +164,7 @@ function bootstrap(): void {
   const progress = wireProgress(root, () => probe.seed);
   const pause = new PausePanel(document, root);
   const shopPanel = new ShopPanel(document, root);
+  const buildPanel = new BuildPanel(document, root);
   const screens: Screen[] = [];
   const e2e = new URLSearchParams(window.location.search).has('e2e');
   // El mundo es la arena del contenido; el lienzo, la vista (0013).
@@ -193,6 +214,20 @@ function bootstrap(): void {
       return shopPanel.view;
     },
     screens,
+    get sites() {
+      const list = probe.snapshot?.sites;
+      if (!list || probe.screen === 'menu') return null;
+      const count = (state: SiteSnapshot['state']) => list.filter((s) => s.state === state).length;
+      return {
+        list,
+        total: list.length,
+        empty: count('free'),
+        house: count('house'),
+        tower: count('tower'),
+        armed: list.filter((s) => s.armed).length,
+        panel: buildPanel.view,
+      };
+    },
   };
   const started = (s: number): void => {
     probe.seed = s;
@@ -234,6 +269,7 @@ function bootstrap(): void {
     resultsLines: progress.resultsLines,
     pause,
     shop: shopPanel,
+    build: buildPanel,
     // Snapshot y sprites en la misma llamada: cualquier lectura ve un par coherente (design D7).
     onRender: (snapshot, results, sprites) => {
       probe.snapshot = snapshot;

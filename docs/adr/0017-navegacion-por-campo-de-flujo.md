@@ -64,3 +64,7 @@ puentes, con hasta 300 vivos. Hay que tener en cuenta varias fuerzas:
 - **Bench** (local, informativo): tick con 300 vivos y mapa generado, 0,023 ms. Con 300 sin línea libre, 0,113 ms.
   Con el jugador cambiando de celda en cada tick, 0,172 ms. BFS completa, 0,059 ms de media (p99 0,073).
 - **Estado**: pasa a "aceptada" al archivar el change.
+
+## Nota (0026)
+"El mapa no cambia durante la partida" queda enmendado por ADR-0025: el terreno sigue inmutable, pero la capa de obra
+de `GameMap` cambia al construir y los campos de flujo se invalidan por su revisión.

@@ -9,6 +9,11 @@ export const TRUNK = 1;
 export const WATER = 2;
 export const BRIDGE = 3;
 export const CASTLE = 4;
+/**
+ * Código interno de la capa de obra (ADR-0025): celda de un edificio construido. No es un
+ * `CellType` (el tipo de la celda no cambia) y no es caminable.
+ */
+export const BUILT = 5;
 
 /** `grass` y `bridge` son caminables; `trunk`, `water` y `castle`, no. */
 export const isWalkableCode = (code: number): boolean => code === GRASS || code === BRIDGE;

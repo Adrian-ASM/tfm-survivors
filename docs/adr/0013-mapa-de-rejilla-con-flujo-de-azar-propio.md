@@ -67,3 +67,7 @@ Los enemigos siguen ignorando el mapa, castillo incluido (deuda para 0018 flow-f
 
 Resultado en apply: balance 27/50 con 215 (banda 25..35) y 0 quietos vivos; 196 y 245 objetos del mapa con las
 semillas 42 y 123 (máximo 258 en 1..50), sin necesidad del `Blitter`; puerta visual aprobada por el usuario.
+
+## Nota (0026)
+"El mapa no cambia durante la partida" queda enmendado por ADR-0025: el terreno sigue inmutable, pero la capa de obra
+de `GameMap` cambia al construir y los campos de flujo se invalidan por su revisión.

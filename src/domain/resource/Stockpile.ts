@@ -1,7 +1,7 @@
 /**
  * Oro, madera y piedra de la partida (spec resources, "Contadores de oro y madera de la partida" y
  * "Contador de piedra de la partida", 0025): enteros que empiezan en 0 (o en los de `RunSetup`).
- * La madera y la piedra solo suben, sin bonificación; el oro sube con cada ingreso
+ * La madera y la piedra suben sin bonificación y solo bajan al construir (0026); el oro sube con cada ingreso
  * (con la bonificación de oro y un resto propio, 0024) y solo baja al comprar en la tienda. Interno
  * a `Run` (ADR-0021).
  */
@@ -44,6 +44,17 @@ export class Stockpile {
       this.goldCount += (total - this.remainder) / 100;
     }
     this.woodCount += wood;
+  }
+
+  /**
+   * Gasta madera y piedra a la vez si alcanzan las dos (true) o no cambia nada (false): el coste de
+   * un edificio (0026). Único camino que baja la madera y la piedra.
+   */
+  spendMaterials(wood: number, stone: number): boolean {
+    if (this.woodCount < wood || this.stoneCount < stone) return false;
+    this.woodCount -= wood;
+    this.stoneCount -= stone;
+    return true;
   }
 
   /** Gasta `price` si alcanza (true) o no cambia nada (false). Único camino que baja el oro. */

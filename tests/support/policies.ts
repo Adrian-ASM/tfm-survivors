@@ -221,6 +221,11 @@ export interface ReferenceBot {
   pick(offer: readonly OfferSnapshot[]): number;
   /** Siguiente compra de la visita con el snapshot en tienda, o `null` para salir. */
   shop(snapshot: RunSnapshot): string | null;
+  /**
+   * Tipo a construir con la obra abierta (bot v5, 0026), o `null` para salir sin construir. Sin
+   * él (bot v4), la política de obra fija: salir.
+   */
+  build?(snapshot: RunSnapshot): string | null;
 }
 
 /** ¿Vida por debajo del umbral del bot v4? */
@@ -305,5 +310,90 @@ export function referenceBot(config: RunConfig, map: MapSnapshot): ReferenceBot 
     input: (snapshot) => dodgeInput(snapshot, world, movement),
     pick: (offer) => pickByPriority(offer),
     shop: (snapshot) => nextPurchase(snapshot),
+  };
+}
+
+/**
+ * Política de obra del bot v5 (spec build-sites 0026, design §7): la torre si es asequible y, si no,
+ * la casa. Lee solo las opciones de la oferta.
+ */
+export function REFERENCE_BUILD_POLICY(s: RunSnapshot): string | null {
+  const kinds = s.build.options.map((o) => o.kind);
+  if (kinds.includes('tower')) return 'tower';
+  return kinds.includes('house') ? 'house' : null;
+}
+
+/** ¿Alcanzan la madera y la piedra del snapshot alguna opción de obra? (costes del contenido). */
+function canBuild(config: RunConfig, s: RunSnapshot): boolean {
+  const { wood, stone } = s.resources;
+  const { house, tower } = config.buildings;
+  return (
+    (wood >= house.cost.wood && stone >= house.cost.stone) ||
+    (wood >= tower.cost.wood && stone >= tower.cost.stone)
+  );
+}
+
+/**
+ * Bot de referencia v5 (spec build-sites 0026, design §7): el v4 más la construcción. Con un solar
+ * libre y armado y madera y piedra para algún edificio, sin enemigos a menos de `SHOP_DANGER_RANGE`
+ * y sin querer ir a la tienda, va al acceso del solar más cercano por distancia de ruta (desempate
+ * por id) por el campo de distancias, como a la puerta; en la obra elige con
+ * `REFERENCE_BUILD_POLICY`. Ve los edificios construidos (los aplica a su mapa) para huir de ellos
+ * y rodearlos. Con `build: false` visita los solares y sale sin construir (política de obra fija).
+ */
+export function builderBot(
+  config: RunConfig,
+  map: MapSnapshot,
+  options: { readonly build?: boolean } = {},
+): ReferenceBot {
+  const world = botWorld(config, map);
+  const toDoorField = new FlowField(world.map);
+  const routeField = new FlowField(world.map);
+  const toSiteField = new FlowField(world.map);
+  const target = { x: 0, y: 0 };
+  const applied = new Set<number>();
+  /** Aplica a su mapa los solares construidos que aún no conocía. */
+  const syncBuilt = (s: RunSnapshot): void => {
+    for (const site of s.sites) {
+      if (site.state === 'free' || applied.has(site.id)) continue;
+      applied.add(site.id);
+      const { col, row, cols, rows } = site[site.state];
+      world.map.build(col, row, cols, rows);
+    }
+  };
+  const toward = (s: RunSnapshot, field: FlowField, x: number, y: number): PlayerInput => {
+    field.retarget(world.map.colAt(x), world.map.rowAt(y));
+    field.steer(s.player.x, s.player.y, x, y, target);
+    return steer(s, world, target.x - s.player.x, target.y - s.player.y);
+  };
+  const toDoor = (s: RunSnapshot): PlayerInput | null => {
+    const { door, armed } = s.shop;
+    if (!door || !armed || !wantsToShop(s) || inDanger(s)) return null;
+    return toward(s, toDoorField, door.x, door.y);
+  };
+  const toSite = (s: RunSnapshot): PlayerInput | null => {
+    if (!canBuild(config, s) || inDanger(s)) return null;
+    routeField.retarget(world.map.colAt(s.player.x), world.map.rowAt(s.player.y));
+    let best: RunSnapshot['sites'][number] | null = null;
+    let bestD = Infinity;
+    for (const site of s.sites) {
+      if (site.state !== 'free' || !site.armed) continue;
+      const d = routeField.distanceAt(
+        world.map.colAt(site.access.x),
+        world.map.rowAt(site.access.y),
+      );
+      if (d >= 0 && d < bestD) [best, bestD] = [site, d];
+    }
+    return best ? toward(s, toSiteField, best.access.x, best.access.y) : null;
+  };
+  const movement = (s: RunSnapshot): PlayerInput => {
+    syncBuilt(s);
+    return toDoor(s) ?? toSite(s) ?? fleeInput(s, world);
+  };
+  return {
+    input: (snapshot) => dodgeInput(snapshot, world, movement),
+    pick: (offer) => pickByPriority(offer),
+    shop: (snapshot) => nextPurchase(snapshot),
+    build: (snapshot) => (options.build === false ? null : REFERENCE_BUILD_POLICY(snapshot)),
   };
 }

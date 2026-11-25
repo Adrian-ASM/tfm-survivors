@@ -192,6 +192,8 @@ describe('StructureArt · recorte y cambio de partida', () => {
       ...plan.structures.flatMap((s) => (ruined.includes(s.id) ? s.intact : s.ruin)),
       // 0022: las vetas activas, con su aspecto agotado deshabilitado.
       ...plan.veins.flatMap((v) => v.ruin),
+      // 0026: los solares en obra, con la casa y la torre deshabilitadas.
+      ...plan.sites.flatMap((s) => [...s.house, ...s.tower]),
     ]);
     return visibleByRule(plan, view).map((v, i) => v && !off.has(i));
   };
@@ -366,6 +368,7 @@ describe('Vetas pintadas con máscara (StructureArt parametrizado)', () => {
     const off = new Set([
       ...plan.structures.flatMap((x) => x.ruin),
       ...plan.veins.flatMap((v) => v.ruin),
+      ...plan.sites.flatMap((x) => [...x.house, ...x.tower]),
     ]);
     expect(layers.counts.mapArt.drawn).toBe(rule.filter((v, i) => v && !off.has(i)).length);
   });

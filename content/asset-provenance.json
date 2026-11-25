@@ -202,6 +202,27 @@
       "version": "Update 010",
       "sha256": "edc4335ad52060a562b21fef868c64576d33b96a6a97ac5ba1448b6fb0a939c1",
       "bytes": 794
+    },
+    {
+      "path": "public/assets/tiny-swords/Factions/Knights/Buildings/House/House_Construction.png",
+      "source": "Tiny Swords (Update 010)/Factions/Knights/Buildings/House/House_Construction.png",
+      "version": "Update 010",
+      "sha256": "0718972905f8fdb47e1db7b80ccc6be4cc73f4d62e273cebafce09ff46990c69",
+      "bytes": 2720
+    },
+    {
+      "path": "public/assets/tiny-swords/Factions/Knights/Buildings/House/House_Blue.png",
+      "source": "Tiny Swords (Update 010)/Factions/Knights/Buildings/House/House_Blue.png",
+      "version": "Update 010",
+      "sha256": "9020e35116ffde6d22a8c854d7117d94e99e19bd582c3c3855ece449d7d2af6d",
+      "bytes": 5264
+    },
+    {
+      "path": "public/assets/tiny-swords/Factions/Knights/Buildings/Tower/Tower_Blue.png",
+      "source": "Tiny Swords (Update 010)/Factions/Knights/Buildings/Tower/Tower_Blue.png",
+      "version": "Update 010",
+      "sha256": "2d39450c366fc1ebc0e5a290a860dcf21ebd7d4a22d16eb5cca23e6d4de94ca9",
+      "bytes": 6546
     }
   ]
 }

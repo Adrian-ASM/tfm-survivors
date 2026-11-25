@@ -2,9 +2,11 @@ import type { TerrainSource } from '../domain/map/TerrainSource';
 import { Run, type RunConfig, type RunSetup } from '../domain/run/Run';
 import type { RandomGenerator } from '../domain/shared/RandomGenerator';
 import { ok, type DomainError, type Result } from '../domain/shared/Result';
+import { BuildOnSite } from './BuildOnSite';
 import { BuyFromShop } from './BuyFromShop';
 import { ChooseUpgrade } from './ChooseUpgrade';
 import { LeaveShop } from './LeaveShop';
+import { LeaveSite } from './LeaveSite';
 import { TickRun } from './TickRun';
 
 /** Los casos de uso de una partida en marcha, sobre la misma `Run`. */
@@ -14,6 +16,9 @@ export interface StartedRun {
   /** Tienda (0024): comprar por id y salir. */
   readonly buyFromShop: BuyFromShop;
   readonly leaveShop: LeaveShop;
+  /** Solares de obra (0026): construir en el solar abierto y salir sin construir. */
+  readonly buildOnSite: BuildOnSite;
+  readonly leaveSite: LeaveSite;
 }
 
 /**
@@ -48,6 +53,8 @@ export class StartRun {
       chooseUpgrade: new ChooseUpgrade(run.value),
       buyFromShop: new BuyFromShop(run.value),
       leaveShop: new LeaveShop(run.value),
+      buildOnSite: new BuildOnSite(run.value),
+      leaveSite: new LeaveSite(run.value),
     });
   }
 }

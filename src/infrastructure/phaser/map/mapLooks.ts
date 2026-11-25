@@ -44,6 +44,8 @@ export interface MapLooks {
   readonly structures: StructureLooks;
   /** Vetas (0022): arte o reserva de la activa y de la agotada, y su color de reserva. */
   readonly veins: VeinLooks;
+  /** Solares (0026): arte o reserva de la obra, la casa y la torre, y sus colores de reserva. */
+  readonly sites: SiteLooks;
 }
 
 const OFF: Off = Object.freeze({ art: false });
@@ -75,6 +77,7 @@ export function resolveMapLooks(
   hasFrame: HasFrame,
   structures: StructureLooks,
   veins: VeinLooks = NO_VEIN_ART,
+  sites: SiteLooks = NO_SITE_ART,
 ): MapLooks {
   const { image } = map.bridges;
   const bridgesOk =
@@ -103,6 +106,7 @@ export function resolveMapLooks(
     colors,
     structures,
     veins,
+    sites,
   };
 }
 
@@ -156,5 +160,31 @@ export function resolveVeinLooks(appearance: Appearance, frames: FrameCount): Ve
     active: look(appearance.veins.active),
     depleted: look(appearance.veins.depleted),
     color: appearance.veinColor,
+  };
+}
+
+/** Aspecto de un solar (0026): la obra común a todo solar libre, la casa o la torre. */
+export type SiteAspectKey = 'free' | 'house' | 'tower';
+
+/** Solares resueltos (0026): arte o reserva de cada aspecto y su color de reserva. */
+export interface SiteLooks {
+  readonly looks: Readonly<Record<SiteAspectKey, StructureLook>>;
+  readonly colors: Readonly<Record<SiteAspectKey, number>>;
+}
+
+/** Sin arte de solares (planes de tests anteriores a 0026): reserva con color 0. */
+export const NO_SITE_ART: SiteLooks = Object.freeze({
+  looks: Object.freeze({ free: OFF, house: OFF, tower: OFF }),
+  colors: Object.freeze({ free: 0, house: 0, tower: 0 }),
+});
+
+/** Arte o reserva de cada aspecto de solar: hoja cargada y su frame `idle[0]` dentro. */
+export function resolveSiteLooks(appearance: Appearance, frames: FrameCount): SiteLooks {
+  const look = (aspect: StructureAspect): StructureLook =>
+    regular(aspect, frames, aspect.idle.frames.slice(0, 1));
+  const { sites, siteColors } = appearance;
+  return {
+    looks: { free: look(sites.construction), house: look(sites.house), tower: look(sites.tower) },
+    colors: { free: siteColors.construction, house: siteColors.house, tower: siteColors.tower },
   };
 }

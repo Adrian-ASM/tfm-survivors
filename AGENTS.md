@@ -144,6 +144,21 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   `hud.stone`/`sprites.pickups.stone`. Roca por tipo en `appearance.json` (`rock`: `Deco/04`–`06`, 64 × 64, un
   frame; reserva `medium`). Sin `stoneRandom` (`Run.start` de los escenarios) no hay piedra ni consumo.
   `STONE_GOLDEN` nueva; balance **idéntico** a `BALANCE_BASELINE` (30/50, 0 quietos) sin regenerarla.
+  Solares de obra (change 0026, ADR-0025): `GameMap` separa el terreno inmutable (`typeAt`, vista y firmas) de una
+  **capa de obra** (`BUILT` 5, `build`, `revision`); `isWalkable`, barridos y `nearestWalkable` leen la capa viva y
+  `FlowField` (también los de `GuardPost`) se invalida al cambiar la revisión. 6 solares por mapa generado
+  (`content/buildings.json`, huella 2 × 2, acceso a 1,5 celdas bajo la huella, radio 40 / re-armado 160) colocados
+  con un séptimo flujo `SITE_STREAM` 7 (1 valor por solar, ruta 18–35 hasta la puerta; `SITE_GOLDEN` nueva, demás
+  firmas intactas); `sites` declarables en `open`/`cells`. Fase `building` (paso 12 tras la tienda, armados al
+  empezar, solo abre si algo es asequible): `Run.build(kind)`/`leaveSite()` sin azar (`BuildOnSite`, `LeaveSite`),
+  `Stockpile.spendMaterials`, despeje de la huella (enemigos, recogibles, ovejas y su origen, puestos de guardia).
+  Casa 15 madera, paga 1 oro cada 1.800 ticks (paso 7.4, ingreso con bonificación); torre 30 madera + 15 piedra,
+  `TowerBattery` con reserva propia de 16 flechas (ids propios, solo enemigos, sin mejoras; `Arsenal` partido en
+  `advance` + `fireAll`). Snapshot `sites`, `build` y `towerProjectiles`; `RunSetup.sites` para escenarios
+  preparados. Render: `planMapArt.sites` (obra común `House_Construction`, `House_Blue`, `Tower_Blue`), `SiteArt`,
+  segunda `ProjectileLayer`, `BuildPanel` + `BuildGate` (Shop → Build → Pause); sondas `__sprint.sites`, `map.sites`,
+  `sprites.sites`/`towerArrows` y pantalla `build`. Bot v4 sale de la obra: `BALANCE_BASELINE` idéntica; bot v5
+  (`builderBot`, torre si es asequible y si no casa) **29/50**; 737/820 objetos del mapa en 42/123.
   Fuente de verdad del comportamiento: `openspec/specs/`.
 
 ## 2. Comandos

@@ -149,8 +149,14 @@ describe('planMapArt · totales con estructuras (semillas 42 y 123)', () => {
     // 0022: más 2 objetos por veta (activa y agotada).
     const veins = withStructures.veins.reduce((n, v) => n + v.intact.length + v.ruin.length, 0);
     expect(veins).toBe(2 * withStructures.veins.length);
-    expect(withStructures.objects).toBe(OBJECTS_BEFORE[seed] + pieces + veins);
-    expect(withStructures.objects - veins).toBe(seed === 42 ? 695 : 778);
+    // 0026: más 6 objetos por solar (obra, casa y torre, con su parte baja y alta).
+    const sites = withStructures.sites.reduce(
+      (n, s) => n + s.free.length + s.house.length + s.tower.length,
+      0,
+    );
+    expect(sites).toBe(6 * withStructures.sites.length);
+    expect(withStructures.objects).toBe(OBJECTS_BEFORE[seed] + pieces + veins + sites);
+    expect(withStructures.objects - veins - sites).toBe(seed === 42 ? 695 : 778);
   });
 });
 
@@ -192,7 +198,9 @@ describe('planMapArt · vetas', () => {
       const map = startSeededRun(aDefaultConfig(), seed).map;
       const plan = planFor(map, seed);
       expect(plan.veins).toHaveLength(map.veins.length);
-      expect(plan.objects).toBe((seed === 42 ? 695 : 778) + 2 * map.veins.length);
+      // 0026: más los 6 objetos de cada solar (737 y 820 en total).
+      const sites = 6 * map.sites.length;
+      expect(plan.objects).toBe((seed === 42 ? 695 : 778) + 2 * map.veins.length + sites);
       expect(plan.objects).toBeLessThanOrEqual(MAX_MAP_OBJECTS);
     },
   );

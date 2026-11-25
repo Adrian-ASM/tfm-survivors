@@ -1,6 +1,7 @@
 import type { Arena } from '../arena/Arena';
 import { contactDamage } from '../collision/contact';
 import type { Enemy } from '../enemy/Enemy';
+import type { GuardPost } from '../enemy/GuardPost';
 import { Horde } from '../enemy/Horde';
 import { HazardField } from '../hazard/HazardField';
 import { FlowField } from '../map/FlowField';
@@ -9,6 +10,8 @@ import { toMapSnapshot, type MapSnapshot } from '../map/MapSnapshot';
 import { OPEN_TERRAIN, resolveTerrain, type TerrainSource } from '../map/TerrainSource';
 import { resolveStructures } from '../structure/resolveStructures';
 import { resolveSheep } from '../sheep/resolveSheep';
+import { resolveSites } from '../site/resolveSites';
+import { BuildSite } from '../site/BuildSite';
 import type { Flock } from '../sheep/Flock';
 import type { Sheep } from '../sheep/Sheep';
 import { StructureField } from '../structure/StructureField';
@@ -25,7 +28,7 @@ import { STONE_PER_DROP, StoneDrops } from '../resource/StoneDrops';
 import type { GoldVein } from '../resource/GoldVein';
 import { resolveResources, type ResourceSites } from '../resource/resolveResources';
 import type { PlayerRules } from '../player/PlayerRules';
-import { err, ok, type DomainError, type Result } from '../shared/Result';
+import { err, invalidConfig, ok, type DomainError, type Result } from '../shared/Result';
 import type { UpgradeChoiceError } from '../upgrade/UpgradeChoiceError';
 import type { ShopError } from '../shop/ShopError';
 import { maxHealthBonus, upgradedPlayer, upgradedWeapon } from '../upgrade/upgradeStats';
@@ -41,8 +44,13 @@ import {
   type RunRules,
 } from './RunConfig';
 import { Arsenal } from '../weapon/Arsenal';
+import { TowerBattery } from '../weapon/TowerBattery';
 import type { UpgradeBoard } from '../upgrade/UpgradeBoard';
-import type { RunSnapshot, ShopSnapshot } from './RunSnapshot';
+import type { BuildSnapshot, RunSnapshot, ShopSnapshot, SiteSnapshot } from './RunSnapshot';
+import { Settlement } from '../site/Settlement';
+import type { BuildError } from '../site/BuildError';
+import { isBuildingKind } from '../site/BuildingRules';
+import { toBuildSnapshot, toSiteSnapshots, CLOSED_BUILD } from '../site/siteSnapshots';
 import {
   toBlastSnapshot,
   toDynamiteSnapshot,
@@ -60,11 +68,22 @@ import {
   toWarnings,
 } from './snapshotParts';
 import type { RunStatus } from './RunStatus';
-import { CHOOSING, LOST, RUNNING, SHOPPING, WON, type RunOutcome, type RunPhase } from './RunPhase';
+import {
+  BUILDING,
+  CHOOSING,
+  LOST,
+  RUNNING,
+  SHOPPING,
+  WON,
+  type RunOutcome,
+  type RunPhase,
+} from './RunPhase';
 import { CastleGate } from '../shop/CastleGate';
 import {
   SETUP_HEALTH_OUT_OF_RANGE,
   SETUP_POSITION_MUST_BE_FINITE,
+  SETUP_SITE_OVERLAPS_PLAYER,
+  SETUP_TOO_MANY_SITES,
   initialState,
   type InitialState,
   type RunSetup,
@@ -139,6 +158,15 @@ export class Run {
   /** Último `ShopSnapshot` y su clave: se rehace solo si cambia (design 0024 §6). */
   private shopView: ShopSnapshot | null = null;
   private shopKey = '';
+  /** Solares de obra, su paso 12 y la oferta abierta (0026). */
+  private readonly settlement: Settlement;
+  /** Torres construidas y su reserva de flechas (0026, pasos 3.1 y 3.2). */
+  private readonly towers: TowerBattery;
+  /** Últimos solares del snapshot y su clave (estado y armado): se rehacen solo si cambian. */
+  private sitesView: readonly SiteSnapshot[] = [];
+  private sitesKey = '';
+  /** Oferta de obra del snapshot: la cerrada o la de la obra abierta (fija mientras dura). */
+  private buildView: BuildSnapshot = CLOSED_BUILD;
 
   private constructor(
     private readonly rules: RunRules,
@@ -148,6 +176,7 @@ export class Run {
     sites: readonly StructureSite[],
     resources: ResourceSites,
     stoneRandom: RandomGenerator | null,
+    buildSites: readonly BuildSite[],
   ) {
     this.arena = rules.arena;
     this.stones = new StoneDrops(rules.resources, stoneRandom);
@@ -155,6 +184,7 @@ export class Run {
       terrain,
       sites.map((s) => ({ ...s, type: s.type.id })),
       { ...resources, veinRadius: rules.resources.goldVeins.radius },
+      buildSites,
     );
     this.field = new FlowField(terrain);
     this.player = initial.player;
@@ -170,6 +200,8 @@ export class Run {
     this.veins = initial.veins;
     this.flock = initial.flock;
     this.gate = new CastleGate(terrain.door, rules.shop, initial.shopArmed);
+    this.settlement = new Settlement(buildSites, rules.buildings);
+    this.towers = new TowerBattery(rules.buildings, buildSites);
     for (const w of rules.loadout.weapons) this.retune(w.id);
     const bonus = maxHealthBonus(rules.upgrades, this.board.levels);
     this.player = this.player.withRules(this.effectivePlayer(), bonus);
@@ -200,6 +232,13 @@ export class Run {
     const { veins, woodPiles } = resources.value;
     const sheep = resolveSheep(terrain, map.value, rules.value.sheep, sites.value);
     if (!sheep.ok) return sheep;
+    const { buildings } = rules.value;
+    const before = { structures: sites.value, veins, woodPiles, sheep: sheep.value.at };
+    const anchors = resolveSites(terrain, map.value, buildings, before);
+    if (!anchors.ok) return anchors;
+    const buildSites = anchors.value.map(
+      (a, id) => new BuildSite(id, a.col, a.row, buildings, map.value.cellSize),
+    );
     const initial = initialState(
       rules.value,
       setup,
@@ -210,17 +249,46 @@ export class Run {
       sheep.value,
     );
     if (!initial.ok) return initial;
-    return ok(
-      new Run(
-        rules.value,
-        random,
-        map.value,
-        initial.value,
-        sites.value,
-        resources.value,
-        stoneRandom ?? null,
-      ),
+    if ((setup.sites?.length ?? 0) > buildSites.length) {
+      return err(invalidConfig('setup.sites', SETUP_TOO_MANY_SITES));
+    }
+    const run = new Run(
+      rules.value,
+      random,
+      map.value,
+      initial.value,
+      sites.value,
+      resources.value,
+      stoneRandom ?? null,
+      buildSites,
     );
+    return run.prebuild(setup.sites ?? []);
+  }
+
+  /** Solares construidos al empezar (`RunSetup.sites`): en el tick 0, como en la obra, sin azar. */
+  private prebuild(entries: NonNullable<RunSetup['sites']>): Result<Run, DomainError> {
+    for (const [i, entry] of entries.entries()) {
+      const site = this.settlement.sites[i];
+      if (!site || !entry.state) continue;
+      const { x, y } = this.player.position;
+      const s = this.terrain.cellSize;
+      const ex = Math.max(site.col * s - x, 0, x - (site.col + site.cols) * s);
+      const ey = Math.max(site.row * s - y, 0, y - (site.row + site.rows) * s);
+      if (ex * ex + ey * ey < this.player.radius ** 2) {
+        return err(invalidConfig(`setup.sites.${String(i)}`, SETUP_SITE_OVERLAPS_PLAYER));
+      }
+      this.raise(site, entry.state);
+    }
+    return ok(this);
+  }
+
+  /** Construye `kind` en el solar: estado, obra en el mapa, torre y despeje (sin azar). */
+  private raise(site: BuildSite, kind: 'house' | 'tower'): void {
+    site.markBuilt(kind, this.tickCount);
+    if (kind === 'tower') this.towers.add(site);
+    const built = this.terrain.build(site.col, site.row, site.cols, site.rows);
+    if (!built.ok) throw new Error(`Invariante rota: ${built.error.message}`);
+    this.clearFootprint();
   }
 
   /** Mapa de la partida (spec procedural-map): la misma vista congelada durante toda la partida. */
@@ -334,10 +402,13 @@ export class Run {
     this.flock.step(n, x, y, this.terrain, this.arena);
     this.field.retarget(this.terrain.colAt(x), this.terrain.rowAt(y));
     this.horde.act(n, x, y, TICK_SECONDS, this.field);
-    const { horde, structures, flock } = this;
-    if (this.arsenal.step(n, x, y, horde.alive, structures.all, flock.all) > 0) {
-      horde.removeDead(this.onDeath);
-    }
+    const { horde, structures, flock, arsenal, towers } = this;
+    // Paso 3 (0026): 3.1 proyectiles del jugador y flechas; 3.2 armas del jugador y torres.
+    let kills = arsenal.advance(n, horde.alive, structures.all, flock.all);
+    kills += towers.advance(n, horde.alive);
+    kills += arsenal.fireAll(n, x, y, horde.alive);
+    towers.fire(n, horde.alive);
+    if (kills > 0) horde.removeDead(this.onDeath);
     structures.settle(this.onRuin);
     flock.settle(n, this.onSheepDeath);
     this.stepHazards(n, x, y);
@@ -347,6 +418,7 @@ export class Run {
     }
     this.collect(x, y);
     this.regenerate(n);
+    this.settlement.payIncome(n, this.payHouse);
     this.director.step(n, horde.alive.length, this.place);
     structures.spawnGuards(n, horde, this.rules.spawn.maxAlive);
     this.flock.respawn(n, x, y);
@@ -354,6 +426,71 @@ export class Run {
     this.openNextOffer();
     // Paso 11: con la oferta abierta en este tick (paso 10) solo re-arma; abre si sigue en curso.
     if (this.gate.step(x, y, this.status === 'running')) this.phase = SHOPPING;
+    // Paso 12 (0026): solares en orden; con otra fase abierta en este tick, solo re-arman.
+    if (this.settlement.step(x, y, this.status === 'running', this.stock)) {
+      this.phase = BUILDING;
+      this.buildView = toBuildSnapshot(this.settlement, this.rules.buildings);
+    }
+  }
+
+  /**
+   * Sale de la obra sin construir (spec build-sites 0026): vuelve a en curso sin ejecutar ticks; el
+   * solar sigue desarmado. Fuera de la obra, `not-building` sin cambios.
+   */
+  /**
+   * Construye `kind` en el solar abierto (spec build-sites 0026), sin ejecutar ticks ni consumir
+   * azar: resta su coste, el solar queda construido en `snapshot.tick`, su huella deja de ser
+   * caminable (la revisión del mapa invalida los campos, ADR-0025) y la partida vuelve a en curso.
+   * Fuera de la obra, con un tipo desconocido o no ofrecido, un error tipado sin cambios.
+   */
+  build(kind: string): Result<void, BuildError> {
+    if (this.phase.status !== 'building') return err({ code: 'not-building' });
+    const site = this.settlement.open;
+    const offered = this.settlement.offered;
+    if (!isBuildingKind(kind)) return err({ code: 'unknown-kind', kind });
+    if (!site || !offered.includes(kind)) return err({ code: 'not-affordable', kind });
+    const { wood, stone } = this.rules.buildings.cost(kind);
+    if (!this.stock.spendMaterials(wood, stone)) return err({ code: 'not-affordable', kind });
+    this.raise(site, kind);
+    this.closeSite();
+    return ok(undefined);
+  }
+
+  /**
+   * Despeje de la huella recién construida (spec build-sites 0026, design §4), en orden fijo y sin
+   * azar: enemigos en orden de lista, recogibles en orden de creación, ovejas en orden de lista y
+   * puestos de guardia. El jugador no se mueve: las reglas del acceso garantizan que no la solapa.
+   */
+  private clearFootprint(): void {
+    const map = this.terrain;
+    const spot = { x: 0, y: 0 };
+    const posts = new Set<GuardPost>();
+    for (const e of this.horde.alive) {
+      if (e.post) posts.add(e.post);
+      if (!map.isBuiltAt(e.x, e.y)) continue;
+      map.nearestWalkable(e.x, e.y, spot);
+      e.relocate(spot.x, spot.y);
+    }
+    this.pickups.evict();
+    this.flock.evict(map);
+    for (const s of this.structures.all) if (s.post) posts.add(s.post);
+    for (const post of posts) post.evict(map);
+    const { x, y } = this.player.position;
+    if (map.overlapsBlocked(x, y, this.player.radius)) {
+      throw new Error('Invariante rota: el jugador solapa la huella recién construida');
+    }
+  }
+
+  leaveSite(): Result<void, BuildError> {
+    if (this.phase.status !== 'building') return err({ code: 'not-building' });
+    this.closeSite();
+    return ok(undefined);
+  }
+
+  private closeSite(): void {
+    this.settlement.close();
+    this.buildView = CLOSED_BUILD;
+    this.phase = RUNNING;
   }
 
   /**
@@ -478,6 +615,14 @@ export class Run {
     dead.post?.release();
   };
 
+  /**
+   * Paso 7.4 (0026): el pago de una casa es un ingreso de oro con la bonificación y el resto propio
+   * del oro, directo al contador (sin recogible ni tope). Se crea una sola vez: no asigna por tick.
+   */
+  private readonly payHouse = (gold: number): void => {
+    this.stock.add(gold, 0, this.player.effective.goldBonusPercent ?? 0);
+  };
+
   /** Una estructura que queda en ruina suelta su oro en su posición (spec goblin-structures). */
   private readonly onRuin = (ruin: Structure): void => {
     const gold = this.rules.resources.goldFor(ruin.site.type.id);
@@ -530,6 +675,7 @@ export class Run {
       enemies: Object.freeze(enemies),
       sheep: Object.freeze(this.flock.all.map((o) => toSheepSnapshot(o, o.damagedAt(k, flash)))),
       projectiles: Object.freeze(this.arsenal.projectiles.map(toProjectileSnapshot)),
+      towerProjectiles: Object.freeze(this.towers.projectiles.map(toProjectileSnapshot)),
       pulses: Object.freeze(this.arsenal.pulses.map(toPulseSnapshot)),
       dynamites: Object.freeze(
         this.hazards.dynamites.map((d) =>
@@ -554,7 +700,20 @@ export class Run {
       offer: toOfferSnapshot(this.board),
       upgrades: toUpgradeLevels(this.rules.upgrades, this.board),
       shop: this.shopSnapshot(),
+      sites: this.siteSnapshots(),
+      build: this.buildView,
     });
+  }
+
+  /** Solares del snapshot, rehechos solo al cambiar el estado o el armado de alguno. */
+  private siteSnapshots(): readonly SiteSnapshot[] {
+    const { sites } = this.settlement;
+    let key = '';
+    for (const s of sites) key += `${s.state}${s.gate.armed ? '+' : '-'}`;
+    if (key === this.sitesKey && this.sitesView.length === sites.length) return this.sitesView;
+    this.sitesKey = key;
+    this.sitesView = toSiteSnapshots(sites);
+    return this.sitesView;
   }
 
   /** Productos y estado de la tienda, rehechos solo al cambiar su clave (oro, vida, niveles…). */

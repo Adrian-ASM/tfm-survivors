@@ -49,6 +49,16 @@ export interface DeclaredSheep {
 }
 
 /**
+ * Solar declarado por un mapa dado (spec procedural-map 0026): la celda de referencia (ancla de la
+ * huella, primera columna y fila); la huella y el acceso salen del contenido. Sin reglas de
+ * colocación ni de ruta: solo tiene que caber en la rejilla y en el mundo.
+ */
+export interface DeclaredSite {
+  readonly col: number;
+  readonly row: number;
+}
+
+/**
  * De dónde sale el mapa de una partida (ADR-0013). Es un valor, no un puerto: la composición lo
  * resuelve junto con la semilla y el dominio nunca la conoce.
  * - `open`: mapa vacío, todo hierba (escenarios sin mapa declarado y `?e2e&map=empty`).
@@ -69,6 +79,8 @@ export type TerrainSource =
       readonly structures?: readonly DeclaredStructure[];
       readonly resources?: DeclaredResources;
       readonly sheep?: DeclaredSheep;
+      /** Solares de obra (0026), en el orden de la lista de solares. */
+      readonly sites?: readonly DeclaredSite[];
     }
   | {
       readonly kind: 'generated';
@@ -78,6 +90,8 @@ export type TerrainSource =
       readonly resourceRandom: RandomGenerator;
       /** Azar de las ovejas (ADR-0022): colocación, primer pasto, paseos y reapariciones. */
       readonly sheepRandom: RandomGenerator;
+      /** Solares de obra (0026): 1 valor por solar, con su propio flujo. */
+      readonly siteRandom: RandomGenerator;
     }
   | {
       readonly kind: 'cells';
@@ -87,6 +101,7 @@ export type TerrainSource =
       readonly structures?: readonly DeclaredStructure[];
       readonly resources?: DeclaredResources;
       readonly sheep?: DeclaredSheep;
+      readonly sites?: readonly DeclaredSite[];
     };
 
 export const OPEN_TERRAIN: TerrainSource = Object.freeze({ kind: 'open' });

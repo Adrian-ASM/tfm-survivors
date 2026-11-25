@@ -23,12 +23,15 @@ export interface ShopStep {
 export const shopVisible = (status: RunStatus | undefined, paused: boolean): boolean =>
   !paused && status === 'shopping';
 
-/** Pantalla de la sonda E2E para un frame de partida: pausa, tienda o en juego. */
+/** Pantalla de la sonda E2E para un frame de partida: pausa, tienda, obra (0026) o en juego. */
 export const playScreen = (
   status: RunStatus | undefined,
   paused: boolean,
-): 'paused' | 'shop' | 'playing' =>
-  paused ? 'paused' : shopVisible(status, paused) ? 'shop' : 'playing';
+): 'paused' | 'shop' | 'build' | 'playing' => {
+  if (paused) return 'paused';
+  if (shopVisible(status, paused)) return 'shop';
+  return status === 'building' ? 'build' : 'playing';
+};
 
 /**
  * Reglas de la tienda en la escena (spec castle-shop y main-menu 0024), sin import del motor

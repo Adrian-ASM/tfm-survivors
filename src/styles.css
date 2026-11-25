@@ -288,3 +288,52 @@ body {
 .shop-panel__notice {
   order: 2;
 }
+
+/* Panel de obra (change 0026): overlay DOM centrado y escalado como la tienda. */
+.build-panel {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5em;
+  max-width: 28em;
+  padding: 1em 1.5em;
+  font: calc(14px * var(--ui-scale, 1)) monospace;
+  color: #fff;
+  background: rgb(20 20 30 / 94%);
+  border: 1px solid #7ce2fe;
+  border-radius: 8px;
+}
+
+.build-panel[hidden] {
+  display: none;
+}
+
+.build-panel h2,
+.build-panel__stock {
+  margin: 0;
+  text-align: center;
+}
+
+.build-panel__options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.build-panel button {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.35em 0.75em;
+  font: inherit;
+  color: #fff;
+  background: #23233a;
+  border: 1px solid #7ce2fe;
+  border-radius: 4px;
+  cursor: pointer;
+}

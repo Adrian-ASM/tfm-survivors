@@ -638,3 +638,84 @@ test('Tienda: se abre al volver a la puerta, un clic sin oro no compra y Esc sal
   expect(seen).not.toContain('paused');
   expect(problems).toEqual([]);
 });
+
+/** Como `routeTo`, desde un punto cualquiera (la posición actual del jugador). */
+function routeFrom(m: MapView, from: Waypoint, to: Waypoint): Waypoint[] | null {
+  return routeTo({ ...m, start: { x: from.x, y: from.y, radius: 0 } }, to);
+}
+
+// Spec build-sites (0026), "Construir una casa en el juego real [E2E]" y parte E2E de
+// sprite-rendering "Solar en obra y casa construida": ?seed=42 con el mapa real en modo manual. El
+// test recoge montones de madera (3 cada uno) por recorridos BFS hasta tener ≥ 15 y va al acceso
+// del solar más cercano; con la obra abierta hace clic en la casa y llama a step(1).
+test('Solares: recoger madera, abrir la obra en el acceso más cercano y construir una casa', async ({
+  page,
+}) => {
+  slowMapRealOnCi();
+  const problems = collect(page, ['pageerror', 'error']);
+  await openGame(page, gameUrl({ seed: 42, manual: true, map: 'real' }));
+  const m = (await probe(page))?.map;
+  if (!m) throw new Error('sin mapa');
+  expect(m.sites).toHaveLength(6);
+  const first = await probe(page);
+  expect(first?.sites?.empty).toBe(6);
+  expect(first?.sprites?.sites).toEqual({ empty: 6, house: 0, tower: 0, fallback: 0 });
+
+  let snap = await snapshotOf(page);
+  /** Recorre la ruta tramo a tramo; atiende ofertas y tienda; para si `done` o en obra. */
+  const walk = async (to: Waypoint, done: (s: NonNullable<typeof snap>) => boolean) => {
+    const at = snap?.player;
+    const route = at ? routeFrom(m, at, to) : null;
+    for (const w of route ?? []) {
+      for (let guard = 0; guard < 40; guard++) {
+        if (!snap || done(snap) || snap.status === 'building' || snap.status === 'over') return;
+        if (snap.status === 'choosing') await page.keyboard.press('1');
+        if (snap.status === 'shopping') await page.keyboard.press('Escape');
+        const leg = legTo(snap.player, w);
+        if (!leg) break;
+        await holdKey(page, leg.key, Math.min(20, leg.ticks));
+        snap = await snapshotOf(page);
+      }
+    }
+  };
+  const piles = [...m.woodPiles];
+  while ((snap?.resources.wood ?? 0) < 15 && piles.length > 0 && snap?.status !== 'over') {
+    const here = snap?.player ?? m.start;
+    piles.sort(
+      (a, b) => Math.hypot(a.x - here.x, a.y - here.y) - Math.hypot(b.x - here.x, b.y - here.y),
+    );
+    const pile = piles.shift();
+    if (!pile) break;
+    const before = snap?.resources.wood ?? 0;
+    await walk(pile, (s) => s.resources.wood > before);
+  }
+  expect(snap?.resources.wood ?? 0).toBeGreaterThanOrEqual(15);
+  const here = snap?.player ?? m.start;
+  const sites = [...(snap?.sites ?? [])]
+    .filter((s) => s.state === 'free' && s.armed)
+    .sort(
+      (a, b) =>
+        Math.hypot(a.access.x - here.x, a.access.y - here.y) -
+        Math.hypot(b.access.x - here.x, b.access.y - here.y),
+    );
+  for (const site of sites) {
+    if (snap?.status === 'building') break;
+    await walk(site.access, () => false);
+  }
+  expect(snap?.status).toBe('building');
+  const open = (await probe(page))?.sites;
+  expect(open?.panel.visible).toBe(true);
+  expect(open?.panel.siteId).toBe(snap?.build.siteId);
+  expect(open?.panel.options.map((o) => o.kind)).toContain('house');
+  const wood = snap?.resources.wood ?? 0;
+
+  await page.locator('[data-building="house"]').click();
+  expect(await step(page, 1)).toBe(1);
+  const after = await probe(page);
+  const built = after?.sites?.list.find((s) => s.id === snap?.build.siteId);
+  expect(built?.state).toBe('house');
+  expect(after?.sites?.panel.visible).toBe(false);
+  expect(after?.snapshot?.resources.wood).toBe(wood - 15);
+  expect(after?.sprites?.sites).toMatchObject({ empty: 5, house: 1, tower: 0 });
+  expect(problems).toEqual([]);
+});

@@ -1,4 +1,4 @@
-import { codeOf, isWalkableCode } from './CellType';
+import { isWalkableCode } from './CellType';
 import type { GameMap } from './GameMap';
 
 /**
@@ -9,7 +9,7 @@ import type { GameMap } from './GameMap';
  * celdas que solo comparten esquina no comunican.
  */
 export function reachableFrom(
-  cells: Uint8Array,
+  cells: ArrayLike<number>,
   cols: number,
   rows: number,
   start: number,
@@ -34,7 +34,13 @@ export function reachableFrom(
 }
 
 /** Encola la celda j si es caminable y no vista; devuelve la cola nueva. */
-function visit(j: number, cells: Uint8Array, seen: Uint8Array, queue: Int32Array, tail: number) {
+function visit(
+  j: number,
+  cells: ArrayLike<number>,
+  seen: Uint8Array,
+  queue: Int32Array,
+  tail: number,
+) {
   if (seen[j] !== 0 || !isWalkableCode(cells[j] ?? -1)) return tail;
   seen[j] = 1;
   queue[tail] = j;
@@ -48,7 +54,7 @@ function visit(j: number, cells: Uint8Array, seen: Uint8Array, queue: Int32Array
  * asignar): `dist` y `queue` con longitud ≥ celdas. Si `start` no es caminable, todo queda a −1.
  */
 export function distancesFrom(
-  cells: Uint8Array,
+  cells: ArrayLike<number>,
   cols: number,
   rows: number,
   start: number,
@@ -77,7 +83,7 @@ export function distancesFrom(
 function step(
   j: number,
   d: number,
-  cells: Uint8Array,
+  cells: ArrayLike<number>,
   dist: Int32Array,
   queue: Int32Array,
   tail: number,
@@ -88,13 +94,12 @@ function step(
   return tail + 1;
 }
 
-/** Códigos de las celdas del mapa en orden de filas (copia; fuera del tick). */
+/**
+ * Códigos vivos de las celdas del mapa en orden de filas (copia; fuera del tick): el terreno con las
+ * celdas construidas (ADR-0025). Sin obras, los del terreno.
+ */
 export function codesOf(map: GameMap): Uint8Array {
-  const codes = new Uint8Array(map.cols * map.rows);
-  for (let r = 0; r < map.rows; r++) {
-    for (let c = 0; c < map.cols; c++) codes[r * map.cols + c] = codeOf(map.typeAt(c, r));
-  }
-  return codes;
+  return Uint8Array.from(map.liveCodes);
 }
 
 /** Celdas alcanzables (1) desde la celda (col, row), en orden de filas. */

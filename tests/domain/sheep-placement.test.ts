@@ -9,7 +9,13 @@ import type { SheepRules } from '../../src/domain/sheep/SheepRules';
 import { placeStructures } from '../../src/domain/structure/placeStructures';
 import type { StructureSite } from '../../src/domain/structure/StructureSite';
 import { seededRun } from '../../src/composition/seedSource';
-import { CONTENT_SHEEP, LONG_RUN_HEALTH, aDefaultConfig, withPlayer, withoutSheep } from '../support/builders';
+import {
+  CONTENT_SHEEP,
+  LONG_RUN_HEALTH,
+  aDefaultConfig,
+  withPlayer,
+  withoutSheep,
+} from '../support/builders';
 import { structureRandomFor } from '../support/camps';
 import { randomInputs } from '../support/inputs';
 import { mapForSeed } from '../support/mapStats';
@@ -83,7 +89,8 @@ function ruleFailures(p: Placed, radius = CONTENT_SHEEP.radius): string[] {
       failures.push(`${tag}: separación`);
     if (map.overlapsBlocked(pt.x, pt.y, radius)) failures.push(`${tag}: solapa el mapa`);
     const exit = map.start;
-    if (!(Math.hypot(pt.x - exit.x, pt.y - exit.y) > EXIT_CLEARANCE)) failures.push(`${tag}: salida`);
+    if (!(Math.hypot(pt.x - exit.x, pt.y - exit.y) > EXIT_CLEARANCE))
+      failures.push(`${tag}: salida`);
     placed.push(cell);
   }
   return failures;
@@ -155,15 +162,21 @@ describe('Colocación determinista de las ovejas (spec procedural-map)', () => {
   });
 
   it('Scenario: Semillas distintas, ovejas distintas (1..50)', () => {
-    const sigs = Array.from({ length: 50 }, (_, i) => place(i + 1).at.map((p) => `${String(p.x)},${String(p.y)}`).join('|'));
+    const sigs = Array.from({ length: 50 }, (_, i) =>
+      place(i + 1)
+        .at.map((p) => `${String(p.x)},${String(p.y)}`)
+        .join('|'),
+    );
     expect(new Set(sigs).size).toBe(50);
   });
 
   it('Scenario: Las ovejas no cambian celdas, estructuras ni recursos (1..50, con tope y con tope 0)', () => {
     for (let seed = 1; seed <= 50; seed++) {
+      // Los solares (0026) se colocan después y esquivan las celdas de las ovejas: fuera de la
+      // comparación (el escenario es de celdas, estructuras y recursos).
       const a = startSeededRun(CONFIG, seed).map;
       const b = startSeededRun(withoutSheep(CONFIG), seed).map;
-      expect(a, `semilla ${String(seed)}`).toEqual(b);
+      expect({ ...a, sites: [] }, `semilla ${String(seed)}`).toEqual({ ...b, sites: [] });
     }
   });
 

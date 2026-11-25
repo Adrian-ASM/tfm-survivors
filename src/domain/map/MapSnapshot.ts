@@ -26,6 +26,8 @@ export interface MapSnapshot {
   readonly veins: readonly MapVein[];
   /** Montones de madera iniciales en su orden (posición inicial; los recogibles, en `RunSnapshot`). */
   readonly woodPiles: readonly MapPoint[];
+  /** Solares de obra en el orden de la lista (0026, estático: el estado va en `RunSnapshot`). */
+  readonly sites: readonly MapSite[];
 }
 
 /** Punto del mapa en px. */
@@ -40,6 +42,21 @@ export interface MapVein extends MapPoint {
   readonly col: number;
   readonly row: number;
   readonly radius: number;
+}
+
+/**
+ * Solar del mapa (spec build-sites 0026): id, huella (ancla, columnas y filas; la de la casa y la de
+ * la torre son la misma, design §1), centro de la huella y acceso.
+ */
+export interface MapSite {
+  readonly id: number;
+  readonly col: number;
+  readonly row: number;
+  readonly cols: number;
+  readonly rows: number;
+  readonly x: number;
+  readonly y: number;
+  readonly access: MapPoint;
 }
 
 /**
@@ -64,7 +81,7 @@ export interface MapStructure {
   } | null;
 }
 
-/** Vista del mapa con sus estructuras, vetas y montones (por defecto, ninguno); copia y congela. */
+/** Vista del mapa con sus estructuras, vetas, montones y solares (por defecto, ninguno); copia y congela. */
 export function toMapSnapshot(
   map: GameMap,
   structures: readonly MapStructure[] = [],
@@ -73,6 +90,7 @@ export function toMapSnapshot(
     readonly woodPiles: readonly MapPoint[];
     readonly veinRadius: number;
   } = { veins: [], woodPiles: [], veinRadius: 0 },
+  sites: readonly MapSite[] = [],
 ): MapSnapshot {
   const cells: CellType[] = [];
   const counts = Object.fromEntries(CELL_TYPES.map((t) => [t, 0])) as Record<CellType, number>;
@@ -121,5 +139,19 @@ export function toMapSnapshot(
       ),
     ),
     woodPiles: Object.freeze(resources.woodPiles.map((p) => Object.freeze({ x: p.x, y: p.y }))),
+    sites: Object.freeze(
+      sites.map((s) =>
+        Object.freeze({
+          id: s.id,
+          col: s.col,
+          row: s.row,
+          cols: s.cols,
+          rows: s.rows,
+          x: s.x,
+          y: s.y,
+          access: Object.freeze({ x: s.access.x, y: s.access.y }),
+        }),
+      ),
+    ),
   });
 }

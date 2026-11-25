@@ -33,4 +33,10 @@ export const MENU_LABELS = {
   shopMax: 'Máximo',
   shopNoGold: 'Oro insuficiente',
   shopFullHealth: 'Vida llena',
+  build: 'Obra',
+  buildLeave: 'Salir',
+  buildWood: 'Madera',
+  buildStone: 'Piedra',
+  buildHouse: 'Casa',
+  buildTower: 'Torre',
 } as const;

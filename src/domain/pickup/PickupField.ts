@@ -126,6 +126,20 @@ export class PickupField {
     if (collected) this.compact();
   }
 
+  /**
+   * Despeje de una obra (spec build-sites 0026): cada recogible, atraído o no, con el centro en una
+   * celda construida pasa al centro de la celda caminable más cercana, sin cambiar id, tipo, valor,
+   * imán ni orden. Sin azar; solo al construir.
+   */
+  evict(): void {
+    for (const p of this.active) {
+      if (!this.map.isBuiltAt(p.x, p.y)) continue;
+      this.map.nearestWalkable(p.x, p.y, this.spot);
+      p.x = this.spot.x;
+      p.y = this.spot.y;
+    }
+  }
+
   /** Compactación estable en el sitio (ADR-0006): O(n), sin asignar. */
   private compact(): void {
     let w = 0;
