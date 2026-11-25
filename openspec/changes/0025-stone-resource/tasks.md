@@ -18,7 +18,7 @@
 
 ## 1. Dominio: reglas de la tirada y contador (TDD)
 
-- [ ] 1.1 *TDD* `StoneDrops` (nuevo, `src/domain/resource/StoneDrops.ts`) y `ResourceRules.stoneChanceFor` con
+- [x] 1.1 *TDD* `StoneDrops` (nuevo, `src/domain/resource/StoneDrops.ts`) y `ResourceRules.stoneChanceFor` con
   `drops.stoneChance?` (opcional en el dominio; ausente = 0). `roll(typeId, detonated)`: sin generador `false` sin
   consumir; con generador consume 1 valor siempre y suelta si `!detonated && ⌊u × 100⌋ < p`. Validación contra el
   catálogo con `STONE_CHANCE_INVALID` (tipo que falta, que sobra, fuera de 0..100 o no entero; el error nombra el
@@ -26,7 +26,7 @@
   Escenarios: `resources` "Umbral de la tirada", "Valor límite de la tirada", "Tipo con 0 consume y no suelta" (a nivel
   de `roll`), "El barril que explota consume y no suelta" (a nivel de `roll`), "La probabilidad de un tipo no desplaza
   las tiradas de los demás", "Tabla de piedra inválida" y "Límites válidos de la tabla" (parte de dominio).
-- [ ] 1.2 *TDD* `Stockpile`: tercer contador `stone` (constructor `(gold, wood, stone = 0)`), `addStone(n)` sin
+- [x] 1.2 *TDD* `Stockpile`: tercer contador `stone` (constructor `(gold, wood, stone = 0)`), `addStone(n)` sin
   bonificación ni resto, que no se toca en `spend`. Test `tests/domain/resource/stockpile.test.ts`.
   Escenarios: `resources` "Sin bonificación", "Valores grandes" y "No baja al comprar ni al recibir daño" (a nivel de
   `Stockpile`; en `Run` los cierra 3.3).

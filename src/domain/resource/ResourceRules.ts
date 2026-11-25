@@ -14,6 +14,8 @@ export const MEAT_HEAL_PERCENT_OUT_OF_RANGE =
 export const RESOURCE_DROP_UNKNOWN_ENEMY = 'Drop de recursos de un tipo de enemigo desconocido';
 export const RESOURCE_GOLD_PER_KILL_INVALID =
   'El oro por baja necesita un entero ≥ 0 para cada tipo de enemigo y ninguno más';
+export const STONE_CHANCE_INVALID =
+  'La probabilidad de piedra necesita un entero de 0 a 100 para cada tipo de enemigo y ninguno más';
 export const RESOURCE_DROP_UNKNOWN_STRUCTURE =
   'Drop de recursos de un tipo de estructura desconocido';
 
@@ -44,6 +46,11 @@ export interface ResourcesConfig {
      * enteros ≥ 0. Ausente (válido en el dominio, no en el fichero), ningún tipo suelta oro.
      */
     readonly goldPerKill?: Readonly<Record<string, number>>;
+    /**
+     * Probabilidad de piedra por baja (0025), porcentaje entero 0..100 por id de tipo: si está,
+     * exactamente los tipos del catálogo. Ausente (válido en el dominio, no en el fichero), 0.
+     */
+    readonly stoneChance?: Readonly<Record<string, number>>;
   };
   readonly woodPiles: { readonly count: number; readonly wood: number };
   readonly goldVeins: { readonly count: number; readonly gold: number; readonly radius: number };
@@ -53,6 +60,7 @@ export interface ResourcesConfig {
 
 const isAmount = (v: number): boolean => Number.isInteger(v) && v >= 1;
 const isCount = (v: number): boolean => Number.isInteger(v) && v >= 0;
+const isPercent = (v: number): boolean => isCount(v) && v <= 100;
 
 const amountError = (field: string): DomainError =>
   invalidConfig(`${PATH}.${field}`, RESOURCE_AMOUNT_MUST_BE_INTEGER);
@@ -100,22 +108,24 @@ function resolveDrops<K extends string>(
 }
 
 /**
- * Oro por baja resuelto contra el catálogo (spec resources 0024): un tipo de más, un valor que no es
- * entero ≥ 0 o un tipo que falta es un error que nombra el tipo.
+ * Tabla por tipo de enemigo resuelta contra el catálogo: oro por baja (0024, enteros ≥ 0) y
+ * probabilidad de piedra (0025, enteros 0..100). Un tipo de más, un valor inválido o un tipo que
+ * falta es un error que nombra el tipo.
  */
-function resolveGoldPerKill(
+function resolvePerType(
   table: Readonly<Record<string, number>> | undefined,
   catalog: EnemyCatalog,
+  field: 'goldPerKill' | 'stoneChance',
+  valid: (v: number) => boolean,
+  message: string,
 ): Result<ReadonlyMap<string, number>, DomainError> {
   const out = new Map<string, number>();
   if (!table) return ok(out);
   const fail = (id: string) =>
-    err(
-      invalidConfig(`${PATH}.drops.goldPerKill.${id}`, `${RESOURCE_GOLD_PER_KILL_INVALID}: ${id}`),
-    );
-  for (const [id, gold] of Object.entries(table)) {
-    if (catalog.get(id) === undefined || !isCount(gold)) return fail(id);
-    out.set(id, gold);
+    err(invalidConfig(`${PATH}.drops.${field}.${id}`, `${message}: ${id}`));
+  for (const [id, value] of Object.entries(table)) {
+    if (catalog.get(id) === undefined || !valid(value)) return fail(id);
+    out.set(id, value);
   }
   const missing = catalog.ids.find((id) => !out.has(id));
   return missing === undefined ? ok(out) : fail(missing);
@@ -135,6 +145,7 @@ export class ResourceRules {
     /** Carne por oveja y curación por unidad (0023). */
     readonly meat: MeatConfig,
     private readonly goldPerKill: ReadonlyMap<string, number>,
+    private readonly stoneChance: ReadonlyMap<string, number>,
   ) {
     Object.freeze(this);
   }
@@ -147,6 +158,11 @@ export class ResourceRules {
   /** Oro que suelta un enemigo abatido de ese tipo (0 si ninguno, 0024). */
   goldForEnemy(enemyType: string): number {
     return this.goldPerKill.get(enemyType) ?? 0;
+  }
+
+  /** Probabilidad entera 0..100 de que una baja abatida de ese tipo suelte piedra (0025). */
+  stoneChanceFor(enemyType: string): number {
+    return this.stoneChance.get(enemyType) ?? 0;
   }
 
   /** Oro que suelta un tipo de estructura al quedar destruida (0 si ninguno). */
@@ -175,8 +191,23 @@ export class ResourceRules {
       RESOURCE_DROP_UNKNOWN_STRUCTURE,
     );
     if (!gold.ok) return gold;
-    const perKill = resolveGoldPerKill(config.drops.goldPerKill, catalog);
+    const { goldPerKill, stoneChance } = config.drops;
+    const perKill = resolvePerType(
+      goldPerKill,
+      catalog,
+      'goldPerKill',
+      isCount,
+      RESOURCE_GOLD_PER_KILL_INVALID,
+    );
     if (!perKill.ok) return perKill;
+    const stone = resolvePerType(
+      stoneChance,
+      catalog,
+      'stoneChance',
+      isPercent,
+      STONE_CHANCE_INVALID,
+    );
+    if (!stone.ok) return stone;
     const scalarError = checkScalars(config);
     if (scalarError) return err(scalarError);
     return ok(
@@ -188,6 +219,7 @@ export class ResourceRules {
         Object.freeze({ ...config.placement }),
         Object.freeze({ ...config.meat }),
         perKill.value,
+        stone.value,
       ),
     );
   }

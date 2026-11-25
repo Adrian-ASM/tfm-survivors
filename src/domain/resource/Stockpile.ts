@@ -1,6 +1,7 @@
 /**
- * Oro y madera de la partida (spec resources, "Contadores de oro y madera de la partida"): enteros
- * que empiezan en 0 (o en los de `RunSetup`). La madera solo sube; el oro sube con cada ingreso
+ * Oro, madera y piedra de la partida (spec resources, "Contadores de oro y madera de la partida" y
+ * "Contador de piedra de la partida", 0025): enteros que empiezan en 0 (o en los de `RunSetup`).
+ * La madera y la piedra solo suben, sin bonificación; el oro sube con cada ingreso
  * (con la bonificación de oro y un resto propio, 0024) y solo baja al comprar en la tienda. Interno
  * a `Run` (ADR-0021).
  */
@@ -11,6 +12,7 @@ export class Stockpile {
   constructor(
     private goldCount = 0,
     private woodCount = 0,
+    private stoneCount = 0,
   ) {}
 
   get gold(): number {
@@ -19,6 +21,15 @@ export class Stockpile {
 
   get wood(): number {
     return this.woodCount;
+  }
+
+  get stone(): number {
+    return this.stoneCount;
+  }
+
+  /** Suma la piedra recogida (entero ≥ 0), tal cual: sin bonificación ni resto (0025). */
+  addStone(stone: number): void {
+    this.stoneCount += stone;
   }
 
   /**
