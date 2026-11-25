@@ -138,6 +138,22 @@ export function chooseWhileOpen(run: Run, pick: (offer: RunSnapshot['offer']) =>
   return choices;
 }
 
+/**
+ * Visita del bot v4 (spec run-outcome 0024): con la tienda abierta, compra lo que elija `bot.shop`
+ * hasta que devuelva `null` y sale. Devuelve los ids comprados, en orden.
+ */
+export function visitShop(run: Run, bot: Pick<ReferenceBot, 'shop'>): string[] {
+  const bought: string[] = [];
+  if (run.status !== 'shopping') return bought;
+  for (let id = bot.shop(run.snapshot()); id !== null; id = bot.shop(run.snapshot())) {
+    const r = run.buy(id);
+    if (!r.ok) throw new Error(`compra rechazada (${id}): ${r.error.code}`);
+    bought.push(id);
+  }
+  run.leaveShop();
+  return bought;
+}
+
 /** Elige la opción 0 mientras haya una oferta abierta (política de elección fija). */
 export const chooseFirstWhileOpen = (run: Run): number => chooseWhileOpen(run, () => 0);
 
@@ -148,6 +164,7 @@ export const chooseFirstWhileOpen = (run: Run): number => chooseWhileOpen(run, (
  */
 export function playReferenceBot(run: Run, bot: ReferenceBot, maxTicks: number): RunSnapshot {
   for (let t = 0; t < maxTicks && run.status !== 'over'; t++) {
+    visitShop(run, bot);
     chooseWhileOpen(run, (offer) => bot.pick(offer));
     run.tick(bot.input(run.snapshot()));
   }

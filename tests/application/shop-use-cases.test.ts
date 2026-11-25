@@ -37,7 +37,9 @@ function started(gold = 0) {
 describe('BuyFromShop y LeaveShop', () => {
   it('compra y devuelve el snapshot en tienda; un error tipado no cambia nada', () => {
     const { tickRun, buyFromShop } = started(30);
-    expect(tickRun.execute(TICK_MS, PlayerInput.NONE).status).toBe('shopping');
+    const open = tickRun.execute(TICK_MS, PlayerInput.NONE);
+    const price = open.shop.products[0]?.price ?? 0;
+    expect(open.status).toBe('shopping');
 
     const bought = buyFromShop.execute('strict-rules');
     const before = tickRun.snapshot();
@@ -45,7 +47,7 @@ describe('BuyFromShop y LeaveShop', () => {
 
     expect(bought.ok && [bought.value.status, bought.value.resources.gold]).toEqual([
       'shopping',
-      20,
+      30 - price,
     ]);
     expect(refused).toEqual({ ok: false, error: { code: 'unknown-product', id: 'refactor' } });
     expect(tickRun.snapshot()).toEqual(before);

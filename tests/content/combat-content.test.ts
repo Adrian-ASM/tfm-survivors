@@ -8,7 +8,9 @@ import sheepJson from '../../content/sheep.json';
 import structuresJson from '../../content/structures.json';
 import wavesJson from '../../content/waves.json';
 import weaponsJson from '../../content/weapons.json';
-import { COMBAT_CONTENT_SHA256 } from '../support/balanceBaseline';
+import { BALANCE_CONTENT_SHA256, COMBAT_CONTENT_SHA256 } from '../support/balanceBaseline';
+import upgradesJson from '../../content/upgrades.json';
+import shopJson from '../../content/shop.json';
 
 /** JSON canónico (claves ordenadas en todos los niveles), el mismo con el que se hizo la huella M0. */
 const canon = (v: unknown): string => {
@@ -62,5 +64,31 @@ describe('Contenido de combate intacto (0024)', () => {
       INTACT_SHA256.resources,
     );
     expect(sha(sheepJson)).toBe(INTACT_SHA256.sheep);
+  });
+});
+
+// Spec castle-shop (0024), "Línea base nueva congelada": huella del contenido calibrado (M2).
+describe('Huella del contenido calibrado (0024)', () => {
+  const now = () => ({
+    upgrades: sha(upgradesJson),
+    player: sha(playerJson),
+    resources: sha(resourcesJson),
+    progression: sha(progressionJson),
+    shop: sha(shopJson),
+  });
+
+  it('Scenario: Línea base nueva congelada (huella de mejoras con precios, jugador, recursos, progresión y tienda)', () => {
+    expect(now()).toEqual(BALANCE_CONTENT_SHA256);
+  });
+
+  it('Scenario: Línea base nueva congelada (un precio de la tienda cambiado en 1 rompe la huella)', () => {
+    const changed = structuredClone(upgradesJson);
+    const [first] = changed.weapons;
+    if (!first) throw new Error('sin mejoras de arma');
+    first.prices = first.prices.map((p, i) => (i === 0 ? p + 1 : p));
+    const heal = { ...shopJson, heal: { ...shopJson.heal, price: shopJson.heal.price + 1 } };
+
+    expect(sha(changed)).not.toBe(BALANCE_CONTENT_SHA256.upgrades);
+    expect(sha(heal)).not.toBe(BALANCE_CONTENT_SHA256.shop);
   });
 });

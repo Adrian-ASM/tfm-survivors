@@ -91,7 +91,7 @@
       "stat": "damage",
       "perLevel": 3,
       "maxLevel": 5,
-      "prices": [10, 15, 22, 30, 40]
+      "prices": [5, 8, 11, 15, 20]
     },
     {
       "id": "fast-ci",
@@ -101,7 +101,7 @@
       "stat": "cooldownTicks",
       "perLevel": -4,
       "maxLevel": 5,
-      "prices": [10, 15, 22, 30, 40]
+      "prices": [5, 8, 11, 15, 20]
     },
     {
       "id": "wide-analysis",
@@ -111,7 +111,7 @@
       "stat": "range",
       "perLevel": 60,
       "maxLevel": 5,
-      "prices": [8, 12, 18, 25, 33]
+      "prices": [4, 6, 9, 12, 16]
     },
     {
       "id": "hard-asserts",
@@ -121,7 +121,7 @@
       "stat": "damage",
       "perLevel": 2,
       "maxLevel": 5,
-      "prices": [10, 15, 22, 30, 40]
+      "prices": [5, 8, 11, 15, 20]
     },
     {
       "id": "watch-mode",
@@ -131,7 +131,7 @@
       "stat": "cooldownTicks",
       "perLevel": -12,
       "maxLevel": 5,
-      "prices": [10, 15, 22, 30, 40]
+      "prices": [5, 8, 11, 15, 20]
     },
     {
       "id": "coverage",
@@ -141,7 +141,7 @@
       "stat": "radius",
       "perLevel": 15,
       "maxLevel": 5,
-      "prices": [8, 12, 18, 25, 33]
+      "prices": [4, 6, 9, 12, 16]
     }
   ]
 }

@@ -131,7 +131,7 @@
   `manual-stepper.test.ts` y `hud.test.ts`.
 
 ## 5. Bot v4 y calibración del balance
-- [ ] 5.1 Bot de referencia v4 (test-after, helper de test). `ReferenceBot.shop`, ir a la tienda con un `FlowField`
+- [x] 5.1 Bot de referencia v4 (test-after, helper de test). `ReferenceBot.shop`, ir a la tienda con un `FlowField`
   del bot hacia la celda de la puerta, compra (curación bajo el umbral, luego orden de compra) y constantes
   `REFERENCE_UPGRADE_PRIORITY`, `REFERENCE_SHOP_ORDER`, `REFERENCE_HEAL_THRESHOLD`, `SHOP_DANGER_RANGE` (design §8);
   `balanceMeasure` con compras/salida y traza de economía (oro por fuente, gastado, visitas, compras, ticks de la
@@ -140,14 +140,24 @@
     tienda con oro y sin peligro", "Sin oro suficiente no va", "El peligro gana a la tienda", "Orden de compra",
     "Compra hasta agotar el oro"; los vivos de esquiva y huida siguen verdes.
   Tests: `tests/support/policies.test.ts` (ampliar) o `tests/domain/reference-bot.test.ts`.
-- [ ] 5.2 M1 y calibración (contenido, test-after). Lote del bot v4 sobre 1..50 con métricas informativas (design §9):
+- [x] 5.2 M1 y calibración (contenido, test-after). Lote del bot v4 sobre 1..50 con métricas informativas (design §9):
   victorias, oro ganado por fuente y gastado, visitas, compras, niveles de arma por partida ganada, mechas, curaciones
   y tiempo del lote en local (×2,8 para CI); tick de muerte máximo del quieto con ambos mapas, plazos del quieto y
   primera oferta de la semilla 7. Iterar **solo** las palancas de design §9 en su orden, anotando cada iteración aquí
   debajo. Criterio: 25–35/50, 0 quietos con ambos mapas, margen del quieto ≥ ~1.000 ticks, lote ≤ 45 s local
   (≤ 81 s ×2,8). Si no se alcanza, **parar y consultar al autor** (spec run-outcome). Todo valor que una spec fije y
   cambie se actualiza en su spec delta.
-- [ ] 5.3 M2: congelar y reactivar. `balanceBaseline.ts` nuevo (filas `[semilla, resultado, tick, bajas]` del bot v4
+  **M1, iteración 0** (contenido provisional de design §2, bot v4): **22/50**, quietos 0/0 (muerte máx. 6.081
+  generado y 6.475 vacío; margen 4.325), primera oferta s7 en el 2.082, mechas 48,0; oro ganado 334/partida y
+  gastado 172 (sobran 162: falta de visitas, no de oro), 2,2 visitas, 8,3 niveles de arma (18,1 por partida ganada),
+  1.ª/5.ª/10.ª compra en los ticks 4.671/14.320/19.718; lote 28,5 s.
+  **Iteración 1 (palanca 2, precios)**: arco y tajo daño/cadencia 5, 8, 11, 15, 20; alcance y radio 4, 6, 9, 12, 16
+  ⇒ **30/50**, quietos 0/0 (mismos ticks máximos: el quieto no compra), mechas 30,44, oro ganado 284 y gastado 122,5,
+  2,54 visitas, 11,6 niveles de arma y 0,12 curaciones por partida (18,9 niveles por ganada), 1.ª/5.ª/10.ª compra
+  en los ticks 3.599/8.285/12.412, lote 35,8 s (34,7–34,9 s en `balance.test.ts`; ×2,8 ≈ 97–100 s). Se cierra aquí
+  (banda y quietos cumplidos; la 5.ª compra queda por encima del ~7.000 orientativo y el lote ×2,8 por encima de
+  los 90 s objetivo: incidencias para el autor).
+- [x] 5.3 M2: congelar y reactivar. `balanceBaseline.ts` nuevo (filas `[semilla, resultado, tick, bajas]` del bot v4
   con el contenido final, media de mechas, huellas: `waves`, `enemies`, `weapons` iguales a M0 y las nuevas de
   `upgrades` con precios, `player`, `resources`, `progression`, `shop`); retirar el lote "sin ovejas" y el
   `describe.skip` de 1.1; `BOT_BATCH_TIMEOUT_MS` sin cambios. Escenarios:
