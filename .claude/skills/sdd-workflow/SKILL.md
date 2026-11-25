@@ -58,6 +58,13 @@ Tras cada fase, resume al usuario en ≤ 5 líneas: qué se produjo, decisiones 
   con ticks fijos): en 0017 una tabla medida incumplía "Oleadas que crecen" y dos escenarios rompieron en apply.
 - **Tiempo del lote de balance**: si el change cambia el bot de referencia o el coste por tick, mide también cuánto
   tarda el lote de 50 partidas y compáralo con su timeout (0020: ~25 s en local, ~70 s en CI, tope 60 s).
+  Mídelo con el test real, con sus invariantes por tick: en 0027 el design citó 43,9 s de un lote sin ellos y el
+  real daba 62–65 s. El factor local → CI no es fijo (0026: ≈ 2,8; 0027: ≈ 1,4 con el mismo bot): antes de subir
+  un timeout, mira el tiempo en el CI de la PR.
+- **Reglas transversales en las specs**: si el change cambia una regla que otras capacidades dan por supuesta
+  ("solo se ofrece lo asequible", "un solar libre no bloquea"), pide al `sdd-spec-writer` que la busque en **todas**
+  las specs vivas, no solo en las de la propuesta (0027: `resources` decía "con madera 14 la casa no se ofrece" y
+  saltó en apply).
 - **Número de ADR**: pide al `sdd-architect` un `git fetch` antes de numerar un ADR y renumera si `main` ocupó el
   número durante el change (0020: dos ADR-0018).
 - **Contraste final del design**: spec y design van en paralelo, así que al pedir *tasks* indica al

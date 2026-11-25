@@ -23,6 +23,8 @@ TDD por capa (ADR-0018). Por cada tarea de `tasks.md`:
   escribe el test del escenario; no hace falta demostrar el rojo. Sí debe fallar si quitas la implementación: si
   dudas de que pruebe algo, rómpela un momento y compruébalo.
 - En el bucle de cada tarea usa `npm run verify:fast` (tests afectados, sin balance) y marca la casilla `[x]`.
+- Antes de marcar una tarea, cruza cada escenario que cita con `tests/` (busca su título literal, como hace el
+  verifier). En 0027, "Marcar no consume azar" se quedó sin test y fue el único Critical del verify.
 
 Al cerrar cada **grupo** de `tasks.md` (o antes si el grupo pasa de ~5 tareas):
 1. `npm run verify` completo en verde (incluye el balance y los guardarraíles). No cierres un grupo en rojo.
