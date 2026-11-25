@@ -3,17 +3,17 @@ import { StartRun } from '../../src/application/StartRun';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import { TICK_MS } from '../support/builders';
-import { NEAR_ACCESS, aSiteConfig, declaredSites, withStock } from '../support/sites';
+import { TOUCH, aSiteConfig, declaredSites, withStock } from '../support/sites';
 
 // Spec build-sites 0026, "Construcción en el solar" y "Salida de la obra sin construir", a través
 // de los casos de uso `BuildOnSite` y `LeaveSite` (patrón de `BuyFromShop`/`LeaveShop`). La obra
-// del solar de prueba se abre en el tick 1 (jugador a d = 10 del acceso).
+// del solar de prueba se abre en el tick 1 (jugador tangente a la cara inferior, 0027).
 
-function started(wood: number, stone = 0, gold = 0) {
+function started(wood: number, stone = 0, gold = 0, player: { x: number; y: number } = TOUCH) {
   const r = new StartRun().execute(
     aSiteConfig(),
     new Mulberry32RandomGenerator(42),
-    { player: NEAR_ACCESS, ...withStock(wood, stone, gold) },
+    { player, ...withStock(wood, stone, gold) },
     declaredSites([{ col: 20, row: 10 }]),
   );
   if (!r.ok) throw new Error(r.error.message);
@@ -60,7 +60,7 @@ describe('BuildOnSite y LeaveSite', () => {
   });
 
   it('Scenario: Salir fuera de la obra (en curso: not-building y sin cambios)', () => {
-    const { tickRun, leaveSite, buildOnSite } = started(0);
+    const { tickRun, leaveSite, buildOnSite } = started(0, 0, 0, { x: 3000, y: 2000 });
     tickRun.execute(TICK_MS, PlayerInput.NONE);
     const before = tickRun.snapshot();
 

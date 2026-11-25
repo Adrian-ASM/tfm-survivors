@@ -13,8 +13,10 @@ import {
 } from '../support/builders';
 import { aProbeType, ticks } from '../support/runs';
 import {
-  TEST_ACCESS,
   TEST_SITE,
+  TEST_SITE_RECT,
+  TOUCH,
+  touchPoint,
   aSiteConfig,
   buildNow,
   leaveSiteIfOpen,
@@ -23,30 +25,39 @@ import {
   withIncome,
   withStock,
 } from '../support/sites';
+import { CONTACT_EPS } from '../../src/domain/site/BuildingRules';
 import { withPlayerStat } from '../support/upgrades';
 
 // Spec build-sites 0026, "Oro periódico de las casas"; simulation-loop, paso 7.4; resources,
 // "Contadores de oro y madera"; run-state, "Simulación congelada en obra". Jugador a 1 px por tick.
-interface Point {
-  readonly x: number;
-  readonly y: number;
+interface Rect {
+  readonly left: number;
+  readonly top: number;
+  readonly right: number;
+  readonly bottom: number;
 }
 const S2 = { col: 28, row: 10 };
-const A2 = { x: 1740, y: 810 };
+const S2_RECT = { left: 1680, top: 600, right: 1800, bottom: 720 };
+
+const gapTo = (r: Rect, x: number, y: number) =>
+  Math.hypot(Math.max(r.left - x, 0, x - r.right), Math.max(r.top - y, 0, y - r.bottom)) - 16;
 
 /**
- * Lleva al jugador en recta hasta que su primera d < 40 al acceso `to` sea la del tick `tick`
- * (espera quieto lo que sobre) y construye `kind` allí.
+ * Lleva al jugador en recta hacia el punto medio de la cara inferior de la huella `rect` hasta que
+ * su primer contacto (g ≤ ε) sea el del tick `tick` (espera quieto lo que sobre) y construye
+ * `kind` allí.
  */
-function buildAt(run: Run, to: Point, tick: number, kind = 'house'): RunSnapshot {
+function buildAt(run: Run, rect: Rect, tick: number, kind = 'house'): RunSnapshot {
   const s = run.snapshot();
+  const to = touchPoint('bottom', 0, rect);
   const d0 = Math.hypot(to.x - s.player.x, to.y - s.player.y);
-  const k = Math.floor(d0 - 40) + 1;
+  const [ux, uy] = [(to.x - s.player.x) / d0, (to.y - s.player.y) / d0];
+  let k = 0;
+  while (gapTo(rect, s.player.x + k * ux, s.player.y + k * uy) > CONTACT_EPS) k++;
   const idle = tick - k - s.tick;
   if (idle < 0) throw new Error(`no llega a tiempo al tick ${String(tick)}`);
   ticks(run, idle);
-  const dir = PlayerInput.of((to.x - s.player.x) / d0, (to.y - s.player.y) / d0);
-  ticks(run, k, dir);
+  ticks(run, k, PlayerInput.of(ux, uy));
   if (run.status !== 'building' || run.snapshot().tick !== tick) {
     throw new Error(`obra no abierta en el tick ${String(tick)} (${run.status})`);
   }
@@ -73,22 +84,22 @@ const start = (
 describe('Oro periódico de las casas (spec build-sites 0026)', () => {
   it('Scenario: Pagos de una casa (construida en el tick 1.000)', () => {
     const run = start(aSiteConfig());
-    buildAt(run, TEST_ACCESS, 1000);
+    buildAt(run, TEST_SITE_RECT, 1000);
     const gold = goldUntil(run, 4600);
     expect([gold.get(2799), gold.get(2800), gold.get(4599), gold.get(4600)]).toEqual([0, 1, 1, 2]);
   });
 
   it('Scenario: Dos casas (ticks 1.000 y 1.500)', () => {
     const run = start(aSiteConfig(), {}, [TEST_SITE, S2]);
-    buildAt(run, TEST_ACCESS, 1000);
-    buildAt(run, A2, 1500);
+    buildAt(run, TEST_SITE_RECT, 1000);
+    buildAt(run, S2_RECT, 1500);
     const gold = goldUntil(run, 4600);
     expect([gold.get(2799), gold.get(2800), gold.get(3300), gold.get(4600)]).toEqual([0, 1, 2, 3]);
   });
 
   it('Scenario: Con bonificación de oro (periodo 10, g = 20: 10 pagos dan 12)', () => {
     const config = withPlayerStat(withIncome(aSiteConfig(), { everyTicks: 10 }), 'prospector', 20);
-    const run = start(config, { player: TEST_ACCESS, upgrades: { prospector: 1 } });
+    const run = start(config, { player: TOUCH, upgrades: { prospector: 1 } });
     untilBuilding(run, 1);
     buildNow(run, 'house');
     const gold = goldUntil(run, 101);
@@ -97,7 +108,7 @@ describe('Oro periódico de las casas (spec build-sites 0026)', () => {
 
   it('Scenario: Pago de una casa como ingreso (resources: g = 10, 10 pagos dan 11)', () => {
     const config = withPlayerStat(withIncome(aSiteConfig(), { everyTicks: 10 }), 'prospector', 10);
-    const run = start(config, { player: TEST_ACCESS, upgrades: { prospector: 1 } });
+    const run = start(config, { player: TOUCH, upgrades: { prospector: 1 } });
     untilBuilding(run, 1);
     buildNow(run, 'house');
     expect(goldUntil(run, 101).get(101)).toBe(11);
@@ -111,7 +122,7 @@ describe('Oro periódico de las casas (spec build-sites 0026)', () => {
       value: 1,
       kind: 'gold' as const,
     }));
-    const run = start(config, { player: TEST_ACCESS, gems: golds });
+    const run = start(config, { player: TOUCH, gems: golds });
     untilBuilding(run, 1);
     buildNow(run, 'house');
     const before = ticks(run, 9).at(-1);
@@ -123,8 +134,8 @@ describe('Oro periódico de las casas (spec build-sites 0026)', () => {
 
   it('Scenario: Sin pago en el tick de la victoria (duración 120, casa en el 60, periodo 60)', () => {
     const config = withIncome(withDuration(aSiteConfig(), 2), { everyTicks: 60 });
-    const run = start(config, { player: { x: 1260, y: 870 } });
-    buildAt(run, TEST_ACCESS, 60);
+    const run = start(config, { player: { x: 1260, y: 780 } });
+    buildAt(run, TEST_SITE_RECT, 60);
     const gold = goldUntil(run, 120);
     const end = run.snapshot();
     expect([end.status, end.outcome, end.tick]).toEqual(['over', 'won', 120]);
@@ -133,13 +144,13 @@ describe('Oro periódico de las casas (spec build-sites 0026)', () => {
 
   it('Scenario: Las pausas no adelantan el pago (oferta en el 2.000 con 600 ticks pedidos)', () => {
     const CHARACTER = { character: DEFAULT_CHARACTER_UPGRADES, weapons: [] };
-    // El jugador llega a (1.260, 849,5) en el tick 1.000; la gema, a 21,5 px a su derecha, se
+    // El jugador llega a (1.260, 737) en el tick 1.000; la gema, a 21,5 px a su derecha, se
     // recoge al moverse 1 px en el tick 2.000.
     const run = start(withUpgrades(aSiteConfig(), CHARACTER), {
-      player: { x: 1260, y: 810 + 1039.5 },
-      gems: [{ x: 1281.5, y: 849.5, value: 5 }],
+      player: { x: 1260, y: 1737 },
+      gems: [{ x: 1281.5, y: 737, value: 5 }],
     });
-    buildAt(run, TEST_ACCESS, 1000);
+    buildAt(run, TEST_SITE_RECT, 1000);
     const idle = goldUntil(run, 1999);
     const [offer] = ticks(run, 1, PlayerInput.of(1, 0));
     expect([offer?.tick, offer?.status]).toEqual([2000, 'choosing']);
@@ -156,12 +167,12 @@ describe('Oro periódico de las casas (spec build-sites 0026)', () => {
 describe('Pagos en el orden del tick (spec simulation-loop 0026, paso 7.4)', () => {
   it('Scenario: Pago de la casa tras la regeneración (recogible y casa en el mismo tick, g = 50)', () => {
     // Casa en el tick 1 con periodo 10: paga en el 11. El `gold` a 21,5 px a la izquierda del
-    // acceso se recoge al moverse 1 px en ese tick.
+    // jugador (tangente a la casa) se recoge al moverse 1 px en ese tick.
     const config = withPlayerStat(withIncome(aSiteConfig(), { everyTicks: 10 }), 'prospector', 50);
     const run = start(config, {
-      player: TEST_ACCESS,
+      player: TOUCH,
       upgrades: { prospector: 1 },
-      gems: [{ x: TEST_ACCESS.x - 21.5, y: TEST_ACCESS.y, value: 1, kind: 'gold' }],
+      gems: [{ x: TOUCH.x - 21.5, y: TOUCH.y, value: 1, kind: 'gold' }],
     });
     untilBuilding(run, 1);
     buildNow(run, 'house');
@@ -175,8 +186,10 @@ describe('Pagos en el orden del tick (spec simulation-loop 0026, paso 7.4)', () 
 
 describe('Simulación congelada en obra (spec run-state 0026)', () => {
   it('Scenario: Peligros, invulnerabilidad y pagos en pausa durante la obra', () => {
-    // s1 con casa en el tick 1 (periodo 63: paga en 568); s2 (20, 20) con acceso en (1.260, 1.410)
-    // se abre en n = 562; un `probe` golpea al jugador en 552 (n − 10) y un barril explota en 566.
+    // s1 con casa en el tick 1 (periodo 63: paga en 568). El jugador, en x = 1.303 (toca s1 por
+    // abajo), espera hasta el tick 98 y baja: toca la esquina superior izquierda de s2 (22, 20) en
+    // n = 562 (y = 1.200, g = 1). Un `probe` que sube por x = 1.303 le golpea en 552 (n − 10) y un
+    // barril explota en 566.
     const types = [aProbeType(), aBarrelType({ fuseTicks: 566 })];
     const config = withIncome(aSiteConfig({ player: { maxHealth: 1000 } }, types), {
       everyTicks: 63,
@@ -184,17 +197,18 @@ describe('Simulación congelada en obra (spec run-state 0026)', () => {
     const run = start(
       config,
       {
-        player: TEST_ACCESS,
+        player: { x: 1303, y: 736 },
         enemies: [
-          { type: 'probe', x: 1260, y: 1938 },
+          { type: 'probe', x: 1303, y: 1767 },
           { type: 'goblin-barrel', x: 3500, y: 300, ...inState('fuse') },
         ],
       },
-      [TEST_SITE, { col: 20, row: 20 }],
+      [TEST_SITE, { col: 22, row: 20 }],
     );
     untilBuilding(run, 1);
     buildNow(run, 'house');
     const down = PlayerInput.of(0, 1);
+    ticks(run, 97);
     while (run.status === 'running') ticks(run, 1, down);
     const n = run.snapshot();
     expect([n.tick, n.build.siteId]).toEqual([562, 1]);

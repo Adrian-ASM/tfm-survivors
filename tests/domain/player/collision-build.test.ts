@@ -5,9 +5,17 @@ import { Player } from '../../../src/domain/player/Player';
 import { PlayerInput } from '../../../src/domain/player/PlayerInput';
 import { TICK_SECONDS } from '../../../src/domain/run/Run';
 import { Vector2 } from '../../../src/domain/shared/Vector2';
-import { aDefaultConfig } from '../../support/builders';
+import { DEFAULT_CHARACTER_UPGRADES, aDefaultConfig, withUpgrades } from '../../support/builders';
 import { mapRules } from '../../support/mapLayouts';
-import { FOOTPRINT, TEST_SITE, TEST_SITE_RECT } from '../../support/sites';
+import { advance, ticks } from '../../support/runs';
+import {
+  FOOTPRINT,
+  TEST_SITE,
+  TEST_SITE_RECT,
+  aSiteConfig,
+  leaveSiteIfOpen,
+  startWithSites,
+} from '../../support/sites';
 
 // Spec build-sites 0026, "Edificios que bloquean el paso", y player-movement, "Colisión con el
 // mapa": con el mapa y `build` directo (la partida con solares llega en el grupo 3). Huella del
@@ -73,14 +81,59 @@ describe('Colisión con edificios construidos (spec build-sites / player-movemen
     expect(Math.abs(lastOf(path).y - (600 - RADIUS))).toBeLessThanOrEqual(0.001);
     expect(path.some(overlapsFootprint)).toBe(false);
   });
+});
 
-  it('Scenario: Un solar sin construir no bloquea', () => {
-    const start: [number, number] = [1100, 660];
-    const input = PlayerInput.of(1, 0);
-    const free = GameMap.open(RULES);
-    const across = walk(free, start, input, 90, 200);
-    const reference = walk(GameMap.open(RULES), start, input, 90, 200);
-    expect(lastOf(across).x).toBeGreaterThan(TEST_SITE_RECT.right + RADIUS);
-    expect(across).toEqual(reference);
+describe('Solar libre que bloquea el paso, en la partida (spec build-sites / player-movement 0027)', () => {
+  const at = (s: { player: { x: number; y: number } }) => Vector2.of(s.player.x, s.player.y);
+
+  it('Scenario: El jugador choca con el solar libre', () => {
+    // Velocidad del contenido (215 px/s): de g = 3,08 pasaría a solapar y el barrido lo deja tangente.
+    const config = aSiteConfig({ player: { speed: CONTENT.player.speed } });
+    const run = startWithSites(config, { player: { x: 1260, y: 800 } });
+    const snaps = [];
+    while (run.status === 'running' && snaps.length < 600) {
+      snaps.push(...ticks(run, 1, PlayerInput.of(0, -1)));
+    }
+    const n = snaps.at(-1);
+    expect(n?.status).toBe('building');
+    expect(Math.abs((n?.player.x ?? 0) - 1260)).toBeLessThanOrEqual(0.001);
+    expect(Math.abs((n?.player.y ?? 0) - 736)).toBeLessThanOrEqual(0.001);
+    expect(snaps.some((s) => overlapsFootprint(at(s)))).toBe(false);
+    expect(n?.sites[0]?.state).toBe('free');
+  });
+
+  it('Scenario: El jugador queda tangente empujando contra el solar libre (600 ticks más)', () => {
+    const run = startWithSites(aSiteConfig(), { player: { x: 1260, y: 800 } });
+    const snaps = advance(run, 664, PlayerInput.of(0, -1));
+    expect(snaps.some((s) => overlapsFootprint(at(s)))).toBe(false);
+    expect(snaps.at(-1)?.player.y).toBeCloseTo(736, 9);
+  });
+
+  it('Scenario: Deslizar junto al solar libre', () => {
+    // Desarmado: la oferta se abre en el tick 1 (tangente) y se cierra sin construir.
+    const run = startWithSites(aSiteConfig({ player: { speed: 200 } }), {
+      player: { x: 1210, y: 736 },
+    });
+    ticks(run, 1);
+    expect(leaveSiteIfOpen(run)).toBe(true);
+    const path = ticks(run, 30, PlayerInput.of(1, -1));
+    const last = path.at(-1);
+    expect(path.every((s) => s.player.y === 736)).toBe(true);
+    expect(Math.abs((last?.player.x ?? 0) - 1280.711)).toBeLessThanOrEqual(0.001);
+    expect(path.every((s) => s.status === 'running')).toBe(true);
+  });
+
+  it('Scenario: Choque con un solar libre a velocidad máxima', () => {
+    // `shortcuts` en nivel 5 sobre 200 px/s: 300 px/s = 5 px/tick.
+    const CHARACTER = { character: DEFAULT_CHARACTER_UPGRADES, weapons: [] };
+    const config = withUpgrades(aSiteConfig({ player: { speed: 200 } }), CHARACTER);
+    const run = startWithSites(config, {
+      player: { x: 1100, y: 660 },
+      upgrades: { shortcuts: 5 },
+    });
+    const path = advance(run, 60, PlayerInput.of(1, 0));
+    expect(Math.abs((path.at(-1)?.player.x ?? 0) - 1184)).toBeLessThanOrEqual(0.001);
+    expect(path.at(-1)?.player.y).toBe(660);
+    expect(path.some((s) => overlapsFootprint(at(s)))).toBe(false);
   });
 });

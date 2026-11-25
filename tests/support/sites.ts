@@ -17,10 +17,10 @@ import { SITE_STREAM, deriveSeed } from '../../src/infrastructure/random/deriveS
 import { withBuildings } from './builders';
 import { aBehaviorConfig, aProbeType } from './runs';
 
-// Escenarios de los solares de obra (spec build-sites 0026). El solar de prueba es un único solar
-// declarado en el mapa vacío, con huella 2 × 2 (casa = torre, design 0026 §1) anclada en la celda
-// (20, 10): x en [1.200, 1.320] e y en [600, 720]. Su acceso está en el centro de la fila r + 3,
-// (1.260, 810).
+// Escenarios de los solares de obra (spec build-sites 0026 y 0027). El solar de prueba es un único
+// solar declarado en el mapa vacío, con huella 2 × 2 (casa = torre) anclada en la celda (20, 10):
+// x en [1.200, 1.320] e y en [600, 720]. Sin acceso: se abre al tocar la huella (g ≤ ε) y se re-arma a
+// g ≥ X (64 con el contenido por defecto, design 0027 §1.4).
 
 /** Celda ancla (primera columna y fila) de la huella del solar de prueba. */
 export const TEST_SITE = { col: 20, row: 10 } as const;
@@ -30,9 +30,6 @@ export const FOOTPRINT = { cols: 2, rows: 2 } as const;
 
 /** Rectángulo de mundo de la huella del solar de prueba (celdas de 60 px). */
 export const TEST_SITE_RECT = { left: 1200, top: 600, right: 1320, bottom: 720 } as const;
-
-/** Acceso del solar de prueba: centro de la huella en x y borde inferior + 1,5 celdas en y. */
-export const TEST_ACCESS = { x: 1260, y: 810 } as const;
 
 /** Celdas `[col, row]` de la huella del solar de prueba, en orden de filas. */
 export const TEST_SITE_CELLS: readonly (readonly [number, number])[] = [
@@ -72,18 +69,50 @@ export function declaredSites(
     : { kind: 'open', sites, ...extra };
 }
 
-/** Jugador a d = 10 del acceso del solar de prueba (a la derecha). */
-export const NEAR_ACCESS = { x: TEST_ACCESS.x + 10, y: TEST_ACCESS.y } as const;
+/** Radio del jugador del contenido por defecto (el de los escenarios del solar de prueba). */
+export const PLAYER_RADIUS = 16;
 
-/** El contenido dado con el acceso de escenario (radio de oferta 40 y re-armado 300). */
-export const withSiteAccess = (
-  config: RunConfig,
-  access: Partial<BuildingsConfig['access']> = {},
-): RunConfig =>
-  withBuildings(config, {
-    ...config.buildings,
-    access: { radius: 40, rearmDistance: 300, ...access },
-  });
+/** Cara de una huella. */
+export type Side = 'top' | 'bottom' | 'left' | 'right';
+
+/** Rectángulo de mundo de una huella. */
+interface Rect {
+  readonly left: number;
+  readonly top: number;
+  readonly right: number;
+  readonly bottom: number;
+}
+
+/**
+ * Centro del jugador (radio `r`) a separación `g` de la cara `side` de la huella, en el punto
+ * medio de esa cara (g = 0: tangente, toca). Por defecto, el solar de prueba.
+ */
+export function touchPoint(
+  side: Side,
+  g = 0,
+  rect: Rect = TEST_SITE_RECT,
+  r = PLAYER_RADIUS,
+): { x: number; y: number } {
+  const cx = (rect.left + rect.right) / 2;
+  const cy = (rect.top + rect.bottom) / 2;
+  switch (side) {
+    case 'top':
+      return { x: cx, y: rect.top - r - g };
+    case 'bottom':
+      return { x: cx, y: rect.bottom + r + g };
+    case 'left':
+      return { x: rect.left - r - g, y: cy };
+    case 'right':
+      return { x: rect.right + r + g, y: cy };
+  }
+}
+
+/** Jugador tangente a la cara inferior del solar de prueba (1.260, 736): toca en el tick 1. */
+export const TOUCH = touchPoint('bottom');
+
+/** El contenido dado con otra separación de re-armado X (la del contenido por defecto es 64). */
+export const withRearm = (config: RunConfig, rearmDistance: number): RunConfig =>
+  withBuildings(config, { ...config.buildings, contact: { rearmDistance } });
 
 /** El contenido dado con los costes de escenario de la casa y de la torre. */
 export const withCosts = (
@@ -109,13 +138,12 @@ export const withIncome = (
 
 /**
  * Contenido de los escenarios del solar de prueba: el mundo por defecto, sin armas ni oleadas, el
- * jugador a 60 px/s (1 px por tick) y el acceso de escenario (40 / 300).
+ * jugador a 60 px/s (1 px por tick) y la separación de re-armado del contenido (64).
  */
 export const aSiteConfig = (
   o: Parameters<typeof aBehaviorConfig>[1] = {},
   types: readonly EnemyTypeConfig[] = [aProbeType()],
-): RunConfig =>
-  withSiteAccess(aBehaviorConfig(types, { ...o, player: { speed: 60, ...o.player } }));
+): RunConfig => aBehaviorConfig(types, { ...o, player: { speed: 60, ...o.player } });
 
 /** Madera, piedra y oro iniciales de un `RunSetup`. */
 export const withStock = (wood: number, stone = 0, gold = 0): RunSetup => ({
@@ -124,7 +152,7 @@ export const withStock = (wood: number, stone = 0, gold = 0): RunSetup => ({
 
 /**
  * Partida en el mapa vacío con estos solares declarados (por defecto, el de prueba) y el jugador en
- * `NEAR_ACCESS` salvo que `setup` diga otra cosa.
+ * `TOUCH` (tangente a la cara inferior del solar de prueba) salvo que `setup` diga otra cosa.
  */
 export function startWithSites(
   config: RunConfig,
@@ -142,7 +170,7 @@ export function startWithSites(
   const r = Run.start(
     config,
     options.random ?? new Mulberry32RandomGenerator(42),
-    { player: NEAR_ACCESS, ...setup },
+    { player: TOUCH, ...setup },
     terrain,
     options.stoneRandom,
   );
@@ -172,6 +200,11 @@ export function buildNow(run: Run, kind: string): RunSnapshot {
   return run.snapshot();
 }
 
-/** Distancia del jugador del snapshot al acceso del solar de prueba. */
-export const dAccess = (s: RunSnapshot | undefined): number =>
-  s ? Math.hypot(s.player.x - TEST_ACCESS.x, s.player.y - TEST_ACCESS.y) : Number.NaN;
+/** Separación g del jugador del snapshot al solar de prueba (NaN sin snapshot). */
+export const gapOf = (s: RunSnapshot | undefined, rect: Rect = TEST_SITE_RECT): number => {
+  if (!s) return Number.NaN;
+  const { x, y, radius } = s.player;
+  const ex = Math.max(rect.left - x, 0, x - rect.right);
+  const ey = Math.max(rect.top - y, 0, y - rect.bottom);
+  return Math.hypot(ex, ey) - radius;
+};

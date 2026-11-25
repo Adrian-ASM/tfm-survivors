@@ -14,13 +14,13 @@
 Al cerrar G1 los solares siguen siendo caminables: el v4 y `STONE_GOLDEN` no cambian (abrir y salir no consumen ni
 ticks ni azar) y el v5 ya toca la huella. Design §1.4–§1.7.
 
-- [ ] 1.1 Reglas y contenido del re-armado: `BuildingRules` con `contact.rearmDistance` > `CONTACT_EPS` (1 px,
+- [x] 1.1 Reglas y contenido del re-armado: `BuildingRules` con `contact.rearmDistance` > `CONTACT_EPS` (1 px,
   exportada) y sin `access`/`checkAccess`/`ACCESS_*` ni la regla cruzada con `playerRadius` (rojo en
   `tests/domain/sites/building-rules.test.ts`); después, test-after, `BuildingsSchema` (`contact` strict, mensaje
   `CONTACT_REARM_MUST_EXCEED_EPS`) y `content/buildings.json` `contact { rearmDistance: 64 }`
   (`tests/infrastructure/content/buildings-content.test.ts`). Escenarios [bs]: "Contenido por defecto",
   "Valores inválidos" (incluido el `access` sobrante y X = ε), "Límites válidos" (X = ε + 0,001), "Campo ausente".
-- [ ] 1.2 Contacto y re-armado en `BuildSite` (`armed`, rectángulo de la huella, `gap`, `touch`) y
+- [x] 1.2 Contacto y re-armado en `BuildSite` (`armed`, rectángulo de la huella, `gap`, `touch`) y
   `Settlement.step(x, y, r, canOpen)` en el paso 12, sin exigir nada asequible (rojo en
   `tests/domain/run-sites-open.test.ts`, reescrito con `touchPoint(site, lado)` y `withRearm(x)` de
   `tests/support/sites.ts`, que sustituyen a `TEST_ACCESS`, `NEAR_ACCESS`, `withSiteAccess` y `dAccess`).
@@ -29,7 +29,7 @@ ticks ni azar) y el v5 ya toca la huella. Design §1.4–§1.7.
   cualquier lado", "Oferta de mejora en el mismo tick", "Tienda y solar en el mismo tick", "Dos solares a la vez",
   "Sin oferta en el tick de la victoria", "Solar construido", "Abrir no consume azar"; [sl] "Solar abierto con los
   recursos del mismo tick".
-- [ ] 1.3 Oferta con las dos opciones y construcción por asequibilidad: `BuildOptionSnapshot` con `affordable` y
+- [x] 1.3 Oferta con las dos opciones y construcción por asequibilidad: `BuildOptionSnapshot` con `affordable` y
   `missing`, `Run.build` rechaza por `canAfford` (`not-building` → `unknown-kind` → `not-affordable`), y fuera
   `access` de `BuildSite`, `MapSnapshot.sites`, `RunSnapshot.sites` y `resolveSites.fits`; `placeSites` solo
   renombra (`routeCellOf`, `ROUTE_CELL_HALF`). Rojo en `tests/domain/run-build.test.ts`,
@@ -42,7 +42,7 @@ ticks ni azar) y el v5 ya toca la huella. Design §1.4–§1.7.
   "Construir no consume azar", "Solares al crear la partida" (sin acceso; la parte "no caminables" queda para 2.1),
   "Lista estable", "Sin solares en el mapa vacío"; [sl] "Solares y flechas en el snapshot", "Snapshot de los
   solares no mutable desde fuera"; [pm] "Firma de referencia de los solares" (`SITE_GOLDEN` intacta).
-- [ ] 1.4 Bots en tests/support (test-after): `REFERENCE_BUILD_POLICY` filtra por `affordable`; `builderBot` (v5)
+- [x] 1.4 Bots en tests/support (test-after): `REFERENCE_BUILD_POLICY` filtra por `affordable`; `builderBot` (v5)
   apunta a `(x del centro, (row + rows) · cellSize)` del solar libre y armado más cercano por ruta, con desempate por
   id; v4 sin cambios (sale con `chooseWhileOpen`). Comprobación: `tests/domain/balance.test.ts` (v4 idéntico a
   `BALANCE_BASELINE`) y `tests/domain/balance-builder.test.ts` (v5 en 25–35, ≥ 1 casa y ≥ 1 torre). Sin regenerar
@@ -51,7 +51,7 @@ ticks ni azar) y el v5 ya toca la huella. Design §1.4–§1.7.
 ## 2. Núcleo: solar libre bloqueante desde el tick 0, validaciones y nueva línea base
 Design §1.1–§1.3, §1.7 y §5. Este grupo cambia la partida: termina regenerando la línea base y `STONE_GOLDEN`.
 
-- [ ] 2.1 Marcado de las huellas libres en `Run.start` (tras `initialState`, en orden de id, sin azar),
+- [x] 2.1 Marcado de las huellas libres en `Run.start` (tras `initialState`, en orden de id, sin azar),
   `GameMap.build` que sube `revision` solo si cambia alguna celda y `Flock.spawnAway` sin la guarda
   `revision > 0`. Rojo en `tests/domain/map/game-map-build.test.ts`, `map/flow-field-build.test.ts`,
   `player/collision-build.test.ts`, `enemy/guard-post-build.test.ts`, `run-build-clearance.test.ts`,
@@ -71,7 +71,7 @@ Design §1.1–§1.3, §1.7 y §5. Este grupo cambia la partida: termina regener
   misma obra en otro momento", "Semillas del conjunto", "Semillas del conjunto con edificios", "Jugador quieto junto
   al castillo"; [mv] "Choque con un solar libre a velocidad máxima", "Partida larga sin solapes con los solares
   libres"; [sh] "Sin reaparición en un solar", "Solo celdas de obra disponibles".
-- [ ] 2.2 Validaciones de arranque y despeje inicial: `MAP_SITE_OVERLAPS_PLAYER` con `map.sites.<i>` para todo
+- [x] 2.2 Validaciones de arranque y despeje inicial: `MAP_SITE_OVERLAPS_PLAYER` con `map.sites.<i>` para todo
   solar (tangente legal; fuera `SETUP_SITE_OVERLAPS_PLAYER`), revalidación de las ovejas declaradas tras el marcado
   (`MAP_SHEEP_ILLEGAL`, `map.sheep.<i>`), `clearFootprint` inicial (enemigos y recogibles de `RunSetup`, puestos y
   puntos de patrulla) y `RunSetup.sites[i].armed`. Rojo en `tests/domain/run-setup-sites.test.ts` y
@@ -80,10 +80,10 @@ Design §1.1–§1.3, §1.7 y §5. Este grupo cambia la partida: termina regener
   sobre el solar libre", "Punto de patrulla sobre el solar libre"; [pm] "Solar declarado sobre la posición inicial",
   "Solar declarado fuera de la rejilla"; [sl] "La política de obra fija no cambia la partida" (solares
   `armed: false` con `withRearm(1e6)`).
-- [ ] 2.3 Bots y huellas (test-after en tests/support): `botWorld(config, map)` marca las huellas de `map.sites`;
+- [x] 2.3 Bots y huellas (test-after en tests/support): `botWorld(config, map)` marca las huellas de `map.sites`;
   fuera `builderBot.syncBuilt`; el control de huellas de `balance-builder.test.ts` vigila las celdas de obra desde el
   tick 0 (no solo tras construir). Escenario [bs]: "Nada en las celdas de obra" (v5, semillas 1..50).
-- [ ] 2.4 Regenerar y medir (test-after): `BALANCE_BASELINE` (v4: resultado, tick final y bajas por semilla) y la
+- [x] 2.4 Regenerar y medir (test-after): `BALANCE_BASELINE` (v4: resultado, tick final y bajas por semilla) y la
   nueva referencia del v5 (`BUILDER_REFERENCE` en `tests/support/balanceBaseline.ts`: victorias), y `STONE_GOLDEN`
   (`tests/support/stoneGolden.ts`) con el comentario de por qué: las huellas bloqueantes cambian qué bajas ocurren y
   en qué orden, y con ellas la secuencia de tiradas del flujo `STONE_STREAM`; las otras cinco firmas no se tocan.

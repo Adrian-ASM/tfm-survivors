@@ -1,64 +1,72 @@
-// Línea base M2 del change 0024 (tasks 5.3), medida con el bot de referencia v4 y el contenido final
-// (dos catálogos, tienda, oro por baja). Spec castle-shop, "Línea base nueva congelada": cada semilla
-// debe terminar igual (resultado, tick y bajas). Sustituye a propósito la de 0022/0023 (bot v3). No
-// se edita a mano: si cambia, es un fallo de determinismo o un cambio de balance que exige un change.
+// Línea base del change 0027 (tasks 2.4), medida con el bot de referencia v4 y el contenido final:
+// los solares libres bloquean desde el tick 0 (ADR-0026) y el v4 los rodea. Sustituye a propósito la
+// M2 de 0024 (30/50), que siguió intacta en 0025 y 0026; con 0027: 34/50, 29,9 mechas por partida.
+// Spec build-sites, "Bot v4 en banda y línea base": cada semilla debe terminar igual (resultado, tick
+// y bajas). No se edita a mano: si cambia, es un fallo de determinismo o un cambio de balance que
+// exige un change.
 
 /** [semilla, resultado, tick final, bajas] del bot de referencia v4 sobre las semillas 1..50. */
 export const BALANCE_BASELINE: readonly (readonly [number, 'won' | 'lost', number, number])[] = [
-  [1, 'won', 36000, 900],
-  [2, 'won', 36000, 847],
-  [3, 'lost', 17322, 367],
-  [4, 'lost', 15354, 304],
-  [5, 'won', 36000, 911],
-  [6, 'won', 36000, 900],
-  [7, 'won', 36000, 862],
-  [8, 'lost', 13364, 278],
-  [9, 'lost', 8568, 160],
-  [10, 'won', 36000, 882],
-  [11, 'lost', 18182, 365],
-  [12, 'won', 36000, 908],
-  [13, 'lost', 14777, 321],
-  [14, 'lost', 10672, 222],
-  [15, 'won', 36000, 865],
-  [16, 'lost', 25688, 552],
+  [1, 'won', 36000, 863],
+  [2, 'won', 36000, 858],
+  [3, 'lost', 16803, 347],
+  [4, 'won', 36000, 884],
+  [5, 'won', 36000, 891],
+  [6, 'won', 36000, 883],
+  [7, 'lost', 12467, 255],
+  [8, 'lost', 15796, 315],
+  [9, 'lost', 23834, 526],
+  [10, 'won', 36000, 898],
+  [11, 'won', 36000, 885],
+  [12, 'won', 36000, 901],
+  [13, 'lost', 11671, 254],
+  [14, 'lost', 15266, 329],
+  [15, 'won', 36000, 875],
+  [16, 'won', 36000, 881],
   [17, 'won', 36000, 880],
   [18, 'won', 36000, 873],
-  [19, 'won', 36000, 879],
-  [20, 'won', 36000, 901],
-  [21, 'won', 36000, 870],
-  [22, 'won', 36000, 827],
-  [23, 'won', 36000, 871],
-  [24, 'won', 36000, 904],
-  [25, 'won', 36000, 882],
-  [26, 'won', 36000, 853],
+  [19, 'won', 36000, 892],
+  [20, 'lost', 14268, 313],
+  [21, 'won', 36000, 878],
+  [22, 'won', 36000, 855],
+  [23, 'won', 36000, 899],
+  [24, 'won', 36000, 887],
+  [25, 'won', 36000, 881],
+  [26, 'won', 36000, 857],
   [27, 'won', 36000, 878],
-  [28, 'lost', 20925, 419],
-  [29, 'won', 36000, 895],
-  [30, 'won', 36000, 887],
-  [31, 'lost', 12146, 275],
-  [32, 'won', 36000, 892],
-  [33, 'won', 36000, 878],
-  [34, 'won', 36000, 878],
-  [35, 'won', 36000, 877],
-  [36, 'lost', 13494, 296],
-  [37, 'won', 36000, 871],
-  [38, 'lost', 17197, 358],
-  [39, 'won', 36000, 888],
-  [40, 'lost', 23981, 516],
-  [41, 'lost', 19703, 402],
-  [42, 'lost', 3939, 61],
-  [43, 'lost', 17005, 344],
-  [44, 'lost', 20290, 429],
-  [45, 'lost', 9026, 185],
-  [46, 'won', 36000, 885],
-  [47, 'won', 36000, 881],
-  [48, 'lost', 19530, 411],
-  [49, 'lost', 12848, 282],
-  [50, 'won', 36000, 866],
+  [28, 'lost', 19606, 386],
+  [29, 'won', 36000, 873],
+  [30, 'lost', 10812, 250],
+  [31, 'lost', 21036, 433],
+  [32, 'won', 36000, 910],
+  [33, 'won', 36000, 890],
+  [34, 'lost', 8825, 180],
+  [35, 'won', 36000, 869],
+  [36, 'lost', 7886, 151],
+  [37, 'won', 36000, 870],
+  [38, 'won', 36000, 865],
+  [39, 'lost', 13390, 284],
+  [40, 'won', 36000, 879],
+  [41, 'won', 36000, 877],
+  [42, 'won', 36000, 907],
+  [43, 'won', 36000, 884],
+  [44, 'won', 36000, 892],
+  [45, 'won', 36000, 879],
+  [46, 'lost', 30381, 684],
+  [47, 'won', 36000, 885],
+  [48, 'lost', 14354, 302],
+  [49, 'lost', 18000, 353],
+  [50, 'won', 36000, 862],
 ];
 
-/** Media de mechas de `goblin-barrel` por partida del bot v4 (sin redondear). */
-export const BASELINE_FUSES_PER_RUN = 30.44;
+/** Media de mechas de `goblin-barrel` por partida del bot v4 (sin redondear; 30,44 en M2). */
+export const BASELINE_FUSES_PER_RUN = 29.9;
+
+/**
+ * Referencia versionada del bot v5 (0027, tasks 2.4; spec build-sites, "Victorias del bot v5"):
+ * victorias sobre las semillas 1..50 con el contenido por defecto final (29/50 en 0026).
+ */
+export const BUILDER_REFERENCE = { wins: 34 } as const;
 
 /**
  * Huella (sha256 de JSON canónico, claves ordenadas) del contenido de `main` antes de 0024 que el

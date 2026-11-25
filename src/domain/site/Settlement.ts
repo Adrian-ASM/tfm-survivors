@@ -1,3 +1,4 @@
+import type { BuildOptionSnapshot } from '../run/RunSnapshot';
 import { BUILDING_KINDS, type BuildingKind, type BuildingRules } from './BuildingRules';
 import type { BuildSite } from './BuildSite';
 
@@ -9,13 +10,14 @@ export interface Materials {
 
 /**
  * Asentamiento de la partida (servicio de dominio con estado, propiedad de `Run`; spec build-sites
- * 0026): los solares en orden de id, el paso 12 (re-armado y apertura de la oferta de obra, como
- * mucho un solar por tick), el solar abierto con su oferta fija (los tipos asequibles al abrirse,
- * en el orden `house`, `tower`). No consume azar ni asigna en el tick salvo al abrir una oferta.
+ * 0026 y 0027): los solares en orden de id, el paso 12 (re-armado y apertura de la oferta de obra por
+ * contacto, como mucho un solar por tick) y el solar abierto con su oferta fija: siempre `house` y
+ * `tower`, cada una con su asequibilidad y lo que falta al abrirse. No consume azar ni asigna en el
+ * tick salvo al abrir una oferta.
  */
 export class Settlement {
   private openSite: BuildSite | null = null;
-  private offer: readonly BuildingKind[] = [];
+  private offer: readonly BuildOptionSnapshot[] = [];
 
   constructor(
     readonly sites: readonly BuildSite[],
@@ -27,8 +29,8 @@ export class Settlement {
     return this.openSite;
   }
 
-  /** Tipos de la oferta abierta en su orden fijo ([] sin oferta). */
-  get offered(): readonly BuildingKind[] {
+  /** Opciones de la oferta abierta en su orden fijo ([] sin oferta), congeladas. */
+  get options(): readonly BuildOptionSnapshot[] {
     return this.offer;
   }
 
@@ -39,23 +41,41 @@ export class Settlement {
   }
 
   /**
-   * Paso 12 con el jugador en (x, y) (spec build-sites, "Apertura del solar con re-armado"), en el
-   * orden de los solares: cada solar `free` se re-arma si procede y, si `canOpen` (la partida sigue
-   * en curso), no se ha abierto otro en este paso y hay ≥ 1 tipo asequible, el primero armado a
-   * d < radio abre la oferta y queda desarmado. Uno armado que no se abre sigue armado. Devuelve true
-   * si se ha abierto una oferta.
+   * Paso 12 con el jugador (x, y, r) (spec build-sites 0027, "Apertura del solar con re-armado"), en
+   * el orden de los solares: cada solar `free` se re-arma si procede y, si `canOpen` (la partida
+   * sigue en curso) y no se ha abierto otro en este paso, el primero armado que el jugador toca abre
+   * la oferta y queda desarmado, se pueda pagar algo o no. Uno armado que no se abre sigue armado.
+   * Devuelve true si se ha abierto una oferta.
    */
-  step(x: number, y: number, canOpen: boolean, m: Materials): boolean {
-    const affordable = canOpen && BUILDING_KINDS.some((k) => this.canAfford(k, m));
+  step(x: number, y: number, r: number, canOpen: boolean, m: Materials): boolean {
     let opened = false;
     for (const site of this.sites) {
       if (!site.isFree) continue;
-      if (!site.gate.step(x, y, affordable && !opened)) continue;
+      if (!site.touch(x, y, r, canOpen && !opened)) continue;
       opened = true;
       this.openSite = site;
-      this.offer = Object.freeze(BUILDING_KINDS.filter((k) => this.canAfford(k, m)));
+      this.offer = this.optionsFor(m);
     }
     return opened;
+  }
+
+  /** Las dos opciones con su asequibilidad y lo que falta con estos materiales. */
+  private optionsFor(m: Materials): readonly BuildOptionSnapshot[] {
+    return Object.freeze(
+      BUILDING_KINDS.map((kind) => {
+        const { wood, stone } = this.rules.cost(kind);
+        return Object.freeze({
+          kind,
+          wood,
+          stone,
+          affordable: this.canAfford(kind, m),
+          missing: Object.freeze({
+            wood: Math.max(0, wood - m.wood),
+            stone: Math.max(0, stone - m.stone),
+          }),
+        });
+      }),
+    );
   }
 
   /**

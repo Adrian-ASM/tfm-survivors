@@ -7,10 +7,10 @@ import { FAKE_HAZARD_CAPACITY, FakeGraphics, fakeKit } from '../../support/FakeS
 import { someLooks } from '../../support/looks';
 import { ticks } from '../../support/runs';
 import {
-  TEST_ACCESS,
   aSiteConfig,
   buildNow,
   startWithSites,
+  TOUCH,
   untilBuilding,
   withStock,
 } from '../../support/sites';
@@ -42,7 +42,7 @@ describe('Flechas de torre pintadas (spec sprite-rendering 0026)', () => {
       weapons: [{ ...LINTER, cooldownTicks: 5 }],
     });
     const run = startWithSites(config, {
-      player: TEST_ACCESS,
+      player: TOUCH,
       ...withStock(30, 15),
       enemies: [{ type: 'goblin-torch', x: 1260, y: 450 }],
     });

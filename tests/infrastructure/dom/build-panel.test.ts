@@ -29,14 +29,16 @@ function panel() {
 const text = (el: FakeElement | undefined, cls: string) => el?.byClass(cls)[0]?.textContent;
 
 describe('BuildPanel', () => {
-  it('Scenario: Panel con una opción (madera 30, piedra 14: la casa por 15 madera y Salir)', () => {
+  // 0027 (núcleo): la oferta lleva siempre la casa y la torre; la fila no asequible desactivada y
+  // con «faltan N» llega con el grupo 3 de tasks.md.
+  it('Panel con la torre no asequible (madera 30, piedra 14: casa, torre y Salir)', () => {
     const { paint, section, rows, build } = panel();
     paint(inSite(30, 14));
 
     expect(section().hidden).toBe(false);
     expect(section().getAttribute('role')).toBe('dialog');
     expect(text(section(), 'build-panel__stock')).toBe('Madera: 30 · Piedra: 14');
-    expect(rows()).toHaveLength(1);
+    expect(rows().map((r) => r.dataset.building)).toEqual(['house', 'tower']);
     expect(text(rows()[0], 'build-panel__name')).toBe(MENU_LABELS.buildHouse);
     expect(text(rows()[0], 'build-panel__cost')).toBe('15 Madera · 0 Piedra');
     expect(text(section(), 'build-panel__leave')).toBe(MENU_LABELS.buildLeave);
@@ -45,7 +47,10 @@ describe('BuildPanel', () => {
       siteId: 0,
       wood: 30,
       stone: 14,
-      options: [{ kind: 'house', wood: 15, stone: 0 }],
+      options: [
+        { kind: 'house', wood: 15, stone: 0 },
+        { kind: 'tower', wood: 30, stone: 15 },
+      ],
     });
   });
 

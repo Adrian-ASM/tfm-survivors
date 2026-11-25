@@ -1,24 +1,28 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
 import { BALANCE_SEEDS, WIN_BAND } from '../support/balanceSeeds';
+import { BUILDER_REFERENCE } from '../support/balanceBaseline';
 import { aDefaultConfig } from '../support/builders';
 import { isWin, perRun, traceBotBatch, type BotTrace } from '../support/balanceMeasure';
 import { builderBot } from '../support/policies';
 
-// Spec build-sites (0026), "Balance con los solares": un lote del bot v5 (el v4 más construcción,
-// `REFERENCE_BUILD_POLICY`) con el contenido por defecto final, entre 25 y 35 victorias, y el
-// invariante "Nada en la huella tras construir" comprobado en cada tick del mismo lote.
-// M1 (apply): 29/50, 1,22 casas y 0,56 torres por partida, ~43 s en local (×2,8 ≈ 120 s en CI).
+// Spec build-sites (0026 y 0027), "Balance con los solares": un lote del bot v5 (el v4 más
+// construcción, `REFERENCE_BUILD_POLICY`) con el contenido por defecto final, entre 25 y 35 victorias
+// e igual a `BUILDER_REFERENCE`, y el invariante "Nada en las celdas de obra" comprobado en cada tick
+// del mismo lote. 0026: 29/50. 0027 (apply): 34/50, 1,3 casas y 1,1 torres por partida, ~43 s en
+// local (×2,8 ≈ 121 s en CI).
 const BOT_BATCH_TIMEOUT_MS = 180_000;
 const DEFAULT_CONFIG = aDefaultConfig();
 const CELL = DEFAULT_CONFIG.map.cellSize;
 
-/** Celdas construidas del snapshot (`col,row`). */
-function builtCells(s: RunSnapshot): Set<string> {
+/**
+ * Celdas de obra del snapshot (`col,row`): la huella de cada solar libre (bloquea desde el tick 0,
+ * 0027) y la del edificio de cada solar construido.
+ */
+function workCells(s: RunSnapshot): Set<string> {
   const out = new Set<string>();
   for (const site of s.sites) {
-    if (site.state === 'free') continue;
-    const { col, row, cols, rows } = site[site.state];
+    const { col, row, cols, rows } = site.state === 'free' ? site.house : site[site.state];
     for (let r = row; r < row + rows; r++)
       for (let c = col; c < col + cols; c++) out.add(`${String(c)},${String(r)}`);
   }
@@ -42,8 +46,8 @@ function overlaps(cells: Set<string>, x: number, y: number, r: number): boolean 
 }
 
 /**
- * Comprobación por tick de "Nada en la huella tras construir" en una partida. Las celdas
- * construidas se recalculan solo al cambiar los solares. Recogibles: los no atraídos no se mueven
+ * Comprobación por tick de "Nada en las celdas de obra" en una partida, desde el tick 0 (0027). Las
+ * celdas de obra se recalculan solo al cambiar los solares. Recogibles: los no atraídos no se mueven
  * nunca, así que uno nuevo (id no visto) en una celda construida, o uno que sigue en la misma
  * posición de una celda construida dos ticks seguidos, incumple; uno atraído que la cruza en vuelo
  * hacia el jugador, no (la spec exige los no atraídos).
@@ -56,7 +60,7 @@ function footprintCheck(seed: number, broken: string[]) {
   return (s: RunSnapshot): void => {
     let k = '';
     for (const site of s.sites) k += site.state;
-    if (k !== key) [key, cells] = [k, builtCells(s)];
+    if (k !== key) [key, cells] = [k, workCells(s)];
     const lastId = s.pickups.at(-1)?.id ?? -1;
     if (cells.size === 0) {
       maxId = lastId;
@@ -89,18 +93,19 @@ describe('Balance con los solares y el bot v5 (spec build-sites 0026)', () => {
     batchMs = performance.now() - t0;
   }, BOT_BATCH_TIMEOUT_MS);
 
-  it('Scenario: Victorias del bot v5 (25–35; ≥ 1 casa y ≥ 1 torre en alguna partida)', () => {
+  it('Scenario: Victorias del bot v5 (25–35, igual a la referencia; ≥ 1 casa y ≥ 1 torre)', () => {
     const wins = traces.filter((t) => isWin(t.final)).length;
     const message = `victorias del bot v5: ${String(wins)}/50`;
 
     expect(traces).toHaveLength(BALANCE_SEEDS.length);
     expect(wins, message).toBeGreaterThanOrEqual(WIN_BAND.min);
     expect(wins, message).toBeLessThanOrEqual(WIN_BAND.max);
+    expect(wins, message).toBe(BUILDER_REFERENCE.wins);
     expect(traces.some((t) => t.buildings.houses >= 1)).toBe(true);
     expect(traces.some((t) => t.buildings.towers >= 1)).toBe(true);
   });
 
-  it('Scenario: Nada en la huella tras construir (semillas 1 a 50, bot v5)', () => {
+  it('Scenario: Nada en las celdas de obra (semillas 1 a 50, bot v5, desde el tick 0)', () => {
     expect(traces.some((t) => t.buildings.builtTicks.length > 0)).toBe(true);
     expect(broken.slice(0, 10)).toEqual([]);
   });

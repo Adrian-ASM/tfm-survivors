@@ -109,10 +109,10 @@ import {
   SHOP_REARM_MUST_EXCEED_RADIUS,
 } from '../../domain/shop/ShopRules';
 import {
-  ACCESS_RADIUS_MUST_BE_POSITIVE,
-  ACCESS_REARM_MUST_EXCEED_RADIUS,
   BUILDING_STONE_MUST_BE_INTEGER,
   BUILDING_WOOD_MUST_BE_INTEGER,
+  CONTACT_EPS,
+  CONTACT_REARM_MUST_EXCEED_EPS,
   HOUSE_INCOME_MUST_BE_INTEGER,
   SITE_PLACEMENT_MUST_BE_INTEGER,
   TOWER_PROJECTILES_MUST_BE_INTEGER,
@@ -619,8 +619,9 @@ export const ShopSchema = z.strictObject({
 
 // Solares y edificios (content/buildings.json, spec build-sites 0026). Estricto en todos los niveles
 // (un campo extra como `hp` falla nombrándolo). El arma de la torre reutiliza el esquema de arma; que
-// sea `nearest-in-range` con `projectile`, `rearmDistance > radius`, la regla del acceso y la ruta
-// los comprueba `BuildingRules` desde el superRefine (una sola implementación).
+// sea `nearest-in-range` con `projectile` y la ruta los comprueba `BuildingRules` desde el
+// superRefine (una sola implementación); `contact.rearmDistance > ε` lo repite zod con el mismo
+// mensaje (0027).
 const BuildingCostSchema = z.strictObject({
   wood: RequiredCount(BUILDING_WOOD_MUST_BE_INTEGER),
   stone: NonNegativeInt(BUILDING_STONE_MUST_BE_INTEGER),
@@ -641,13 +642,10 @@ export const BuildingsSchema = z.strictObject({
     minStructureCells: SiteDistance,
     route: z.strictObject({ min: SiteDistance, max: SiteDistance }),
   }),
-  access: z.strictObject({
-    radius: z
-      .number({ error: ACCESS_RADIUS_MUST_BE_POSITIVE })
-      .positive({ error: ACCESS_RADIUS_MUST_BE_POSITIVE }),
+  contact: z.strictObject({
     rearmDistance: z
-      .number({ error: ACCESS_REARM_MUST_EXCEED_RADIUS })
-      .positive({ error: ACCESS_REARM_MUST_EXCEED_RADIUS }),
+      .number({ error: CONTACT_REARM_MUST_EXCEED_EPS })
+      .gt(CONTACT_EPS, { error: CONTACT_REARM_MUST_EXCEED_EPS }),
   }),
   house: z.strictObject({
     cost: BuildingCostSchema,

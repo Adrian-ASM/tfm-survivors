@@ -270,7 +270,11 @@ function effectiveSpeed(config: RunConfig, snapshot: RunSnapshot): number {
   return speed;
 }
 
-/** Mundo del bot para una partida creada con `config` cuyo mapa es `map`. */
+/**
+ * Mundo del bot para una partida creada con `config` cuyo mapa es `map`, con las huellas de
+ * `map.sites` marcadas en su capa de obra, como el núcleo (ADR-0026: los solares libres bloquean
+ * desde el tick 0 y la huella del edificio es la del solar).
+ */
 export function botWorld(config: RunConfig, map: MapSnapshot): BotWorld {
   const { arena } = config;
   const rules = Arena.create(arena.width, arena.height);
@@ -279,6 +283,7 @@ export function botWorld(config: RunConfig, map: MapSnapshot): BotWorld {
   if (!mapRules.ok) throw new Error(mapRules.error.message);
   const grid = GameMap.fromCells(map.cells, mapRules.value);
   if (!grid.ok) throw new Error(grid.error.message);
+  for (const s of map.sites) grid.value.build(s.col, s.row, s.cols, s.rows);
   return {
     arena,
     map: grid.value,
@@ -314,13 +319,14 @@ export function referenceBot(config: RunConfig, map: MapSnapshot): ReferenceBot 
 }
 
 /**
- * Política de obra del bot v5 (spec build-sites 0026, design §7): la torre si es asequible y, si no,
- * la casa. Lee solo las opciones de la oferta.
+ * Política de obra del bot v5 (spec build-sites 0026 y 0027, design 0027 §1.7): la torre si es
+ * asequible, si no la casa si lo es y, si no, `null` (sale sin construir). Lee solo las opciones de
+ * la oferta (siempre las dos, con `affordable`).
  */
 export function REFERENCE_BUILD_POLICY(s: RunSnapshot): string | null {
-  const kinds = s.build.options.map((o) => o.kind);
-  if (kinds.includes('tower')) return 'tower';
-  return kinds.includes('house') ? 'house' : null;
+  const affordable = (kind: string) => s.build.options.some((o) => o.kind === kind && o.affordable);
+  if (affordable('tower')) return 'tower';
+  return affordable('house') ? 'house' : null;
 }
 
 /** ¿Alcanzan la madera y la piedra del snapshot alguna opción de obra? (costes del contenido). */
@@ -336,10 +342,13 @@ function canBuild(config: RunConfig, s: RunSnapshot): boolean {
 /**
  * Bot de referencia v5 (spec build-sites 0026, design §7): el v4 más la construcción. Con un solar
  * libre y armado y madera y piedra para algún edificio, sin enemigos a menos de `SHOP_DANGER_RANGE`
- * y sin querer ir a la tienda, va al acceso del solar más cercano por distancia de ruta (desempate
- * por id) por el campo de distancias, como a la puerta; en la obra elige con
- * `REFERENCE_BUILD_POLICY`. Ve los edificios construidos (los aplica a su mapa) para huir de ellos
- * y rodearlos. Con `build: false` visita los solares y sale sin construir (política de obra fija).
+ * y sin querer ir a la tienda, va al punto medio del borde inferior de la huella del solar más
+ * cercano por distancia de ruta hasta la celda bajo la huella (col + ⌊cols/2⌋, row + rows), con
+ * desempate por id (design 0027 §1.7), por el campo de distancias, como a la puerta: el barrido lo
+ * deja tangente (g = 0) y la obra se abre; en la obra elige con
+ * `REFERENCE_BUILD_POLICY`. Huye de las huellas de los solares y las rodea desde el tick 0 (las
+ * marca `botWorld`). Con `build: false` visita los solares y sale sin construir (política de obra
+ * fija).
  */
 export function builderBot(
   config: RunConfig,
@@ -351,16 +360,6 @@ export function builderBot(
   const routeField = new FlowField(world.map);
   const toSiteField = new FlowField(world.map);
   const target = { x: 0, y: 0 };
-  const applied = new Set<number>();
-  /** Aplica a su mapa los solares construidos que aún no conocía. */
-  const syncBuilt = (s: RunSnapshot): void => {
-    for (const site of s.sites) {
-      if (site.state === 'free' || applied.has(site.id)) continue;
-      applied.add(site.id);
-      const { col, row, cols, rows } = site[site.state];
-      world.map.build(col, row, cols, rows);
-    }
-  };
   const toward = (s: RunSnapshot, field: FlowField, x: number, y: number): PlayerInput => {
     field.retarget(world.map.colAt(x), world.map.rowAt(y));
     field.steer(s.player.x, s.player.y, x, y, target);
@@ -378,18 +377,16 @@ export function builderBot(
     let bestD = Infinity;
     for (const site of s.sites) {
       if (site.state !== 'free' || !site.armed) continue;
-      const d = routeField.distanceAt(
-        world.map.colAt(site.access.x),
-        world.map.rowAt(site.access.y),
-      );
+      const { col, row, cols, rows } = site.house;
+      const d = routeField.distanceAt(col + Math.floor(cols / 2), row + rows);
       if (d >= 0 && d < bestD) [best, bestD] = [site, d];
     }
-    return best ? toward(s, toSiteField, best.access.x, best.access.y) : null;
+    if (!best) return null;
+    const { col, cols, row, rows } = best.house;
+    const size = world.map.cellSize;
+    return toward(s, toSiteField, (col + cols / 2) * size, (row + rows) * size);
   };
-  const movement = (s: RunSnapshot): PlayerInput => {
-    syncBuilt(s);
-    return toDoor(s) ?? toSite(s) ?? fleeInput(s, world);
-  };
+  const movement = (s: RunSnapshot): PlayerInput => toDoor(s) ?? toSite(s) ?? fleeInput(s, world);
   return {
     input: (snapshot) => dodgeInput(snapshot, world, movement),
     pick: (offer) => pickByPriority(offer),

@@ -45,8 +45,8 @@ export interface MapVein extends MapPoint {
 }
 
 /**
- * Solar del mapa (spec build-sites 0026): id, huella (ancla, columnas y filas; la de la casa y la de
- * la torre son la misma, design §1), centro de la huella y acceso.
+ * Solar del mapa (spec build-sites 0026 y 0027): id, huella (ancla, columnas y filas; la de la casa
+ * y la de la torre son la misma) y centro de la huella. Sin acceso (0027).
  */
 export interface MapSite {
   readonly id: number;
@@ -56,7 +56,6 @@ export interface MapSite {
   readonly rows: number;
   readonly x: number;
   readonly y: number;
-  readonly access: MapPoint;
 }
 
 /**
@@ -149,7 +148,6 @@ export function toMapSnapshot(
           rows: s.rows,
           x: s.x,
           y: s.y,
-          access: Object.freeze({ x: s.access.x, y: s.access.y }),
         }),
       ),
     ),

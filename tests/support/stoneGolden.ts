@@ -53,11 +53,16 @@ export function stoneSignatureOf(run: Run, maxTicks = STONE_GOLDEN_TICKS): Stone
 export const stoneSignatureForSeed = (seed: number): StoneSignature =>
   stoneSignatureOf(startSeededRun(aDefaultConfig(), seed));
 
-/** Medida en el apply de 0025 (quieto: pocas bajas antes de morir o del tick 3.600). */
+/**
+ * Regenerada en el apply de 0027 (antes, 0025): las huellas de los solares libres bloquean desde el
+ * tick 0 (ADR-0026) y cambian qué bajas ocurren y en qué orden, y con ellas la secuencia de tiradas
+ * del flujo `STONE_STREAM`. Las otras cinco firmas (MAP, STRUCTURE, RESOURCE, SHEEP y SITE) no
+ * cambian (quieto: pocas bajas antes de morir o del tick 3.600).
+ */
 export const STONE_GOLDEN: Readonly<Record<42 | 123, StoneSignature>> = {
   42: {
     first: [
-      '10@850:goblin-torch:1666,1266',
+      '10@853:goblin-torch:1667,1272',
       '13@950:goblin-torch:1654,1119',
       '22@1331:goblin-torch:1727,1132',
     ],

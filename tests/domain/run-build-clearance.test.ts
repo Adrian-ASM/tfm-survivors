@@ -20,33 +20,36 @@ import {
   aBarrelType,
   aDefaultConfig,
   aSegment,
+  aStillType,
   inState,
+  withSheep,
   withWeapons,
 } from '../support/builders';
 import { aCampScenario, aGuardAt, aGuardType } from '../support/camps';
 import { cellsWith, mapRules } from '../support/mapLayouts';
 import { CountingRandom, StubRandom } from '../support/random';
-import { ticks } from '../support/runs';
+import { advance, ticks } from '../support/runs';
 import { declaredSheep } from '../support/sheep';
 import {
   FOOTPRINT,
-  TEST_ACCESS,
   TEST_SITE,
   TEST_SITE_RECT,
   aSiteConfig,
   buildNow,
   leaveSiteIfOpen,
   startWithSites,
+  TOUCH,
+  touchPoint,
   untilBuilding,
-  withSiteAccess,
   withStock,
 } from '../support/sites';
 
 // Spec build-sites 0026, "Huella despejada al construir", "Edificios que bloquean el paso" y
 // "Edificios indestructibles y fuera del combate"; enemy-behavior, "Navegación con edificios
 // construidos". Solar de prueba: huella (20..21, 10..11), x en [1.200, 1.320] e y en [600, 720];
-// acceso P = (1.260, 810), donde está quieto el jugador (la obra se abre en el tick 1).
-const P = TEST_ACCESS;
+// P = (1.260, 736), tangente a la cara inferior, donde está quieto el jugador (la obra se abre en el
+// tick 1).
+const P = TOUCH;
 const TORCH = SCENARIO_ENEMY_TYPES.filter((t) => t.id === 'goblin-torch');
 const torchConfig = (o: Parameters<typeof aSiteConfig>[0] = {}): RunConfig =>
   aSiteConfig({ ...o, player: { maxHealth: LONG_RUN_HEALTH, ...o.player } }, TORCH);
@@ -104,29 +107,26 @@ describe('Huella despejada al construir (spec build-sites 0026)', () => {
     expect(s.pickups.every((p) => isCellCenter(p.x, p.y))).toBe(true);
   });
 
-  it('Scenario: Oveja que solapa la huella (y su origen en otra celda)', () => {
-    const flock = declaredSheep([{ x: 1330, y: 650 }]);
+  it('Scenario: Oveja tangente a la huella (radio 20 en (1.260, 740), origen en su posición)', () => {
+    // El jugador toca la cara superior, a 156 px de la oveja: con huida de radio 50 no la asusta.
+    const flock = declaredSheep([{ x: 1260, y: 740 }]);
     const run = startWithSites(
-      aSiteConfig(),
-      { player: P, ...withStock(15), sheep: [{ origin: { x: 1230, y: 630 } }] },
+      withSheep(aSiteConfig(), { flee: { radius: 50, speed: 180 } }),
+      { player: touchPoint('top'), ...withStock(15) },
       [TEST_SITE],
       flock.kind === 'open' && flock.sheep ? { sheep: flock.sheep } : {},
     );
     untilBuilding(run, 1);
-    const sheep = run.snapshot().sheep[0];
-    expect(overlapsFootprint(sheep?.x ?? 0, sheep?.y ?? 0, sheep?.radius ?? 0)).toBe(true);
     const s = buildNow(run, 'house');
     const o = s.sheep[0];
-    expect(overlapsFootprint(o?.x ?? 1260, o?.y ?? 660, o?.radius ?? 18)).toBe(false);
-    expect(inFootprint(o?.origin.x ?? 1260, o?.origin.y ?? 660)).toBe(false);
-    expect(isCellCenter(o?.origin.x ?? 0, o?.origin.y ?? 0)).toBe(true);
+    expect([o?.x, o?.y, o?.origin.x, o?.origin.y]).toEqual([1260, 740, 1260, 740]);
     const after = ticks(run, 600);
     expect(after.some((x) => x.sheep.some((q) => overlapsFootprint(q.x, q.y, q.radius)))).toBe(
       false,
     );
   });
 
-  it('Scenario: Punto de patrulla dentro de la huella (GuardPost.evict)', () => {
+  it('GuardPost.evict recoloca un punto de patrulla que cae en una celda de obra', () => {
     const config = aCampScenario();
     const arena = Arena.create(config.arena.width, config.arena.height);
     if (!arena.ok) throw new Error(arena.error.message);
@@ -146,18 +146,18 @@ describe('Huella despejada al construir (spec build-sites 0026)', () => {
     expect(out).toEqual({ x: 1890, y: 750 });
   });
 
-  it('Scenario: Punto de patrulla dentro de la huella (partida, 1.200 ticks)', () => {
+  it('con una torre en el solar el guardia sigue fuera de la huella (partida, 1.200 ticks)', () => {
     const base = aCampScenario({ player: { speed: 210 } });
     const types = base.enemies.types.map((t) =>
       t.id === 'guard' ? aGuardType({ detect: 5, lose: 10 }) : t,
     );
-    const config = withSiteAccess({ ...base, enemies: { ...base.enemies, types } });
+    const config: RunConfig = { ...base, enemies: { ...base.enemies, types } };
     const site = { col: 32, row: 11 };
     // La casa goblin (30..31, 10..12), con puerta en (1.890, 810), declarada en el mapa vacío.
     const r = startWithSites(
       config,
       {
-        player: { x: 1980, y: 870 },
+        player: { x: 1980, y: 796 },
         ...withStock(30, 15),
         enemies: [aGuardAt(1890, 810, { house: 0 })],
       },
@@ -195,89 +195,123 @@ describe('Huella despejada al construir (spec build-sites 0026)', () => {
   });
 });
 
-describe('Edificios que bloquean el paso, en la partida (spec build-sites 0026)', () => {
-  /** Torch en E = (1.260, 300), arriba de la huella; P bajo ella: el segmento E–P la cruza. */
-  const chaseRun = (build: boolean) => {
-    const run = openAtP(torchConfig(), { enemies: [{ type: 'goblin-torch', x: 1260, y: 300 }] });
-    if (build) buildNow(run, 'house');
-    else leaveSiteIfOpen(run);
-    return ticks(run, 3600);
+describe('Solar libre y edificios que bloquean el paso, en la partida (spec build-sites 0027)', () => {
+  /** Jugador quieto en Q = (1.260, 1.000) y torch en E = (1.260, 300): el segmento E–Q cruza la huella. */
+  const Q = { x: 1260, y: 1000 };
+  const chaseRun = (withSite: boolean) => {
+    const run = startWithSites(
+      torchConfig(),
+      { player: Q, enemies: [{ type: 'goblin-torch', x: 1260, y: 300 }] },
+      withSite ? [TEST_SITE] : [],
+    );
+    return advance(run, 3600);
   };
   const reachedAt = (snaps: readonly RunSnapshot[]) =>
     snaps.findIndex((s) => {
       const e = s.enemies[0];
-      return !!e && Math.abs(e.x - P.x) <= 0.001 && Math.abs(e.y - P.y) <= 0.001;
+      return !!e && Math.abs(e.x - Q.x) <= 0.001 && Math.abs(e.y - Q.y) <= 0.001;
     });
+  const at = (s: RunSnapshot) => s.enemies[0] ?? { x: 0, y: 0 };
 
-  it.each([
-    ['El enemigo rodea el edificio nuevo (build-sites)'],
-    ['El campo se recalcula y el enemigo rodea (enemy-behavior)'],
-  ])('Scenario: %s', () => {
+  it('Scenario: El enemigo rodea el solar libre (con el solar y sin él, 3.600 ticks)', () => {
     const without = chaseRun(false);
-    const withHouse = chaseRun(true);
-    const at = (s: RunSnapshot) => s.enemies[0] ?? { x: 0, y: 0 };
+    const withSite = chaseRun(true);
     expect(without.some((s) => inFootprint(at(s).x, at(s).y))).toBe(true);
-    expect(withHouse.some((s) => inFootprint(at(s).x, at(s).y))).toBe(false);
-    // Sin línea libre en el tick n + 1: no avanza en recta hacia P (x = 1.260).
-    expect(withHouse[0]?.enemies[0]?.x).not.toBe(1260);
-    expect(reachedAt(withHouse)).toBeGreaterThan(reachedAt(without));
+    expect(withSite.some((s) => inFootprint(at(s).x, at(s).y))).toBe(false);
     expect(reachedAt(without)).toBeGreaterThan(0);
+    expect(reachedAt(withSite)).toBeGreaterThan(reachedAt(without));
   });
 
-  it('Scenario: Campo recalculado con el jugador en la misma celda', () => {
-    // Troncos en (21, 9) y (20, 12): el torch en (20, 9) no tiene línea libre y su siguiente
-    // celda en el tick 1 es (20, 10), de la huella. Tras la casa, la siguiente es (19, 9).
-    const rules = mapRules();
-    const cells = cellsWith(rules, { '21,9': 'trunk', '20,12': 'trunk' });
-    const run = startWithSites(
-      torchConfig(),
-      { player: P, ...withStock(15), enemies: [{ type: 'goblin-torch', x: 1230, y: 570 }] },
-      [TEST_SITE],
-      { cells },
+  it('Scenario: El enemigo rodea un solar libre desde el tick 0 (enemy-behavior, 1.200 ticks)', () => {
+    const snaps = chaseRun(true).slice(0, 1200);
+    // Sin línea libre en el tick 1: no avanza en recta hacia Q (x = 1.260).
+    expect(snaps[0]?.enemies[0]?.x).not.toBe(1260);
+    expect(snaps.some((s) => inFootprint(at(s).x, at(s).y))).toBe(false);
+    expect(reachedAt(snaps)).toBeGreaterThan(0);
+  });
+
+  it('Scenario: El solar libre corta la línea libre (tick 0; con el mapa vacío sí la tiene)', () => {
+    const [withSite] = chaseRun(true);
+    const [without] = chaseRun(false);
+    expect(withSite?.enemies[0]?.x).not.toBe(1260);
+    expect(without?.enemies[0]?.x).toBe(1260);
+  });
+
+  /** Primer enemigo que aparece con el azar fijo 0,75 (ángulo 3π/2: el punto queda encima). */
+  const spawnOver = (
+    player: { x: number; y: number },
+    ringRadius: number,
+    sites: readonly { col: number; row: number }[],
+    cells?: ReturnType<typeof cellsWith>,
+    tower = false,
+  ) => {
+    const base = aSiteConfig({ segments: [aSegment(['probe'], 1)] });
+    const config = {
+      ...base,
+      waves: { ...base.waves, spawn: { ringRadius, minDistance: 0, maxAttempts: 8 } },
+    };
+    const random = new CountingRandom(new StubRandom(0.75));
+    const run = startWithSites(config, { player, ...withStock(30, 15) }, sites, {
+      random,
+      ...(cells ? { cells } : {}),
+    });
+    if (tower) {
+      untilBuilding(run, 1);
+      buildNow(run, 'tower');
+    }
+    let before = random.calls;
+    for (let t = 0; t < 120 && run.snapshot().enemies.length === 0; t++) {
+      before = random.calls;
+      leaveSiteIfOpen(run);
+      run.tick(PlayerInput.NONE);
+    }
+    return { enemy: run.snapshot().enemies[0], consumed: random.calls - before };
+  };
+
+  it('Scenario: Aparición sobre el solar libre (punto en la celda (20, 10), como con un tronco)', () => {
+    // Desde (1.230, 800) con el anillo de 170: el punto es (1.230, 630), en la celda (20, 10).
+    const onSite = spawnOver({ x: 1230, y: 800 }, 170, [TEST_SITE]);
+    const trunk = spawnOver(
+      { x: 1230, y: 800 },
+      170,
+      [],
+      cellsWith(mapRules(), { '20,10': 'trunk' }),
     );
-    untilBuilding(run, 1);
-    const n = run.snapshot().enemies[0];
-    expect(n?.x).toBeCloseTo(1230, 6);
-    expect(n?.y).toBeGreaterThan(570);
-    buildNow(run, 'house');
-    const next = ticks(run, 1)[0]?.enemies[0];
-    expect(next?.x).toBeLessThan(n?.x ?? 0);
-    expect(next?.y).toBeLessThanOrEqual(n?.y ?? 0);
+    expect(inFootprint(onSite.enemy?.x ?? 1230, onSite.enemy?.y ?? 630)).toBe(false);
+    expect(isCellCenter(onSite.enemy?.x ?? 0, onSite.enemy?.y ?? 0)).toBe(true);
+    // 1 valor para el tipo del director y 1 por el único intento, como con el tronco.
+    expect([onSite.consumed, trunk.consumed]).toEqual([2, 2]);
   });
 
   it('Scenario: Aparición sobre el edificio (torre; 1 valor del azar por intento)', () => {
-    // Azar fijo 0,75: ángulo 3π/2, punto (1.260, 660) desde P con el anillo de 150, en la huella.
-    const calls = (build: boolean) => {
-      const base = aSiteConfig({ segments: [aSegment(['probe'], 1)] });
-      const config = {
-        ...base,
-        waves: { ...base.waves, spawn: { ringRadius: 150, minDistance: 0, maxAttempts: 8 } },
-      };
-      const random = new CountingRandom(new StubRandom(0.75));
-      const run = startWithSites(config, { player: P, ...withStock(30, 15) }, [TEST_SITE], {
-        random,
-      });
-      untilBuilding(run, 1);
-      if (build) buildNow(run, 'tower');
-      else leaveSiteIfOpen(run);
-      let before = random.calls;
-      for (let t = 0; t < 120 && run.snapshot().enemies.length === 0; t++) {
-        before = random.calls;
-        run.tick(PlayerInput.NONE);
-      }
-      return { enemy: run.snapshot().enemies[0], consumed: random.calls - before };
-    };
-    const onTower = calls(true);
-    const free = calls(false);
-    expect([free.enemy?.x, free.enemy?.y]).toEqual([1260, 660]);
+    // Desde P con el anillo de 76: el punto es (1.260, 660), en la huella.
+    const onTower = spawnOver(P, 76, [TEST_SITE], undefined, true);
     expect(inFootprint(onTower.enemy?.x ?? 1260, onTower.enemy?.y ?? 660)).toBe(false);
     expect(isCellCenter(onTower.enemy?.x ?? 0, onTower.enemy?.y ?? 0)).toBe(true);
-    // 1 valor para el tipo del director y 1 por el único intento, igual que sin edificio.
     expect(onTower.consumed).toBe(2);
-    expect(free.consumed).toBe(2);
   });
 
-  it('Scenario: Recogible creado sobre el edificio (suelta en la huella de una casa)', () => {
+  it('Scenario: Recogible creado sobre el solar libre (torch de vida 4 en (1.230, 630))', () => {
+    const torch = aStillType({ id: 'goblin-torch', health: 4 });
+    const config = withWeapons(aSiteConfig({ player: { maxHealth: 1000 } }, [torch]), {
+      maxProjectiles: 32,
+      hitFlashTicks: 4,
+      weapons: [LINTER],
+    });
+    const run = startWithSites(config, {
+      player: { x: 1230, y: 800 },
+      enemies: [{ type: 'goblin-torch', x: 1230, y: 630 }],
+    });
+    const snaps = advance(run, 120);
+    const n = snaps.findIndex((s) => s.kills === 1);
+    const gem = snaps[n]?.pickups.find((x) => x.kind === 'xp');
+    expect(n).toBeGreaterThanOrEqual(0);
+    expect(snaps[n - 1]?.enemies[0]).toMatchObject({ x: 1230, y: 630 });
+    expect(inFootprint(gem?.x ?? 1230, gem?.y ?? 630)).toBe(false);
+    expect(isCellCenter(gem?.x ?? 0, gem?.y ?? 0)).toBe(true);
+  });
+
+  it('una gema soltada en la huella de una casa se recoloca (PickupField sobre la capa de obra)', () => {
     const config = aDefaultConfig();
     const rules = PickupRules.create(config.progression);
     if (!rules.ok) throw new Error(rules.error.message);

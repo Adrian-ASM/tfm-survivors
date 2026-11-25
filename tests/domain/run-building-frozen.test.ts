@@ -5,19 +5,12 @@ import type { RunConfig } from '../../src/domain/run/RunConfig';
 import { LINTER, aSegment, withWeapons } from '../support/builders';
 import { aBehaviorConfig, aProbeType, ticks } from '../support/runs';
 import { declaredSheep } from '../support/sheep';
-import {
-  TEST_ACCESS,
-  leaveSiteIfOpen,
-  startWithSites,
-  untilBuilding,
-  withSiteAccess,
-  withStock,
-} from '../support/sites';
+import { leaveSiteIfOpen, startWithSites, untilBuilding, withStock } from '../support/sites';
 
 // Spec run-state 0026, "Simulación congelada en obra". El solar de prueba se abre en el tick 6
-// (jugador desde d = 45 hacia arriba a 1 px por tick).
+// (jugador desde g = 7 bajo la cara inferior, hacia arriba a 1 px por tick: g = 1 en el tick 6).
 const UP = PlayerInput.of(0, -1);
-const START = { x: TEST_ACCESS.x, y: TEST_ACCESS.y + 45 };
+const START = { x: 1260, y: 743 };
 
 /**
  * Partida "llena" al abrirse la obra: un enemigo inmortal a 350 px, el Linter con cadencia 1
@@ -34,7 +27,7 @@ function fullConfig(): RunConfig {
     hitFlashTicks: 4,
     weapons: [{ ...LINTER, cooldownTicks: 1 }],
   };
-  return withSiteAccess(withWeapons(base, weapons));
+  return withWeapons(base, weapons);
 }
 
 function fullRun(seed = 42): Run {

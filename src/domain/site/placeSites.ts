@@ -20,13 +20,15 @@ export interface PlacedBefore {
   readonly sheep: readonly Point[];
 }
 
-/** Celda del acceso de un solar con ancla (c, r): columna del centro, fila r + rows + 1. */
-export const accessCellOf = (
-  c: number,
-  r: number,
-  cols: number,
-  rows: number,
-): [number, number] => [c + Math.floor(cols / 2), r + rows + 1];
+/**
+ * Celda de ruta de un solar con ancla (c, r): columna del centro, fila r + rows + 1 (la del antiguo
+ * acceso de 0026). Solo es la celda de referencia de colocación y ruta; no tiene papel en el juego
+ * (0027).
+ */
+export const routeCellOf = (c: number, r: number, cols: number, rows: number): [number, number] => [
+  c + Math.floor(cols / 2),
+  r + rows + 1,
+];
 
 /** Máscara de las celdas ocupadas por lo colocado antes (huellas y puertas, vetas, montones, ovejas). */
 function takenCells(map: GameMap, before: PlacedBefore): Uint8Array {
@@ -97,15 +99,15 @@ function candidateAnchors(map: GameMap, before: PlacedBefore, rules: BuildingRul
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       if (!zoneIsFree(c, r, fc, fr, free)) continue;
-      const [ac, ar] = accessCellOf(c, r, fc, fr);
-      const access = ar * cols + ac;
-      let ok = far(access);
+      const [ac, ar] = routeCellOf(c, r, fc, fr);
+      const routeCell = ar * cols + ac;
+      let ok = far(routeCell);
       for (let rr = r; ok && rr < r + fr; rr++) {
         for (let cc = c; ok && cc < c + fc; cc++) ok = far(rr * cols + cc);
       }
-      if (!ok || (r + fr + 1 + ACCESS_HALF) * map.cellSize > map.height) continue;
+      if (!ok || (r + fr + 1 + ROUTE_CELL_HALF) * map.cellSize > map.height) continue;
       if (route) {
-        const d = route[access] ?? -1;
+        const d = route[routeCell] ?? -1;
         if (d < p.route.min || d > p.route.max) continue;
       }
       out.push(r * cols + c);
@@ -114,10 +116,10 @@ function candidateAnchors(map: GameMap, before: PlacedBefore, rules: BuildingRul
   return out;
 }
 
-/** Media celda: el acceso está en el centro de su fila. */
-const ACCESS_HALF = 0.5;
+/** Media celda: el centro de la celda de ruta debe quedar dentro del mundo. */
+const ROUTE_CELL_HALF = 0.5;
 
-/** Huella, anillo de 1 celda y fila de acceso (bajo la huella, tras la fila del anillo) libres. */
+/** Huella, anillo de 1 celda y fila de la celda de ruta (bajo la huella, tras el anillo) libres. */
 function zoneIsFree(
   c: number,
   r: number,

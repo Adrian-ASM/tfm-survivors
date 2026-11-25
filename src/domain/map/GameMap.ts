@@ -82,7 +82,7 @@ export class GameMap {
     this.live = cells.slice();
   }
 
-  /** Obras hechas desde la creación: cambia si y solo si cambia la caminabilidad (ADR-0025). */
+  /** Obras que cambiaron alguna celda: cambia si y solo si cambia la caminabilidad (ADR-0026). */
   get revision(): number {
     return this.builds;
   }
@@ -93,9 +93,10 @@ export class GameMap {
   }
 
   /**
-   * Marca como construidas las celdas `col..col+cols−1 × row..row+rows−1`, sea cual sea su
-   * terreno, que no cambia, y sube la revisión. Solo falla si la huella no cabe en la rejilla, y
-   * entonces no cambia nada.
+   * Marca como celdas de la capa de obra (solar libre o edificio, ADR-0026) las celdas
+   * `col..col+cols−1 × row..row+rows−1`, sea cual sea su terreno, que no cambia. Sube la revisión
+   * solo si alguna celda cambia (idempotente sobre una huella ya marcada). Solo falla si la huella no
+   * cabe en la rejilla, y entonces no cambia nada.
    */
   build(col: number, row: number, cols: number, rows: number): Result<void, DomainError> {
     const fits =
@@ -108,14 +109,19 @@ export class GameMap {
       this.inside(col, row) &&
       this.inside(col + cols - 1, row + rows - 1);
     if (!fits) return err(invalidConfig('map.build', BUILD_OUTSIDE_GRID));
+    let changed = false;
     for (let r = row; r < row + rows; r++) {
-      this.live.fill(BUILT, r * this.cols + col, r * this.cols + col + cols);
+      for (let i = r * this.cols + col; i < r * this.cols + col + cols; i++) {
+        if (this.live[i] === BUILT) continue;
+        this.live[i] = BUILT;
+        changed = true;
+      }
     }
-    this.builds += 1;
+    if (changed) this.builds += 1;
     return ok(undefined);
   }
 
-  /** ¿Es la celda (c, r) de un edificio construido? Fuera de la rejilla, no. */
+  /** ¿Es la celda (c, r) de la capa de obra (solar libre o edificio)? Fuera de la rejilla, no. */
   isBuilt(col: number, row: number): boolean {
     return this.inside(col, row) && this.live[row * this.cols + col] === BUILT;
   }

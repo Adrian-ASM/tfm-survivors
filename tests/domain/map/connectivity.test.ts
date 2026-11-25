@@ -1,7 +1,18 @@
 import { describe, expect, it } from 'vitest';
+import { seededRun } from '../../../src/composition/seedSource';
+import { FlowField } from '../../../src/domain/map/FlowField';
 import { GameMap } from '../../../src/domain/map/GameMap';
-import { isFullyConnected, reachableCells } from '../../../src/domain/map/connectivity';
+import { resolveTerrain } from '../../../src/domain/map/TerrainSource';
+import {
+  isFullyConnected,
+  isFullyConnectedFrom,
+  reachableCells,
+  reachableCellsFrom,
+} from '../../../src/domain/map/connectivity';
+import { BALANCE_SEEDS } from '../../support/balanceSeeds';
+import { aDefaultConfig } from '../../support/builders';
 import { mapRules, mapWith } from '../../support/mapLayouts';
+import { startSeededRun } from '../../support/runs';
 
 const RULES = mapRules();
 
@@ -66,5 +77,63 @@ describe('Conectividad (spec procedural-map)', () => {
     expect(isFullyConnected(mapWith(RULES, river))).toBe(true);
     river['5,2'] = 'water';
     expect(isFullyConnected(mapWith(RULES, river))).toBe(false);
+  });
+});
+
+// Spec procedural-map 0027, "Conectividad con los edificios construidos" y "Campo de distancias hacia
+// una celda": el mapa de la partida con las huellas de sus 6 solares en la capa de obra (libres en el
+// tick 0 y, como casa o torre, la misma huella).
+describe('Conectividad y campo con los solares (spec procedural-map 0027)', () => {
+  const CONTENT = aDefaultConfig();
+  const FULL = mapRules(CONTENT.map, CONTENT.arena.width, CONTENT.arena.height);
+  /** Mapa de la semilla con las huellas de sus solares marcadas, y los solares. */
+  const withSites = (seed: number) => {
+    const sites = startSeededRun(CONTENT, seed).map.sites;
+    const map = resolveTerrain(seededRun(seed).terrain, FULL);
+    if (!map.ok) throw new Error(map.error.message);
+    for (const s of sites) map.value.build(s.col, s.row, s.cols, s.rows);
+    return { map: map.value, sites };
+  };
+
+  it('Scenario: Sin zonas aisladas con los solares (libres; casa y torre son la misma huella)', () => {
+    const bad: string[] = [];
+    for (const seed of BALANCE_SEEDS) {
+      const { map, sites } = withSites(seed);
+      const exit = map.start;
+      expect([exit.x, exit.y]).toEqual([1950, 1170]);
+      const [ec, er] = [map.colAt(exit.x), map.rowAt(exit.y)];
+      if (!isFullyConnectedFrom(map, ec, er)) bad.push(`${String(seed)}: aisladas`);
+      const reached = reachableCellsFrom(map, ec, er);
+      for (const s of sites) {
+        const ring: [number, number][] = [];
+        for (let c = s.col; c < s.col + s.cols; c++) ring.push([c, s.row - 1], [c, s.row + s.rows]);
+        for (let r = s.row; r < s.row + s.rows; r++) ring.push([s.col - 1, r], [s.col + s.cols, r]);
+        const ok = ring.some(([c, r]) => map.isWalkable(c, r) && reached[r * map.cols + c] === 1);
+        if (!ok) bad.push(`${String(seed)}#${String(s.id)}`);
+      }
+    }
+    expect(bad).toEqual([]);
+  });
+
+  it('Scenario: Toda celda caminable con distancia con los solares libres (hacia (32, 19))', () => {
+    const bad: string[] = [];
+    for (const seed of BALANCE_SEEDS) {
+      const { map, sites } = withSites(seed);
+      const field = new FlowField(map);
+      field.retarget(32, 19);
+      const inSite = (c: number, r: number) =>
+        sites.some((s) => c >= s.col && c < s.col + s.cols && r >= s.row && r < s.row + s.rows);
+      for (let r = 0; r < map.rows; r++) {
+        for (let c = 0; c < map.cols; c++) {
+          const d = field.distanceAt(c, r);
+          const blocked = map.typeAt(c, r) !== 'grass' && map.typeAt(c, r) !== 'bridge';
+          if (map.isWalkable(c, r) ? d < 0 : d >= 0)
+            bad.push(`${String(seed)}@${String(c)},${String(r)}`);
+          if ((blocked || inSite(c, r)) && d >= 0)
+            bad.push(`${String(seed)}!${String(c)},${String(r)}`);
+        }
+      }
+    }
+    expect(bad.slice(0, 10)).toEqual([]);
   });
 });

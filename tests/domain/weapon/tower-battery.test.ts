@@ -28,9 +28,9 @@ function battery(
       weapon: { ...CONTENT_BUILDINGS.tower.weapon, ...tower.weapon },
     },
   };
-  const rules = BuildingRules.create(config, MAP);
+  const rules = BuildingRules.create(config);
   if (!rules.ok) throw new Error(rules.error.message);
-  const sites = anchors.map(([c, r], id) => new BuildSite(id, c, r, rules.value, MAP.cellSize));
+  const sites = anchors.map(([c, r], id) => new BuildSite(id, c, r, rules.value, MAP));
   const b = new TowerBattery(rules.value, sites);
   for (const s of sites) b.add(s);
   return b;
@@ -158,9 +158,9 @@ describe('TowerBattery (spec build-sites 0026)', () => {
 
   it('sin torres construidas no dispara ni asigna', () => {
     const config = CONTENT_BUILDINGS;
-    const rules = BuildingRules.create(config, MAP);
+    const rules = BuildingRules.create(config);
     if (!rules.ok) throw new Error(rules.error.message);
-    const site = new BuildSite(0, 20, 10, rules.value, MAP.cellSize);
+    const site = new BuildSite(0, 20, 10, rules.value, MAP);
     const b = new TowerBattery(rules.value, [site]);
     b.fire(1, [new FakeTarget(1260, 600)]);
     expect(b.projectiles).toHaveLength(0);

@@ -13,7 +13,7 @@ import {
 import { PauseGate } from '../../../src/infrastructure/phaser/PauseGate';
 import { playScreen } from '../../../src/infrastructure/phaser/ShopGate';
 import { TICK_MS } from '../../support/builders';
-import { TEST_ACCESS, aSiteConfig, startWithSites, withStock } from '../../support/sites';
+import { aSiteConfig, startWithSites, withStock } from '../../support/sites';
 
 // Spec build-sites 0026 "Panel de obra", main-menu "Pausa con Esc" y simulation-loop "Step en obra":
 // la escena pasa Esc y la acción del panel a `BuildGate` antes que a `PauseGate`, y luego un frame a
@@ -108,10 +108,11 @@ describe('BuildGate (build-sites y main-menu 0026)', () => {
 
 describe('ManualStepper con la obra (simulation-loop 0026)', () => {
   it('Scenario: Step en obra (abre en el 3.er tick: step(10) = 3 y step(5) = 0)', async () => {
-    // Desde d = 42 hacia arriba a 1 px por tick: la primera d < 40 es la del tick 3.
+    // Desde g = 4 bajo la cara inferior, hacia arriba a 1 px por tick: la primera g ≤ ε (1) es la
+    // del tick 3.
     const run = startWithSites(aSiteConfig(), {
       ...withStock(15),
-      player: { x: TEST_ACCESS.x, y: TEST_ACCESS.y + 42 },
+      player: { x: 1260, y: 740 },
     });
     const tickRun = new TickRun(run);
     const gate = new PauseGate();

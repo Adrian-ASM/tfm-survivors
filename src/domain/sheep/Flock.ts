@@ -250,8 +250,8 @@ export class Flock {
       const y = baseY[j] ?? 0;
       const dx = x - px;
       const dy = y - py;
-      // Con edificios (0026), una celda base que solapa la obra deja de ser candidata.
-      const blocked = map !== undefined && map.revision > 0 && map.overlapsBlocked(x, y, r);
+      // Una celda base que solapa una celda no caminable (de obra incluida, ADR-0026) no es candidata.
+      const blocked = map !== undefined && map.overlapsBlocked(x, y, r);
       return dx * dx + dy * dy >= min2 && !blocked;
     };
     let k = 0;

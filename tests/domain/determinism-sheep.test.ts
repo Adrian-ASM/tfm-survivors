@@ -14,6 +14,7 @@ import {
   aWavesConfig,
   withPlayer,
   withoutSheep,
+  withoutSites,
 } from '../support/builders';
 import { randomInputs } from '../support/inputs';
 import { CountingRandom } from '../support/random';
@@ -280,9 +281,11 @@ describe('Ovejas deterministas (spec sheep y simulation-loop)', () => {
       }
       return out;
     };
-    const withSheep = spawns(aDefaultConfig());
+    // 0027: sin solares en los dos lados (su colocación evita las ovejas y desde 0027 bloquean).
+    const base = withoutSites(aDefaultConfig());
+    const withSheep = spawns(base);
     expect(withSheep.length).toBeGreaterThan(0);
-    expect(spawns(withoutSheep(aDefaultConfig()))).toEqual(withSheep);
+    expect(spawns(withoutSheep(base))).toEqual(withSheep);
   });
 
   // Spec xp-gems (0023), "Recogibles con tipo".

@@ -111,7 +111,8 @@ test('Scenario: Recalcular los campos al construir (casa con 4 casas goblin y su
   if (!first) throw new Error('sin solares');
   const runs = Array.from({ length: 30 }, () => {
     const run = start(config, {
-      player: first.access,
+      // Tangente a la cara inferior de la huella (0027: se abre al tocarla).
+      player: { x: first.x, y: (first.row + first.rows) * probe.map.cellSize + 16 },
       resources: { gold: 0, wood: 15, stone: 0 },
     });
     run.tick(PlayerInput.NONE);

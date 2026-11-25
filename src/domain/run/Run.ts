@@ -9,8 +9,8 @@ import type { GameMap } from '../map/GameMap';
 import { toMapSnapshot, type MapSnapshot } from '../map/MapSnapshot';
 import { OPEN_TERRAIN, resolveTerrain, type TerrainSource } from '../map/TerrainSource';
 import { resolveStructures } from '../structure/resolveStructures';
-import { resolveSheep } from '../sheep/resolveSheep';
-import { resolveSites } from '../site/resolveSites';
+import { resolveSheep, revalidateDeclaredSheep } from '../sheep/resolveSheep';
+import { resolveSites, siteOverlappingPlayer } from '../site/resolveSites';
 import { BuildSite } from '../site/BuildSite';
 import type { Flock } from '../sheep/Flock';
 import type { Sheep } from '../sheep/Sheep';
@@ -82,7 +82,6 @@ import { CastleGate } from '../shop/CastleGate';
 import {
   SETUP_HEALTH_OUT_OF_RANGE,
   SETUP_POSITION_MUST_BE_FINITE,
-  SETUP_SITE_OVERLAPS_PLAYER,
   SETUP_TOO_MANY_SITES,
   initialState,
   type InitialState,
@@ -237,7 +236,8 @@ export class Run {
     const anchors = resolveSites(terrain, map.value, buildings, before);
     if (!anchors.ok) return anchors;
     const buildSites = anchors.value.map(
-      (a, id) => new BuildSite(id, a.col, a.row, buildings, map.value.cellSize),
+      (a, id) =>
+        new BuildSite(id, a.col, a.row, buildings, map.value, setup.sites?.[id]?.armed ?? true),
     );
     const initial = initialState(
       rules.value,
@@ -249,6 +249,14 @@ export class Run {
       sheep.value,
     );
     if (!initial.ok) return initial;
+    // ADR-0026: las huellas de los solares libres son celdas de obra desde el tick 0, en orden de
+    // id y sin azar (el terreno, la vista del mapa y las firmas no cambian).
+    for (const site of buildSites) map.value.build(site.col, site.row, site.cols, site.rows);
+    const { position, radius } = initial.value.player;
+    const onPlayer = siteOverlappingPlayer(buildSites, position.x, position.y, radius);
+    if (onPlayer) return err(onPlayer);
+    const sheepOnSite = revalidateDeclaredSheep(terrain, map.value, rules.value.sheep);
+    if (sheepOnSite) return err(sheepOnSite);
     if ((setup.sites?.length ?? 0) > buildSites.length) {
       return err(invalidConfig('setup.sites', SETUP_TOO_MANY_SITES));
     }
@@ -262,22 +270,35 @@ export class Run {
       stoneRandom ?? null,
       buildSites,
     );
+    run.evictPosts();
     return run.prebuild(setup.sites ?? []);
   }
 
-  /** Solares construidos al empezar (`RunSetup.sites`): en el tick 0, como en la obra, sin azar. */
+  /**
+   * Despeje inicial (design 0027 §1.3, spec build-sites "Punto de patrulla sobre el solar libre"):
+   * los puestos de guardia y sus puntos de patrulla que caen en una celda de obra se recolocan desde
+   * el nacimiento, en orden fijo y sin azar. Los enemigos, recogibles y ovejas no se mueven.
+   */
+  private evictPosts(): void {
+    for (const post of this.guardPosts()) post.evict(this.terrain);
+  }
+
+  /** Puestos de guardia de la partida: los de los enemigos vivos y los de las estructuras. */
+  private guardPosts(): Set<GuardPost> {
+    const posts = new Set<GuardPost>();
+    for (const e of this.horde.alive) if (e.post) posts.add(e.post);
+    for (const s of this.structures.all) if (s.post) posts.add(s.post);
+    return posts;
+  }
+
+  /**
+   * Solares construidos al empezar (`RunSetup.sites`): en el tick 0, como en la obra, sin azar. El
+   * jugador no puede solaparlos: ya lo garantiza `MAP_SITE_OVERLAPS_PLAYER` para todo solar (0027).
+   */
   private prebuild(entries: NonNullable<RunSetup['sites']>): Result<Run, DomainError> {
     for (const [i, entry] of entries.entries()) {
       const site = this.settlement.sites[i];
-      if (!site || !entry.state) continue;
-      const { x, y } = this.player.position;
-      const s = this.terrain.cellSize;
-      const ex = Math.max(site.col * s - x, 0, x - (site.col + site.cols) * s);
-      const ey = Math.max(site.row * s - y, 0, y - (site.row + site.rows) * s);
-      if (ex * ex + ey * ey < this.player.radius ** 2) {
-        return err(invalidConfig(`setup.sites.${String(i)}`, SETUP_SITE_OVERLAPS_PLAYER));
-      }
-      this.raise(site, entry.state);
+      if (site && entry.state) this.raise(site, entry.state);
     }
     return ok(this);
   }
@@ -427,28 +448,26 @@ export class Run {
     // Paso 11: con la oferta abierta en este tick (paso 10) solo re-arma; abre si sigue en curso.
     if (this.gate.step(x, y, this.status === 'running')) this.phase = SHOPPING;
     // Paso 12 (0026): solares en orden; con otra fase abierta en este tick, solo re-arman.
-    if (this.settlement.step(x, y, this.status === 'running', this.stock)) {
+    const { radius } = this.player;
+    if (this.settlement.step(x, y, radius, this.status === 'running', this.stock)) {
       this.phase = BUILDING;
-      this.buildView = toBuildSnapshot(this.settlement, this.rules.buildings);
+      this.buildView = toBuildSnapshot(this.settlement);
     }
   }
 
   /**
-   * Sale de la obra sin construir (spec build-sites 0026): vuelve a en curso sin ejecutar ticks; el
-   * solar sigue desarmado. Fuera de la obra, `not-building` sin cambios.
-   */
-  /**
-   * Construye `kind` en el solar abierto (spec build-sites 0026), sin ejecutar ticks ni consumir
-   * azar: resta su coste, el solar queda construido en `snapshot.tick`, su huella deja de ser
-   * caminable (la revisión del mapa invalida los campos, ADR-0025) y la partida vuelve a en curso.
-   * Fuera de la obra, con un tipo desconocido o no ofrecido, un error tipado sin cambios.
+   * Construye `kind` en el solar abierto (spec build-sites 0027), sin ejecutar ticks ni consumir
+   * azar: resta su coste, el solar queda construido en `snapshot.tick`, su huella es no caminable
+   * (ADR-0025/0026) y la partida vuelve a en curso. Fuera de la obra (`not-building`), con un tipo
+   * desconocido (`unknown-kind`) o no asequible (`not-affordable`), un error tipado sin cambios.
    */
   build(kind: string): Result<void, BuildError> {
     if (this.phase.status !== 'building') return err({ code: 'not-building' });
     const site = this.settlement.open;
-    const offered = this.settlement.offered;
     if (!isBuildingKind(kind)) return err({ code: 'unknown-kind', kind });
-    if (!site || !offered.includes(kind)) return err({ code: 'not-affordable', kind });
+    if (!site || !this.settlement.canAfford(kind, this.stock)) {
+      return err({ code: 'not-affordable', kind });
+    }
     const { wood, stone } = this.rules.buildings.cost(kind);
     if (!this.stock.spendMaterials(wood, stone)) return err({ code: 'not-affordable', kind });
     this.raise(site, kind);
@@ -464,16 +483,14 @@ export class Run {
   private clearFootprint(): void {
     const map = this.terrain;
     const spot = { x: 0, y: 0 };
-    const posts = new Set<GuardPost>();
+    const posts = this.guardPosts();
     for (const e of this.horde.alive) {
-      if (e.post) posts.add(e.post);
       if (!map.isBuiltAt(e.x, e.y)) continue;
       map.nearestWalkable(e.x, e.y, spot);
       e.relocate(spot.x, spot.y);
     }
     this.pickups.evict();
     this.flock.evict(map);
-    for (const s of this.structures.all) if (s.post) posts.add(s.post);
     for (const post of posts) post.evict(map);
     const { x, y } = this.player.position;
     if (map.overlapsBlocked(x, y, this.player.radius)) {
@@ -481,6 +498,10 @@ export class Run {
     }
   }
 
+  /**
+   * Sale de la obra sin construir (spec build-sites 0026): vuelve a en curso sin ejecutar ticks; el
+   * solar sigue desarmado. Fuera de la obra, `not-building` sin cambios.
+   */
   leaveSite(): Result<void, BuildError> {
     if (this.phase.status !== 'building') return err({ code: 'not-building' });
     this.closeSite();
@@ -709,7 +730,7 @@ export class Run {
   private siteSnapshots(): readonly SiteSnapshot[] {
     const { sites } = this.settlement;
     let key = '';
-    for (const s of sites) key += `${s.state}${s.gate.armed ? '+' : '-'}`;
+    for (const s of sites) key += `${s.state}${s.armed ? '+' : '-'}`;
     if (key === this.sitesKey && this.sitesView.length === sites.length) return this.sitesView;
     this.sitesKey = key;
     this.sitesView = toSiteSnapshots(sites);

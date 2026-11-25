@@ -17,8 +17,85 @@ function distances(field: FlowField, map: GameMap): number[] {
   return out;
 }
 
+/** Caminabilidad de las 2.304 celdas, en orden de filas. */
+function walkable(map: GameMap): boolean[] {
+  const out: boolean[] = [];
+  for (let r = 0; r < map.rows; r++)
+    for (let c = 0; c < map.cols; c++) out.push(map.isWalkable(c, r));
+  return out;
+}
+
+describe('Campo con los solares libres (spec procedural-map / build-sites 0027, ADR-0026)', () => {
+  // El solar libre del tick 0 es la huella marcada en la capa de obra (`Run.start`); construir la
+  // casa o la torre vuelve a marcar la misma huella (idempotente).
+  it('Scenario: Caminabilidad de las celdas de obra', () => {
+    const bare = GameMap.open(RULES);
+    const map = GameMap.open(RULES);
+    build(map);
+    const free = TEST_SITE_CELLS.map(([c, r]) => [map.isWalkable(c, r), map.typeAt(c, r)]);
+    build(map);
+    const house = TEST_SITE_CELLS.map(([c, r]) => [map.isWalkable(c, r), map.typeAt(c, r)]);
+    expect(free).toEqual(TEST_SITE_CELLS.map(() => [false, 'grass']));
+    expect(house).toEqual(free);
+    expect(TEST_SITE_CELLS.map(([c, r]) => [bare.isWalkable(c, r), bare.typeAt(c, r)])).toEqual(
+      TEST_SITE_CELLS.map(() => [true, 'grass']),
+    );
+  });
+
+  it('Scenario: Campo de distancias en el tick 0 (hacia la celda (21, 16))', () => {
+    const map = GameMap.open(RULES);
+    build(map);
+    const field = new FlowField(map);
+    field.retarget(21, 16);
+    expect(TEST_SITE_CELLS.map(([c, r]) => field.distanceAt(c, r))).toEqual([-1, -1, -1, -1]);
+    expect(field.distanceAt(20, 9)).toBeGreaterThan(8);
+  });
+
+  it('Scenario: Campo con un solar (sin solar, libre y tras construir la casa)', () => {
+    const bare = GameMap.open(RULES);
+    const map = GameMap.open(RULES);
+    build(map);
+    const without = new FlowField(bare);
+    const field = new FlowField(map);
+    without.retarget(20, 14);
+    field.retarget(20, 14);
+    const before = distances(without, bare);
+    const free = distances(field, map);
+    build(map);
+    const house = distances(field, map);
+    const manhattan = before.every((d, i) => {
+      const c = i % map.cols;
+      return d === Math.abs(c - 20) + Math.abs((i - c) / map.cols - 14);
+    });
+    expect(manhattan).toBe(true);
+    expect(TEST_SITE_CELLS.map(([c, r]) => free[r * map.cols + c])).toEqual([-1, -1, -1, -1]);
+    const behind = 8 * map.cols + 20;
+    expect(free[behind]).toBeGreaterThan(before[behind] ?? 0);
+    expect(house).toEqual(free);
+  });
+
+  it('Scenario: Construir no cambia la caminabilidad por defecto (casa y, aparte, torre)', () => {
+    const consult = (map: GameMap) => {
+      const field = new FlowField(map);
+      field.retarget(21, 16);
+      return { walkable: walkable(map), field: distances(field, map), revision: map.revision };
+    };
+    const map = GameMap.open(RULES);
+    build(map);
+    const free = consult(map);
+    // La huella de la casa y la de la torre son la del solar: construir marca la misma.
+    build(map);
+    const house = consult(map);
+    build(map);
+    const tower = consult(map);
+    expect(house).toEqual(free);
+    expect(tower).toEqual(free);
+    expect(TEST_SITE_CELLS.every(([c, r]) => !map.isWalkable(c, r))).toBe(true);
+  });
+});
+
 describe('FlowField con la capa de obra (ADR-0025)', () => {
-  it('Scenario: Campo con un edificio', () => {
+  it('el campo se invalida al construir sobre un mapa sin obra (map.build directo)', () => {
     const map = GameMap.open(RULES);
     const field = new FlowField(map);
     // T = (20, 14), debajo de la huella (filas 10–11): la celda (20, 8) queda al otro lado.
