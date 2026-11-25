@@ -11,6 +11,8 @@ import type { Hud } from './Hud';
 import { KeyboardInput } from './KeyboardInput';
 import { PauseGate, type PauseAction } from './PauseGate';
 import { PauseKey } from './PauseKey';
+import { ShopGate, playScreen, shopVisible, type ShopAction } from './ShopGate';
+import type { ShopSnapshot } from '../../domain/run/RunSnapshot';
 import type { RingSprite } from './PulseLayer';
 import { RestartKey } from './RestartKey';
 import { GAME_SCENE_KEY, MENU_SCENE_KEY } from './sceneKeys';
@@ -83,8 +85,18 @@ export interface PauseView {
   setVisible(visible: boolean): void;
 }
 
+/**
+ * Overlay de la tienda (DOM, 0024): la escena lo pinta con la tienda del snapshot, lo muestra solo
+ * en tienda y lee la acción pulsada.
+ */
+export interface ShopView {
+  sync(shop: ShopSnapshot, health: { current: number; max: number }): void;
+  setVisible(visible: boolean): void;
+  takeAction(): ShopAction;
+}
+
 /** Pantalla visible (para la sonda de E2E). */
-export type Screen = 'menu' | 'playing' | 'paused';
+export type Screen = 'menu' | 'playing' | 'paused' | 'shop';
 
 /** Lo que la escena ha pintado en un frame (para el probe de E2E). */
 export type OnRender = (
@@ -110,6 +122,8 @@ export interface GameSceneDeps {
   /** Las 5 líneas de resultados, en el DOM con el panel (design 0017 D11). */
   readonly resultsLines: ResultsTexts;
   readonly pause: PauseView;
+  /** Overlay de la tienda (0024). */
+  readonly shop: ShopView;
   readonly onRender?: OnRender;
   readonly onScreen?: (screen: Screen) => void;
   /** Velocidad de simulación ya resuelta (1 en modo jugador; solo `?e2e&speed` la cambia). */
@@ -162,6 +176,7 @@ export class GameScene extends Phaser.Scene {
   private rig: CameraRig | undefined;
   private last: RunSnapshot | undefined;
   private gate = new PauseGate();
+  private readonly shopGate = new ShopGate();
 
   constructor(private readonly deps: GameSceneDeps) {
     super(GAME_SCENE_KEY);
@@ -271,8 +286,14 @@ export class GameScene extends Phaser.Scene {
     const action = this.deps.pause.takeAction();
     const restart = w.restart.read();
     const index = choiceIndex(this.last?.offer.length ?? 0, w.choice.read(), w.offer.takeClicked());
+    // Tienda (0024) antes que la pausa: en tienda, Esc sale y se consume (nunca pausa este frame);
+    // 1–3 y R se leen y se descartan (sin oferta ni partida terminada no hacen nada).
+    const shopAction = this.deps.shop.takeAction();
+    const shopStatus = this.last?.status ?? started.tickRun.status;
+    const shop = this.shopGate.step(esc, shopAction, shopStatus, started);
+    if (shop.snapshot) this.render(shop.snapshot);
     const status = this.last?.status ?? started.tickRun.status;
-    if (this.gate.step(esc, action, status, started.tickRun) === 'menu') {
+    if (this.gate.step(shop.esc, action, status, started.tickRun) === 'menu') {
       this.scene.start(MENU_SCENE_KEY);
       return;
     }
@@ -333,6 +354,7 @@ export class GameScene extends Phaser.Scene {
   /** Volver al menú: el motor destruye los objetos de la escena; aquí se sueltan las referencias. */
   private leave(): void {
     this.deps.pause.setVisible(false);
+    this.deps.shop.setVisible(false);
     this.deps.progress.leave();
     this.w = undefined;
     this.rig = undefined;
@@ -360,7 +382,8 @@ export class GameScene extends Phaser.Scene {
 
   private showPause(paused: boolean): void {
     this.deps.pause.setVisible(paused);
-    this.deps.onScreen?.(paused ? 'paused' : 'playing');
+    this.deps.shop.setVisible(shopVisible(this.last?.status, paused));
+    this.deps.onScreen?.(playScreen(this.last?.status, paused));
   }
 
   private render(snapshot: RunSnapshot): void {
@@ -375,6 +398,10 @@ export class GameScene extends Phaser.Scene {
     if (this.rig) w.layers.cullMap(this.rig.nextView());
     w.hud.sync(snapshot);
     w.offer.sync(snapshot.offer);
+    this.deps.shop.sync(snapshot.shop, {
+      current: snapshot.player.health,
+      max: snapshot.player.maxHealth,
+    });
     w.results.sync(snapshot);
     // En el frame en que termina la partida: se guarda antes de que R pueda leerse (spec).
     this.deps.progress.sync(snapshot, started.tickRun);

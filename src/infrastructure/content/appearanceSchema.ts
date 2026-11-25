@@ -62,7 +62,11 @@ const SheetFile = z
   .string()
   .regex(/^(?!.*\.\.)[A-Za-z0-9_][A-Za-z0-9_ ./-]*\.png$/, { error: SHEET_FILE_FORMAT });
 
-const SheetSchema = z.strictObject({ file: SheetFile, frameWidth: FrameSize, frameHeight: FrameSize });
+const SheetSchema = z.strictObject({
+  file: SheetFile,
+  frameWidth: FrameSize,
+  frameHeight: FrameSize,
+});
 
 const BaseShape = {
   sheet: SheetSchema,

@@ -546,6 +546,7 @@ export interface RawContent {
     drops: {
       enemies: Record<string, { wood: number; [extra: string]: unknown }>;
       structures: Record<string, { gold: number; [extra: string]: unknown }>;
+      goldPerKill: Record<string, number>;
       [extra: string]: unknown;
     };
     woodPiles: { count: number; wood: number };

@@ -33,6 +33,7 @@ function sceneWith(started: StartedRun, manual: ManualStepper | undefined): Scen
   const deps = {
     progress: { sync: () => undefined, leave: () => undefined },
     pause: { takeAction: () => null, setVisible: () => undefined },
+    shop: { takeAction: () => null, setVisible: () => undefined, sync: () => undefined },
     manual,
   } as unknown as GameSceneDeps;
   const scene = new GameScene(deps);

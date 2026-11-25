@@ -1,0 +1,115 @@
+import { describe, expect, it } from 'vitest';
+import { BuyFromShop } from '../../src/application/BuyFromShop';
+import { LeaveShop } from '../../src/application/LeaveShop';
+import { TickRun } from '../../src/application/TickRun';
+import { PlayerInput } from '../../src/domain/player/PlayerInput';
+import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
+import { PauseGate } from '../../src/infrastructure/phaser/PauseGate';
+import {
+  ShopGate,
+  playScreen,
+  shopVisible,
+  type ShopAction,
+} from '../../src/infrastructure/phaser/ShopGate';
+import {
+  DEFAULT_WEAPONS,
+  DEFAULT_WEAPON_UPGRADES,
+  TICK_MS,
+  withWeapons,
+} from '../support/builders';
+import { aBehaviorConfig, aProbeType } from '../support/runs';
+import { startAtDoor } from '../support/shop';
+
+// Spec castle-shop (0024) "Overlay de la tienda" y main-menu "Pausa con Esc": la escena pasa Esc y
+// la acción del panel a `ShopGate` antes que a `PauseGate`, y luego un frame a `TickRun`. Aquí se
+// reproduce ese orden sin motor (patrón de pause-gate.test).
+
+/** Mejoras de arma con los precios de escenario: `strict-rules` a 10 y `fast-ci` a 15. */
+const SCENARIO_WEAPON_UPGRADES = DEFAULT_WEAPON_UPGRADES.map((u) =>
+  u.id === 'fast-ci'
+    ? { ...u, prices: [15, 20, 25, 30, 35] }
+    : { ...u, prices: [10, 15, 20, 25, 30] },
+);
+
+/** Partida en tienda desde el tick 1 (oro 12) con sus casos de uso y las dos puertas de la escena. */
+function scene(gold = 12) {
+  const run = startAtDoor(
+    {
+      ...withWeapons(aBehaviorConfig([aProbeType()]), DEFAULT_WEAPONS),
+      upgrades: { character: [], weapons: SCENARIO_WEAPON_UPGRADES },
+    },
+    { resources: { gold, wood: 0 } },
+  );
+  const tickRun = new TickRun(run);
+  const uc = { buyFromShop: new BuyFromShop(run), leaveShop: new LeaveShop(run) };
+  const shopGate = new ShopGate();
+  const pause = new PauseGate();
+  let last: RunSnapshot = tickRun.execute(TICK_MS, PlayerInput.NONE);
+  const screens: string[] = [];
+  /** Un frame de la escena con Esc (flanco de `PauseKey`) y la acción del panel. */
+  const frame = (esc: boolean, action: ShopAction = null): RunSnapshot => {
+    const shop = shopGate.step(esc, action, last.status, uc);
+    if (shop.snapshot) last = shop.snapshot;
+    pause.step(shop.esc, null, last.status, tickRun);
+    last = pause.frame(tickRun, TICK_MS, PlayerInput.NONE, 1);
+    screens.push(playScreen(last.status, pause.paused));
+    return last;
+  };
+  return { run, frame, pause, screens, first: last };
+}
+
+describe('ShopGate (castle-shop y main-menu 0024)', () => {
+  it.each<[string, boolean, ShopAction]>([
+    ['Esc', true, null],
+    ['el botón Salir', false, { kind: 'leave' }],
+  ])('Scenario: Salir con Esc o con el botón (%s: tick n + 1 y sin pausa)', (_n, esc, action) => {
+    const { frame, first, pause, screens } = scene();
+    expect(first.status).toBe('shopping');
+
+    const s = frame(esc, action);
+
+    expect([s.status, s.tick, pause.paused]).toEqual(['running', first.tick + 1, false]);
+    expect(shopVisible(s.status, pause.paused)).toBe(false);
+    expect(screens).not.toContain('paused');
+  });
+
+  it('Scenario: Esc en la tienda (mantenida 60 frames: sale y no pausa; otra pulsación pausa)', () => {
+    const { frame, pause, screens } = scene();
+
+    frame(true);
+    for (let i = 0; i < 59; i++) frame(false);
+    expect([pause.paused, screens.includes('paused')]).toEqual([false, false]);
+
+    frame(true);
+
+    expect(pause.paused).toBe(true);
+  });
+
+  it('Scenario: Clic en un producto (compra con BuyFromShop) y Clic sin oro (nada cambia)', () => {
+    const { frame, run } = scene();
+    const before = run.snapshot();
+
+    const failed = frame(false, { kind: 'buy', id: 'fast-ci' });
+    expect(failed).toEqual(before);
+    const bought = frame(false, { kind: 'buy', id: 'strict-rules' });
+
+    expect([bought.status, bought.resources.gold]).toEqual(['shopping', 2]);
+    expect(bought.shop.products[0]).toMatchObject({ id: 'strict-rules', level: 1 });
+  });
+
+  it('las teclas de la partida no hacen nada en la tienda: 0 ticks por frame', () => {
+    const { frame, first } = scene();
+
+    const s = Array.from({ length: 600 }, () => frame(false)).at(-1);
+
+    expect([s?.tick, s?.status]).toEqual([first.tick, 'shopping']);
+  });
+
+  it('Scenario: Sin overlay fuera de la tienda (en curso, eligiendo, en pausa y terminada)', () => {
+    expect(shopVisible('running', false)).toBe(false);
+    expect(shopVisible('choosing', false)).toBe(false);
+    expect(shopVisible('shopping', true)).toBe(false);
+    expect(shopVisible('over', false)).toBe(false);
+    expect([shopVisible('shopping', false), playScreen('shopping', false)]).toEqual([true, 'shop']);
+  });
+});

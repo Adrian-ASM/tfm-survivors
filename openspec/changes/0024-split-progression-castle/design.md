@@ -398,6 +398,12 @@ por id con id propio de la curación; puerta declarada en mapas `open`/`cells`; 
   política de tienda fija de los escenarios vive en `chooseWhileOpen` de `tests/support/runs.ts` (sale sin comprar),
   así que `advance`, `play` y los lotes la aplican sin más cambios. "La política de tienda fija no cambia la partida"
   compara con un re-armado inalcanzable (equivale a sin puerta en el mapa generado, que siempre la tiene).
+- **Grupo 4**: el repo no tiene jsdom (y no se añaden dependencias): `ShopPanel` se prueba con un DOM falso mínimo
+  (`tests/support/fakeDom.ts`). Las filas son botones con `aria-disabled` y clase `is-unavailable` en vez de
+  `disabled`, para que un clic sin oro llegue al caso de uso (que lo rechaza sin cambios) y el E2E pueda pulsarlo.
+  `shopVisible`/`playScreen` (puros, en `ShopGate.ts`) deciden overlay y pantalla de la sonda. La sonda gana
+  `shop` (`visible`, `gold`, productos con `id`, `level`, `price`, `buyable`) y `screens` (pantallas vistas desde
+  la carga, para comprobar que Esc en la tienda no pasa por `paused`). Sin API nueva de Phaser.
 
 ## ADRs
 - `docs/adr/0023-progresion-separada-y-tienda-como-fase.md` (nuevo): catálogo con dos orígenes sobre un vector de

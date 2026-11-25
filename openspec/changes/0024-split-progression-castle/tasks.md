@@ -112,7 +112,7 @@
   `tests/application/tick-run.test.ts` y `tests/domain/determinism.test.ts`.
 
 ## 4. Infraestructura y composición (test-after)
-- [ ] 4.1 Contenido validado con zod. `UpgradesSchema` (dos listas, `prices` solo en `weapons`), `ProgressionSchema`
+- [x] 4.1 Contenido validado con zod. `UpgradesSchema` (dos listas, `prices` solo en `weapons`), `ProgressionSchema`
   (`levelUpHealPercent`), `PlayerSchema` (`regenIntervalTicks`), `ResourcesSchema` (`goldPerKill`), `ShopSchema` y
   `RawContentFiles.shop`; mensajes que nombran campo, tipo o mejora. Escenarios:
   - castle-shop · "Contenido por defecto", "Valores inválidos", "Límites válidos" (todos los casos);
@@ -120,7 +120,7 @@
     intervalo de regeneración inválido (requisito "Regeneración de vida").
   Tests: `tests/infrastructure/shop-content.test.ts`, ampliar `progression-content.test.ts`,
   `resources-content.test.ts` y `builders-content.test.ts`.
-- [ ] 4.2 Overlay de la tienda, Esc y sonda. `dom/ShopPanel.ts` (jsdom), `phaser/ShopGate.ts` (Node, sin motor),
+- [x] 4.2 Overlay de la tienda, Esc y sonda. `dom/ShopPanel.ts` (jsdom), `phaser/ShopGate.ts` (Node, sin motor),
   cableado en `GameScene` (antes de `PauseGate`; 1–3 y R descartadas), `Screen` `'shop'`, `menuText`, CSS con
   `--ui-scale`, `main.ts` con `ShopPanel` y sonda `window.__sprint.shop`. Escenarios:
   - castle-shop · "Overlay con oro justo", "Clic en un producto", "Clic sin oro", "Salir con Esc o con el botón", "Sin
