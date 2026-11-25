@@ -16,7 +16,9 @@ Consulta la matriz de AGENTS.md §5. Si es trivial → prompt directo. Si es inc
 
 1. Id: `NNNN-kebab-case` (siguiente número libre en `openspec/changes/` y `openspec/changes/archive/`).
 2. Worktree y rama: skill `worktree-flow` → `change/NNNN-…`. Si el worktree ya existía, comprueba que tiene
-   `node_modules` (si no, `npm ci`) antes del primer commit, también el de los artefactos de planificación.
+   `node_modules` (si no, `npm ci`) antes del primer commit, también el de los artefactos de planificación, y
+   que `git config --get core.hooksPath` apunta a `.husky/_` de **este** worktree (en 0024 y 0025 apuntaba al de
+   0022; ver `worktree-flow`).
 3. Crea `openspec/changes/<id>/` y, si existe una issue en GitHub, anota su número en `proposal.md`.
 
 ## 2. Fases
@@ -45,6 +47,10 @@ Tras cada fase, resume al usuario en ≤ 5 líneas: qué se produjo, decisiones 
 - En apply, al cerrar cada sección de `tasks.md`, haz `git fetch` y mira si `origin/main` avanzó; si avanzó,
   rebasa antes de seguir (0014).
 - Fases pequeñas pueden fusionarse (`spec+design+tasks` en un paso) si el usuario lo pide: anótalo en la retrospectiva.
+- **Decisiones abiertas al gate de propuesta**: si la exploración deja abierta una regla de azar (cuántos valores
+  consume cada evento, cuándo no consume) o en qué fichero de `content/` vive un dato, pregúntalo al usuario antes
+  de *propose* y escríbelo en `proposal.md`. Si no, spec ∥ design lo resuelven distinto (0025: consumo por baja y
+  roca en `resources.json` frente a `appearance.json`; costó una ronda más del spec-writer).
 - **Mediciones previas**: si `exploration.md` las pide, ejecútalas antes de *propose* (test temporal fuera del
   repo o un `sdd-implementer` acotado que no versiona nada) y pasa los números al `sdd-spec-writer`. Un objetivo
   de balance no entra en la propuesta sin datos (0006: el design previó ajustes que no servían). Antes de pasar
