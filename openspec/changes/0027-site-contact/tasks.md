@@ -133,7 +133,7 @@ Design §3. Test-after.
   (`getBoundingClientRect`); tras el clic y `step(1)`: solar en `house`, panel oculto, madera −15,
   `sprites.sites` 1 casa y 5 solares en obra, sin errores. Ejecutar `npm run test:e2e -- gameplay.spec`.
   Escenario [bs]: "Construir una casa en el juego real".
-- [ ] 4.2 GDD (delegar en el subagente `game-designer`): entrada **0027 `site-contact`**, renumerar
+- [x] 4.2 GDD (delegar en el subagente `game-designer`): entrada **0027 `site-contact`**, renumerar
   `goblin-tower-archers` → **0028** y `characters` → **0029**, con las referencias de `balance-pass-2` y la mención
   "bloque 0020-0028" (líneas señaladas en `exploration.md`).
 - [ ] 4.3 Al cerrar (fase archive): párrafo de 0027 en AGENTS.md §1 (solar libre bloqueante desde el tick 0 con
