@@ -125,7 +125,7 @@ Design §3. Test-after.
   en el diario de IA. En 4.1, además, la sonda del E2E comprueba que la fila de la torre existe siempre.
 
 ## 4. E2E y documentación
-- [ ] 4.1 **0 E2E nuevos**: ampliar "Construir una casa en el juego real" (`tests/e2e/gameplay.spec.ts`,
+- [x] 4.1 **0 E2E nuevos**: ampliar "Construir una casa en el juego real" (`tests/e2e/gameplay.spec.ts`,
   `?e2e&manual&seed=42`, `map: 'real'`) y `tests/e2e/probe.ts`: la ruta trata las huellas de `map.sites` como no
   caminables, camina a la celda bajo la huella más cercana y empuja hacia arriba con `step(n)` hasta la obra; con
   ≥ 15 de madera y < 15 de piedra comprueba la sonda (`house` asequible, `tower` no, sin clave `access`), la fila de

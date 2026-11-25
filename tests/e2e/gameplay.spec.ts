@@ -445,11 +445,16 @@ interface Waypoint {
   readonly y: number;
 }
 
+/** ¿Es (c, r) una celda de la huella de algún solar? (0027: no caminable desde el tick 0). */
+const inSite = (m: MapView, c: number, r: number): boolean =>
+  m.sites.some((x) => c >= x.col && c < x.col + x.cols && r >= x.row && r < x.row + x.rows);
+
 /**
  * Recorrido de la salida al montón (0022): BFS de 4 vecinos por celdas caminables (`grass` y
- * `bridge`) desde la celda de la salida hasta la del montón, comprimido en tramos rectos entre
- * centros de celda (el radio del jugador, 16, cabe en media celda: ningún tramo roza un bloqueo).
- * `null` si no hay camino. El primer punto es el centro de la celda de la salida.
+ * `bridge` fuera de las huellas de los solares, 0027) desde la celda de la salida hasta la del
+ * montón, comprimido en tramos rectos entre centros de celda (el radio del jugador, 16, cabe en
+ * media celda: ningún tramo roza un bloqueo ni toca un solar). `null` si no hay camino. El primer
+ * punto es el centro de la celda de la salida.
  */
 function routeTo(m: MapView, pile: { x: number; y: number }): Waypoint[] | null {
   const s = m.cellSize;
@@ -458,7 +463,8 @@ function routeTo(m: MapView, pile: { x: number; y: number }): Waypoint[] | null 
     r >= 0 &&
     c < m.cols &&
     r < m.rows &&
-    ['grass', 'bridge'].includes(m.cells[r * m.cols + c] ?? '');
+    ['grass', 'bridge'].includes(m.cells[r * m.cols + c] ?? '') &&
+    !inSite(m, c, r);
   const from = Math.floor(m.start.y / s) * m.cols + Math.floor(m.start.x / s);
   const to = Math.floor(pile.y / s) * m.cols + Math.floor(pile.x / s);
   const prev = new Map<number, number>([[from, -1]]);
@@ -644,11 +650,13 @@ function routeFrom(m: MapView, from: Waypoint, to: Waypoint): Waypoint[] | null 
   return routeTo({ ...m, start: { x: from.x, y: from.y, radius: 0 } }, to);
 }
 
-// Spec build-sites (0026), "Construir una casa en el juego real [E2E]" y parte E2E de
+// Spec build-sites (0027), "Construir una casa en el juego real [E2E]" y parte E2E de
 // sprite-rendering "Solar en obra y casa construida": ?seed=42 con el mapa real en modo manual. El
-// test recoge montones de madera (3 cada uno) por recorridos BFS hasta tener ≥ 15 y va al acceso
-// del solar más cercano; con la obra abierta hace clic en la casa y llama a step(1).
-test('Solares: recoger madera, abrir la obra en el acceso más cercano y construir una casa', async ({
+// test recoge montones de madera (3 cada uno) por recorridos BFS (las huellas de los solares no son
+// caminables) hasta tener ≥ 15, va a la celda bajo la huella del solar más cercano y empuja hacia
+// arriba hasta tocarla; con la obra abierta comprueba la torre desactivada, iconos y separación,
+// hace clic en la casa y llama a step(1).
+test('Solares: recoger madera, tocar el solar más cercano y construir una casa', async ({
   page,
 }) => {
   slowMapRealOnCi();
@@ -691,22 +699,58 @@ test('Solares: recoger madera, abrir la obra en el acceso más cercano y constru
   }
   expect(snap?.resources.wood ?? 0).toBeGreaterThanOrEqual(15);
   const here = snap?.player ?? m.start;
+  expect(snap?.resources.stone ?? 0).toBeLessThan(15);
+  const s = m.cellSize;
+  /** Centro de la celda bajo la huella (columna del centro, fila r + rows): vecina caminable. */
+  const below = (x: { col: number; row: number; cols: number; rows: number }): Waypoint => ({
+    x: (x.col + Math.floor(x.cols / 2)) * s + s / 2,
+    y: (x.row + x.rows) * s + s / 2,
+  });
   const sites = [...(snap?.sites ?? [])]
-    .filter((s) => s.state === 'free' && s.armed)
-    .sort(
-      (a, b) =>
-        Math.hypot(a.access.x - here.x, a.access.y - here.y) -
-        Math.hypot(b.access.x - here.x, b.access.y - here.y),
-    );
+    .filter((x) => x.state === 'free' && x.armed)
+    .sort((a, b) => {
+      const [pa, pb] = [below(a.house), below(b.house)];
+      return Math.hypot(pa.x - here.x, pa.y - here.y) - Math.hypot(pb.x - here.x, pb.y - here.y);
+    });
   for (const site of sites) {
     if (snap?.status === 'building') break;
-    await walk(site.access, () => false);
+    await walk(below(site.house), () => false);
+    // Empuja hacia arriba contra la cara inferior hasta tocarla (g ≤ ε) y abrir la obra.
+    for (let guard = 0; guard < 10 && snap?.status === 'running'; guard++) {
+      await holdKey(page, 'ArrowUp', 5);
+      snap = await snapshotOf(page);
+    }
   }
   expect(snap?.status).toBe('building');
   const open = (await probe(page))?.sites;
   expect(open?.panel.visible).toBe(true);
   expect(open?.panel.siteId).toBe(snap?.build.siteId);
-  expect(open?.panel.options.map((o) => o.kind)).toContain('house');
+  expect(open?.panel.options.map((o) => [o.kind, o.affordable])).toEqual([
+    ['house', true],
+    ['tower', false],
+  ]);
+  expect(open?.list.some((x) => 'access' in x)).toBe(false);
+  expect(m.sites.some((x) => 'access' in x)).toBe(false);
+  const tower = page.locator('[data-building="tower"]');
+  await expect(tower).toBeDisabled();
+  await expect(tower).toContainText('faltan');
+  const icons = page.locator('.build-panel .resource-icon');
+  expect(await icons.count()).toBeGreaterThan(0);
+  for (const box of await icons.evaluateAll((els) =>
+    els.map((e) => e.getBoundingClientRect().toJSON() as { width: number; height: number }),
+  )) {
+    expect(box.width).toBeGreaterThanOrEqual(20);
+    expect(box.height).toBeGreaterThanOrEqual(20);
+  }
+  const gaps = await page.locator('.build-panel__option').evaluateAll((rows) =>
+    rows.map((r) => {
+      const name = r.querySelector('.build-panel__name')?.getBoundingClientRect();
+      const cost = r.querySelector('.build-panel__amount')?.getBoundingClientRect();
+      return name && cost ? cost.left - name.right : -1;
+    }),
+  );
+  expect(gaps).toHaveLength(2);
+  for (const g of gaps) expect(g).toBeGreaterThanOrEqual(8);
   const wood = snap?.resources.wood ?? 0;
 
   await page.locator('[data-building="house"]').click();

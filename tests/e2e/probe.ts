@@ -112,12 +112,11 @@ export interface FootprintView {
   rows: number;
 }
 
-/** Solar del snapshot (0026). */
+/** Solar del snapshot (0026; sin acceso desde 0027). */
 export interface SiteView {
   id: number;
   state: 'free' | 'house' | 'tower';
   armed: boolean;
-  access: { x: number; y: number };
   house: FootprintView;
   tower: FootprintView;
 }
@@ -126,6 +125,9 @@ export interface BuildOptionView {
   kind: 'house' | 'tower';
   wood: number;
   stone: number;
+  /** 0027: asequible con la madera y la piedra al abrirse, y lo que falta de cada una. */
+  affordable: boolean;
+  missing: { wood: number; stone: number };
 }
 
 /** Sonda de los solares (0026): null en el menú. */
@@ -279,7 +281,7 @@ export interface MapView {
   /** Vetas y montones iniciales (0022), en el orden de colocación. */
   veins: { id: number; x: number; y: number; col: number; row: number; radius: number }[];
   woodPiles: { x: number; y: number }[];
-  /** Solares del mapa (0026): huella, centro y acceso. */
+  /** Solares del mapa (0026): huella y centro (sin acceso desde 0027). */
   sites: {
     id: number;
     col: number;
@@ -288,7 +290,6 @@ export interface MapView {
     rows: number;
     x: number;
     y: number;
-    access: { x: number; y: number };
   }[];
   emptyForced: boolean;
 }
