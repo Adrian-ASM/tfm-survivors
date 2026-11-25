@@ -91,7 +91,9 @@ El sistema SHALL leer de `content/*.json`, validados con zod antes de llegar al 
   destruida, oro por `goblin-tower` destruida, oro por veta, madera por montón y **carne por oveja**;
 - el **oro por baja** de cada tipo de enemigo (ver "Oro por enemigo abatido"), enteros ≥ 0;
 - la **curación de la carne**: el porcentaje de la vida máxima efectiva que cura cada unidad de valor de un recogible
-  `meat` (ver "Curación por carne" en `player-health`), entero de 1 a 100;
+  `meat` (ver "Curación por carne" en `player-health`), entero de 1 a 100. Esta cota se aplica al valor base del
+  contenido, sin mejoras; la cota de la curación efectiva con las mejoras de `meatHealPercent` (`hunter`) la fija
+  "Estadísticas de personaje nuevas" en `upgrades` (base + todas en su `maxLevel` entre 1 y 100);
 - el **número por mapa generado** de montones de madera y de vetas: enteros ≥ 0;
 - el **radio de contacto de la veta**: número > 0;
 - los **parámetros de colocación** de montones y vetas (ver "Recursos en el mapa generado" en `procedural-map`):
@@ -103,8 +105,17 @@ contenido que declare otro tipo falla con un error que nombra el tipo. Con el co
 vale 1 y la curación de la carne 20. El tope de oro en el suelo es el del contenido (puede subir respecto a 32 por el
 oro de las bajas; se calibra en apply).
 
-<!-- Escenarios vivos sin cambios: "Contenido por defecto", "Valores fuera de rango", "Límites válidos" y "Campos
-     ausentes, desconocidos y tipo no admitido". -->
+<!-- Escenarios vivos sin cambios: "Contenido por defecto", "Valores fuera de rango" y "Campos ausentes, desconocidos
+     y tipo no admitido". -->
+
+#### Scenario: Límites válidos
+- **GIVEN** el contenido por defecto con, en un caso cada vez: 0 montones y 0 vetas por mapa; todas las cantidades a 1;
+  la curación de la carne 1; la curación de la carne 100 con un catálogo de personaje sin mejoras de
+  `meatHealPercent`; o todas las distancias de colocación a 0
+- **WHEN** se carga el contenido
+- **THEN** la carga tiene éxito
+- **AND** con la curación de la carne 100 y el catálogo de personaje por defecto (`hunter` con `perLevel` > 0) la carga
+  falla con el error de `upgrades` que nombra `hunter` y `meatHealPercent`, no con un error del campo de recursos
 
 ### Requirement: Contadores de oro y madera de la partida
 El sistema SHALL llevar en cada partida dos contadores enteros, **oro** y **madera**, que valen 0 al crear la

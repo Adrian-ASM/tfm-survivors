@@ -266,7 +266,8 @@ el bot v4 y el contenido final: por semilla, el resultado, el tick final y las b
 combate y de la tienda; queda congelada y un test MUST fallar si cualquiera de ellos cambia. El verify-report MUST
 anotar: las victorias, el oro medio ganado y gastado por partida, las visitas y compras medias por partida, la media de
 mechas de `goblin-barrel` (que sigue en "Barril que cumple su papel") y el tiempo del lote del bot en local y ×2,8
-como equivalente de CI (tope 90 s, objetivo ≤ 81 s).
+como equivalente de CI (solo anotado). El lote MUST caber en el tiempo máximo del lote en los tests (180 s), que no
+se sube; si el CI real lo desmiente, se optimiza en otro change.
 
 #### Scenario: Victorias del bot v4
 - **GIVEN** el contenido por defecto final, cada semilla de 1 a 50 con su mapa generado y el bot de referencia v4

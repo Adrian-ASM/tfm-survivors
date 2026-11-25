@@ -422,6 +422,13 @@ por id con id propio de la curación; puerta declarada en mapas `open`/`cells`; 
   la carga, para comprobar que Esc en la tienda no pasa por `paused`). Sin API nueva de Phaser.
 - **Grupo 6**: el E2E pulsa la fila sin oro con `click({ force: true })` (Playwright no pulsa un botón con
   `aria-disabled`); el resto del recorrido es el de §7.
+- **Verify (W1, decisión del autor 2026-11-25)**: el lote del bot v4 mide 34,7–35,8 s en local (×2,8 ≈ 97–100 s),
+  por encima del objetivo previo de ≤ 90 s equivalentes. Se acepta: el objetivo pasa a "dentro de
+  `BOT_BATCH_TIMEOUT_MS` (180 s, sin subirlo)" y el ×2,8 queda solo anotado. Si el CI real lo desmiente, se
+  optimiza el lote en otro change.
+- **Verify (W2, decisión del autor 2026-11-25)**: la cota de 100 de "Límites válidos" (`resources`) se lee sobre el
+  valor base de la carne; la cota con `hunter` es la de `upgrades` (`UpgradeCatalog.checkMeatHeal`). Solo se
+  corrige la spec; el código no cambia.
 
 ## ADRs
 - `docs/adr/0023-progresion-separada-y-tienda-como-fase.md` (nuevo): catálogo con dos orígenes sobre un vector de

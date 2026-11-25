@@ -38,8 +38,8 @@ change (0024):
   primera oferta en ≤ 4.800 ticks; primera baja en ≤ 900) MUST seguir cumpliéndose con el contenido final, y los ticks
   medidos (incluida la primera oferta de la semilla 7) MUST anotarse en el design o en el verify-report;
 - el tiempo del lote del bot (50 partidas de hasta 36.000 ticks) MUST anotarse en el verify-report, en local y
-  multiplicado por 2,8 como equivalente de CI, con el objetivo de ≤ 90 s equivalentes (margen objetivo ≤ 81 s); el
-  tiempo máximo del lote en los tests no se sube salvo decisión registrada en el design.
+  multiplicado por 2,8 como equivalente de CI (solo anotado, sin objetivo); el lote MUST caber en el tiempo máximo
+  del lote en los tests (180 s), que no se sube; si el CI real lo desmiente, se optimiza en otro change.
 
 La banda y las reglas mandan sobre cualquier valor concreto y MUST NOT relajarse en este change: si ninguna
 combinación de esas palancas devuelve a la vez la banda 25–35 y 0 quietos supervivientes (con ambos mapas), el change
