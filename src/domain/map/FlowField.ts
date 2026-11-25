@@ -1,6 +1,6 @@
 import { isWalkableCode } from './CellType';
 import type { GameMap } from './GameMap';
-import { codesOf, distancesFrom } from './connectivity';
+import { distancesFrom } from './connectivity';
 
 /**
  * Tolerancia en el parámetro t del segmento para tratar dos cruces de rejilla como la misma esquina
@@ -9,40 +9,35 @@ import { codesOf, distancesFrom } from './connectivity';
 const CORNER_EPS = 1e-9;
 
 /**
- * Campo de flujo de la partida (servicio de dominio con estado, propiedad de `Run`; ADR-0017):
- * distancias 4-vecinas hacia la celda del jugador sobre el mapa inmutable de la partida (spec
- * procedural-map, "Campo de distancias hacia una celda"). Es función solo de (mapa, celda): cada
- * cambio de celda recalcula desde cero. Perezoso: `retarget` marca el campo como sucio y la BFS se
- * hace en la primera consulta que la necesita. Buffers preasignados: no asigna en el tick ni
- * consume azar.
+ * Campo de flujo (servicio de dominio con estado; ADR-0017 y ADR-0025): distancias 4-vecinas hacia
+ * una celda (la del jugador, propiedad de `Run`, o un punto fijo de un `GuardPost`) sobre los
+ * códigos vivos del mapa (spec procedural-map, "Campo de distancias hacia una celda"). Es función
+ * solo de (mapa con sus obras, celda): un cambio de celda o de revisión del mapa (una obra)
+ * recalcula desde cero. Perezoso: `retarget` y `sync` marcan el campo como sucio y la BFS se hace en
+ * la primera consulta que la necesita. Buffers preasignados: no asigna en el tick ni consume azar.
  */
 export class FlowField {
-  private readonly cells: Uint8Array;
   private readonly dist: Int32Array;
   private readonly queue: Int32Array;
   private readonly cols: number;
   private readonly rows: number;
   /** ¿Tiene el mapa alguna celda no caminable? Sin ninguna, `steer` es la persecución recta. */
-  private readonly blocked: boolean;
+  private blocked: boolean;
+  /** Revisión del mapa con la que se calcularon `blocked` y las distancias. */
+  private seenRevision: number;
   private targetCol = -1;
   private targetRow = -1;
   private dirty = true;
   private bfsCount = 0;
 
-  /**
-   * `cells`: copia de los códigos del mapa ya hecha (`codesOf`) para compartirla entre varios campos
-   * (los puntos de un puesto de guardia, ADR-0020); sin ella, se copia aquí. Nunca se escribe.
-   */
-  constructor(
-    private readonly map: GameMap,
-    cells: Uint8Array = codesOf(map),
-  ) {
-    this.cells = cells;
+  constructor(private readonly map: GameMap) {
     this.cols = map.cols;
     this.rows = map.rows;
-    this.dist = new Int32Array(this.cells.length);
-    this.queue = new Int32Array(this.cells.length);
-    this.blocked = this.cells.some((code) => !isWalkableCode(code));
+    const n = map.cols * map.rows;
+    this.dist = new Int32Array(n);
+    this.queue = new Int32Array(n);
+    this.seenRevision = map.revision;
+    this.blocked = hasBlocked(map.liveCodes);
   }
 
   /** BFS hechas desde la creación (observabilidad del cálculo perezoso, tests y bench). */
@@ -61,6 +56,7 @@ export class FlowField {
   /** Pasos 4-vecinos de (col, row) hasta el objetivo; −1 = sin distancia (o fuera de la rejilla). */
   distanceAt(col: number, row: number): number {
     if (col < 0 || row < 0 || col >= this.cols || row >= this.rows) return -1;
+    this.sync();
     this.ensure();
     return this.dist[row * this.cols + col] ?? -1;
   }
@@ -75,6 +71,7 @@ export class FlowField {
   steer(ex: number, ey: number, px: number, py: number, out: { x: number; y: number }): void {
     out.x = px;
     out.y = py;
+    this.sync();
     if (!this.blocked) return;
     const map = this.map;
     const c = map.colAt(ex);
@@ -131,6 +128,18 @@ export class FlowField {
     return true;
   }
 
+  /**
+   * Si el mapa cambió de revisión (una obra, ADR-0025), el campo queda sucio y se recalcula
+   * `blocked`: O(celdas), una vez por obra. Sin obras no hace nada.
+   */
+  private sync(): void {
+    const { revision } = this.map;
+    if (revision === this.seenRevision) return;
+    this.seenRevision = revision;
+    this.blocked = hasBlocked(this.map.liveCodes);
+    this.dirty = true;
+  }
+
   private ensure(): void {
     if (!this.dirty) return;
     const inside =
@@ -139,8 +148,14 @@ export class FlowField {
       this.targetCol < this.cols &&
       this.targetRow < this.rows;
     const start = inside ? this.targetRow * this.cols + this.targetCol : -1;
-    distancesFrom(this.cells, this.cols, this.rows, start, this.dist, this.queue);
+    distancesFrom(this.map.liveCodes, this.cols, this.rows, start, this.dist, this.queue);
     this.dirty = false;
     this.bfsCount += 1;
   }
+}
+
+/** ¿Hay algún código no caminable? */
+function hasBlocked(codes: ArrayLike<number>): boolean {
+  for (let i = 0; i < codes.length; i++) if (!isWalkableCode(codes[i] ?? 0)) return true;
+  return false;
 }

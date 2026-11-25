@@ -9,14 +9,14 @@
      radio 40 y re-armado 300. Es un change grande (~133 escenarios): 9 grupos y 19 tareas. -->
 
 ## 1. Dominio · mapa con capa de obra (design §2, ADR-0025)
-- [ ] 1.1 `GameMap` con terreno inmutable, `live` + `BUILT`, `build()`, `revision`, `isBuilt` y `liveCodes`.
+- [x] 1.1 `GameMap` con terreno inmutable, `live` + `BUILT`, `build()`, `revision`, `isBuilt` y `liveCodes`.
   `codesOf` pasa a copiar los códigos vivos. La colisión del jugador y de las ovejas lee la obra sin cambiar
   `Player` ni `Flock`.
   - Escenarios: pm "Caminabilidad de una celda construida"; bs "El jugador choca con la casa" y "Un solar sin
     construir no bloquea"; mv "Choque con una torre construida a velocidad máxima".
   - Tests: `tests/domain/map/game-map-build.test.ts` y `tests/domain/player/collision-build.test.ts`, sobre el
     mapa con `build` directo.
-- [ ] 1.2 `FlowField` sin copia propia, con `sync()` por revisión (BFS y `blocked`). `GuardPost` sin `codesOf`.
+- [x] 1.2 `FlowField` sin copia propia, con `sync()` por revisión (BFS y `blocked`). `GuardPost` sin `codesOf`.
   - Escenarios: pm "Campo con un edificio" y "Mismo campo con los mismos edificios" (a nivel de campo); bs "El
     edificio corta la línea libre"; eb "El guardia vuelve rodeando el edificio" y "Mismo movimiento con la misma
     obra en otro momento".

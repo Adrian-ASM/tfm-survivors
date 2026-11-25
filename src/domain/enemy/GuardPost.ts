@@ -1,5 +1,4 @@
 import type { Arena } from '../arena/Arena';
-import { codesOf } from '../map/connectivity';
 import { FlowField } from '../map/FlowField';
 import type { GameMap } from '../map/GameMap';
 import type { EnemyType } from './EnemyType';
@@ -13,8 +12,8 @@ export const TO_POST = -1;
 /**
  * Puesto de guardia (ADR-0020): el punto que guardan los guardias de una casa (su puerta) o el que
  * fija un escenario, con los 4 puntos de patrulla de cada estado de patrulla del tipo y un campo
- * de distancias por punto distinto (puesto y esquinas), orientado una sola vez porque el mapa no
- * cambia. Cuenta los guardias vivos que lo guardan (tope de la casa). No consume azar ni asigna en
+ * de distancias por punto distinto (puesto y esquinas), orientado una sola vez: cada campo lee los
+ * códigos vivos del mapa y se invalida solo al cambiar su revisión (una obra, ADR-0025). Cuenta los guardias vivos que lo guardan (tope de la casa). No consume azar ni asigna en
  * el tick: la BFS de cada campo se hace en su primera consulta.
  */
 export class GuardPost {
@@ -33,7 +32,6 @@ export class GuardPost {
     arena: Arena,
   ) {
     this.map = map;
-    const codes = codesOf(map);
     const spot = { x: 0, y: 0 };
     const b = type.behavior;
     this.corners = b.kinds.map((kind, state) => {
@@ -49,21 +47,21 @@ export class GuardPost {
         map.nearestWalkable(arena.clampX(cx, type.radius), arena.clampY(cy, type.radius), spot);
         points[2 * i] = spot.x;
         points[2 * i + 1] = spot.y;
-        this.fieldTo(spot.x, spot.y, codes);
+        this.fieldTo(spot.x, spot.y);
       });
       return points;
     });
-    this.fieldTo(x, y, codes);
+    this.fieldTo(x, y);
   }
 
   /** Campo orientado a la celda de (qx, qy); lo crea la primera vez (solo al construir). */
-  private fieldTo(qx: number, qy: number, codes: Uint8Array): FlowField {
+  private fieldTo(qx: number, qy: number): FlowField {
     const col = this.map.colAt(qx);
     const row = this.map.rowAt(qy);
     const key = row * this.map.cols + col;
     let field = this.fields.get(key);
     if (!field) {
-      field = new FlowField(this.map, codes);
+      field = new FlowField(this.map);
       field.retarget(col, row);
       this.fields.set(key, field);
     }

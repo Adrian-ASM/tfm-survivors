@@ -1,5 +1,5 @@
 import { err, invalidConfig, ok, type DomainError, type Result } from '../shared/Result';
-import { GRASS, codeOf, isWalkableCode, typeOf, type CellType } from './CellType';
+import { BUILT, GRASS, codeOf, isWalkableCode, typeOf, type CellType } from './CellType';
 import type { MapRules, StartZone } from './MapRules';
 
 export const MAP_DIMENSIONS_MISMATCH =
@@ -36,9 +36,15 @@ export interface CellRect {
   readonly bottom: number;
 }
 
+export const BUILD_OUTSIDE_GRID = 'La huella de la obra debe caber en la rejilla.';
+
 /**
- * Mapa de la partida (value object): rejilla inmutable de celdas tipadas en orden de filas, un
- * byte por celda en una `Uint8Array` privada. Ninguna consulta consume azar ni asigna en el tick.
+ * Mapa de la partida (entidad con una capa mutable, ADR-0025): **terreno** inmutable de celdas
+ * tipadas en orden de filas (un byte por celda en una `Uint8Array` privada; lo leen `typeAt`, la
+ * vista del mapa y las firmas) y una **capa de obra**, copia viva de los códigos con `BUILT` en las
+ * celdas construidas, que leen todas las consultas de caminabilidad. La única mutación es `build`
+ * (solo la llama `Run`, entre ticks), que sube `revision`. Ninguna consulta consume azar ni asigna
+ * en el tick.
  */
 export class GameMap {
   readonly cols: number;
@@ -54,6 +60,9 @@ export class GameMap {
    * la declarada en `open`/`cells` o `null`. No es una celda.
    */
   readonly door: Point | null;
+  /** Códigos vivos: el terreno con `BUILT` en las celdas construidas (ADR-0025). */
+  private readonly live: Uint8Array;
+  private builds = 0;
 
   private constructor(
     readonly rules: MapRules,
@@ -70,7 +79,45 @@ export class GameMap {
     this.start = start;
     this.castle = castle;
     this.door = door ? Object.freeze({ x: door.x, y: door.y }) : null;
-    Object.freeze(this);
+    this.live = cells.slice();
+  }
+
+  /** Obras hechas desde la creación: cambia si y solo si cambia la caminabilidad (ADR-0025). */
+  get revision(): number {
+    return this.builds;
+  }
+
+  /** Códigos vivos en orden de filas, de solo lectura (BFS de los campos, sin copiar). */
+  get liveCodes(): ArrayLike<number> {
+    return this.live;
+  }
+
+  /**
+   * Marca como construidas las celdas `col..col+cols−1 × row..row+rows−1`, sea cual sea su
+   * terreno, que no cambia, y sube la revisión. Solo falla si la huella no cabe en la rejilla, y
+   * entonces no cambia nada.
+   */
+  build(col: number, row: number, cols: number, rows: number): Result<void, DomainError> {
+    const fits =
+      Number.isInteger(col) &&
+      Number.isInteger(row) &&
+      Number.isInteger(cols) &&
+      Number.isInteger(rows) &&
+      cols >= 1 &&
+      rows >= 1 &&
+      this.inside(col, row) &&
+      this.inside(col + cols - 1, row + rows - 1);
+    if (!fits) return err(invalidConfig('map.build', BUILD_OUTSIDE_GRID));
+    for (let r = row; r < row + rows; r++) {
+      this.live.fill(BUILT, r * this.cols + col, r * this.cols + col + cols);
+    }
+    this.builds += 1;
+    return ok(undefined);
+  }
+
+  /** ¿Es la celda (c, r) de un edificio construido? Fuera de la rejilla, no. */
+  isBuilt(col: number, row: number): boolean {
+    return this.inside(col, row) && this.live[row * this.cols + col] === BUILT;
   }
 
   /** Salida en el punto dado (sin él, el centro del mundo) con el radio de la zona de inicio. */
@@ -129,10 +176,10 @@ export class GameMap {
     return typeOf(this.cells[row * this.cols + col] ?? GRASS);
   }
 
-  /** ¿Es caminable la celda (c, r)? Fuera de la rejilla, no. */
+  /** ¿Es caminable la celda (c, r), con las obras hechas? Fuera de la rejilla, no. */
   isWalkable(col: number, row: number): boolean {
     if (!this.inside(col, row)) return false;
-    return isWalkableCode(this.cells[row * this.cols + col] ?? GRASS);
+    return isWalkableCode(this.live[row * this.cols + col] ?? GRASS);
   }
 
   /** Columna de la x de mundo (x = ancho ⇒ última columna). Sin asignar. */
