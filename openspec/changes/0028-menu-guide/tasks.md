@@ -125,7 +125,7 @@
 
 ## 5. E2E y documentación · commit 3
 
-- [ ] 5.1 **Ampliar «Arranque y menú» de `smoke.spec.ts`**: es el único E2E del change, sin `?e2e`, solo DOM y
+- [x] 5.1 **Ampliar «Arranque y menú» de `smoke.spec.ts`**: es el único E2E del change, sin `?e2e`, solo DOM y
   sin umbrales de tiempo (design §8).
   - Comprobación previa: `tests/support/logicGuard.ts` solo veta `waitForTimeout`, `playChoosingFirst` y
     `expect.poll` sobre el tick, así que `setViewportSize` y `waitFrames` están permitidos (precedente en
@@ -144,7 +144,7 @@
       redimensionar», con el indicador conservado. Los dos parcialmente.
     - Spec `world-camera`: «Redimensionado con la guía abierta», parcialmente.
   - Ejecución: `npm run test:e2e -- smoke.spec`.
-- [ ] 5.2 **Documentación**:
+- [x] 5.2 **Documentación**:
   - Línea de estado de 0028 en `AGENTS.md` §1.
   - Entrada del diario de IA en `docs/ai-log/`.
   - `npm run verify` y `npm run test:e2e` en verde, y commit 3.

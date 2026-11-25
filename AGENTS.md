@@ -168,6 +168,12 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   huella es error. `BuildPanel` con iconos del HUD (`resourceIcons`: `W_Idle`, `Deco/05`), coste 0 omitido y «faltan
   N». Solo cambia `STONE_GOLDEN`; `BALANCE_BASELINE` regenerada (v4 **34/50**), `BUILDER_REFERENCE` 34/50, 0
   quietos. Lotes en CI 52 s (v4) y 89 s (v5, timeout propio 300 s por el invariante por tick).
+  Guía «Cómo jugar» (change 0028): 5.º botón del menú en la 2.ª posición; modal DOM `GuideModal` de 7 páginas de
+  `content/guide.json` (zod, ids fijos en orden, sin dígitos) con 14 marcadores `{clave}` que se interpolan al
+  arrancar desde la `RunConfig` (`parseGuide`, el último paso de `bootContent`; error por `showContentError`).
+  Anterior/Siguiente/Cerrar, Esc y flechas con un `keydown` en `document` solo mientras está abierto, foco en el
+  recuadro y de vuelta en «Cómo jugar»; estado `guide` de `MenuController` bloquea el resto. Iconos de los cinco
+  recursos (`ResourceIcons`; gema como SVG `data:` de su color). Sin núcleo ni sonda; balance intacto.
   Fuente de verdad del comportamiento: `openspec/specs/`.
 
 ## 2. Comandos

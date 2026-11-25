@@ -1,4 +1,4 @@
-import { type Page } from '@playwright/test';
+import { type Locator, type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 import {
   backToMenu,
@@ -39,25 +39,80 @@ const mmss = (tick: number): string => {
   return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 };
 
-test('Arranque y menú: botones, título y sin errores de consola ni violaciones de CSP', async ({
+const MENU_BUTTONS = ['Jugar', 'Cómo jugar', 'Exportar', 'Importar', 'Borrar datos'];
+
+/** La caja del elemento está entera dentro de la ventana. */
+async function expectInside(
+  target: Locator,
+  size: { readonly width: number; readonly height: number },
+): Promise<void> {
+  const box = await target.boundingBox();
+  if (!box) throw new Error('elemento sin caja');
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.y).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width).toBeLessThanOrEqual(size.width);
+  expect(box.y + box.height).toBeLessThanOrEqual(size.height);
+}
+
+test('Arranque y menú: botones, guía, título y sin errores de consola ni violaciones de CSP', async ({
   page,
 }) => {
   const problems = collect(page, ['error', 'warning']);
+  let nativeDialogs = 0;
+  page.on('dialog', (d) => {
+    nativeDialogs += 1;
+    void d.dismiss();
+  });
   await watchCsp(page);
   await page.goto(playerUrl());
   await expect(menuPanel(page)).toBeVisible();
   // Unos frames con el menú pintado (un número de frames, no un tiempo).
   await waitFrames(page, 30);
 
-  expect(await menuPanel(page).getByRole('button').allTextContents()).toEqual([
-    'Jugar',
-    'Exportar',
-    'Importar',
-    'Borrar datos',
-  ]);
+  expect(await menuPanel(page).getByRole('button').allTextContents()).toEqual(MENU_BUTTONS);
   expect(await page.title()).toContain('Greentide Vanguard');
   // 0017 (D11): el título es el h1 del panel del menú (un único bloque centrado).
   await expect(menuPanel(page).getByRole('heading', { level: 1 })).toHaveText('Greentide Vanguard');
+
+  // Spec menu-guide (0028), "Recorrido de la guía en el smoke": solo DOM, sin sonda ni reloj.
+  const guide = page.locator('.guide-modal');
+  const indicator = guide.locator('.guide-modal__page');
+  const control = (name: string) => guide.getByRole('button', { name, exact: true });
+  await expect(guide).toBeHidden();
+  await menuButton(page, 'Cómo jugar').click();
+  await expect(guide).toBeVisible();
+  await expect(indicator).toHaveText('1 de 7');
+  await expect(control('Anterior')).toBeHidden();
+  for (let k = 2; k <= 7; k += 1) {
+    await page.keyboard.press('ArrowRight');
+    await expect(indicator).toHaveText(`${String(k)} de 7`);
+  }
+  await page.keyboard.press('ArrowRight');
+  await expect(indicator).toHaveText('7 de 7');
+  await expect(control('Siguiente')).toBeHidden();
+  // Spec main-menu, "Guía entera en la ventana mínima y con escala ×2" (página 7) y world-camera,
+  // "Redimensionado con la guía abierta": recuadro y botones enteros, centrados y en la misma página.
+  for (const size of [
+    { width: 960, height: 540 },
+    { width: 1920, height: 1080 },
+  ]) {
+    await page.setViewportSize(size);
+    await waitFrames(page, 2);
+    await expect(indicator).toHaveText('7 de 7');
+    await expectInside(guide, size);
+    for (const name of ['Anterior', 'Cerrar']) await expectInside(control(name), size);
+    const box = await guide.boundingBox();
+    if (!box) throw new Error('guía sin caja');
+    expect(Math.abs(box.x + box.width / 2 - size.width / 2)).toBeLessThanOrEqual(1);
+    expect(Math.abs(box.y + box.height / 2 - size.height / 2)).toBeLessThanOrEqual(1);
+  }
+  await page.keyboard.press('Escape');
+  await expect(guide).toBeHidden();
+  await expect(menuPanel(page)).toBeVisible();
+  expect(await menuPanel(page).getByRole('button').allTextContents()).toEqual(MENU_BUTTONS);
+  await expect(menuButton(page, 'Cómo jugar')).toBeFocused();
+
+  expect(nativeDialogs).toBe(0);
   expect(await cspState(page)).toEqual({ violations: [], metas: 1 });
   expect(problems).toEqual([]);
 });
