@@ -498,8 +498,13 @@ describe('RenderLayers · recorte del mapa (0018)', () => {
 });
 
 // Spec sprite-rendering (0018), "Sonda de render para E2E": `drawn` y totales del plan entero.
-const planOfSeed = (seed: number, missing: readonly string[] = []) =>
-  planFor(toMapSnapshot(mapForSeed(aDefaultConfig(), seed)), seed, missing);
+const planOfSeed = (seed: number, missing: readonly string[] = [], maxDecor?: number) =>
+  planFor(
+    toMapSnapshot(mapForSeed(aDefaultConfig(), seed)),
+    seed,
+    missing,
+    maxDecor === undefined ? {} : { maxDecor },
+  );
 const viewOf = (p: { x: number; y: number }, w = 1280, h = 720) =>
   followView(p, screenFrame(w, h), WORLD_42);
 const MAP_SHEETS_FILES = [
@@ -509,13 +514,17 @@ const MAP_SHEETS_FILES = [
   'Terrain/Bridge/Bridge_All.png',
   'Factions/Knights/Buildings/Castle/Castle_Blue.png',
 ];
+/** 0029: las 11 hojas de la decoración. */
+const DECOR_SHEETS = ['01', '02', '03', '07', '08', '09', '10', '11', '16', '17', '18'].map(
+  (n) => `Deco/${n}.png`,
+);
 
 describe('RenderLayers · sonda drawn (0018)', () => {
   it.each([
     [42, 667],
     [123, 750],
   ])(
-    'Scenario: Totales del mapa sin cambios (semilla %i: %i objetos con toda vista)',
+    'Scenario: Totales del mapa sin cambios (semilla %i: %i objetos con toda vista, tope 0)',
     (seed, n) => {
       const totals: unknown[] = [];
       const drawnAtStart: number[] = [];
@@ -525,7 +534,7 @@ describe('RenderLayers · sonda drawn (0018)', () => {
         [3840, 2160],
       ] as const) {
         for (const p of [{ x: 1920, y: 1080 }, { x: 16, y: 16 }, START]) {
-          const { paint, layers } = culled(planOfSeed(seed), screenFrame(w, h));
+          const { paint, layers } = culled(planOfSeed(seed, [], 0), screenFrame(w, h));
           paint(at(0, p.x, p.y));
           const { drawn, ...rest } = layers.counts.mapArt;
           totals.push({ cells: { ...layers.counts.cells }, ...rest });
@@ -591,7 +600,12 @@ describe('RenderLayers · sonda drawn (0018)', () => {
 
   const reserveCases: [string, readonly string[]][] = [
     ...MAP_SHEETS_FILES.map((f): [string, string[]] => [f, [f]]),
+    ['Deco/18.png', ['Deco/18.png']],
     ['las cinco hojas', MAP_SHEETS_FILES],
+    [
+      'ninguna hoja del mapa (las cinco y las 11 de decoración)',
+      [...MAP_SHEETS_FILES, ...DECOR_SHEETS],
+    ],
   ];
   it.each(reserveCases)('Scenario: Recorte con aspecto de reserva (sin %s)', (_, sheets) => {
     const plan = planOfSeed(42, sheets);
@@ -607,11 +621,27 @@ describe('RenderLayers · sonda drawn (0018)', () => {
       );
     }
     expect(frames).toEqual([true, true, true, true]);
-    const { water, shore, foam, tree, canopy, bridge, castle } = layers.counts.mapArt;
-    expect({ water, shore, foam, tree, canopy, bridge, castle }).toEqual(plan.counts);
+    const { water, shore, foam, tree, canopy, bridge, castle, decor } = layers.counts.mapArt;
+    expect({ water, shore, foam, tree, canopy, bridge, castle, decor }).toEqual(plan.counts);
     expect(plan.low.some((d) => d.kind === 'rect')).toBe(
-      !sheets.every((f) => f === 'Terrain/Water/Foam/Foam.png'),
+      !sheets.every((f) => f === 'Terrain/Water/Foam/Foam.png' || f.startsWith('Deco/')),
     );
+    // 0029: los recuentos de reserva, los de todas las hojas; sin pintar, las de las hojas que faltan.
+    const full = planOfSeed(42);
+    const fullDecor = full.counts.decor;
+    // Sin las hojas de decoración, los mismos recuentos de reserva de los elementos del mapa.
+    const sameMapSheets = planOfSeed(
+      42,
+      sheets.filter((f) => !f.startsWith('Deco/')),
+    );
+    expect({ ...plan.counts, decor: null }).toEqual({ ...sameMapSheets.counts, decor: null });
+    expect(plan.decor.map((d) => d.file)).toEqual(full.decor.map((d) => d.file));
+    expect(decor.unpainted).toBe(full.decor.filter((d) => sheets.includes(d.file)).length);
+    expect(decor.planned).toBe(fullDecor.planned);
+    const unpainted = [...plan.low, ...plan.high].filter(
+      (d) => d.kind === 'sprite' && sheets.includes(d.texture) && d.texture.startsWith('Deco/'),
+    );
+    expect(unpainted).toEqual([]);
   });
 });
 
@@ -647,7 +677,11 @@ describe('RenderLayers · recuentos para la sonda', () => {
     frame(s);
     const c = layers.counts;
     expect(c.pickups.meat).toEqual({ visible: 1, placeholder: 0 });
-    expect(c.sheep).toEqual({ visible: 3, placeholder: 0, byState: { graze: 1, wander: 0, flee: 2 } });
+    expect(c.sheep).toEqual({
+      visible: 3,
+      placeholder: 0,
+      byState: { graze: 1, wander: 0, flee: 2 },
+    });
     expect([c.enemies.visible, c.projectiles.visible, c.gems.visible, c.player.visible]).toEqual([
       2, 1, 3, 1,
     ]);

@@ -44,8 +44,9 @@ const covers = (rects: number[][], [l = 0, t = 0, r = 0, b = 0]: number[]) =>
   rects.some(([x0 = 0, y0 = 0, x1 = 0, y1 = 0]) => x0 <= l && y0 <= t && x1 >= r && y1 >= b);
 
 describe('planMapArt · arte en su sitio', () => {
-  it('Scenario: Elementos en su sitio (árbol, agua y puente)', () => {
+  it('Scenario: Elementos en su sitio (árbol, agua y puente; sin decoración: mapa explícito)', () => {
     const plan = planFor(snap(PLACES));
+    expect(plan.decor).toEqual([]);
     const [tree] = spritesOf(plan, 'trunk');
     near(tree?.x ?? 0, 630);
     near(tree?.y ?? 0, 300);
@@ -272,24 +273,28 @@ describe('planMapArt + recorte · todo el plan se puede ver (0018)', () => {
     { width: DEFAULT_MAX_VIEW.width, height: DEFAULT_MAX_VIEW.height },
   ];
 
-  it.each([42, 123])('Scenario: Todo el plan se puede ver (semilla %i, tres ventanas)', (seed) => {
-    const plan = planFor(toMapSnapshot(mapForSeed(aDefaultConfig(), seed)), seed);
-    const boxes = [...plan.low, ...plan.high].map((d) => d.bounds);
-    const M = cullMargin(plan.cellSize);
-    const world = { x: 0, y: 0, ...WORLD };
-    const unseen: string[] = [];
-    for (const size of views) {
-      const seen = new Uint8Array(boxes.length);
-      for (const p of gridPositions()) {
-        const rect = clipRect(followView(p, size, WORLD), M);
-        boxes.forEach((b, i) => {
-          if (!seen[i] && touches(b, rect)) seen[i] = 1;
-        });
+  it.each([42, 123])(
+    'Scenario: Todo el plan se puede ver (semilla %i, tres ventanas, decoración incluida)',
+    (seed) => {
+      const plan = planFor(toMapSnapshot(mapForSeed(aDefaultConfig(), seed)), seed);
+      expect(spritesOf(plan, 'decor').length).toBeGreaterThan(0);
+      const boxes = [...plan.low, ...plan.high].map((d) => d.bounds);
+      const M = cullMargin(plan.cellSize);
+      const world = { x: 0, y: 0, ...WORLD };
+      const unseen: string[] = [];
+      for (const size of views) {
+        const seen = new Uint8Array(boxes.length);
+        for (const p of gridPositions()) {
+          const rect = clipRect(followView(p, size, WORLD), M);
+          boxes.forEach((b, i) => {
+            if (!seen[i] && touches(b, rect)) seen[i] = 1;
+          });
+        }
+        if (seen.includes(0)) unseen.push(`${String(size.width)}: ${String(seen.indexOf(0))}`);
       }
-      if (seen.includes(0)) unseen.push(`${String(size.width)}: ${String(seen.indexOf(0))}`);
-    }
-    expect(unseen).toEqual([]);
-    expect(boxes.every((b) => touches(b, world))).toBe(true);
-    expect(boxes).toHaveLength(plan.objects);
-  });
+      expect(unseen).toEqual([]);
+      expect(boxes.every((b) => touches(b, world))).toBe(true);
+      expect(boxes).toHaveLength(plan.objects);
+    },
+  );
 });

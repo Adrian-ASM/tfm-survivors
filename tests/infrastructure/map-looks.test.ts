@@ -130,3 +130,60 @@ describe('Aspectos de las estructuras resueltos', () => {
     });
   });
 });
+
+// Spec sprite-rendering (0029): reserva del árbol y de la torre con su `idle` animada, y arte de la
+// decoración por aspecto (sin reserva de color).
+describe('resolveMapLooks · animaciones y decoración (0029)', () => {
+  it('Scenario: Reserva de árbol y torre (una hoja del árbol sin el frame 5: árbol a reserva)', () => {
+    const counts: FrameCount = (key) => (key === TREE_FILE ? 5 : loaded()(key));
+    expect(resolveMapLooks(map, terrain, counts, allBridgeFrames, STRUCTURES).trees.art).toBe(
+      false,
+    );
+    const all: FrameCount = (key) => (key === TREE_FILE ? 6 : loaded()(key));
+    expect(resolveMapLooks(map, terrain, all, allBridgeFrames, STRUCTURES).trees.art).toBe(true);
+  });
+
+  it('Scenario: Reserva de árbol y torre (sin Tree.png: árbol a reserva)', () => {
+    const looks = resolveMapLooks(map, terrain, loaded([TREE_FILE]), allBridgeFrames, STRUCTURES);
+    expect(looks.trees.art).toBe(false);
+  });
+
+  it('Scenario: Reserva de las estructuras (torre intacta con la idle de 4 frames: sin el frame 3, reserva)', () => {
+    const a = parsed.value;
+    const tower = a.structures['goblin-tower'];
+    if (!tower) throw new Error('sin torre');
+    const withTowerIdle = {
+      ...a,
+      structures: {
+        ...a.structures,
+        'goblin-tower': {
+          intact: { ...tower.intact, idle: { frames: [0, 1, 2, 3], fps: 5, loop: true } },
+          ruin: tower.ruin,
+        },
+      },
+    };
+    const three = resolveStructureLooks(withTowerIdle, () => 3).types['goblin-tower'];
+    const four = resolveStructureLooks(withTowerIdle, () => 4).types['goblin-tower'];
+    expect([three?.intact.art, three?.ruin.art]).toEqual([false, true]);
+    expect([four?.intact.art, four?.ruin.art]).toEqual([true, true]);
+  });
+
+  it('decoración: arte por aspecto (hoja cargada y su frame dentro); los datos, siempre', () => {
+    const frames: FrameCount = (key) =>
+      key === 'Deco/18.png'
+        ? null
+        : key === 'Deco/08.png'
+          ? 0
+          : key.startsWith('Deco/')
+            ? 1
+            : loaded()(key);
+    const looks = resolveMapLooks(map, terrain, frames, allBridgeFrames, STRUCTURES);
+    expect(looks.decor.data).toBe(map.decor);
+    const art = Object.fromEntries(
+      map.decor.items.map((i, k) => [i.sheet.file, looks.decor.art[k]]),
+    );
+    expect(art['Deco/18.png']).toBe(false);
+    expect(art['Deco/08.png']).toBe(false);
+    expect(art['Deco/01.png']).toBe(true);
+  });
+});

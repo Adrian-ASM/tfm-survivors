@@ -115,29 +115,41 @@ describe('planMapArt · estructuras', () => {
 
 /** Objetos del mapa de antes de este change (0017/0018): 667 (42) y 750 (123). */
 const OBJECTS_BEFORE: Readonly<Record<42 | 123, number>> = { 42: 667, 123: 750 };
-const MAX_MAP_OBJECTS = 1000;
+/** Objetivo de 0029 con la decoración (spec "Coste de render del mapa"; límite duro 1.000). */
+const MAX_MAP_OBJECTS = 950;
+/** Sin decoración (tope 0): las cifras de antes de 0029. */
+const NO_DECOR = { maxDecor: 0 } as const;
+/** Objetos de escena de la decoración de un plan (baja 1, alta 2). */
+const decorObjects = (plan: ReturnType<typeof planFor>) =>
+  plan.decor.filter((d) => d.painted).reduce((n, d) => n + d.pieces, 0);
 
 describe('planMapArt · totales con estructuras (semillas 42 y 123)', () => {
-  it.each([42, 123] as const)('Scenario: Presupuesto de objetos con estructuras (%i)', (seed) => {
-    const map = startSeededRun(aDefaultConfig(), seed).map;
-    const plan = planFor(map, seed);
-    expect(plan.objects).toBeLessThanOrEqual(MAX_MAP_OBJECTS);
-    expect(plan.structures.map((s) => s.id)).toEqual(map.structures.map((s) => s.id));
-    const all = [...plan.low, ...plan.high];
-    for (const s of map.structures) {
-      const planned = plan.structures.find((p) => p.id === s.id);
-      const sprites = [...(planned?.intact ?? []), ...(planned?.ruin ?? [])].map((i) => all[i]);
-      expect(sprites.length).toBeGreaterThan(0);
-      for (const d of sprites) {
-        expect(d).toMatchObject({ kind: 'sprite', x: s.x, y: (s.row + s.rows) * map.cellSize });
+  it.each([42, 123] as const)(
+    'Scenario: Presupuesto de objetos con estructuras (%i, decoración incluida, ≤ 950)',
+    (seed) => {
+      const map = startSeededRun(aDefaultConfig(), seed).map;
+      const plan = planFor(map, seed);
+      expect(plan.objects).toBeLessThanOrEqual(MAX_MAP_OBJECTS);
+      expect(decorObjects(plan)).toBeGreaterThan(0);
+      expect(plan.structures.map((s) => s.id)).toEqual(map.structures.map((s) => s.id));
+      const all = [...plan.low, ...plan.high];
+      for (const s of map.structures) {
+        const planned = plan.structures.find((p) => p.id === s.id);
+        const sprites = [...(planned?.intact ?? []), ...(planned?.ruin ?? [])].map((i) => all[i]);
+        expect(sprites.length).toBeGreaterThan(0);
+        for (const d of sprites) {
+          expect(d).toMatchObject({ kind: 'sprite', x: s.x, y: (s.row + s.rows) * map.cellSize });
+        }
       }
-    }
-  });
+    },
+  );
 
   // 695 (42) y 778 (123): las de antes más 4 objetos por cada una de las 7 estructuras.
   it.each([42, 123] as const)('Scenario: Totales del mapa con estructuras (%i)', (seed) => {
-    const withStructures = planFor(startSeededRun(aDefaultConfig(), seed).map, seed);
-    const before = planFor(toMapSnapshot(mapForSeed(aDefaultConfig(), seed)), seed);
+    // 0029: con tope de decoración 0, las cifras de antes de este change.
+    const map = startSeededRun(aDefaultConfig(), seed).map;
+    const withStructures = planFor(map, seed, [], NO_DECOR);
+    const before = planFor(toMapSnapshot(mapForSeed(aDefaultConfig(), seed)), seed, [], NO_DECOR);
     expect(before.objects).toBe(OBJECTS_BEFORE[seed]);
     expect(withStructures.cells).toEqual(before.cells);
     expect(withStructures.counts).toEqual(before.counts);
@@ -157,6 +169,10 @@ describe('planMapArt · totales con estructuras (semillas 42 y 123)', () => {
     expect(sites).toBe(6 * withStructures.sites.length);
     expect(withStructures.objects).toBe(OBJECTS_BEFORE[seed] + pieces + veins + sites);
     expect(withStructures.objects - veins - sites).toBe(seed === 42 ? 695 : 778);
+    // Con la decoración del repositorio: los mismos más los de su decoración, ≤ 950.
+    const repo = planFor(map, seed);
+    expect(repo.objects).toBe(withStructures.objects + decorObjects(repo));
+    expect(repo.objects).toBeLessThanOrEqual(MAX_MAP_OBJECTS);
   });
 });
 
@@ -193,15 +209,20 @@ describe('planMapArt · vetas', () => {
   });
 
   it.each([42, 123] as const)(
-    'Scenario: Tope de objetos con las vetas (%i: los de antes más los de las vetas, ≤ 1.000)',
+    'Scenario: Tope de objetos con las vetas (%i: los de antes más vetas y decoración, ≤ 950)',
     (seed) => {
       const map = startSeededRun(aDefaultConfig(), seed).map;
       const plan = planFor(map, seed);
       expect(plan.veins).toHaveLength(map.veins.length);
-      // 0026: más los 6 objetos de cada solar (737 y 820 en total).
+      // 0026: más los 6 objetos de cada solar (737 y 820 en total). 0029: más la decoración.
       const sites = 6 * map.sites.length;
-      expect(plan.objects).toBe((seed === 42 ? 695 : 778) + 2 * map.veins.length + sites);
+      expect(plan.objects).toBe(
+        (seed === 42 ? 695 : 778) + 2 * map.veins.length + sites + decorObjects(plan),
+      );
       expect(plan.objects).toBeLessThanOrEqual(MAX_MAP_OBJECTS);
+      // Ninguna celda de veta tiene decoración (ni en la huella de su base).
+      const veinCells = new Set(map.veins.map((v) => v.row * map.cols + v.col));
+      expect(plan.decor.some((d) => d.base.some((c) => veinCells.has(c)))).toBe(false);
     },
   );
 

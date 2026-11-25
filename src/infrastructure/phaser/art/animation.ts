@@ -42,6 +42,20 @@ export function frameAt(anim: AnimSpec, ms: number): number {
   return anim.frames[i] ?? anim.frames[0] ?? 0;
 }
 
+/**
+ * Frame de hoja de una animación en bucle con fase (0029, árboles y torres del mapa): la posición
+ * `(⌊ms · fps / 1000⌋ + phase) mod n` de sus frames. Con fase 0 es `frameAt` en bucle.
+ */
+export function phasedFrameAt(
+  anim: Pick<AnimSpec, 'frames' | 'fps'>,
+  ms: number,
+  phase: number,
+): number {
+  const n = anim.frames.length;
+  const i = (((Math.floor((ms * anim.fps) / 1000) + phase) % n) + n) % n;
+  return anim.frames[i] ?? anim.frames[0] ?? 0;
+}
+
 /** Una animación sin bucle ha terminado cuando el tiempo alcanza n · 1000 / fps. */
 export function animDone(anim: AnimSpec, ms: number): boolean {
   return ms >= (anim.frames.length * 1000) / anim.fps;

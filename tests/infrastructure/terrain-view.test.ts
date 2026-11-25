@@ -149,6 +149,7 @@ describe('Capas del mapa en el área de juego', () => {
       canopy: none,
       bridge: none,
       castle: none,
+      decor: { planned: 0, painted: 0, unpainted: 0 },
       objects: 0,
       drawn: 0,
     });

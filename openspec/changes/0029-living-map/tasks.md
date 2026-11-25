@@ -37,7 +37,7 @@
   `boot-plan.test.ts`.
 
 ### Grupo B · Plan puro del arte del mapa (commit 2)
-- [ ] 3.3 `map/decorChoices.ts` + `planMapArt`: celdas válidas, huella de base, orden por hash con sales
+- [x] 3.3 `map/decorChoices.ts` + `planMapArt`: celdas válidas, huella de base, orden por hash con sales
   `DECOR_PLACE_KEY`/`DECOR_KIND_KEY`, aceptación voraz con huellas libres y tope sobre datos; `decor.placed`, piezas
   solo con arte, capas e índices (decoración antes de troncos en la baja y antes de copas en la alta),
   `counts.decor` (`planned`/`painted`/`unpainted`). **Medición**: objetos exactos de 42 y 123 (tope 0 y repositorio)
@@ -49,7 +49,13 @@
   vetas", "Todo el plan se puede ver", "Recorte con aspecto de reserva", "Decoración baja y alta" (orden de capas en
   el plan); BS: "Objetos del mapa sin cambios", "Solares sin decoración" — tests: `plan-decor.test.ts` (nuevo),
   `plan-sites.test.ts`, `plan-map-art.test.ts`, `plan-map-fallback.test.ts`, `map-culling.test.ts`.
-- [ ] 3.4 Fases y grupos de animación: `treeChoices` (`phase = h mod n`, volteo igual), `TOWER_PHASE_KEY`,
+  **Medición (apply, contenido por defecto, sin navegador)**: semilla 42 → **820** objetos del mapa (737 con tope
+  0 + 83 de decoración: 66 decoraciones, 17 altas, 3 espantapájaros) y `drawn` **119** a 1.280 × 720 con el jugador
+  en la salida (108 con tope 0); semilla 123 → **904** (820 + 84: 66 decoraciones, 18 altas, 2 espantapájaros) y
+  `drawn` **90** (79 con tope 0). Ambas ≤ 950. En 1..50: 63–71 decoraciones y 76–95 objetos de decoración por
+  mapa. Fijadas en `plan-sites.test.ts`, `plan-map-fallback.test.ts` y `sheep-layer.test.ts`. "Recorte con aspecto
+  de reserva" está en `render-layers.test.ts` (casos `Deco/18.png` y "ninguna hoja del mapa").
+- [x] 3.4 Fases y grupos de animación: `treeChoices` (`phase = h mod n`, volteo igual), `TOWER_PHASE_KEY`,
   `phasedFrameAt`, `mapLooks` con todos los frames de `idle` (árbol y aspectos de estructura) y
   `MapArtPlan.animations` (tronco+copa y partes de torre intacta en el mismo grupo; ruinas, vetas, solares, castillo
   y decoración sin grupo).

@@ -50,6 +50,13 @@ const FRAME_COUNTS: Readonly<Record<string, number>> = {
   'Factions/Knights/Buildings/House/House_Construction.png': 1,
   'Factions/Knights/Buildings/House/House_Blue.png': 1,
   'Factions/Knights/Buildings/Tower/Tower_Blue.png': 1,
+  // 0029: las 11 hojas de la decoración, de 1 frame cada una.
+  ...Object.fromEntries(
+    ['01', '02', '03', '07', '08', '09', '10', '11', '16', '17', '18'].map((n) => [
+      `Deco/${n}.png`,
+      1,
+    ]),
+  ),
 };
 
 /** Texturas cargadas salvo las de `missing` (doble de `textureFrames`). */
@@ -66,9 +73,19 @@ export const bridgeFrames =
     (Object.values(BRIDGE_FRAME_NAMES) as string[]).includes(name) &&
     !missing.includes(name);
 
+/** Cambios de los datos de aspecto del mapa para un escenario (0029: tope de decoración). */
+export interface MapArtEdits {
+  /** Tope de decoración (`map.decor.maxObjects`); por defecto, el del repositorio (120). */
+  readonly maxDecor?: number;
+  /** Otro cambio de los datos de aspecto ya validados (p. ej. la `idle` del árbol de 1 frame). */
+  readonly appearance?: (a: Appearance) => Appearance;
+}
+
 /** Aspectos del mapa del repositorio resueltos con las hojas que faltan dadas. */
-export function repoMapLooks(missing: readonly string[] = []): MapLooks {
-  const a = repoAppearance();
+export function repoMapLooks(missing: readonly string[] = [], edits: MapArtEdits = {}): MapLooks {
+  const base = (edits.appearance ?? ((x: Appearance) => x))(repoAppearance());
+  const { maxDecor = base.map.decor.maxObjects } = edits;
+  const a = { ...base, map: { ...base.map, decor: { ...base.map.decor, maxObjects: maxDecor } } };
   return resolveMapLooks(
     a.map,
     a.terrain,
@@ -84,8 +101,13 @@ export function repoMapLooks(missing: readonly string[] = []): MapLooks {
 export const WORLD = { width: arenaJson.width, height: arenaJson.height } as const;
 
 /** Plan del mapa con los aspectos del repositorio y la semilla de decoración de `seed`. */
-export function planFor(map: MapSnapshot, seed = 42, missing: readonly string[] = []): MapArtPlan {
-  return planMapArt(map, repoMapLooks(missing), {
+export function planFor(
+  map: MapSnapshot,
+  seed = 42,
+  missing: readonly string[] = [],
+  edits: MapArtEdits = {},
+): MapArtPlan {
+  return planMapArt(map, repoMapLooks(missing, edits), {
     decorSeed: deriveSeed(seed, DECOR_STREAM),
     world: WORLD,
   });

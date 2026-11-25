@@ -181,6 +181,7 @@ export class RenderLayers {
     for (const key of ['water', 'shore', 'foam', 'tree', 'canopy', 'bridge', 'castle'] as const) {
       mapArt[key] = { ...painted.mapArt[key] };
     }
+    mapArt.decor = { ...painted.mapArt.decor };
     mapArt.objects = painted.mapArt.objects;
     this.mapCanvas = canvas;
     this.culler.reset(plan);
