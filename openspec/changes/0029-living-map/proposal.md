@@ -50,8 +50,9 @@ y sin pasar de 1.000 objetos de escena del mapa.
    1.000.
 8. **Fase de la torre**: cada torre goblin intacta tiene su propia fase, derivada de un hash de la semilla y de la
    estructura (sin PRNG ni flujo nuevo), como la del árbol.
-9. **Reloj de la animación**: árboles y torres siguen el mismo reloj de render que la espuma, también en pausa, con
-   oferta abierta, en la tienda y en la obra.
+9. **Reloj de la animación** (corregida por el autor en la fase SPEC): árboles y torres siguen el mismo reloj de
+   render que la espuma (un solo reloj), que se **congela** en pausa, con oferta abierta, en la tienda, en la obra y
+   con la partida terminada; al reanudar siguen desde el mismo frame.
 
 ## Alcance
 - **Dentro**:
@@ -127,8 +128,8 @@ y sin pasar de 1.000 objetos de escena del mapa.
   zonas excluidas (decisión 3), de las 11 hojas admitidas, y el mapa vacío y los explícitos tienen 0.
 - Misma semilla ⇒ misma decoración (celda, hoja, posición) y mismas fases de árbol en dos cálculos y tras R.
 - En cada mapa generado de 1..50 hay ≥ 2 fases de árbol distintas; cada torre intacta recorre sus 4 frames con su
-  fase por estructura, y árboles y torres avanzan también en pausa, oferta, tienda y obra; la torre en
-  ruina, castillo, casas, mina y edificios de caballeros muestran siempre el mismo frame.
+  fase por estructura, y árboles, torres y espuma quedan congelados (mismo frame) en pausa, oferta, tienda, obra y
+  partida terminada; la torre en ruina, castillo, casas, mina y edificios de caballeros muestran siempre el mismo frame.
 - Firmas doradas (`MAP_GOLDEN`, `STRUCTURE_GOLDEN`, `RESOURCE_GOLDEN`, `SHEEP_GOLDEN`, `STONE_GOLDEN`, `SITE_GOLDEN`)
   intactas y `BALANCE_BASELINE` idéntica semilla a semilla (sin regenerar); snapshots iguales campo a campo con y sin
   decoración/animación en 1.200 ticks de la semilla 42.
