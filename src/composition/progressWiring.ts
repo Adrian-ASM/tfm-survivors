@@ -5,6 +5,9 @@ import { RecordRun } from '../application/RecordRun';
 import type { HistoryEntry, Records } from '../domain/progress/Progress';
 import { ConfirmDialog } from '../infrastructure/dom/ConfirmDialog';
 import { downloadProgress } from '../infrastructure/dom/downloadProgress';
+import { GuideModal } from '../infrastructure/dom/GuideModal';
+import type { ResourceIcons } from '../infrastructure/dom/resourceIcons';
+import type { Guide } from '../infrastructure/content/guideSchema';
 import { MenuPanel } from '../infrastructure/dom/MenuPanel';
 import { ResultsPanel } from '../infrastructure/dom/ResultsPanel';
 import { PROGRESS_CORRUPT_WARNING } from '../infrastructure/dom/resultsPanelText';
@@ -34,12 +37,23 @@ export interface ProgressWiring {
   probe(): ProgressProbe;
 }
 
+/** Guía «Cómo jugar» del menú (0028): ya validada e interpolada, con los iconos de recurso. */
+export interface MenuGuide {
+  readonly guide: Guide;
+  readonly icons: ResourceIcons;
+}
+
 /**
  * Guardado local y export/import (design 0007): carga el progreso antes de crear el juego (nunca
  * lanza), avisa una vez por consola si los datos guardados estaban dañados y crea el panel DOM
- * sobre el canvas. `seedOf` da la semilla de la partida actual.
+ * sobre el canvas. `seedOf` da la semilla de la partida actual. El menú lleva la guía `menuGuide`,
+ * que `menu.show` deja cerrada (Volver al menú, también con `?e2e`).
  */
-export function wireProgress(root: HTMLElement, seedOf: () => number): ProgressWiring {
+export function wireProgress(
+  root: HTMLElement,
+  seedOf: () => number,
+  menuGuide: MenuGuide,
+): ProgressWiring {
   const repository = new LocalStorageProgressRepository(() => window.localStorage);
   const { session, issue } = new LoadProgress(repository).execute();
   if (issue === 'corrupt') console.warn(PROGRESS_CORRUPT_WARNING);
@@ -68,20 +82,27 @@ export function wireProgress(root: HTMLElement, seedOf: () => number): ProgressW
   });
 
   const controller = new MenuController();
-  const menuPanel = new MenuPanel(document, root, controller, {
-    onExport: () => {
-      downloadProgress(menuProgress.exportText());
+  const guideModal = new GuideModal(document, root, menuGuide.guide, menuGuide.icons);
+  const menuPanel = new MenuPanel(
+    document,
+    root,
+    controller,
+    {
+      onExport: () => {
+        downloadProgress(menuProgress.exportText());
+      },
+      onImport: (file) => {
+        void menuProgress.importFile(file).then((view) => {
+          menuPanel.setMessage(view.message);
+        });
+      },
+      onOpenConfirm: () => {
+        menuPanel.setLocked(true);
+        dialog.open();
+      },
     },
-    onImport: (file) => {
-      void menuProgress.importFile(file).then((view) => {
-        menuPanel.setMessage(view.message);
-      });
-    },
-    onOpenConfirm: () => {
-      menuPanel.setLocked(true);
-      dialog.open();
-    },
-  });
+    guideModal,
+  );
   // Cancelar no llega a ClearProgress: 0 escrituras y 0 borrados por construcción.
   const closeDialog = (): void => {
     dialog.close();

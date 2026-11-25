@@ -63,7 +63,7 @@
 
 ## 4. Guía en el menú (infraestructura `dom/` + `menu/` + composición) · commit 2
 
-- [ ] 4.1 **Iconos de recurso** (design §6).
+- [x] 4.1 **Iconos de recurso** (design §6).
   - Implementa:
     - `ResourceIcons` pasa a `{ xp, gold, wood, meat, stone }`.
     - La gema como forma usa un SVG `data:` con `placeholderColor`, generado por una función pura.
@@ -74,7 +74,7 @@
     - Hojas de una fila, comprobadas por IHDR.
     - «Sin assets nuevos»: `guard:all` y la nota de procedencia, sin cambios.
   - Test: `tests/infrastructure/dom/resource-icons.test.ts`.
-- [ ] 4.2 **`fakeDom` ampliado + `GuideModal`** (design §3, §5).
+- [x] 4.2 **`fakeDom` ampliado + `GuideModal`** (design §3, §5).
   - Implementa:
     - En `fakeDom`: `focus()`, `scrollTop`, alta y baja de listeners en el documento con recuento por tipo, y
       `dispatchKey(key, { repeat, altKey, ctrlKey, metaKey })` que informa de `preventDefault`.
@@ -96,7 +96,7 @@
     - «Página sin recursos» (0 iconos).
     - «Hoja de icono que no carga»: el render no depende de la carga y no escucha `error`.
   - Test: `tests/infrastructure/dom/guide-modal.test.ts`.
-- [ ] 4.3 **`MenuController` + `MenuPanel` + cableado + CSS** (design §4, §7).
+- [x] 4.3 **`MenuController` + `MenuPanel` + cableado + CSS** (design §4, §7).
   - Implementa:
     - Estado `guide` con `openGuide()` y `closeGuide()`.
     - El 5.º botón «Cómo jugar» en la 2.ª posición y las etiquetas en `menuText`.
@@ -121,7 +121,7 @@
   - Tests:
     - `tests/infrastructure/menu/menu-controller.test.ts` (ampliar).
     - `tests/infrastructure/dom/menu-panel.test.ts` (nuevo).
-- [ ] 4.4 Cierre del grupo: `npm run verify` en verde y commit 2.
+- [x] 4.4 Cierre del grupo: `npm run verify` en verde y commit 2.
 
 ## 5. E2E y documentación · commit 3
 

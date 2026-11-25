@@ -1,16 +1,21 @@
 // DOM mínimo para probar los paneles DOM en Node (Vitest sin jsdom; no se añaden dependencias):
 // solo lo que usan `button`, `setPanelHidden` y los paneles (createElement, atributos, clases,
-// hijos, textContent, dataset, clics y foco).
+// hijos, textContent, dataset, clics y foco) y, desde 0028, la guía del menú (`focus`, `scrollTop`
+// y escuchas de teclado en el documento con recuento por tipo).
+
+type Listener = (event?: unknown) => void;
 
 export class FakeElement {
   readonly children: FakeElement[] = [];
   readonly dataset: Record<string, string> = {};
   private readonly attributes = new Map<string, string>();
-  private readonly listeners = new Map<string, (() => void)[]>();
+  private readonly listeners = new Map<string, Listener[]>();
   private text = '';
   className = '';
   hidden = false;
   type = '';
+  disabled = false;
+  scrollTop = 0;
   parent: FakeElement | null = null;
 
   constructor(
@@ -47,12 +52,24 @@ export class FakeElement {
     this.append(...nodes);
   }
 
-  addEventListener(type: string, fn: () => void): void {
+  addEventListener(type: string, fn: Listener): void {
     this.listeners.set(type, [...(this.listeners.get(type) ?? []), fn]);
   }
 
+  /** Escuchas registradas de un tipo (p. ej. 0 de `error` en los iconos de la guía). */
+  listenerCount(type: string): number {
+    return this.listeners.get(type)?.length ?? 0;
+  }
+
+  /** Como un clic de ratón real: un botón `disabled` no lo recibe y uno activo toma el foco. */
   click(): void {
+    if (this.disabled) return;
+    if (this.tagName === 'button') this.focus();
     for (const fn of this.listeners.get('click') ?? []) fn();
+  }
+
+  focus(): void {
+    this.ownerDocument.activeElement = this;
   }
 
   blur(): void {
@@ -75,16 +92,66 @@ export class FakeElement {
   }
 }
 
+/** Opciones de una tecla de `dispatchKey` (las de `KeyboardEvent` que mira la guía). */
+export interface FakeKeyOptions {
+  readonly repeat?: boolean;
+  readonly altKey?: boolean;
+  readonly ctrlKey?: boolean;
+  readonly metaKey?: boolean;
+}
+
 export class FakeDocument {
   activeElement: FakeElement | null = null;
+  private readonly listeners = new Map<string, Listener[]>();
 
   createElement(tag: string): FakeElement {
     return new FakeElement(tag, this);
   }
+
+  addEventListener(type: string, fn: Listener): void {
+    this.listeners.set(type, [...(this.listeners.get(type) ?? []), fn]);
+  }
+
+  /** Quita la escucha con la misma referencia (como el DOM: si no está, no hace nada). */
+  removeEventListener(type: string, fn: Listener): void {
+    const list = this.listeners.get(type) ?? [];
+    const i = list.indexOf(fn);
+    if (i >= 0) this.listeners.set(type, [...list.slice(0, i), ...list.slice(i + 1)]);
+  }
+
+  /** Escuchas registradas en el documento de un tipo. */
+  listenerCount(type: string): number {
+    return this.listeners.get(type)?.length ?? 0;
+  }
+
+  /**
+   * Un `keydown` en el documento con esa tecla; informa de si alguna escucha llamó a
+   * `preventDefault`. Recorre una copia: una escucha que se quita no corta el evento en curso.
+   */
+  dispatchKey(key: string, options: FakeKeyOptions = {}): { defaultPrevented: boolean } {
+    let defaultPrevented = false;
+    const event = {
+      key,
+      repeat: options.repeat ?? false,
+      altKey: options.altKey ?? false,
+      ctrlKey: options.ctrlKey ?? false,
+      metaKey: options.metaKey ?? false,
+      preventDefault: () => {
+        defaultPrevented = true;
+      },
+    };
+    for (const fn of [...(this.listeners.get('keydown') ?? [])]) fn(event);
+    return { defaultPrevented };
+  }
 }
 
 /** Documento y contenedor falsos con `HTMLElement` global (lo usa `setPanelHidden`). */
-export function fakeDom(): { doc: Document; root: HTMLElement; fake: FakeElement } {
+export function fakeDom(): {
+  doc: Document;
+  root: HTMLElement;
+  fake: FakeElement;
+  fakeDoc: FakeDocument;
+} {
   (globalThis as { HTMLElement?: unknown }).HTMLElement ??= FakeElement;
   const fakeDoc = new FakeDocument();
   const fake = fakeDoc.createElement('div');
@@ -92,5 +159,6 @@ export function fakeDom(): { doc: Document; root: HTMLElement; fake: FakeElement
     doc: fakeDoc as unknown as Document,
     root: fake as unknown as HTMLElement,
     fake,
+    fakeDoc,
   };
 }
