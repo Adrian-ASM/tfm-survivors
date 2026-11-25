@@ -1,0 +1,67 @@
+{
+  "pages": [
+    {
+      "id": "movement",
+      "title": "Movimiento y armas",
+      "paragraphs": [
+        "Muévete con WASD o con las flechas. Es lo único que controlas: no hay botón de ataque.",
+        "Tus armas disparan solas contra el enemigo más cercano. Esquiva, recoge y mantente con vida."
+      ]
+    },
+    {
+      "id": "progression",
+      "title": "Experiencia y mejoras",
+      "paragraphs": [
+        "Los enemigos abatidos sueltan gemas de experiencia. Al llenar la barra subes de nivel.",
+        "Cada subida te ofrece {upgrades.offerSize} mejoras de personaje a elegir, de un catálogo de {upgrades.characterCount}. Elige con el ratón o con las teclas de número.",
+        "Si ya no quedan mejoras de personaje, cada subida te cura un {progression.levelUpHealPercent} % de la vida máxima."
+      ],
+      "icons": ["xp"]
+    },
+    {
+      "id": "resources",
+      "title": "Recursos",
+      "paragraphs": [
+        "Pasa por encima de lo que cae para recogerlo: gemas de experiencia, oro, madera, carne y piedra.",
+        "El oro sale de los enemigos, de los campamentos destruidos y de las vetas de oro. La madera, de los barriles abatidos y de los montones del mapa. Algunos goblins sueltan piedra.",
+        "Las ovejas dejan carne al morir. Cada trozo cura un {resources.meat.healPercent} % de la vida máxima."
+      ],
+      "icons": ["xp", "gold", "wood", "meat", "stone"]
+    },
+    {
+      "id": "castle",
+      "title": "El castillo y su tienda",
+      "paragraphs": [
+        "Acércate a la puerta del castillo para abrir la tienda. Mientras compras, la partida se detiene.",
+        "Con oro mejoras tus armas ({upgrades.weaponCount} mejoras en total) o compras una cura por {shop.heal.price} de oro. Sal de la tienda con Salir o con Esc."
+      ],
+      "icons": ["gold"]
+    },
+    {
+      "id": "sites",
+      "title": "Solares de obra",
+      "paragraphs": [
+        "Toca un solar libre para ver qué puedes levantar en él con tu madera y tu piedra.",
+        "Una casa cuesta {buildings.house.wood} de madera y te paga {buildings.house.incomeGold} de oro cada {buildings.house.incomeSeconds} s.",
+        "Una torre cuesta {buildings.tower.wood} de madera y {buildings.tower.stone} de piedra, y dispara flechas a los enemigos cercanos."
+      ],
+      "icons": ["wood", "stone", "gold"]
+    },
+    {
+      "id": "enemies",
+      "title": "Enemigos y campamentos",
+      "paragraphs": [
+        "Los goblins de antorcha te persiguen. Los de dinamita lanzan cargas: sal del aviso antes de que estalle. Los barriles se acercan y explotan.",
+        "Cada mapa tiene {structures.houseCount} casas y {structures.towerCount} torres goblin. Las casas hacen salir guardias, y casas y torres sueltan oro al quedar en ruina."
+      ]
+    },
+    {
+      "id": "outcome",
+      "title": "Victoria y derrota",
+      "paragraphs": [
+        "Resiste {run.duration} para ganar la partida. Si tu vida llega a cero, pierdes.",
+        "Pulsa Esc durante la partida para pausarla. Tus récords y tu historial se guardan en este navegador."
+      ]
+    }
+  ]
+}

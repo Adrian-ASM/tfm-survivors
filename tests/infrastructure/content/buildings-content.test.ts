@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import guideJson from '../../../content/guide.json';
 import { bootContent } from '../../../src/composition/contentBoot';
 import { CONTACT_EPS } from '../../../src/domain/site/BuildingRules';
 import { loadRunConfig, parseRunConfig } from '../../../src/infrastructure/content/loadRunConfig';
@@ -37,7 +38,11 @@ function bootErrors(
   const appearance = rawAppearance();
   changeAppearance(appearance);
   const errors: string[] = [];
-  const booted = bootContent({ content: raw, appearance }, (e) => errors.push(e.field), REGISTERED);
+  const booted = bootContent(
+    { content: raw, appearance, guide: guideJson },
+    (e) => errors.push(e.field),
+    REGISTERED,
+  );
   return { booted: booted !== null, errors };
 }
 

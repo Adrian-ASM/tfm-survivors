@@ -39,18 +39,19 @@ describe('MenuController (spec main-menu)', () => {
     ]);
   });
 
-  it('Scenario: Opciones bloqueadas con el diálogo abierto (todas dan false)', () => {
+  it('Scenario: Opciones bloqueadas con el diálogo abierto (todas false, también la guía)', () => {
     const menu = confirming();
 
     const actions = [
       menu.requestPlay(),
+      menu.openGuide(),
       menu.requestExport(),
       menu.requestImport(),
       menu.openConfirm(),
     ];
 
     expect([actions, menu.takePlay(), menu.state]).toEqual([
-      [false, false, false, false],
+      [false, false, false, false, false],
       false,
       'confirming',
     ]);
@@ -93,6 +94,61 @@ describe('MenuController (spec main-menu)', () => {
     menu.show();
 
     expect([menu.state, menu.takePlay(), menu.requestPlay()]).toEqual(['idle', false, true]);
+  });
+});
+
+describe('MenuController con la guía (spec menu-guide, 0028)', () => {
+  const guiding = (): MenuController => {
+    const menu = new MenuController();
+    menu.openGuide();
+    return menu;
+  };
+
+  it('openGuide solo en idle: abre una vez y una segunda pulsación no tiene efecto', () => {
+    const menu = new MenuController();
+
+    expect([menu.openGuide(), menu.openGuide(), menu.state]).toEqual([true, false, 'guide']);
+  });
+
+  it('Scenario: Pulsaciones del menú con la guía abierta (todas dan false)', () => {
+    const menu = guiding();
+
+    const actions = [
+      menu.requestPlay(),
+      menu.requestExport(),
+      menu.requestImport(),
+      menu.openConfirm(),
+      menu.confirm(),
+      menu.cancel(),
+    ];
+
+    expect([actions, menu.takePlay(), menu.state]).toEqual([
+      [false, false, false, false, false, false],
+      false,
+      'guide',
+    ]);
+  });
+
+  it('closeGuide solo con la guía abierta y deja el menú operativo', () => {
+    const menu = guiding();
+
+    expect([menu.closeGuide(), menu.closeGuide(), menu.state]).toEqual([true, false, 'idle']);
+    expect([menu.requestExport(), menu.requestPlay(), menu.takePlay()]).toEqual([true, true, true]);
+  });
+
+  it('openGuide tras Jugar no tiene efecto', () => {
+    const menu = new MenuController();
+    menu.requestPlay();
+
+    expect([menu.openGuide(), menu.state]).toEqual([false, 'leaving']);
+  });
+
+  it('show() con la guía abierta vuelve a idle', () => {
+    const menu = guiding();
+
+    menu.show();
+
+    expect([menu.state, menu.closeGuide(), menu.openGuide()]).toEqual(['idle', false, true]);
   });
 });
 

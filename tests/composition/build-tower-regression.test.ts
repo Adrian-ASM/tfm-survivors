@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import guideJson from '../../content/guide.json';
 import appearanceJson from '../../content/appearance.json';
 import provenanceJson from '../../content/asset-provenance.json';
 import { BuildOnSite } from '../../src/application/BuildOnSite';
@@ -22,7 +23,7 @@ import { startSeededRun } from '../support/runs';
 describe('Torre construible con el contenido real (regresión 0027 §3.4)', () => {
   it('panel y sonda con la torre activada; el clic la construye (madera −30, piedra −15)', () => {
     const booted = bootContent(
-      { content: repositoryContent(), appearance: appearanceJson },
+      { content: repositoryContent(), appearance: appearanceJson, guide: guideJson },
       (e) => {
         throw new Error(`${e.field}: ${e.message}`);
       },

@@ -1,5 +1,6 @@
 import type { MenuController } from '../menu/MenuController';
 import { button, setPanelHidden } from './button';
+import type { GuideModal } from './GuideModal';
 import { MENU_LABELS } from './menuText';
 import { pickedFile } from './pickedFile';
 
@@ -12,9 +13,10 @@ export interface MenuPanelActions {
 }
 
 /**
- * Panel DOM del menú de inicio (ADR-0011): Jugar, Exportar, Importar y Borrar datos, en ese orden,
- * el selector de fichero oculto y el mensaje (`role="status"`). Cada clic pasa por
- * `MenuController`, que decide si tiene efecto. Solo `textContent` y `addEventListener` (CSP).
+ * Panel DOM del menú de inicio (ADR-0011): Jugar, Cómo jugar, Exportar, Importar y Borrar datos, en
+ * ese orden, el selector de fichero oculto y el mensaje (`role="status"`). Cada clic pasa por
+ * `MenuController`, que decide si tiene efecto. Cómo jugar abre la guía (0028), que recibe ya
+ * creada. Solo `textContent` y `addEventListener` (CSP).
  */
 export class MenuPanel {
   private readonly root: HTMLElement;
@@ -26,6 +28,7 @@ export class MenuPanel {
     parent: HTMLElement,
     private readonly controller: MenuController,
     actions: MenuPanelActions,
+    private readonly guide: GuideModal,
   ) {
     this.root = doc.createElement('section');
     this.root.className = 'menu-panel';
@@ -50,10 +53,22 @@ export class MenuPanel {
       if (chosen) actions.onImport(chosen);
     });
 
+    // Al cerrar la guía: menú operativo y, el último paso, foco en Cómo jugar (un botón
+    // `disabled` no recibe el foco).
+    const guideButton = button(doc, MENU_LABELS.guide, () => {
+      if (!controller.openGuide()) return;
+      this.setLocked(true);
+      guide.open(() => {
+        controller.closeGuide();
+        this.setLocked(false);
+        guideButton.focus();
+      });
+    });
     this.buttons = [
       button(doc, MENU_LABELS.play, () => {
         if (controller.requestPlay()) this.hide();
       }),
+      guideButton,
       button(doc, MENU_LABELS.export, () => {
         if (controller.requestExport()) actions.onExport();
       }),
@@ -71,8 +86,9 @@ export class MenuPanel {
     parent.append(this.root);
   }
 
-  /** Menú operativo y sin mensajes heredados. */
+  /** Menú operativo, con la guía cerrada y sin mensajes heredados. */
   show(): void {
+    this.guide.close();
     this.controller.show();
     this.setMessage(null);
     this.setLocked(false);
@@ -89,7 +105,7 @@ export class MenuPanel {
     this.message.hidden = text === null;
   }
 
-  /** Con el diálogo abierto (o al salir) los botones no se pueden pulsar. */
+  /** Con el diálogo o la guía abiertos (o al salir) los botones no se pueden pulsar. */
   setLocked(locked: boolean): void {
     for (const b of this.buttons) b.disabled = locked;
   }

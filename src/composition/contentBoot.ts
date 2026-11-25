@@ -1,7 +1,9 @@
 import type { RunConfig } from '../domain/run/RunConfig';
 import { err, invalidConfig, ok, type DomainError, type Result } from '../domain/shared/Result';
 import { RUIN_COLOR_KEY, type Appearance } from '../infrastructure/content/appearanceSchema';
+import type { Guide } from '../infrastructure/content/guideSchema';
 import { checkTileScales, parseAppearance } from '../infrastructure/content/loadAppearance';
+import { parseGuide } from '../infrastructure/content/loadGuide';
 import {
   parseContent,
   type RawContentFiles,
@@ -19,10 +21,14 @@ export const STRUCTURE_APPEARANCE_MISSING =
 export const STRUCTURE_APPEARANCE_UNKNOWN =
   'Aspecto o color de un tipo de estructura que no existe en structures.json.';
 
-/** Contenido crudo del arranque: el de juego (`content/*.json`) y los datos de aspecto. */
+/**
+ * Contenido crudo del arranque: el de juego (`content/*.json`), los datos de aspecto y la guía del
+ * menú (0028; obligatoria: un arranque sin guía no debe pasar desapercibido).
+ */
 export interface RawBoot {
   readonly content: RawContentFiles;
   readonly appearance: unknown;
+  readonly guide: unknown;
 }
 
 export interface BootedContent {
@@ -30,6 +36,8 @@ export interface BootedContent {
   /** Tope de vista del lienzo (presentación): no llega al núcleo. */
   readonly maxView: ViewSize;
   readonly appearance: Appearance;
+  /** Guía «Cómo jugar» ya validada e interpolada con la config (0028). */
+  readonly guide: Guide;
 }
 
 /**
@@ -89,8 +97,8 @@ function checkStructureRefs(appearance: Appearance, config: RunConfig): Result<t
 
 /**
  * Valida el contenido de juego, los datos de aspecto (con las hojas registradas en la nota de
- * procedencia) y su cruce. Ante el primer error lo informa y devuelve `null`: no se crea ni el menú
- * ni la partida. Sin motor ni DOM (se prueba en Node).
+ * procedencia), su cruce y la guía del menú. Ante el primer error lo informa y devuelve `null`:
+ * no se crea ni el menú ni la partida. Sin motor ni DOM (se prueba en Node).
  */
 export function bootContent(
   raw: RawBoot,
@@ -118,5 +126,11 @@ export function bootContent(
     report(scales.error);
     return null;
   }
-  return { config, maxView, appearance: appearance.value };
+  // La guía va la última: sus marcadores leen la config ya validada (design 0028 §1).
+  const guide = parseGuide(raw.guide, config);
+  if (!guide.ok) {
+    report(guide.error);
+    return null;
+  }
+  return { config, maxView, appearance: appearance.value, guide: guide.value };
 }

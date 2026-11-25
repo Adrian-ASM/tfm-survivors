@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import guideJson from '../../content/guide.json';
 import { bootContent } from '../../src/composition/contentBoot';
 import { loadRunConfig, parseRunConfig } from '../../src/infrastructure/content/loadRunConfig';
 import { rawContent, type RawContent } from '../support/builders';
@@ -63,7 +64,7 @@ describe('Contenido de las ovejas validado (spec sheep, con zod)', () => {
     raw.sheep.health = 0;
     const errors: string[] = [];
     const booted = bootContent(
-      { content: raw, appearance: rawAppearance() },
+      { content: raw, appearance: rawAppearance(), guide: guideJson },
       (e) => errors.push(e.field),
       REGISTERED,
     );

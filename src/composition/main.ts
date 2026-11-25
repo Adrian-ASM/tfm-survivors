@@ -3,6 +3,7 @@
 import '../infrastructure/validation/cspSafeZod';
 import Phaser from 'phaser';
 import appearanceJson from '../../content/appearance.json';
+import guideJson from '../../content/guide.json';
 import provenanceJson from '../../content/asset-provenance.json';
 import { RestartRun } from '../application/RestartRun';
 import { buildRunRules, type RunConfig } from '../domain/run/RunConfig';
@@ -135,7 +136,7 @@ function bootstrap(): void {
 
   // Contenido de juego + datos de aspecto + su cruce, antes de crear el menú o la partida (0012).
   const booted = bootContent(
-    { content: repositoryContent(), appearance: appearanceJson },
+    { content: repositoryContent(), appearance: appearanceJson, guide: guideJson },
     (error) => {
       console.error(`Contenido inválido en ${error.field}: ${error.message}`);
       showContentError(root, error);
@@ -161,13 +162,15 @@ function bootstrap(): void {
   const mapMode = mapModeOf(mapResolved);
   // Solo con el modo manual: cola de `step(n)` que GameScene atiende frame a frame.
   const stepper = advance.manual ? new ManualStepper() : undefined;
-  // Antes de crear el juego: el panel queda en el DOM y el progreso cargado (nunca lanza).
-  const progress = wireProgress(root, () => probe.seed);
+  // Iconos del panel de obra y de la guía: las hojas del HUD con la URL que carga BootScene (0027).
+  const sheetUrl = (file: string) => assetUrl(import.meta.env.BASE_URL, file);
+  const icons = resourceIcons(appearance, sheetUrl);
+  // Antes de crear el juego: el panel queda en el DOM y el progreso cargado (nunca lanza). El menú
+  // lleva la guía ya validada e interpolada (0028).
+  const progress = wireProgress(root, () => probe.seed, { guide: booted.guide, icons });
   const pause = new PausePanel(document, root);
   const shopPanel = new ShopPanel(document, root);
-  // Iconos del panel de obra: las hojas del HUD con la URL que carga BootScene (0027).
-  const sheetUrl = (file: string) => assetUrl(import.meta.env.BASE_URL, file);
-  const buildPanel = new BuildPanel(document, root, resourceIcons(appearance, sheetUrl));
+  const buildPanel = new BuildPanel(document, root, icons);
   const screens: Screen[] = [];
   const e2e = new URLSearchParams(window.location.search).has('e2e');
   // El mundo es la arena del contenido; el lienzo, la vista (0013).

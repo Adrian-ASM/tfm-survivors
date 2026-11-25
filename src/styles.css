@@ -400,3 +400,86 @@ body {
   object-position: 0 50%;
   image-rendering: pixelated;
 }
+
+/* Guía «Cómo jugar» del menú (change 0028, design §7): recuadro centrado por la rejilla de #game,
+   sobre el menú y a la escala de UI. Cabecera y acciones siempre enteras; el texto hace scroll
+   dentro del cuerpo si no cabe. */
+.guide-modal {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75em;
+  box-sizing: border-box;
+  width: min(36em, calc(100vw - 2em));
+  max-height: calc(100vh - 2em);
+  padding: 1em 1.5em;
+  font: calc(16px * var(--ui-scale, 1)) monospace;
+  color: #fff;
+  background: rgb(20 20 30 / 96%);
+  border: 1px solid #7ce2fe;
+  border-radius: 8px;
+  outline: none;
+}
+
+.guide-modal[hidden],
+.guide-modal [hidden] {
+  display: none;
+}
+
+.guide-modal__header {
+  display: flex;
+  flex: none;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1em;
+}
+
+.guide-modal__header h2 {
+  margin: 0;
+  font-size: 1.25em;
+}
+
+.guide-modal__page {
+  flex: none;
+  margin: 0;
+  color: #7ce2fe;
+}
+
+.guide-modal__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.guide-modal__body p {
+  margin: 0 0 0.6em;
+  line-height: 1.4;
+}
+
+.guide-modal__icons {
+  display: flex;
+  gap: 0.5em;
+}
+
+.guide-modal__actions {
+  display: flex;
+  flex: none;
+  justify-content: flex-end;
+  gap: 0.5em;
+}
+
+.guide-modal button {
+  padding: 0.375em 1em;
+  font: inherit;
+  color: #fff;
+  background: #23233a;
+  border: 1px solid #7ce2fe;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.guide-modal button:hover,
+.guide-modal button:focus-visible {
+  background: #34345a;
+}

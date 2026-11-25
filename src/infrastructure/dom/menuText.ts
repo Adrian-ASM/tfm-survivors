@@ -16,6 +16,7 @@ export const MENU_MESSAGES: Readonly<Record<MenuMessage, string>> = {
 /** Etiquetas visibles exactas (spec main-menu). */
 export const MENU_LABELS = {
   play: 'Jugar',
+  guide: 'Cómo jugar',
   export: 'Exportar',
   import: 'Importar',
   clear: 'Borrar datos',
@@ -39,6 +40,21 @@ export const MENU_LABELS = {
   buildStone: 'piedra',
   buildHouse: 'Casa',
   buildTower: 'Torre',
+  guidePrev: 'Anterior',
+  guideNext: 'Siguiente',
+  guideClose: 'Cerrar',
+} as const;
+
+/** Indicador de página de la guía (spec menu-guide): «n de total». */
+export const guidePage = (n: number, total: number): string => `${String(n)} de ${String(total)}`;
+
+/** Texto alternativo de cada icono de recurso de la guía (etiquetas de UI, no texto de páginas). */
+export const GUIDE_ICON_ALT = {
+  xp: 'gemas',
+  gold: 'oro',
+  wood: 'madera',
+  meat: 'carne',
+  stone: 'piedra',
 } as const;
 
 /** Texto de lo que falta de un recurso en el panel de obra (0027): «faltan N». */

@@ -51,7 +51,7 @@ export class BuildPanel {
   constructor(
     private readonly doc: Document,
     parent: HTMLElement,
-    private readonly icons: ResourceIcons,
+    private readonly icons: Pick<ResourceIcons, 'wood' | 'stone'>,
   ) {
     this.root = doc.createElement('section');
     this.root.className = 'build-panel';
