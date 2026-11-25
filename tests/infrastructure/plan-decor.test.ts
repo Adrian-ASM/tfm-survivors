@@ -16,8 +16,16 @@ import {
   type MapArtPlan,
   type SpriteDraw,
 } from '../../src/infrastructure/phaser/map/planMapArt';
+import { RestartRun } from '../../src/application/RestartRun';
+import { StartRun } from '../../src/application/StartRun';
+import { seededRun } from '../../src/composition/seedSource';
+import { PlayerInput } from '../../src/domain/player/PlayerInput';
+import { RenderLayers } from '../../src/infrastructure/phaser/RenderLayers';
+import type { MapArtCanvas } from '../../src/infrastructure/phaser/TerrainView';
 import { BALANCE_SEEDS } from '../support/balanceSeeds';
-import { aDefaultConfig } from '../support/builders';
+import { FAKE_HAZARD_CAPACITY, FakeGraphics, fakeKit } from '../support/FakeSprite';
+import { someLooks } from '../support/looks';
+import { TICK_MS, aDefaultConfig } from '../support/builders';
 import { startOn } from '../support/camps';
 import {
   WORLD,
@@ -163,12 +171,87 @@ describe('Decoración del mapa generado (plan)', () => {
     expect(next).toBeGreaterThanOrEqual(1);
   });
 
-  it('Scenario: Misma semilla, misma decoración (semilla 42, dos cálculos)', () => {
-    const map = seedMap(42);
-    const a = planFor(map, 42).decor.map(keyOf);
-    const b = planFor(seedMap(42), 42).decor.map(keyOf);
+  it('Scenario: Misma semilla, misma decoración (42: dos cálculos y un tercero tras pintar 600 frames y R)', () => {
+    const started = new StartRun().execute(
+      CONFIG,
+      seededRun(42).random,
+      undefined,
+      seededRun(42).terrain,
+    );
+    if (!started.ok) throw new Error(started.error.message);
+    const run = started.value.tickRun;
+    const first = planFor(run.map(), 42);
+    const second = planFor(seedMap(42), 42);
+    // Capas reales del adaptador (dobles sin motor) pintando el mapa en cada uno de 600 frames.
+    const layers = new RenderLayers(
+      {
+        kit: fakeKit(),
+        warnings: () => new FakeGraphics(),
+        ring: () => ({
+          visible: true,
+          setPosition() {
+            return this;
+          },
+          setRadius() {
+            return this;
+          },
+          setAlpha() {
+            return this;
+          },
+          setVisible() {
+            return this;
+          },
+        }),
+        looks: someLooks(),
+        capacity: {
+          enemies: 300,
+          projectiles: 64,
+          pulses: 8,
+          pickups: 436,
+          sheep: 5,
+          corpses: 64,
+          visualTicks: new Map(),
+          hazards: FAKE_HAZARD_CAPACITY,
+        },
+      },
+      { visible: 1, placeholder: 0 },
+    );
+    const canvas: MapArtCanvas = {
+      clear: () => undefined,
+      tiles: () => undefined,
+      sprite: () => undefined,
+      rect: () => undefined,
+      circle: () => undefined,
+      foam: () => undefined,
+      frame: () => undefined,
+      show: () => undefined,
+    };
+    layers.paintMap(canvas, first);
+    for (let f = 0; f < 600; f++) {
+      if (run.status === 'choosing') started.value.chooseUpgrade.execute(0);
+      else run.execute(TICK_MS, PlayerInput.NONE);
+      const snap = run.snapshot();
+      layers.advance(TICK_MS, false);
+      layers.render(snap);
+      layers.cullMap({ x: snap.player.x - 640, y: snap.player.y - 360, width: 1280, height: 720 });
+    }
+    // R: la partida termina (quieto pierde) y se reinicia con la misma semilla.
+    for (let i = 0; i < 20_000 && run.status !== 'over'; i++) {
+      if (run.status === 'choosing') started.value.chooseUpgrade.execute(0);
+      else run.execute(TICK_MS, PlayerInput.NONE);
+    }
+    expect(run.status).toBe('over');
+    const next = new RestartRun(CONFIG, () => seededRun(42)).execute(run);
+    if (!next.ok) throw new Error('reinicio rechazado');
+    layers.clear();
+    const third = planFor(next.value.tickRun.map(), 42);
+    layers.paintMap(canvas, third);
+
+    const a = first.decor.map(keyOf);
     expect(a.length).toBeGreaterThan(0);
-    expect(b).toEqual(a);
+    expect(second.decor.map(keyOf)).toEqual(a);
+    expect(third.decor.map(keyOf)).toEqual(a);
+    expect(layers.counts.mapArt.decor.planned).toBe(a.length);
   });
 
   it('Scenario: Otra semilla, otra decoración (42 frente a 43)', () => {
