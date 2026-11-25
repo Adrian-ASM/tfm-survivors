@@ -173,8 +173,8 @@ describe('Procedencia de las hojas de los peligros (asset-provenance)', () => {
 
   it('Scenario: Hojas nuevas registradas', () => {
     // 0021: 15 de antes más las 4 hojas de casas, torres y ruinas; 0022: más las 3 de recursos;
-    // 0023: más la de la carne y las dos de la oveja.
-    expect(files).toHaveLength(25);
+    // 0023: más la de la carne y las dos de la oveja; 0025: más las tres rocas de la piedra.
+    expect(files).toHaveLength(28);
 
     expect(bySource(DYNAMITE_SOURCE)?.path).toBe(
       `${ASSET_DIR}Factions/Goblins/Troops/TNT/Dynamite/Dynamite.png`,

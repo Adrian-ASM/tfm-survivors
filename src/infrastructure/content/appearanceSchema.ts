@@ -80,9 +80,14 @@ export const StillSchema = z.strictObject({ ...BaseShape, idle: AnimSchema });
 export const MovingSchema = z.strictObject({ ...BaseShape, idle: AnimSchema, walk: AnimSchema });
 export const CorpseSchema = z.strictObject({ ...BaseShape, death: DeathSchema });
 
+/** Tamaños de roca de la piedra (0025): uno por hoja de `Deco`. */
+export const ROCK_SIZES = ['small', 'medium', 'large'] as const;
+export type RockSize = (typeof ROCK_SIZES)[number];
+
 /**
  * Enemigo (0020): `idle`/`walk` y, si su comportamiento las pide, `fuse` (mecha) y `throw` (carga),
  * de la misma hoja. La exigencia por clase de estado la comprueba la composición con el contenido.
+ * `rock` (0025): roca con la que se pinta la piedra que suelta; solo presentación.
  */
 export const EnemyAspectSchema = z.strictObject({
   ...BaseShape,
@@ -90,6 +95,7 @@ export const EnemyAspectSchema = z.strictObject({
   walk: AnimSchema,
   fuse: AnimSchema.optional(),
   throw: AnimSchema.optional(),
+  rock: z.enum(ROCK_SIZES),
 });
 
 /** Animación con su propia hoja (oveja, 0023): cada animación puede venir de un fichero distinto. */
@@ -305,15 +311,36 @@ function checkStructureColors(
  */
 const XpShapeSchema = z.strictObject({ shape: z.literal(true), placeholderColor: Hex });
 
+/** Roca de la piedra (0025): un aspecto quieto sin color propio (el de reserva es de `stone`). */
+const RockAspectSchema = z.strictObject({
+  sheet: BaseShape.sheet,
+  scale: BaseShape.scale,
+  origin: BaseShape.origin,
+  facing: BaseShape.facing,
+  idle: AnimSchema,
+});
+
+/** Piedra (0025): un color de reserva y exactamente las tres rocas. */
+const StoneLooksSchema = z.strictObject({
+  placeholderColor: Hex,
+  rocks: z.strictObject({
+    small: RockAspectSchema,
+    medium: RockAspectSchema,
+    large: RockAspectSchema,
+  }),
+});
+
 /**
- * Aspectos de los recogibles (0022, 0023): exactamente los tipos de la unión `xp | gold | wood |
- * meat`. La gema puede tener hoja (distinta de las de oro, madera y carne) o ser una forma de color.
+ * Aspectos de los recogibles (0022, 0023, 0025): exactamente los tipos de la unión `xp | gold |
+ * wood | meat | stone`. La gema puede tener hoja (distinta de las de oro, madera, carne y piedra) o
+ * ser una forma de color.
  */
 const PickupLooksSchema = z.strictObject({
   xp: z.union([StillSchema, XpShapeSchema]),
   gold: StillSchema,
   wood: StillSchema,
   meat: StillSchema,
+  stone: StoneLooksSchema,
 });
 
 /** Aspectos de la veta (0022): activa y agotada, sin color propio (la reserva usa `veinColor`). */
@@ -323,7 +350,7 @@ const VeinLooksSchema = z.strictObject({
 });
 
 export const XP_SHEET_MUST_DIFFER =
-  'La hoja de la gema (xp) debe ser distinta de las del oro, la madera y la carne.';
+  'La hoja de la gema (xp) debe ser distinta de las del oro, la madera, la carne y la piedra.';
 export const RESOURCE_COLORS_MUST_DIFFER =
   'Los colores de reserva de los recogibles y de la veta son distintos dos a dos, de los del mapa y ' +
   'de los de las estructuras.';
@@ -331,7 +358,8 @@ export const RESOURCE_COLORS_MUST_DIFFER =
 /**
  * Colores de reserva de los recogibles (xp, gold, wood, meat) y de la veta (0022, 0023): distintos dos a dos y
  * de los del mapa y de las estructuras, y el de la oveja (0023), distinto de todos ellos. El error
- * nombra el primero, en ese orden (la carne y la oveja, de 0023, van tras la veta), que repite uno.
+ * nombra el primero, en ese orden (la carne y la oveja, de 0023, van tras la veta, y la piedra, de
+ * 0025, tras la oveja), que repite uno.
  */
 function checkResourceColors(a: z.output<typeof AppearanceShape>, ctx: z.RefinementCtx): void {
   const seen = new Set<number>([...Object.values(a.terrain), ...Object.values(a.structureColors)]);
@@ -342,6 +370,7 @@ function checkResourceColors(a: z.output<typeof AppearanceShape>, ctx: z.Refinem
     [['veinColor'], a.veinColor],
     [['pickups', 'meat', 'placeholderColor'], a.pickups.meat.placeholderColor],
     [['sheep', 'placeholderColor'], a.sheep.placeholderColor],
+    [['pickups', 'stone', 'placeholderColor'], a.pickups.stone.placeholderColor],
   ];
   for (const [path, color] of colors) {
     if (seen.has(color)) {
@@ -350,8 +379,9 @@ function checkResourceColors(a: z.output<typeof AppearanceShape>, ctx: z.Refinem
     }
     seen.add(color);
   }
-  const { xp, gold, wood, meat } = a.pickups;
-  const others = [gold.sheet.file, wood.sheet.file, meat.sheet.file];
+  const { xp, gold, wood, meat, stone } = a.pickups;
+  const rocks = ROCK_SIZES.map((size) => stone.rocks[size].sheet.file);
+  const others = [gold.sheet.file, wood.sheet.file, meat.sheet.file, ...rocks];
   if ('sheet' in xp && others.includes(xp.sheet.file)) {
     ctx.addIssue({
       code: 'custom',
@@ -373,7 +403,7 @@ const AppearanceShape = z.strictObject({
     .min(1, { error: MAX_BLAST_SPRITES_MUST_BE_INTEGER }),
   enemies: z.record(z.string(), EnemyAspectSchema),
   projectile: StillSchema,
-  /** Por tipo de recogible (0022, 0023): `xp` (la gema), `gold`, `wood` y `meat`. */
+  /** Por tipo de recogible (0022, 0023, 0025): `xp` (la gema), `gold`, `wood`, `meat` y `stone`. */
   pickups: PickupLooksSchema,
   /** Oveja (0023): `idle` y `bounce` con su hoja cada una. */
   sheep: SheepAspectSchema,
@@ -410,6 +440,7 @@ export type StillAspect = z.output<typeof StillSchema>;
 /** Gema sin hoja (0022): forma de color. */
 export type XpShapeAspect = z.output<typeof XpShapeSchema>;
 export type PickupLooksAppearance = z.output<typeof PickupLooksSchema>;
+export type StoneLooksAppearance = z.output<typeof StoneLooksSchema>;
 export type SheepAspect = z.output<typeof SheepAspectSchema>;
 export type VeinLooksAppearance = z.output<typeof VeinLooksSchema>;
 export type MovingAspect = z.output<typeof MovingSchema>;

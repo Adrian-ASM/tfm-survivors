@@ -33,7 +33,7 @@
 
 ## 2. Infraestructura: arte de la piedra (test-after)
 
-- [ ] 2.1 Copiar `C:\Users\Adri\TFM\Tiny Swords (Update 010)\Deco\04.png`, `05.png` y `06.png` a
+- [x] 2.1 Copiar `C:\Users\Adri\TFM\Tiny Swords (Update 010)\Deco\04.png`, `05.png` y `06.png` a
   `public/assets/tiny-swords/Deco/` (mismo nombre, byte a byte; nada más de `Deco`). Medir sha256 y bytes de cada
   fichero copiado (`Get-FileHash -Algorithm SHA256` y `(Get-Item …).Length`, o `node:crypto`) y añadir 3 entradas a
   `content/asset-provenance.json` (`path`, `source` `Tiny Swords (Update 010)/Deco/0N.png`, `version` `Update 010`,
@@ -41,7 +41,7 @@
   Tests (ampliar el de procedencia/guardarraíl): `asset-provenance` "Hojas de la piedra registradas", "Integridad de
   las hojas de la piedra", "Hoja de la piedra sin entrada", "Hoja de la piedra del Free Pack" y "Solo las tres rocas de
   Deco". `npm.cmd run guard:all` en verde.
-- [ ] 2.2 Esquema y datos de aspecto: `pickups.stone = { placeholderColor, rocks: { small, medium, large } }` (rocas =
+- [x] 2.2 Esquema y datos de aspecto: `pickups.stone = { placeholderColor, rocks: { small, medium, large } }` (rocas =
   `StillSchema` sin color), `EnemyAspectSchema.rock` obligatorio (`small|medium|large`), color de la piedra en
   `checkResourceColors` (tras la oveja), rocas en `pickupAspectsOf` (carga, registro y reserva) y en
   `XP_SHEET_MUST_DIFFER`. `appearance.json`: color `#9aa0a6`, rocas `Deco/04`–`06` con el tamaño medido en 2.1, escala
