@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import resourcesJson from '../../content/resources.json';
 import { aDefaultConfig } from './builders';
 import {
   MAP_GOLDEN,
@@ -60,7 +61,12 @@ describe('Firmas intactas con la economía del oro (0024)', () => {
       const run = startSeededRun(aDefaultConfig(), seed);
       const s = run.snapshot();
 
-      expect(Object.values(aDefaultConfig().resources.drops.goldPerKill ?? {})).not.toHaveLength(0);
+      expect(aDefaultConfig().resources.drops.goldPerKill).toEqual(resourcesJson.drops.goldPerKill);
+      expect(Object.keys(resourcesJson.drops.goldPerKill).sort()).toEqual(
+        aDefaultConfig()
+          .enemies.types.map((t) => t.id)
+          .sort(),
+      );
       expect(signatureOf(run.map.cells)).toBe(MAP_GOLDEN[seed]);
       expect(structureSignatureOf(run.map.structures)).toEqual(STRUCTURE_GOLDEN[seed]);
       expect(resourceSignatureOf(run.map)).toEqual(RESOURCE_GOLDEN[seed]);

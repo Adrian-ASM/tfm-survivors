@@ -18,6 +18,7 @@ import { MAX_WOOD_BELOW_WOOD_PILES } from '../../src/domain/run/RunConfig';
 import { loadRunConfig, parseRunConfig } from '../../src/infrastructure/content/loadRunConfig';
 import { PICKUP_RADIUS_MUST_BE_POSITIVE } from '../../src/domain/player/PlayerRules';
 import { rawContent, type RawContent } from '../support/builders';
+import { UPGRADE_STAT_OUT_OF_RANGE } from '../../src/domain/upgrade/UpgradeType';
 
 // Specs xp-gems ("Contenido de gemas validado") y resources ("Contenido de recursos validado") de
 // 0022 con el cargador: forma con zod (estricto) y las invariantes del dominio desde el superRefine.
@@ -274,9 +275,8 @@ describe('Contenido de recursos validado (resources, con zod)', () => {
       },
     ],
     ['curación de la carne 1', (r: Raw) => (r.resources.meat.healPercent = 1)],
-    // 0024: con el contenido por defecto, 100 + el máximo de `hunter` pasaría de 100 (spec upgrades,
-    // carne efectiva ≤ 100); el límite del campo se prueba sin la mejora del cazador (incidencia de
-    // apply: 'Límites válidos' de resources choca con la cota de la carne de upgrades).
+    // Spec resources (0024), "Límites válidos": la curación 100 vale para el campo, pero con el
+    // catálogo por defecto (`hunter` > 0) la carne efectiva pasaría de 100 (ver el caso de abajo).
     [
       'curación de la carne 100 (sin hunter)',
       (r: Raw) => {
@@ -293,6 +293,15 @@ describe('Contenido de recursos validado (resources, con zod)', () => {
     ],
   ])('Scenario: Límites válidos (%s)', (_name, change) => {
     expect(loads(change)).toBe(true);
+  });
+
+  it('Scenario: Límites válidos (curación de la carne 100 con hunter: error de upgrades, no de recursos)', () => {
+    const e = failure((r) => (r.resources.meat.healPercent = 100));
+
+    expect(e.field).toMatch(/^upgrades\.character\.\d+\.perLevel$/);
+    expect(e.message).toContain(UPGRADE_STAT_OUT_OF_RANGE);
+    expect(e.message).toContain('hunter');
+    expect(e.message).toContain('meatHealPercent');
   });
 
   it('Scenario: Campos ausentes, desconocidos y tipo no admitido (oro por veta, curación, meatPerHouse, potion)', () => {
