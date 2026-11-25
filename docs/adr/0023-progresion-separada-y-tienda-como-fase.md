@@ -1,6 +1,6 @@
 # ADR-0023 · Progresión separada: catálogo con dos orígenes y tienda como fase de la partida
 
-- **Estado**: propuesta (change 0024-split-progression-castle)
+- **Estado**: aceptada (change 0024-split-progression-castle)
 - **Fecha**: 2026-11-24
 - **Matiza**: ADR-0008 (las mejoras ganan origen y precio por nivel), ADR-0009 (cuarta fase de `Run`)
 

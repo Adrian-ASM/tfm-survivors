@@ -272,6 +272,11 @@ cada `step` es exacto, así que el recorrido es el mismo en cada ejecución. Un 
 - `REFERENCE_UPGRADE_PRIORITY` (oferta) pasa a solo personaje (provisional `guardrail, armor, regeneration,
   steady-nerves, shortcuts`). Ambas prioridades son palancas de §9 y quedan fijadas en la spec al cerrar.
 - El bucle de `balanceMeasure` llama a `buy` por cada artículo y a `leaveShop` en `shopping`.
+- **Parámetros finales (apply, M1)**: sin cambios respecto a los provisionales: `REFERENCE_UPGRADE_PRIORITY` =
+  `guardrail, armor, regeneration, steady-nerves, shortcuts`; `REFERENCE_SHOP_ORDER` = `strict-rules, fast-ci,
+  hard-asserts, watch-mode, wide-analysis, coverage`; `REFERENCE_HEAL_THRESHOLD` 0,5; `SHOP_DANGER_RANGE` 200 px.
+  `ReferenceBot.shop(snapshot)` devuelve **la siguiente compra** (o `null`) y `visitShop` repite con el snapshot
+  nuevo, porque el precio del nivel siguiente solo se conoce tras comprar (desviación menor de la firma).
 
 ## 9. Plan de calibración de balance (mediciones)
 
@@ -309,6 +314,17 @@ bot v4 con el contenido final (regresión de determinismo), media de mechas nuev
 `enemies` y `weapons` **iguales a las de hoy** y `upgrades` (con los precios), `player`, `resources`, `progression` y
 `shop` nuevas (spec: un precio cambiado en 1 hace fallar la huella). El verify-report anota victorias, oro ganado y
 gastado, visitas y compras medias, mechas y el lote en local y ×2,8 (CI).
+
+**Resultado del apply (M1 → M2)**. Iteración 0 (contenido de §2): 22/50, 0 quietos, oro ganado 334 y gastado 172
+por partida (sobra oro; faltan visitas: 2,2), 5.ª compra en el tick ~14.300. Iteración 1 (palanca 2): precios del
+daño y la cadencia de las dos armas **5, 8, 11, 15, 20** y de alcance y radio **4, 6, 9, 12, 16** ⇒ **30/50**, 0
+quietos con los dos mapas (muerte máxima 6.081 generado / 6.475 vacío: margen 4.325), primera oferta s7 en el
+2.082 y plazos del quieto intactos, mechas **30,44** (> 16,3), oro ganado 284 y gastado 122,5, 2,54 visitas, 11,6
+niveles de arma (18,9 por partida ganada) y 0,12 curaciones por partida; 1.ª/5.ª/10.ª compra en los ticks
+3.599/8.285/12.412. El resto del contenido de §2 queda como estaba (oro por baja 1/2/1/2, casas 15, torres 25,
+curación 25 por 8, puerta 40/160, `levelUpHealPercent` 10, regeneración cada 180 ticks, `maxGold` 32). Lote del bot
+v4: 34,7–35,8 s en local (×2,8 ≈ 97–100 s, por encima de los 90 s objetivo); `BOT_BATCH_TIMEOUT_MS` sigue en 180 s.
+La 5.ª compra (8.285) queda por encima del ~7.000 orientativo. M2 congelada en `balanceBaseline.ts`.
 
 **Tiempo del lote**: se retira el segundo lote "sin ovejas" (comparaba con la base M0, que deja de existir); queda un
 solo lote con el contenido por defecto, comparado fila a fila con la base nueva. Con el bot v4 (viajes a la puerta,
@@ -404,6 +420,8 @@ por id con id propio de la curación; puerta declarada en mapas `open`/`cells`; 
   `shopVisible`/`playScreen` (puros, en `ShopGate.ts`) deciden overlay y pantalla de la sonda. La sonda gana
   `shop` (`visible`, `gold`, productos con `id`, `level`, `price`, `buyable`) y `screens` (pantallas vistas desde
   la carga, para comprobar que Esc en la tienda no pasa por `paused`). Sin API nueva de Phaser.
+- **Grupo 6**: el E2E pulsa la fila sin oro con `click({ force: true })` (Playwright no pulsa un botón con
+  `aria-disabled`); el resto del recorrido es el de §7.
 
 ## ADRs
 - `docs/adr/0023-progresion-separada-y-tienda-como-fase.md` (nuevo): catálogo con dos orígenes sobre un vector de

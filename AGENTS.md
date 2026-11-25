@@ -123,6 +123,19 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   **28/50** con ovejas, **27/50** idéntico a la base con tope 0 (segundo lote del bot en `verify`) y 0 quietos.
   Escenarios con la oveja de prueba: `TEST_SHEEP`, `withSheep`, `declaredSheep` y `aSheepConfig`
   (`tests/support/sheep.ts`); `aRunConfig` lleva tope 0.
+  Progresión separada y tienda del castillo (change 0024, ADR-0023): `upgrades.json` con dos catálogos en un solo
+  vector de niveles, `character` (9, oferta 1 de 3 por XP; 6 stats nuevos de base 0: `regeneration`, `armor` con
+  daño mínimo 1, `invulnerabilityTicks`, `xpBonusPercent`, `goldBonusPercent` y `meatHealPercent` con cota de la
+  carne en [1, 100]) y `weapons` (6, solo en la tienda, `prices` por nivel). Subida sin mejoras disponibles: cura
+  `levelUpHealPercent` (progression.json). Oro por baja por tipo (`resources.drops.goldPerKill`, tabla completa en
+  el fichero; opcional en el dominio = 0), casas 15 y torres 25. Tienda = fase `shopping` de `Run`: paso 11 con la
+  puerta (salida del castillo en el generado; `door` declarable en `open`/`cells`; `content/shop.json` radio 40 y
+  re-armado 160), `Run.buy(id)`/`leaveShop()` sin azar (`BuyFromShop`, `LeaveShop`), `snapshot.shop` en todo
+  estado. Overlay DOM `ShopPanel` + `ShopGate` antes de la pausa (Esc sale sin pausar); sonda `__sprint.shop` y
+  `screens`. Escenarios: `aRunConfig` sin oro por baja (`withGoldPerKill`, `withExtraTypes`), política de tienda
+  fija dentro de `chooseWhileOpen`, puerta de escenario en `tests/support/shop.ts`. Bot v4 (va a la puerta con un
+  `FlowField`, cura bajo 0,5 y compra por `REFERENCE_SHOP_ORDER`): **30/50**, 0 quietos, línea base M2 en
+  `balanceBaseline.ts` (un solo lote, ~35 s local).
   Fuente de verdad del comportamiento: `openspec/specs/`.
 
 ## 2. Comandos

@@ -168,9 +168,9 @@
   Tests: `tests/domain/balance.test.ts`, `tests/support/balanceBaseline.ts`.
 
 ## 6. E2E y documentación
-- [ ] 6.1 E2E "Abrir, intentar comprar y salir" (castle-shop), ampliando un test de `gameplay.spec` con el recorrido
+- [x] 6.1 E2E "Abrir, intentar comprar y salir" (castle-shop), ampliando un test de `gameplay.spec` con el recorrido
   determinista de design §7 (`seed=42`, `map: 'real'`, manual, `step(5)` hasta armada y hasta en tienda, precondición
   oro 0 comprobada, clic sin compra, Esc sin pausa, `step(1)` = 1). Un solo E2E nuevo; `npm.cmd run test:e2e` verde.
-- [ ] 6.2 Documentación. Cifras finales de M1/M2 y parámetros del bot en design §8–§9 (desviaciones del apply en el
+- [x] 6.2 Documentación. Cifras finales de M1/M2 y parámetros del bot en design §8–§9 (desviaciones del apply en el
   mismo commit); ADR-0023 a "aceptada"; AGENTS.md §1 (estado 0024); entrada en `docs/ai-log/` (incluye el aparcado
   temporal del lote y cualquier bloqueo de hooks).

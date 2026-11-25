@@ -568,3 +568,63 @@ test('Recursos: el HUD muestra el oro y la madera del snapshot mientras se va al
   expect((await probe(page))?.hud?.wood).toBe(String(last?.resources.wood));
   expect(problems).toEqual([]);
 });
+
+// Spec castle-shop (0024), "Abrir, intentar comprar y salir [E2E]": recorrido determinista con
+// ?seed=42 y el mapa real (design §7). ↓ hasta que la tienda se arma y ↑ hasta que se abre; el oro
+// es 0 a esa altura (precondición comprobada), así que el clic en el producto más barato no compra.
+test('Tienda: se abre al volver a la puerta, un clic sin oro no compra y Esc sale sin pausa', async ({
+  page,
+}) => {
+  slowMapRealOnCi();
+  const problems = collect(page, ['pageerror', 'error']);
+  await openGame(page, gameUrl({ seed: 42, manual: true, map: 'real' }));
+  const read = async () => {
+    const s = await snapshotOf(page);
+    if (!s) throw new Error('sin snapshot');
+    return s;
+  };
+  let snap = await read();
+  for (let i = 0; i < 20 && !snap.shop.armed; i++) {
+    await holdKey(page, 'ArrowDown', 5);
+    snap = await read();
+  }
+  expect([snap.shop.armed, snap.status]).toEqual([true, 'running']);
+  let last = 5;
+  for (let i = 0; i < 20 && snap.status === 'running'; i++) {
+    last = await holdKey(page, 'ArrowUp', 5);
+    snap = await read();
+  }
+  expect([snap.status, last < 5]).toEqual(['shopping', true]);
+
+  const open = (await probe(page))?.shop;
+  expect(open?.visible).toBe(true);
+  expect(open?.gold).toBe(snap.resources.gold);
+  expect(snap.resources.gold).toBe(0);
+  const priced = (open?.products ?? []).filter((p) => p.price !== null);
+  const cheapest = [...priced].sort((a, b) => (a.price ?? 0) - (b.price ?? 0))[0];
+  if (!cheapest) throw new Error('sin productos con precio');
+  expect(cheapest.buyable).toBe(false);
+
+  // La fila no comprable lleva aria-disabled (Playwright no la pulsa sin force); el clic llega al
+  // caso de uso, que rechaza la compra sin cambios (spec "Clic sin oro").
+  await page.locator(`[data-product="${cheapest.id}"]`).click({ force: true });
+  await step(page, 1);
+  const after = await probe(page);
+  const same = after?.shop?.products.find((p) => p.id === cheapest.id);
+  expect([after?.snapshot?.resources.gold, same?.level, same?.buyable]).toEqual([
+    0,
+    cheapest.level,
+    false,
+  ]);
+
+  await focusGame(page);
+  await page.keyboard.press('Escape');
+  await expect.poll(async () => (await probe(page))?.shop?.visible).toBe(false);
+  const tick = (await read()).tick;
+  expect(await step(page, 1)).toBe(1);
+  expect((await read()).tick).toBe(tick + 1);
+  const seen = (await probe(page))?.screens ?? [];
+  expect(seen).toContain('shop');
+  expect(seen).not.toContain('paused');
+  expect(problems).toEqual([]);
+});
