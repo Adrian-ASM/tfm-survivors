@@ -9,9 +9,12 @@ import { builderBot } from '../support/policies';
 // Spec build-sites (0026 y 0027), "Balance con los solares": un lote del bot v5 (el v4 más
 // construcción, `REFERENCE_BUILD_POLICY`) con el contenido por defecto final, entre 25 y 35 victorias
 // e igual a `BUILDER_REFERENCE`, y el invariante "Nada en las celdas de obra" comprobado en cada tick
-// del mismo lote. 0026: 29/50. 0027 (apply): 34/50, 1,3 casas y 1,1 torres por partida, ~43 s en
-// local (×2,8 ≈ 121 s en CI).
-const BOT_BATCH_TIMEOUT_MS = 180_000;
+// del mismo lote. 0026: 29/50. 0027 (apply): 34/50, 1,3 casas y 1,1 torres por partida.
+// Timeout (verify 0027, W1): el lote del v5 con la comprobación de celdas de obra en cada tick, que
+// desde 0027 vigila las 6 huellas desde el tick 0, mide 62,6 y 65,4 s en local aislado (sin el resto
+// de verify); ×2,8 ≈ 175–183 s en CI, por encima del tope de 180 s. Se sube solo este a 300 s (deuda
+// de lotes ya conocida; el bot y el contenido no cambian). El lote sin comprobación mide ~43 s.
+const BOT_BATCH_TIMEOUT_MS = 300_000;
 const DEFAULT_CONFIG = aDefaultConfig();
 const CELL = DEFAULT_CONFIG.map.cellSize;
 

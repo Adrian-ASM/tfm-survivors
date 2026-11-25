@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
-import type { Run } from '../../src/domain/run/Run';
+import { seededRun } from '../../src/composition/seedSource';
+import type { TerrainSource } from '../../src/domain/map/TerrainSource';
+import { Run } from '../../src/domain/run/Run';
 import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
 import { CONTACT_EPS } from '../../src/domain/site/BuildingRules';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
@@ -374,5 +376,29 @@ describe('Oferta de obra (spec build-sites 0027)', () => {
     const snaps = [runningRun, choosing, shopping, over].map((r) => r.snapshot());
     expect(snaps.map((s) => s.status)).toEqual(['running', 'choosing', 'shopping', 'over']);
     expect(snaps.every((s) => JSON.stringify(s.build) === JSON.stringify(closed))).toBe(true);
+  });
+});
+
+// Spec build-sites 0027, "Solar libre que bloquea el paso": marcar las huellas al crear la partida no
+// consume azar.
+describe('Marcado de las huellas (spec build-sites 0027)', () => {
+  it('Scenario: Marcar no consume azar (semilla 7, mapa vacío, con el solar de prueba y sin él)', () => {
+    const created = (withSite: boolean) => {
+      const seeding = seededRun(7, 'empty');
+      const random = new CountingRandom(seeding.random);
+      const stones = new CountingRandom(seeding.stoneRandom);
+      const sheep = new CountingRandom(sheepRandom(7));
+      const terrain: TerrainSource = {
+        kind: 'open',
+        sites: withSite ? [TEST_SITE] : [],
+        sheep: { at: [{ x: 3000, y: 1800 }], random: sheep },
+      };
+      const r = Run.start(aDefaultConfig(), random, {}, terrain, stones);
+      if (!r.ok) throw new Error(r.error.message);
+      expect(r.value.snapshot().sites).toHaveLength(withSite ? 1 : 0);
+      // Estado de cada generador: valores consumidos y el siguiente que daría.
+      return [random, sheep, stones].map((g) => [g.calls, g.next()]);
+    };
+    expect(created(true)).toEqual(created(false));
   });
 });
