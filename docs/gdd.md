@@ -79,7 +79,8 @@ Máquina de estados por tipo, definida en contenido:
 - **Campamentos de guardianes** en zonas ricas en recursos (generados con el mapa).
 - **Casas y torres de madera goblin**: generadores/defensas **destruibles** (única excepción a "edificios
   indestructibles"). Destruirlas da recompensa: oro por objetivos.
-  Llevan barra de vida y, desde 0028, cada torre lleva un arquero goblin que dispara al jugador en su radio.
+  Llevan barra de vida (0031 `combat-feedback`) y, desde 0032, cada torre lleva un arquero goblin que dispara al
+  jugador en su radio.
 
 **Bestiario solo con el pack** (no se dibujan enemigos nuevos con IA; el Enemy Pack de pago queda descartado por
 licencia): caballeros rivales de otro color (arqueros, guerreros, peones), variantes de élite por color de goblin,
@@ -120,13 +121,13 @@ Should.
 |---|---|
 | **Must** (hecho) | Movimiento · 2 armas automáticas · oleadas · colisiones y vida · gemas de XP · subida de nivel con 3 opciones · temporizador, victoria y derrota · HUD · menú · guardado local + exportar/importar · despliegue público (0001–0011) |
 | **Must** (nuevo) | Arte con sprites del pack CC0 y tema medieval (0012) · mundo grande con cámara y límites (0013) · mapa procedural por semilla con colisión (0015) · arte del mapa (0016) · vista a pantalla completa (0017) · recorte del arte del mapa fuera de cámara (0018) · navegación por campo de flujo (0019) |
-| **Should** | Comportamientos de enemigos (0020, parte A hecha) · casas y torres goblin con TNT de guardia (0021) · recursos (0022, hecho) · ovejas, carne y curación (0023, hecho) · progresión separada y castillo-tienda (0024, hecho) · piedra como recurso (0025, hecho) · solares de obra: casa y torre (0026, hecho) · oferta de obra al tocar el solar (0027, hecho) · barras de vida y arqueros en las torres goblin (0028) · elección de personaje y Guerrero (0029, aplazado hasta tener cerrados 0024 y 0026) · pasada de equilibrio como diseño (balance-pass-2, número al empezar) · campamentos de guardianes en zonas ricas (sin número, tras 0023) ·
+| **Should** | Comportamientos de enemigos (0020, parte A hecha) · casas y torres goblin con TNT de guardia (0021) · recursos (0022, hecho) · ovejas, carne y curación (0023, hecho) · progresión separada y castillo-tienda (0024, hecho) · piedra como recurso (0025, hecho) · solares de obra: casa y torre (0026, hecho) · oferta de obra al tocar el solar (0027, hecho) · guía «Cómo jugar» en el menú (0028) · mapa vivo: decoración y árboles animados (0029) · recogibles visibles y animados (0030) · barras de vida y números de daño (0031) · arqueros en las torres goblin (0032) · elección de personaje y Guerrero (0033, aplazado hasta tener cerrados 0024 y 0026) · pasada de equilibrio como diseño (balance-pass-2, número al empezar) · campamentos de guardianes en zonas ricas (sin número, tras 0023) ·
 modo Objetivos · meta-progresión guardada · un jefe final · opciones de audio y accesibilidad · controles táctiles |
 | **Could** | UI del pack · ciclo día/noche · minimapa/niebla de guerra · modo Infinito · victoria "defender el castillo" · talar árboles · colocación libre de edificios · jefes por escala · audio · login con Google + Supabase · reto diario con semilla compartida · i18n ES/EN · PWA |
 | **Won't** | Multijugador · desniveles/terreno multinivel · monetización · leaderboard con re-simulación · enemigos dibujados con IA |
 
 Nota: v1 tenía "mapas procedurales complejos" en Won't. Se acota a un mapa de rejilla sin desniveles y entra como
-Must (0015); lo que baja a Should es todo el bloque de contenido 0020–0029.
+Must (0015); lo que baja a Should es todo el bloque de contenido 0020–0033.
 
 Renumeración (2026-11-23): 0014 acabó siendo `e2e-manual-step` (infraestructura de tests), así que el mapa
 procedural pasa a 0015. Al aprobar 0015 se partió en mapa puro (0015) y arte del mapa (0016), y se añadió la vista
@@ -163,6 +164,13 @@ Renumeración (2026-11-25, segunda): 0026 `build-sites` está hecho. Entra el ch
 (la oferta de obra pasa a ser por contacto con el solar, sin punto de acceso) antes de los arqueros. Se desplazan un
 número: `goblin-tower-archers` pasa de 0027 a 0028 y `characters`, de 0028 a 0029. Bloque Should resultante: 0027
 `site-contact`, 0028 `goblin-tower-archers`, 0029 `characters`, balance-pass-2 y campamentos de guardianes.
+
+Renumeración (2026-11-25, tercera): 0027 `site-contact` está hecho. Entran cuatro changes nuevos antes de las torres
+arqueras, aprobados por el autor: 0028 `menu-guide`, 0029 `living-map`, 0030 `pickup-visibility` y 0031
+`combat-feedback`. `goblin-tower-archers` pasa de 0028 a 0032 y `characters`, de 0029 a 0033. Las barras de vida de
+casas y torres goblin se mueven de `goblin-tower-archers` a 0031. Bloque Should resultante: 0028 `menu-guide`,
+0029 `living-map`, 0030 `pickup-visibility`, 0031 `combat-feedback`, 0032 `goblin-tower-archers`, 0033
+`characters`, balance-pass-2 y campamentos de guardianes. Los cuatro nuevos son Should y no suben ningún Must.
 
 ### Historias Must nuevas (criterios clave)
 
@@ -272,13 +280,79 @@ no tener que buscar un punto de acceso y entender de un vistazo qué puedo const
   proyectado.
 - Prioridad: Should (pequeño). Cambia el contenido de solares y su firma dorada.
 
-**0028 · goblin-tower-archers · Como jugador quiero ver cuánta vida le queda a cada casa y torre goblin y que las
-torres me disparen, para que atacar un campamento sea una decisión de riesgo y no un paseo.**
-- Motivo: hoy las torres son estructuras destruibles sin comportamiento (decisión D4 de 0021) y no hay forma de
-  saber cuánto falta para destruir una casa o torre.
+**0028 · menu-guide · Como jugador quiero un botón «Cómo jugar» en el menú de inicio con páginas que expliquen las
+mecánicas, para entender el juego sin probar y fallar.**
+- Motivo: el juego ya tiene XP, cuatro recursos, tienda, solares, enemigos con comportamientos y campamentos, y nada
+  lo explica al jugador nuevo.
+- Given el menú de inicio, When el jugador pulsa «Cómo jugar», Then se abre un modal con la primera página y los
+  controles anterior, siguiente y cerrar.
+- Given el modal abierto, When el jugador navega con anterior y siguiente, Then ve en orden las páginas: movimiento
+  y armas automáticas, XP y mejoras de personaje, recursos (oro, madera, carne, piedra, gemas), castillo-tienda,
+  solares de obra (casa y torre), enemigos y campamentos, y victoria y derrota; en la primera no hay anterior y en la
+  última no hay siguiente.
+- Given el modal abierto, When el jugador pulsa cerrar o Esc, Then vuelve al menú de inicio sin iniciar partida.
+- Given `?e2e` al cargar, When aparece el menú o se salta, Then el modal no se muestra por sí solo.
+- Given el texto de las páginas, When se lee el contenido, Then vive en `content/` validado con zod (sin textos
+  fijos en el código).
+- Alcance: solo DOM e infraestructura; el núcleo y el balance no cambian (idéntico a `BALANCE_BASELINE`).
+- Prioridad: Should (pequeño).
+
+**0029 · living-map · Como jugador quiero un mapa con más decoración y con árboles y estructuras animados, para que
+el mundo se vea vivo y no una rejilla estática.**
+- Motivo: Tiny Swords Update 010 trae Deco 01–18 y el repo solo usa 04–06 (rocas de piedra); los árboles tienen más
+  fotogramas de los que se usan hoy como modelos fijos.
+- Given un mapa generado, When se pinta, Then aparece decoración no bloqueante (Deco 01–18 salvo las rocas ya
+  usadas) repartida por la hierba, con variedad por el flujo de decoración de arte; no toca el núcleo ni las firmas
+  doradas (`MAP_GOLDEN`, `STRUCTURE_GOLDEN`, etc.).
+- Given la decoración, When se aplica el recorte por cámara de 0018, Then solo se pinta la que cae en la vista.
+- Given los árboles, When pasan los frames, Then se animan con una fase distinta por árbol (no se balancean todos a
+  la vez).
+- Given la torre goblin intacta, When se renderiza, Then se anima con los 4 fotogramas de `Wood_Tower_Red` (hoy solo
+  el 0).
+- Given las semillas 42 y 123, When se cuentan los objetos del mapa, Then no superan 1.000 (hoy 737/820).
+- Given una hoja nueva, When se versiona, Then tiene entrada en `content/asset-provenance.json` y no procede del Free
+  Pack.
+- Nota: castillo, casas, torres azules, casa goblin y mina de oro tienen un solo fotograma y quedan estáticos.
+- Preguntas abiertas: densidad de la decoración; si evita caminos, puertas y solares (propuesta: solo en hierba libre
+  fuera de huellas, de la zona de inicio y de los accesos); fotogramas exactos del balanceo de los árboles (a
+  verificar en explore).
+- Prioridad: Should. Solo infraestructura y contenido; balance idéntico.
+
+**0030 · pickup-visibility · Como jugador quiero ver con claridad los recogibles (oro, madera, carne, piedra y gemas
+de XP), para no perderme lo que puedo recoger en una pantalla grande.**
+- Motivo: en un monitor 4K los recogibles (escala 0,3, unos 38 px) se ven diminutos y estáticos.
+- Given un recogible de oro, madera o carne, When aparece, Then reproduce su hoja de aparición (`G_Spawn`, `W_Spawn`,
+  `M_Spawn`, 7 fotogramas de 128 px) y después flota levemente.
+- Given una piedra o una gema de XP (sin hoja de aparición), When aparece, Then solo flota levemente.
+- Given los cinco tipos, When se renderizan, Then su escala es mayor que la actual (valor en `appearance.json`).
+- Given el radio de recogida, When se compara con el anterior, Then no cambia y el balance es idéntico a
+  `BALANCE_BASELINE`.
+- Alcance: solo infraestructura y contenido.
+- Pregunta abierta para explore/propose: si lo pequeño es todo el juego en pantallas grandes, valorar un zoom de
+  cámara por tamaño de ventana (afecta a ADR-0014, al área visible y exige revisar el anillo de aparición). Decisión
+  del autor; puede quedar fuera del change.
+- Prioridad: Should.
+
+**0031 · combat-feedback · Como jugador quiero ver la vida de casas y torres goblin y el daño de cada golpe, para
+saber cuánto falta para destruir algo y cuánto daño hago y recibo.**
+- Motivo: no hay forma de saber cuánto falta para destruir una casa o torre (criterio movido desde 0032) ni cuánto
+  daño aplica cada golpe.
 - Given una casa o torre goblin con vida completa o dañada, When se renderiza, Then lleva una barra de vida sobre
   ella que refleja su vida actual.
 - Given una casa o torre goblin destruida (en ruina), When se renderiza, Then la barra ya no se muestra.
+- Given un golpe a un enemigo, estructura, oveja o al jugador, When el tick termina, Then aparece un número con el
+  daño aplicado en la posición del objetivo y se desvanece.
+- Given la misma semilla y las mismas entradas, When se simula dos veces, Then los golpes de cada tick expuestos en
+  el snapshot son idénticos (sin azar; el render los muestra con un pool).
+- Given las semillas 1..50 con el bot, When se mide, Then el balance es idéntico a `BALANCE_BASELINE`.
+- Preguntas abiertas: color por tipo de objetivo (propuesta: jugador en rojo); agrupar los golpes del mismo tick por
+  objetivo; tope de números simultáneos.
+- Prioridad: Should.
+
+**0032 · goblin-tower-archers · Como jugador quiero que las torres goblin me disparen, para que atacar un campamento
+sea una decisión de riesgo y no un paseo.**
+- Motivo: hoy las torres son estructuras destruibles sin comportamiento (decisión D4 de 0021).
+- Nota: los dos criterios de barra de vida de casas y torres se movieron a 0031 `combat-feedback`.
 - Given una torre goblin intacta con su arquero y el jugador fuera de su radio, When pasan ticks, Then el arquero
   no dispara.
 - Given el jugador que entra en el radio de la torre, When transcurre su cadencia, Then el arquero dispara una
@@ -294,7 +368,7 @@ torres me disparen, para que atacar un campamento sea una decisión de riesgo y 
 - Efecto en balance: las torres con disparo cambian el riesgo de explorar; se vuelve a medir la banda del bot y se
   comprueba que el bot v3 sigue siendo representativo (deuda W3 de 0020).
 
-**0029 · characters · Como jugador quiero elegir entre Arquero y Guerrero para poder jugar de forma distinta.**
+**0033 · characters · Como jugador quiero elegir entre Arquero y Guerrero para poder jugar de forma distinta.**
 - Nota de orden: era 0022. Se movió al final del bloque porque el Guerrero necesita el formato de mejoras separado
   de 0024 (personaje por XP, arma por oro; hecho) y el balance ya estable con recursos, castillo y solares; así sus mejoras
   y su equilibrio se hacen una sola vez. Los criterios se redactan al proponer el change.
@@ -303,7 +377,7 @@ torres me disparen, para que atacar un campamento sea una decisión de riesgo y 
 justo para que la partida sea divertida y no solo "dentro de la banda".**
 - Motivo: desde 0010 cada change solo recalibra para mantener el gate (25–35/50 victorias del bot, quieto pierde
   antes de 180 s); es una red de seguridad, no diseño. En 0020 el gate cuadró pero el Goblin Barril casi nunca llega
-  a encender la mecha en partida real porque el arco lo mata antes. Se hace después de 0029 porque recursos,
+  a encender la mecha en partida real porque el arco lo mata antes. Se hace después de 0033 porque recursos,
   castillo-tienda, solares, arqueros de torre y personajes mueven los números; hacerlo antes no compensa.
 - Mientras tanto, los changes pueden hacer ajustes puntuales cuando una mecánica no se percibe (p. ej. el barril,
   que ya mide 0020b).
@@ -351,8 +425,12 @@ Pendientes:
 | 0025 stone-resource | **Hecho y archivado (PR #63/#64)**: recogible `stone` (quinto tipo): lo sueltan los enemigos al morir con probabilidad por tipo (contenido, flujo de azar propio), además del oro por baja; contador e icono en el HUD; sin uso aún. Balance idéntico a la base de 0024 | Should | |
 | 0026 build-sites | **Hecho (apply 2026-11-25)**: 6 solares por mapa; casa (15 madera, 1 oro cada 30 s) y torre de caballeros (30 madera + 15 piedra, flechas propias), edificios que bloquean el paso con el recálculo del campo de flujo. Bot v4 idéntico a la base; bot v5 29/50 | Should | |
 | 0027 site-contact | **Hecho (apply 2026-11-25)**: oferta de obra al tocar el solar por cualquier lado (sin punto de acceso); solar libre bloqueante para todos desde el tick 0; re-armado al alejarse 64 px; panel con casa y torre siempre, iconos de recurso y «faltan N» en la no asequible. Bot v4 34/50 y bot v5 34/50 sin recalibrar | Should | |
-| 0028 goblin-tower-archers | Barra de vida sobre casas y torres goblin (desaparece en ruina) y un arquero goblin en cada torre que dispara al jugador dentro de su radio (decisión D4 de 0021 superada) | Should | ¿Hay goblin arquero en Update 010? (procedencia) |
-| 0029 characters | Elección de personaje y Guerrero. Aplazado desde 0022 hasta tener el formato de mejoras de 0024 (hecho) | Should | ¿Es divertido el Guerrero? |
+| 0028 menu-guide | Botón «Cómo jugar» en el menú con páginas (anterior/siguiente/cerrar) que explican las mecánicas; textos en `content/` con zod; solo DOM, balance idéntico | Should | |
+| 0029 living-map | Más decoración (Deco 01–18) no bloqueante, árboles animados con fase por árbol y torre goblin animada; ≤ 1.000 objetos del mapa; castillo, casas y mina quedan estáticos | Should | Densidad, zonas permitidas y fotogramas de los árboles (explore) |
+| 0030 pickup-visibility | Recogibles más grandes, hoja de aparición para oro, madera y carne (`*_Spawn`) y flote leve en los cinco; radio de recogida y balance intactos | Should | ¿Zoom de cámara por tamaño de ventana? (decisión del autor) |
+| 0031 combat-feedback | Barras de vida en casas y torres goblin (desaparecen en ruina) y números de daño deterministas en cada golpe (snapshot sin azar, pool en el render); balance idéntico | Should | |
+| 0032 goblin-tower-archers | Un arquero goblin en cada torre que dispara al jugador dentro de su radio (decisión D4 de 0021 superada); las barras de vida pasaron a 0031 | Should | ¿Hay goblin arquero en Update 010? (procedencia) |
+| 0033 characters | Elección de personaje y Guerrero. Aplazado desde 0022 hasta tener el formato de mejoras de 0024 (hecho) | Should | ¿Es divertido el Guerrero? |
 | balance-pass-2 (número al empezar) | Pasada de equilibrio como diseño, no como red de seguridad: stats por tipo de enemigo y de personaje, métricas más allá de la tasa de victoria, revisión del bot de referencia y playtest humano con notas | Should | |
 | goblin-guard-camps (sin número, tras 0023 sheep-meat) | Campamentos de guardianes en zonas ricas en recursos (sacados de 0021, D8) | Should | |
 | Resto | UI del pack, día/noche, minimapa, jefes, audio | Could | |
