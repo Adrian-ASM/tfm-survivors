@@ -68,6 +68,11 @@ export class MapCuller {
     if (index >= 0 && index < this.enabled.length) this.enabled[index] = on ? 1 : 0;
   }
 
+  /** ¿Se dibuja la entrada `index` tras el último recorte? Solo lectura (animación del mapa, 0029). */
+  isVisible(index: number): boolean {
+    return this.visible[index] === 1;
+  }
+
   /** Recorte del frame con su rectángulo visible `view`. */
   apply(view: Box, canvas: MapVisibility): void {
     const r = clipRect(view, this.margin);

@@ -107,9 +107,14 @@ describe('Procedencia de las hojas de la piedra (asset-provenance)', () => {
     expect(problems.join('\n')).toContain(target);
   });
 
-  it('Scenario: Solo las tres rocas de Deco (04, 05 y 06, una vez cada una)', () => {
+  // 0029: la carpeta Deco versionada tiene además las 11 hojas de la decoración del mapa.
+  it('Scenario: Solo las rocas y la decoración en Deco (01–11 y 16–18, una vez cada una)', () => {
     const deco = versioned().filter((f) => f.startsWith(`${ASSET_DIR}Deco/`));
+    const expected = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 16, 17, 18].map((n) =>
+      pathOf(`${String(n).padStart(2, '0')}.png`),
+    );
 
-    expect(deco.sort()).toEqual(ROCKS.map(pathOf));
+    expect(deco.sort()).toEqual(expected);
+    expect(deco.filter((f) => /Deco\/1[2-5]\.png$/.test(f))).toEqual([]);
   });
 });

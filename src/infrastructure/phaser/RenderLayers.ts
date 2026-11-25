@@ -11,7 +11,8 @@ import { ProjectileLayer } from './ProjectileLayer';
 import { PulseLayer, type RingSprite } from './PulseLayer';
 import { VEIN_KEY, veinCounts, type SpriteCounts } from './renderCounts';
 import type { SpriteKit } from './SpriteLike';
-import { MapCuller } from './map/mapCulling';
+import { MapAnimator } from './map/mapAnimation';
+import { MapCuller, type MapVisibility } from './map/mapCulling';
 import type { Box, MapArtPlan } from './map/planMapArt';
 import { paintMapArt, zeroCells, zeroMapArt, type MapArtCanvas } from './TerrainView';
 import { StructureArt } from './StructureArt';
@@ -81,6 +82,20 @@ export class RenderLayers {
   private readonly siteArt = new SiteArt();
   private foamAnim: AnimSpec | null = null;
   private foamFrame = -1;
+  /** Árboles y torres goblin intactas del mapa pintado (0029), con el mismo reloj que la espuma. */
+  private readonly mapAnimator = new MapAnimator();
+  /**
+   * Visibilidad del recorte que ceba el frame vigente de un objeto animado al mostrarlo, en el mismo
+   * frame y antes de pintarse (0029): se crea una vez, no por frame.
+   */
+  private readonly primedVisibility: MapVisibility = {
+    show: (index, visible) => {
+      const canvas = this.mapCanvas;
+      if (!canvas) return;
+      canvas.show(index, visible);
+      if (visible) this.mapAnimator.prime(index, canvas);
+    },
+  };
 
   constructor(parts: RenderParts, ground: SpriteCount) {
     const { kit, looks, capacity } = parts;
@@ -138,6 +153,11 @@ export class RenderLayers {
    * Una vez por `update` del motor: avanza el reloj salvo con el mundo detenido (pausa, elección o
    * partida terminada, según el último snapshot pintado).
    */
+  /** Reloj de render en ms (espuma, árboles y torres, 0029): solo lectura. */
+  get renderMs(): number {
+    return this.clock.ms;
+  }
+
   advance(deltaMs: number, paused: boolean): void {
     this.clock.advance(deltaMs, paused || this.status !== 'running');
   }
@@ -159,6 +179,8 @@ export class RenderLayers {
     this.veinArt.sync(snapshot.veins);
     this.siteArt.sync(snapshot.sites);
     this.animateFoam(ms);
+    // 0029: tras los `sync` de estructuras y antes del recorte (`cullMap`), solo a lo dibujado.
+    if (this.mapCanvas) this.mapAnimator.tick(ms, this.culler, this.mapCanvas);
   }
 
   /** Espuma del mapa en bucle con el reloj de render: `setFrame` solo cuando cambia (0016). */
@@ -181,12 +203,14 @@ export class RenderLayers {
     for (const key of ['water', 'shore', 'foam', 'tree', 'canopy', 'bridge', 'castle'] as const) {
       mapArt[key] = { ...painted.mapArt[key] };
     }
+    mapArt.decor = { ...painted.mapArt.decor };
     mapArt.objects = painted.mapArt.objects;
     this.mapCanvas = canvas;
     this.culler.reset(plan);
     this.structureArt.reset(plan.structures, this.culler);
     this.veinArt.reset(plan.veins, this.culler);
     this.siteArt.reset(plan.sites, this.culler);
+    this.mapAnimator.reset(plan);
     mapArt.drawn = this.culler.drawn;
     this.foamAnim = plan.foam ? { frames: plan.foam.frames, fps: plan.foam.fps, loop: true } : null;
     this.foamFrame = -1;
@@ -199,7 +223,7 @@ export class RenderLayers {
    */
   cullMap(view: Box): void {
     if (!this.mapCanvas) return;
-    this.culler.apply(view, this.mapCanvas);
+    this.culler.apply(view, this.primedVisibility);
     this.counts.mapArt.drawn = this.culler.drawn;
   }
 

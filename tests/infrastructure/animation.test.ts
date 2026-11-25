@@ -4,6 +4,7 @@ import {
   Motion,
   animDone,
   frameAt,
+  phasedFrameAt,
 } from '../../src/infrastructure/phaser/art/animation';
 
 // Spec sprite-rendering: "Animación por estado" y "Orientación" (change 0012, design "Comportamiento").
@@ -133,5 +134,30 @@ describe('Motion (estado y orientación por Δ entre ticks distintos)', () => {
     m.reset();
     m.update(800, 100, 3);
     expect([m.moving, m.flipX('right')]).toEqual([false, false]);
+  });
+});
+
+// Spec sprite-rendering (0029), "Animación del arte del mapa": frame por fase y reloj de render.
+describe('phasedFrameAt', () => {
+  const TREE = { frames: [0, 1, 2, 3, 4, 5], fps: 6 };
+  const TOWER = { frames: [0, 1, 2, 3], fps: 5 };
+
+  it('Scenario: Frame de un árbol según su fase (fase 2: R 0, 700 y 1.000 → 2, 0 y 2; nunca el 8)', () => {
+    expect([0, 700, 1000].map((ms) => phasedFrameAt(TREE, ms, 2))).toEqual([2, 0, 2]);
+    const seen = new Set<number>();
+    for (let f = 0; f < 600; f++) seen.add(phasedFrameAt(TREE, f * FRAME_MS, 2));
+    expect([...seen].sort()).toEqual([0, 1, 2, 3, 4, 5]);
+    expect(seen.has(8)).toBe(false);
+  });
+
+  it('Scenario: Frame de una torre según su fase (fase 1: R 0, 650 y 800 → 1, 0 y 1)', () => {
+    expect([0, 650, 800].map((ms) => phasedFrameAt(TOWER, ms, 1))).toEqual([1, 0, 1]);
+  });
+
+  it('con fase 0 es frameAt en bucle; con 1 frame, estático', () => {
+    for (const ms of [0, 333, 1000, 12345]) {
+      expect(phasedFrameAt(TREE, ms, 0)).toBe(frameAt({ ...TREE, loop: true }, ms));
+      expect(phasedFrameAt({ frames: [7], fps: 6 }, ms, 3)).toBe(7);
+    }
   });
 });

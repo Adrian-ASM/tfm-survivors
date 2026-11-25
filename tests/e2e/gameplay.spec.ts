@@ -161,8 +161,20 @@ test('Cámara: centrada al empezar y sigue al jugador hacia la derecha sin salir
 // Spec sprite-rendering: sonda de sprites coherente con el snapshot en cada frame pintado y
 // aspecto de reserva solo para el tipo cuya hoja no carga.
 const TORCH_SHEET = '**/Factions/Goblins/Troops/Torch/Red/Torch_Red.png';
-/** Hojas del mapa (0016) que también se bloquean: agua, espuma, árbol, puente y castillo. */
-const MAP_SHEETS = ['Water.png', 'Foam.png', 'Tree.png', 'Bridge_All.png', 'Castle_Blue.png'];
+/**
+ * Hojas del mapa (0016) que también se bloquean: agua, espuma, árbol, puente y castillo; 0029: y la
+ * del espantapájaros de la decoración.
+ */
+const MAP_SHEETS = [
+  'Water.png',
+  'Foam.png',
+  'Tree.png',
+  'Bridge_All.png',
+  'Castle_Blue.png',
+  'Deco/18.png',
+];
+/** Espantapájaros del plan de la semilla 42 (lo fija también `plan-decor.test.ts`, sin navegador). */
+const SCARECROWS_42 = 3;
 const BLOCKED = ['Torch_Red.png', ...MAP_SHEETS];
 /** Ticks por step mientras se muestrea: varios frames pintados. */
 const SAMPLED_CHUNK = 10;
@@ -198,6 +210,10 @@ test('Sprites: recuentos de la sonda iguales al snapshot y reserva si fallan Tor
   ]);
   expect(art.castle).toEqual({ painted: 1, fallback: 1 });
   expect([art.foam.painted, art.canopy.painted]).toEqual([0, 0]);
+  // 0029: sin pintar, exactamente las del espantapájaros; el resto de la decoración, con su arte.
+  expect(art.decor.unpainted).toBe(SCARECROWS_42);
+  expect(art.decor.painted).toBe(art.decor.planned - SCARECROWS_42);
+  expect(art.decor.painted).toBeGreaterThan(0);
 
   await startSpriteSampler(page, 'goblin-torch');
   const reached = await stepUntil(
@@ -336,7 +352,7 @@ test('Mapa real: sonda igual a la firma de la semilla 42, castillo y salida, y s
   const shores = shoreCount(m);
   const art = first.sprites?.mapArt;
   const ok = (painted: number) => ({ painted, fallback: 0 });
-  expect(art && { ...art, objects: undefined, drawn: undefined }).toEqual({
+  expect(art && { ...art, decor: undefined, objects: undefined, drawn: undefined }).toEqual({
     water: ok(m.counts.water),
     shore: ok(shores),
     foam: ok(shores),
@@ -344,10 +360,15 @@ test('Mapa real: sonda igual a la firma de la semilla 42, castillo y salida, y s
     canopy: ok(m.counts.trunk),
     bridge: ok(m.counts.bridge),
     castle: ok(1),
+    decor: undefined,
     objects: undefined,
     drawn: undefined,
   });
   expect(shores).toBeGreaterThan(0);
+  // 0029: decoración del plan ≥ 1, toda pintada con su hoja.
+  const decor = art?.decor;
+  expect(decor?.planned).toBeGreaterThanOrEqual(1);
+  expect(decor).toEqual({ planned: decor?.planned, painted: decor?.planned, unpainted: 0 });
 
   // 0021, "Estructuras y guardias en el navegador": sin input, al arrancar y tras el intervalo de
   // nacimiento de la casa + 1 tick, pintadas intactas/ruina por tipo = snapshot y sin reserva.

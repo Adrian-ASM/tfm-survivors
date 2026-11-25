@@ -35,6 +35,13 @@ export const TOWER_RUIN_FILE = 'Factions/Goblins/Buildings/Wood_Tower/Wood_Tower
 export const SITE_CONSTRUCTION_FILE = 'Factions/Knights/Buildings/House/House_Construction.png';
 export const SITE_HOUSE_FILE = 'Factions/Knights/Buildings/House/House_Blue.png';
 export const SITE_TOWER_FILE = 'Factions/Knights/Buildings/Tower/Tower_Blue.png';
+/** Decoración (0029): las 11 hojas de Deco, en el orden de los datos del repositorio. */
+export const DECOR_FILES = ['01', '02', '03', '07', '08', '09', '10', '11', '16', '17', '18'].map(
+  (n) => `Deco/${n}.png`,
+);
+/** Las altas: cartel, poste (64 × 128) y espantapájaros (192 × 192). */
+export const DECOR_TALL_FILES = ['Deco/16.png', 'Deco/17.png', 'Deco/18.png'];
+export const DECOR_SCARECROW_FILE = 'Deco/18.png';
 
 const FILES = [
   TORCH_FILE,
@@ -68,6 +75,7 @@ const FILES = [
   SITE_CONSTRUCTION_FILE,
   SITE_HOUSE_FILE,
   SITE_TOWER_FILE,
+  ...DECOR_FILES,
 ];
 
 /** Los 15 casos de orilla (lados de río, letras en orden N-E-S-W; design 0016 §12.2 B2). */
@@ -169,7 +177,7 @@ export function rawMapAppearance(): Record<string, Json> {
     foam: { ...tile(FOAM_FILE, 192, { x: 0.5, y: 0.5 }), idle: anim([0, 1, 2, 3], 8, true) },
     trees: {
       ...tile(TREE_FILE, 192, { x: 0.5, y: 0.9 }),
-      models: [{ frame: 0 }, { frame: 1 }],
+      idle: anim([0, 1, 2, 3, 4, 5], 6, true),
       flip: true,
     },
     bridges: {
@@ -187,6 +195,30 @@ export function rawMapAppearance(): Record<string, Json> {
       origin: { x: 0.5, y: 1 },
       frame: 0,
     },
+    decor: rawDecorAppearance(),
+  };
+}
+
+/** Aspecto de decoración crudo (0029): hoja de `w × h` de 1 frame, origen en el borde inferior. */
+export const decorItem = (file: string, w: number, h: number, tall: boolean): Json => ({
+  sheet: { file, frameWidth: w, frameHeight: h },
+  frame: 0,
+  scale: 0.9375,
+  origin: { x: 0.5, y: 1 },
+  tall,
+});
+
+/** Sección `map.decor` cruda válida (0029): las 11 hojas de Deco, tope 120 y densidad 25. */
+export function rawDecorAppearance(): Json {
+  return {
+    density: 25,
+    maxObjects: 120,
+    castleMargin: 1,
+    items: DECOR_FILES.map((file) => {
+      if (file === DECOR_SCARECROW_FILE) return decorItem(file, 192, 192, true);
+      const tall = DECOR_TALL_FILES.includes(file);
+      return decorItem(file, 64, tall ? 128 : 64, tall);
+    }),
   };
 }
 

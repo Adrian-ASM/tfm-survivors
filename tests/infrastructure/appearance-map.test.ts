@@ -34,9 +34,28 @@ describe('Datos de aspecto del mapa validados', () => {
     expect(failure(raw)).toBe('map.shore.cases.EN');
   });
 
-  it('Scenario: Datos del mapa inválidos (árbol con la lista de modelos [])', () => {
+  // 0029: el árbol tiene `idle` en bucle en vez de modelos fijos.
+  it('Scenario: Datos del mapa inválidos (árbol sin idle)', () => {
     const raw = rawAppearance();
-    at(raw, 'trees').models = [];
+    Reflect.deleteProperty(at(raw, 'trees'), 'idle');
+    expect(failure(raw)).toBe('map.trees.idle');
+  });
+
+  it('Scenario: Datos del mapa inválidos (árbol con idle sin bucle)', () => {
+    const raw = rawAppearance();
+    sub(at(raw, 'trees'), 'idle').loop = false;
+    expect(failure(raw)).toBe('map.trees.idle.loop');
+  });
+
+  it('Scenario: Datos del mapa inválidos (árbol con frames de idle [])', () => {
+    const raw = rawAppearance();
+    sub(at(raw, 'trees'), 'idle').frames = [];
+    expect(failure(raw)).toBe('map.trees.idle.frames');
+  });
+
+  it('Scenario: Datos del mapa inválidos (campo extra models en el árbol)', () => {
+    const raw = rawAppearance();
+    at(raw, 'trees').models = [{ frame: 0 }];
     expect(failure(raw)).toBe('map.trees.models');
   });
 

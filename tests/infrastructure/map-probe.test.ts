@@ -3,6 +3,7 @@ import { RestartRun } from '../../src/application/RestartRun';
 import { StartRun } from '../../src/application/StartRun';
 import { decorSeedOf, seededRun } from '../../src/composition/seedSource';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
+import type { MapArtPlan } from '../../src/infrastructure/phaser/map/planMapArt';
 import { DECOR_STREAM, deriveSeed } from '../../src/infrastructure/random/deriveSeed';
 import { TICK_MS, aDefaultConfig } from '../support/builders';
 import { planFor, spritesOf } from '../support/mapArt';
@@ -25,32 +26,71 @@ describe('Semilla de decoración de la composición', () => {
     expect(decorSeedOf(42)).not.toBe(decorSeedOf(43));
   });
 
-  it('Scenario: Mismos modelos con la misma semilla (tras 600 frames y R con la misma semilla)', () => {
-    const r = new StartRun().execute(
-      CONFIG,
-      seededRun(42).random,
-      undefined,
-      seededRun(42).terrain,
-    );
-    if (!r.ok) throw new Error(r.error.message);
-    const first = planFor(r.value.tickRun.map(), 42);
-    for (let i = 0; i < 600 && r.value.tickRun.status === 'running'; i++) {
-      r.value.tickRun.execute(TICK_MS, PlayerInput.NONE);
-    }
-    const models = (plan: typeof first) =>
+  /** Planes de la semilla 42: al empezar, otra vez, tras 600 ticks y tras R con la misma semilla. */
+  const restartedPlans = (() => {
+    let cached: MapArtPlan[] | null = null;
+    return (): MapArtPlan[] => {
+      if (cached) return cached;
+      const r = new StartRun().execute(
+        CONFIG,
+        seededRun(42).random,
+        undefined,
+        seededRun(42).terrain,
+      );
+      if (!r.ok) throw new Error(r.error.message);
+      const first = planFor(r.value.tickRun.map(), 42);
+      const twice = planFor(r.value.tickRun.map(), 42);
+      for (let i = 0; i < 600 && r.value.tickRun.status === 'running'; i++) {
+        r.value.tickRun.execute(TICK_MS, PlayerInput.NONE);
+      }
+      const again = planFor(r.value.tickRun.map(), 42);
+      // Quieto pierde antes de 10.800 ticks (run-outcome); se elige la opción 0 en cada oferta.
+      const ended = r.value.tickRun;
+      for (let i = 0; i < 20_000 && ended.status !== 'over'; i++) {
+        if (ended.status === 'choosing') r.value.chooseUpgrade.execute(0);
+        else ended.execute(TICK_MS, PlayerInput.NONE);
+      }
+      expect(ended.status).toBe('over');
+      const next = new RestartRun(CONFIG, () => seededRun(42)).execute(ended);
+      if (!next.ok) throw new Error('reinicio rechazado');
+      cached = [first, twice, again, planFor(next.value.tickRun.map(), 42)];
+      return cached;
+    };
+  })();
+
+  it('Scenario: Mismas fases con la misma semilla (tras 600 frames y R con la misma semilla)', () => {
+    const models = (plan: MapArtPlan) =>
       spritesOf(plan, 'trunk').map((s) => `${String(s.frame)}${s.flipX ? 'f' : ''}`);
-    const again = planFor(r.value.tickRun.map(), 42);
-    expect(models(again)).toEqual(models(first));
-    // Quieto pierde antes de 10.800 ticks (run-outcome); se elige la opción 0 en cada oferta.
-    const ended = r.value.tickRun;
-    for (let i = 0; i < 20_000 && ended.status !== 'over'; i++) {
-      if (ended.status === 'choosing') r.value.chooseUpgrade.execute(0);
-      else ended.execute(TICK_MS, PlayerInput.NONE);
-    }
-    expect(ended.status).toBe('over');
-    const next = new RestartRun(CONFIG, () => seededRun(42)).execute(ended);
-    if (!next.ok) throw new Error('reinicio rechazado');
-    expect(models(planFor(next.value.tickRun.map(), 42))).toEqual(models(first));
+    const [first, ...rest] = restartedPlans().map(models);
+    expect(first?.length).toBeGreaterThan(0);
+    for (const other of rest) expect(other).toEqual(first);
+  });
+
+  it('Scenario: Misma semilla, misma decoración (dos cálculos y tras 600 frames y R)', () => {
+    const decor = (plan: MapArtPlan) =>
+      plan.decor.map(
+        (d) => `${String(d.col)},${String(d.row)}:${d.file}@${String(d.x)},${String(d.y)}`,
+      );
+    const [first, ...rest] = restartedPlans().map(decor);
+    expect(first?.length).toBeGreaterThan(0);
+    for (const other of rest) expect(other).toEqual(first);
+  });
+
+  it('Scenario: Fases deterministas (árboles en [0, 5] y torres en [0, 3], iguales tras 600 frames y R)', () => {
+    const phases = (plan: MapArtPlan) =>
+      plan.animations.map(
+        (a) => `${String(a.frames.length)}:${String(a.phase)}:${a.indices.join()}`,
+      );
+    const plans = restartedPlans();
+    const [first, ...rest] = plans.map(phases);
+    for (const other of rest) expect(other).toEqual(first);
+    const groups = plans[0]?.animations ?? [];
+    const trees = groups.filter((a) => a.frames.length === 6);
+    const towers = groups.filter((a) => a.frames.length === 4);
+    expect(trees.length).toBeGreaterThan(0);
+    expect(towers.length).toBeGreaterThan(0);
+    expect(trees.every((a) => a.phase >= 0 && a.phase <= 5)).toBe(true);
+    expect(towers.every((a) => a.phase >= 0 && a.phase <= 3)).toBe(true);
   });
 });
 

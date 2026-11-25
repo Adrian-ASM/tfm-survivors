@@ -1,4 +1,5 @@
 import type {
+  DecorCount,
   ElementCount,
   MapArtCounts,
   MapArtPlan,
@@ -27,6 +28,11 @@ export interface MapArtCanvas {
   /** Pone el frame dado a todas las espumas pintadas, ocultas incluidas (animación de render). */
   foam(frame: number): void;
   /**
+   * Pone el frame de hoja `frame` al sprite pintado `index` (mismo índice que `show`), conservando
+   * su recorte: árboles y torres animados (0029). Sin efecto si el objeto no es un sprite.
+   */
+  frame(index: number, frame: number): void;
+  /**
    * Muestra u oculta el objeto `index` del mapa pintado, en el orden de llamada de `tiles`, `sprite` y
    * `rect` (y `circle`, 0022) desde el último `clear` (recorte por cámara, 0018).
    */
@@ -37,7 +43,11 @@ export interface MapArtCanvas {
 export type CellCounts = { -readonly [K in keyof MapCellCounts]: number };
 
 /** Elementos del mapa pintados (sonda `sprites.mapArt`), mutable para las capas. */
-export type MapArtProbe = { -readonly [K in keyof MapArtCounts]: ElementCount } & {
+export type MapArtProbe = {
+  -readonly [K in Exclude<keyof MapArtCounts, 'decor'>]: ElementCount;
+} & {
+  /** Decoración (0029): del plan, pintadas y sin pintar por fallo de su hoja; 0 en el menú. */
+  decor: { -readonly [K in keyof DecorCount]: number };
   objects: number;
   /** Objetos del mapa visibles tras el último recorte por cámara (0018); 0 en el menú. */
   drawn: number;
@@ -55,6 +65,7 @@ export const zeroMapArt = (): MapArtProbe => ({
   canopy: none(),
   bridge: none(),
   castle: none(),
+  decor: { planned: 0, painted: 0, unpainted: 0 },
   objects: 0,
   drawn: 0,
 });

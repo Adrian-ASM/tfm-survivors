@@ -116,20 +116,28 @@ describe('planMapArt · reserva por elemento', () => {
     const { water, shore, foam, tree, canopy, bridge, castle } = plan.counts;
     const counts: ElementCount[] = [water, shore, foam, tree, canopy, bridge, castle];
     expect(counts.every((c) => c.painted === 0)).toBe(true);
+    expect(plan.counts.decor).toEqual({ planned: 0, painted: 0, unpainted: 0 });
   });
 });
 
 // Spec sprite-rendering (0017), "Coste de render del mapa": tope sin navegador que entra en verify.
 // Con el mundo de 3.840 × 2.160 (0017): 667 (42) y 750 (123); con casas y torres (0021), 695 y 778.
-const MAX_MAP_OBJECTS = 1000;
+// 0029: con la decoración el objetivo es ≤ 950 (límite duro 1.000); medidos en apply 820 y 904.
+const MAX_MAP_OBJECTS = 950;
+const MEASURED: Readonly<Record<number, number>> = { 42: 820, 123: 904 };
 
 describe('planMapArt · objetos del mapa (punto de control 2)', () => {
-  it.each([42, 123])('Scenario: Objetos del mapa (semilla %i: ≤ 1.000 sin navegador)', (seed) => {
-    const plan = planFor(startSeededRun(aDefaultConfig(), seed).map, seed);
-    expect(plan.structures.length).toBeGreaterThan(0);
-    expect(plan.objects).toBeLessThanOrEqual(MAX_MAP_OBJECTS);
-    expect(plan.objects).toBe(objectsOf(plan));
-  });
+  it.each([42, 123])(
+    'Scenario: Tope de objetos sin navegador (semilla %i: ≤ 950, decoración incluida)',
+    (seed) => {
+      const plan = planFor(startSeededRun(aDefaultConfig(), seed).map, seed);
+      expect(plan.structures.length).toBeGreaterThan(0);
+      expect(plan.decor.length).toBeGreaterThan(0);
+      expect(plan.objects).toBeLessThanOrEqual(MAX_MAP_OBJECTS);
+      expect(plan.objects).toBe(MEASURED[seed]);
+      expect(plan.objects).toBe(objectsOf(plan));
+    },
+  );
 });
 
 describe('planMapArt · recuentos de la sonda', () => {
@@ -149,7 +157,10 @@ describe('planMapArt · recuentos de la sonda', () => {
       canopy: { painted: trunk, ...none },
       bridge: { painted: bridge, ...none },
       castle: { painted: 1, ...none },
+      // 0029: toda la decoración del plan pintada con su hoja.
+      decor: { planned: plan.decor.length, painted: plan.decor.length, unpainted: 0 },
     });
+    expect(plan.decor.length).toBeGreaterThan(0);
     expect(plan.objects).toBe(objectsOf(plan));
   });
 

@@ -125,15 +125,29 @@ describe('SheepLayer', () => {
   });
 
   it.each([
-    // 0026: 701 y 784 más los 36 objetos de los 6 solares.
-    [42, 737],
-    [123, 820],
+    // 0026: 701 y 784 más los 36 objetos de los 6 solares. 0029: más la decoración (83 y 84).
+    [42, 820],
+    [123, 904],
   ] as const)(
-    'Scenario: Ovejas fuera del plan del mapa (semilla %i: %i objetos, como antes)',
+    'Scenario: Ovejas fuera del plan del mapa (semilla %i: %i objetos, con y sin ovejas)',
     (seed, objects) => {
-      const run = startSeededRun(aDefaultConfig(), seed);
+      const config = aDefaultConfig();
+      const run = startSeededRun(config, seed);
+      const noSheep = startSeededRun({ ...config, sheep: { ...config.sheep, maxAlive: 0 } }, seed);
       expect(run.snapshot().sheep.length).toBeGreaterThan(0);
-      expect(planFor(run.map, seed).objects).toBe(objects);
+      expect(noSheep.snapshot().sheep).toHaveLength(0);
+      const plan = planFor(run.map, seed);
+      expect(plan.objects).toBe(objects);
+      // Sin decoración, los mismos objetos con y sin ovejas (ninguno es de una oveja).
+      const zero = { maxDecor: 0 };
+      expect(planFor(noSheep.map, seed, [], zero).objects).toBe(
+        planFor(run.map, seed, [], zero).objects,
+      );
+      // La decoración no depende de dónde estén las ovejas: el plan tras moverse es el mismo.
+      // (Con tope de ovejas 0 los solares se colocan en otras celdas, regla de 0026, y la decoración
+      // sigue a los solares: ver incidencia de apply 0029.)
+      for (let i = 0; i < 600; i++) run.tick(PlayerInput.NONE);
+      expect(planFor(run.map, seed).decor).toEqual(plan.decor);
     },
   );
 

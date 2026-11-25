@@ -62,6 +62,7 @@ function canvasDouble() {
     rect: () => add('low', 'rect'),
     circle: () => add('low', 'circle'),
     foam: () => undefined,
+    frame: () => undefined,
     show: (i, v) => {
       const o = objects[i];
       if (o) o.visible = v;

@@ -107,6 +107,12 @@ function mapArtCanvas(
   const foams: Phaser.GameObjects.Sprite[] = [];
   /** Objetos del mapa pintado en orden de llamada: el índice de `show` (0018). */
   const painted: { setVisible(value: boolean): unknown }[] = [];
+  /** Sprite de cada índice pintado (`undefined` si es baldosa, rectángulo o círculo; 0029). */
+  const spriteAt: (Phaser.GameObjects.Sprite | undefined)[] = [];
+  const keep = (obj: { setVisible(value: boolean): unknown }, s?: Phaser.GameObjects.Sprite) => {
+    painted.push(obj);
+    spriteAt.push(s);
+  };
   return {
     clear: () => {
       tiles.hide();
@@ -116,6 +122,7 @@ function mapArtCanvas(
       sprites.high.hide();
       foams.length = 0;
       painted.length = 0;
+      spriteAt.length = 0;
     },
     tiles: (t) => {
       const obj = tiles
@@ -126,7 +133,7 @@ function mapArtCanvas(
         .setTileScale(t.scale)
         .setTilePosition(0, 0)
         .setVisible(true);
-      painted.push(obj);
+      keep(obj);
     },
     sprite: (layer, s) => {
       const obj = sprites[layer]
@@ -140,7 +147,7 @@ function mapArtCanvas(
       if (s.crop) obj.setCrop(s.crop.x, s.crop.y, s.crop.width, s.crop.height);
       else obj.setCrop();
       if (s.role === 'foam') foams.push(obj);
-      painted.push(obj);
+      keep(obj, obj);
     },
     rect: (r) => {
       const obj = rects
@@ -149,7 +156,7 @@ function mapArtCanvas(
         .setSize(r.width, r.height)
         .setFillStyle(r.color)
         .setVisible(true);
-      painted.push(obj);
+      keep(obj);
     },
     circle: (c) => {
       const obj = circles
@@ -158,10 +165,15 @@ function mapArtCanvas(
         .setRadius(c.radius)
         .setFillStyle(c.color)
         .setVisible(true);
-      painted.push(obj);
+      keep(obj);
     },
     foam: (frame) => {
       for (const f of foams) f.setFrame(frame);
+    },
+    // 0029: `TextureCrop.setFrame` (4.2.1) reaplica el recorte si `isCropped`; todos los frames de
+    // la animación miden lo mismo, así que tamaño y origen no cambian.
+    frame: (index, frame) => {
+      spriteAt[index]?.setFrame(frame);
     },
     show: (index, visible) => {
       painted[index]?.setVisible(visible);

@@ -162,7 +162,7 @@ const TerrainSchema = z
   });
 
 export const FOAM_MUST_LOOP = 'La animación de la espuma va en bucle.';
-export const MODELS_REQUIRED = 'El árbol necesita al menos un modelo.';
+export const TREE_MUST_LOOP = 'La animación del árbol va en bucle.';
 export const RECT_ORIGIN_MUST_BE_INTEGER = 'El recorte empieza en enteros ≥ 0.';
 
 /**
@@ -211,6 +211,43 @@ const MapShape = {
   origin: BaseShape.origin,
 };
 
+export const DECOR_ITEMS_REQUIRED = 'La decoración necesita al menos un aspecto.';
+export const DECOR_MAX_OBJECTS_MUST_BE_INTEGER = 'El tope de decoración es un entero ≥ 0.';
+export const DECOR_DENSITY_MUST_BE_POSITIVE = 'La densidad de la decoración es un número > 0.';
+export const DECOR_MARGIN_MUST_BE_INTEGER = 'El margen del castillo es un entero ≥ 0.';
+export const DECOR_SHEET_REPEATED = 'Dos aspectos de decoración no pueden usar la misma hoja';
+export const DECOR_SHEET_IS_ROCK = 'Un aspecto de decoración no puede usar la hoja de una roca';
+
+/**
+ * Aspecto de decoración (0029, design §Datos): una sola hoja (que lo identifica), su frame, escala,
+ * origen y si es alta (base en la capa baja y parte alta en la alta, como el árbol). Sin pesos,
+ * volteo ni `id`.
+ */
+const DecorItemSchema = z.strictObject({
+  sheet: BaseShape.sheet,
+  frame: FrameIndex,
+  scale: BaseShape.scale,
+  origin: BaseShape.origin,
+  tall: z.boolean(),
+});
+
+/**
+ * Decoración del mapa generado (0029): aspectos, tope en objetos de escena (sobre los datos),
+ * densidad (celdas válidas por decoración esperada) y margen de la huella del castillo en celdas.
+ */
+const DecorSchema = z.strictObject({
+  density: z.number().positive({ error: DECOR_DENSITY_MUST_BE_POSITIVE }),
+  maxObjects: z
+    .number()
+    .int({ error: DECOR_MAX_OBJECTS_MUST_BE_INTEGER })
+    .min(0, { error: DECOR_MAX_OBJECTS_MUST_BE_INTEGER }),
+  castleMargin: z
+    .number()
+    .int({ error: DECOR_MARGIN_MUST_BE_INTEGER })
+    .min(0, { error: DECOR_MARGIN_MUST_BE_INTEGER }),
+  items: z.array(DecorItemSchema).min(1, { error: DECOR_ITEMS_REQUIRED }),
+});
+
 /** Aspectos del mapa (change 0016, design §5.1 y §12.2 B2); todo estricto. */
 const MapAppearanceSchema = z.strictObject({
   water: z.strictObject({ ...MapShape, frame: FrameIndex }),
@@ -231,9 +268,14 @@ const MapAppearanceSchema = z.strictObject({
       loop: z.literal(true, { error: FOAM_MUST_LOOP }),
     }),
   }),
+  // 0029: el árbol reproduce su `idle` en bucle con una fase por celda (antes, modelos fijos).
   trees: z.strictObject({
     ...MapShape,
-    models: z.array(z.strictObject({ frame: FrameIndex })).min(1, { error: MODELS_REQUIRED }),
+    idle: z.strictObject({
+      frames: Frames,
+      fps: Fps,
+      loop: z.literal(true, { error: TREE_MUST_LOOP }),
+    }),
     flip: z.boolean(),
   }),
   bridges: z.strictObject({
@@ -243,6 +285,7 @@ const MapAppearanceSchema = z.strictObject({
     frames: z.strictObject({ northSouth: RectSchema, eastWest: RectSchema }),
   }),
   castle: z.strictObject({ ...MapShape, frame: FrameIndex }),
+  decor: DecorSchema,
 });
 
 /**
@@ -455,10 +498,30 @@ const AppearanceShape = z.strictObject({
   siteColors: SiteColorsSchema,
 });
 
+/**
+ * Hojas de la decoración (0029): distintas entre sí (la hoja identifica el aspecto) y ninguna de una
+ * roca de la piedra. El error nombra la hoja en el mensaje y el campo en la ruta.
+ */
+function checkDecorSheets(a: z.output<typeof AppearanceShape>, ctx: z.RefinementCtx): void {
+  const rocks = new Set(ROCK_SIZES.map((size) => a.pickups.stone.rocks[size].sheet.file));
+  const seen = new Set<string>();
+  a.map.decor.items.forEach((item, i) => {
+    const file = item.sheet.file;
+    const path = ['map', 'decor', 'items', i, 'sheet', 'file'];
+    if (rocks.has(file)) {
+      ctx.addIssue({ code: 'custom', path, message: `${DECOR_SHEET_IS_ROCK}: ${file}.` });
+    } else if (seen.has(file)) {
+      ctx.addIssue({ code: 'custom', path, message: `${DECOR_SHEET_REPEATED}: ${file}.` });
+    }
+    seen.add(file);
+  });
+}
+
 export const AppearanceSchema = AppearanceShape.superRefine((a, ctx) => {
   checkStructureColors(a.structureColors, a.terrain, ctx);
   checkResourceColors(a, ctx);
   checkSiteColors(a, ctx);
+  checkDecorSheets(a, ctx);
 });
 
 export type Appearance = z.output<typeof AppearanceSchema>;
@@ -467,6 +530,9 @@ export type StructureLooksAppearance = z.output<typeof StructureLooksSchema>;
 export type SiteLooksAppearance = z.output<typeof SiteLooksSchema>;
 export type SiteColors = z.output<typeof SiteColorsSchema>;
 export type MapAppearance = z.output<typeof MapAppearanceSchema>;
+/** Decoración del mapa generado (0029). */
+export type DecorAppearance = z.output<typeof DecorSchema>;
+export type DecorItem = z.output<typeof DecorItemSchema>;
 /** Recorte en px de una hoja no regular (marcos del puente). */
 export type SheetRect = z.output<typeof RectSchema>;
 export type Anim =

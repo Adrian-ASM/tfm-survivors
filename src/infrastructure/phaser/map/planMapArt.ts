@@ -1,14 +1,17 @@
 import type { CellType } from '../../../domain/map/CellType';
 import type { MapSnapshot, MapStructure, MapVein } from '../../../domain/map/MapSnapshot';
-import type { MapLooks, SiteAspectKey, StructureLook } from './mapLooks';
+import { deriveSeed } from '../../random/deriveSeed';
+import { TOWER_PHASE_KEY, decorCut, placeDecor, type PlacedDecor } from './decorChoices';
+import type { DecorLooks, MapLooks, SiteAspectKey, StructureLook } from './mapLooks';
 import { bridgeOrientation, riverSides, shoreCells, type RiverSides } from './shoreTiles';
 import { bestRuns, shoreTileCells, waterTileCells, type KeyedCell, type TileRun } from './tileRuns';
-import { treeModels } from './treeChoices';
+import { treeLooks } from './treeChoices';
 
 // Plan del pintado del mapa (design 0016 §5.2 y §12.2): convierte el snapshot del mapa y los
 // aspectos resueltos en la lista de objetos de cada capa, en orden de pintado. Puro: sin motor.
-// Capa baja: agua, espuma, orillas, puentes, troncos, fachada y parte baja de las estructuras.
-// Capa alta: copas, tejado y parte alta de las estructuras (0021).
+// Capa baja: agua, espuma, orillas, puentes, decoración (base), troncos, fachada y parte baja de las
+// estructuras. Capa alta: decoración (parte alta), copas, tejado y parte alta de las estructuras
+// (0021, 0029).
 
 /** Caja en px de mundo de lo que pinta un objeto del mapa (0018, design §3; error ≤ 1 px). */
 export interface Box {
@@ -52,7 +55,9 @@ export interface SpriteDraw {
     | 'roof'
     | 'structure'
     | 'structure-top'
-    | 'vein';
+    | 'vein'
+    | 'decor'
+    | 'decor-top';
   readonly texture: string;
   readonly frame: number | string;
   readonly x: number;
@@ -144,6 +149,32 @@ export interface MapArtCounts {
   readonly canopy: ElementCount;
   readonly bridge: ElementCount;
   readonly castle: ElementCount;
+  /** Decoración (0029), en decoraciones: del plan, pintadas con su hoja y sin pintar. */
+  readonly decor: DecorCount;
+}
+
+/** Recuento de la decoración (sonda `sprites.mapArt.decor`): `painted + unpainted = planned`. */
+export interface DecorCount {
+  readonly planned: number;
+  readonly painted: number;
+  readonly unpainted: number;
+}
+
+/** Decoración del plan (0029): la colocación (sobre los datos) y si se pinta con su hoja. */
+export interface PlannedDecor extends PlacedDecor {
+  readonly painted: boolean;
+}
+
+/**
+ * Grupo de animación del mapa (0029): objetos del plan (índices en `[...low, ...high]`) que muestran
+ * el frame `phasedFrameAt({ frames, fps }, ms, phase)`. Tronco y copa, o las dos partes de una
+ * torre intacta, van en el mismo grupo.
+ */
+export interface PlannedAnimation {
+  readonly frames: readonly number[];
+  readonly fps: number;
+  readonly phase: number;
+  readonly indices: readonly number[];
 }
 
 /** Celdas del mapa representadas por tipo, con arte o con reserva (`sprites.cells`). */
@@ -171,6 +202,10 @@ export interface MapArtPlan {
   readonly veins: readonly PlannedStructure[];
   /** Solares (0026), en el orden del snapshot, con los índices de sus tres aspectos. */
   readonly sites: readonly PlannedSite[];
+  /** Decoración (0029) en el orden de colocación, pintada o no. */
+  readonly decor: readonly PlannedDecor[];
+  /** Árboles y torres goblin intactas (0029), agrupados por animación y fase. */
+  readonly animations: readonly PlannedAnimation[];
 }
 
 export interface PlanContext {
@@ -327,17 +362,21 @@ function bridgeDraws(g: Grid, looks: MapLooks): LowDraw[] {
 function treeDraws(g: Grid, looks: MapLooks, decorSeed: number) {
   const trunks: LowDraw[] = [];
   const canopies: SpriteDraw[] = [];
-  if (!looks.trees.art) return { trunks: g.fallback('trunk', looks.colors.trunk), canopies };
+  /** Fase de cada árbol con arte (0029), en el orden de `trunks` y `canopies`. */
+  const phases: number[] = [];
+  if (!looks.trees.art) {
+    return { trunks: g.fallback('trunk', looks.colors.trunk), canopies, phases };
+  }
   const { texture, aspect } = looks.trees;
   const { frameWidth: w, frameHeight: h } = aspect.sheet;
   const cut = aspect.origin.y * h - g.s / aspect.scale;
-  for (const { index, frame, flipX } of treeModels(g.map, decorSeed, aspect)) {
+  for (const { index, phase, flipX } of treeLooks(g.map, decorSeed, aspect)) {
     const col = index % g.map.cols;
     const row = (index - col) / g.map.cols;
     const base = {
       kind: 'sprite',
       texture,
-      frame,
+      frame: aspect.idle.frames[phase] ?? 0,
       x: g.centerX(col),
       y: g.bottom(row),
       scale: aspect.scale,
@@ -350,8 +389,99 @@ function treeDraws(g: Grid, looks: MapLooks, decorSeed: number) {
     canopies.push(
       placed({ ...base, role: 'canopy', crop: { x: 0, y: 0, width: w, height: cut } }, size),
     );
+    phases.push(phase);
   }
-  return { trunks, canopies };
+  return { trunks, canopies, phases };
+}
+
+/**
+ * Decoración (0029): la colocación sale de los datos (no de la carga); solo las de aspecto con arte
+ * tienen piezas. Baja: 1 sprite entero en la capa baja; alta: base (desde el borde superior de la
+ * celda de anclaje) en la baja y parte alta en la alta, como el árbol.
+ */
+function decorDraws(g: Grid, decor: DecorLooks, decorSeed: number, generated: boolean) {
+  const low: SpriteDraw[] = [];
+  const high: SpriteDraw[] = [];
+  const placedDecor: PlannedDecor[] = [];
+  if (!generated) return { low, high, placed: placedDecor };
+  for (const d of placeDecor(g.map, decor.data, decorSeed)) {
+    const item = decor.data.items[d.item];
+    const painted = item !== undefined && decor.art[d.item] === true;
+    placedDecor.push({ ...d, painted });
+    if (!item || !painted) continue;
+    const { frameWidth: w, frameHeight: h } = item.sheet;
+    const base = {
+      kind: 'sprite',
+      texture: item.sheet.file,
+      frame: item.frame,
+      x: d.x,
+      y: d.y,
+      scale: item.scale,
+      origin: item.origin,
+      flipX: false,
+    } as const;
+    const size = frameOf(item.sheet);
+    if (!item.tall) {
+      low.push(placed({ ...base, role: 'decor', crop: null }, size));
+      continue;
+    }
+    const cut = decorCut(item, g.s);
+    low.push(
+      placed({ ...base, role: 'decor', crop: { x: 0, y: cut, width: w, height: h - cut } }, size),
+    );
+    if (cut > 0) {
+      high.push(
+        placed({ ...base, role: 'decor-top', crop: { x: 0, y: 0, width: w, height: cut } }, size),
+      );
+    }
+  }
+  return { low, high, placed: placedDecor };
+}
+
+/**
+ * Grupos de animación (0029, design §Animación): un grupo por fase de árbol con los índices de su
+ * tronco y su copa; uno por (tipo, fase) de torre intacta con arte e `idle` de ≥ 2 frames con las
+ * partes de su aspecto intacto. Ruinas, vetas, solares, castillo y decoración, sin grupo.
+ */
+function animationGroups(
+  looks: MapLooks,
+  trees: { phases: readonly number[]; trunkStart: number; canopyStart: number },
+  structures: readonly PlannedStructure[],
+  decorSeed: number,
+): PlannedAnimation[] {
+  const groups = new Map<
+    string,
+    { frames: readonly number[]; fps: number; phase: number; indices: number[] }
+  >();
+  const add = (
+    key: string,
+    frames: readonly number[],
+    fps: number,
+    phase: number,
+    at: number[],
+  ) => {
+    const k = `${key}#${String(phase)}`;
+    const group = groups.get(k) ?? { frames, fps, phase, indices: [] };
+    group.indices.push(...at);
+    groups.set(k, group);
+  };
+  if (looks.trees.art && looks.trees.aspect.idle.frames.length >= 2) {
+    const { frames, fps } = looks.trees.aspect.idle;
+    trees.phases.forEach((phase, k) => {
+      add('tree', frames, fps, phase, [trees.trunkStart + k, trees.canopyStart + k]);
+    });
+  }
+  const towerSeed = deriveSeed(decorSeed, TOWER_PHASE_KEY);
+  for (const s of structures) {
+    const look = looks.structures.types[s.type]?.intact;
+    if (!look?.art || s.fallback.intact) continue;
+    const { frames, fps } = look.aspect.idle;
+    if (frames.length < 2) continue;
+    add(`structure:${s.type}`, frames, fps, deriveSeed(towerSeed, s.id) % frames.length, [
+      ...s.intact,
+    ]);
+  }
+  return [...groups.values()].sort((a, b) => (a.indices[0] ?? 0) - (b.indices[0] ?? 0));
 }
 
 /**
@@ -603,7 +733,7 @@ function veinDraws(map: MapSnapshot, looks: MapLooks, start: number) {
 const count = (painted: number, fallback = 0): ElementCount => ({ painted, fallback });
 
 /** Recuentos de la sonda: celdas por elemento, con arte o con reserva (B9). */
-function countsOf(map: MapSnapshot, looks: MapLooks): MapArtCounts {
+function countsOf(map: MapSnapshot, looks: MapLooks): Omit<MapArtCounts, 'decor'> {
   const { water, trunk, bridge } = map.counts;
   const shores = shoreCells(map).length;
   const art = (on: boolean, n: number) => count(n, on ? 0 : n);
@@ -619,45 +749,67 @@ function countsOf(map: MapSnapshot, looks: MapLooks): MapArtCounts {
   };
 }
 
+/** Recuento de la decoración del plan: pintadas con su hoja y sin pintar (0029). */
+function decorCount(placedDecor: readonly PlannedDecor[]): DecorCount {
+  const painted = placedDecor.filter((d) => d.painted).length;
+  return { planned: placedDecor.length, painted, unpainted: placedDecor.length - painted };
+}
+
 /**
- * Plan de pintado del mapa: listas de la capa baja (agua, espuma, orillas, puentes, troncos y
- * fachada, en ese orden) y de la alta (copas y tejado).
+ * Plan de pintado del mapa: listas de la capa baja (agua, espuma, orillas, puentes, decoración,
+ * troncos y fachada, en ese orden) y de la alta (decoración alta, copas y tejado), y después las
+ * estructuras, vetas y solares.
  */
 export function planMapArt(map: MapSnapshot, looks: MapLooks, ctx: PlanContext): MapArtPlan {
   const g = new Grid(map, ctx.world);
-  const { trunks, canopies } = treeDraws(g, looks, ctx.decorSeed);
+  const trees = treeDraws(g, looks, ctx.decorSeed);
   const { facade, roof } = castleDraws(g, looks);
   const built = structureDraws(g, looks);
-  const ground: LowDraw[] = [
+  // 0029: decoración solo en el mapa generado (el único con huella de castillo).
+  const decor = decorDraws(g, looks.decor, ctx.decorSeed, map.castle !== null);
+  const beforeTrunks: LowDraw[] = [
     ...waterDraws(g, looks),
     ...foamDraws(g, looks),
     ...shoreDraws(g, looks),
     ...bridgeDraws(g, looks),
-    ...trunks,
-    ...facade,
+    ...decor.low,
   ];
+  const ground: LowDraw[] = [...beforeTrunks, ...trees.trunks, ...facade];
   // 0021: las estructuras tras la fachada (capa baja) y tras el tejado (capa alta). 0022: las vetas,
   // tras las estructuras en la capa baja.
   const veins = veinDraws(map, looks, ground.length + built.low.length);
   // 0026: los solares, tras las vetas en la capa baja y tras las estructuras en la alta.
   const sites = siteDraws(g, looks);
   const low = [...ground, ...built.low, ...veins.low, ...sites.low];
-  const above = [...canopies, ...roof];
+  const above = [...decor.high, ...trees.canopies, ...roof];
   const high = [...above, ...built.high, ...sites.high];
   const sitesLow = ground.length + built.low.length + veins.low.length;
   const sitesHigh = low.length + above.length + built.high.length;
   const foam = looks.foam.art && shoreCells(map).length > 0 ? looks.foam.aspect.idle : null;
   const { trunk, water, bridge, castle } = map.counts;
+  const structures = built.number(ground.length, low.length + above.length);
+  const animations = animationGroups(
+    looks,
+    {
+      phases: trees.phases,
+      trunkStart: beforeTrunks.length,
+      canopyStart: low.length + decor.high.length,
+    },
+    structures,
+    ctx.decorSeed,
+  );
   return {
     low,
     high,
     foam,
-    counts: countsOf(map, looks),
+    counts: { ...countsOf(map, looks), decor: decorCount(decor.placed) },
     cells: { trunk, water, bridge, castle },
     objects: low.length + high.length,
     cellSize: map.cellSize,
-    structures: built.number(ground.length, low.length + above.length),
+    structures,
     veins: veins.planned,
     sites: sites.number(sitesLow, sitesHigh),
+    decor: decor.placed,
+    animations,
   };
 }

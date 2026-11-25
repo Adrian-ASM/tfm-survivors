@@ -10,7 +10,7 @@ import { aSiteConfig, startWithSites } from '../../support/sites';
 const APPEARANCE = repoAppearance();
 const TOWER_FILE = APPEARANCE.sites.tower.sheet.file;
 const testSiteMap = () => startWithSites(aSiteConfig()).map;
-const MAX_MAP_OBJECTS = 1000;
+const MAX_MAP_OBJECTS = 950;
 
 describe('planMapArt · solares (spec sprite-rendering 0026)', () => {
   it('tres aspectos por solar: obra, casa y torre, con origen en el borde inferior de la huella', () => {
@@ -48,12 +48,18 @@ describe('planMapArt · solares (spec sprite-rendering 0026)', () => {
   });
 
   it.each([42, 123] as const)(
-    'Scenario: Presupuesto de objetos con solares · Objetos del mapa sin cambios (%i: 737 y 820)',
+    'Scenario: Presupuesto de objetos con solares · Objetos del mapa sin cambios (%i: 737 y 820 con tope 0)',
     (seed) => {
       const map = startSeededRun(aDefaultConfig(), seed).map;
+      // 0029: con el tope de decoración 0, los de antes; con los datos del repositorio, esos más
+      // los de su decoración (medidos en apply: 820 y 904), ≤ 950.
+      const zero = planFor(map, seed, [], { maxDecor: 0 });
       const plan = planFor(map, seed);
-      expect(plan.sites).toHaveLength(6);
-      expect(plan.objects).toBe(seed === 42 ? 737 : 820);
+      expect(zero.sites).toHaveLength(6);
+      expect(zero.objects).toBe(seed === 42 ? 737 : 820);
+      const decor = plan.decor.reduce((n, d) => n + d.pieces, 0);
+      expect(plan.objects).toBe(zero.objects + decor);
+      expect(plan.objects).toBe(seed === 42 ? 820 : 904);
       expect(plan.objects).toBeLessThanOrEqual(MAX_MAP_OBJECTS);
     },
   );

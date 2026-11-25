@@ -1,6 +1,7 @@
 import {
   RUIN_COLOR_KEY,
   type Appearance,
+  type DecorAppearance,
   type MapAppearance,
   type SheetRect,
   type StructureAspect,
@@ -46,6 +47,17 @@ export interface MapLooks {
   readonly veins: VeinLooks;
   /** Solares (0026): arte o reserva de la obra, la casa y la torre, y sus colores de reserva. */
   readonly sites: SiteLooks;
+  /** Decoración (0029): sus datos (la colocación no depende de la carga) y arte por aspecto. */
+  readonly decor: DecorLooks;
+}
+
+/**
+ * Decoración resuelta (0029): los datos tal cual (colocación y tope) y, por aspecto, si su hoja está
+ * cargada y contiene su frame. Sin arte, esas decoraciones no se pintan (sin reserva).
+ */
+export interface DecorLooks {
+  readonly data: DecorAppearance;
+  readonly art: readonly boolean[];
 }
 
 const OFF: Off = Object.freeze({ art: false });
@@ -88,11 +100,8 @@ export function resolveMapLooks(
     water: regular(map.water, frames, [map.water.frame]),
     shore: regular(map.shore, frames, Object.values(map.shore.cases)),
     foam: regular(map.foam, frames, map.foam.idle.frames),
-    trees: regular(
-      map.trees,
-      frames,
-      map.trees.models.map((m) => m.frame),
-    ),
+    // 0029: todos los frames de su `idle` (sin uno de ellos, el árbol cae entero a reserva).
+    trees: regular(map.trees, frames, map.trees.idle.frames),
     bridges: bridgesOk
       ? {
           art: true,
@@ -103,6 +112,10 @@ export function resolveMapLooks(
         }
       : OFF,
     castle: regular(map.castle, frames, [map.castle.frame]),
+    decor: {
+      data: map.decor,
+      art: map.decor.items.map((item) => fits(frames, item.sheet.file, [item.frame])),
+    },
     colors,
     structures,
     veins,
@@ -127,10 +140,13 @@ export interface StructureLooks {
   readonly ruinColor: number;
 }
 
-/** Arte o reserva de cada aspecto de estructura: hoja cargada y su frame `idle[0]` dentro. */
+/**
+ * Arte o reserva de cada aspecto de estructura: hoja cargada y **todos** los frames de su `idle`
+ * dentro (0029: una torre sin su frame 3 cae a reserva en vez de pedir un frame inexistente).
+ */
 export function resolveStructureLooks(appearance: Appearance, frames: FrameCount): StructureLooks {
   const look = (aspect: StructureAspect): StructureLook =>
-    regular(aspect, frames, aspect.idle.frames.slice(0, 1));
+    regular(aspect, frames, aspect.idle.frames);
   const types = Object.fromEntries(
     Object.entries(appearance.structures).map(([id, a]) => [
       id,
