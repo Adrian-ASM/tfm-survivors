@@ -299,6 +299,17 @@ export const withBuildings = (config: RunConfig, buildings: BuildingsConfig): Ru
   buildings,
 });
 
+/**
+ * El mismo contenido con 0 solares por mapa (0027): desde que los solares libres bloquean, su
+ * colocación (que evita vetas, montones y ovejas) cambia la partida. Los escenarios que comparan dos
+ * contenidos que solo difieren en eso lo usan en los dos lados.
+ */
+export const withoutSites = (config: RunConfig): RunConfig =>
+  withBuildings(config, {
+    ...config.buildings,
+    sites: { ...config.buildings.sites, count: 0 },
+  });
+
 /** El mismo contenido sin fuentes de recursos (design 0022 §10). */
 export const withoutResourceSources = (config: RunConfig): RunConfig =>
   withResources(config, NO_RESOURCES);
@@ -614,7 +625,7 @@ export interface RawContent {
       route: { min: number; max: number };
       [extra: string]: unknown;
     };
-    access: { radius: number; rearmDistance: number; [extra: string]: unknown };
+    contact: { rearmDistance: number; [extra: string]: unknown };
     house: {
       cost: { wood: number; stone: number };
       income: { gold: number; everyTicks: number };

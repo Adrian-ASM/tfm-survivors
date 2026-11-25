@@ -222,29 +222,33 @@ export interface FootprintSnapshot {
 }
 
 /**
- * Solar de obra (spec build-sites 0026): id, estado, si está armado, acceso y huellas de casa y de
- * torre (iguales con el contenido por defecto, design §1).
+ * Solar de obra (spec build-sites 0027): id, estado, si está armado y huellas de casa y de torre
+ * (iguales con el contenido por defecto). Sin acceso.
  */
 export interface SiteSnapshot {
   readonly id: number;
   readonly state: 'free' | 'house' | 'tower';
   readonly armed: boolean;
-  readonly access: { readonly x: number; readonly y: number };
   readonly house: FootprintSnapshot;
   readonly tower: FootprintSnapshot;
 }
 
-/** Opción de la oferta de obra: tipo de edificio y su coste. */
+/**
+ * Opción de la oferta de obra (spec build-sites 0027): tipo de edificio, su coste, si es asequible
+ * con la madera y la piedra al abrirse y lo que falta de cada una (max(0, coste − saldo)).
+ */
 export interface BuildOptionSnapshot {
   readonly kind: 'house' | 'tower';
   readonly wood: number;
   readonly stone: number;
+  readonly affordable: boolean;
+  readonly missing: { readonly wood: number; readonly stone: number };
 }
 
 /**
- * Oferta de obra (spec build-sites 0026): abierta si y solo si la partida está en obra, con el solar
- * abierto y sus opciones asequibles al abrirse (`house` y después `tower`); cerrada, sin solar ni
- * opciones.
+ * Oferta de obra (spec build-sites 0027): abierta si y solo si la partida está en obra, con el solar
+ * abierto y siempre las dos opciones (`house` y después `tower`), cada una con su asequibilidad al
+ * abrirse; cerrada, sin solar ni opciones.
  */
 export interface BuildSnapshot {
   readonly open: boolean;

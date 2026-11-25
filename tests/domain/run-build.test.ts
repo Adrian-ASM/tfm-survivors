@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import type { Run } from '../../src/domain/run/Run';
-import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import {
   DEFAULT_CHARACTER_UPGRADES,
@@ -16,25 +15,22 @@ import { CountingRandom } from '../support/random';
 import { advance, startSeededRun, ticks } from '../support/runs';
 import { declaredSheep, sheepRandom } from '../support/sheep';
 import {
-  NEAR_ACCESS,
-  TEST_ACCESS,
   TEST_SITE,
+  TOUCH,
   aSiteConfig,
   buildNow,
-  dAccess,
   leaveSiteIfOpen,
   startWithSites,
   untilBuilding,
   withStock,
 } from '../support/sites';
 
-// Spec build-sites 0026, "Construcción en el solar" y "Salida de la obra sin construir"; resources,
+// Spec build-sites 0026 y 0027, "Construcción en el solar" y "Salida de la obra sin construir"; resources,
 // "Contadores de oro y madera" y "Contador de piedra"; run-state, "Estado de la partida".
 const UP = PlayerInput.of(0, -1);
 const RIGHT = PlayerInput.of(1, 0);
 const LEFT = PlayerInput.of(-1, 0);
 const CHARACTER = { character: DEFAULT_CHARACTER_UPGRADES, weapons: [] };
-const building = (snaps: readonly RunSnapshot[]) => snaps.some((s) => s.status === 'building');
 
 /** Partida en obra en el solar de prueba (abierta en el tick 1) con estos recursos. */
 function inSite(wood: number, stone = 0, gold = 0, config = aSiteConfig()): Run {
@@ -51,7 +47,7 @@ function outsideTheSite(): Run[] {
   });
   const choosing = startWithSites(withUpgrades(aSiteConfig(), CHARACTER), {
     ...withStock(100, 100),
-    gems: [{ ...NEAR_ACCESS, value: 9 }],
+    gems: [{ ...TOUCH, value: 9 }],
   });
   ticks(choosing, 1);
   const shopping = startWithSites(
@@ -71,7 +67,7 @@ function outsideTheSite(): Run[] {
   return all;
 }
 
-describe('Construcción en el solar (spec build-sites 0026)', () => {
+describe('Construcción en el solar (spec build-sites 0027)', () => {
   it('Scenario: Construir una casa', () => {
     const run = inSite(20, 7, 3);
     const n = run.snapshot().tick;
@@ -86,13 +82,31 @@ describe('Construcción en el solar (spec build-sites 0026)', () => {
     expect([s.resources.wood, s.resources.stone, s.sites[0]?.state]).toEqual([0, 0, 'tower']);
   });
 
-  it('Scenario: Torre no ofrecida (madera 30, piedra 14)', () => {
+  it('Scenario: Torre no asequible (madera 30, piedra 14: en la oferta, no asequible)', () => {
     const run = inSite(30, 14);
     const before = run.snapshot();
+    expect(before.build.options[1]).toMatchObject({ kind: 'tower', affordable: false });
     const r = run.build('tower');
     expect(r).toEqual({ ok: false, error: { code: 'not-affordable', kind: 'tower' } });
     expect(run.snapshot()).toEqual(before);
     expect(run.status).toBe('building');
+  });
+
+  it('Scenario: Nada asequible (madera 0 y piedra 0)', () => {
+    const run = inSite(0, 0);
+    const before = run.snapshot();
+    expect(run.build('house')).toEqual({
+      ok: false,
+      error: { code: 'not-affordable', kind: 'house' },
+    });
+    expect(run.build('tower')).toEqual({
+      ok: false,
+      error: { code: 'not-affordable', kind: 'tower' },
+    });
+    expect(run.snapshot()).toEqual(before);
+    expect(run.status).toBe('building');
+    expect(run.leaveSite().ok).toBe(true);
+    expect(run.status).toBe('running');
   });
 
   it('Scenario: Tipo desconocido (castle)', () => {
@@ -148,11 +162,12 @@ describe('Construcción en el solar (spec build-sites 0026)', () => {
     expect([s.resources.gold, s.resources.wood, s.resources.stone]).toEqual([g, w, st]);
   });
 
-  it('Scenario: La madera baja al construir (con madera 14 la casa no se ofrece)', () => {
-    const run = startWithSites(aSiteConfig(), withStock(14));
-    const snaps = ticks(run, 60);
-    expect(building(snaps)).toBe(false);
-    expect(snaps.at(-1)?.resources.wood).toBe(14);
+  it('Scenario: La madera baja al construir (con madera 14 la casa no es asequible)', () => {
+    // 0027: la oferta se abre siempre; "no se ofrece" (resources 0026) se lee como no asequible.
+    const run = inSite(14);
+    expect(run.snapshot().build.options[0]).toMatchObject({ kind: 'house', affordable: false });
+    expect(run.build('house').ok).toBe(false);
+    expect(run.snapshot().resources.wood).toBe(14);
   });
 
   it('Scenario: Construcciones distintas divergen (simulation-loop)', () => {
@@ -163,7 +178,7 @@ describe('Construcción en el solar (spec build-sites 0026)', () => {
   });
 
   it('el edificio bloquea al jugador desde el tick siguiente (choca con la cara inferior)', () => {
-    const run = startWithSites(aSiteConfig(), { ...withStock(15), player: TEST_ACCESS });
+    const run = startWithSites(aSiteConfig(), { ...withStock(15), player: TOUCH });
     untilBuilding(run, 1);
     buildNow(run, 'house');
     const path = ticks(run, 120, UP);
@@ -226,37 +241,29 @@ describe('Lista de solares y estado de la partida con edificios', () => {
     ).toBe(true);
   });
 
-  it('Scenario: Solar construido (madera y piedra 100, ida a d = 400 y vuelta)', () => {
-    const run = inSite(115, 100);
-    buildNow(run, 'house');
-    const away = ticks(run, 390, RIGHT);
-    const back = ticks(run, 400, LEFT);
-    const rest = ticks(run, 60);
-    expect(dAccess(away.at(-1))).toBeCloseTo(400, 6);
-    expect(Math.min(...back.map(dAccess))).toBeLessThan(40);
-    expect(building([...away, ...back, ...rest])).toBe(false);
-  });
-
   it('Scenario: Snapshot de los solares no mutable desde fuera (simulation-loop)', () => {
     const run = startWithSites(aSiteConfig(), { ...withStock(0), player: { x: 3000, y: 2000 } });
     ticks(run, 10);
     const s = run.snapshot();
-    const site = s.sites[0] as { state: string; armed: boolean };
+    const site = s.sites[0] as { state: string; armed: boolean; house: { col: number } };
     try {
       site.state = 'house';
       site.armed = false;
+      site.house.col = 0;
     } catch {
       // Congelado: el adaptador no puede cambiarlo.
     }
     const [next] = ticks(run, 1);
     expect([next?.tick, next?.sites[0]?.state, next?.sites[0]?.armed]).toEqual([11, 'free', true]);
+    expect(next?.sites[0]?.house).toEqual({ col: 20, row: 10, cols: 2, rows: 2 });
     expect(Object.isFrozen(s.sites) && Object.isFrozen(s.sites[0])).toBe(true);
   });
 
   it('Scenario: Obra abierta justo antes del tick de la victoria (duración 120)', () => {
+    // A 1 px por tick desde y = 856: la primera g ≤ ε es la del tick 119 (y = 737).
     const run = startWithSites(withDuration(aSiteConfig(), 2), {
       ...withStock(15),
-      player: { x: TEST_ACCESS.x, y: TEST_ACCESS.y + 158.5 },
+      player: { x: 1260, y: 856 },
     });
     expect(untilBuilding(run, 200, UP)).toBe(119);
     const during = ticks(run, 600, UP);
@@ -284,10 +291,11 @@ describe('Lista de solares y estado de la partida con edificios', () => {
     ['El tipo de las celdas no cambia (build-sites)'],
   ])('Scenario: %s (semilla 42, casa en su primer solar)', () => {
     const config = aDefaultConfig();
-    const first = startSeededRun(config, 42).map.sites[0];
+    const run0 = startSeededRun(config, 42).map;
+    const first = run0.sites[0];
     if (!first) throw new Error('sin solares');
     const run = startSeededRun(config, 42, 'generated', {
-      player: first.access,
+      player: { x: first.x, y: (first.row + first.rows) * run0.cellSize + 16 },
       resources: { gold: 0, wood: 15, stone: 0 },
     });
     const atStart = [...run.map.cells];

@@ -5,18 +5,21 @@ import { Run } from '../../src/domain/run/Run';
 import type { RunConfig } from '../../src/domain/run/RunConfig';
 import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
 import type { TerrainSource } from '../../src/domain/map/TerrainSource';
-import { CONTENT_BUILDINGS, aDefaultConfig, withBuildings, withPlayer } from '../support/builders';
+import { aDefaultConfig, withPlayer } from '../support/builders';
 import { builderBot } from '../support/policies';
 import { CountingRandom } from '../support/random';
 import { chooseFirstWhileOpen, visitShop, visitSite } from '../support/runs';
+import { withRearm } from '../support/sites';
 
-// Spec simulation-loop 0026, "Política de obra fija en los escenarios" y "Determinismo" ("Partida
-// con edificios reproducible"). Semilla 42 con su mapa generado.
+// Spec simulation-loop 0026 y 0027, "Política de obra fija en los escenarios" y "Determinismo"
+// ("Partida con edificios reproducible"). Semilla 42 con su mapa generado.
 const CONFIG = aDefaultConfig();
-const NO_SITES = withBuildings(CONFIG, {
-  ...CONTENT_BUILDINGS,
-  sites: { ...CONTENT_BUILDINGS.sites, count: 0 },
-});
+/**
+ * 0027: los mismos solares, igual de bloqueantes, pero desarmados al empezar y sin re-armarse nunca
+ * (X = 1e6): ninguna oferta de obra llega a abrirse.
+ */
+const NEVER_ARMED = withRearm(CONFIG, 1e6);
+const DISARMED = Array.from({ length: CONFIG.buildings.sites.count }, () => ({ armed: false }));
 
 /** Partida sembrada como la composición, con contadores en el azar de partida, ovejas y piedra. */
 function counted(config: RunConfig, setup = {}) {
@@ -54,18 +57,20 @@ function hash(text: string): number {
   return h >>> 0;
 }
 
-describe('Política de obra fija (spec simulation-loop 0026)', () => {
+describe('Política de obra fija (spec simulation-loop 0027)', () => {
   it('Scenario: La política de obra fija no cambia la partida (semilla 42, madera y piedra 100)', () => {
     const setup = { resources: { gold: 0, wood: 100, stone: 100 } };
     const a = counted(CONFIG, setup);
-    const b = counted(NO_SITES, setup);
+    const b = counted(NEVER_ARMED, { ...setup, sites: DISARMED });
     // Inputs del bot v5 que visita los solares y sale sin construir, grabados en la primera.
     const bot = builderBot(CONFIG, a.run.map, { build: false });
     let opened = 0;
+    let openedB = 0;
     const left: string[] = [];
     const right: string[] = [];
     for (let t = 0; t < 3600 && a.run.status !== 'over'; t++) {
       if (a.run.status === 'building') opened++;
+      if (b.run.status === 'building') openedB++;
       visitSite(a.run, bot);
       chooseFirstWhileOpen(a.run);
       chooseFirstWhileOpen(b.run);
@@ -76,6 +81,7 @@ describe('Política de obra fija (spec simulation-loop 0026)', () => {
       right.push(comparable(b.run.snapshot(), b.calls()));
     }
     expect(opened).toBeGreaterThanOrEqual(2);
+    expect(openedB).toBe(0);
     expect(left.length).toBe(right.length);
     expect(left.findIndex((x, i) => x !== right[i])).toBe(-1);
   });

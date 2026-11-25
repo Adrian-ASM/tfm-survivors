@@ -54,9 +54,12 @@ function spawnsPerTick(list: readonly RunSnapshot[], guards = false): Spawn[][] 
 }
 
 /** Mapa generado por la semilla 7 (el de `startSeededRun`). */
+/** Mapa generado de la semilla 7 con las huellas de sus solares libres (ADR-0026: bloquean). */
 function generatedMap(): GameMap {
   const map = resolveTerrain(seededRun(7).terrain, mapRules());
   if (!map.ok) throw new Error(map.error.message);
+  for (const s of startSeededRun(CONFIG, 7).map.sites)
+    map.value.build(s.col, s.row, s.cols, s.rows);
   return map.value;
 }
 

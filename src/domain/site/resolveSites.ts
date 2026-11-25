@@ -2,28 +2,41 @@ import type { GameMap } from '../map/GameMap';
 import type { DeclaredSite, TerrainSource } from '../map/TerrainSource';
 import { assertNever } from '../shared/assertNever';
 import { err, invalidConfig, ok, type DomainError, type Result } from '../shared/Result';
-import { ACCESS_OFFSET_CELLS, type BuildingRules } from './BuildingRules';
+import type { BuildingRules } from './BuildingRules';
+import type { BuildSite } from './BuildSite';
 import { placeSites, type PlacedBefore } from './placeSites';
 
-export const MAP_SITE_OUTSIDE =
-  'La huella y el acceso de un solar declarado deben caber en la rejilla y en el mundo';
+export const MAP_SITE_OUTSIDE = 'La huella de un solar declarado debe caber en la rejilla';
+export const MAP_SITE_OVERLAPS_PLAYER =
+  'La huella de un solar no puede solapar al jugador en su posición inicial';
 
-/** ¿Caben la huella del ancla (col, row) en la rejilla y su acceso en el mundo? */
+/**
+ * Primer solar cuya huella solapa el círculo (x, y, r) del jugador inicial (design 0027 §1.3): la
+ * tangencia (g = 0) es legal. El error nombra `map.sites.<i>`; `null` si ninguno.
+ */
+export function siteOverlappingPlayer(
+  sites: readonly BuildSite[],
+  x: number,
+  y: number,
+  r: number,
+): DomainError | null {
+  const i = sites.findIndex((s) => s.gap(x, y, r) < 0);
+  if (i < 0) return null;
+  const at = `map.sites.${String(i)}`;
+  return invalidConfig(at, `${MAP_SITE_OVERLAPS_PLAYER} (solar ${at})`);
+}
+
+/** ¿Cabe la huella del ancla (col, row) en la rejilla? (0027: sin acceso.) */
 function fits(site: DeclaredSite, map: GameMap, rules: BuildingRules): boolean {
   const { col, row } = site;
   const { cols, rows } = rules.sites.footprint;
-  const s = map.cellSize;
-  const accessX = (col + cols / 2) * s;
-  const accessY = (row + rows + ACCESS_OFFSET_CELLS) * s;
   return (
     Number.isInteger(col) &&
     Number.isInteger(row) &&
     col >= 0 &&
     row >= 0 &&
     col + cols <= map.cols &&
-    row + rows <= map.rows &&
-    accessX <= map.width &&
-    accessY <= map.height
+    row + rows <= map.rows
   );
 }
 

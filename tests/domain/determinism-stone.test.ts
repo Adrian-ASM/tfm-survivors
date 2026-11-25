@@ -74,12 +74,15 @@ function stonesDropped(snaps: readonly RunSnapshot[]): number {
 }
 
 describe('Firma dorada de las piedras (simulation-loop 0025)', () => {
-  it.each([42, 123] as const)('Scenario: Firma dorada de las piedras (%i)', (seed) => {
-    const signature = stoneSignatureForSeed(seed);
+  it.each([42, 123] as const)(
+    'Scenario: Firma dorada de las piedras · Firma de la piedra regenerada (%i, 0027)',
+    (seed) => {
+      const signature = stoneSignatureForSeed(seed);
 
-    expect(signature).toEqual(STONE_GOLDEN[seed]);
-    expect(signature.dropped).toBeGreaterThanOrEqual(1);
-  });
+      expect(signature).toEqual(STONE_GOLDEN[seed]);
+      expect(signature.dropped).toBeGreaterThanOrEqual(1);
+    },
+  );
 
   it.each([42, 123] as const)('Scenario: Firmas anteriores intactas (%i)', (seed) => {
     const run = startSeededRun(aDefaultConfig(), seed);

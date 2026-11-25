@@ -5,13 +5,7 @@ import { TickRun } from '../../src/application/TickRun';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import { TICK_MS } from '../support/builders';
-import {
-  NEAR_ACCESS,
-  aSiteConfig,
-  declaredSites,
-  startWithSites,
-  withStock,
-} from '../support/sites';
+import { TOUCH, aSiteConfig, declaredSites, startWithSites, withStock } from '../support/sites';
 
 // Spec simulation-loop 0026, "Sin tiempo acumulado en obra" (regresión del bucle de paso fijo: la
 // obra congela como la tienda). La obra del solar de prueba se abre en el tick 1.
@@ -21,7 +15,7 @@ describe('Sin tiempo acumulado en obra (simulation-loop 0026)', () => {
     const r = new StartRun().execute(
       aSiteConfig(),
       new Mulberry32RandomGenerator(42),
-      { player: NEAR_ACCESS, ...withStock(15) },
+      { player: TOUCH, ...withStock(15) },
       declaredSites([{ col: 20, row: 10 }]),
     );
     if (!r.ok) throw new Error(r.error.message);

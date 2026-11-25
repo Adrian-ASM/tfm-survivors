@@ -141,7 +141,8 @@ describe('Plazos del jugador quieto con el contenido final (0019)', () => {
 
 // Spec run-outcome (0010), "Partida ganable y perdible": requisito "Perdible" sobre 1..50, con la
 // política de tienda fija (0024). M1 de 0024: el quieto muere como muy tarde en el tick 6.081
-// (generado) y 6.475 (vacío), frente a 10.800 (margen 4.325 ticks); nunca pasa por la tienda.
+// (generado) y 6.475 (vacío), frente a 10.800 (margen 4.325 ticks); nunca pasa por la tienda. 0027
+// (solares bloqueantes): 6.067 (generado) y 6.475 (vacío); nunca pasa por en obra.
 describe('Jugador quieto pierde (0010)', () => {
   it('Scenario: Jugador quieto pierde con todas las semillas (mapa generado) · Quieto pierde con ovejas · Quieto pierde con la tienda · Mejoras de arma fuera de la oferta · Quieto pierde con los solares', () => {
     const t0 = performance.now();
@@ -230,35 +231,38 @@ describe('Balance con el contenido por defecto y el bot v4 (0024)', () => {
     expect(traces.some((t) => t.economy.purchases + t.economy.heals > 0)).toBe(true);
   });
 
-  it('Scenario: Línea base nueva congelada (cada semilla igual que la base M2)', () => {
+  it('Scenario: Línea base nueva congelada (cada semilla igual que la base de 0027)', () => {
     const rows = finals.map((s, i) => [BALANCE_SEEDS[i], s.outcome, s.tick, s.kills]);
 
     expect(rows).toEqual(BALANCE_BASELINE.map((r) => [...r]));
   });
 
   // Spec resources (0025), "Balance idéntico con la piedra": el lote juega con el azar de la piedra
-  // (`startSeededRun`) y la línea base de 0024 no se regenera.
-  it('Scenario: Línea base intacta (30/50 semilla a semilla y ≥ 1 piedra soltada)', () => {
+  // (`startSeededRun`); la línea base es la regenerada en 0027 (34/50, antes 30/50).
+  it('Scenario: Línea base intacta (34/50 semilla a semilla y ≥ 1 piedra soltada)', () => {
     const rows = finals.map((s, i) => [BALANCE_SEEDS[i], s.outcome, s.tick, s.kills]);
     const wins = finals.filter((s) => s.outcome === 'won' && s.tick === TEN_MINUTES).length;
 
     expect(rows).toEqual(BALANCE_BASELINE.map((r) => [...r]));
-    expect(wins).toBe(30);
+    expect(wins).toBe(34);
     expect(traces.some((t) => t.economy.stoneDropped + t.economy.stoneCollected >= 1)).toBe(true);
   });
 
-  // Spec build-sites (0026), "Línea base intacta con el bot v4": el v4 cierra cada oferta de obra
-  // sin construir (política de obra fija) y la línea base no se regenera.
-  it('Scenario: Línea base intacta con el bot v4 (30/50 semilla a semilla, ningún solar construido)', () => {
+  // Spec build-sites (0027), "Bot v4 en banda y línea base": el v4 cierra cada oferta de obra sin
+  // construir (política de obra fija) y rodea los solares libres; la línea base se regenera en 0027.
+  it('Scenario: Bot v4 en banda y línea base (34/50 semilla a semilla, ningún solar construido)', () => {
     const rows = finals.map((s, i) => [BALANCE_SEEDS[i], s.outcome, s.tick, s.kills]);
+    const wins = finals.filter((s) => s.outcome === 'won' && s.tick === TEN_MINUTES).length;
 
+    expect(wins).toBeGreaterThanOrEqual(WIN_BAND.min);
+    expect(wins).toBeLessThanOrEqual(WIN_BAND.max);
     expect(rows).toEqual(BALANCE_BASELINE.map((r) => [...r]));
     expect(finals.every((s) => s.sites.length === 6)).toBe(true);
     expect(finals.flatMap((s) => s.sites).every((x) => x.state === 'free')).toBe(true);
     expect(traces.every((t) => t.buildings.houses + t.buildings.towers === 0)).toBe(true);
   });
 
-  it('Scenario: Barril que cumple su papel · Mechas por partida (> 16,3; 30,44 en M2)', () => {
+  it('Scenario: Barril que cumple su papel · Mechas por partida (> 16,3; 29,9 en 0027)', () => {
     const fuses = perRun(traces, (t) => t.fuses);
 
     expect(fuses, `mechas por partida: ${fuses.toFixed(2)}`).toBeGreaterThan(BARREL_FUSE_BASELINE);
@@ -280,7 +284,9 @@ describe('Balance con el contenido por defecto y el bot v4 (0024)', () => {
 
 // Spec run-outcome (0010 y 0024), "Bot de referencia para el balance".
 describe('Bot de referencia (0010)', () => {
-  it('Scenario: Bot reproducible (semilla 7, dos veces, con elecciones y compras)', () => {
+  // 0027: con los solares bloqueantes, el v4 de la semilla 7 ya no llega a comprar (pierde en el
+  // 12.467 sin visitar la tienda); la spec solo pide reproducibilidad, con mejoras adquiridas.
+  it('Scenario: Bot reproducible (semilla 7, dos veces, con elecciones)', () => {
     const summary = () => {
       const run = startDefault(7);
       const bot = botFor(run);
@@ -302,7 +308,7 @@ describe('Bot de referencia (0010)', () => {
     };
 
     const first = summary();
-    expect(first.bought.length).toBeGreaterThan(0);
+    expect(first.up.length).toBeGreaterThan(0);
     expect(summary()).toEqual(first);
   });
 });

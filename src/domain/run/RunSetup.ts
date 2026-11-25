@@ -60,8 +60,6 @@ export const SETUP_TOO_MANY_STRUCTURES =
 export const SETUP_STRUCTURE_HEALTH_OUT_OF_RANGE =
   'La vida inicial de una estructura debe ser finita y estar entre 0 y la de su tipo.';
 export const SETUP_TOO_MANY_SITES = 'Hay más solares iniciales que solares en el mapa.';
-export const SETUP_SITE_OVERLAPS_PLAYER =
-  'Un solar construido al empezar no puede solapar al jugador inicial.';
 export const SETUP_UPGRADE_LEVEL_OUT_OF_RANGE =
   'El nivel inicial de una mejora debe ser un entero en [0, maxLevel].';
 
@@ -142,9 +140,12 @@ export interface RunSetup {
   /**
    * Por índice de la lista de solares (0026, escenarios preparados): construido al empezar (en el
    * tick 0) como casa o torre, con el mismo efecto que construirlo en la obra; sin `state`, libre.
-   * Como mucho tantas entradas como solares.
+   * `armed` (0027, por defecto true): si empieza armado. Como mucho tantas entradas como solares.
    */
-  readonly sites?: readonly { readonly state?: 'house' | 'tower' }[];
+  readonly sites?: readonly {
+    readonly state?: 'house' | 'tower';
+    readonly armed?: boolean;
+  }[];
 }
 
 /** Dinamita inicial de `RunSetup` (tests y bench). */

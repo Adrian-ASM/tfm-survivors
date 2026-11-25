@@ -19,12 +19,13 @@ class FakeMask {
   }
 }
 
-/** Partida de la semilla 42 con el jugador en el acceso del primer solar y madera para la casa. */
+/** Partida de la semilla 42 con el jugador tangente al primer solar y madera para la casa. */
 function atFirstSite() {
-  const first = startSeededRun(aDefaultConfig(), 42).map.sites[0];
+  const { sites, cellSize } = startSeededRun(aDefaultConfig(), 42).map;
+  const first = sites[0];
   if (!first) throw new Error('sin solares');
   return startSeededRun(aDefaultConfig(), 42, 'generated', {
-    player: first.access,
+    player: { x: first.x, y: (first.row + first.rows) * cellSize + 16 },
     resources: { gold: 0, wood: 15, stone: 0 },
   });
 }

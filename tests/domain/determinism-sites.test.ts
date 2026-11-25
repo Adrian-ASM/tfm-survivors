@@ -22,14 +22,13 @@ import { SITE_GOLDEN } from '../support/siteGolden';
 import { siteSignatureOf } from '../support/sites';
 import { STONE_GOLDEN, stoneSignatureForSeed } from '../support/stoneGolden';
 
-// Spec procedural-map 0026, "Colocación de solares determinista con azar propio" (`SITE_STREAM` 7).
+// Spec procedural-map 0026 y 0027, "Colocación de solares determinista con azar propio" (`SITE_STREAM` 7).
 const CONTENT = aDefaultConfig();
 const withCount = (count: number): RunConfig =>
   withBuildings(CONTENT, { ...CONTENT_BUILDINGS, sites: { ...CONTENT_BUILDINGS.sites, count } });
 
-/** Lista de solares del tick 0 con accesos y huellas (lo que comparan los escenarios). */
-const sitesOf = (run: Run) =>
-  run.map.sites.map((s) => [s.id, s.col, s.row, s.cols, s.rows, s.access.x, s.access.y]);
+/** Lista de solares del tick 0: orden y huellas (lo que comparan los escenarios; sin acceso). */
+const sitesOf = (run: Run) => run.map.sites.map((s) => [s.id, s.col, s.row, s.cols, s.rows]);
 
 describe('Solares deterministas con azar propio (spec procedural-map 0026)', () => {
   it('Scenario: Misma semilla, mismos solares', () => {
@@ -46,7 +45,7 @@ describe('Solares deterministas con azar propio (spec procedural-map 0026)', () 
 
   it('Scenario: Semillas distintas, solares distintos', () => {
     const lists = BALANCE_SEEDS.map((seed) =>
-      JSON.stringify(startSeededRun(CONTENT, seed).map.sites.map((s) => s.access)),
+      JSON.stringify(sitesOf(startSeededRun(CONTENT, seed))),
     );
     expect(new Set(lists).size).toBe(BALANCE_SEEDS.length);
   });

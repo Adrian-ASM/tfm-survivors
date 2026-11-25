@@ -1,5 +1,4 @@
 import type { BuildSnapshot, FootprintSnapshot, SiteSnapshot } from '../run/RunSnapshot';
-import type { BuildingRules } from './BuildingRules';
 import type { BuildSite } from './BuildSite';
 import type { Settlement } from './Settlement';
 
@@ -21,8 +20,7 @@ export function toSiteSnapshots(sites: readonly BuildSite[]): readonly SiteSnaps
       Object.freeze({
         id: s.id,
         state: s.state,
-        armed: s.gate.armed,
-        access: Object.freeze({ x: s.access.x, y: s.access.y }),
+        armed: s.armed,
         house: footprintOf(s),
         tower: footprintOf(s),
       }),
@@ -31,14 +29,12 @@ export function toSiteSnapshots(sites: readonly BuildSite[]): readonly SiteSnaps
 }
 
 /** Oferta de la obra abierta (al abrirse; no cambia mientras dura), o la cerrada. */
-export function toBuildSnapshot(settlement: Settlement, rules: BuildingRules): BuildSnapshot {
+export function toBuildSnapshot(settlement: Settlement): BuildSnapshot {
   const site = settlement.open;
   if (!site) return CLOSED_BUILD;
   return Object.freeze({
     open: true,
     siteId: site.id,
-    options: Object.freeze(
-      settlement.offered.map((kind) => Object.freeze({ kind, ...rules.cost(kind) })),
-    ),
+    options: settlement.options,
   });
 }

@@ -9,9 +9,10 @@ import { FlowField } from '../../../src/domain/map/FlowField';
 import { GameMap } from '../../../src/domain/map/GameMap';
 import { TICK_SECONDS } from '../../../src/domain/run/Run';
 import { aDefaultConfig } from '../../support/builders';
-import { aGuardType } from '../../support/camps';
+import { aCampScenario, aGuardAt, aGuardType } from '../../support/camps';
 import { mapRules } from '../../support/mapLayouts';
-import { FOOTPRINT, TEST_SITE } from '../../support/sites';
+import { advance } from '../../support/runs';
+import { FOOTPRINT, TEST_SITE, startWithSites } from '../../support/sites';
 
 // Spec enemy-behavior 0026, "Navegación con edificios construidos": con `Horde`, `GuardPost` y el
 // mapa con `build` directo (la obra en una partida llega en el grupo 3). Huella del solar de
@@ -45,23 +46,30 @@ const build = (map: GameMap) =>
 const inFootprint = (map: GameMap, x: number, y: number) => map.isBuilt(map.colAt(x), map.rowAt(y));
 
 describe('Guardias con edificios construidos (spec enemy-behavior 0026)', () => {
-  it('Scenario: El guardia vuelve rodeando el edificio', () => {
-    const map = GameMap.open(RULES);
-    const Q = { x: 1260, y: 830 };
-    const post = new GuardPost(Q.x, Q.y, GUARD, map, ARENA);
-    build(map);
-    const guard = Enemy.spawn(0, GUARD, 1260, 500, ARENA, GUARD.health, RETURN, 0, post);
-    const horde = new Horde([guard], ARENA);
-    const field = new FlowField(map);
-    const path: [number, number][] = [];
-    for (let n = 1; n <= 1200; n++) {
-      horde.act(n, FAR_PLAYER.x, FAR_PLAYER.y, TICK_SECONDS, field);
-      path.push([guard.x, guard.y]);
-    }
-    expect(path.some(([x, y]) => inFootprint(map, x, y))).toBe(false);
-    const reached = path.some(([x, y]) => Math.abs(x - Q.x) <= 0.001 && Math.abs(y - Q.y) <= 0.001);
-    expect(reached).toBe(true);
-  });
+  // 0027: el solar libre es la huella marcada desde el tick 0 y la torre la misma huella (casa =
+  // torre = solar), así que los dos casos navegan sobre la misma capa de obra.
+  it.each([['solar libre'], ['torre construida']])(
+    'Scenario: El guardia vuelve rodeando un solar (%s)',
+    () => {
+      const map = GameMap.open(RULES);
+      const Q = { x: 1260, y: 830 };
+      const post = new GuardPost(Q.x, Q.y, GUARD, map, ARENA);
+      build(map);
+      const guard = Enemy.spawn(0, GUARD, 1260, 500, ARENA, GUARD.health, RETURN, 0, post);
+      const horde = new Horde([guard], ARENA);
+      const field = new FlowField(map);
+      const path: [number, number][] = [];
+      for (let n = 1; n <= 1200; n++) {
+        horde.act(n, FAR_PLAYER.x, FAR_PLAYER.y, TICK_SECONDS, field);
+        path.push([guard.x, guard.y]);
+      }
+      expect(path.some(([x, y]) => inFootprint(map, x, y))).toBe(false);
+      const reached = path.some(
+        ([x, y]) => Math.abs(x - Q.x) <= 0.001 && Math.abs(y - Q.y) <= 0.001,
+      );
+      expect(reached).toBe(true);
+    },
+  );
 
   it('Scenario: Mismo movimiento con la misma obra en otro momento', () => {
     const P = { x: 1260, y: 900 };
@@ -93,5 +101,28 @@ describe('Guardias con edificios construidos (spec enemy-behavior 0026)', () => 
     expect(run(true)).toEqual(early);
     expect(early.some(([x, y]) => inFootprint(probe, x, y))).toBe(false);
     expect(early.some(([x, y]) => x === P.x && y === P.y)).toBe(true);
+  });
+});
+
+// Spec build-sites 0027, "Punto de patrulla sobre el solar libre": despeje inicial de los puestos.
+describe('Puestos de guardia con los solares libres (spec build-sites 0027)', () => {
+  it('Scenario: Punto de patrulla sobre el solar libre (1.200 ticks con el jugador lejos)', () => {
+    // Casa goblin (30..31, 10..12) con puerta en (1.890, 810): la esquina 1 de la patrulla (radio 60)
+    // es (1.950, 750), celda (32, 12), de la huella del solar (32..33, 11..12). Recolocada desde el
+    // nacimiento al centro de la celda caminable más cercana, (1.890, 750).
+    const base = aCampScenario();
+    const types = base.enemies.types.map((t) =>
+      t.id === 'guard' ? aGuardType({ detect: 5, lose: 10 }) : t,
+    );
+    const run = startWithSites(
+      { ...base, enemies: { ...base.enemies, types } },
+      { player: { x: 3500, y: 2000 }, enemies: [aGuardAt(1890, 810, { house: 0 })] },
+      [{ col: 32, row: 11 }],
+      { structures: [{ type: 'goblin-house', col: 30, row: 10, cols: 2, rows: 3 }] },
+    );
+    const path = advance(run, 1200);
+    const onSite = (x: number, y: number) => x >= 1920 && x < 2040 && y >= 660 && y < 780;
+    expect(path.some((s) => s.enemies.some((e) => onSite(e.x, e.y)))).toBe(false);
+    expect(path.some((s) => s.enemies.some((e) => e.x === 1890 && e.y === 750))).toBe(true);
   });
 });

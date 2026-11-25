@@ -1,4 +1,3 @@
-import type { MapRules } from '../map/MapRules';
 import { err, invalidConfig, ok, type DomainError, type Result } from '../shared/Result';
 import { WeaponType, type WeaponTypeConfig } from '../weapon/WeaponType';
 
@@ -12,11 +11,11 @@ export const isBuildingKind = (kind: string): kind is BuildingKind =>
   (BUILDING_KINDS as readonly string[]).includes(kind);
 
 /**
- * Celdas entre el borde inferior de la huella y el acceso (design 0026 §1): el acceso queda en el
- * centro de la fila r + rows + 1, separado de la huella por una fila libre. Es geometría del solar,
- * no contenido.
+ * Separación máxima (px) entre el círculo del jugador y el rectángulo de la huella para que el
+ * jugador **toque** un solar (design 0027 §1.4): g ≤ ε. Constante del dominio, no contenido; el
+ * barrido deja al jugador tangente (g ≈ 0), así que vale igual en caras y esquinas.
  */
-export const ACCESS_OFFSET_CELLS = 1.5;
+export const CONTACT_EPS = 1;
 
 /** Mensajes de las invariantes de los edificios; la validación de contenido (zod) usa los mismos. */
 export const BUILDING_WOOD_MUST_BE_INTEGER = 'La madera de un edificio debe ser un entero ≥ 1.';
@@ -27,12 +26,8 @@ export const TOWER_PROJECTILES_MUST_BE_INTEGER =
   'El tope de flechas de torre debe ser un entero ≥ 1.';
 export const TOWER_WEAPON_MUST_BE_NEAREST_PROJECTILE =
   'El arma de la torre debe ser `nearest-in-range` con `projectile`.';
-export const ACCESS_RADIUS_MUST_BE_POSITIVE = 'El radio de oferta del acceso debe ser > 0.';
-export const ACCESS_REARM_MUST_EXCEED_RADIUS =
-  'La distancia de re-armado de un solar debe ser mayor que el radio de oferta.';
-export const ACCESS_TOO_CLOSE =
-  'El radio de oferta más el radio del jugador debe ser < 1,5 celdas ' +
-  '(el jugador no puede tocar la huella al abrir)';
+export const CONTACT_REARM_MUST_EXCEED_EPS =
+  'La separación de re-armado de un solar debe ser un número finito mayor que ε (1 px).';
 export const SITE_PLACEMENT_MUST_BE_INTEGER =
   'Los parámetros de colocación de los solares deben ser enteros ≥ 0 (la huella, ≥ 1).';
 export const SITE_ROUTE_MIN_ABOVE_MAX =
@@ -59,7 +54,7 @@ export interface SitePlacementConfig {
 /** Contenido de los solares y edificios (content/buildings.json, spec build-sites 0026). */
 export interface BuildingsConfig {
   readonly sites: SitePlacementConfig;
-  readonly access: { readonly radius: number; readonly rearmDistance: number };
+  readonly contact: { readonly rearmDistance: number };
   readonly house: {
     readonly cost: BuildingCost;
     readonly income: { readonly gold: number; readonly everyTicks: number };
@@ -101,18 +96,10 @@ function checkPlacement(p: SitePlacementConfig): DomainError | null {
   return null;
 }
 
-function checkAccess(config: BuildingsConfig, map: MapRules): DomainError | null {
-  const { radius, rearmDistance } = config.access;
-  const path = `${PATH}.access`;
-  if (!(Number.isFinite(radius) && radius > 0)) {
-    return invalidConfig(`${path}.radius`, ACCESS_RADIUS_MUST_BE_POSITIVE);
-  }
-  if (!(Number.isFinite(rearmDistance) && rearmDistance > radius)) {
-    return invalidConfig(`${path}.rearmDistance`, ACCESS_REARM_MUST_EXCEED_RADIUS);
-  }
-  // Design §1: el jugador a d < radio del acceso nunca solapa la huella (spec "Jugador fuera...").
-  if (!(radius + map.playerRadius < ACCESS_OFFSET_CELLS * map.cellSize)) {
-    return invalidConfig(`${path}.radius`, ACCESS_TOO_CLOSE);
+function checkContact(config: BuildingsConfig): DomainError | null {
+  const { rearmDistance } = config.contact;
+  if (!(Number.isFinite(rearmDistance) && rearmDistance > CONTACT_EPS)) {
+    return invalidConfig(`${PATH}.contact.rearmDistance`, CONTACT_REARM_MUST_EXCEED_EPS);
   }
   return null;
 }
@@ -133,14 +120,14 @@ function towerWeapon(config: WeaponTypeConfig): Result<WeaponType, DomainError> 
 }
 
 /**
- * Reglas de los solares y edificios (value object, spec build-sites 0026): colocación, acceso,
- * costes por tipo, ingreso de la casa y arma y tope de flechas de la torre. La única
- * implementación de sus invariantes y de la regla cruzada con el mapa y el jugador (design §1).
+ * Reglas de los solares y edificios (value object, spec build-sites 0026 y 0027): colocación,
+ * separación de re-armado del contacto, costes por tipo, ingreso de la casa y arma y tope de flechas
+ * de la torre. La única implementación de sus invariantes (zod las llama desde el superRefine).
  */
 export class BuildingRules {
   private constructor(
     readonly sites: SitePlacementConfig,
-    readonly access: { readonly radius: number; readonly rearmDistance: number },
+    readonly contact: { readonly rearmDistance: number },
     private readonly costs: Readonly<Record<BuildingKind, BuildingCost>>,
     readonly income: { readonly gold: number; readonly everyTicks: number },
     readonly towerWeapon: WeaponType,
@@ -154,13 +141,13 @@ export class BuildingRules {
     return this.costs[kind];
   }
 
-  static create(config: BuildingsConfig, map: MapRules): Result<BuildingRules, DomainError> {
+  static create(config: BuildingsConfig): Result<BuildingRules, DomainError> {
     const problem =
       checkPlacement(config.sites) ??
       checkCost(config.house.cost, `${PATH}.house.cost`) ??
       checkIncome(config.house.income) ??
       checkCost(config.tower.cost, `${PATH}.tower.cost`) ??
-      checkAccess(config, map);
+      checkContact(config);
     if (problem) return err(problem);
     const weapon = towerWeapon(config.tower.weapon);
     if (!weapon.ok) return weapon;
@@ -175,7 +162,7 @@ export class BuildingRules {
           footprint: Object.freeze(sites.footprint),
           route: Object.freeze(sites.route),
         }),
-        Object.freeze({ ...config.access }),
+        Object.freeze({ rearmDistance: config.contact.rearmDistance }),
         Object.freeze({
           house: Object.freeze({ ...config.house.cost }),
           tower: Object.freeze({ ...config.tower.cost }),

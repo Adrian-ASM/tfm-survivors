@@ -198,7 +198,7 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
     const message = `${SHOP_HEAL_ID_TAKEN}: ${shop.value.heal.id}`;
     return err(invalidConfig('shop.heal.id', message));
   }
-  const buildings = BuildingRules.create(config.buildings, map.value);
+  const buildings = BuildingRules.create(config.buildings);
   if (!buildings.ok) return buildings;
   return ok({
     arena: arena.value,

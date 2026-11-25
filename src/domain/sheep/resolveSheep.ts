@@ -9,6 +9,24 @@ import { isLegalSheepAt, legalCells } from './legalPosition';
 import { placeSheep, sheepCells } from './placeSheep';
 import type { SheepRules } from './SheepRules';
 
+/**
+ * Vuelve a validar las ovejas declaradas de un mapa dado con la capa de obra ya marcada (design 0027
+ * §1.3): una que solapa la huella de un solar no se recoloca; el error nombra `map.sheep.<i>`.
+ */
+export function revalidateDeclaredSheep(
+  source: TerrainSource,
+  map: GameMap,
+  rules: SheepRules,
+): DomainError | null {
+  if (source.kind === 'generated') return null;
+  for (const [i, p] of (source.sheep?.at ?? []).entries()) {
+    if (isLegalSheepAt(map, p.x, p.y, rules.radius)) continue;
+    const at = `map.sheep.${String(i)}`;
+    return invalidConfig(at, `${MAP_SHEEP_ILLEGAL} (${at})`);
+  }
+  return null;
+}
+
 export const MAP_SHEEP_ILLEGAL =
   'Una oveja declarada debe estar en una posición legal de su círculo (dentro del mundo y sin ' +
   'solapar celdas no caminables)';

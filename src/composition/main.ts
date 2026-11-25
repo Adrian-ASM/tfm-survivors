@@ -13,6 +13,7 @@ import { repositoryContent } from '../infrastructure/content/loadRunConfig';
 import { PausePanel } from '../infrastructure/dom/PausePanel';
 import { ShopPanel, type ShopPanelView } from '../infrastructure/dom/ShopPanel';
 import { BuildPanel, type BuildPanelView } from '../infrastructure/dom/BuildPanel';
+import { resourceIcons } from '../infrastructure/dom/resourceIcons';
 import type { SiteSnapshot } from '../domain/run/RunSnapshot';
 import { GameScene, type SceneCapacity, type Screen } from '../infrastructure/phaser/GameScene';
 import { MenuScene } from '../infrastructure/phaser/MenuScene';
@@ -164,7 +165,9 @@ function bootstrap(): void {
   const progress = wireProgress(root, () => probe.seed);
   const pause = new PausePanel(document, root);
   const shopPanel = new ShopPanel(document, root);
-  const buildPanel = new BuildPanel(document, root);
+  // Iconos del panel de obra: las hojas del HUD con la URL que carga BootScene (0027).
+  const sheetUrl = (file: string) => assetUrl(import.meta.env.BASE_URL, file);
+  const buildPanel = new BuildPanel(document, root, resourceIcons(appearance, sheetUrl));
   const screens: Screen[] = [];
   const e2e = new URLSearchParams(window.location.search).has('e2e');
   // El mundo es la arena del contenido; el lienzo, la vista (0013).
@@ -297,7 +300,7 @@ function bootstrap(): void {
 
   const boot = new BootScene({
     appearance,
-    assetUrl: (file) => assetUrl(import.meta.env.BASE_URL, file),
+    assetUrl: sheetUrl,
     e2e,
   });
 

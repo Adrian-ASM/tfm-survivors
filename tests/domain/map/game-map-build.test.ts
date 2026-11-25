@@ -5,8 +5,8 @@ import { codesOf, isFullyConnected } from '../../../src/domain/map/connectivity'
 import { mapRules, mapWith } from '../../support/mapLayouts';
 import { FOOTPRINT, TEST_SITE, TEST_SITE_CELLS } from '../../support/sites';
 
-// Spec procedural-map 0026, "Rejilla de celdas tipadas" y ADR-0025: el terreno no cambia y la capa
-// de obra hace no caminables las celdas construidas.
+// Spec procedural-map 0026 y 0027, "Rejilla de celdas tipadas", ADR-0025 y ADR-0026: el terreno no
+// cambia y la capa de obra (solares libres y edificios) hace no caminables sus celdas.
 const RULES = mapRules();
 const buildTestSite = (map: GameMap) =>
   map.build(TEST_SITE.col, TEST_SITE.row, FOOTPRINT.cols, FOOTPRINT.rows);
@@ -28,12 +28,21 @@ describe('GameMap · capa de obra (ADR-0025)', () => {
     expect(map.isWalkable(22, 10)).toBe(true);
   });
 
-  it('cada obra sube la revisión en 1; sin obras es 0', () => {
+  it('cada obra que cambia alguna celda sube la revisión en 1; sin obras es 0', () => {
     const map = GameMap.open(RULES);
     expect(map.revision).toBe(0);
     buildTestSite(map);
     expect(map.revision).toBe(1);
     map.build(40, 20, 2, 2);
+    expect(map.revision).toBe(2);
+  });
+
+  it('construir sobre una huella ya marcada no sube la revisión; solapar en parte, sí (ADR-0026)', () => {
+    const map = GameMap.open(RULES);
+    buildTestSite(map);
+    expect(buildTestSite(map).ok).toBe(true);
+    expect(map.revision).toBe(1);
+    map.build(TEST_SITE.col, TEST_SITE.row + 1, FOOTPRINT.cols, FOOTPRINT.rows);
     expect(map.revision).toBe(2);
   });
 

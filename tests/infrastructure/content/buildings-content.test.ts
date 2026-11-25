@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { bootContent } from '../../../src/composition/contentBoot';
+import { CONTACT_EPS } from '../../../src/domain/site/BuildingRules';
 import { loadRunConfig, parseRunConfig } from '../../../src/infrastructure/content/loadRunConfig';
 import appearanceJson from '../../../content/appearance.json';
 import provenanceJson from '../../../content/asset-provenance.json';
@@ -7,7 +8,7 @@ import { parseAppearance } from '../../../src/infrastructure/content/loadAppeara
 import { REGISTERED, rawAppearance, type RawAppearance } from '../../support/appearance';
 import { rawContent, type RawContent } from '../../support/builders';
 
-// Spec build-sites 0026, "Contenido de los edificios validado" (content/buildings.json con zod
+// Spec build-sites 0026 y 0027, "Contenido de los edificios validado" (content/buildings.json con zod
 // estricto y las reglas de `BuildingRules` desde el superRefine), y sprite-rendering, "Pintado de
 // los solares y de los edificios" (colores de reserva de los solares).
 type Buildings = RawContent['buildings'];
@@ -57,8 +58,8 @@ describe('Contenido de los edificios validado (spec build-sites 0026, con zod)',
     expect(b.tower.weapon.damage).toBeLessThan(torch?.health ?? 0);
     expect(torch?.health).toBe(10);
     expect(Number.isInteger(b.tower.maxProjectiles) && b.tower.maxProjectiles >= 1).toBe(true);
-    expect(b.access.radius).toBeGreaterThan(0);
-    expect(b.access.rearmDistance).toBeGreaterThan(b.access.radius);
+    expect(b.contact).toEqual({ rearmDistance: 64 });
+    expect('access' in b).toBe(false);
   });
 
   it.each([
@@ -107,12 +108,26 @@ describe('Contenido de los edificios validado (spec build-sites 0026, con zod)',
       (b: Buildings) => (b.tower.maxProjectiles = 0),
       'buildings.tower.maxProjectiles',
     ],
-    ['radio de oferta 0', (b: Buildings) => (b.access.radius = 0), 'buildings.access.radius'],
-    ['radio de oferta −5', (b: Buildings) => (b.access.radius = -5), 'buildings.access.radius'],
     [
-      're-armado igual al radio',
-      (b: Buildings) => (b.access.rearmDistance = b.access.radius),
-      'buildings.access.rearmDistance',
+      'separación de re-armado 0',
+      (b: Buildings) => (b.contact.rearmDistance = 0),
+      'buildings.contact.rearmDistance',
+    ],
+    [
+      'separación de re-armado −5',
+      (b: Buildings) => (b.contact.rearmDistance = -5),
+      'buildings.contact.rearmDistance',
+    ],
+    [
+      'separación de re-armado = ε',
+      (b: Buildings) => (b.contact.rearmDistance = CONTACT_EPS),
+      'buildings.contact.rearmDistance',
+    ],
+    [
+      'bloque access de 0026 sobrante',
+      (b: Buildings) =>
+        ((b as Record<string, unknown>)['access'] = { radius: 40, rearmDistance: 160 }),
+      'buildings.access',
     ],
     ['campo extra hp: 100', (b: Buildings) => (b.house['hp'] = 100), 'buildings.house.hp'],
   ])('Scenario: Valores inválidos (%s)', (_name, change, field) => {
@@ -120,9 +135,9 @@ describe('Contenido de los edificios validado (spec build-sites 0026, con zod)',
   });
 
   it('Scenario: Valores inválidos (no se muestra el menú: el arranque falla)', () => {
-    const { booted, errors } = bootErrors((b) => (b.access.radius = 0));
+    const { booted, errors } = bootErrors((b) => (b.contact.rearmDistance = 0));
     expect(booted).toBe(false);
-    expect(errors).toEqual(['buildings.access.radius']);
+    expect(errors).toEqual(['buildings.contact.rearmDistance']);
   });
 
   it.each([
@@ -130,10 +145,7 @@ describe('Contenido de los edificios validado (spec build-sites 0026, con zod)',
     ['madera 1 en las dos', (b: Buildings) => ((b.house.cost.wood = 1), (b.tower.cost.wood = 1))],
     ['periodo 1', (b: Buildings) => (b.house.income.everyTicks = 1)],
     ['tope de flechas 1', (b: Buildings) => (b.tower.maxProjectiles = 1)],
-    [
-      're-armado = radio + 0,001',
-      (b: Buildings) => (b.access.rearmDistance = b.access.radius + 0.001),
-    ],
+    ['re-armado = ε + 0,001', (b: Buildings) => (b.contact.rearmDistance = CONTACT_EPS + 0.001)],
   ])('Scenario: Límites válidos (%s)', (_name, change) => {
     expect(loads(change)).toBe(true);
   });
@@ -148,6 +160,11 @@ describe('Contenido de los edificios validado (spec build-sites 0026, con zod)',
       'sin el tope de flechas',
       'buildings.tower.maxProjectiles',
       (b: Buildings) => delete (b.tower as Partial<Buildings['tower']>).maxProjectiles,
+    ],
+    [
+      'sin la separación de re-armado',
+      'buildings.contact.rearmDistance',
+      (b: Buildings) => delete (b.contact as Partial<Buildings['contact']>).rearmDistance,
     ],
   ])('Scenario: Campo ausente (%s)', (_name, field, change) => {
     expect(failure(change).field).toBe(field);

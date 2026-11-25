@@ -9,7 +9,7 @@
     "minStructureCells": 4,
     "route": { "min": 18, "max": 35 }
   },
-  "access": { "radius": 40, "rearmDistance": 160 },
+  "contact": { "rearmDistance": 64 },
   "house": {
     "cost": { "wood": 15, "stone": 0 },
     "income": { "gold": 1, "everyTicks": 1800 }

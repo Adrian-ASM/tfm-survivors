@@ -14,6 +14,7 @@ import {
   withResources,
   withWeapons,
   withoutResourceSources,
+  withoutSites,
 } from '../support/builders';
 import { startOn } from '../support/camps';
 import { randomInputs } from '../support/inputs';
@@ -26,6 +27,8 @@ import { aPulse, weaponsOf } from '../support/weapons';
 // Test-after (ADR-0018): el comportamiento ya está en los grupos 1–3.1.
 const LONG = 14_400;
 const TOUGH = withPlayer(aDefaultConfig(), { maxHealth: LONG_RUN_HEALTH });
+/** 0027: sin solares (su colocación evita vetas y montones y desde 0027 bloquean el paso). */
+const TOUGH_NO_SITES = withoutSites(TOUGH);
 
 /** Campos de combate y de progresión del requisito, sin los ids de las gemas ni los recursos. */
 function combat(s: RunSnapshot): string {
@@ -75,8 +78,8 @@ describe('Recursos sin efecto en el combate (resources)', () => {
     'Scenario: Mismo combate con y sin recursos (semilla %i, 14.400 ticks, ovejas incluidas)',
     (seed) => {
       const inputs = randomInputs(LONG, 2026);
-      const withRes = startSeededRun(TOUGH, seed);
-      const without = startSeededRun(withoutResourceSources(TOUGH), seed);
+      const withRes = startSeededRun(TOUGH_NO_SITES, seed);
+      const without = startSeededRun(withoutResourceSources(TOUGH_NO_SITES), seed);
       expect(without.snapshot().veins).toEqual([]);
       expect(withRes.snapshot().sheep.length).toBeGreaterThan(0);
       const diverged = lockstep(withRes, without, inputs, (x, y) => combat(x) === combat(y));

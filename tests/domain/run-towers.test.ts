@@ -22,38 +22,33 @@ import { ticks } from '../support/runs';
 import { DEFAULT_STRUCTURES, aTowerType } from '../support/camps';
 import { declaredSheep } from '../support/sheep';
 import {
-  TEST_ACCESS,
   TEST_SITE,
   aSiteConfig,
-  buildNow,
   leaveSiteIfOpen,
   startWithSites,
-  untilBuilding,
   withStock,
 } from '../support/sites';
 
 // Spec build-sites 0026, "Torre que dispara sola"; simulation-loop, paso 3 y "Snapshot para el
 // motor". Torre en el solar de prueba (punto de disparo en el centro de la huella, C = (1.260, 660))
-// construida en el tick 1 con el jugador quieto en el acceso P = (1.260, 810).
+// construida al empezar (tick 0, `RunSetup.sites`) con el jugador quieto en P = (1.260, 810), a
+// g = 74 de la huella (0027: sin acceso; así P queda a 150 px de C).
 const C = { x: 1260, y: 660 };
-const P = TEST_ACCESS;
+const P = { x: 1260, y: 810 };
 const CONTENT_ARROW = CONTENT_BUILDINGS.tower.weapon;
 /** Enemigo inmóvil con vida de sobra (el objetivo "permanente" de los escenarios). */
 const STILL = aStillType({ id: 'goblin-torch', health: 1e9 });
 const towerConfig = (types: readonly EnemyTypeConfig[] = [STILL], o = {}): RunConfig =>
   aSiteConfig({ player: { maxHealth: 1e6 }, ...o }, types);
 
-/** Partida con la torre construida en el tick 1 en el solar de prueba. */
+/** Partida con la torre construida en el tick 0 (n = 0) en el solar de prueba. */
 function withTower(config: RunConfig, setup: RunSetup = {}, options = {}): Run {
-  const run = startWithSites(
+  return startWithSites(
     config,
-    { player: P, ...withStock(30, 15), ...setup },
+    { player: P, ...withStock(30, 15), sites: [{ state: 'tower' }], ...setup },
     [TEST_SITE],
     options,
   );
-  untilBuilding(run, 1);
-  buildNow(run, 'tower');
-  return run;
 }
 
 /** Ticks (de los snapshots dados) en los que se crea alguna flecha de torre nueva. */
@@ -74,7 +69,7 @@ describe('Torre que dispara sola (spec build-sites 0026)', () => {
     const config = withWeapons(towerConfig(), { ...DEFAULT_WEAPONS, weapons: [LINTER] });
     const run = withTower(config, { enemies: [{ type: 'goblin-torch', x: 1260, y: 360 }] });
     const [n1, n2] = ticks(run, 2);
-    expect(n1?.tick).toBe(2);
+    expect(n1?.tick).toBe(1);
     expect(n1?.towerProjectiles).toHaveLength(1);
     expect([n1?.towerProjectiles[0]?.x, n1?.towerProjectiles[0]?.y]).toEqual([C.x, C.y]);
     expect(n2?.towerProjectiles[0]?.x).toBeCloseTo(C.x, 9);
@@ -82,10 +77,10 @@ describe('Torre que dispara sola (spec build-sites 0026)', () => {
     expect(n1?.projectiles).toEqual([]);
   });
 
-  it('Scenario: Cadencia de la torre (c = 45, objetivo a 100 px)', () => {
+  it('Scenario: Cadencia de la torre (c = 45, objetivo a 100 px, n = 0)', () => {
     const run = withTower(towerConfig(), { enemies: [{ type: 'goblin-torch', x: 1260, y: 560 }] });
     const c = CONTENT_ARROW.cooldownTicks;
-    expect(arrowTicks(ticks(run, 2 * c + 1))).toEqual([2, 2 + c, 2 + 2 * c]);
+    expect(arrowTicks(ticks(run, 2 * c + 1))).toEqual([1, 1 + c, 1 + 2 * c]);
   });
 
   it('Scenario: Solo enemigos (estructura y oveja en alcance, sin enemigos)', () => {
@@ -183,14 +178,17 @@ describe('Torre que dispara sola (spec build-sites 0026)', () => {
   });
 
   it('Scenario: 600 ticks en obra con una flecha de torre en vuelo (run-state)', () => {
-    // Segundo solar (20, 14) con acceso en (1.260, 1.050): el jugador baja y lo abre.
+    // Segundo solar (20, 14), y en [840, 960]: el jugador baja desde P y toca su cara superior.
     const run = startWithSites(
       towerConfig(),
-      { player: P, ...withStock(60, 30), enemies: [{ type: 'goblin-torch', x: 1260, y: 360 }] },
+      {
+        player: P,
+        ...withStock(60, 30),
+        sites: [{ state: 'tower' }],
+        enemies: [{ type: 'goblin-torch', x: 1260, y: 360 }],
+      },
       [TEST_SITE, { col: 20, row: 14 }],
     );
-    untilBuilding(run, 1);
-    buildNow(run, 'tower');
     while (run.status === 'running') ticks(run, 1, PlayerInput.of(0, 1));
     const at = run.snapshot();
     expect(at.build.siteId).toBe(1);
@@ -203,18 +201,10 @@ describe('Torre que dispara sola (spec build-sites 0026)', () => {
 
 describe('Torres en el orden del tick y en el snapshot (spec simulation-loop 0026)', () => {
   it('Scenario: Las flechas después de las armas del jugador', () => {
-    // Objetivo inmóvil T con |T − P| − |T − C| = 8: el proyectil del Linter (tick 1) y la flecha
-    // (tick 2) avanzan 8 px por tick y lo solapan en el mismo tick.
-    const x = 1560;
-    let lo = 600;
-    let hi = 735;
-    const diff = (y: number) => Math.hypot(x - P.x, y - P.y) - Math.hypot(x - C.x, y - C.y);
-    for (let i = 0; i < 80; i++) {
-      const mid = (lo + hi) / 2;
-      if (diff(mid) > 8) lo = mid;
-      else hi = mid;
-    }
-    const T = { x, y: (lo + hi) / 2 };
+    // Objetivo inmóvil T a la misma distancia de P y de C (en la mediatriz y = 735): el proyectil del
+    // Linter y la flecha salen en el tick 1, avanzan 8 px por tick y lo solapan en el mismo tick.
+    const T = { x: 1560, y: 735 };
+    expect(Math.hypot(T.x - P.x, T.y - P.y)).toBeCloseTo(Math.hypot(T.x - C.x, T.y - C.y), 9);
     const torch = aStillType({ id: 'goblin-torch', health: 6 });
     const config = withWeapons(towerConfig([torch]), { ...DEFAULT_WEAPONS, weapons: [LINTER] });
     const run = withTower(config, { enemies: [{ type: 'goblin-torch', ...T }] });
@@ -233,8 +223,9 @@ describe('Torres en el orden del tick y en el snapshot (spec simulation-loop 002
   });
 
   it('Scenario: Solares y flechas en el snapshot (f1 impacta, f3 se crea)', () => {
-    // Torre con cadencia 20 en s1; s2 (20, 11), con acceso en (1.260, 870), se abre en el tick 2 y
-    // se cierra: desarmado. Jugador quieto a 30 px de los dos accesos; objetivo a 300 px de C.
+    // Torre con cadencia 20 en s1 (tick 0); s2 (22, 13), x en [1.320, 1.440] e y en [780, 900], se
+    // abre en el tick 1 (jugador quieto tangente a su cara izquierda) y se cierra: desarmado.
+    // Objetivo a 300 px de C y a > 400 px del jugador.
     const base = towerConfig();
     const config = withWeapons(
       withBuildings(base, {
@@ -246,14 +237,13 @@ describe('Torres en el orden del tick y en el snapshot (spec simulation-loop 002
     const run = startWithSites(
       config,
       {
-        player: { x: 1260, y: 840 },
+        player: { x: 1304, y: 810 },
         ...withStock(60, 30),
+        sites: [{ state: 'tower' }],
         enemies: [{ type: 'goblin-torch', x: 1260, y: 360 }],
       },
-      [TEST_SITE, { col: 20, row: 11 }],
+      [TEST_SITE, { col: 22, row: 13 }],
     );
-    untilBuilding(run, 1);
-    buildNow(run, 'tower');
     const ids = () => run.snapshot().towerProjectiles.map((p) => p.id);
     for (let t = 0; t < 200 && JSON.stringify(ids()) !== '[1,2]'; t++) {
       ticks(run, 1);
@@ -261,12 +251,12 @@ describe('Torres en el orden del tick y en el snapshot (spec simulation-loop 002
     }
     const s = run.snapshot();
     expect(s.sites.map((x) => [x.id, x.state, x.armed])).toEqual([
-      [0, 'tower', false],
+      [0, 'tower', true],
       [1, 'free', false],
     ]);
-    expect(s.tick).toBe(42);
-    expect(s.sites[1]?.access).toEqual({ x: 1260, y: 870 });
-    expect(s.sites[1]?.house).toEqual({ col: 20, row: 11, cols: 2, rows: 2 });
+    expect(s.tick).toBe(41);
+    expect(s.sites.some((x) => 'access' in x)).toBe(false);
+    expect(s.sites[1]?.house).toEqual({ col: 22, row: 13, cols: 2, rows: 2 });
     expect(s.towerProjectiles.map((p) => p.id)).toEqual([1, 2]);
     expect(s.towerProjectiles.every((p) => p.radius === 4)).toBe(true);
     const arrows = new Set(s.towerProjectiles);
