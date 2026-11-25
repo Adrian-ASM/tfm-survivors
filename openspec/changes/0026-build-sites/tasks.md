@@ -140,10 +140,10 @@
   - Test: `tests/bench/run-tick-buildings.bench.ts`. Las medias se anotan para el verify-report.
 
 ## 9. E2E y documentación
-- [ ] 9.1 E2E nuevo (1) en `gameplay.spec.ts`, manual, mapa real, semilla 42, con la ruta calculada por BFS sobre la
+- [x] 9.1 E2E nuevo (1) en `gameplay.spec.ts`, manual, mapa real, semilla 42, con la ruta calculada por BFS sobre la
   sonda: madera ≥ 15, acceso, clic en la casa y `step(1)`. Se amplía el test de humo del menú con `sites: null`.
   - Escenarios: bs "Construir una casa en el juego real [E2E]" y "Sonda de solares en el menú"; parte E2E de sr
     "Solar en obra y casa construida".
   - Tipos de la sonda en `tests/e2e/probe.ts`.
-- [ ] 9.2 Documentación: estado del proyecto en AGENTS.md (0026), ADR-0025 a `aceptada`, ADR-0013/0017/0020 con una
+- [x] 9.2 Documentación: estado del proyecto en AGENTS.md (0026), ADR-0025 a `aceptada`, ADR-0013/0017/0020 con una
   nota que apunte a ADR-0025, GDD 0026 hecho y diario de IA.

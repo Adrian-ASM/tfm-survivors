@@ -1,6 +1,6 @@
 # ADR-0025 · Capa de obra mutable sobre el mapa y solares como fase
 
-- **Estado**: propuesta
+- **Estado**: aceptada (change 0026-build-sites, apply 2026-11-25; pendiente de verify y archive)
 - **Fecha**: 2026-11-25
 
 ## Contexto
@@ -46,3 +46,11 @@ los `GuardPost`.
   - Hay un código interno de celda (`BUILT`) que no es un `CellType`.
 - Cómo revertirla: quitar `build`/`revision` y volver a la copia en `FlowField`. Los solares podrían seguir sin
   bloquear (opción 4).
+
+## Addendum · resultados del apply (2026-11-25)
+- Con 0 obras todo es idéntico: `BALANCE_BASELINE` (bot v4, 30/50) y las cinco firmas sin regenerar.
+- Bot v5 (`builderBot`): 29/50, 1,22 casas y 0,56 torres por partida, 12,8 de oro de casas y ~5,8 bajas por flechas
+  (estimación) por partida. Sin recalibrar la torre.
+- Bench (local, informativo): 300 vivos + 6 torres 0,12 ms/tick frente a 0,135 sin solares; construir una casa más el
+  primer tick (recálculo de campos) 0,015 ms.
+- `RunSetup.sites` (tick 0) para escenarios preparados: el núcleo no puede construir sin llegar al acceso.

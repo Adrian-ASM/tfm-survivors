@@ -29,6 +29,7 @@ import type { Appearance } from '../content/appearanceSchema';
 import { resolveLooks } from './art/looks';
 import {
   resolveMapLooks,
+  resolveSiteLooks,
   resolveStructureLooks,
   resolveVeinLooks,
   type MapLooks,
@@ -233,6 +234,7 @@ export class GameScene extends Phaser.Scene {
       textureHasFrame(this),
       resolveStructureLooks(appearance, textureFrames(this)),
       resolveVeinLooks(appearance, textureFrames(this)),
+      resolveSiteLooks(appearance, textureFrames(this)),
     );
     const { layers, mapArt } = createPlayfield(
       {

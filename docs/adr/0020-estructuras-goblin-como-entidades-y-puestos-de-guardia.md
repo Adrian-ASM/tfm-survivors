@@ -96,3 +96,7 @@ línea base de la propuesta, lo que valida el rastro de mechas y explosiones.
   150 en alerta): media 0,06–0,07 ms por tick, frente a 2 ms (gate del bench) y 0,25 ms (objetivo).
 - Objetos del mapa: 695 (42) y 778 (123), ≤ 1.000. Firma de celdas sin cambios; `STRUCTURE_GOLDEN` nueva.
 - El estado pasa a "aceptada" tras verify.
+
+## Nota (0026)
+"El mapa no cambia durante la partida" queda enmendado por ADR-0025: el terreno sigue inmutable, pero la capa de obra
+de `GameMap` cambia al construir y los campos de flujo se invalidan por su revisión.

@@ -64,7 +64,7 @@ export interface EnemyView {
 
 export interface SnapshotView {
   tick: number;
-  status: 'running' | 'choosing' | 'shopping' | 'over';
+  status: 'running' | 'choosing' | 'shopping' | 'building' | 'over';
   /** Tienda del castillo (0024): puerta, si está armada y oro. */
   shop: { armed: boolean; open: boolean; gold: number; door: { x: number; y: number } | null };
   outcome: 'won' | 'lost' | null;
@@ -98,6 +98,51 @@ export interface SnapshotView {
   progression: { level: number; xp: number; xpToNext: number; pendingLevelUps: number };
   offer: { id: string; name: string; level: number; nextLevel: number }[];
   upgrades: { id: string; level: number }[];
+  /** Solares (0026) y oferta de obra. */
+  sites: SiteView[];
+  build: { open: boolean; siteId: number | null; options: BuildOptionView[] };
+  towerProjectiles: { id: number; x: number; y: number }[];
+}
+
+/** Huella de un edificio en un solar (0026). */
+export interface FootprintView {
+  col: number;
+  row: number;
+  cols: number;
+  rows: number;
+}
+
+/** Solar del snapshot (0026). */
+export interface SiteView {
+  id: number;
+  state: 'free' | 'house' | 'tower';
+  armed: boolean;
+  access: { x: number; y: number };
+  house: FootprintView;
+  tower: FootprintView;
+}
+
+export interface BuildOptionView {
+  kind: 'house' | 'tower';
+  wood: number;
+  stone: number;
+}
+
+/** Sonda de los solares (0026): null en el menú. */
+export interface SitesProbeView {
+  list: SiteView[];
+  total: number;
+  empty: number;
+  house: number;
+  tower: number;
+  armed: number;
+  panel: {
+    visible: boolean;
+    siteId: number | null;
+    wood: number;
+    stone: number;
+    options: BuildOptionView[];
+  };
 }
 
 export interface ResultsViewData {
@@ -160,6 +205,10 @@ export interface SpritesView {
   cells: { trunk: number; water: number; bridge: number; castle: number };
   /** Elementos del mapa pintados y cuántos con reserva, y objetos del mapa (change 0016). */
   mapArt: MapArtView;
+  /** Solares pintados (0026): en obra, casas, torres y con reserva. */
+  sites: { empty: number; house: number; tower: number; fallback: number };
+  /** Flechas de torre pintadas (0026). */
+  towerArrows: SpriteCountView;
 }
 
 /** Elementos del mapa pintados (con reserva incluida) y con reserva. */
@@ -230,6 +279,17 @@ export interface MapView {
   /** Vetas y montones iniciales (0022), en el orden de colocación. */
   veins: { id: number; x: number; y: number; col: number; row: number; radius: number }[];
   woodPiles: { x: number; y: number }[];
+  /** Solares del mapa (0026): huella, centro y acceso. */
+  sites: {
+    id: number;
+    col: number;
+    row: number;
+    cols: number;
+    rows: number;
+    x: number;
+    y: number;
+    access: { x: number; y: number };
+  }[];
   emptyForced: boolean;
 }
 
@@ -251,11 +311,13 @@ interface Probe {
     results: ResultsViewData | null;
     progress: ProgressView | null;
     /** Pantalla visible (change 0009) y partidas creadas en la carga. */
-    screen?: 'menu' | 'playing' | 'paused' | 'shop';
+    screen?: 'menu' | 'playing' | 'paused' | 'shop' | 'build';
     /** Pantallas vistas desde la carga (0024). */
     screens?: string[];
     /** Overlay de la tienda (0024). */
     shop?: ShopProbeView;
+    /** Solares y panel de obra (0026): null en el menú. */
+    sites?: SitesProbeView | null;
     runs?: number;
     /** Sonda de sprites (change 0012). */
     sprites?: SpritesView;
@@ -293,6 +355,7 @@ export const probe = (page: Page) =>
           map: p.map ?? null,
           hud: p.hud ?? null,
           shop: p.shop ?? null,
+          sites: p.sites ?? null,
           screens: p.screens ?? [],
         }
       : null;
