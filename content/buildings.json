@@ -1,0 +1,28 @@
+{
+  "sites": {
+    "count": 6,
+    "footprint": { "cols": 2, "rows": 2 },
+    "minGapCells": 6,
+    "minWaterCells": 3,
+    "minCastleCells": 4,
+    "minStartCells": 6,
+    "minStructureCells": 4,
+    "route": { "min": 18, "max": 35 }
+  },
+  "access": { "radius": 40, "rearmDistance": 160 },
+  "house": {
+    "cost": { "wood": 15, "stone": 0 },
+    "income": { "gold": 1, "everyTicks": 1800 }
+  },
+  "tower": {
+    "cost": { "wood": 30, "stone": 15 },
+    "maxProjectiles": 16,
+    "weapon": {
+      "id": "tower-arrow",
+      "cooldownTicks": 45,
+      "damage": 4,
+      "targeting": { "mode": "nearest-in-range", "range": 350 },
+      "attack": { "type": "projectile", "speed": 480, "radius": 4, "lifetimeTicks": 60 }
+    }
+  }
+}

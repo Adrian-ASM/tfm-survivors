@@ -9,6 +9,8 @@ import { toMapSnapshot, type MapSnapshot } from '../map/MapSnapshot';
 import { OPEN_TERRAIN, resolveTerrain, type TerrainSource } from '../map/TerrainSource';
 import { resolveStructures } from '../structure/resolveStructures';
 import { resolveSheep } from '../sheep/resolveSheep';
+import { resolveSites } from '../site/resolveSites';
+import { BuildSite } from '../site/BuildSite';
 import type { Flock } from '../sheep/Flock';
 import type { Sheep } from '../sheep/Sheep';
 import { StructureField } from '../structure/StructureField';
@@ -148,6 +150,7 @@ export class Run {
     sites: readonly StructureSite[],
     resources: ResourceSites,
     stoneRandom: RandomGenerator | null,
+    buildSites: readonly BuildSite[],
   ) {
     this.arena = rules.arena;
     this.stones = new StoneDrops(rules.resources, stoneRandom);
@@ -155,6 +158,7 @@ export class Run {
       terrain,
       sites.map((s) => ({ ...s, type: s.type.id })),
       { ...resources, veinRadius: rules.resources.goldVeins.radius },
+      buildSites,
     );
     this.field = new FlowField(terrain);
     this.player = initial.player;
@@ -200,6 +204,13 @@ export class Run {
     const { veins, woodPiles } = resources.value;
     const sheep = resolveSheep(terrain, map.value, rules.value.sheep, sites.value);
     if (!sheep.ok) return sheep;
+    const { buildings } = rules.value;
+    const before = { structures: sites.value, veins, woodPiles, sheep: sheep.value.at };
+    const anchors = resolveSites(terrain, map.value, buildings, before);
+    if (!anchors.ok) return anchors;
+    const buildSites = anchors.value.map(
+      (a, id) => new BuildSite(id, a.col, a.row, buildings, map.value.cellSize),
+    );
     const initial = initialState(
       rules.value,
       setup,
@@ -219,6 +230,7 @@ export class Run {
         sites.value,
         resources.value,
         stoneRandom ?? null,
+        buildSites,
       ),
     );
   }

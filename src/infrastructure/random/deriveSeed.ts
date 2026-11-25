@@ -33,6 +33,13 @@ export const SHEEP_STREAM = 5;
  */
 export const STONE_STREAM = 6;
 
+/**
+ * Flujo de la colocación de los solares de obra (0026): 1 valor por solar del mapa generado, tras
+ * estructuras, recursos y ovejas. Independiente de los demás flujos. Cambiarlo cambia todos los
+ * solares (`SITE_GOLDEN`).
+ */
+export const SITE_STREAM = 7;
+
 /** Sal de los flujos (constante áurea de 32 bits, como en las mezclas de hash habituales). */
 const STREAM_SALT = 0x9e3779b9;
 

@@ -6,6 +6,7 @@ import {
   MAP_STREAM,
   RESOURCE_STREAM,
   SHEEP_STREAM,
+  SITE_STREAM,
   STONE_STREAM,
   STRUCT_STREAM,
   deriveSeed,
@@ -23,8 +24,9 @@ export const mapModeOf = (resolved: { readonly emptyForced: boolean }): MapMode 
  * `Mulberry32(seed)`, el mapa con su propio flujo, `Mulberry32(deriveSeed(seed, MAP_STREAM))`, y
  * sus casas y torres con otro, `Mulberry32(deriveSeed(seed, STRUCT_STREAM))`, y sus vetas y montones
  * con otro, `Mulberry32(deriveSeed(seed, RESOURCE_STREAM))` (ADR-0021), y sus ovejas con otro,
- * `Mulberry32(deriveSeed(seed, SHEEP_STREAM))` (ADR-0022); o el mapa vacío (sin estructuras,
- * recursos ni ovejas) si se fuerza. El azar de la piedra, `Mulberry32(deriveSeed(seed,
+ * `Mulberry32(deriveSeed(seed, SHEEP_STREAM))` (ADR-0022), y sus solares con otro,
+ * `Mulberry32(deriveSeed(seed, SITE_STREAM))` (0026); o el mapa vacío (sin estructuras, recursos,
+ * ovejas ni solares) si se fuerza. El azar de la piedra, `Mulberry32(deriveSeed(seed,
  * STONE_STREAM))` (ADR-0024), se crea antes de mirar el modo: existe en los dos.
  */
 export function seededRun(seed: number, mode: MapMode = 'generated'): RunSeeding {
@@ -35,9 +37,17 @@ export function seededRun(seed: number, mode: MapMode = 'generated'): RunSeeding
   const structureRandom = new Mulberry32RandomGenerator(deriveSeed(seed, STRUCT_STREAM));
   const resourceRandom = new Mulberry32RandomGenerator(deriveSeed(seed, RESOURCE_STREAM));
   const sheepRandom = new Mulberry32RandomGenerator(deriveSeed(seed, SHEEP_STREAM));
+  const siteRandom = new Mulberry32RandomGenerator(deriveSeed(seed, SITE_STREAM));
   return {
     random,
-    terrain: { kind: 'generated', random: mapRandom, structureRandom, resourceRandom, sheepRandom },
+    terrain: {
+      kind: 'generated',
+      random: mapRandom,
+      structureRandom,
+      resourceRandom,
+      sheepRandom,
+      siteRandom,
+    },
     stoneRandom,
   };
 }

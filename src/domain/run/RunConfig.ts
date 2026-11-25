@@ -27,6 +27,7 @@ import { StructureRules } from '../structure/StructureRules';
 import type { StructuresConfig } from '../structure/StructureType';
 import { SheepRules, type SheepConfig } from '../sheep/SheepRules';
 import { SHOP_HEAL_ID_TAKEN, ShopRules, type ShopConfig } from '../shop/ShopRules';
+import { BuildingRules, type BuildingsConfig } from '../site/BuildingRules';
 
 export type { WeaponsConfig, PlayerRules };
 export {
@@ -91,6 +92,8 @@ export interface RunConfig {
   readonly sheep: SheepConfig;
   /** Tienda del castillo (content/shop.json, spec castle-shop, 0024). */
   readonly shop: ShopConfig;
+  /** Solares y edificios (content/buildings.json, spec build-sites, 0026). */
+  readonly buildings: BuildingsConfig;
 }
 
 /** Forma del contenido de mejoras (content/upgrades.json): personaje y arma (ADR-0023). */
@@ -128,6 +131,8 @@ export interface RunRules {
   readonly sheep: SheepRules;
   /** Puerta (radio y re-armado) y curación de pago de la tienda. */
   readonly shop: ShopRules;
+  /** Solares (colocación y acceso), costes, ingreso de la casa y arma de la torre (0026). */
+  readonly buildings: BuildingRules;
 }
 
 function checkBudgetCoversCatalog(spawn: SpawnRules, catalog: EnemyCatalog): DomainError | null {
@@ -193,6 +198,8 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
     const message = `${SHOP_HEAL_ID_TAKEN}: ${shop.value.heal.id}`;
     return err(invalidConfig('shop.heal.id', message));
   }
+  const buildings = BuildingRules.create(config.buildings, map.value);
+  if (!buildings.ok) return buildings;
   return ok({
     arena: arena.value,
     player: config.player,
@@ -212,5 +219,6 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
     resources: resources.value,
     sheep: sheep.value,
     shop: shop.value,
+    buildings: buildings.value,
   });
 }

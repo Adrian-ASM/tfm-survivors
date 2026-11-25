@@ -109,6 +109,15 @@ import {
   SHOP_REARM_MUST_EXCEED_RADIUS,
 } from '../../domain/shop/ShopRules';
 import {
+  ACCESS_RADIUS_MUST_BE_POSITIVE,
+  ACCESS_REARM_MUST_EXCEED_RADIUS,
+  BUILDING_STONE_MUST_BE_INTEGER,
+  BUILDING_WOOD_MUST_BE_INTEGER,
+  HOUSE_INCOME_MUST_BE_INTEGER,
+  SITE_PLACEMENT_MUST_BE_INTEGER,
+  TOWER_PROJECTILES_MUST_BE_INTEGER,
+} from '../../domain/site/BuildingRules';
+import {
   STRUCTURE_COUNT_MUST_BE_INTEGER,
   STRUCTURE_FOOTPRINT_MUST_FIT,
   STRUCTURE_GUARDS_MUST_BE_INTEGER,
@@ -313,20 +322,19 @@ const AttackSchema = z.discriminatedUnion('type', [
 
 // La compatibilidad criterio ↔ ataque, los ids únicos y el resto de reglas cruzadas las aplica
 // `buildRunRules` desde el superRefine del loader (una sola implementación, ADR-0007).
+/** Un arma de content/weapons.json (también el arma de la torre de content/buildings.json, 0026). */
+const WeaponSchema = z.strictObject({
+  id: z.string().min(1, { error: WEAPON_ID_REQUIRED }),
+  cooldownTicks: Count(WEAPON_COOLDOWN_MUST_BE_INTEGER),
+  damage: Count(WEAPON_DAMAGE_MUST_BE_INTEGER),
+  targeting: TargetingSchema,
+  attack: AttackSchema,
+});
+
 export const WeaponsSchema = z.strictObject({
   maxProjectiles: Count(MAX_PROJECTILES_MUST_BE_INTEGER),
   hitFlashTicks: Count(HIT_FLASH_TICKS_MUST_BE_INTEGER),
-  weapons: z
-    .array(
-      z.strictObject({
-        id: z.string().min(1, { error: WEAPON_ID_REQUIRED }),
-        cooldownTicks: Count(WEAPON_COOLDOWN_MUST_BE_INTEGER),
-        damage: Count(WEAPON_DAMAGE_MUST_BE_INTEGER),
-        targeting: TargetingSchema,
-        attack: AttackSchema,
-      }),
-    )
-    .min(1, { error: WEAPONS_REQUIRED }),
+  weapons: z.array(WeaponSchema).min(1, { error: WEAPONS_REQUIRED }),
 });
 
 export const ProgressionSchema = z.strictObject({
@@ -606,5 +614,51 @@ export const ShopSchema = z.strictObject({
     description: UpgradeText(UPGRADE_DESCRIPTION_MAX),
     amount: RequiredCount(SHOP_HEAL_MUST_BE_INTEGER),
     price: RequiredCount(SHOP_HEAL_MUST_BE_INTEGER),
+  }),
+});
+
+// Solares y edificios (content/buildings.json, spec build-sites 0026). Estricto en todos los niveles
+// (un campo extra como `hp` falla nombrándolo). El arma de la torre reutiliza el esquema de arma; que
+// sea `nearest-in-range` con `projectile`, `rearmDistance > radius`, la regla del acceso y la ruta
+// los comprueba `BuildingRules` desde el superRefine (una sola implementación).
+const BuildingCostSchema = z.strictObject({
+  wood: RequiredCount(BUILDING_WOOD_MUST_BE_INTEGER),
+  stone: NonNegativeInt(BUILDING_STONE_MUST_BE_INTEGER),
+});
+const SiteDistance = NonNegativeInt(SITE_PLACEMENT_MUST_BE_INTEGER);
+
+export const BuildingsSchema = z.strictObject({
+  sites: z.strictObject({
+    count: SiteDistance,
+    footprint: z.strictObject({
+      cols: RequiredCount(SITE_PLACEMENT_MUST_BE_INTEGER),
+      rows: RequiredCount(SITE_PLACEMENT_MUST_BE_INTEGER),
+    }),
+    minGapCells: SiteDistance,
+    minWaterCells: SiteDistance,
+    minCastleCells: SiteDistance,
+    minStartCells: SiteDistance,
+    minStructureCells: SiteDistance,
+    route: z.strictObject({ min: SiteDistance, max: SiteDistance }),
+  }),
+  access: z.strictObject({
+    radius: z
+      .number({ error: ACCESS_RADIUS_MUST_BE_POSITIVE })
+      .positive({ error: ACCESS_RADIUS_MUST_BE_POSITIVE }),
+    rearmDistance: z
+      .number({ error: ACCESS_REARM_MUST_EXCEED_RADIUS })
+      .positive({ error: ACCESS_REARM_MUST_EXCEED_RADIUS }),
+  }),
+  house: z.strictObject({
+    cost: BuildingCostSchema,
+    income: z.strictObject({
+      gold: RequiredCount(HOUSE_INCOME_MUST_BE_INTEGER),
+      everyTicks: RequiredCount(HOUSE_INCOME_MUST_BE_INTEGER),
+    }),
+  }),
+  tower: z.strictObject({
+    cost: BuildingCostSchema,
+    maxProjectiles: RequiredCount(TOWER_PROJECTILES_MUST_BE_INTEGER),
+    weapon: WeaponSchema,
   }),
 });

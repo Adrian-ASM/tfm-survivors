@@ -1,10 +1,16 @@
+import { siteRandomFor } from '../../support/sites';
 import { describe, expect, it } from 'vitest';
 import type { TerrainSource } from '../../../src/domain/map/TerrainSource';
 import { Run } from '../../../src/domain/run/Run';
 import { MAP_STRUCTURE_OUT_OF_GRID } from '../../../src/domain/structure/resolveStructures';
 import { Mulberry32RandomGenerator } from '../../../src/infrastructure/random/Mulberry32RandomGenerator';
 import { MAP_STREAM, deriveSeed } from '../../../src/infrastructure/random/deriveSeed';
-import { aCampsConfig, resourceRandomFor, sheepRandomFor, structureRandomFor } from '../../support/camps';
+import {
+  aCampsConfig,
+  resourceRandomFor,
+  sheepRandomFor,
+  structureRandomFor,
+} from '../../support/camps';
 import { NO_RESOURCES, NO_STRUCTURES } from '../../support/builders';
 
 const CONFIG = aCampsConfig();
@@ -26,6 +32,7 @@ const generated = (seed: number): TerrainSource => ({
   structureRandom: structureRandomFor(seed),
   resourceRandom: resourceRandomFor(seed),
   sheepRandom: sheepRandomFor(seed),
+  siteRandom: siteRandomFor(seed),
 });
 
 describe('Estructuras del mapa de la partida (procedural-map, goblin-structures)', () => {

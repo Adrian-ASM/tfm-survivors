@@ -9,6 +9,7 @@ import structuresJson from '../../content/structures.json';
 import resourcesJson from '../../content/resources.json';
 import sheepJson from '../../content/sheep.json';
 import shopJson from '../../content/shop.json';
+import buildingsJson from '../../content/buildings.json';
 import type { EnemyTypeConfig } from '../../src/domain/enemy/EnemyType';
 import type { BehaviorConfig } from '../../src/domain/enemy/behavior/BehaviorConfig';
 import type { HazardRulesConfig } from '../../src/domain/hazard/HazardRules';
@@ -20,6 +21,7 @@ import type { StructuresConfig } from '../../src/domain/structure/StructureType'
 import type { ResourcesConfig } from '../../src/domain/resource/ResourceRules';
 import type { SheepConfig } from '../../src/domain/sheep/SheepRules';
 import type { ShopConfig } from '../../src/domain/shop/ShopRules';
+import type { BuildingsConfig } from '../../src/domain/site/BuildingRules';
 
 /** Copia profunda congelada de un valor de content/ (los tests no pueden alterar el JSON). */
 function frozen<T>(value: T): T {
@@ -272,7 +274,6 @@ export const withoutSheep = (config: RunConfig): RunConfig => ({
 export const withMeat = (config: RunConfig, meat: Partial<ResourcesConfig['meat']>): RunConfig =>
   withResources(config, { ...config.resources, meat: { ...config.resources.meat, ...meat } });
 
-/** El mismo contenido sin fuentes de recursos (design 0022 §10). */
 /** Tienda por defecto, leída de content/shop.json (0024, una sola fuente). */
 export const CONTENT_SHOP: ShopConfig = frozen(shopJson);
 
@@ -289,6 +290,16 @@ export const withShop = (
   shop: { door: { ...config.shop.door, ...door }, heal: { ...config.shop.heal, ...heal } },
 });
 
+/** Solares y edificios por defecto, leídos de content/buildings.json (0026, una sola fuente). */
+export const CONTENT_BUILDINGS: BuildingsConfig = frozen(buildingsJson) as BuildingsConfig;
+
+/** El mismo contenido con los solares y edificios cambiados (0026). */
+export const withBuildings = (config: RunConfig, buildings: BuildingsConfig): RunConfig => ({
+  ...config,
+  buildings,
+});
+
+/** El mismo contenido sin fuentes de recursos (design 0022 §10). */
 export const withoutResourceSources = (config: RunConfig): RunConfig =>
   withResources(config, NO_RESOURCES);
 
@@ -388,6 +399,7 @@ export const aRunConfig = (overrides: Partial<PlayerConfig> = {}): RunConfig => 
   resources: NO_RESOURCES,
   sheep: NO_SHEEP,
   shop: CONTENT_SHOP,
+  buildings: CONTENT_BUILDINGS,
 });
 
 /** El mismo contenido con otra duración objetivo en segundos (p. ej. 2 ⇒ 120 ticks). */
@@ -591,6 +603,27 @@ export interface RawContent {
       description: string;
       amount: number;
       price: number;
+      [extra: string]: unknown;
+    };
+    [extra: string]: unknown;
+  };
+  buildings: {
+    sites: {
+      count: number;
+      footprint: { cols: number; rows: number };
+      route: { min: number; max: number };
+      [extra: string]: unknown;
+    };
+    access: { radius: number; rearmDistance: number; [extra: string]: unknown };
+    house: {
+      cost: { wood: number; stone: number };
+      income: { gold: number; everyTicks: number };
+      [extra: string]: unknown;
+    };
+    tower: {
+      cost: { wood: number; stone: number };
+      maxProjectiles: number;
+      weapon: MutableWeapon;
       [extra: string]: unknown;
     };
     [extra: string]: unknown;

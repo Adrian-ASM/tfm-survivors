@@ -23,14 +23,14 @@
   - Tests: `tests/domain/map/flow-field-build.test.ts` y `tests/domain/enemy/guard-post-build.test.ts`.
 
 ## 2. Dominio · reglas de edificios y solares (design §1, §3)
-- [ ] 2.1 `BuildingRules`/`BuildingKind` en `RunConfig`: costes, ingreso, arma de la torre con `WeaponType.create`
+- [x] 2.1 `BuildingRules`/`BuildingKind` en `RunConfig`: costes, ingreso, arma de la torre con `WeaponType.create`
   y restricción `nearest-in-range` + `projectile`, tope de flechas, acceso con `radius + playerRadius < 1,5 ·
   cellSize` y `rearm > radius`, y colocación. `BuildSite` lleva huella 2 × 2 (casa = torre), acceso a 1,5 celdas y
   `ProximityGate`, extraído de `CastleGate` sin cambio de comportamiento.
   - Escenarios: bs "Jugador fuera de la huella al abrir" y la parte de reglas cruzadas de "Valores inválidos" y
     "Límites válidos" (en el dominio; la parte de zod va en 6.1).
   - Test: `tests/domain/sites/building-rules.test.ts`.
-- [ ] 2.2 `placeSites` (candidatas en orden de filas, 1 valor por solar, zona con anillo y fila de acceso,
+- [x] 2.2 `placeSites` (candidatas en orden de filas, 1 valor por solar, zona con anillo y fila de acceso,
   distancias, ovejas iniciales y ruta 18–35), `resolveSites` con `siteRandom` y `sites?` declarados (solo se
   comprueba que caben), `MapSnapshot.sites` y `SITE_GOLDEN` nueva en `tests/support/siteGolden.ts`.
   - Escenarios: pm "Reglas de colocación con las semillas del conjunto", "Contenido sin hueco suficiente",

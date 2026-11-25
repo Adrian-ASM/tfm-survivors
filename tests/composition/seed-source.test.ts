@@ -1,3 +1,4 @@
+import { siteRandomFor } from '../support/sites';
 import { resourceRandomFor, sheepRandomFor } from '../support/camps';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { restartRandoms, seededRun } from '../../src/composition/seedSource';
@@ -177,6 +178,7 @@ describe('restartRandoms con el mapa', () => {
       structureRandom: new Mulberry32RandomGenerator(deriveSeed(42, STRUCT_STREAM)),
       resourceRandom: resourceRandomFor(42),
       sheepRandom: sheepRandomFor(42),
+      siteRandom: siteRandomFor(42),
     });
     if (!first.ok) throw new Error(first.error.message);
     play(first.value, 36_000);
