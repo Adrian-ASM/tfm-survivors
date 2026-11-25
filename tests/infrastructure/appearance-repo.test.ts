@@ -91,7 +91,7 @@ describe('Datos de aspecto del repositorio', () => {
     expect(Object.keys(map.shore.cases)).toHaveLength(15);
     expect(map.foam.idle).toMatchObject({ loop: true });
     expect(map.foam.idle.frames).toHaveLength(8);
-    expect(map.trees.models.length).toBeGreaterThanOrEqual(2);
+    expect(map.trees.idle).toEqual({ frames: [0, 1, 2, 3, 4, 5], fps: 6, loop: true });
     expect(Object.keys(map.bridges.frames).sort()).toEqual(['eastWest', 'northSouth']);
     expect(map.castle.sheet.file.endsWith('Castle_Blue.png')).toBe(true);
   });
@@ -102,7 +102,7 @@ describe('Datos de aspecto del repositorio', () => {
       [map.water.sheet, [map.water.frame]],
       [map.shore.sheet, Object.values(map.shore.cases)],
       [map.foam.sheet, map.foam.idle.frames],
-      [map.trees.sheet, map.trees.models.map((m) => m.frame)],
+      [map.trees.sheet, map.trees.idle.frames],
       [map.castle.sheet, [map.castle.frame]],
     ] as const;
     for (const [sheet, frames] of sheets) {
@@ -205,5 +205,69 @@ describe('Datos de aspecto del repositorio', () => {
     expect(towers).toHaveLength(1);
     const forbidden = /Fire|Wood_Tower_InConstruction/;
     expect(files.filter((f) => forbidden.test(f) && !f.startsWith('openspec/'))).toEqual([]);
+  });
+
+  // 0029: torre intacta animada; el resto de estructuras, vetas y solares, de 1 frame.
+  it('Scenario: Datos del repositorio (torre intacta 0–3 a 5 fps; el resto de 1 frame)', () => {
+    expect(appearance.structures['goblin-tower']?.intact.idle).toEqual({
+      frames: [0, 1, 2, 3],
+      fps: 5,
+      loop: true,
+    });
+    const still = [
+      appearance.structures['goblin-house']?.intact,
+      appearance.structures['goblin-house']?.ruin,
+      appearance.structures['goblin-tower']?.ruin,
+      appearance.veins.active,
+      appearance.veins.depleted,
+      appearance.sites.construction,
+      appearance.sites.house,
+      appearance.sites.tower,
+    ];
+    expect(still.map((a) => a?.idle.frames.length)).toEqual([1, 1, 1, 1, 1, 1, 1, 1]);
+    expect(appearance.map.castle.frame).toBe(0);
+  });
+
+  it('Scenario: Datos del repositorio (11 aspectos de decoración, altos 16–18, tope 120, densidad 25)', () => {
+    const { decor } = appearance.map;
+    const names = decor.items.map((i) => i.sheet.file);
+    expect(names).toEqual(
+      ['01', '02', '03', '07', '08', '09', '10', '11', '16', '17', '18'].map(
+        (n) => `Deco/${n}.png`,
+      ),
+    );
+    expect(decor.items.filter((i) => i.tall).map((i) => i.sheet.file)).toEqual([
+      'Deco/16.png',
+      'Deco/17.png',
+      'Deco/18.png',
+    ]);
+    for (const item of decor.items) {
+      const { width, height } = grid(item.sheet.file);
+      const { frameWidth, frameHeight } = item.sheet;
+      expect([width % frameWidth, height % frameHeight]).toEqual([0, 0]);
+      expect(item.frame).toBeLessThan((width / frameWidth) * (height / frameHeight));
+    }
+    expect([decor.maxObjects, decor.density]).toEqual([120, 25]);
+  });
+
+  it('Scenario: Hoja de cada elemento (las 11 de decoración, ninguna roca)', () => {
+    const rocks = Object.values(appearance.pickups.stone.rocks).map((r) => r.sheet.file);
+    const sources = appearance.map.decor.items.map((i) => sourceOfFile(i.sheet.file));
+    expect(sources).toEqual(
+      ['01', '02', '03', '07', '08', '09', '10', '11', '16', '17', '18'].map(
+        (n) => `Tiny Swords (Update 010)/Deco/${n}.png`,
+      ),
+    );
+    expect(appearance.map.decor.items.some((i) => rocks.includes(i.sheet.file))).toBe(false);
+  });
+
+  it('Scenario: Solo las hojas usadas (Deco versionado: 01–11 y 16–18, ninguna de 12–15)', () => {
+    const files = execFileSync('git', ['ls-files'], { cwd: root, encoding: 'utf8' }).split('\n');
+    const deco = files.filter((f) => f.startsWith(`${ASSET_DIR}Deco/`)).sort();
+    expect(deco).toEqual(
+      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 16, 17, 18].map(
+        (n) => `${ASSET_DIR}Deco/${String(n).padStart(2, '0')}.png`,
+      ),
+    );
   });
 });

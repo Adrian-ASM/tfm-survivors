@@ -14,7 +14,7 @@
 ## 3. Infraestructura y contenido
 
 ### Grupo A · Assets y datos de aspecto (commit 1)
-- [ ] 3.1 Copiar byte a byte `Deco/01`–`03`, `07`–`11` y `16`–`18` del pack Update 010 a
+- [x] 3.1 Copiar byte a byte `Deco/01`–`03`, `07`–`11` y `16`–`18` del pack Update 010 a
   `public/assets/tiny-swords/Deco/` con sus 11 entradas en `content/asset-provenance.json` (sha256 y bytes reales;
   las entradas de antes, intactas). **Medición**: anotar la última fila opaca de `16`, `17` y `18` y decidir su
   `origin.y` (por defecto 1, design §Comprobación; si se baja, la huella de base lo absorbe). Rehacer
@@ -23,7 +23,12 @@
   — AP: "Hojas de la decoración registradas", "Integridad de las hojas de la decoración", "Hoja de la decoración sin
   entrada", "Hoja de la decoración del Free Pack", "Calabazas y huesos fuera", "Solo las rocas y la decoración en
   Deco", "Hojas de la piedra registradas" — tests: `stone-provenance.test.ts`, `decor-provenance.test.ts` (nuevo).
-- [ ] 3.2 Esquema y datos: `map.trees` con `idle` en bucle (sin `models`), `map.decor` (`density`, `maxObjects`,
+  **Medición (apply)**: filas opacas (alfa > 0) de cada hoja: `16` 3–103 de 128, `17` 15–104 de 128, `18` 48–168 de
+  192 (columnas 54–140). El pie queda ≈ 24 px de hoja (≈ 22 px de mundo) sobre el borde inferior de la celda, en
+  la mitad baja de la celda, como las bajas (01–11, centradas). **Decisión: `origin.y` = 1 en las tres**: bajarlo
+  metería la base en la fila de abajo y la huella de base dejaría de ser 1 celda (3 × 1 en 18), que es lo que fija
+  la spec. Nota: entradas de la nota 31 → 42.
+- [x] 3.2 Esquema y datos: `map.trees` con `idle` en bucle (sin `models`), `map.decor` (`density`, `maxObjects`,
   `castleMargin`, `items` con `tall`; hoja única, no roca, en la nota), `idle` 0–3 a 5 fps de la torre intacta,
   hojas de decoración en `mapSheetsOf` y `sheetsToLoad`. Actualizar `content/appearance.json`.
   — SR: "Datos del repositorio", "Datos del mapa inválidos", "Datos de la decoración inválidos", "Rutas de hoja no

@@ -52,8 +52,9 @@ describe('Procedencia de las hojas de los edificios de caballeros (asset-provena
     expect(
       checkAssets({ files: versioned(), provenance: provenanceJson, digest: digestOf }),
     ).toEqual([]);
-    expect(files).toHaveLength(ENTRIES_BEFORE + 3);
-    const added = files.slice(ENTRIES_BEFORE);
+    // 0029 añade 11 de decoración al final: estas 3 siguen en su sitio, sin cambios.
+    expect(files.length).toBeGreaterThanOrEqual(ENTRIES_BEFORE + 3);
+    const added = files.slice(ENTRIES_BEFORE, ENTRIES_BEFORE + 3);
     expect(added.map((f) => f.source)).toEqual(SOURCES);
     for (const entry of added) {
       expect(entry.path).toBe(ASSET_DIR + entry.source.replace('Tiny Swords (Update 010)/', ''));

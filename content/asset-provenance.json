@@ -223,6 +223,83 @@
       "version": "Update 010",
       "sha256": "2d39450c366fc1ebc0e5a290a860dcf21ebd7d4a22d16eb5cca23e6d4de94ca9",
       "bytes": 6546
+    },
+    {
+      "path": "public/assets/tiny-swords/Deco/01.png",
+      "source": "Tiny Swords (Update 010)/Deco/01.png",
+      "version": "Update 010",
+      "sha256": "aae1d14745a5886b3217498f3ad1f8c0a82f3f1dc644ac2efd25c3f36f90eae7",
+      "bytes": 464
+    },
+    {
+      "path": "public/assets/tiny-swords/Deco/02.png",
+      "source": "Tiny Swords (Update 010)/Deco/02.png",
+      "version": "Update 010",
+      "sha256": "7adc58201b1db819ff18957eeacf044f4551beb5be09725587d8293cc2876d5a",
+      "bytes": 607
+    },
+    {
+      "path": "public/assets/tiny-swords/Deco/03.png",
+      "source": "Tiny Swords (Update 010)/Deco/03.png",
+      "version": "Update 010",
+      "sha256": "5afe95e862aaa047064a1b189f19d97cf10363db4d4953218d4c4e8a44ee3838",
+      "bytes": 791
+    },
+    {
+      "path": "public/assets/tiny-swords/Deco/07.png",
+      "source": "Tiny Swords (Update 010)/Deco/07.png",
+      "version": "Update 010",
+      "sha256": "fae1719e2b2de9bd708598cdd2a0d0a5ca09aa88630dc6b52a80957f6a465d31",
+      "bytes": 670
+    },
+    {
+      "path": "public/assets/tiny-swords/Deco/08.png",
+      "source": "Tiny Swords (Update 010)/Deco/08.png",
+      "version": "Update 010",
+      "sha256": "f94b5fa5aac1b62b58d9389c5524bebd0d99a4193749e41a505642bde965a6a8",
+      "bytes": 830
+    },
+    {
+      "path": "public/assets/tiny-swords/Deco/09.png",
+      "source": "Tiny Swords (Update 010)/Deco/09.png",
+      "version": "Update 010",
+      "sha256": "fa07501a73b22ae6d96297dfc5d8dad81791afe8751b8a40fb6ced4dfe45c3d5",
+      "bytes": 1196
+    },
+    {
+      "path": "public/assets/tiny-swords/Deco/10.png",
+      "source": "Tiny Swords (Update 010)/Deco/10.png",
+      "version": "Update 010",
+      "sha256": "68f57683bc1f512d34fc0107c6b4fb33904a3298295df09f3a2d4a05e977821b",
+      "bytes": 634
+    },
+    {
+      "path": "public/assets/tiny-swords/Deco/11.png",
+      "source": "Tiny Swords (Update 010)/Deco/11.png",
+      "version": "Update 010",
+      "sha256": "26a7592cbc3ac76b63a871cd40261c45728eca9c520a39000f1f2cdc5bfda7fd",
+      "bytes": 879
+    },
+    {
+      "path": "public/assets/tiny-swords/Deco/16.png",
+      "source": "Tiny Swords (Update 010)/Deco/16.png",
+      "version": "Update 010",
+      "sha256": "bbf9170c41a2bd10f4e10942407f9c90c3a4f338f5fe454a4cc7fa0b287fafef",
+      "bytes": 2102
+    },
+    {
+      "path": "public/assets/tiny-swords/Deco/17.png",
+      "source": "Tiny Swords (Update 010)/Deco/17.png",
+      "version": "Update 010",
+      "sha256": "c3da63203ae56798b0188fc09c376bdb7ea6de74a8c1930c4ec6f7d02b5881ac",
+      "bytes": 2023
+    },
+    {
+      "path": "public/assets/tiny-swords/Deco/18.png",
+      "source": "Tiny Swords (Update 010)/Deco/18.png",
+      "version": "Update 010",
+      "sha256": "8ef2e9479438091df9622dd4aa4f943b2454916fadc7975cfa1f39d30231eb68",
+      "bytes": 3595
     }
   ]
 }

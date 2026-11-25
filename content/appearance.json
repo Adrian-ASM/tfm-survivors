@@ -475,26 +475,11 @@
         "x": 0.5,
         "y": 0.92
       },
-      "models": [
-        {
-          "frame": 0
-        },
-        {
-          "frame": 1
-        },
-        {
-          "frame": 2
-        },
-        {
-          "frame": 3
-        },
-        {
-          "frame": 4
-        },
-        {
-          "frame": 5
-        }
-      ],
+      "idle": {
+        "frames": [0, 1, 2, 3, 4, 5],
+        "fps": 6,
+        "loop": true
+      },
       "flip": true
     },
     "bridges": {
@@ -531,6 +516,90 @@
         "y": 1
       },
       "frame": 0
+    },
+    "decor": {
+      "density": 25,
+      "maxObjects": 120,
+      "castleMargin": 1,
+      "items": [
+        {
+          "sheet": { "file": "Deco/01.png", "frameWidth": 64, "frameHeight": 64 },
+          "frame": 0,
+          "scale": 0.9375,
+          "origin": { "x": 0.5, "y": 1 },
+          "tall": false
+        },
+        {
+          "sheet": { "file": "Deco/02.png", "frameWidth": 64, "frameHeight": 64 },
+          "frame": 0,
+          "scale": 0.9375,
+          "origin": { "x": 0.5, "y": 1 },
+          "tall": false
+        },
+        {
+          "sheet": { "file": "Deco/03.png", "frameWidth": 64, "frameHeight": 64 },
+          "frame": 0,
+          "scale": 0.9375,
+          "origin": { "x": 0.5, "y": 1 },
+          "tall": false
+        },
+        {
+          "sheet": { "file": "Deco/07.png", "frameWidth": 64, "frameHeight": 64 },
+          "frame": 0,
+          "scale": 0.9375,
+          "origin": { "x": 0.5, "y": 1 },
+          "tall": false
+        },
+        {
+          "sheet": { "file": "Deco/08.png", "frameWidth": 64, "frameHeight": 64 },
+          "frame": 0,
+          "scale": 0.9375,
+          "origin": { "x": 0.5, "y": 1 },
+          "tall": false
+        },
+        {
+          "sheet": { "file": "Deco/09.png", "frameWidth": 64, "frameHeight": 64 },
+          "frame": 0,
+          "scale": 0.9375,
+          "origin": { "x": 0.5, "y": 1 },
+          "tall": false
+        },
+        {
+          "sheet": { "file": "Deco/10.png", "frameWidth": 64, "frameHeight": 64 },
+          "frame": 0,
+          "scale": 0.9375,
+          "origin": { "x": 0.5, "y": 1 },
+          "tall": false
+        },
+        {
+          "sheet": { "file": "Deco/11.png", "frameWidth": 64, "frameHeight": 64 },
+          "frame": 0,
+          "scale": 0.9375,
+          "origin": { "x": 0.5, "y": 1 },
+          "tall": false
+        },
+        {
+          "sheet": { "file": "Deco/16.png", "frameWidth": 64, "frameHeight": 128 },
+          "frame": 0,
+          "scale": 0.9375,
+          "origin": { "x": 0.5, "y": 1 },
+          "tall": true
+        },
+        {
+          "sheet": { "file": "Deco/17.png", "frameWidth": 64, "frameHeight": 128 },
+          "frame": 0,
+          "scale": 0.9375,
+          "origin": { "x": 0.5, "y": 1 },
+          "tall": true
+        },
+        {
+          "sheet": { "file": "Deco/18.png", "frameWidth": 192, "frameHeight": 192 },
+          "frame": 0,
+          "scale": 0.9375,
+          "origin": { "x": 0.5, "y": 1 },
+          "tall": true
+        }
+      ]
     }
   },
   "structures": {
@@ -586,8 +655,8 @@
         },
         "facing": "right",
         "idle": {
-          "frames": [0],
-          "fps": 1,
+          "frames": [0, 1, 2, 3],
+          "fps": 5,
           "loop": true
         }
       },

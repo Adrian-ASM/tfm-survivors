@@ -3,7 +3,7 @@ import type { MapSnapshot, MapStructure, MapVein } from '../../../domain/map/Map
 import type { MapLooks, SiteAspectKey, StructureLook } from './mapLooks';
 import { bridgeOrientation, riverSides, shoreCells, type RiverSides } from './shoreTiles';
 import { bestRuns, shoreTileCells, waterTileCells, type KeyedCell, type TileRun } from './tileRuns';
-import { treeModels } from './treeChoices';
+import { treeLooks } from './treeChoices';
 
 // Plan del pintado del mapa (design 0016 §5.2 y §12.2): convierte el snapshot del mapa y los
 // aspectos resueltos en la lista de objetos de cada capa, en orden de pintado. Puro: sin motor.
@@ -331,13 +331,13 @@ function treeDraws(g: Grid, looks: MapLooks, decorSeed: number) {
   const { texture, aspect } = looks.trees;
   const { frameWidth: w, frameHeight: h } = aspect.sheet;
   const cut = aspect.origin.y * h - g.s / aspect.scale;
-  for (const { index, frame, flipX } of treeModels(g.map, decorSeed, aspect)) {
+  for (const { index, phase, flipX } of treeLooks(g.map, decorSeed, aspect)) {
     const col = index % g.map.cols;
     const row = (index - col) / g.map.cols;
     const base = {
       kind: 'sprite',
       texture,
-      frame,
+      frame: aspect.idle.frames[phase] ?? 0,
       x: g.centerX(col),
       y: g.bottom(row),
       scale: aspect.scale,

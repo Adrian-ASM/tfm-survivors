@@ -88,11 +88,8 @@ export function resolveMapLooks(
     water: regular(map.water, frames, [map.water.frame]),
     shore: regular(map.shore, frames, Object.values(map.shore.cases)),
     foam: regular(map.foam, frames, map.foam.idle.frames),
-    trees: regular(
-      map.trees,
-      frames,
-      map.trees.models.map((m) => m.frame),
-    ),
+    // 0029: todos los frames de su `idle` (sin uno de ellos, el árbol cae entero a reserva).
+    trees: regular(map.trees, frames, map.trees.idle.frames),
     bridges: bridgesOk
       ? {
           art: true,

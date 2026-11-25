@@ -113,7 +113,16 @@ export function mapSheetsOf(appearance: Appearance): [string[], string][] {
     sheet('trees', trees.sheet.file),
     [['map', 'bridges', 'image'], bridges.image],
     sheet('castle', castle.sheet.file),
+    ...decorSheetsOf(appearance),
   ];
+}
+
+/** Hojas de la decoración (0029) con su ruta de campo (`map.decor.items.<i>.sheet.file`). */
+export function decorSheetsOf(appearance: Appearance): [string[], string][] {
+  return appearance.map.decor.items.map((item, i): [string[], string] => [
+    ['map', 'decor', 'items', String(i), 'sheet', 'file'],
+    item.sheet.file,
+  ]);
 }
 
 /** Aspectos de las estructuras (0021) con su ruta de campo, en el orden del fichero. */
@@ -158,8 +167,11 @@ export function parseAppearance(
       ]),
     ];
     for (const [path, file] of sheets) {
-      if (!known.has(ASSET_DIR + file))
-        ctx.addIssue({ code: 'custom', path, message: SHEET_NOT_REGISTERED });
+      if (known.has(ASSET_DIR + file)) continue;
+      // 0029: en la decoración la hoja la identifica (no hay id): el mensaje la nombra.
+      const message =
+        path[1] === 'decor' ? `${SHEET_NOT_REGISTERED} ${file}` : SHEET_NOT_REGISTERED;
+      ctx.addIssue({ code: 'custom', path, message });
     }
   });
   const parsed = schema.safeParse(raw);

@@ -25,7 +25,7 @@ describe('Semilla de decoración de la composición', () => {
     expect(decorSeedOf(42)).not.toBe(decorSeedOf(43));
   });
 
-  it('Scenario: Mismos modelos con la misma semilla (tras 600 frames y R con la misma semilla)', () => {
+  it('Scenario: Mismas fases con la misma semilla (tras 600 frames y R con la misma semilla)', () => {
     const r = new StartRun().execute(
       CONFIG,
       seededRun(42).random,

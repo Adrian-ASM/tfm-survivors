@@ -23,10 +23,17 @@ export interface ImageLoad {
   readonly file: string;
 }
 
-/** Hojas regulares de los aspectos del mapa (la orilla comparte la del fondo). */
+/** Hojas regulares de los aspectos del mapa (la orilla comparte la del fondo) y de la decoración. */
 function mapSheets(appearance: Appearance) {
-  const { water, shore, foam, trees, castle } = appearance.map;
-  return [water.sheet, shore.sheet, foam.sheet, trees.sheet, castle.sheet];
+  const { water, shore, foam, trees, castle, decor } = appearance.map;
+  return [
+    water.sheet,
+    shore.sheet,
+    foam.sheet,
+    trees.sheet,
+    castle.sheet,
+    ...decor.items.map((item) => item.sheet),
+  ];
 }
 
 /** Una carga por `file` distinto: aspectos, mapa, estructuras, vetas, ovejas y solares. Puro. */

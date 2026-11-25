@@ -12,6 +12,8 @@ import { GAME_SCENE_KEY, MENU_SCENE_KEY } from '../../src/infrastructure/phaser/
 import {
   BRIDGE_FILE,
   CASTLE_FILE,
+  DECOR_FILES,
+  DECOR_SCARECROW_FILE,
   TOWER_FILE,
   REGISTERED,
   TORCH_FILE,
@@ -35,8 +37,16 @@ describe('BootScene · plan de carga', () => {
     // color (sin hoja), su bolsa es la del oro y se suman la madera y las dos vetas: 18 + 3 = 21.
     // 0023: más la carne (M_Idle) y las dos hojas de la oveja (idle y bounce) = 24.
     // 0025: más las tres rocas de la piedra (Deco/04–06) = 27. 0026: más obra, casa y torre = 30.
-    expect(sheets).toHaveLength(30);
-    expect(new Set(sheets.map((s) => s.key)).size).toBe(30);
+    // 0029: más las 11 hojas de la decoración = 41.
+    expect(sheets).toHaveLength(41);
+    expect(new Set(sheets.map((s) => s.key)).size).toBe(41);
+    expect(sheets.find((s) => s.key === DECOR_SCARECROW_FILE)).toEqual({
+      key: DECOR_SCARECROW_FILE,
+      file: DECOR_SCARECROW_FILE,
+      frameWidth: 192,
+      frameHeight: 192,
+    });
+    expect(DECOR_FILES.every((f) => sheets.some((s) => s.key === f))).toBe(true);
     expect(sheets.find((s) => s.key === TOWER_FILE)).toMatchObject({
       frameWidth: 256,
       frameHeight: 192,
@@ -54,6 +64,16 @@ describe('BootScene · plan de carga', () => {
       frameWidth: 192,
       frameHeight: 192,
     });
+  });
+
+  it('una decoración con la hoja de otro aspecto la carga una vez', () => {
+    const a = appearance((raw) => {
+      const decor = raw.map.decor as { items: { sheet: { file: string } }[] };
+      const first = decor.items[0];
+      if (first) first.sheet.file = TORCH_FILE;
+    });
+    expect(sheetsToLoad(a).filter((s) => s.key === TORCH_FILE)).toHaveLength(1);
+    expect(sheetsToLoad(a)).toHaveLength(40);
   });
 
   it('dos aspectos con la misma hoja la cargan una vez', () => {

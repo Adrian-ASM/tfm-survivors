@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import appearanceJson from '../../content/appearance.json';
 import { toMapSnapshot } from '../../src/domain/map/MapSnapshot';
 import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
-import { treeModel, treeModels } from '../../src/infrastructure/phaser/map/treeChoices';
+import { treeLook, treeLooks } from '../../src/infrastructure/phaser/map/treeChoices';
 import { DECOR_STREAM, MAP_STREAM, deriveSeed } from '../../src/infrastructure/random/deriveSeed';
 import { BALANCE_SEEDS } from '../support/balanceSeeds';
 import { aDefaultConfig } from '../support/builders';
@@ -11,10 +11,11 @@ import { mapRules, mapWith } from '../support/mapLayouts';
 import { mapForSeed } from '../support/mapStats';
 import { chooseFirstWhileOpen, startSeededRun } from '../support/runs';
 
-// Spec sprite-rendering (0016), "Variedad de árboles por semilla" (design §12.2 B8).
+// Spec sprite-rendering (0016, 0029), "Variedad de árboles por semilla": fase y volteo por celda.
 const TREES = appearanceJson.map.trees;
 const decor = (seed: number) => deriveSeed(seed, DECOR_STREAM);
-const key = (m: { frame: number; flipX: boolean }) => `${String(m.frame)}${m.flipX ? 'f' : ''}`;
+const key = (m: { phase: number; flipX: boolean }) => `${String(m.phase)}${m.flipX ? 'f' : ''}`;
+const N = TREES.idle.frames.length;
 
 describe('treeChoices', () => {
   it('DECOR_STREAM es un flujo propio, distinto del del mapa', () => {
@@ -22,54 +23,60 @@ describe('treeChoices', () => {
     expect(DECOR_STREAM).not.toBe(MAP_STREAM);
   });
 
-  it('treeModel es una función de la semilla y la celda (sin estado)', () => {
-    const a = treeModel(decor(42), 130, TREES.models, true);
-    expect(treeModel(decor(42), 130, TREES.models, true)).toEqual(a);
-    expect(TREES.models.map((m) => m.frame)).toContain(a.frame);
-    expect(treeModel(decor(42), 130, TREES.models, false).flipX).toBe(false);
+  it('treeLook es una función de la semilla y la celda (sin estado), fase en [0, n − 1]', () => {
+    const a = treeLook(decor(42), 130, N, true);
+    expect(treeLook(decor(42), 130, N, true)).toEqual(a);
+    expect(a.phase).toBeGreaterThanOrEqual(0);
+    expect(a.phase).toBeLessThan(N);
+    expect(treeLook(decor(42), 130, N, false).flipX).toBe(false);
   });
 
-  it('Scenario: Mismos modelos con la misma semilla (dos cálculos, semilla 42)', () => {
+  it('la fase usa los mismos bits que el modelo de antes (h mod n): en R = 0, el mismo frame', () => {
+    const h = deriveSeed(decor(42), 130);
+    expect(treeLook(decor(42), 130, N, true).phase).toBe(h % N);
+  });
+
+  it('Scenario: Mismas fases con la misma semilla (dos cálculos, semilla 42)', () => {
     const map = toMapSnapshot(mapForSeed(aDefaultConfig(), 42));
-    const first = treeModels(map, decor(42), TREES).map(key);
+    const first = treeLooks(map, decor(42), TREES).map(key);
     expect(first.length).toBe(map.counts.trunk);
-    expect(treeModels(map, decor(42), TREES).map(key)).toEqual(first);
+    expect(treeLooks(map, decor(42), TREES).map(key)).toEqual(first);
   });
 
-  it('Scenario: Variedad dentro de un mapa (1..50: ≥ 2 modelos por mapa)', () => {
+  it('Scenario: Variedad dentro de un mapa (1..50: ≥ 2 fases por mapa)', () => {
     const poor = BALANCE_SEEDS.filter((seed) => {
       const map = toMapSnapshot(mapForSeed(aDefaultConfig(), seed));
-      const frames = new Set(treeModels(map, decor(seed), TREES).map((m) => m.frame));
+      const frames = new Set(treeLooks(map, decor(seed), TREES).map((m) => m.phase));
       return frames.size < 2;
     });
     expect(poor).toEqual([]);
   });
 
-  it('Scenario: Otra semilla, otros modelos (20 troncos, semillas 42 y 43)', () => {
+  it('Scenario: Otra semilla, otras fases (20 troncos, semillas 42 y 43)', () => {
     const layout: Record<string, 'trunk'> = {};
     for (let r = 2; r <= 5; r++)
       for (let c = 2; c <= 6; c++) layout[`${String(c)},${String(r)}`] = 'trunk';
     const map = toMapSnapshot(mapWith(mapRules(), layout));
-    const a = treeModels(map, decor(42), TREES).map(key);
-    const b = treeModels(map, decor(43), TREES).map(key);
+    const a = treeLooks(map, decor(42), TREES).map(key);
+    const b = treeLooks(map, decor(43), TREES).map(key);
     expect(a).toHaveLength(20);
     expect(a).not.toEqual(b);
   });
 
-  it('Scenario: La variedad no toca la simulación (semilla 42, 1.200 ticks, 1 modelo frente a 6)', () => {
+  it('Scenario: La variedad no toca la simulación (semilla 42, 1.200 ticks, idle de 1 frame frente a 6)', () => {
     const inputs = randomInputs(1200, 7);
     const play = (trees: typeof TREES) => {
       const run = startSeededRun(aDefaultConfig(), 42);
       const out: { snap: RunSnapshot; cells: string }[] = [];
       for (const input of inputs) {
         chooseFirstWhileOpen(run);
-        treeModels(run.map, decor(42), trees);
+        treeLooks(run.map, decor(42), trees);
         run.tick(input);
         out.push({ snap: run.snapshot(), cells: run.map.cells.join() });
       }
       return out;
     };
-    const one = { ...TREES, models: [{ frame: 0 }], flip: false };
+    const one = { ...TREES, idle: { ...TREES.idle, frames: [0] }, flip: false };
     expect(play(TREES)).toEqual(play(one));
   });
 });
