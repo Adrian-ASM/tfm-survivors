@@ -1,6 +1,6 @@
 import type { CellType } from '../../../domain/map/CellType';
 import type { MapSnapshot, MapStructure, MapVein } from '../../../domain/map/MapSnapshot';
-import type { MapLooks, StructureLook } from './mapLooks';
+import type { MapLooks, SiteAspectKey, StructureLook } from './mapLooks';
 import { bridgeOrientation, riverSides, shoreCells, type RiverSides } from './shoreTiles';
 import { bestRuns, shoreTileCells, waterTileCells, type KeyedCell, type TileRun } from './tileRuns';
 import { treeModels } from './treeChoices';
@@ -169,6 +169,8 @@ export interface MapArtPlan {
   readonly structures: readonly PlannedStructure[];
   /** Vetas del mapa (0022), en el orden del snapshot: `intact` = activa y `ruin` = agotada. */
   readonly veins: readonly PlannedStructure[];
+  /** Solares (0026), en el orden del snapshot, con los índices de sus tres aspectos. */
+  readonly sites: readonly PlannedSite[];
 }
 
 export interface PlanContext {
@@ -402,7 +404,7 @@ interface AspectDraws {
  */
 function structureAspect(
   g: Grid,
-  s: MapStructure,
+  s: Footprint,
   look: StructureLook | undefined,
   color: number,
 ): AspectDraws {
@@ -443,6 +445,67 @@ function structureAspect(
         ]
       : [];
   return { low, high, fallback: false };
+}
+
+/** Huella de mundo de una estructura o de un solar (primera columna y fila, columnas y filas). */
+interface Footprint {
+  readonly col: number;
+  readonly row: number;
+  readonly cols: number;
+  readonly rows: number;
+}
+
+/**
+ * Solar en el plan (0026): índices de sus objetos (en `[...low, ...high]`) por aspecto, obra, casa y
+ * torre, con la misma regla baja/alta que las estructuras, y si cada uno es la reserva.
+ */
+export interface PlannedSite {
+  readonly id: number;
+  readonly free: readonly number[];
+  readonly house: readonly number[];
+  readonly tower: readonly number[];
+  readonly fallback: Readonly<Record<SiteAspectKey, boolean>>;
+}
+
+/** Piezas de los solares (0026), con índices relativos a cada lista, y su numeración final. */
+function siteDraws(g: Grid, looks: MapLooks) {
+  const low: LowDraw[] = [];
+  const high: SpriteDraw[] = [];
+  const keys: readonly SiteAspectKey[] = ['free', 'house', 'tower'];
+  const parts = g.map.sites.map((s) => {
+    const entry = {
+      id: s.id,
+      low: [] as number[][],
+      high: [] as number[][],
+      fallback: [] as boolean[],
+    };
+    for (const k of keys) {
+      const a = structureAspect(g, s, looks.sites.looks[k], looks.sites.colors[k]);
+      entry.low.push(a.low.map((d) => low.push(d) - 1));
+      entry.high.push(a.high.map((d) => high.push(d) - 1));
+      entry.fallback.push(a.fallback);
+    }
+    return entry;
+  });
+  const number = (lowStart: number, highStart: number): PlannedSite[] =>
+    parts.map(({ id, low: l, high: h, fallback }) => {
+      const at = (k: number) => [
+        ...(l[k] ?? []).map((i) => lowStart + i),
+        ...(h[k] ?? []).map((i) => highStart + i),
+      ];
+      return {
+        id,
+        free: at(0),
+        house: at(1),
+        tower: at(2),
+        fallback: {
+          free: fallback[0] ?? true,
+          house: fallback[1] ?? true,
+          tower: fallback[2] ?? true,
+        },
+      };
+    });
+  return { low, high, number };
 }
 
 /** Estructura en el plan (0021): índices de sus objetos por aspecto, en `[...low, ...high]`. */
@@ -576,9 +639,13 @@ export function planMapArt(map: MapSnapshot, looks: MapLooks, ctx: PlanContext):
   // 0021: las estructuras tras la fachada (capa baja) y tras el tejado (capa alta). 0022: las vetas,
   // tras las estructuras en la capa baja.
   const veins = veinDraws(map, looks, ground.length + built.low.length);
-  const low = [...ground, ...built.low, ...veins.low];
+  // 0026: los solares, tras las vetas en la capa baja y tras las estructuras en la alta.
+  const sites = siteDraws(g, looks);
+  const low = [...ground, ...built.low, ...veins.low, ...sites.low];
   const above = [...canopies, ...roof];
-  const high = [...above, ...built.high];
+  const high = [...above, ...built.high, ...sites.high];
+  const sitesLow = ground.length + built.low.length + veins.low.length;
+  const sitesHigh = low.length + above.length + built.high.length;
   const foam = looks.foam.art && shoreCells(map).length > 0 ? looks.foam.aspect.idle : null;
   const { trunk, water, bridge, castle } = map.counts;
   return {
@@ -591,5 +658,6 @@ export function planMapArt(map: MapSnapshot, looks: MapLooks, ctx: PlanContext):
     cellSize: map.cellSize,
     structures: built.number(ground.length, low.length + above.length),
     veins: veins.planned,
+    sites: sites.number(sitesLow, sitesHigh),
   };
 }

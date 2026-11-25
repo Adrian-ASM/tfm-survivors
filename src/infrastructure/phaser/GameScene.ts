@@ -12,6 +12,7 @@ import { KeyboardInput } from './KeyboardInput';
 import { PauseGate, type PauseAction } from './PauseGate';
 import { PauseKey } from './PauseKey';
 import { ShopGate, playScreen, shopVisible, type ShopAction } from './ShopGate';
+import { BuildGate, buildVisible, type BuildAction } from './BuildGate';
 import type { ShopSnapshot } from '../../domain/run/RunSnapshot';
 import type { RingSprite } from './PulseLayer';
 import { RestartKey } from './RestartKey';
@@ -57,6 +58,8 @@ const PULSE_LINE_WIDTH = 2;
 export interface SceneCapacity {
   readonly enemies: number;
   readonly projectiles: number;
+  /** Flechas de torre vivas como mucho (tope de las torres, 0026). */
+  readonly towerProjectiles: number;
   readonly pulses: number;
   /** Recogibles de los cuatro tipos: suma de los topes (0022, 0023). */
   readonly pickups: number;
@@ -95,8 +98,18 @@ export interface ShopView {
   takeAction(): ShopAction;
 }
 
+/**
+ * Panel de obra (DOM, 0026): la escena lo pinta con el snapshot, lo muestra solo en obra y lee la
+ * acción pulsada.
+ */
+export interface BuildView {
+  sync(snapshot: RunSnapshot): void;
+  setVisible(visible: boolean): void;
+  takeAction(): BuildAction;
+}
+
 /** Pantalla visible (para la sonda de E2E). */
-export type Screen = 'menu' | 'playing' | 'paused' | 'shop';
+export type Screen = 'menu' | 'playing' | 'paused' | 'shop' | 'build';
 
 /** Lo que la escena ha pintado en un frame (para el probe de E2E). */
 export type OnRender = (
@@ -124,6 +137,8 @@ export interface GameSceneDeps {
   readonly pause: PauseView;
   /** Overlay de la tienda (0024). */
   readonly shop: ShopView;
+  /** Panel de obra (0026). */
+  readonly build: BuildView;
   readonly onRender?: OnRender;
   readonly onScreen?: (screen: Screen) => void;
   /** Velocidad de simulación ya resuelta (1 en modo jugador; solo `?e2e&speed` la cambia). */
@@ -177,6 +192,7 @@ export class GameScene extends Phaser.Scene {
   private last: RunSnapshot | undefined;
   private gate = new PauseGate();
   private readonly shopGate = new ShopGate();
+  private readonly buildGate = new BuildGate();
 
   constructor(private readonly deps: GameSceneDeps) {
     super(GAME_SCENE_KEY);
@@ -294,8 +310,13 @@ export class GameScene extends Phaser.Scene {
     const shopStatus = this.last?.status ?? started.tickRun.status;
     const shop = this.shopGate.step(esc, shopAction, shopStatus, started);
     if (shop.snapshot) this.render(shop.snapshot);
+    // Obra (0026) tras la tienda y antes de la pausa, con la misma regla de Esc.
+    const buildAction = this.deps.build.takeAction();
+    const buildStatus = this.last?.status ?? started.tickRun.status;
+    const site = this.buildGate.step(shop.esc, buildAction, buildStatus, started);
+    if (site.snapshot) this.render(site.snapshot);
     const status = this.last?.status ?? started.tickRun.status;
-    if (this.gate.step(shop.esc, action, status, started.tickRun) === 'menu') {
+    if (this.gate.step(site.esc, action, status, started.tickRun) === 'menu') {
       this.scene.start(MENU_SCENE_KEY);
       return;
     }
@@ -357,6 +378,7 @@ export class GameScene extends Phaser.Scene {
   private leave(): void {
     this.deps.pause.setVisible(false);
     this.deps.shop.setVisible(false);
+    this.deps.build.setVisible(false);
     this.deps.progress.leave();
     this.w = undefined;
     this.rig = undefined;
@@ -385,6 +407,7 @@ export class GameScene extends Phaser.Scene {
   private showPause(paused: boolean): void {
     this.deps.pause.setVisible(paused);
     this.deps.shop.setVisible(shopVisible(this.last?.status, paused));
+    this.deps.build.setVisible(buildVisible(this.last?.status, paused));
     this.deps.onScreen?.(playScreen(this.last?.status, paused));
   }
 
@@ -404,6 +427,7 @@ export class GameScene extends Phaser.Scene {
       current: snapshot.player.health,
       max: snapshot.player.maxHealth,
     });
+    this.deps.build.sync(snapshot);
     w.results.sync(snapshot);
     // En el frame en que termina la partida: se guarda antes de que R pueda leerse (spec).
     this.deps.progress.sync(snapshot, started.tickRun);

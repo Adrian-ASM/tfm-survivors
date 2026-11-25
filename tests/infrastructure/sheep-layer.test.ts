@@ -125,8 +125,9 @@ describe('SheepLayer', () => {
   });
 
   it.each([
-    [42, 701],
-    [123, 784],
+    // 0026: 701 y 784 más los 36 objetos de los 6 solares.
+    [42, 737],
+    [123, 820],
   ] as const)(
     'Scenario: Ovejas fuera del plan del mapa (semilla %i: %i objetos, como antes)',
     (seed, objects) => {

@@ -109,15 +109,15 @@
   - Test: `tests/hooks/guard-assets.test.ts` (ampliado).
 
 ## 7. Infraestructura · render, panel y sonda (test-after)
-- [ ] 7.1 `planMapArt.sites` (3 aspectos: obra común, casa y torre; baja/alta; `bounds` para `MapCuller`), `SiteArt`
+- [x] 7.1 `planMapArt.sites` (3 aspectos: obra común, casa y torre; baja/alta; `bounds` para `MapCuller`), `SiteArt`
   y `sprites.sites`.
   - Escenarios: sr "Solar en obra y casa construida" (sin navegador, con snapshots preparados), "Reserva de los
     edificios", "Presupuesto de objetos con solares" y "Pintar los solares no cambia la simulación".
   - Tests: `tests/infrastructure/phaser/plan-sites.test.ts` y `tests/infrastructure/phaser/site-art.test.ts`.
-- [ ] 7.2 Segunda instancia de `ProjectileLayer` para `towerProjectiles`, y `sprites.towerArrows`.
+- [x] 7.2 Segunda instancia de `ProjectileLayer` para `towerProjectiles`, y `sprites.towerArrows`.
   - Escenario: sr "Flechas coherentes con el snapshot".
   - Test: `tests/infrastructure/phaser/tower-arrows.test.ts`.
-- [ ] 7.3 `BuildPanel` (DOM) y `BuildGate` en `GameScene` (orden Shop → Build → Pause). Sin input ni 1/2/3/R con el
+- [x] 7.3 `BuildPanel` (DOM) y `BuildGate` en `GameScene` (orden Shop → Build → Pause). Sin input ni 1/2/3/R con el
   panel. `playScreen` añade `'build'`, y la sonda gana `__sprint.sites` y `map.sites` (`null` en el menú).
   - Escenarios: bs "Panel con una opción", "Panel con dos opciones", "Clic en la casa", "Salir con Esc o con el
     botón" y "Sin panel fuera de la obra"; mm "Esc en la obra"; sl "Step en obra".

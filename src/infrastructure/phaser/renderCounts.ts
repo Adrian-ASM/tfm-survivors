@@ -4,6 +4,7 @@ import type { PickupCounts } from './PickupLayer';
 import { zeroSheepCounts, type SheepCounts } from './SheepLayer';
 import { zeroCells, zeroMapArt, type CellCounts, type MapArtProbe } from './TerrainView';
 import { zeroStructureCounts, type StructureCount } from './StructureArt';
+import { zeroSiteCounts, type SiteCount } from './SiteArt';
 
 /**
  * Sonda de sprites para E2E (design D7, cierra 0009 · W2): visibles y con aspecto de reserva por
@@ -37,6 +38,10 @@ export interface SpriteCounts {
   readonly structures: Record<string, StructureCount>;
   /** Vetas pintadas (0022): activas, agotadas y cuántas con su círculo de reserva. */
   readonly veins: VeinCount;
+  /** Solares pintados (0026): en obra, casas, torres y cuántos con reserva. */
+  readonly sites: SiteCount;
+  /** Flechas de torre pintadas (0026), aparte de los proyectiles del jugador. */
+  readonly towerArrows: SpriteCount;
 }
 
 /** Clave de las vetas en su `StructureArt` (un solo "tipo"). */
@@ -97,5 +102,7 @@ export function emptyCounts(
     mapArt: zeroMapArt(),
     structures: zeroStructureCounts(structureTypes),
     veins: { active: 0, depleted: 0, fallback: 0 },
+    sites: zeroSiteCounts(),
+    towerArrows: zero(),
   };
 }

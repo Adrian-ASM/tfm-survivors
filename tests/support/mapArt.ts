@@ -9,6 +9,7 @@ import {
   BRIDGE_FRAME_NAMES,
   resolveMapLooks,
   resolveStructureLooks,
+  resolveSiteLooks,
   resolveVeinLooks,
   type HasFrame,
   type MapLooks,
@@ -46,6 +47,9 @@ const FRAME_COUNTS: Readonly<Record<string, number>> = {
   'Factions/Goblins/Buildings/Wood_Tower/Wood_Tower_Destroyed.png': 1,
   'Resources/Gold Mine/GoldMine_Active.png': 1,
   'Resources/Gold Mine/GoldMine_Inactive.png': 1,
+  'Factions/Knights/Buildings/House/House_Construction.png': 1,
+  'Factions/Knights/Buildings/House/House_Blue.png': 1,
+  'Factions/Knights/Buildings/Tower/Tower_Blue.png': 1,
 };
 
 /** Texturas cargadas salvo las de `missing` (doble de `textureFrames`). */
@@ -72,6 +76,7 @@ export function repoMapLooks(missing: readonly string[] = []): MapLooks {
     bridgeFrames(),
     resolveStructureLooks(a, loadedExcept(missing)),
     resolveVeinLooks(a, loadedExcept(missing)),
+    resolveSiteLooks(a, loadedExcept(missing)),
   );
 }
 
