@@ -266,6 +266,27 @@ export class GameMap {
     }
   }
 
+  /**
+   * Centro (del rectángulo recortado) de la celda de (x, y) si es caminable; si no, el de
+   * `nearestWalkable`. Lo usa el despeje de una obra para las ovejas (0026): una oveja con el centro
+   * en una celda libre pero que solapa la obra va al centro de su propia celda.
+   */
+  nearestWalkableCenter(x: number, y: number, out: { x: number; y: number }): void {
+    const col = this.colAt(x);
+    const row = this.rowAt(y);
+    if (!this.isWalkable(col, row)) {
+      this.nearestWalkable(x, y, out);
+      return;
+    }
+    out.x = (col * this.cellSize + this.edge(col + 1, this.width)) / 2;
+    out.y = (row * this.cellSize + this.edge(row + 1, this.height)) / 2;
+  }
+
+  /** ¿Está el punto (x, y) en una celda construida? */
+  isBuiltAt(x: number, y: number): boolean {
+    return this.isBuilt(this.colAt(x), this.rowAt(y));
+  }
+
   /** Columna (eje x) o fila (eje y) de una coordenada de mundo. */
   private indexAt(v: number, alongX: boolean): number {
     return alongX ? this.colAt(v) : this.rowAt(v);

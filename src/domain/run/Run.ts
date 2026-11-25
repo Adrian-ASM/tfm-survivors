@@ -1,6 +1,7 @@
 import type { Arena } from '../arena/Arena';
 import { contactDamage } from '../collision/contact';
 import type { Enemy } from '../enemy/Enemy';
+import type { GuardPost } from '../enemy/GuardPost';
 import { Horde } from '../enemy/Horde';
 import { HazardField } from '../hazard/HazardField';
 import { FlowField } from '../map/FlowField';
@@ -44,7 +45,11 @@ import {
 } from './RunConfig';
 import { Arsenal } from '../weapon/Arsenal';
 import type { UpgradeBoard } from '../upgrade/UpgradeBoard';
-import type { RunSnapshot, ShopSnapshot } from './RunSnapshot';
+import type { BuildSnapshot, RunSnapshot, ShopSnapshot, SiteSnapshot } from './RunSnapshot';
+import { Settlement } from '../site/Settlement';
+import type { BuildError } from '../site/BuildError';
+import { isBuildingKind } from '../site/BuildingRules';
+import { toBuildSnapshot, toSiteSnapshots, CLOSED_BUILD } from '../site/siteSnapshots';
 import {
   toBlastSnapshot,
   toDynamiteSnapshot,
@@ -62,7 +67,16 @@ import {
   toWarnings,
 } from './snapshotParts';
 import type { RunStatus } from './RunStatus';
-import { CHOOSING, LOST, RUNNING, SHOPPING, WON, type RunOutcome, type RunPhase } from './RunPhase';
+import {
+  BUILDING,
+  CHOOSING,
+  LOST,
+  RUNNING,
+  SHOPPING,
+  WON,
+  type RunOutcome,
+  type RunPhase,
+} from './RunPhase';
 import { CastleGate } from '../shop/CastleGate';
 import {
   SETUP_HEALTH_OUT_OF_RANGE,
@@ -141,6 +155,13 @@ export class Run {
   /** Último `ShopSnapshot` y su clave: se rehace solo si cambia (design 0024 §6). */
   private shopView: ShopSnapshot | null = null;
   private shopKey = '';
+  /** Solares de obra, su paso 12 y la oferta abierta (0026). */
+  private readonly settlement: Settlement;
+  /** Últimos solares del snapshot y su clave (estado y armado): se rehacen solo si cambian. */
+  private sitesView: readonly SiteSnapshot[] = [];
+  private sitesKey = '';
+  /** Oferta de obra del snapshot: la cerrada o la de la obra abierta (fija mientras dura). */
+  private buildView: BuildSnapshot = CLOSED_BUILD;
 
   private constructor(
     private readonly rules: RunRules,
@@ -174,6 +195,7 @@ export class Run {
     this.veins = initial.veins;
     this.flock = initial.flock;
     this.gate = new CastleGate(terrain.door, rules.shop, initial.shopArmed);
+    this.settlement = new Settlement(buildSites, rules.buildings);
     for (const w of rules.loadout.weapons) this.retune(w.id);
     const bonus = maxHealthBonus(rules.upgrades, this.board.levels);
     this.player = this.player.withRules(this.effectivePlayer(), bonus);
@@ -366,6 +388,74 @@ export class Run {
     this.openNextOffer();
     // Paso 11: con la oferta abierta en este tick (paso 10) solo re-arma; abre si sigue en curso.
     if (this.gate.step(x, y, this.status === 'running')) this.phase = SHOPPING;
+    // Paso 12 (0026): solares en orden; con otra fase abierta en este tick, solo re-arman.
+    if (this.settlement.step(x, y, this.status === 'running', this.stock)) {
+      this.phase = BUILDING;
+      this.buildView = toBuildSnapshot(this.settlement, this.rules.buildings);
+    }
+  }
+
+  /**
+   * Sale de la obra sin construir (spec build-sites 0026): vuelve a en curso sin ejecutar ticks; el
+   * solar sigue desarmado. Fuera de la obra, `not-building` sin cambios.
+   */
+  /**
+   * Construye `kind` en el solar abierto (spec build-sites 0026), sin ejecutar ticks ni consumir
+   * azar: resta su coste, el solar queda construido en `snapshot.tick`, su huella deja de ser
+   * caminable (la revisión del mapa invalida los campos, ADR-0025) y la partida vuelve a en curso.
+   * Fuera de la obra, con un tipo desconocido o no ofrecido, un error tipado sin cambios.
+   */
+  build(kind: string): Result<void, BuildError> {
+    if (this.phase.status !== 'building') return err({ code: 'not-building' });
+    const site = this.settlement.open;
+    const offered = this.settlement.offered;
+    if (!isBuildingKind(kind)) return err({ code: 'unknown-kind', kind });
+    if (!site || !offered.includes(kind)) return err({ code: 'not-affordable', kind });
+    const { wood, stone } = this.rules.buildings.cost(kind);
+    if (!this.stock.spendMaterials(wood, stone)) return err({ code: 'not-affordable', kind });
+    site.markBuilt(kind, this.tickCount);
+    const built = this.terrain.build(site.col, site.row, site.cols, site.rows);
+    if (!built.ok) throw new Error(`Invariante rota: ${built.error.message}`);
+    this.clearFootprint();
+    this.closeSite();
+    return ok(undefined);
+  }
+
+  /**
+   * Despeje de la huella recién construida (spec build-sites 0026, design §4), en orden fijo y sin
+   * azar: enemigos en orden de lista, recogibles en orden de creación, ovejas en orden de lista y
+   * puestos de guardia. El jugador no se mueve: las reglas del acceso garantizan que no la solapa.
+   */
+  private clearFootprint(): void {
+    const map = this.terrain;
+    const spot = { x: 0, y: 0 };
+    const posts = new Set<GuardPost>();
+    for (const e of this.horde.alive) {
+      if (e.post) posts.add(e.post);
+      if (!map.isBuiltAt(e.x, e.y)) continue;
+      map.nearestWalkable(e.x, e.y, spot);
+      e.relocate(spot.x, spot.y);
+    }
+    this.pickups.evict();
+    this.flock.evict(map);
+    for (const s of this.structures.all) if (s.post) posts.add(s.post);
+    for (const post of posts) post.evict(map);
+    const { x, y } = this.player.position;
+    if (map.overlapsBlocked(x, y, this.player.radius)) {
+      throw new Error('Invariante rota: el jugador solapa la huella recién construida');
+    }
+  }
+
+  leaveSite(): Result<void, BuildError> {
+    if (this.phase.status !== 'building') return err({ code: 'not-building' });
+    this.closeSite();
+    return ok(undefined);
+  }
+
+  private closeSite(): void {
+    this.settlement.close();
+    this.buildView = CLOSED_BUILD;
+    this.phase = RUNNING;
   }
 
   /**
@@ -566,7 +656,20 @@ export class Run {
       offer: toOfferSnapshot(this.board),
       upgrades: toUpgradeLevels(this.rules.upgrades, this.board),
       shop: this.shopSnapshot(),
+      sites: this.siteSnapshots(),
+      build: this.buildView,
     });
+  }
+
+  /** Solares del snapshot, rehechos solo al cambiar el estado o el armado de alguno. */
+  private siteSnapshots(): readonly SiteSnapshot[] {
+    const { sites } = this.settlement;
+    let key = '';
+    for (const s of sites) key += `${s.state}${s.gate.armed ? '+' : '-'}`;
+    if (key === this.sitesKey && this.sitesView.length === sites.length) return this.sitesView;
+    this.sitesKey = key;
+    this.sitesView = toSiteSnapshots(sites);
+    return this.sitesView;
   }
 
   /** Productos y estado de la tienda, rehechos solo al cambiar su clave (oro, vida, niveles…). */

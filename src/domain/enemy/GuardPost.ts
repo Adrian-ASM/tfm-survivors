@@ -23,15 +23,14 @@ export class GuardPost {
   private readonly fields = new Map<number, FlowField>();
   private readonly map: GameMap;
   private guards = 0;
+  /** Puesto: fijo salvo que una obra lo cubra (`evict`, 0026). */
+  private px: number;
+  private py: number;
 
-  constructor(
-    readonly x: number,
-    readonly y: number,
-    type: EnemyType,
-    map: GameMap,
-    arena: Arena,
-  ) {
+  constructor(x: number, y: number, type: EnemyType, map: GameMap, arena: Arena) {
     this.map = map;
+    this.px = x;
+    this.py = y;
     const spot = { x: 0, y: 0 };
     const b = type.behavior;
     this.corners = b.kinds.map((kind, state) => {
@@ -68,14 +67,51 @@ export class GuardPost {
     return field;
   }
 
+  /** x del puesto. */
+  get x(): number {
+    return this.px;
+  }
+
+  /** y del puesto. */
+  get y(): number {
+    return this.py;
+  }
+
+  /**
+   * Despeje de una obra (spec build-sites 0026): el puesto y cada punto de patrulla en una celda
+   * construida pasan al centro de la celda caminable más cercana, y su campo se orienta a la celda
+   * nueva. Sin azar; solo al construir (en el mapa generado no ocurre, por la colocación).
+   */
+  evict(map: GameMap): void {
+    const spot = { x: 0, y: 0 };
+    if (map.isBuiltAt(this.px, this.py)) {
+      map.nearestWalkable(this.px, this.py, spot);
+      this.px = spot.x;
+      this.py = spot.y;
+      this.fieldTo(spot.x, spot.y);
+    }
+    for (const points of this.corners) {
+      if (!points) continue;
+      for (let i = 0; i < CORNERS; i++) {
+        const qx = points[2 * i] ?? 0;
+        const qy = points[2 * i + 1] ?? 0;
+        if (!map.isBuiltAt(qx, qy)) continue;
+        map.nearestWalkable(qx, qy, spot);
+        points[2 * i] = spot.x;
+        points[2 * i + 1] = spot.y;
+        this.fieldTo(spot.x, spot.y);
+      }
+    }
+  }
+
   /** x del punto de patrulla `i` (0..3) del estado `state`, o del puesto con `TO_POST`. */
   pointX(state: number, i: number): number {
-    return i === TO_POST ? this.x : (this.corners[state]?.[2 * i] ?? this.x);
+    return i === TO_POST ? this.px : (this.corners[state]?.[2 * i] ?? this.px);
   }
 
   /** y del punto de patrulla `i` (0..3) del estado `state`, o del puesto con `TO_POST`. */
   pointY(state: number, i: number): number {
-    return i === TO_POST ? this.y : (this.corners[state]?.[2 * i + 1] ?? this.y);
+    return i === TO_POST ? this.py : (this.corners[state]?.[2 * i + 1] ?? this.py);
   }
 
   /**

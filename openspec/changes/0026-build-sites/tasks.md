@@ -42,7 +42,7 @@
   - Si no salen 6 en alguna semilla, se ajusta `minGapCells`.
 
 ## 3. Dominio · fase `building` en `Run` (design §4, §5 paso 12)
-- [ ] 3.1 `Settlement` con solares armados al inicio, paso 12 tras la tienda (uno por tick, asequible ⇒ abre; si
+- [x] 3.1 `Settlement` con solares armados al inicio, paso 12 tras la tienda (uno por tick, asequible ⇒ abre; si
   no, sigue armado), `BUILDING` en `RunPhase`/`RunStatus`, `snapshot.sites` y `snapshot.build` cacheado por clave.
   - Escenarios: bs "Solares al crear la partida", "Sin solares en el mapa vacío", "Lista estable" (con
     `build`, que se hace en 3.2: el test se cierra allí) y los 14 de "Apertura del solar con re-armado", de "Se
@@ -50,7 +50,7 @@
     la obra"; pm "Sin solares"; sl "Solar abierto con los recursos del mismo tick"; rs "600 ticks en obra", "La
     obra no consume azar", "Obra abierta justo antes del tick de la victoria" y "En obra y vuelta a en curso".
   - Tests: `tests/domain/run-sites-open.test.ts` y `tests/domain/run-building-frozen.test.ts`.
-- [ ] 3.2 `Run.build(kind)`/`leaveSite()` con `BuildError`, `Stockpile.spendMaterials`, `map.build` y vuelta a
+- [x] 3.2 `Run.build(kind)`/`leaveSite()` con `BuildError`, `Stockpile.spendMaterials`, `map.build` y vuelta a
   `RUNNING`.
   - Escenarios: bs "Construir una casa", "Construir una torre con el coste exacto", "Torre no ofrecida", "Tipo
     desconocido", "Construir fuera de la obra", "Un solo edificio por visita", "Construir no consume azar", "Salir
@@ -58,7 +58,7 @@
     al construir una torre" y "La casa no gasta piedra"; sl "Construcciones distintas divergen" y "Snapshot de los
     solares no mutable desde fuera"; pm "Tipos constantes con edificios"; bs "El tipo de las celdas no cambia".
   - Test: `tests/domain/run-build.test.ts`.
-- [ ] 3.3 Despeje de la huella al construir: `Enemy.relocate`, `PickupField.evict`, `Flock.evict` (con el origen)
+- [x] 3.3 Despeje de la huella al construir: `Enemy.relocate`, `PickupField.evict`, `Flock.evict` (con el origen)
   y `GuardPost.evict`, en orden fijo y sin azar. Comprobación de bloqueo en `Run`.
   - Escenarios: bs "Enemigo dentro de la huella", "Recogibles dentro de la huella", "Oveja que solapa la huella",
     "Punto de patrulla dentro de la huella", "Despejar no consume azar", "El enemigo rodea el edificio nuevo",

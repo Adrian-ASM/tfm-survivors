@@ -152,6 +152,28 @@ export class Flock {
     s.dy = dir?.[1] ?? 0;
   }
 
+  /**
+   * Despeje de una obra (spec build-sites 0026), en orden de lista y sin azar: cada oveja cuyo
+   * círculo solapa una celda no caminable (solo puede ser la obra nueva) pasa al centro de la celda
+   * caminable más cercana a su centro (la suya si es caminable), y cada origen en una celda
+   * construida, al centro de la caminable más cercana.
+   */
+  evict(map: GameMap): void {
+    const spot = { x: 0, y: 0 };
+    for (const s of this.alive) {
+      if (map.overlapsBlocked(s.x, s.y, s.radius)) {
+        map.nearestWalkableCenter(s.x, s.y, spot);
+        s.x = spot.x;
+        s.y = spot.y;
+      }
+      if (map.isBuiltAt(s.originX, s.originY)) {
+        map.nearestWalkable(s.originX, s.originY, spot);
+        s.originX = spot.x;
+        s.originY = spot.y;
+      }
+    }
+  }
+
   /** Avance con el barrido por ejes del jugador (desliza, no rebota, puede atascarse). */
   private move(s: Sheep, step: number, map: GameMap, arena: Arena): void {
     const r = s.radius;
@@ -220,11 +242,17 @@ export class Flock {
     const { baseCells, baseX, baseY } = this;
     const min = this.rules.config.respawn.minPlayerDistance;
     const min2 = min * min;
+    const map = this.ground?.map;
+    const r = this.rules.radius;
     const ok = (j: number): boolean => {
       if (baseCells[j] === deathCell) return false;
-      const dx = (baseX[j] ?? 0) - px;
-      const dy = (baseY[j] ?? 0) - py;
-      return dx * dx + dy * dy >= min2;
+      const x = baseX[j] ?? 0;
+      const y = baseY[j] ?? 0;
+      const dx = x - px;
+      const dy = y - py;
+      // Con edificios (0026), una celda base que solapa la obra deja de ser candidata.
+      const blocked = map !== undefined && map.revision > 0 && map.overlapsBlocked(x, y, r);
+      return dx * dx + dy * dy >= min2 && !blocked;
     };
     let k = 0;
     for (let j = 0; j < baseCells.length; j++) if (ok(j)) k++;
@@ -234,7 +262,12 @@ export class Flock {
     for (let j = 0; j < baseCells.length; j++) {
       if (!ok(j)) continue;
       if (pick === 0) {
-        this.add(baseX[j] ?? 0, baseY[j] ?? 0, this.rules.health, n + this.rules.config.graze.ticks);
+        this.add(
+          baseX[j] ?? 0,
+          baseY[j] ?? 0,
+          this.rules.health,
+          n + this.rules.config.graze.ticks,
+        );
         return true;
       }
       pick--;

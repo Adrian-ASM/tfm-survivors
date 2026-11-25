@@ -7,6 +7,10 @@ export const BUILDING_KINDS = ['house', 'tower'] as const;
 
 export type BuildingKind = (typeof BUILDING_KINDS)[number];
 
+/** ¿Es un tipo de edificio del contenido? (entrada del adaptador, sin validar). */
+export const isBuildingKind = (kind: string): kind is BuildingKind =>
+  (BUILDING_KINDS as readonly string[]).includes(kind);
+
 /**
  * Celdas entre el borde inferior de la huella y el acceso (design 0026 §1): el acceso queda en el
  * centro de la fila r + rows + 1, separado de la huella por una fila libre. Es geometría del solar,

@@ -1,7 +1,21 @@
 import type { CellType } from '../../src/domain/map/CellType';
-import type { DeclaredSite, TerrainSource } from '../../src/domain/map/TerrainSource';
+import type { EnemyTypeConfig } from '../../src/domain/enemy/EnemyType';
+import type {
+  DeclaredSheep,
+  DeclaredSite,
+  DeclaredStructure,
+  TerrainSource,
+} from '../../src/domain/map/TerrainSource';
+import { PlayerInput } from '../../src/domain/player/PlayerInput';
+import { Run, type RunSetup } from '../../src/domain/run/Run';
+import type { RunConfig } from '../../src/domain/run/RunConfig';
+import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
+import type { RandomGenerator } from '../../src/domain/shared/RandomGenerator';
+import type { BuildingsConfig } from '../../src/domain/site/BuildingRules';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import { SITE_STREAM, deriveSeed } from '../../src/infrastructure/random/deriveSeed';
+import { withBuildings } from './builders';
+import { aBehaviorConfig, aProbeType } from './runs';
 
 // Escenarios de los solares de obra (spec build-sites 0026). El solar de prueba es un único solar
 // declarado en el mapa vacío, con huella 2 × 2 (casa = torre, design 0026 §1) anclada en la celda
@@ -43,10 +57,121 @@ export const siteRandomFor = (seed: number): Mulberry32RandomGenerator =>
  */
 export function declaredSites(
   sites: readonly DeclaredSite[],
-  options: { cells?: readonly CellType[]; door?: { x: number; y: number } } = {},
+  options: {
+    cells?: readonly CellType[];
+    door?: { x: number; y: number };
+    structures?: readonly DeclaredStructure[];
+  } = {},
 ): TerrainSource {
-  const door = options.door ? { door: options.door } : {};
+  const extra = {
+    ...(options.door ? { door: options.door } : {}),
+    ...(options.structures ? { structures: options.structures } : {}),
+  };
   return options.cells
-    ? { kind: 'cells', cells: options.cells, sites, ...door }
-    : { kind: 'open', sites, ...door };
+    ? { kind: 'cells', cells: options.cells, sites, ...extra }
+    : { kind: 'open', sites, ...extra };
 }
+
+/** Jugador a d = 10 del acceso del solar de prueba (a la derecha). */
+export const NEAR_ACCESS = { x: TEST_ACCESS.x + 10, y: TEST_ACCESS.y } as const;
+
+/** El contenido dado con el acceso de escenario (radio de oferta 40 y re-armado 300). */
+export const withSiteAccess = (
+  config: RunConfig,
+  access: Partial<BuildingsConfig['access']> = {},
+): RunConfig =>
+  withBuildings(config, {
+    ...config.buildings,
+    access: { radius: 40, rearmDistance: 300, ...access },
+  });
+
+/** El contenido dado con los costes de escenario de la casa y de la torre. */
+export const withCosts = (
+  config: RunConfig,
+  house: BuildingsConfig['house']['cost'],
+  tower: BuildingsConfig['tower']['cost'],
+): RunConfig =>
+  withBuildings(config, {
+    ...config.buildings,
+    house: { ...config.buildings.house, cost: house },
+    tower: { ...config.buildings.tower, cost: tower },
+  });
+
+/** El contenido dado con otro ingreso de la casa (oro por pago y periodo). */
+export const withIncome = (
+  config: RunConfig,
+  income: Partial<BuildingsConfig['house']['income']>,
+): RunConfig =>
+  withBuildings(config, {
+    ...config.buildings,
+    house: { ...config.buildings.house, income: { ...config.buildings.house.income, ...income } },
+  });
+
+/**
+ * Contenido de los escenarios del solar de prueba: el mundo por defecto, sin armas ni oleadas, el
+ * jugador a 60 px/s (1 px por tick) y el acceso de escenario (40 / 300).
+ */
+export const aSiteConfig = (
+  o: Parameters<typeof aBehaviorConfig>[1] = {},
+  types: readonly EnemyTypeConfig[] = [aProbeType()],
+): RunConfig =>
+  withSiteAccess(aBehaviorConfig(types, { ...o, player: { speed: 60, ...o.player } }));
+
+/** Madera, piedra y oro iniciales de un `RunSetup`. */
+export const withStock = (wood: number, stone = 0, gold = 0): RunSetup => ({
+  resources: { gold, wood, stone },
+});
+
+/**
+ * Partida en el mapa vacío con estos solares declarados (por defecto, el de prueba) y el jugador en
+ * `NEAR_ACCESS` salvo que `setup` diga otra cosa.
+ */
+export function startWithSites(
+  config: RunConfig,
+  setup: RunSetup = {},
+  sites: readonly DeclaredSite[] = [TEST_SITE],
+  options: Parameters<typeof declaredSites>[1] & {
+    random?: RandomGenerator;
+    stoneRandom?: RandomGenerator;
+    sheep?: DeclaredSheep;
+  } = {},
+): Run {
+  const base = declaredSites(sites, options);
+  const terrain: TerrainSource =
+    options.sheep && base.kind !== 'generated' ? { ...base, sheep: options.sheep } : base;
+  const r = Run.start(
+    config,
+    options.random ?? new Mulberry32RandomGenerator(42),
+    { player: NEAR_ACCESS, ...setup },
+    terrain,
+    options.stoneRandom,
+  );
+  if (!r.ok) throw new Error(`${r.error.field}: ${r.error.message}`);
+  return r.value;
+}
+
+/** Ejecuta ticks hasta que la partida está en obra (como mucho `limit`); devuelve el tick. */
+export function untilBuilding(run: Run, limit = 1000, input = PlayerInput.NONE): number {
+  for (let i = 0; i < limit && run.status === 'running'; i++) run.tick(input);
+  if (run.status !== 'building') throw new Error(`sin obra (estado ${run.status})`);
+  return run.snapshot().tick;
+}
+
+/** Política de obra fija (spec simulation-loop 0026): si la obra está abierta, salir sin construir. */
+export function leaveSiteIfOpen(run: Run): boolean {
+  if (run.status !== 'building') return false;
+  const r = run.leaveSite();
+  if (!r.ok) throw new Error(`salida rechazada: ${r.error.code}`);
+  return true;
+}
+
+/** Construye `kind` en la obra abierta; falla si se rechaza. */
+export function buildNow(run: Run, kind: string): RunSnapshot {
+  const r = run.build(kind);
+  if (!r.ok) throw new Error(`obra rechazada (${kind}): ${r.error.code}`);
+  return run.snapshot();
+}
+
+/** Distancia del jugador del snapshot al acceso del solar de prueba. */
+export const dAccess = (s: RunSnapshot | undefined): number =>
+  s ? Math.hypot(s.player.x - TEST_ACCESS.x, s.player.y - TEST_ACCESS.y) : Number.NaN;

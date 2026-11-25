@@ -136,7 +136,8 @@ export function ticks(run: Run, n: number, input = PlayerInput.NONE): RunSnapsho
 
 /**
  * Elige `pick(oferta)` mientras haya una oferta abierta (también las encoladas) y, con la tienda
- * abierta, aplica la política de tienda fija (spec simulation-loop 0024): sale sin comprar.
+ * abierta, aplica la política de tienda fija (spec simulation-loop 0024): sale sin comprar. Con la
+ * obra abierta, la política de obra fija (0026): sale sin construir.
  */
 export function chooseWhileOpen(run: Run, pick: (offer: RunSnapshot['offer']) => number): number {
   let choices = 0;
@@ -146,6 +147,8 @@ export function chooseWhileOpen(run: Run, pick: (offer: RunSnapshot['offer']) =>
     choices++;
   }
   if (run.status === 'shopping') run.leaveShop();
+  // Política de obra fija (spec simulation-loop 0026): con la oferta de un solar abierta, salir.
+  if (run.status === 'building') run.leaveSite();
   return choices;
 }
 

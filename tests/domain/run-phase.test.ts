@@ -1,5 +1,6 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import {
+  BUILDING,
   CHOOSING,
   LOST,
   RUNNING,
@@ -11,9 +12,9 @@ import {
 import type { RunStatus } from '../../src/domain/run/RunStatus';
 
 describe('RunPhase (spec run-outcome: Invariante entre estado y resultado, modelo)', () => {
-  const phases: readonly RunPhase[] = [RUNNING, CHOOSING, SHOPPING, WON, LOST];
+  const phases: readonly RunPhase[] = [RUNNING, CHOOSING, SHOPPING, BUILDING, WON, LOST];
 
-  it('las 5 fases están congeladas (en tienda desde 0024)', () => {
+  it('las 6 fases están congeladas (en tienda desde 0024, en obra desde 0026)', () => {
     expect(phases.every((p) => Object.isFrozen(p))).toBe(true);
   });
 
@@ -22,6 +23,7 @@ describe('RunPhase (spec run-outcome: Invariante entre estado y resultado, model
       ['running', null],
       ['choosing', null],
       ['shopping', null],
+      ['building', null],
       ['over', 'won'],
       ['over', 'lost'],
     ]);
@@ -32,6 +34,9 @@ describe('RunPhase (spec run-outcome: Invariante entre estado y resultado, model
     expectTypeOf<Extract<RunPhase, { status: 'running' }>['outcome']>().toEqualTypeOf<null>();
     expectTypeOf<Extract<RunPhase, { status: 'choosing' }>['outcome']>().toEqualTypeOf<null>();
     expectTypeOf<Extract<RunPhase, { status: 'shopping' }>['outcome']>().toEqualTypeOf<null>();
-    expectTypeOf<RunStatus>().toEqualTypeOf<'running' | 'choosing' | 'shopping' | 'over'>();
+    expectTypeOf<Extract<RunPhase, { status: 'building' }>['outcome']>().toEqualTypeOf<null>();
+    expectTypeOf<RunStatus>().toEqualTypeOf<
+      'running' | 'choosing' | 'shopping' | 'building' | 'over'
+    >();
   });
 });

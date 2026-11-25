@@ -61,7 +61,11 @@ function firstError(c: SheepConfig): DomainError | null {
       'respawn.minPlayerDistance',
       SHEEP_DISTANCE_MUST_BE_NON_NEGATIVE,
     ],
-    [isCount(c.placement.minStartCells), 'placement.minStartCells', SHEEP_PLACEMENT_MUST_BE_INTEGER],
+    [
+      isCount(c.placement.minStartCells),
+      'placement.minStartCells',
+      SHEEP_PLACEMENT_MUST_BE_INTEGER,
+    ],
     [
       isCount(c.placement.minCastleCells),
       'placement.minCastleCells',
