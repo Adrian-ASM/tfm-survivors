@@ -109,6 +109,7 @@ describe('Contenido de vida e invulnerabilidad validado', () => {
       maxHealth: 100,
       invulnerabilityTicks: 30,
       pickupRadius: 64,
+      regenIntervalTicks: 180,
     });
   });
 

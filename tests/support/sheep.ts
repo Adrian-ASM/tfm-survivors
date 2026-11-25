@@ -15,6 +15,7 @@ import {
   aSegment,
   aWavesConfig,
   withDuration,
+  withGoldPerKill,
   withSheep,
   withWeapons,
 } from './builders';
@@ -50,10 +51,12 @@ export function aSheepConfig(
   patch: Parameters<typeof withSheep>[1] = {},
   base: RunConfig = { ...aDefaultConfig(), weapons: NO_WEAPONS, upgrades: NO_UPGRADES },
 ): RunConfig {
-  return withSheep(
-    { ...base, waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 0)] }).waves },
-    patch,
-  );
+  // 0024: escenarios anteriores al oro por baja, con 0 en todos los tipos (convención de resources).
+  const quiet = {
+    ...base,
+    waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 0)] }).waves,
+  };
+  return withSheep(withGoldPerKill(quiet, {}), patch);
 }
 
 /** Partida con ovejas declaradas en el mapa vacío (o de celdas) y el azar de la partida 42. */
@@ -91,10 +94,7 @@ export const firstAt = (s: RunSnapshot | undefined): [number, number] => [
  * suelo (radio de recogida 1). Devuelve el snapshot del tick 1 y el final.
  */
 export function sheepFeast(): { first: RunSnapshot; final: RunSnapshot } {
-  const base = withDuration(
-    withWeapons(aSheepConfig(), weaponsOf([TESTS])),
-    1,
-  );
+  const base = withDuration(withWeapons(aSheepConfig(), weaponsOf([TESTS])), 1);
   const config = { ...base, player: { ...base.player, pickupRadius: 1 } };
   const near = [-5, 0, 5].map((d) => ({ x: 1000 + d, y: 1005 }));
   const far = [-60, 0, 60].map((d) => ({ x: 1000 + d, y: 1060 }));

@@ -123,7 +123,10 @@ export function ticks(run: Run, n: number, input = PlayerInput.NONE): RunSnapsho
   return snaps;
 }
 
-/** Elige `pick(oferta)` mientras haya una oferta abierta (también las encoladas). */
+/**
+ * Elige `pick(oferta)` mientras haya una oferta abierta (también las encoladas) y, con la tienda
+ * abierta, aplica la política de tienda fija (spec simulation-loop 0024): sale sin comprar.
+ */
 export function chooseWhileOpen(run: Run, pick: (offer: RunSnapshot['offer']) => number): number {
   let choices = 0;
   while (run.status === 'choosing') {
@@ -131,7 +134,24 @@ export function chooseWhileOpen(run: Run, pick: (offer: RunSnapshot['offer']) =>
     if (!r.ok) throw new Error(`elección rechazada: ${r.error.code}`);
     choices++;
   }
+  if (run.status === 'shopping') run.leaveShop();
   return choices;
+}
+
+/**
+ * Visita del bot v4 (spec run-outcome 0024): con la tienda abierta, compra lo que elija `bot.shop`
+ * hasta que devuelva `null` y sale. Devuelve los ids comprados, en orden.
+ */
+export function visitShop(run: Run, bot: Pick<ReferenceBot, 'shop'>): string[] {
+  const bought: string[] = [];
+  if (run.status !== 'shopping') return bought;
+  for (let id = bot.shop(run.snapshot()); id !== null; id = bot.shop(run.snapshot())) {
+    const r = run.buy(id);
+    if (!r.ok) throw new Error(`compra rechazada (${id}): ${r.error.code}`);
+    bought.push(id);
+  }
+  run.leaveShop();
+  return bought;
 }
 
 /** Elige la opción 0 mientras haya una oferta abierta (política de elección fija). */
@@ -144,6 +164,7 @@ export const chooseFirstWhileOpen = (run: Run): number => chooseWhileOpen(run, (
  */
 export function playReferenceBot(run: Run, bot: ReferenceBot, maxTicks: number): RunSnapshot {
   for (let t = 0; t < maxTicks && run.status !== 'over'; t++) {
+    visitShop(run, bot);
     chooseWhileOpen(run, (offer) => bot.pick(offer));
     run.tick(bot.input(run.snapshot()));
   }

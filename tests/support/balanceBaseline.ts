@@ -1,78 +1,88 @@
-// Línea base M0 del change 0022 (tasks 0.1), generada con el código de `main` (5dc4163) antes de
-// tocar nada. Spec resources, "Balance sin recalibrar con los recursos": cada semilla debe terminar
-// igual (resultado, tick y bajas) con el contenido final. No se edita a mano: si cambia, es un fallo de
-// determinismo, no un balance que recalibrar.
+// Línea base M2 del change 0024 (tasks 5.3), medida con el bot de referencia v4 y el contenido final
+// (dos catálogos, tienda, oro por baja). Spec castle-shop, "Línea base nueva congelada": cada semilla
+// debe terminar igual (resultado, tick y bajas). Sustituye a propósito la de 0022/0023 (bot v3). No
+// se edita a mano: si cambia, es un fallo de determinismo o un cambio de balance que exige un change.
 
-/** [semilla, resultado, tick final, bajas] del bot de referencia v3 sobre las semillas 1..50. */
+/** [semilla, resultado, tick final, bajas] del bot de referencia v4 sobre las semillas 1..50. */
 export const BALANCE_BASELINE: readonly (readonly [number, 'won' | 'lost', number, number])[] = [
-  [1, 'lost', 25407, 584],
-  [2, 'lost', 18364, 390],
-  [3, 'lost', 8716, 181],
-  [4, 'won', 36000, 862],
-  [5, 'won', 36000, 883],
-  [6, 'lost', 17241, 363],
-  [7, 'won', 36000, 903],
-  [8, 'lost', 32019, 699],
-  [9, 'won', 36000, 900],
-  [10, 'lost', 14173, 303],
-  [11, 'lost', 21969, 450],
-  [12, 'won', 36000, 890],
-  [13, 'won', 36000, 916],
-  [14, 'lost', 8141, 153],
-  [15, 'won', 36000, 896],
-  [16, 'won', 36000, 909],
-  [17, 'lost', 13905, 295],
-  [18, 'lost', 8165, 173],
-  [19, 'won', 36000, 895],
-  [20, 'lost', 34980, 872],
-  [21, 'lost', 6642, 122],
-  [22, 'won', 36000, 892],
-  [23, 'won', 36000, 903],
-  [24, 'lost', 9969, 207],
-  [25, 'won', 36000, 855],
-  [26, 'won', 36000, 865],
-  [27, 'won', 36000, 892],
-  [28, 'won', 36000, 884],
-  [29, 'lost', 14194, 309],
-  [30, 'won', 36000, 899],
-  [31, 'won', 36000, 923],
-  [32, 'won', 36000, 869],
-  [33, 'lost', 6342, 119],
-  [34, 'lost', 18110, 376],
-  [35, 'won', 36000, 884],
-  [36, 'won', 36000, 893],
-  [37, 'won', 36000, 884],
-  [38, 'won', 36000, 891],
-  [39, 'lost', 21890, 463],
-  [40, 'won', 36000, 852],
-  [41, 'won', 36000, 891],
-  [42, 'lost', 11505, 240],
-  [43, 'won', 36000, 901],
-  [44, 'won', 36000, 913],
-  [45, 'won', 36000, 899],
-  [46, 'lost', 6646, 127],
-  [47, 'lost', 16312, 354],
-  [48, 'lost', 24828, 548],
-  [49, 'lost', 14001, 287],
-  [50, 'lost', 15869, 344],
+  [1, 'won', 36000, 900],
+  [2, 'won', 36000, 847],
+  [3, 'lost', 17322, 367],
+  [4, 'lost', 15354, 304],
+  [5, 'won', 36000, 911],
+  [6, 'won', 36000, 900],
+  [7, 'won', 36000, 862],
+  [8, 'lost', 13364, 278],
+  [9, 'lost', 8568, 160],
+  [10, 'won', 36000, 882],
+  [11, 'lost', 18182, 365],
+  [12, 'won', 36000, 908],
+  [13, 'lost', 14777, 321],
+  [14, 'lost', 10672, 222],
+  [15, 'won', 36000, 865],
+  [16, 'lost', 25688, 552],
+  [17, 'won', 36000, 880],
+  [18, 'won', 36000, 873],
+  [19, 'won', 36000, 879],
+  [20, 'won', 36000, 901],
+  [21, 'won', 36000, 870],
+  [22, 'won', 36000, 827],
+  [23, 'won', 36000, 871],
+  [24, 'won', 36000, 904],
+  [25, 'won', 36000, 882],
+  [26, 'won', 36000, 853],
+  [27, 'won', 36000, 878],
+  [28, 'lost', 20925, 419],
+  [29, 'won', 36000, 895],
+  [30, 'won', 36000, 887],
+  [31, 'lost', 12146, 275],
+  [32, 'won', 36000, 892],
+  [33, 'won', 36000, 878],
+  [34, 'won', 36000, 878],
+  [35, 'won', 36000, 877],
+  [36, 'lost', 13494, 296],
+  [37, 'won', 36000, 871],
+  [38, 'lost', 17197, 358],
+  [39, 'won', 36000, 888],
+  [40, 'lost', 23981, 516],
+  [41, 'lost', 19703, 402],
+  [42, 'lost', 3939, 61],
+  [43, 'lost', 17005, 344],
+  [44, 'lost', 20290, 429],
+  [45, 'lost', 9026, 185],
+  [46, 'won', 36000, 885],
+  [47, 'won', 36000, 881],
+  [48, 'lost', 19530, 411],
+  [49, 'lost', 12848, 282],
+  [50, 'won', 36000, 866],
 ];
 
-/** Media de mechas de `goblin-barrel` por partida del bot v3 (sin redondear). */
-export const BASELINE_FUSES_PER_RUN = 26.88;
+/** Media de mechas de `goblin-barrel` por partida del bot v4 (sin redondear). */
+export const BASELINE_FUSES_PER_RUN = 30.44;
 
 /**
- * Huella (sha256 de JSON canónico, claves ordenadas) de los campos de combate del contenido de
- * `main` (spec resources, "Contenido de combate intacto"; spec sheep 0023, ídem). Progresión: solo los
- * campos de XP; recursos: sin la carne (los campos que añade 0023).
+ * Huella (sha256 de JSON canónico, claves ordenadas) del contenido de `main` antes de 0024 que el
+ * change no puede tocar (spec run-outcome, "Presupuesto de oleadas y stats intactos"): oleadas,
+ * enemigos, armas y estructuras completos, el jugador sin `regenIntervalTicks` y la progresión solo
+ * con los campos de XP y gemas.
  */
 export const COMBAT_CONTENT_SHA256 = {
   waves: 'ad7b9a6c23c3dce1f8d80473273e7e481ee83fd11fff41c3393db968f846ecc7',
   enemies: '5ab431721ced0525c9b2fe802808e328c222d20b4d5f6dc8d2243e551066c07c',
   weapons: '4aa8c55f7bfdf02d1b2e8700e23120d59dc04d5a0a811973395b47c6a3cda0f9',
-  upgrades: 'ad0bfdcaa189586f880535d0e8ae2e05e37d5bc477593a35ce8790593d270751',
   player: '625622ed673953ac1cce75e60c9effecc1fecdf3c5174685e21ede1175ff88f0',
   progression: 'd794f9130929587446e03b8052c1a8d0ba7b86876548c90e34303e6fd464133b',
   structures: '2ebda39bdcf9091295b115fb84b4e8569184dfd9fed3fa0b400cbc36bfbfa105',
-  /** 0023 (M0, tasks 0.1): content/resources.json de `main` antes del change, sin el campo `meat`. */
-  resources: 'c09e42573541d9b138d4a843eeea5f65717ecc70f203ecd9387c92716805787d',
+} as const;
+
+/**
+ * Huella del contenido final de 0024 (M2): los ficheros calibrados enteros. Un precio, un oro o una
+ * curación cambiados en 1 la rompen (spec castle-shop, "Línea base nueva congelada").
+ */
+export const BALANCE_CONTENT_SHA256 = {
+  upgrades: '9a93d344f3d239a00d9781f7d1e754f974f8ade30cb5ea2d05056c3bc14a09a7',
+  player: '4e9a87f231c360f05a6d115e4690e4f85612573bb6a3e7fd7fae3245d5ad22f0',
+  resources: '518d3ec381209c897736a614b13de443cdde5fe69101106965ff8b816522c87d',
+  progression: '43351a63986f766c1dae881873b73a79a6634cadca2948a8e57c603619672659',
+  shop: 'fb83c18046f4755af1ebb34942994bd7321d2162ff9a31bd6fb5800d847a3275',
 } as const;

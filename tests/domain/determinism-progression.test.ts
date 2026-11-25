@@ -4,12 +4,7 @@ import type { Run, RunSetup } from '../../src/domain/run/Run';
 import type { RunConfig } from '../../src/domain/run/RunConfig';
 import type { OfferSnapshot, RunSnapshot } from '../../src/domain/run/RunSnapshot';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
-import {
-  DEFAULT_UPGRADE_LIST,
-  LONG_RUN_HEALTH,
-  aDefaultConfig,
-  withPlayer,
-} from '../support/builders';
+import { DEFAULT_UPGRADES, LONG_RUN_HEALTH, aDefaultConfig, withPlayer } from '../support/builders';
 import { randomInputs } from '../support/inputs';
 import { chooseFirstWhileOpen, play, startRun, startSeededRun } from '../support/runs';
 
@@ -158,10 +153,12 @@ describe('Determinismo con progresión y elecciones', () => {
       offers++;
       r.chooseUpgrade(0);
     }
-    const total = DEFAULT_UPGRADE_LIST.reduce((n, u) => n + u.maxLevel, 0);
+    // 0024: solo el catálogo de personaje sale en la oferta (ninguna de arma).
+    const { character } = DEFAULT_UPGRADES;
+    const total = character.reduce((n, u) => n + u.maxLevel, 0);
     expect(offers).toBe(total);
-    expect(r.snapshot().upgrades.map((u) => u.level)).toEqual(Array(9).fill(5));
-    expect([...seen].sort()).toEqual(DEFAULT_UPGRADE_LIST.map((u) => u.id).sort());
+    expect(r.snapshot().upgrades).toEqual(character.map((u) => ({ id: u.id, level: u.maxLevel })));
+    expect([...seen].sort()).toEqual(character.map((u) => u.id).sort());
     expect(repeated).toBe(0);
   });
 });

@@ -9,6 +9,7 @@ export class Experience {
   private lvl: number;
   private current: number;
   private pending = 0;
+  private remainder = 0;
 
   /** `level` y `xp` iniciales ya validados (`RunSetup`): level entero ≥ 1, 0 ≤ xp < toNext. */
   constructor(
@@ -36,9 +37,20 @@ export class Experience {
     return this.pending;
   }
 
-  /** Suma XP; cada umbral alcanzado sube 1 nivel, arrastra el sobrante y registra una subida. */
-  gain(amount: number): void {
-    this.current += amount;
+  /** Resto en centésimas de la bonificación de XP (0..99; no sale en el snapshot). */
+  get bonusRemainder(): number {
+    return this.remainder;
+  }
+
+  /**
+   * Suma la XP de `amount` con la bonificación `bonusPercent` (spec leveling 0024): con el resto r,
+   * `t = amount × (100 + b) + r`, suma ⌊t / 100⌋ y deja `r = t mod 100`. Con b = 0, exactamente
+   * `amount`. Cada umbral alcanzado sube 1 nivel, arrastra el sobrante y registra una subida.
+   */
+  gain(amount: number, bonusPercent = 0): void {
+    const total = amount * (100 + bonusPercent) + this.remainder;
+    this.remainder = total % 100;
+    this.current += (total - this.remainder) / 100;
     for (let need = this.xpToNext; this.current >= need; need = this.xpToNext) {
       this.current -= need;
       this.lvl += 1;

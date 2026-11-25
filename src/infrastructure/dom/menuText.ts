@@ -26,4 +26,11 @@ export const MENU_LABELS = {
   pause: 'Pausa',
   title: 'Greentide Vanguard',
   confirmQuestion: '¿Borrar el progreso guardado (récords e historial)?',
+  shop: 'Tienda',
+  shopLeave: 'Salir',
+  shopGoldLabel: 'Oro',
+  shopGold: 'de oro',
+  shopMax: 'Máximo',
+  shopNoGold: 'Oro insuficiente',
+  shopFullHealth: 'Vida llena',
 } as const;

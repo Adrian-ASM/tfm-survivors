@@ -74,12 +74,17 @@ describe('Ovejas en el mapa generado (spec sheep)', () => {
       const run = startSeededRun(aDefaultConfig(), 42);
       const start = run.snapshot().sheep.map((o) => [o.x, o.y]);
       const first: number[] = start.map(() => 0);
-      play(run, CONTENT_SHEEP.graze.ticks + 1, () => PlayerInput.NONE, (s, t) => {
-        s.sheep.forEach((o, i) => {
-          const [x, y] = start[i] ?? [];
-          if (!first[i] && (o.x !== x || o.y !== y)) first[i] = t;
-        });
-      });
+      play(
+        run,
+        CONTENT_SHEEP.graze.ticks + 1,
+        () => PlayerInput.NONE,
+        (s, t) => {
+          s.sheep.forEach((o, i) => {
+            const [x, y] = start[i] ?? [];
+            if (!first[i] && (o.x !== x || o.y !== y)) first[i] = t;
+          });
+        },
+      );
       return first;
     };
     const a = firstMoves();
@@ -109,17 +114,22 @@ describe('Ovejas en el mapa generado (spec sheep)', () => {
       }
       return false;
     };
-    play(run, 36_000, (_, t) => inputs[t - 1] ?? PlayerInput.NONE, (s) => {
-      if (s.sheep.length > CONTENT_SHEEP.maxAlive) over++;
-      for (const o of s.sheep) {
-        const key = `${String(o.origin.x)},${String(o.origin.y)}`;
-        if (owner.has(o.id) && owner.get(o.id) !== key) repeated++;
-        owner.set(o.id, key);
-        const r = o.radius;
-        const out = o.x < r || o.y < r || o.x > 3840 - r || o.y > 2160 - r;
-        if (out || blocked(o.x, o.y, r)) overlaps++;
-      }
-    });
+    play(
+      run,
+      36_000,
+      (_, t) => inputs[t - 1] ?? PlayerInput.NONE,
+      (s) => {
+        if (s.sheep.length > CONTENT_SHEEP.maxAlive) over++;
+        for (const o of s.sheep) {
+          const key = `${String(o.origin.x)},${String(o.origin.y)}`;
+          if (owner.has(o.id) && owner.get(o.id) !== key) repeated++;
+          owner.set(o.id, key);
+          const r = o.radius;
+          const out = o.x < r || o.y < r || o.x > 3840 - r || o.y > 2160 - r;
+          if (out || blocked(o.x, o.y, r)) overlaps++;
+        }
+      },
+    );
     expect(run.snapshot().tick).toBe(36_000);
     expect([over, overlaps, repeated]).toEqual([0, 0, 0]);
   }, 60_000);
@@ -135,10 +145,15 @@ describe('Ovejas en el mapa generado (spec sheep)', () => {
     const due = n + CONTENT_SHEEP.respawn.everyTicks;
     const counts = new Map<number, number>();
     const seen = new Set<number>();
-    play(run, due, () => PlayerInput.NONE, (s, t) => {
-      counts.set(t, s.sheep.length);
-      for (const o of s.sheep) seen.add(o.id);
-    });
+    play(
+      run,
+      due,
+      () => PlayerInput.NONE,
+      (s, t) => {
+        counts.set(t, s.sheep.length);
+        for (const o of s.sheep) seen.add(o.id);
+      },
+    );
     expect(counts.get(n)).toBe(CONTENT_SHEEP.maxAlive - 2);
     expect(counts.get(due - 1)).toBe(CONTENT_SHEEP.maxAlive - 2);
     // Condición del escenario: ninguna otra ha muerto entretanto (solo las 2 reapariciones nuevas).
@@ -162,7 +177,8 @@ describe('Ovejas deterministas (spec sheep y simulation-loop)', () => {
         if (s.sheep.some((o) => o.state === 'flee')) facts.fled = true;
         if (s.sheep.length < prev.sheep.length) facts.died = true;
         if (s.sheep.some((o) => !ids.has(o.id))) facts.respawned = true;
-        const healed = s.player.health > prev.player.health && s.player.maxHealth === prev.player.maxHealth;
+        const healed =
+          s.player.health > prev.player.health && s.player.maxHealth === prev.player.maxHealth;
         if (healed && !facts.healedAt) [facts.healedAt, facts.healedTo] = [t, s.player.health];
         prev = s;
         return facts.respawned && facts.healedAt > 0;
@@ -183,13 +199,20 @@ describe('Ovejas deterministas (spec sheep y simulation-loop)', () => {
     const snaps = () => {
       const run = startSeededRun(aDefaultConfig(), 42);
       const out: RunSnapshot[] = [];
-      play(run, 600, (_, t) => inputs[t - 1] ?? PlayerInput.NONE, (s) => void out.push(s));
+      play(
+        run,
+        600,
+        (_, t) => inputs[t - 1] ?? PlayerInput.NONE,
+        (s) => void out.push(s),
+      );
       return out;
     };
     const a = snaps();
     expect(a.at(-1)?.sheep.length).toBeGreaterThan(0);
     expect(snaps()).toStrictEqual(a);
-    expect(startSeededRun(aDefaultConfig(), 42).map).toEqual(startSeededRun(aDefaultConfig(), 42).map);
+    expect(startSeededRun(aDefaultConfig(), 42).map).toEqual(
+      startSeededRun(aDefaultConfig(), 42).map,
+    );
   });
 
   it('Scenario: Partida larga reproducible (semilla 7, 36.000 inputs: ovejas, oro y madera)', () => {
@@ -210,11 +233,22 @@ describe('Ovejas deterministas (spec sheep y simulation-loop)', () => {
       waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 5)] }).waves,
     };
     const P = { x: 1000, y: 1000 };
-    const herd = [P, { x: 1100, y: 1000 }, { x: 2000, y: 1500 }, { x: 600, y: 600 }, { x: 3000, y: 400 }];
+    const herd = [
+      P,
+      { x: 1100, y: 1000 },
+      { x: 2000, y: 1500 },
+      { x: 600, y: 600 },
+      { x: 3000, y: 400 },
+    ];
     const busy = new CountingRandom(new Mulberry32RandomGenerator(7));
     const idle = new CountingRandom(new Mulberry32RandomGenerator(7));
     const sheepDice = new CountingRandom(sheepRandom(7));
-    const a = Run.start(config, busy, { player: P, dynamites: [aDynamite({ x: 2000, y: 1500 }, 3)] }, declaredSheep(herd, { random: sheepDice }));
+    const a = Run.start(
+      config,
+      busy,
+      { player: P, dynamites: [aDynamite({ x: 2000, y: 1500 }, 3)] },
+      declaredSheep(herd, { random: sheepDice }),
+    );
     const b = Run.start(config, idle, { player: P }, declaredSheep([]));
     if (!a.ok || !b.ok) throw new Error('partidas');
     const states = new Set<string>();
@@ -253,14 +287,25 @@ describe('Ovejas deterministas (spec sheep y simulation-loop)', () => {
 
   // Spec xp-gems (0023), "Recogibles con tipo".
   it('Scenario: Ningún enemigo ni estructura suelta carne (tope 0, semilla 7, 36.000 ticks)', () => {
-    const run = startSeededRun(withoutSheep(TOUGH), 7);
+    // 0024: sin mejoras de arma en la oferta, el paseo aleatorio ya no llega a ninguna estructura;
+    // el jugador empieza sobre la primera y las estructuras con vida 1, para que alguna caiga.
+    const config = withoutSheep(TOUGH);
+    const [first] = startSeededRun(config, 7).snapshot().structures;
+    const structures = Array.from({ length: 7 }, () => ({ health: 1 }));
+    const player = { x: first?.x ?? 0, y: first?.y ?? 0 };
+    const run = startSeededRun(config, 7, 'generated', { player, structures });
     const inputs = randomInputs(36_000, 2026);
     let meat = 0;
     let kills = 0;
-    play(run, 36_000, (_, t) => inputs[t - 1] ?? PlayerInput.NONE, (s) => {
-      meat += s.pickups.filter((p) => p.kind === 'meat').length;
-      kills = s.kills;
-    });
+    play(
+      run,
+      36_000,
+      (_, t) => inputs[t - 1] ?? PlayerInput.NONE,
+      (s) => {
+        meat += s.pickups.filter((p) => p.kind === 'meat').length;
+        kills = s.kills;
+      },
+    );
     expect(kills).toBeGreaterThan(0);
     expect(run.snapshot().structures.some((x) => x.destroyed)).toBe(true);
     expect(meat).toBe(0);
@@ -269,6 +314,7 @@ describe('Ovejas deterministas (spec sheep y simulation-loop)', () => {
   it('el azar de las ovejas sale de su flujo (SHEEP_STREAM) y no del de la partida', () => {
     const { terrain } = seededRun(42);
     expect(terrain.kind).toBe('generated');
-    if (terrain.kind === 'generated') expect(terrain.sheepRandom.next()).toBe(sheepRandom(42).next());
+    if (terrain.kind === 'generated')
+      expect(terrain.sheepRandom.next()).toBe(sheepRandom(42).next());
   });
 });

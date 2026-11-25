@@ -1,59 +1,5 @@
 {
-  "upgrades": [
-    {
-      "id": "strict-rules",
-      "name": "Puntas de acero",
-      "description": "Las flechas del arco hacen más daño.",
-      "target": { "kind": "weapon", "weapon": "linter" },
-      "stat": "damage",
-      "perLevel": 3,
-      "maxLevel": 5
-    },
-    {
-      "id": "fast-ci",
-      "name": "Tensado rápido",
-      "description": "El arco dispara más a menudo.",
-      "target": { "kind": "weapon", "weapon": "linter" },
-      "stat": "cooldownTicks",
-      "perLevel": -4,
-      "maxLevel": 5
-    },
-    {
-      "id": "wide-analysis",
-      "name": "Ojo de halcón",
-      "description": "El arco alcanza objetivos más lejanos.",
-      "target": { "kind": "weapon", "weapon": "linter" },
-      "stat": "range",
-      "perLevel": 60,
-      "maxLevel": 5
-    },
-    {
-      "id": "hard-asserts",
-      "name": "Filo templado",
-      "description": "El tajo hace más daño.",
-      "target": { "kind": "weapon", "weapon": "tests" },
-      "stat": "damage",
-      "perLevel": 2,
-      "maxLevel": 5
-    },
-    {
-      "id": "watch-mode",
-      "name": "Brazo incansable",
-      "description": "El tajo se lanza más a menudo.",
-      "target": { "kind": "weapon", "weapon": "tests" },
-      "stat": "cooldownTicks",
-      "perLevel": -12,
-      "maxLevel": 5
-    },
-    {
-      "id": "coverage",
-      "name": "Barrido amplio",
-      "description": "El tajo llega más lejos a tu alrededor.",
-      "target": { "kind": "weapon", "weapon": "tests" },
-      "stat": "radius",
-      "perLevel": 15,
-      "maxLevel": 5
-    },
+  "character": [
     {
       "id": "guardrail",
       "name": "Cota de malla",
@@ -80,6 +26,122 @@
       "stat": "pickupRadius",
       "perLevel": 32,
       "maxLevel": 5
+    },
+    {
+      "id": "regeneration",
+      "name": "Bálsamo de hierbas",
+      "description": "Recuperas vida poco a poco.",
+      "target": { "kind": "player" },
+      "stat": "regeneration",
+      "perLevel": 1,
+      "maxLevel": 5
+    },
+    {
+      "id": "armor",
+      "name": "Escudo de roble",
+      "description": "Cada golpe te quita menos vida, pero siempre al menos 1.",
+      "target": { "kind": "player" },
+      "stat": "armor",
+      "perLevel": 1,
+      "maxLevel": 3
+    },
+    {
+      "id": "steady-nerves",
+      "name": "Temple de veterano",
+      "description": "Tras un golpe, tardas más en volver a ser vulnerable.",
+      "target": { "kind": "player" },
+      "stat": "invulnerabilityTicks",
+      "perLevel": 6,
+      "maxLevel": 5
+    },
+    {
+      "id": "scholar",
+      "name": "Tomo del erudito",
+      "description": "Las gemas te dan más experiencia.",
+      "target": { "kind": "player" },
+      "stat": "xpBonusPercent",
+      "perLevel": 10,
+      "maxLevel": 5
+    },
+    {
+      "id": "prospector",
+      "name": "Bolsa del mercader",
+      "description": "Ganas más oro cada vez que lo recoges.",
+      "target": { "kind": "player" },
+      "stat": "goldBonusPercent",
+      "perLevel": 10,
+      "maxLevel": 5
+    },
+    {
+      "id": "hunter",
+      "name": "Festín del cazador",
+      "description": "La carne te cura más.",
+      "target": { "kind": "player" },
+      "stat": "meatHealPercent",
+      "perLevel": 5,
+      "maxLevel": 4
+    }
+  ],
+  "weapons": [
+    {
+      "id": "strict-rules",
+      "name": "Puntas de acero",
+      "description": "Las flechas del arco hacen más daño.",
+      "target": { "kind": "weapon", "weapon": "linter" },
+      "stat": "damage",
+      "perLevel": 3,
+      "maxLevel": 5,
+      "prices": [5, 8, 11, 15, 20]
+    },
+    {
+      "id": "fast-ci",
+      "name": "Tensado rápido",
+      "description": "El arco dispara más a menudo.",
+      "target": { "kind": "weapon", "weapon": "linter" },
+      "stat": "cooldownTicks",
+      "perLevel": -4,
+      "maxLevel": 5,
+      "prices": [5, 8, 11, 15, 20]
+    },
+    {
+      "id": "wide-analysis",
+      "name": "Ojo de halcón",
+      "description": "El arco alcanza objetivos más lejanos.",
+      "target": { "kind": "weapon", "weapon": "linter" },
+      "stat": "range",
+      "perLevel": 60,
+      "maxLevel": 5,
+      "prices": [4, 6, 9, 12, 16]
+    },
+    {
+      "id": "hard-asserts",
+      "name": "Filo templado",
+      "description": "El tajo hace más daño.",
+      "target": { "kind": "weapon", "weapon": "tests" },
+      "stat": "damage",
+      "perLevel": 2,
+      "maxLevel": 5,
+      "prices": [5, 8, 11, 15, 20]
+    },
+    {
+      "id": "watch-mode",
+      "name": "Brazo incansable",
+      "description": "El tajo se lanza más a menudo.",
+      "target": { "kind": "weapon", "weapon": "tests" },
+      "stat": "cooldownTicks",
+      "perLevel": -12,
+      "maxLevel": 5,
+      "prices": [5, 8, 11, 15, 20]
+    },
+    {
+      "id": "coverage",
+      "name": "Barrido amplio",
+      "description": "El tajo llega más lejos a tu alrededor.",
+      "target": { "kind": "weapon", "weapon": "tests" },
+      "stat": "radius",
+      "perLevel": 15,
+      "maxLevel": 5,
+      "prices": [4, 6, 9, 12, 16]
     }
   ]
 }

@@ -197,3 +197,94 @@ body {
 .confirm-dialog button:focus-visible {
   background: #34345a;
 }
+
+/* Tienda del castillo (change 0024): overlay DOM centrado y escalado como la pausa. */
+.shop-panel {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5em;
+  max-width: 32em;
+  padding: 1em 1.5em;
+  font: calc(14px * var(--ui-scale, 1)) monospace;
+  color: #fff;
+  background: rgb(20 20 30 / 94%);
+  border: 1px solid #f5c542;
+  border-radius: 8px;
+}
+
+.shop-panel[hidden] {
+  display: none;
+}
+
+.shop-panel h2,
+.shop-panel__gold {
+  margin: 0;
+  text-align: center;
+}
+
+.shop-panel__gold {
+  color: #f5c542;
+}
+
+.shop-panel__products {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.shop-panel button {
+  width: 100%;
+  padding: 0.35em 0.75em;
+  font: inherit;
+  color: #fff;
+  text-align: left;
+  background: #23233a;
+  border: 1px solid #7ce2fe;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.shop-panel__product {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 0 0.75em;
+}
+
+.shop-panel__description,
+.shop-panel__notice {
+  grid-column: 1 / -1;
+  font-size: 0.85em;
+  color: #c8c8d8;
+}
+
+.shop-panel__notice {
+  color: #ff8a80;
+}
+
+.shop-panel__product.is-unavailable {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.shop-panel__leave {
+  text-align: center;
+}
+
+.shop-panel button:hover,
+.shop-panel button:focus-visible {
+  background: #34345a;
+}
+
+.shop-panel__description {
+  order: 1;
+}
+
+.shop-panel__notice {
+  order: 2;
+}

@@ -3,5 +3,6 @@
   "radius": 16,
   "maxHealth": 100,
   "invulnerabilityTicks": 30,
-  "pickupRadius": 128
+  "pickupRadius": 128,
+  "regenIntervalTicks": 180
 }

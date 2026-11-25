@@ -7,6 +7,7 @@ import { WaveTable, type WaveSegmentConfig } from '../wave/WaveTable';
 import { WeaponLoadout, type WeaponsConfig } from '../weapon/WeaponLoadout';
 import {
   INVULNERABILITY_TICKS_MUST_BE_INTEGER,
+  REGEN_INTERVAL_MUST_BE_INTEGER,
   PICKUP_RADIUS_MUST_BE_POSITIVE,
   PLAYER_HEALTH_MUST_BE_POSITIVE,
   RADIUS_MUST_FIT,
@@ -17,18 +18,20 @@ import {
 import { PickupRules, type PickupRulesConfig } from '../pickup/PickupRules';
 import { ResourceRules, type ResourcesConfig } from '../resource/ResourceRules';
 import { XpCurve, type XpCurveConfig } from '../progression/XpCurve';
-import { UpgradeCatalog } from '../upgrade/UpgradeCatalog';
-import type { UpgradeTypeConfig } from '../upgrade/UpgradeType';
+import { checkLevelUpHeal, type LevelUpHealConfig } from '../progression/LevelUpHeal';
+import { UpgradeCatalog, type UpgradeLists } from '../upgrade/UpgradeCatalog';
 import { RunDuration } from './RunDuration';
 import { MapRules, type MapConfig } from '../map/MapRules';
 import { HazardRules, type HazardRulesConfig } from '../hazard/HazardRules';
 import { StructureRules } from '../structure/StructureRules';
 import type { StructuresConfig } from '../structure/StructureType';
 import { SheepRules, type SheepConfig } from '../sheep/SheepRules';
+import { SHOP_HEAL_ID_TAKEN, ShopRules, type ShopConfig } from '../shop/ShopRules';
 
 export type { WeaponsConfig, PlayerRules };
 export {
   INVULNERABILITY_TICKS_MUST_BE_INTEGER,
+  REGEN_INTERVAL_MUST_BE_INTEGER,
   PICKUP_RADIUS_MUST_BE_POSITIVE,
   PLAYER_HEALTH_MUST_BE_POSITIVE,
   RADIUS_MUST_FIT,
@@ -70,8 +73,8 @@ export interface RunConfig {
     readonly segments: readonly WaveSegmentConfig[];
   };
   readonly weapons: WeaponsConfig;
-  /** Curva de XP y recogibles (fichero de progresión, plano). */
-  readonly progression: XpCurveConfig & PickupRulesConfig;
+  /** Curva de XP, recogibles y curación por subida (fichero de progresión, plano). */
+  readonly progression: XpCurveConfig & PickupRulesConfig & LevelUpHealConfig;
   readonly upgrades: UpgradesConfig;
   /** Duración objetivo de la partida (content/run.json). */
   readonly run: { readonly durationSeconds: number };
@@ -86,12 +89,12 @@ export interface RunConfig {
   readonly resources: ResourcesConfig;
   /** Ovejas neutrales (content/sheep.json, spec sheep, 0023). */
   readonly sheep: SheepConfig;
+  /** Tienda del castillo (content/shop.json, spec castle-shop, 0024). */
+  readonly shop: ShopConfig;
 }
 
-/** Forma del contenido de mejoras (content/upgrades.json). */
-export interface UpgradesConfig {
-  readonly upgrades: readonly UpgradeTypeConfig[];
-}
+/** Forma del contenido de mejoras (content/upgrades.json): personaje y arma (ADR-0023). */
+export type UpgradesConfig = UpgradeLists;
 
 /** Reglas de la partida ya construidas como value objects del dominio. */
 export interface RunRules {
@@ -107,6 +110,8 @@ export interface RunRules {
   readonly curve: XpCurve;
   /** Radio, imán y topes por tipo de los recogibles. */
   readonly pickups: PickupRules;
+  /** % de la vida máxima que cura cada subida sin mejoras de personaje disponibles (0024). */
+  readonly levelUpHealPercent: number;
   /** Catálogo de mejoras en el orden del contenido (ya validado con su build de peor caso). */
   readonly upgrades: UpgradeCatalog;
   /** Cota de pulsos visibles a la vez con la cadencia mínima alcanzable (ADR-0008). */
@@ -121,6 +126,8 @@ export interface RunRules {
   readonly resources: ResourceRules;
   /** Ovejas: tope, movimiento, vida, reaparición y colocación. */
   readonly sheep: SheepRules;
+  /** Puerta (radio y re-armado) y curación de pago de la tienda. */
+  readonly shop: ShopRules;
 }
 
 function checkBudgetCoversCatalog(spawn: SpawnRules, catalog: EnemyCatalog): DomainError | null {
@@ -156,8 +163,10 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
   if (!curve.ok) return curve;
   const pickups = PickupRules.create(config.progression);
   if (!pickups.ok) return pickups;
+  const healError = checkLevelUpHeal(config.progression);
+  if (healError) return err(healError);
   const upgrades = UpgradeCatalog.create(
-    config.upgrades.upgrades,
+    config.upgrades,
     loadout.value,
     config.player,
     arena.value,
@@ -171,11 +180,19 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
   if (!structures.ok) return structures;
   const resources = ResourceRules.create(config.resources, catalog.value, structures.value);
   if (!resources.ok) return resources;
+  const meatError = upgrades.value.checkMeatHeal(resources.value.meat.healPercent);
+  if (meatError) return err(meatError);
   if (pickups.value.maxWood < resources.value.woodPiles.count) {
     return err(invalidConfig('progression.maxWood', MAX_WOOD_BELOW_WOOD_PILES));
   }
   const sheep = SheepRules.create(config.sheep);
   if (!sheep.ok) return sheep;
+  const shop = ShopRules.create(config.shop);
+  if (!shop.ok) return shop;
+  if (upgrades.value.indexOf(shop.value.heal.id) >= 0) {
+    const message = `${SHOP_HEAL_ID_TAKEN}: ${shop.value.heal.id}`;
+    return err(invalidConfig('shop.heal.id', message));
+  }
   return ok({
     arena: arena.value,
     player: config.player,
@@ -186,6 +203,7 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
     loadout: loadout.value,
     curve: curve.value,
     pickups: pickups.value,
+    levelUpHealPercent: config.progression.levelUpHealPercent,
     upgrades: upgrades.value,
     pulseCapacity: upgrades.value.pulseCapacity,
     duration: duration.value,
@@ -193,5 +211,6 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
     structures: structures.value,
     resources: resources.value,
     sheep: sheep.value,
+    shop: shop.value,
   });
 }

@@ -1,0 +1,10 @@
+{
+  "door": { "radius": 40, "rearmDistance": 160 },
+  "heal": {
+    "id": "heal",
+    "name": "Poción de curación",
+    "description": "Recuperas vida.",
+    "amount": 25,
+    "price": 8
+  }
+}

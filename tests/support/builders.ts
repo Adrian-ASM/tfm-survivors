@@ -8,6 +8,7 @@ import upgradesJson from '../../content/upgrades.json';
 import structuresJson from '../../content/structures.json';
 import resourcesJson from '../../content/resources.json';
 import sheepJson from '../../content/sheep.json';
+import shopJson from '../../content/shop.json';
 import type { EnemyTypeConfig } from '../../src/domain/enemy/EnemyType';
 import type { BehaviorConfig } from '../../src/domain/enemy/behavior/BehaviorConfig';
 import type { HazardRulesConfig } from '../../src/domain/hazard/HazardRules';
@@ -18,6 +19,7 @@ import type { UpgradeTypeConfig } from '../../src/domain/upgrade/UpgradeType';
 import type { StructuresConfig } from '../../src/domain/structure/StructureType';
 import type { ResourcesConfig } from '../../src/domain/resource/ResourceRules';
 import type { SheepConfig } from '../../src/domain/sheep/SheepRules';
+import type { ShopConfig } from '../../src/domain/shop/ShopRules';
 
 /** Copia profunda congelada de un valor de content/ (los tests no pueden alterar el JSON). */
 function frozen<T>(value: T): T {
@@ -54,18 +56,41 @@ export const TESTS: WeaponTypeConfig = {
  * calibración, 0019); el esquema zod lo valida en `loadRunConfig` y builders-content.test lo
  * compara con lo cargado.
  */
-export const DEFAULT_UPGRADE_LIST: readonly UpgradeTypeConfig[] = frozen(
-  upgradesJson.upgrades as UpgradeTypeConfig[],
+export const DEFAULT_CHARACTER_UPGRADES: readonly UpgradeTypeConfig[] = frozen(
+  upgradesJson.character as UpgradeTypeConfig[],
 );
 
-/** Contenido de mejoras por defecto (content/upgrades.json). */
-export const DEFAULT_UPGRADES: UpgradesConfig = { upgrades: DEFAULT_UPGRADE_LIST };
+/** Catálogo de arma por defecto (0024): las 6 mejoras de arma, con sus precios por nivel. */
+export const DEFAULT_WEAPON_UPGRADES: readonly UpgradeTypeConfig[] = frozen(
+  upgradesJson.weapons as UpgradeTypeConfig[],
+);
+
+/** Las 15 mejoras de los dos catálogos en el orden del vector de niveles: personaje y luego arma. */
+export const DEFAULT_UPGRADE_LIST: readonly UpgradeTypeConfig[] = Object.freeze([
+  ...DEFAULT_CHARACTER_UPGRADES,
+  ...DEFAULT_WEAPON_UPGRADES,
+]);
+
+/** Contenido de mejoras por defecto (content/upgrades.json, dos catálogos desde 0024). */
+export const DEFAULT_UPGRADES: UpgradesConfig = Object.freeze({
+  character: DEFAULT_CHARACTER_UPGRADES,
+  weapons: DEFAULT_WEAPON_UPGRADES,
+});
 
 /**
  * Sin mejoras: válido en el dominio (no en el fichero). Por defecto en `aRunConfig`, así que los
  * escenarios de 0001–0004 no se pausan: las subidas se registran sin oferta.
  */
-export const NO_UPGRADES: UpgradesConfig = { upgrades: [] };
+export const NO_UPGRADES: UpgradesConfig = Object.freeze({ character: [], weapons: [] });
+
+/**
+ * Los dos catálogos a partir de una lista mezclada: las de objetivo jugador van al de personaje y
+ * las de objetivo arma, al de arma (escenarios escritos con una sola lista antes de 0024).
+ */
+export const upgradesOf = (list: readonly UpgradeTypeConfig[]): UpgradesConfig => ({
+  character: list.filter((u) => u.target.kind === 'player'),
+  weapons: list.filter((u) => u.target.kind === 'weapon'),
+});
 
 /** Curva y gemas por defecto, leídas de content/progression.json (0019). */
 export const DEFAULT_PROGRESSION: RunConfig['progression'] = frozen(progressionJson);
@@ -164,6 +189,33 @@ export const withDrops = (
   return withResources(config, { ...config.resources, drops: { enemies, structures } });
 };
 
+/**
+ * El mismo contenido con oro por baja (0024): la tabla completa sobre los tipos de enemigo de
+ * `config`, con 0 en los que no se dan (`withGoldPerKill(c, {})` = todo 0, la convención de los
+ * escenarios vivos que cuentan u ordenan recogibles de bajas con el contenido por defecto).
+ */
+export const withGoldPerKill = (
+  config: RunConfig,
+  gold: Readonly<Record<string, number>>,
+): RunConfig => {
+  const goldPerKill = Object.fromEntries(config.enemies.types.map((t) => [t.id, gold[t.id] ?? 0]));
+  const { drops } = config.resources;
+  return withResources(config, { ...config.resources, drops: { ...drops, goldPerKill } });
+};
+
+/**
+ * El mismo contenido con tipos de enemigo de escenario añadidos; si el contenido tiene tabla de oro
+ * por baja (0024: completa por tipo), los tipos nuevos entran con 0.
+ */
+export const withExtraTypes = (config: RunConfig, ...types: EnemyTypeConfig[]): RunConfig => {
+  const next = {
+    ...config,
+    enemies: { ...config.enemies, types: [...config.enemies.types, ...types] },
+  };
+  const table = config.resources.drops.goldPerKill;
+  return table ? withGoldPerKill(next, table) : next;
+};
+
 /** Ovejas por defecto, leídas de content/sheep.json (0023, una sola fuente). */
 export const CONTENT_SHEEP: SheepConfig = frozen(sheepJson);
 
@@ -201,13 +253,26 @@ export const withoutSheep = (config: RunConfig): RunConfig => ({
 });
 
 /** El mismo contenido con la carne cambiada (0023: `perSheep` y `healPercent`). */
-export const withMeat = (
-  config: RunConfig,
-  meat: Partial<ResourcesConfig['meat']>,
-): RunConfig =>
+export const withMeat = (config: RunConfig, meat: Partial<ResourcesConfig['meat']>): RunConfig =>
   withResources(config, { ...config.resources, meat: { ...config.resources.meat, ...meat } });
 
 /** El mismo contenido sin fuentes de recursos (design 0022 §10). */
+/** Tienda por defecto, leída de content/shop.json (0024, una sola fuente). */
+export const CONTENT_SHOP: ShopConfig = frozen(shopJson);
+
+/**
+ * El mismo contenido con la puerta de la tienda cambiada (valores de escenario: "radio de interacción
+ * 40 y distancia de re-armado 300") y, opcional, la curación de pago.
+ */
+export const withShop = (
+  config: RunConfig,
+  door: Partial<ShopConfig['door']>,
+  heal: Partial<ShopConfig['heal']> = {},
+): RunConfig => ({
+  ...config,
+  shop: { door: { ...config.shop.door, ...door }, heal: { ...config.shop.heal, ...heal } },
+});
+
 export const withoutResourceSources = (config: RunConfig): RunConfig =>
   withResources(config, NO_RESOURCES);
 
@@ -294,6 +359,7 @@ export const aRunConfig = (overrides: Partial<PlayerConfig> = {}): RunConfig => 
     maxHealth: overrides.maxHealth ?? 100,
     invulnerabilityTicks: overrides.invulnerabilityTicks ?? 30,
     pickupRadius: overrides.pickupRadius ?? 64,
+    regenIntervalTicks: overrides.regenIntervalTicks ?? 60,
   },
   enemies: { hazards: DEFAULT_HAZARDS, types: SCENARIO_ENEMY_TYPES },
   waves: DEFAULT_WAVES,
@@ -305,6 +371,7 @@ export const aRunConfig = (overrides: Partial<PlayerConfig> = {}): RunConfig => 
   structures: NO_STRUCTURES,
   resources: NO_RESOURCES,
   sheep: NO_SHEEP,
+  shop: CONTENT_SHOP,
 });
 
 /** El mismo contenido con otra duración objetivo en segundos (p. ej. 2 ⇒ 120 ticks). */
@@ -334,7 +401,11 @@ export const aDefaultConfig = (): RunConfig =>
   withUpgrades(
     withWeapons(
       {
-        ...aRunConfig({ pickupRadius: DEFAULT_PICKUP_RADIUS, speed: playerJson.speed }),
+        ...aRunConfig({
+          pickupRadius: DEFAULT_PICKUP_RADIUS,
+          speed: playerJson.speed,
+          regenIntervalTicks: playerJson.regenIntervalTicks,
+        }),
         arena: CONTENT_ARENA,
         progression: DEFAULT_PROGRESSION,
         enemies: { hazards: DEFAULT_HAZARDS, types: DEFAULT_ENEMY_TYPES },
@@ -409,6 +480,7 @@ interface MutableUpgrade {
   stat: string;
   perLevel: number;
   maxLevel: number;
+  prices?: number[];
 }
 /**
  * Contenido crudo con la forma de los ficheros de juego de content/, mutable para preparar casos
@@ -421,6 +493,7 @@ export interface RawContent {
     maxHealth: number;
     invulnerabilityTicks: number;
     pickupRadius: number;
+    regenIntervalTicks: number;
   };
   arena: { width: number; height: number; maxView: { width: number; height: number } };
   enemies: {
@@ -447,9 +520,13 @@ export interface RawContent {
     maxGold: number;
     maxWood: number;
     maxMeat: number;
+    levelUpHealPercent: number;
     [extra: string]: unknown;
   };
-  upgrades: { upgrades: [MutableUpgrade, MutableUpgrade, ...MutableUpgrade[]] };
+  upgrades: {
+    character: [MutableUpgrade, ...MutableUpgrade[]];
+    weapons: [MutableUpgrade, ...MutableUpgrade[]];
+  };
   run: { durationSeconds: number };
   map: {
     cellSize: number;
@@ -469,6 +546,7 @@ export interface RawContent {
     drops: {
       enemies: Record<string, { wood: number; [extra: string]: unknown }>;
       structures: Record<string, { gold: number; [extra: string]: unknown }>;
+      goldPerKill: Record<string, number>;
       [extra: string]: unknown;
     };
     woodPiles: { count: number; wood: number };
@@ -486,6 +564,18 @@ export interface RawContent {
     flee: { radius: number; speed: number };
     respawn: { everyTicks: number; minPlayerDistance: number };
     placement: { minStartCells: number; minCastleCells: number; minGapCells: number };
+    [extra: string]: unknown;
+  };
+  shop: {
+    door: { radius: number; rearmDistance: number; [extra: string]: unknown };
+    heal: {
+      id: string;
+      name: string;
+      description: string;
+      amount: number;
+      price: number;
+      [extra: string]: unknown;
+    };
     [extra: string]: unknown;
   };
 }

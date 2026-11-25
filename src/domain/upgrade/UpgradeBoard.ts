@@ -52,14 +52,15 @@ export class UpgradeBoard {
   }
 
   /**
-   * Abre una oferta con `k = min(OFFER_SIZE, m)` mejoras distintas de las m disponibles (nivel <
-   * maxLevel), por Fisher–Yates parcial: `j = i + ⌊random · (m − i)⌋`. Consume exactamente k
-   * valores de azar; con m = 0 devuelve false sin consumir ninguno.
+   * Abre una oferta con `k = min(OFFER_SIZE, m)` mejoras distintas de las m de personaje
+   * disponibles (nivel < maxLevel; las de arma nunca, ADR-0023), por Fisher–Yates parcial:
+   * `j = i + ⌊random · (m − i)⌋`. Consume exactamente k valores de azar; con m = 0 devuelve false
+   * sin consumir ninguno.
    */
   open(random: RandomGenerator): boolean {
-    const { upgrades } = this.catalog;
+    const { upgrades, levelIndices } = this.catalog;
     let m = 0;
-    for (let i = 0; i < upgrades.length; i++) {
+    for (const i of levelIndices) {
       const u = upgrades[i];
       if (u && (this.lv[i] ?? 0) < u.maxLevel) {
         this.work[m] = i;
@@ -82,6 +83,14 @@ export class UpgradeBoard {
       }
     }
     return true;
+  }
+
+  /**
+   * Sube 1 nivel la mejora `index` del catálogo (compra en la tienda, 0024): sin azar ni oferta. Las
+   * comprobaciones (en tienda, nivel máximo, oro) son de `Run`.
+   */
+  raise(index: number): void {
+    this.lv[index] = (this.lv[index] ?? 0) + 1;
   }
 
   /** Elige la opción `index`: sube su nivel y cierra la oferta. Sin efectos si es un error. */

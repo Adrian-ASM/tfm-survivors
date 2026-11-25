@@ -9,6 +9,7 @@ import {
   aSegment,
   aWavesConfig,
   withDuration,
+  upgradesOf,
 } from '../support/builders';
 import { startRun, ticks } from '../support/runs';
 
@@ -95,6 +96,20 @@ describe('Snapshot no mutable desde fuera (resultado, bajas y duración)', () =>
   });
 });
 
+describe('Mejoras adquiridas de los dos catálogos (upgrades 0024)', () => {
+  it('Scenario: Adquiridas de los dos catálogos (guardrail 2, scholar 1 y fast-ci 1, en ese orden)', () => {
+    const upgrades = { 'fast-ci': 1, scholar: 1, guardrail: 2 };
+
+    const snap = startRun(quiet(), { player: CENTER, upgrades }).snapshot();
+
+    expect(snap.upgrades).toEqual([
+      { id: 'guardrail', level: 2 },
+      { id: 'scholar', level: 1 },
+      { id: 'fast-ci', level: 1 },
+    ]);
+  });
+});
+
 describe('Snapshot ampliado', () => {
   it('Scenario: Oferta en el snapshot (guardrail en nivel 2: opción 2 → 3 y adquirida con 2)', () => {
     const guardrail = DEFAULT_UPGRADE_LIST.filter((u) => u.id === 'guardrail');
@@ -104,7 +119,7 @@ describe('Snapshot ampliado', () => {
       experience: { level: 1, xp: 4 },
       upgrades: { guardrail: 2 },
     };
-    const [first] = ticks(startRun(quiet({ upgrades: { upgrades: guardrail } }), setup), 1);
+    const [first] = ticks(startRun(quiet({ upgrades: upgradesOf(guardrail) }), setup), 1);
     expect(first?.offer).toEqual([
       {
         id: 'guardrail',

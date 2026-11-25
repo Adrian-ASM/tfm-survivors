@@ -3,8 +3,9 @@ import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import type { RunSetup } from '../../src/domain/run/Run';
 import type { RunConfig } from '../../src/domain/run/RunConfig';
 import type { OfferSnapshot } from '../../src/domain/run/RunSnapshot';
-import { DEFAULT_UPGRADE_LIST, aDefaultConfig, withPlayer } from '../support/builders';
+import { DEFAULT_UPGRADES, aDefaultConfig, withPlayer } from '../support/builders';
 import {
+  REFERENCE_SHOP_ORDER,
   REFERENCE_UPGRADE_PRIORITY,
   botWorld,
   isBlockedMove,
@@ -30,25 +31,29 @@ const offerOf = (...ids: string[]): OfferSnapshot[] => ids.map(option);
 
 // Spec run-outcome (0010), "Bot de referencia para el balance": elección priorizada.
 describe('pickByPriority (elección del bot de referencia)', () => {
-  it('Scenario: Elige por prioridad, no por posición', () => {
-    expect(pickByPriority(offerOf('watch-mode', 'fast-ci', 'coverage'))).toBe(1);
+  // 0024 (bot v4): prioridad solo de personaje.
+  it('Scenario: Elige por prioridad de personaje, no por posición (dos fuera y la primera: 2)', () => {
+    const top = REFERENCE_UPGRADE_PRIORITY[0] ?? '';
+    expect(pickByPriority(offerOf('scholar', 'hunter', top))).toBe(2);
   });
 
-  it('Scenario: La prioridad más alta gana', () => {
-    expect(pickByPriority(offerOf('strict-rules', 'hard-asserts', 'guardrail'))).toBe(2);
+  it('la prioridad más alta gana (armor antes que shortcuts)', () => {
+    expect(pickByPriority(offerOf('shortcuts', 'prospector', 'armor'))).toBe(2);
   });
 
-  it('Scenario: Ningún id priorizado en la oferta', () => {
-    expect(pickByPriority(offerOf('coverage', 'shortcuts', 'context-window'))).toBe(0);
+  it('Scenario: Ningún id priorizado en la oferta (índice 0)', () => {
+    expect(pickByPriority(offerOf('scholar', 'prospector', 'context-window'))).toBe(0);
   });
 
   it('Scenario: Oferta de una sola opción', () => {
-    expect(pickByPriority(offerOf('wide-analysis'))).toBe(0);
+    expect(pickByPriority(offerOf('hunter'))).toBe(0);
   });
 
-  it('cada id de la prioridad existe en el catálogo por defecto (una errata caería en la opción 0)', () => {
-    const ids = DEFAULT_UPGRADE_LIST.map((u) => u.id);
-    for (const id of REFERENCE_UPGRADE_PRIORITY) expect(ids).toContain(id);
+  it('cada id de la prioridad es de personaje y cada uno del orden de compra, de arma', () => {
+    const character = DEFAULT_UPGRADES.character.map((u) => u.id);
+    const weapons = DEFAULT_UPGRADES.weapons.map((u) => u.id);
+    for (const id of REFERENCE_UPGRADE_PRIORITY) expect(character).toContain(id);
+    expect([...REFERENCE_SHOP_ORDER].sort()).toEqual([...weapons].sort());
   });
 });
 
@@ -142,7 +147,7 @@ describe('Bot ligado a la configuración de la partida (0013)', () => {
     const config = aDefaultConfig();
     const bot = referenceBot(config, startRun(config).map);
 
-    expect(bot.pick(offerOf('watch-mode', 'fast-ci', 'coverage'))).toBe(1);
+    expect(bot.pick(offerOf('scholar', 'guardrail', 'hunter'))).toBe(1);
   });
 });
 

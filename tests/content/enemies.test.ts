@@ -1,7 +1,5 @@
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import playerJson from '../../content/player.json';
-import upgradesJson from '../../content/upgrades.json';
 import wavesJson from '../../content/waves.json';
 import weaponsJson from '../../content/weapons.json';
 import type { EnemyTypeConfig } from '../../src/domain/enemy/EnemyType';
@@ -181,12 +179,13 @@ describe('Comportamientos del contenido por defecto', () => {
   });
 });
 
-/** sha256 del JSON (normalizado) de `main` antes del change: oleadas, armas, mejoras y jugador. */
+/**
+ * sha256 del JSON (normalizado) de `main` antes del change: oleadas y armas (0024: las mejoras y el
+ * jugador los cubren upgrades-text.test y combat-content.test).
+ */
 const MAIN_DIGESTS = {
   waves: 'ce5c4b3082e4e06302912116777f62879811a8a2e31b2534bc3da4b83a2028f7',
   weapons: 'bc4c0d1ac14267f69a8c903f222baa224a11dd39fb0a277b892ee8706f28d703',
-  upgrades: 'bc89143d0570d23e8cfab229294637a328d9d14bffdff006866192ef886beba9',
-  player: '6e5dc270b8372f9b7e4cecc364e4231ff924d07dd77a8df293aaac72a0f22c08',
 } as const;
 const digest = (v: unknown) => createHash('sha256').update(JSON.stringify(v)).digest('hex');
 
@@ -195,8 +194,6 @@ describe('Presupuesto y stats intactos (run-outcome)', () => {
     expect({
       waves: digest(wavesJson),
       weapons: digest(weaponsJson),
-      upgrades: digest(upgradesJson),
-      player: digest(playerJson),
     }).toEqual(MAIN_DIGESTS);
     expect([config.waves.maxAlive, config.waves.spawn.ringRadius, config.player.speed]).toEqual([
       300, 1500, 215,

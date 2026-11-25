@@ -12,8 +12,9 @@ import {
 import { XpBar } from '../../src/infrastructure/phaser/XpBar';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
-import { aDefaultConfig, withPlayer } from '../support/builders';
-import { startRun } from '../support/runs';
+import { aDefaultConfig, withPlayer, withShop } from '../support/builders';
+import { aBehaviorConfig, aProbeType, startRun } from '../support/runs';
+import { buyAll, startAtDoor, untilShopping } from '../support/shop';
 import { FakeBar, FakeLabel } from '../support/sprites';
 
 const HEALTH_WIDTH = 200;
@@ -471,5 +472,31 @@ describe('HUD · oro y madera (0022)', () => {
       h.sync(fresh());
     }).not.toThrow();
     expect(h.shown).toEqual({ gold: '0', wood: '0' });
+  });
+});
+
+// Spec hud (0024), "HUD en la tienda": solo cambian el oro y la vida (por las compras).
+describe('HUD en la tienda (0024)', () => {
+  it('Scenario: HUD en la tienda (09:50, 40/100 y oro 30; tras la curación, 65/100 y oro 20)', () => {
+    const h = hud();
+    // Tienda abierta en el tick 600: el jugador entra en el radio de la puerta en ese tick.
+    const run = startAtDoor(
+      withShop(aBehaviorConfig([aProbeType()]), {}, { amount: 25, price: 10 }),
+      {
+        player: { x: 1039 + 600 * (210 / 60), y: 1000, health: 40 },
+        resources: { gold: 30, wood: 0 },
+      },
+    );
+    untilShopping(run, 700, PlayerInput.of(-1, 0));
+    const inShop = run.snapshot();
+    expect(inShop.tick).toBe(600);
+    for (let i = 0; i < 600; i++) h.view.sync(run.snapshot());
+    const during = [h.clock.text, h.healthLabel.text, h.gold.text];
+
+    buyAll(run, ['heal']);
+    h.view.sync(run.snapshot());
+
+    expect(during).toEqual(['09:50', '40/100', '30']);
+    expect([h.clock.text, h.healthLabel.text, h.gold.text]).toEqual(['09:50', '65/100', '20']);
   });
 });

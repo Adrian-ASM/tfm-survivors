@@ -213,8 +213,14 @@ export function rawAppearance(): RawAppearance {
       origin: { x: 0.5, y: 0.5 },
       facing: 'right',
       placeholderColor: '#f0ead6',
-      idle: { sheet: { file: SHEEP_IDLE_FILE, frameWidth: 128, frameHeight: 128 }, ...anim([0, 1, 2, 3, 4, 5, 6, 7], 8, true) },
-      bounce: { sheet: { file: SHEEP_BOUNCE_FILE, frameWidth: 128, frameHeight: 128 }, ...anim([0, 1, 2, 3, 4, 5], 10, true) },
+      idle: {
+        sheet: { file: SHEEP_IDLE_FILE, frameWidth: 128, frameHeight: 128 },
+        ...anim([0, 1, 2, 3, 4, 5, 6, 7], 8, true),
+      },
+      bounce: {
+        sheet: { file: SHEEP_BOUNCE_FILE, frameWidth: 128, frameHeight: 128 },
+        ...anim([0, 1, 2, 3, 4, 5], 10, true),
+      },
     },
     ground: still(GROUND_FILE, 64, '#2f6b3a'),
     corpse: { ...base(DEAD_FILE, 128, '#b0b4ba'), death: anim([1, 2, 3, 4, 5, 6], 15, false) },

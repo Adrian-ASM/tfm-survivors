@@ -9,6 +9,7 @@ import {
   withDuration,
   withUpgrades,
   withWeapons,
+  upgradesOf,
 } from '../../support/builders';
 import {
   HOUSE_AT_20_10,
@@ -102,9 +103,10 @@ describe('Nacimiento de guardias · lugar en el tick (enemy-spawning, simulation
   });
 
   it('Scenario: Nacimiento en pausa durante la oferta', () => {
-    const config = withUpgrades(aCampScenario({ house: houseOf(1, 6) }), {
-      upgrades: [anUpgrade('guardrail')],
-    });
+    const config = withUpgrades(
+      aCampScenario({ house: houseOf(1, 6) }),
+      upgradesOf([anUpgrade('guardrail')]),
+    );
     const run = startDeclared(config, [HOUSE_AT_20_10], {
       player: FAR,
       experience: { level: 1, xp: 4 },

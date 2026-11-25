@@ -3,7 +3,11 @@ import { loadRunConfig } from '../../src/infrastructure/content/loadRunConfig';
 
 // Spec upgrades (0013), "Textos medievales de las mejoras": solo cambian `name` y `description`.
 const loaded = loadRunConfig();
-const upgrades = loaded.ok ? loaded.value.upgrades.upgrades : [];
+const upgrades = loaded.ok
+  ? [...loaded.value.upgrades.character, ...loaded.value.upgrades.weapons]
+  : [];
+const weaponList = loaded.ok ? loaded.value.upgrades.weapons : [];
+const previousCharacter = loaded.ok ? loaded.value.upgrades.character.slice(0, 3) : [];
 
 /** Tabla de la spec: id → [name, description], carácter a carácter. */
 const MEDIEVAL_TEXTS: Readonly<Record<string, readonly [string, string]>> = {
@@ -16,6 +20,12 @@ const MEDIEVAL_TEXTS: Readonly<Record<string, readonly [string, string]>> = {
   guardrail: ['Cota de malla', 'Más vida máxima (y la misma cantidad de vida actual).'],
   shortcuts: ['Botas de viajero', 'Te mueves más rápido.'],
   'context-window': ['Amuleto del saqueador', 'Atraes las gemas desde más lejos.'],
+  regeneration: ['Bálsamo de hierbas', 'Recuperas vida poco a poco.'],
+  armor: ['Escudo de roble', 'Cada golpe te quita menos vida, pero siempre al menos 1.'],
+  'steady-nerves': ['Temple de veterano', 'Tras un golpe, tardas más en volver a ser vulnerable.'],
+  scholar: ['Tomo del erudito', 'Las gemas te dan más experiencia.'],
+  prospector: ['Bolsa del mercader', 'Ganas más oro cada vez que lo recoges.'],
+  hunter: ['Festín del cazador', 'La carne te cura más.'],
 };
 
 /** Palabras del tema anterior que no pueden quedar en los textos visibles. */
@@ -89,7 +99,7 @@ const MAIN_UPGRADES_WITHOUT_TEXTS = [
 ];
 
 describe('Textos medievales de las mejoras (0013)', () => {
-  it('Scenario: Textos del catálogo por defecto (9 pares id → name/description)', () => {
+  it('Scenario: Textos del catálogo por defecto (15 pares id → name/description)', () => {
     const texts = Object.fromEntries(upgrades.map((u) => [u.id, [u.name, u.description]]));
 
     expect(texts).toEqual(MEDIEVAL_TEXTS);
@@ -101,18 +111,21 @@ describe('Textos medievales de las mejoras (0013)', () => {
       visible.some((text) => new RegExp(`(^|[^\\p{L}])${word}([^\\p{L}]|$)`, 'iu').test(text)),
     );
 
-    expect(visible).toHaveLength(18);
+    expect(visible).toHaveLength(30);
     expect(found).toEqual([]);
   });
 
-  it('Scenario: Ids y números sin cambios (mismo orden, sin name ni description)', () => {
-    const withoutTexts = upgrades.map(({ id, target, stat, perLevel, maxLevel }) => ({
-      id,
-      target,
-      stat,
-      perLevel,
-      maxLevel,
-    }));
+  // 0024: sustituye a "Ids y números sin cambios" (las de arma cambian de catálogo y ganan precios).
+  it('Scenario: Mejoras de arma y de personaje sin cambios (campo a campo, sin textos)', () => {
+    const withoutTexts = [...weaponList, ...previousCharacter].map(
+      ({ id, target, stat, perLevel, maxLevel }) => ({
+        id,
+        target,
+        stat,
+        perLevel,
+        maxLevel,
+      }),
+    );
 
     expect(withoutTexts).toEqual(MAIN_UPGRADES_WITHOUT_TEXTS);
   });

@@ -172,6 +172,43 @@ export interface UpgradeLevelSnapshot {
   readonly level: number;
 }
 
+/**
+ * Producto de la tienda (spec castle-shop 0024): un nivel de una mejora de arma (precio del
+ * siguiente nivel o `null` en el máximo) o la curación de pago. `affordable`: oro ≥ precio (y, en la
+ * curación, vida por debajo de la máxima).
+ */
+export type ShopProductSnapshot =
+  | {
+      readonly kind: 'upgrade';
+      readonly id: string;
+      readonly name: string;
+      readonly description: string;
+      readonly level: number;
+      readonly maxLevel: number;
+      readonly price: number | null;
+      readonly affordable: boolean;
+    }
+  | {
+      readonly kind: 'heal';
+      readonly id: string;
+      readonly name: string;
+      readonly description: string;
+      readonly amount: number;
+      readonly price: number;
+      readonly affordable: boolean;
+    };
+
+/** La tienda en todo snapshot (0024): puerta, si está armada, si está abierta, oro y productos. */
+export interface ShopSnapshot {
+  readonly armed: boolean;
+  /** La partida está en tienda. */
+  readonly open: boolean;
+  readonly door: { readonly x: number; readonly y: number; readonly radius: number } | null;
+  readonly gold: number;
+  /** Las mejoras de arma en el orden de su catálogo y después la curación (longitud fija). */
+  readonly products: readonly ShopProductSnapshot[];
+}
+
 /** Todo el snapshot salvo la fase (estado + resultado). */
 export interface RunSnapshotBody {
   readonly tick: number;
@@ -223,6 +260,8 @@ export interface RunSnapshotBody {
   /** Oferta abierta ([] si no hay). */
   readonly offer: readonly OfferSnapshot[];
   readonly upgrades: readonly UpgradeLevelSnapshot[];
+  /** Tienda del castillo (0024), en todos los estados. */
+  readonly shop: ShopSnapshot;
 }
 
 /**

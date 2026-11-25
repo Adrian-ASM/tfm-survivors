@@ -4,6 +4,7 @@ import {
   DEFAULT_ENEMY_TYPES,
   DEFAULT_PROGRESSION,
   DEFAULT_UPGRADE_LIST,
+  DEFAULT_UPGRADES,
   DEFAULT_WAVES,
   CONTENT_STRUCTURES,
   aDefaultConfig,
@@ -20,7 +21,7 @@ describe('Builders de contenido por defecto = content/*.json validado', () => {
   it('tipos de enemigo, progresión, mejoras y oleadas iguales a los cargados por loadRunConfig', () => {
     expect(DEFAULT_ENEMY_TYPES).toEqual(content.enemies.types);
     expect(DEFAULT_PROGRESSION).toEqual(content.progression);
-    expect(DEFAULT_UPGRADE_LIST).toEqual(content.upgrades.upgrades);
+    expect(DEFAULT_UPGRADES).toEqual(content.upgrades);
     expect(DEFAULT_WAVES).toEqual(content.waves);
   });
 

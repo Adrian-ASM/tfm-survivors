@@ -58,18 +58,41 @@ export function playerWith(
   catalog: Upgrades,
   contribution: Contribution,
 ): PlayerRules {
-  const bonus: Record<PlayerStat, number> = { maxHealth: 0, speed: 0, pickupRadius: 0 };
+  const bonus: Record<PlayerStat, number> = {
+    maxHealth: 0,
+    speed: 0,
+    pickupRadius: 0,
+    regeneration: 0,
+    armor: 0,
+    invulnerabilityTicks: 0,
+    xpBonusPercent: 0,
+    goldBonusPercent: 0,
+    meatHealPercent: 0,
+  };
   catalog.upgrades.forEach((u, i) => {
     if (u.target.kind === 'player' && u.stat in bonus)
       bonus[u.stat as PlayerStat] += contribution(u, i);
   });
+  // Las estadísticas de 0024 tienen base 0 implícita (no van en content/player.json).
   return {
     ...base,
     maxHealth: base.maxHealth + bonus.maxHealth,
     speed: base.speed + bonus.speed,
     pickupRadius: base.pickupRadius + bonus.pickupRadius,
+    invulnerabilityTicks: base.invulnerabilityTicks + bonus.invulnerabilityTicks,
+    regeneration: (base.regeneration ?? 0) + bonus.regeneration,
+    armor: (base.armor ?? 0) + bonus.armor,
+    xpBonusPercent: (base.xpBonusPercent ?? 0) + bonus.xpBonusPercent,
+    goldBonusPercent: (base.goldBonusPercent ?? 0) + bonus.goldBonusPercent,
+    meatHealPercent: (base.meatHealPercent ?? 0) + bonus.meatHealPercent,
   };
 }
+
+/**
+ * Mejor caso de una estadística (ADR-0008, 0024): solo los incrementos positivos, todos a su nivel
+ * máximo. Cota superior de la carne efectiva (spec upgrades: ≤ 100).
+ */
+export const bestCase: Contribution = (u) => Math.max(0, u.perLevel * u.maxLevel);
 
 /** Arma efectiva con los niveles dados, siempre desde la base de contenido (ADR-0008). */
 export const upgradedWeapon = (

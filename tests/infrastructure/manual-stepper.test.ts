@@ -5,6 +5,10 @@ import {
   ManualStepper,
   type StepPlan,
 } from '../../src/infrastructure/e2e/ManualStepper';
+import { TickRun } from '../../src/application/TickRun';
+import { PauseGate } from '../../src/infrastructure/phaser/PauseGate';
+import { aBehaviorConfig, aProbeType } from '../support/runs';
+import { startAtDoor } from '../support/shop';
 
 /**
  * Partida falsa que hace de `GameScene` en modo manual: ejecuta los ticks planificados hasta
@@ -218,5 +222,38 @@ describe('ManualStepper · varios frames, input congelado y parada (design 0014 
     expect([stepper.plan.length, stepper.served.length, stepper.afterRender.length]).toEqual([
       1, 2, 0,
     ]);
+  });
+});
+
+// Spec simulation-loop (0024), "Tienda a mitad de step": la escena en modo manual con una partida
+// real (`PauseGate.manualFrame` + `TickRun`) que abre la tienda en el tick 7.
+describe('ManualStepper con la tienda (0024)', () => {
+  it('Scenario: Tienda a mitad de step (step(20) = 7 y en tienda; step(10) = 0; tras salir, 10)', async () => {
+    const run = startAtDoor(aBehaviorConfig([aProbeType()]), {
+      player: { x: 1039 + 7 * 3.5, y: 1000 },
+    });
+    const tickRun = new TickRun(run);
+    const gate = new PauseGate();
+    const stepper = new ManualStepper();
+    const frame = () => {
+      const plan = stepper.plan(() => PlayerInput.of(-1, 0));
+      const r = gate.manualFrame(tickRun, plan.ticks, plan.input);
+      stepper.served(r.ticks, tickRun.status === 'running');
+      stepper.afterRender();
+    };
+    const step = async (n: number) => {
+      const p = stepper.request(n);
+      for (let i = 0; i < 5; i++) frame();
+      return p;
+    };
+
+    const first = await step(20);
+    const atShop = run.snapshot();
+    const blocked = await step(10);
+    run.leaveShop();
+    const after = await step(10);
+
+    expect([first, atShop.tick, atShop.status]).toEqual([7, 7, 'shopping']);
+    expect([blocked, after, run.snapshot().tick]).toEqual([0, 10, 17]);
   });
 });

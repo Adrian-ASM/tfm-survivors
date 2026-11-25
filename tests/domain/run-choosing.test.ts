@@ -12,6 +12,8 @@ import {
   aSegment,
   aWavesConfig,
   anUpgrade,
+  upgradesOf,
+  withExtraTypes,
 } from '../support/builders';
 import { CountingRandom } from '../support/random';
 import { aProbeType, advance, startRun, ticks } from '../support/runs';
@@ -28,8 +30,7 @@ function busyConfig(): RunConfig {
   const base = withScenarioCurve(aDefaultConfig());
   const probe = aProbeType({ health: 1e6, speed: 1e-6 });
   return {
-    ...base,
-    enemies: { ...base.enemies, types: [...base.enemies.types, probe] },
+    ...withExtraTypes(base, probe),
     waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 0)] }).waves,
   };
 }
@@ -95,9 +96,9 @@ describe('Pausa y reanudación', () => {
   });
 
   it('Scenario: La invulnerabilidad no corre durante la pausa (sin daño de 21 a 40, sí en 41)', () => {
-    const base = quietDefault({ upgrades: { upgrades: [anUpgrade('fast-ci')] } });
+    const base = quietDefault({ upgrades: upgradesOf([anUpgrade('context-window')]) });
     const probe = aProbeType({ damage: 10, health: 1e6 });
-    const config = { ...base, enemies: { ...base.enemies, types: [...base.enemies.types, probe] } };
+    const config = withExtraTypes(base, probe);
     // El probe (1 px/tick) entra en contacto en el tick 10; la gema atraída se recoge en el 20.
     const setup: RunSetup = {
       player: atPlayer,
@@ -152,7 +153,7 @@ describe('Elección de mejora (Run.chooseUpgrade)', () => {
 
   it('Scenario: Índice fuera de rango (2 con 2 opciones)', () => {
     const list = [anUpgrade('guardrail'), anUpgrade('shortcuts')];
-    const run = startRun(quietDefault({ upgrades: { upgrades: list } }), offerOnTick1);
+    const run = startRun(quietDefault({ upgrades: upgradesOf(list) }), offerOnTick1);
     const [n] = ticks(run, 1);
     expect(n?.offer).toHaveLength(2);
     expect(run.chooseUpgrade(2)).toMatchObject({
@@ -171,9 +172,8 @@ describe('Elección de mejora (Run.chooseUpgrade)', () => {
     const killer = aProbeType({ damage: 10, health: 1e6 });
     const dying = startRun(
       {
-        ...base,
+        ...withExtraTypes(base, killer),
         player: { ...base.player, maxHealth: 10 },
-        enemies: { ...base.enemies, types: [...base.enemies.types, killer] },
       },
       { player: atPlayer, enemies: [{ type: 'probe', ...atPlayer }] },
     );
@@ -201,21 +201,7 @@ describe('Elección de mejora (Run.chooseUpgrade)', () => {
     expect(ticks(run, 1)[0]?.tick).toBe(2);
   });
 
-  it('Scenario: La disponibilidad se recalcula entre ofertas encoladas (coverage a 1 del máximo)', () => {
-    const list = [anUpgrade('coverage', { maxLevel: 1 })];
-    const setup = {
-      ...offerOnTick1,
-      gems: [{ x: 500, y: 270, value: 16 }],
-      experience: { level: 1, xp: 0 },
-    };
-    const run = startRun(quietDefault({ upgrades: { upgrades: list } }), setup);
-    const [n] = ticks(run, 1);
-    expect([n?.progression.pendingLevelUps, n?.offer.map((o) => o.id)]).toEqual([2, ['coverage']]);
-    expect(run.chooseUpgrade(0).ok).toBe(true);
-    const s = run.snapshot();
-    expect([s.status, s.offer, s.progression.pendingLevelUps]).toEqual(['running', [], 0]);
-  });
-
+  // "La disponibilidad se recalcula entre ofertas encoladas" (0024, con la curación): run-levelup-heal.
   it('Scenario: Ninguna disponible (todas al máximo: nivel 8 sin oferta y el tick n + 1 normal)', () => {
     const run = startRun(quietDefault(), {
       player: atPlayer,
@@ -228,16 +214,16 @@ describe('Elección de mejora (Run.chooseUpgrade)', () => {
     expect([n?.status, n?.offer, next?.tick]).toEqual(['running', [], 2]);
   });
 
-  it('Scenario: Mejora en su nivel máximo (fast-ci a 5: figura con nivel 5 y no sale)', () => {
+  it('Scenario: Mejora en su nivel máximo (shortcuts a 5: figura con nivel 5 y no sale)', () => {
     for (const seed of [1, 2, 3, 4, 5]) {
       const run = startRun(
         quietDefault(),
-        { ...offerOnTick1, upgrades: { 'fast-ci': 5 } },
+        { ...offerOnTick1, upgrades: { shortcuts: 5 } },
         new Mulberry32RandomGenerator(seed),
       );
       const [n] = ticks(run, 1);
-      expect(n?.offer.map((o) => o.id)).not.toContain('fast-ci');
-      expect(n?.upgrades).toEqual([{ id: 'fast-ci', level: 5 }]);
+      expect(n?.offer.map((o) => o.id)).not.toContain('shortcuts');
+      expect(n?.upgrades).toEqual([{ id: 'shortcuts', level: 5 }]);
     }
   });
 });
@@ -249,10 +235,9 @@ describe('Cadencia y elecciones', () => {
     list: readonly ReturnType<typeof anUpgrade>[],
     setup: RunSetup,
   ) {
-    const base = quietDefault({ upgrades: { upgrades: list } });
+    const base = quietDefault({ upgrades: upgradesOf(list) });
     const config: RunConfig = {
-      ...base,
-      enemies: { ...base.enemies, types: [...base.enemies.types, still] },
+      ...withExtraTypes(base, still),
       weapons: weaponsOf(weapons),
     };
     return startRun(config, { player: atPlayer, ...setup });
@@ -273,17 +258,6 @@ describe('Cadencia y elecciones', () => {
   const gemOnTick = (n: number) => [
     { x: 480 + 21 + 6 * (n - 1) + 3, y: 270, value: 1, attracted: true },
   ];
-
-  it('Scenario: Cadencia mejorada sin reiniciar la carga (fast-ci en la oferta del tick 10: 1, 31, 57, 83)', () => {
-    const run = weaponRun([LINTER], [anUpgrade('fast-ci')], {
-      enemies: target,
-      gems: gemOnTick(10),
-      experience: { level: 1, xp: 4 },
-    });
-    const snaps = advance(run, 90);
-    expect(snaps[9]?.offer.map((o) => o.id)).toEqual(['fast-ci']);
-    expect(launches(snaps)).toEqual([1, 31, 57, 83]);
-  });
 
   it('Scenario: La pausa no adelanta la recarga (oferta en el tick 5 con 600 ticks pedidos)', () => {
     const run = weaponRun([LINTER], [anUpgrade('guardrail')], {

@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import { Run } from '../../src/domain/run/Run';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
-import { CONTENT_SHEEP, aDefaultConfig, aStillType, withSheep } from '../support/builders';
+import {
+  CONTENT_SHEEP,
+  aDefaultConfig,
+  aStillType,
+  withExtraTypes,
+  withSheep,
+} from '../support/builders';
 import { cellsWith, mapRules } from '../support/mapLayouts';
 import { startSeededRun, ticks } from '../support/runs';
 import {
@@ -22,8 +28,26 @@ describe('Ovejas declaradas en un mapa explícito (spec procedural-map)', () => 
     const run = startWithSheep(aDefaultConfig(), [SHEEP_AT, { x: 1500, y: 600 }]);
     const s = run.snapshot();
     expect(s.sheep).toEqual([
-      { id: 0, x: 1000, y: 1000, radius: 18, health: 12, state: 'graze', damaged: false, origin: { x: 1000, y: 1000 } },
-      { id: 1, x: 1500, y: 600, radius: 18, health: 12, state: 'graze', damaged: false, origin: { x: 1500, y: 600 } },
+      {
+        id: 0,
+        x: 1000,
+        y: 1000,
+        radius: 18,
+        health: 12,
+        state: 'graze',
+        damaged: false,
+        origin: { x: 1000, y: 1000 },
+      },
+      {
+        id: 1,
+        x: 1500,
+        y: 600,
+        radius: 18,
+        health: 12,
+        state: 'graze',
+        damaged: false,
+        origin: { x: 1500, y: 600 },
+      },
     ]);
     expect(run.map.cells.every((c) => c === 'grass')).toBe(true);
   });
@@ -167,9 +191,7 @@ describe('Ovejas neutrales (spec sheep)', () => {
 
   it('Scenario: El contacto de un enemigo no la daña (enemigo de daño 5 en su centro, 600 ticks)', () => {
     const base = aSheepConfig();
-    const config = withSheep(
-      { ...base, enemies: { ...base.enemies, types: [...base.enemies.types, aStillType({ damage: 5 })] } },
-    );
+    const config = withSheep(withExtraTypes(base, aStillType({ damage: 5 })));
     const run = startWithSheep(config, [SHEEP_AT], { enemies: [{ type: 'still', ...SHEEP_AT }] });
     for (const s of ticks(run, 600)) {
       expect([s.sheep[0]?.health, s.sheep[0]?.damaged]).toEqual([12, false]);

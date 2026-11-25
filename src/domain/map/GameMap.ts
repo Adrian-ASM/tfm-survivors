@@ -49,12 +49,18 @@ export class GameMap {
   /** Punto de salida del jugador y centro de la zona de inicio de este mapa (0016). */
   readonly start: StartZone;
   readonly castle: CastleFootprint | null;
+  /**
+   * Puerta de la tienda (spec procedural-map 0024): la salida ante el castillo en el mapa generado,
+   * la declarada en `open`/`cells` o `null`. No es una celda.
+   */
+  readonly door: Point | null;
 
   private constructor(
     readonly rules: MapRules,
     private readonly cells: Uint8Array,
     start: StartZone,
     castle: CastleFootprint | null,
+    door: Point | null,
   ) {
     this.cols = rules.cols;
     this.rows = rules.rows;
@@ -63,6 +69,7 @@ export class GameMap {
     this.height = rules.height;
     this.start = start;
     this.castle = castle;
+    this.door = door ? Object.freeze({ x: door.x, y: door.y }) : null;
     Object.freeze(this);
   }
 
@@ -73,9 +80,9 @@ export class GameMap {
   }
 
   /** Mapa vacío: todas las celdas `grass`; salida en `start` o, sin ella, en el centro del mundo. */
-  static open(rules: MapRules, start?: Point): GameMap {
+  static open(rules: MapRules, start?: Point, door?: Point): GameMap {
     const cells = new Uint8Array(rules.cellCount).fill(GRASS);
-    return new GameMap(rules, cells, GameMap.startAt(rules, start), null);
+    return new GameMap(rules, cells, GameMap.startAt(rules, start), null, door ?? null);
   }
 
   /**
@@ -86,6 +93,7 @@ export class GameMap {
     types: readonly CellType[],
     rules: MapRules,
     start?: Point,
+    door?: Point,
   ): Result<GameMap, DomainError> {
     if (types.length !== rules.cellCount) {
       const got = String(types.length);
@@ -95,7 +103,7 @@ export class GameMap {
     }
     const cells = new Uint8Array(types.length);
     types.forEach((t, i) => (cells[i] = codeOf(t)));
-    return ok(new GameMap(rules, cells, GameMap.startAt(rules, start), null));
+    return ok(new GameMap(rules, cells, GameMap.startAt(rules, start), null, door ?? null));
   }
 
   /**
@@ -106,7 +114,8 @@ export class GameMap {
     if (cells.length !== rules.cellCount) throw new Error('Invariante rota: rejilla del mapa');
     const { firstCol, lastCol, firstRow, lastRow } = rules.castle;
     const footprint = Object.freeze({ firstCol, lastCol, firstRow, lastRow });
-    return new GameMap(rules, cells, rules.castleStart, footprint);
+    const { x, y } = rules.castleStart;
+    return new GameMap(rules, cells, rules.castleStart, footprint, { x, y });
   }
 
   private inside(col: number, row: number): boolean {

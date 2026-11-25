@@ -64,7 +64,9 @@ export interface EnemyView {
 
 export interface SnapshotView {
   tick: number;
-  status: 'running' | 'choosing' | 'over';
+  status: 'running' | 'choosing' | 'shopping' | 'over';
+  /** Tienda del castillo (0024): puerta, si está armada y oro. */
+  shop: { armed: boolean; open: boolean; gold: number; door: { x: number; y: number } | null };
   outcome: 'won' | 'lost' | null;
   kills: number;
   durationTicks: number;
@@ -230,6 +232,13 @@ export interface MapView {
   emptyForced: boolean;
 }
 
+/** Sonda de la tienda (0024): overlay visible, oro y, por producto, lo que muestra el panel. */
+export interface ShopProbeView {
+  visible: boolean;
+  gold: number;
+  products: { id: string; level: number | null; price: number | null; buyable: boolean }[];
+}
+
 interface Probe {
   __sprint?: {
     /** Mapa de la partida en curso (change 0015). */
@@ -241,7 +250,11 @@ interface Probe {
     results: ResultsViewData | null;
     progress: ProgressView | null;
     /** Pantalla visible (change 0009) y partidas creadas en la carga. */
-    screen?: 'menu' | 'playing' | 'paused';
+    screen?: 'menu' | 'playing' | 'paused' | 'shop';
+    /** Pantallas vistas desde la carga (0024). */
+    screens?: string[];
+    /** Overlay de la tienda (0024). */
+    shop?: ShopProbeView;
     runs?: number;
     /** Sonda de sprites (change 0012). */
     sprites?: SpritesView;
@@ -278,6 +291,8 @@ export const probe = (page: Page) =>
           manual: p.manual ?? null,
           map: p.map ?? null,
           hud: p.hud ?? null,
+          shop: p.shop ?? null,
+          screens: p.screens ?? [],
         }
       : null;
   });

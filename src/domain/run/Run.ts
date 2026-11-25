@@ -18,6 +18,7 @@ import type { Player } from '../player/Player';
 import type { PlayerInput } from '../player/PlayerInput';
 import type { RandomGenerator } from '../shared/RandomGenerator';
 import type { Experience } from '../progression/Experience';
+import { levelUpHeal } from '../progression/LevelUpHeal';
 import { PickupGain, type PickupField } from '../pickup/PickupField';
 import type { Stockpile } from '../resource/Stockpile';
 import type { GoldVein } from '../resource/GoldVein';
@@ -25,6 +26,7 @@ import { resolveResources, type ResourceSites } from '../resource/resolveResourc
 import type { PlayerRules } from '../player/PlayerRules';
 import { err, ok, type DomainError, type Result } from '../shared/Result';
 import type { UpgradeChoiceError } from '../upgrade/UpgradeChoiceError';
+import type { ShopError } from '../shop/ShopError';
 import { maxHealthBonus, upgradedPlayer, upgradedWeapon } from '../upgrade/upgradeStats';
 import { WeaponType } from '../weapon/WeaponType';
 import { TICK_SECONDS } from '../shared/Tick';
@@ -39,7 +41,7 @@ import {
 } from './RunConfig';
 import { Arsenal } from '../weapon/Arsenal';
 import type { UpgradeBoard } from '../upgrade/UpgradeBoard';
-import type { RunSnapshot } from './RunSnapshot';
+import type { RunSnapshot, ShopSnapshot } from './RunSnapshot';
 import {
   toBlastSnapshot,
   toDynamiteSnapshot,
@@ -53,10 +55,12 @@ import {
   toPulseSnapshot,
   toSheepSnapshot,
   toUpgradeLevels,
+  toShopSnapshot,
   toWarnings,
 } from './snapshotParts';
 import type { RunStatus } from './RunStatus';
-import { CHOOSING, LOST, RUNNING, WON, type RunOutcome, type RunPhase } from './RunPhase';
+import { CHOOSING, LOST, RUNNING, SHOPPING, WON, type RunOutcome, type RunPhase } from './RunPhase';
+import { CastleGate } from '../shop/CastleGate';
 import {
   SETUP_HEALTH_OUT_OF_RANGE,
   SETUP_POSITION_MUST_BE_FINITE,
@@ -125,6 +129,11 @@ export class Run {
   private readonly veins: readonly GoldVein[];
   /** Ovejas neutrales (ADR-0022): fuera de `Horde`, del director y de las bajas. */
   private readonly flock: Flock;
+  /** Puerta del castillo y su re-armado (ADR-0023, paso 11). */
+  private readonly gate: CastleGate;
+  /** Último `ShopSnapshot` y su clave: se rehace solo si cambia (design 0024 §6). */
+  private shopView: ShopSnapshot | null = null;
+  private shopKey = '';
 
   private constructor(
     private readonly rules: RunRules,
@@ -153,6 +162,7 @@ export class Run {
     this.structures = new StructureField(initial.structures);
     this.veins = initial.veins;
     this.flock = initial.flock;
+    this.gate = new CastleGate(terrain.door, rules.shop, initial.shopArmed);
     for (const w of rules.loadout.weapons) this.retune(w.id);
     const bonus = maxHealthBonus(rules.upgrades, this.board.levels);
     this.player = this.player.withRules(this.effectivePlayer(), bonus);
@@ -234,6 +244,46 @@ export class Run {
     return ok(undefined);
   }
 
+  /**
+   * Compra un producto de la tienda por id (spec castle-shop 0024): un nivel de una mejora de arma
+   * (precio del siguiente nivel; rige desde el siguiente tick) o la curación de pago (porción con
+   * tope, precio completo). Solo en tienda; no ejecuta ticks ni consume azar. Un error no cambia nada.
+   */
+  buy(productId: string): Result<void, ShopError> {
+    if (this.phase.status !== 'shopping') return err({ code: 'not-shopping' });
+    const { heal } = this.rules.shop;
+    if (productId === heal.id) {
+      if (this.player.health.current >= this.player.health.max) return err({ code: 'health-full' });
+      if (!this.stock.spend(heal.price)) return this.noGold(heal.price);
+      this.player = this.player.heal(heal.amount);
+      return ok(undefined);
+    }
+    const index = this.rules.upgrades.indexOf(productId);
+    const upgrade = this.rules.upgrades.upgrades[index];
+    if (!upgrade || upgrade.source !== 'shop')
+      return err({ code: 'unknown-product', id: productId });
+    const price = upgrade.priceAt(this.board.levelOf(index));
+    if (price === null) return err({ code: 'max-level', id: productId });
+    if (!this.stock.spend(price)) return this.noGold(price);
+    this.board.raise(index);
+    if (upgrade.target.kind === 'weapon') this.retune(upgrade.target.weapon);
+    return ok(undefined);
+  }
+
+  private noGold(price: number): Result<void, ShopError> {
+    return err({ code: 'not-enough-gold', price, gold: this.stock.gold });
+  }
+
+  /**
+   * Sale de la tienda (spec castle-shop 0024): vuelve a en curso sin ejecutar ticks; el siguiente
+   * tick continúa donde se quedó. La puerta sigue desarmada. Fuera de la tienda, `not-shopping`.
+   */
+  leaveShop(): Result<void, ShopError> {
+    if (this.phase.status !== 'shopping') return err({ code: 'not-shopping' });
+    this.phase = RUNNING;
+    return ok(undefined);
+  }
+
   /** Reglas efectivas del jugador desde la base de contenido (ADR-0008). */
   private effectivePlayer(): PlayerRules {
     return upgradedPlayer(this.rules.player, this.rules.upgrades, this.board.levels);
@@ -277,11 +327,14 @@ export class Run {
       return;
     }
     this.collect(x, y);
+    this.regenerate(n);
     this.director.step(n, horde.alive.length, this.place);
     structures.spawnGuards(n, horde, this.rules.spawn.maxAlive);
     this.flock.respawn(n, x, y);
     this.tickCount = n;
     this.openNextOffer();
+    // Paso 11: con la oferta abierta en este tick (paso 10) solo re-arma; abre si sigue en curso.
+    if (this.gate.step(x, y, this.status === 'running')) this.phase = SHOPPING;
   }
 
   /**
@@ -292,35 +345,53 @@ export class Run {
   private collect(x: number, y: number): void {
     const { gain } = this;
     this.pickups.step(x, y, this.player.radius, this.player.pickupRadius, gain);
-    if (gain.xp > 0) this.experience.gain(gain.xp);
-    this.stock.add(gain.gold, gain.wood);
+    // La bonificación se aplica a la suma del paso: con el resto arrastrado equivale a gema a gema.
+    if (gain.xp > 0) this.experience.gain(gain.xp, this.player.effective.xpBonusPercent ?? 0);
+    const goldBonus = this.player.effective.goldBonusPercent ?? 0;
+    this.stock.add(gain.gold, gain.wood, goldBonus);
     if (gain.meat > 0) this.heal(gain.meat);
-    for (const v of this.veins) this.stock.add(v.tap(x, y, this.player.radius), 0);
+    for (const v of this.veins) this.stock.add(v.tap(x, y, this.player.radius), 0, goldBonus);
   }
 
   /**
-   * Curación por carne (spec player-health 0023): `valor × max(1, ⌊% × máx / 100⌋)` con la vida
+   * Paso 7.3 (spec player-health 0024): en los ticks múltiplos del intervalo del contenido, la
+   * regeneración efectiva cura con tope. Sin regeneración no hace nada. No consume azar.
+   */
+  private regenerate(n: number): void {
+    const { regeneration = 0, regenIntervalTicks } = this.player.effective;
+    if (regeneration > 0 && n % regenIntervalTicks === 0)
+      this.player = this.player.heal(regeneration);
+  }
+
+  /**
+   * Curación por carne (spec player-health 0023 y 0024): `valor × max(1, ⌊% × máx / 100⌋)`, con %
+   * = la del contenido + `meatHealPercent` efectiva, con la vida
    * máxima efectiva de este momento y tope en ella. Sumar las piezas del paso y curar una vez es lo
    * mismo que curar pieza a pieza (el tope es monótono). No consume azar.
    */
   private heal(meat: number): void {
     const max = this.player.health.max;
-    const perUnit = Math.max(1, Math.floor((this.rules.resources.meat.healPercent * max) / 100));
+    const percent =
+      this.rules.resources.meat.healPercent + (this.player.effective.meatHealPercent ?? 0);
+    const perUnit = Math.max(1, Math.floor((percent * max) / 100));
     this.player = this.player.heal(meat * perUnit);
   }
 
   /**
    * Último paso del tick (y tras cada elección): con subidas pendientes y sin oferta abierta,
-   * sortea la siguiente (único consumo de azar nuevo) y pasa a eligiendo. Sin mejoras disponibles
-   * las subidas quedan registradas, sin oferta ni pausa y sin consumir azar.
+   * sortea la siguiente (único consumo de azar nuevo) y pasa a eligiendo. Sin mejoras de personaje
+   * disponibles, cada subida cura (con tope) y queda registrada, sin oferta ni pausa ni azar.
    */
   private openNextOffer(): void {
     if (this.experience.pendingLevelUps === 0 || this.board.isOpen) return;
     if (this.board.open(this.random)) {
       this.phase = CHOOSING;
-    } else {
-      this.experience.clearPending();
+      return;
     }
+    // Sin mejoras de personaje disponibles, cada subida pendiente cura (spec leveling 0024).
+    const each = levelUpHeal(this.rules.levelUpHealPercent, this.player.health.max);
+    this.player = this.player.heal(this.experience.pendingLevelUps * each);
+    this.experience.clearPending();
   }
 
   /**
@@ -364,15 +435,21 @@ export class Run {
   }
 
   /**
-   * Cada muerto suelta su gema en su posición, en orden de la lista (spec xp-gems), y después su
-   * madera si su tipo la suelta y no ha explotado por su mecha (spec enemy-hazards 0022); un
+   * Cada muerto suelta su gema en su posición, en orden de la lista (spec xp-gems), y después, si no
+   * ha explotado por su mecha, su madera (spec enemy-hazards 0022) y su oro por baja (spec resources
+   * 0024), si su tipo los suelta; un
    * guardia deja libre su hueco en el tope de su casa. Se crea una sola vez: no asigna por tick.
    */
   private readonly onDeath = (dead: Enemy): void => {
     const { x, y, type } = dead;
     this.pickups.drop('xp', x, y, type.xp);
-    const wood = dead.detonated ? 0 : this.rules.resources.woodFor(type.id);
-    if (wood > 0) this.pickups.drop('wood', x, y, wood);
+    if (!dead.detonated) {
+      const { resources } = this.rules;
+      const wood = resources.woodFor(type.id);
+      if (wood > 0) this.pickups.drop('wood', x, y, wood);
+      const gold = resources.goldForEnemy(type.id);
+      if (gold > 0) this.pickups.drop('gold', x, y, gold);
+    }
     dead.post?.release();
   };
 
@@ -447,6 +524,34 @@ export class Run {
       progression: toProgressionSnapshot(this.experience),
       offer: toOfferSnapshot(this.board),
       upgrades: toUpgradeLevels(this.rules.upgrades, this.board),
+      shop: this.shopSnapshot(),
     });
+  }
+
+  /** Productos y estado de la tienda, rehechos solo al cambiar su clave (oro, vida, niveles…). */
+  private shopSnapshot(): ShopSnapshot {
+    const { health } = this.player;
+    const { levels } = this.board;
+    const key = [
+      this.stock.gold,
+      health.current,
+      health.max,
+      this.gate.armed,
+      this.phase.status,
+      ...this.rules.upgrades.shopIndices.map((i) => levels[i] ?? 0),
+    ].join(',');
+    if (this.shopView && key === this.shopKey) return this.shopView;
+    this.shopKey = key;
+    this.shopView = toShopSnapshot({
+      catalog: this.rules.upgrades,
+      board: this.board,
+      heal: this.rules.shop.heal,
+      gate: this.gate,
+      open: this.phase.status === 'shopping',
+      gold: this.stock.gold,
+      health: health.current,
+      maxHealth: health.max,
+    });
+    return this.shopView;
   }
 }

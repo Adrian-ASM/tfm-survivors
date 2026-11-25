@@ -16,8 +16,9 @@ import {
   aSegment,
   aWavesConfig,
   withPlayer,
+  upgradesOf,
 } from '../support/builders';
-import { aProbeType, advance, enemyById, startRun, ticks } from '../support/runs';
+import { aProbeType, enemyById, startRun, ticks } from '../support/runs';
 import { weaponsOf } from '../support/weapons';
 
 const CENTER = { x: 480, y: 270 };
@@ -45,7 +46,7 @@ function weaponRun(
     resources: NO_RESOURCES,
     waves: aWavesConfig({ types: STILL, segments: [aSegment(['goblin-torch'], 0)] }).waves,
     weapons: weaponsOf(weapons),
-    upgrades: { upgrades: list.filter((u) => fitsLoadout(u, weapons)) },
+    upgrades: upgradesOf(list.filter((u) => fitsLoadout(u, weapons))),
   };
   return startRun(config, { player: CENTER, ...setup });
 }
@@ -58,13 +59,6 @@ const bugAt = (x: number, y = 270, health?: number) => ({
 });
 const healthOf = (s: RunSnapshot | undefined, id: number) =>
   s?.enemies.find((e) => e.id === id)?.health ?? 0;
-/** Gema atraída que se recoge en el tick `n` con el jugador quieto en el centro. */
-const gemOnTick = (n: number) => ({
-  x: 480 + 21 + 6 * (n - 1) + 3,
-  y: 270,
-  value: 1,
-  attracted: true,
-});
 
 describe('Efectos de las mejoras de arma', () => {
   it('Scenario: Más daño del Linter / Daño efectivo con mejoras (strict-rules 1: vida 1)', () => {
@@ -124,51 +118,6 @@ describe('Efectos de las mejoras de arma', () => {
     expect(first?.gems).toHaveLength(1);
   });
 
-  it('Scenario: Proyectil en vuelo durante una mejora de daño (vida 4 en T + 11; luego −9)', () => {
-    const list = [DEFAULT_UPGRADE_LIST[0] as UpgradeTypeConfig];
-    const run = weaponRun(
-      [LINTER],
-      { enemies: [bugAt(580, 270, 10)], gems: [gemOnTick(3)], experience: { level: 1, xp: 4 } },
-      list,
-    );
-    const snaps = advance(run, 60);
-    expect(snaps[2]?.offer.map((o) => o.id)).toEqual(['strict-rules']);
-    expect(healthOf(snaps[10], 0)).toBe(10);
-    expect(healthOf(snaps[11], 0)).toBe(4);
-    expect(snaps.at(-1)?.enemies).toEqual([]);
-
-    const tough = weaponRun(
-      [LINTER],
-      {
-        enemies: [{ type: 'goblin-barrel', x: 580, y: 270, health: 19 }],
-        gems: [gemOnTick(3)],
-        experience: { level: 1, xp: 4 },
-      },
-      list,
-    );
-    const later = advance(tough, 60);
-    const lives = [...new Set(later.map((s) => healthOf(s, 0)))];
-    expect(lives).toEqual([19, 13, 4]);
-  });
-
-  it('Scenario: Pulso visible durante una mejora de radio (90 de T a T + 7; el siguiente 105)', () => {
-    const list = DEFAULT_UPGRADE_LIST.filter((u) => u.id === 'coverage');
-    const run = weaponRun(
-      [TESTS],
-      {
-        enemies: [bugAt(530, 270)],
-        gems: [{ x: 500, y: 270, value: 1 }],
-        experience: { level: 1, xp: 4 },
-      },
-      list,
-    );
-    const snaps = advance(run, 95);
-    expect(snaps[0]?.status).toBe('choosing');
-    const first = snaps.slice(0, 8).map((s) => s.pulses.map((p) => [p.firedAt, p.radius]));
-    expect(first).toEqual(Array(8).fill([[1, 90]]));
-    expect(snaps[90]?.pulses).toEqual([expect.objectContaining({ firedAt: 91, radius: 105 })]);
-  });
-
   it('Scenario: El contenido base no cambia (otra partida empieza sin mejoras y con damage 6)', () => {
     weaponRun([LINTER], { enemies: [bugAt(580)], upgrades: { 'strict-rules': 3 } });
     const fresh = weaponRun([LINTER], { enemies: [bugAt(580)] });
@@ -197,7 +146,7 @@ describe('Efectos de las mejoras del jugador', () => {
       structures: NO_STRUCTURES,
       resources: NO_RESOURCES,
       waves: aWavesConfig({ types, segments: [aSegment(['goblin-torch'], 0)] }).waves,
-      upgrades: { upgrades: list },
+      upgrades: upgradesOf(list),
     };
     return startRun(config, { player: CENTER, ...setup });
   };

@@ -5,7 +5,8 @@ import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
 import { BALANCE_SEEDS, STILL_LIMIT_TICKS } from './balanceSeeds';
 import { botWorld, referenceBot, threateningWarnings, type ReferenceBot } from './policies';
 import type { MapMode } from '../../src/composition/seedSource';
-import { chooseWhileOpen, play, startSeededRun, stillSurvivors } from './runs';
+import { PlayerInput } from '../../src/domain/player/PlayerInput';
+import { chooseWhileOpen, play, startSeededRun, stillSurvivors, visitShop } from './runs';
 
 /** Duración objetivo de la partida (content/run.json): 600 s = 36.000 ticks. */
 export const TEN_MINUTES = 36_000;
@@ -26,6 +27,25 @@ export interface BotTrace {
   readonly healed: number;
   /** Ovejas que han muerto en la partida (0023). */
   readonly sheepDeaths: number;
+  /** Economía de la tienda (0024, informativa): ver `EconomyTrace`. */
+  readonly economy: EconomyTrace;
+}
+
+/** Oro y tienda de una partida del bot v4 (design 0024 §9, M1). */
+export interface EconomyTrace {
+  /** Oro soltado en el suelo por bajas y por estructuras, y oro de las vetas agotadas. */
+  readonly droppedByKills: number;
+  readonly droppedByStructures: number;
+  readonly veins: number;
+  /** Oro que entró en el contador (recogido + vetas, con bonificación) y oro gastado. */
+  readonly earned: number;
+  readonly spent: number;
+  /** Visitas a la tienda, niveles de arma comprados y curaciones compradas. */
+  readonly visits: number;
+  readonly purchases: number;
+  readonly heals: number;
+  /** Tick de cada nivel de arma comprado, en orden. */
+  readonly purchaseTicks: readonly number[];
 }
 
 /** Vida curada entre dos snapshots (0 si cambió la máxima: una mejora no es curación). */
@@ -77,17 +97,53 @@ export function playBotTraced(
   let healed = 0;
   let sheepDeaths = 0;
   let last: RunSnapshot | null = null;
+  const eco = { droppedByKills: 0, droppedByStructures: 0, veins: 0, earned: 0, spent: 0 };
+  const visit = { visits: 0, purchases: 0, heals: 0 };
+  const purchaseTicks: number[] = [];
+  // Recogibles en orden de creación con ids crecientes: los nuevos del tick están al final.
+  let lastPickup = -1;
+  const healId = config.shop.heal.id;
   for (let t = 0; t < maxTicks && run.status !== 'over'; t++) {
+    let shopped = false;
+    if (run.status === 'shopping') {
+      const pre = run.snapshot();
+      const bought = visitShop(run, bot);
+      visit.visits++;
+      for (const id of bought) {
+        if (id === healId) visit.heals++;
+        else {
+          visit.purchases++;
+          purchaseTicks.push(pre.tick);
+        }
+      }
+      eco.spent += pre.resources.gold - run.snapshot().resources.gold;
+      shopped = true;
+    }
     const chosen = chooseWhileOpen(run, (offer) => bot.pick(offer));
-    // Sin elección entre ticks el estado no cambia: el `after` del tick anterior es el `before` de
-    // este (0022, M1: la mitad de snapshots por tick; los resultados son los mismos).
-    const before = chosen > 0 || !last ? run.snapshot() : last;
+    // Sin elección ni compra entre ticks el estado no cambia: el `after` del tick anterior es el
+    // `before` de este (0022, M1: la mitad de snapshots por tick; los resultados son los mismos).
+    const before = chosen > 0 || shopped || !last ? run.snapshot() : last;
     const input = bot.input(before);
     run.tick(input);
     const after = run.snapshot();
     last = after;
     healed += healedBetween(before, after);
     sheepDeaths += sheepLost(before, after);
+    eco.earned += Math.max(0, after.resources.gold - before.resources.gold);
+    const ruined = after.structures.some((x, i) => x.destroyed && !before.structures[i]?.destroyed);
+    const { pickups } = after;
+    let first = pickups.length;
+    while (first > 0 && (pickups[first - 1]?.id ?? -1) > lastPickup) first--;
+    for (const p of pickups.slice(first)) {
+      lastPickup = Math.max(lastPickup, p.id);
+      if (p.kind !== 'gold') continue;
+      const fromStructure =
+        ruined && after.structures.some((x) => x.destroyed && x.x === p.x && x.y === p.y);
+      if (fromStructure) eco.droppedByStructures += p.value;
+      else eco.droppedByKills += p.value;
+    }
+    const tapped = after.veins.filter((v, i) => v.depleted && !before.veins[i]?.depleted);
+    for (const v of tapped) eco.veins += v.gold;
     for (const e of after.enemies) if (e.stateKind === 'fuse') fused.add(e.id);
     for (const d of after.dynamites) {
       if (seenDynamites.has(d.id)) continue;
@@ -110,7 +166,16 @@ export function playBotTraced(
     )
       w3Damage += lost;
   }
-  return { final: run.snapshot(), fuses: fused.size, barrelBlasts, w3Damage, healed, sheepDeaths };
+  const economy = { ...eco, ...visit, purchaseTicks };
+  return {
+    final: run.snapshot(),
+    fuses: fused.size,
+    barrelBlasts,
+    w3Damage,
+    healed,
+    sheepDeaths,
+    economy,
+  };
 }
 
 /** ¿Victoria en el tick 36.000 (spec run-outcome)? */
@@ -131,6 +196,10 @@ export interface StillTrace {
   readonly final: RunSnapshot;
   /** Vida recuperada con la carne. */
   readonly healed: number;
+  /** Ids de todas las opciones de todas las ofertas abiertas (0024: ninguna de arma). */
+  readonly offered: ReadonlySet<string>;
+  /** La partida pasó por en tienda en algún tick (0024: el quieto nunca debe). */
+  readonly shopped: boolean;
 }
 
 /**
@@ -142,19 +211,28 @@ export function traceStillBatch(config: RunConfig, mode: MapMode = 'generated'):
     const run = startSeededRun(config, seed, mode);
     let prev = run.snapshot();
     let healed = 0;
-    play(run, STILL_LIMIT_TICKS - 1, (_, r) => {
-      const now = r.snapshot();
+    const offered = new Set<string>();
+    let shopped = false;
+    for (let t = 1; t < STILL_LIMIT_TICKS && run.status !== 'over'; t++) {
+      chooseWhileOpen(run, (offer) => {
+        for (const o of offer) offered.add(o.id);
+        return 0;
+      });
+      run.tick(PlayerInput.NONE);
+      const now = run.snapshot();
+      shopped ||= now.status === 'shopping';
       healed += healedBetween(prev, now);
       prev = now;
-      return false;
-    });
-    return { seed, final: run.snapshot(), healed };
+    }
+    return { seed, final: run.snapshot(), healed, offered, shopped };
   });
 }
 
 /** Semillas cuyo quieto no ha perdido antes del tick 10.800. */
 export const stillAlive = (traces: readonly StillTrace[]): number[] =>
-  traces.filter((t) => !(t.final.status === 'over' && t.final.outcome === 'lost')).map((t) => t.seed);
+  traces
+    .filter((t) => !(t.final.status === 'over' && t.final.outcome === 'lost'))
+    .map((t) => t.seed);
 
 /** Media por partida de un contador del rastro. */
 export const perRun = (traces: readonly BotTrace[], pick: (t: BotTrace) => number): number =>

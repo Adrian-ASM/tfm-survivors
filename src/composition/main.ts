@@ -11,6 +11,7 @@ import type { RunSnapshot } from '../domain/run/RunSnapshot';
 import type { DomainError } from '../domain/shared/Result';
 import { repositoryContent } from '../infrastructure/content/loadRunConfig';
 import { PausePanel } from '../infrastructure/dom/PausePanel';
+import { ShopPanel, type ShopPanelView } from '../infrastructure/dom/ShopPanel';
 import { GameScene, type SceneCapacity, type Screen } from '../infrastructure/phaser/GameScene';
 import { MenuScene } from '../infrastructure/phaser/MenuScene';
 import { emptyCounts, type SpriteCounts } from '../infrastructure/phaser/renderCounts';
@@ -66,6 +67,10 @@ interface E2EProbe {
   readonly viewport: ViewportView | null;
   /** Oro y madera que muestra el HUD (0022); null en el menú. */
   readonly hud: { readonly gold: string; readonly wood: string } | null;
+  /** Overlay de la tienda (0024): si se ve, el oro y, por producto, nivel, precio y si es comprable. */
+  readonly shop: ShopPanelView;
+  /** Pantallas vistas desde la carga (0024: el E2E comprueba que Esc en la tienda no pausa). */
+  readonly screens: readonly Screen[];
 }
 
 function showContentError(root: HTMLElement, error: DomainError): void {
@@ -138,6 +143,8 @@ function bootstrap(): void {
   // Antes de crear el juego: el panel queda en el DOM y el progreso cargado (nunca lanza).
   const progress = wireProgress(root, () => probe.seed);
   const pause = new PausePanel(document, root);
+  const shopPanel = new ShopPanel(document, root);
+  const screens: Screen[] = [];
   const e2e = new URLSearchParams(window.location.search).has('e2e');
   // El mundo es la arena del contenido; el lienzo, la vista (0013).
   const world: WorldSize = { width: config.value.arena.width, height: config.value.arena.height };
@@ -178,6 +185,10 @@ function bootstrap(): void {
     get hud() {
       return hudView();
     },
+    get shop() {
+      return shopPanel.view;
+    },
+    screens,
   };
   const started = (s: number): void => {
     probe.seed = s;
@@ -198,6 +209,7 @@ function bootstrap(): void {
   });
   const onScreen = (screen: Screen): void => {
     probe.screen = screen;
+    if (screens.at(-1) !== screen) screens.push(screen);
     if (screen !== 'menu') return;
     probe.snapshot = null;
     probe.results = null;
@@ -217,6 +229,7 @@ function bootstrap(): void {
     progress: progress.scene,
     resultsLines: progress.resultsLines,
     pause,
+    shop: shopPanel,
     // Snapshot y sprites en la misma llamada: cualquier lectura ve un par coherente (design D7).
     onRender: (snapshot, results, sprites) => {
       probe.snapshot = snapshot;

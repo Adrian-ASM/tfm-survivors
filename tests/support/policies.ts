@@ -1,4 +1,5 @@
 import { Arena } from '../../src/domain/arena/Arena';
+import { FlowField } from '../../src/domain/map/FlowField';
 import { GameMap } from '../../src/domain/map/GameMap';
 import { MapRules } from '../../src/domain/map/MapRules';
 import type { MapSnapshot } from '../../src/domain/map/MapSnapshot';
@@ -8,16 +9,32 @@ import type { OfferSnapshot, RunSnapshot } from '../../src/domain/run/RunSnapsho
 import type { RunConfig } from '../../src/domain/run/RunConfig';
 
 /**
- * Prioridad de mejoras del bot de referencia (spec run-outcome, 0010). Cambiarla exige un change
- * que revise los requisitos de balance.
+ * Prioridad de mejoras de personaje del bot de referencia v4 (spec run-outcome, 0024; antes, 0010).
+ * Cambiarla exige un change que revise los requisitos de balance.
  */
 export const REFERENCE_UPGRADE_PRIORITY: readonly string[] = [
   'guardrail',
+  'armor',
+  'regeneration',
+  'steady-nerves',
+  'shortcuts',
+];
+
+/** Orden de compra de mejoras de arma del bot v4 (spec run-outcome 0024). */
+export const REFERENCE_SHOP_ORDER: readonly string[] = [
   'strict-rules',
   'fast-ci',
   'hard-asserts',
   'watch-mode',
+  'wide-analysis',
+  'coverage',
 ];
+
+/** Por debajo de esta fracción de la vida máxima el bot v4 compra la curación primero. */
+export const REFERENCE_HEAL_THRESHOLD = 0.5;
+
+/** Un enemigo vivo a menos de esta distancia (px) impide al bot v4 ir a la tienda. */
+export const SHOP_DANGER_RANGE = 200;
 
 /**
  * Índice de la opción cuyo id aparece antes en `priority`, sea cual sea su posición en la oferta;
@@ -162,7 +179,11 @@ function steer(snapshot: RunSnapshot, world: BotWorld, fx: number, fy: number): 
  * todos ellos), el input es el de la huida (`fleeInput`). Sin pesos ni márgenes propios: solo lee
  * lo que expone el snapshot (no conoce el daño ni las dinamitas aún no lanzadas).
  */
-export function dodgeInput(snapshot: RunSnapshot, world: BotWorld): PlayerInput {
+export function dodgeInput(
+  snapshot: RunSnapshot,
+  world: BotWorld,
+  movement: (snapshot: RunSnapshot, world: BotWorld) => PlayerInput = fleeInput,
+): PlayerInput {
   const { x, y } = snapshot.player;
   let fx = 0;
   let fy = 0;
@@ -171,7 +192,7 @@ export function dodgeInput(snapshot: RunSnapshot, world: BotWorld): PlayerInput 
     fx += (x - w.x) / d;
     fy += (y - w.y) / d;
   }
-  if (fx === 0 && fy === 0) return fleeInput(snapshot, world);
+  if (fx === 0 && fy === 0) return movement(snapshot, world);
   return steer(snapshot, world, fx, fy);
 }
 
@@ -191,17 +212,54 @@ export function threateningWarnings(
   });
 }
 
-/** Bot de referencia del balance (v3): esquiva de avisos, huida y elección por prioridad. */
+/**
+ * Bot de referencia del balance (v4, 0024): esquiva de avisos, ida a la tienda o huida, elección
+ * por prioridad de personaje y compras.
+ */
 export interface ReferenceBot {
   input(snapshot: RunSnapshot): PlayerInput;
   pick(offer: readonly OfferSnapshot[]): number;
+  /** Siguiente compra de la visita con el snapshot en tienda, o `null` para salir. */
+  shop(snapshot: RunSnapshot): string | null;
 }
+
+/** ¿Vida por debajo del umbral del bot v4? */
+const lowHealth = (s: RunSnapshot): boolean =>
+  s.player.health < REFERENCE_HEAL_THRESHOLD * s.player.maxHealth;
+
+/**
+ * Siguiente compra del bot v4 (spec run-outcome 0024): con la vida bajo el umbral y oro para la
+ * curación, la curación; si no, la primera mejora de arma de `REFERENCE_SHOP_ORDER` no agotada
+ * cuyo precio le alcanza; si nada, `null`.
+ */
+export function nextPurchase(s: RunSnapshot): string | null {
+  const { gold, products } = s.shop;
+  const heal = products.find((p) => p.kind === 'heal');
+  if (heal && lowHealth(s) && gold >= heal.price) return heal.id;
+  for (const id of REFERENCE_SHOP_ORDER) {
+    const p = products.find((x) => x.id === id);
+    if (p?.kind === 'upgrade' && p.price !== null && gold >= p.price) return id;
+  }
+  return null;
+}
+
+/** ¿Quiere comprar? Oro para alguna mejora de arma no agotada o, bajo el umbral, la curación. */
+export function wantsToShop(s: RunSnapshot): boolean {
+  const { gold, products } = s.shop;
+  return products.some((p) =>
+    p.kind === 'heal' ? lowHealth(s) && gold >= p.price : p.price !== null && gold >= p.price,
+  );
+}
+
+/** ¿Algún enemigo vivo a menos de `SHOP_DANGER_RANGE`? */
+const inDanger = (s: RunSnapshot): boolean =>
+  s.enemies.some((e) => Math.hypot(e.x - s.player.x, e.y - s.player.y) < SHOP_DANGER_RANGE);
 
 /** Velocidad efectiva: la base del contenido más las mejoras de velocidad del snapshot. */
 function effectiveSpeed(config: RunConfig, snapshot: RunSnapshot): number {
   let speed = config.player.speed;
   for (const { id, level } of snapshot.upgrades) {
-    const u = config.upgrades.upgrades.find((x) => x.id === id);
+    const u = config.upgrades.character.find((x) => x.id === id);
     if (u?.target.kind === 'player' && u.stat === 'speed') speed += u.perLevel * level;
   }
   return speed;
@@ -225,15 +283,27 @@ export function botWorld(config: RunConfig, map: MapSnapshot): BotWorld {
 }
 
 /**
- * Bot de referencia v3 ligado a la partida (spec run-outcome, 0013, 0015 y 0020): esquiva los avisos
- * amenazantes (`dodgeInput`) y, si no, huye de las paredes de
- * `config.arena` y de las celdas no caminables de `map` (el mapa de esa partida, `run.map`) sin
- * recibir ningún otro dato de tamaño ni de mapa.
+ * Bot de referencia v4 ligado a la partida (spec run-outcome, 0013, 0015, 0020 y 0024): esquiva los
+ * avisos amenazantes (`dodgeInput`); si no, y quiere comprar con la tienda armada y sin enemigos a
+ * menos de `SHOP_DANGER_RANGE`, va a la puerta por el campo de distancias del mapa (línea libre o
+ * vecino con distancia − 1, como los enemigos); si no, huye de las paredes de `config.arena` y de
+ * las celdas no caminables de `map`. No recibe ningún otro dato de tamaño ni de mapa.
  */
 export function referenceBot(config: RunConfig, map: MapSnapshot): ReferenceBot {
   const world = botWorld(config, map);
+  const field = new FlowField(world.map);
+  const target = { x: 0, y: 0 };
+  const toDoor = (s: RunSnapshot): PlayerInput | null => {
+    const { door, armed } = s.shop;
+    if (!door || !armed || !wantsToShop(s) || inDanger(s)) return null;
+    field.retarget(world.map.colAt(door.x), world.map.rowAt(door.y));
+    field.steer(s.player.x, s.player.y, door.x, door.y, target);
+    return steer(s, world, target.x - s.player.x, target.y - s.player.y);
+  };
+  const movement = (s: RunSnapshot): PlayerInput => toDoor(s) ?? fleeInput(s, world);
   return {
-    input: (snapshot) => dodgeInput(snapshot, world),
+    input: (snapshot) => dodgeInput(snapshot, world, movement),
     pick: (offer) => pickByPriority(offer),
+    shop: (snapshot) => nextPurchase(snapshot),
   };
 }
