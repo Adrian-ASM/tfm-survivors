@@ -78,7 +78,7 @@
   `map-golden.test.ts` (sin cambiar las firmas).
 
 ## 3. Dominio y aplicación · tienda
-- [ ] 3.1 Puerta, re-armado y fase en tienda (TDD). `door` en `TerrainSource` `open`/`cells` con validación
+- [x] 3.1 Puerta, re-armado y fase en tienda (TDD). `door` en `TerrainSource` `open`/`cells` con validación
   `map.door`, `GameMap.door`/`MapSnapshot.door`; `ShopRules` + `content/shop.json` provisional con zod mínimo;
   `CastleGate` y paso 11; `SHOPPING` en `RunPhase`; `RunSetup.shop.armed`; `snapshot.shop` en todo estado con caché
   por clave. Escenarios:
@@ -92,7 +92,7 @@
   - simulation-loop · "Partida recién creada", "Oferta en el snapshot", "La tienda se abre tras el director".
   Tests: `tests/domain/castle-gate.test.ts`, `run-shop-door.test.ts`, `run-shop-frozen.test.ts`, ampliar
   `map-door.test.ts` y `run-snapshot.test.ts`.
-- [ ] 3.2 Comprar y salir, en `Run` y en los casos de uso (TDD). `Run.buy(id)` y `Run.leaveShop()` con `ShopError`;
+- [x] 3.2 Comprar y salir, en `Run` y en los casos de uso (TDD). `Run.buy(id)` y `Run.leaveShop()` con `ShopError`;
   `BuyFromShop`, `LeaveShop` y `StartedRun`; política de tienda fija en `tests/support/` (salir sin comprar). Escenarios:
   - castle-shop · "Compra de una mejora de arma", "Varias compras en una visita", "Oro exacto", "Compras rechazadas",
     "Compra fuera de la tienda", "Comprar no consume azar", "Salir y seguir", "Salir fuera de la tienda", "Visita sin

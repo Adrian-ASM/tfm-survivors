@@ -41,6 +41,8 @@ const withPreviousTexts = (config: RunConfig): RunConfig => {
 const withoutTexts = (s: RunSnapshot) => ({
   ...s,
   offer: s.offer.map(({ id, level, nextLevel }) => ({ id, level, nextLevel })),
+  // 0024: los productos de la tienda repiten los textos de las mejoras de arma.
+  shop: { ...s.shop, products: s.shop.products.map(({ id, price }) => ({ id, price })) },
 });
 
 /** Partida quieta con la política de elección fija, hasta que termina o hasta el tick 36.000. */

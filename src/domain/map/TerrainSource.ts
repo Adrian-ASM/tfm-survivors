@@ -7,6 +7,7 @@ import { GameMap } from './GameMap';
 import type { MapRules } from './MapRules';
 import { generateMap } from './generateMap';
 
+export const MAP_DOOR_OUTSIDE = 'La puerta de la tienda declarada debe estar dentro del mundo.';
 export const MAP_START_ILLEGAL =
   'El punto de salida declarado no es una posición legal del jugador en ese mapa.';
 
@@ -63,6 +64,8 @@ export type TerrainSource =
   | {
       readonly kind: 'open';
       readonly start?: DeclaredStart;
+      /** Puerta de la tienda (0024); sin ella, el mapa no tiene tienda. */
+      readonly door?: DeclaredStart;
       readonly structures?: readonly DeclaredStructure[];
       readonly resources?: DeclaredResources;
       readonly sheep?: DeclaredSheep;
@@ -80,6 +83,7 @@ export type TerrainSource =
       readonly kind: 'cells';
       readonly cells: readonly CellType[];
       readonly start?: DeclaredStart;
+      readonly door?: DeclaredStart;
       readonly structures?: readonly DeclaredStructure[];
       readonly resources?: DeclaredResources;
       readonly sheep?: DeclaredSheep;
@@ -102,19 +106,36 @@ function checkStart(map: GameMap, declared: DeclaredStart | undefined) {
   return ok(map);
 }
 
+/** ¿Está la puerta declarada dentro del mundo (bordes incluidos)? */
+function checkDoor(map: GameMap): Result<GameMap, DomainError> {
+  const { door } = map;
+  if (!door) return ok(map);
+  const inside =
+    Number.isFinite(door.x) &&
+    Number.isFinite(door.y) &&
+    door.x >= 0 &&
+    door.x <= map.width &&
+    door.y >= 0 &&
+    door.y <= map.height;
+  return inside ? ok(map) : err(invalidConfig('map.door', MAP_DOOR_OUTSIDE));
+}
+
 /** Mapa de la partida a partir de su origen y de las reglas del contenido. */
 export function resolveTerrain(
   source: TerrainSource,
   rules: MapRules,
 ): Result<GameMap, DomainError> {
   switch (source.kind) {
-    case 'open':
-      return checkStart(GameMap.open(rules, source.start), source.start);
+    case 'open': {
+      const map = checkStart(GameMap.open(rules, source.start, source.door), source.start);
+      return map.ok ? checkDoor(map.value) : map;
+    }
     case 'generated':
       return ok(generateMap(rules, source.random));
     case 'cells': {
-      const map = GameMap.fromCells(source.cells, rules, source.start);
-      return map.ok ? checkStart(map.value, source.start) : map;
+      const map = GameMap.fromCells(source.cells, rules, source.start, source.door);
+      const started = map.ok ? checkStart(map.value, source.start) : map;
+      return started.ok ? checkDoor(started.value) : started;
     }
     default:
       return assertNever(source);

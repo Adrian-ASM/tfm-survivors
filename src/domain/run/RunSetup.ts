@@ -132,6 +132,8 @@ export interface RunSetup {
    * contenido]) y punto de origen (por defecto, su posición). Como mucho tantas entradas como ovejas.
    */
   readonly sheep?: readonly { readonly health?: number; readonly origin?: Point }[];
+  /** Tienda (0024, atajo de escenarios): si empieza armada (por defecto, desarmada). */
+  readonly shop?: { readonly armed?: boolean };
 }
 
 /** Dinamita inicial de `RunSetup` (tests y bench). */
@@ -410,6 +412,8 @@ export interface InitialState {
   readonly flock: Flock;
   /** Vida actual del jugador al empezar (ya validada), o null si empieza llena. */
   readonly playerHealth: number | null;
+  /** La tienda empieza armada (atajo de escenarios, 0024). */
+  readonly shopArmed: boolean;
 }
 
 /** Valida el `RunSetup` contra las reglas y construye el estado inicial de la partida. */
@@ -460,6 +464,7 @@ export function initialState(
     dynamites: dynamites.value,
     structures: structures.value,
     flock: flock.value,
+    shopArmed: setup.shop?.armed ?? false,
     playerHealth: playerHealth.value,
   });
 }

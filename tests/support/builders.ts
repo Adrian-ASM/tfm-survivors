@@ -8,6 +8,7 @@ import upgradesJson from '../../content/upgrades.json';
 import structuresJson from '../../content/structures.json';
 import resourcesJson from '../../content/resources.json';
 import sheepJson from '../../content/sheep.json';
+import shopJson from '../../content/shop.json';
 import type { EnemyTypeConfig } from '../../src/domain/enemy/EnemyType';
 import type { BehaviorConfig } from '../../src/domain/enemy/behavior/BehaviorConfig';
 import type { HazardRulesConfig } from '../../src/domain/hazard/HazardRules';
@@ -18,6 +19,7 @@ import type { UpgradeTypeConfig } from '../../src/domain/upgrade/UpgradeType';
 import type { StructuresConfig } from '../../src/domain/structure/StructureType';
 import type { ResourcesConfig } from '../../src/domain/resource/ResourceRules';
 import type { SheepConfig } from '../../src/domain/sheep/SheepRules';
+import type { ShopConfig } from '../../src/domain/shop/ShopRules';
 
 /** Copia profunda congelada de un valor de content/ (los tests no pueden alterar el JSON). */
 function frozen<T>(value: T): T {
@@ -255,6 +257,22 @@ export const withMeat = (config: RunConfig, meat: Partial<ResourcesConfig['meat'
   withResources(config, { ...config.resources, meat: { ...config.resources.meat, ...meat } });
 
 /** El mismo contenido sin fuentes de recursos (design 0022 §10). */
+/** Tienda por defecto, leída de content/shop.json (0024, una sola fuente). */
+export const CONTENT_SHOP: ShopConfig = frozen(shopJson);
+
+/**
+ * El mismo contenido con la puerta de la tienda cambiada (valores de escenario: "radio de interacción
+ * 40 y distancia de re-armado 300") y, opcional, la curación de pago.
+ */
+export const withShop = (
+  config: RunConfig,
+  door: Partial<ShopConfig['door']>,
+  heal: Partial<ShopConfig['heal']> = {},
+): RunConfig => ({
+  ...config,
+  shop: { door: { ...config.shop.door, ...door }, heal: { ...config.shop.heal, ...heal } },
+});
+
 export const withoutResourceSources = (config: RunConfig): RunConfig =>
   withResources(config, NO_RESOURCES);
 
@@ -353,6 +371,7 @@ export const aRunConfig = (overrides: Partial<PlayerConfig> = {}): RunConfig => 
   structures: NO_STRUCTURES,
   resources: NO_RESOURCES,
   sheep: NO_SHEEP,
+  shop: CONTENT_SHOP,
 });
 
 /** El mismo contenido con otra duración objetivo en segundos (p. ej. 2 ⇒ 120 ticks). */
@@ -544,6 +563,18 @@ export interface RawContent {
     flee: { radius: number; speed: number };
     respawn: { everyTicks: number; minPlayerDistance: number };
     placement: { minStartCells: number; minCastleCells: number; minGapCells: number };
+    [extra: string]: unknown;
+  };
+  shop: {
+    door: { radius: number; rearmDistance: number; [extra: string]: unknown };
+    heal: {
+      id: string;
+      name: string;
+      description: string;
+      amount: number;
+      price: number;
+      [extra: string]: unknown;
+    };
     [extra: string]: unknown;
   };
 }

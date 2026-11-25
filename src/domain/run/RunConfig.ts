@@ -26,6 +26,7 @@ import { HazardRules, type HazardRulesConfig } from '../hazard/HazardRules';
 import { StructureRules } from '../structure/StructureRules';
 import type { StructuresConfig } from '../structure/StructureType';
 import { SheepRules, type SheepConfig } from '../sheep/SheepRules';
+import { SHOP_HEAL_ID_TAKEN, ShopRules, type ShopConfig } from '../shop/ShopRules';
 
 export type { WeaponsConfig, PlayerRules };
 export {
@@ -88,6 +89,8 @@ export interface RunConfig {
   readonly resources: ResourcesConfig;
   /** Ovejas neutrales (content/sheep.json, spec sheep, 0023). */
   readonly sheep: SheepConfig;
+  /** Tienda del castillo (content/shop.json, spec castle-shop, 0024). */
+  readonly shop: ShopConfig;
 }
 
 /** Forma del contenido de mejoras (content/upgrades.json): personaje y arma (ADR-0023). */
@@ -123,6 +126,8 @@ export interface RunRules {
   readonly resources: ResourceRules;
   /** Ovejas: tope, movimiento, vida, reaparición y colocación. */
   readonly sheep: SheepRules;
+  /** Puerta (radio y re-armado) y curación de pago de la tienda. */
+  readonly shop: ShopRules;
 }
 
 function checkBudgetCoversCatalog(spawn: SpawnRules, catalog: EnemyCatalog): DomainError | null {
@@ -182,6 +187,12 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
   }
   const sheep = SheepRules.create(config.sheep);
   if (!sheep.ok) return sheep;
+  const shop = ShopRules.create(config.shop);
+  if (!shop.ok) return shop;
+  if (upgrades.value.indexOf(shop.value.heal.id) >= 0) {
+    const message = `${SHOP_HEAL_ID_TAKEN}: ${shop.value.heal.id}`;
+    return err(invalidConfig('shop.heal.id', message));
+  }
   return ok({
     arena: arena.value,
     player: config.player,
@@ -200,5 +211,6 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
     structures: structures.value,
     resources: resources.value,
     sheep: sheep.value,
+    shop: shop.value,
   });
 }

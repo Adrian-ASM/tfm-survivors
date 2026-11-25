@@ -26,6 +26,7 @@ import { resolveResources, type ResourceSites } from '../resource/resolveResourc
 import type { PlayerRules } from '../player/PlayerRules';
 import { err, ok, type DomainError, type Result } from '../shared/Result';
 import type { UpgradeChoiceError } from '../upgrade/UpgradeChoiceError';
+import type { ShopError } from '../shop/ShopError';
 import { maxHealthBonus, upgradedPlayer, upgradedWeapon } from '../upgrade/upgradeStats';
 import { WeaponType } from '../weapon/WeaponType';
 import { TICK_SECONDS } from '../shared/Tick';
@@ -40,7 +41,7 @@ import {
 } from './RunConfig';
 import { Arsenal } from '../weapon/Arsenal';
 import type { UpgradeBoard } from '../upgrade/UpgradeBoard';
-import type { RunSnapshot } from './RunSnapshot';
+import type { RunSnapshot, ShopSnapshot } from './RunSnapshot';
 import {
   toBlastSnapshot,
   toDynamiteSnapshot,
@@ -54,10 +55,12 @@ import {
   toPulseSnapshot,
   toSheepSnapshot,
   toUpgradeLevels,
+  toShopSnapshot,
   toWarnings,
 } from './snapshotParts';
 import type { RunStatus } from './RunStatus';
-import { CHOOSING, LOST, RUNNING, WON, type RunOutcome, type RunPhase } from './RunPhase';
+import { CHOOSING, LOST, RUNNING, SHOPPING, WON, type RunOutcome, type RunPhase } from './RunPhase';
+import { CastleGate } from '../shop/CastleGate';
 import {
   SETUP_HEALTH_OUT_OF_RANGE,
   SETUP_POSITION_MUST_BE_FINITE,
@@ -126,6 +129,11 @@ export class Run {
   private readonly veins: readonly GoldVein[];
   /** Ovejas neutrales (ADR-0022): fuera de `Horde`, del director y de las bajas. */
   private readonly flock: Flock;
+  /** Puerta del castillo y su re-armado (ADR-0023, paso 11). */
+  private readonly gate: CastleGate;
+  /** Último `ShopSnapshot` y su clave: se rehace solo si cambia (design 0024 §6). */
+  private shopView: ShopSnapshot | null = null;
+  private shopKey = '';
 
   private constructor(
     private readonly rules: RunRules,
@@ -154,6 +162,7 @@ export class Run {
     this.structures = new StructureField(initial.structures);
     this.veins = initial.veins;
     this.flock = initial.flock;
+    this.gate = new CastleGate(terrain.door, rules.shop, initial.shopArmed);
     for (const w of rules.loadout.weapons) this.retune(w.id);
     const bonus = maxHealthBonus(rules.upgrades, this.board.levels);
     this.player = this.player.withRules(this.effectivePlayer(), bonus);
@@ -235,6 +244,46 @@ export class Run {
     return ok(undefined);
   }
 
+  /**
+   * Compra un producto de la tienda por id (spec castle-shop 0024): un nivel de una mejora de arma
+   * (precio del siguiente nivel; rige desde el siguiente tick) o la curación de pago (porción con
+   * tope, precio completo). Solo en tienda; no ejecuta ticks ni consume azar. Un error no cambia nada.
+   */
+  buy(productId: string): Result<void, ShopError> {
+    if (this.phase.status !== 'shopping') return err({ code: 'not-shopping' });
+    const { heal } = this.rules.shop;
+    if (productId === heal.id) {
+      if (this.player.health.current >= this.player.health.max) return err({ code: 'health-full' });
+      if (!this.stock.spend(heal.price)) return this.noGold(heal.price);
+      this.player = this.player.heal(heal.amount);
+      return ok(undefined);
+    }
+    const index = this.rules.upgrades.indexOf(productId);
+    const upgrade = this.rules.upgrades.upgrades[index];
+    if (!upgrade || upgrade.source !== 'shop')
+      return err({ code: 'unknown-product', id: productId });
+    const price = upgrade.priceAt(this.board.levelOf(index));
+    if (price === null) return err({ code: 'max-level', id: productId });
+    if (!this.stock.spend(price)) return this.noGold(price);
+    this.board.raise(index);
+    if (upgrade.target.kind === 'weapon') this.retune(upgrade.target.weapon);
+    return ok(undefined);
+  }
+
+  private noGold(price: number): Result<void, ShopError> {
+    return err({ code: 'not-enough-gold', price, gold: this.stock.gold });
+  }
+
+  /**
+   * Sale de la tienda (spec castle-shop 0024): vuelve a en curso sin ejecutar ticks; el siguiente
+   * tick continúa donde se quedó. La puerta sigue desarmada. Fuera de la tienda, `not-shopping`.
+   */
+  leaveShop(): Result<void, ShopError> {
+    if (this.phase.status !== 'shopping') return err({ code: 'not-shopping' });
+    this.phase = RUNNING;
+    return ok(undefined);
+  }
+
   /** Reglas efectivas del jugador desde la base de contenido (ADR-0008). */
   private effectivePlayer(): PlayerRules {
     return upgradedPlayer(this.rules.player, this.rules.upgrades, this.board.levels);
@@ -284,6 +333,8 @@ export class Run {
     this.flock.respawn(n, x, y);
     this.tickCount = n;
     this.openNextOffer();
+    // Paso 11: con la oferta abierta en este tick (paso 10) solo re-arma; abre si sigue en curso.
+    if (this.gate.step(x, y, this.status === 'running')) this.phase = SHOPPING;
   }
 
   /**
@@ -473,6 +524,34 @@ export class Run {
       progression: toProgressionSnapshot(this.experience),
       offer: toOfferSnapshot(this.board),
       upgrades: toUpgradeLevels(this.rules.upgrades, this.board),
+      shop: this.shopSnapshot(),
     });
+  }
+
+  /** Productos y estado de la tienda, rehechos solo al cambiar su clave (oro, vida, niveles…). */
+  private shopSnapshot(): ShopSnapshot {
+    const { health } = this.player;
+    const { levels } = this.board;
+    const key = [
+      this.stock.gold,
+      health.current,
+      health.max,
+      this.gate.armed,
+      this.phase.status,
+      ...this.rules.upgrades.shopIndices.map((i) => levels[i] ?? 0),
+    ].join(',');
+    if (this.shopView && key === this.shopKey) return this.shopView;
+    this.shopKey = key;
+    this.shopView = toShopSnapshot({
+      catalog: this.rules.upgrades,
+      board: this.board,
+      heal: this.rules.shop.heal,
+      gate: this.gate,
+      open: this.phase.status === 'shopping',
+      gold: this.stock.gold,
+      health: health.current,
+      maxHealth: health.max,
+    });
+    return this.shopView;
   }
 }

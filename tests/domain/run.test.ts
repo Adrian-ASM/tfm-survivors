@@ -42,6 +42,24 @@ describe('Run', () => {
       progression: { level: 1, xp: 0, xpToNext: 5, pendingLevelUps: 0 },
       offer: [],
       upgrades: [],
+      // 0024: sin puerta en el mapa vacío; sin mejoras de arma, solo la curación.
+      shop: {
+        armed: false,
+        open: false,
+        door: null,
+        gold: 0,
+        products: [
+          {
+            kind: 'heal',
+            id: 'heal',
+            name: 'Poción de curación',
+            description: 'Recuperas vida.',
+            amount: 25,
+            price: 8,
+            affordable: false,
+          },
+        ],
+      },
     });
   });
 

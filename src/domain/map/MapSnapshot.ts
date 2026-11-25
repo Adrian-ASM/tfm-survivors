@@ -18,6 +18,8 @@ export interface MapSnapshot {
   readonly start: StartZone;
   /** Huella del castillo del mapa generado; `null` en el vacío y en los explícitos. */
   readonly castle: CastleFootprint | null;
+  /** Puerta de la tienda (0024): la del castillo en el generado, la declarada o `null`. */
+  readonly door: MapPoint | null;
   /** Casas y torres de la partida en su orden fijo (estático: la vida va en `RunSnapshot`). */
   readonly structures: readonly MapStructure[];
   /** Vetas en su orden de colocación o declaración (estático: el estado va en `RunSnapshot`). */
@@ -89,6 +91,7 @@ export function toMapSnapshot(
     counts: Object.freeze(counts),
     start: Object.freeze({ ...map.start }),
     castle: map.castle ? Object.freeze({ ...map.castle }) : null,
+    door: map.door ? Object.freeze({ x: map.door.x, y: map.door.y }) : null,
     structures: Object.freeze(
       structures.map((s) =>
         Object.freeze({

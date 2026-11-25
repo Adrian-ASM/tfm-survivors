@@ -102,6 +102,11 @@ import {
   WEAPON_DAMAGE_MUST_BE_INTEGER,
 } from '../../domain/weapon/WeaponType';
 import {
+  SHOP_HEAL_MUST_BE_INTEGER,
+  SHOP_RADIUS_MUST_BE_POSITIVE,
+  SHOP_REARM_MUST_EXCEED_RADIUS,
+} from '../../domain/shop/ShopRules';
+import {
   STRUCTURE_COUNT_MUST_BE_INTEGER,
   STRUCTURE_FOOTPRINT_MUST_FIT,
   STRUCTURE_GUARDS_MUST_BE_INTEGER,
@@ -572,5 +577,26 @@ export const SheepSchema = z.strictObject({
     minStartCells: SheepPlacement,
     minCastleCells: SheepPlacement,
     minGapCells: SheepPlacement,
+  }),
+});
+
+// Tienda del castillo (content/shop.json, spec castle-shop 0024). Estricto en todos los niveles
+// (un campo extra como `discount` falla nombrándolo). El cruce `rearmDistance > radius` y que el id
+// de la curación no sea el de una mejora los comprueba `buildRunRules` desde el superRefine.
+export const ShopSchema = z.strictObject({
+  door: z.strictObject({
+    radius: z
+      .number({ error: SHOP_RADIUS_MUST_BE_POSITIVE })
+      .positive({ error: SHOP_RADIUS_MUST_BE_POSITIVE }),
+    rearmDistance: z
+      .number({ error: SHOP_REARM_MUST_EXCEED_RADIUS })
+      .positive({ error: SHOP_REARM_MUST_EXCEED_RADIUS }),
+  }),
+  heal: z.strictObject({
+    id: z.string().regex(/^[a-z][a-z0-9-]*$/, { error: UPGRADE_ID_FORMAT }),
+    name: UpgradeText(UPGRADE_NAME_MAX),
+    description: UpgradeText(UPGRADE_DESCRIPTION_MAX),
+    amount: RequiredCount(SHOP_HEAL_MUST_BE_INTEGER),
+    price: RequiredCount(SHOP_HEAL_MUST_BE_INTEGER),
   }),
 });

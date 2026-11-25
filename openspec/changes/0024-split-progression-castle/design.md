@@ -392,6 +392,12 @@ por id con id propio de la curación; puerta declarada en mapas `open`/`cells`; 
   tabla completa sobre los tipos de `c` y `withExtraTypes` añade tipos de escenario con 0. `aSheepConfig` aplica la
   convención (oro por baja 0). `Stockpile.add(oro, madera, g)` y `spend(precio)`; el bonus de oro se aplica a la
   suma de 7.1 y a cada veta en 7.2.
+- **Grupo 3**: `ShopProductSnapshot` es una unión con `kind: 'upgrade' | 'heal'` (la curación lleva `amount` y
+  precio fijo); la clave de la caché del `ShopSnapshot` incluye el estado de la partida. `buy` comprueba, en este
+  orden: tienda abierta, id de la curación (vida llena, oro), mejora de arma (desconocida, máximo, oro). La
+  política de tienda fija de los escenarios vive en `chooseWhileOpen` de `tests/support/runs.ts` (sale sin comprar),
+  así que `advance`, `play` y los lotes la aplican sin más cambios. "La política de tienda fija no cambia la partida"
+  compara con un re-armado inalcanzable (equivale a sin puerta en el mapa generado, que siempre la tiene).
 
 ## ADRs
 - `docs/adr/0023-progresion-separada-y-tienda-como-fase.md` (nuevo): catálogo con dos orígenes sobre un vector de

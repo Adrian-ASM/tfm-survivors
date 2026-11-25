@@ -9,6 +9,8 @@ import type { Sheep } from '../sheep/Sheep';
 import type { UpgradeBoard } from '../upgrade/UpgradeBoard';
 import type { UpgradeCatalog } from '../upgrade/UpgradeCatalog';
 import type { Projectile } from '../weapon/Projectile';
+import type { CastleGate } from '../shop/CastleGate';
+import type { ShopConfig } from '../shop/ShopRules';
 import type { PulseEcho } from '../weapon/PulseEcho';
 import type {
   BlastSnapshot,
@@ -22,6 +24,8 @@ import type {
   StructureSnapshot,
   PulseSnapshot,
   SheepSnapshot,
+  ShopProductSnapshot,
+  ShopSnapshot,
   UpgradeLevelSnapshot,
   VeinSnapshot,
   WarningSnapshot,
@@ -186,4 +190,60 @@ export function toUpgradeLevels(
     if (level >= 1) out.push(Object.freeze({ id: u.id, level }));
   });
   return Object.freeze(out);
+}
+
+/** Lo que necesita `toShopSnapshot` (lo reúne `Run`). */
+export interface ShopParts {
+  readonly catalog: UpgradeCatalog;
+  readonly board: UpgradeBoard;
+  readonly heal: ShopConfig['heal'];
+  readonly gate: CastleGate;
+  readonly open: boolean;
+  readonly gold: number;
+  readonly health: number;
+  readonly maxHealth: number;
+}
+
+/**
+ * Tienda del snapshot (spec castle-shop 0024): las mejoras de arma en orden de catálogo, con el
+ * precio del siguiente nivel (o `null` al máximo), y la curación de pago al final.
+ */
+export function toShopSnapshot(p: ShopParts): ShopSnapshot {
+  const { catalog, board, heal, gate, gold } = p;
+  const products: ShopProductSnapshot[] = catalog.shopIndices.map((i) => {
+    const u = catalog.upgrades[i];
+    if (!u) throw new Error('Invariante rota: índice de tienda');
+    const level = board.levelOf(i);
+    const price = u.priceAt(level);
+    const { id, name, description, maxLevel } = u;
+    return Object.freeze({
+      kind: 'upgrade' as const,
+      id,
+      name,
+      description,
+      level,
+      maxLevel,
+      price,
+      affordable: price !== null && gold >= price,
+    });
+  });
+  products.push(
+    Object.freeze({
+      kind: 'heal' as const,
+      id: heal.id,
+      name: heal.name,
+      description: heal.description,
+      amount: heal.amount,
+      price: heal.price,
+      affordable: gold >= heal.price && p.health < p.maxHealth,
+    }),
+  );
+  const { door } = gate;
+  return Object.freeze({
+    armed: gate.armed,
+    open: p.open,
+    door: door ? Object.freeze({ x: door.x, y: door.y, radius: gate.radius }) : null,
+    gold,
+    products: Object.freeze(products),
+  });
 }

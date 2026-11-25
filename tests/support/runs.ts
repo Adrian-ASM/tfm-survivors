@@ -123,7 +123,10 @@ export function ticks(run: Run, n: number, input = PlayerInput.NONE): RunSnapsho
   return snaps;
 }
 
-/** Elige `pick(oferta)` mientras haya una oferta abierta (también las encoladas). */
+/**
+ * Elige `pick(oferta)` mientras haya una oferta abierta (también las encoladas) y, con la tienda
+ * abierta, aplica la política de tienda fija (spec simulation-loop 0024): sale sin comprar.
+ */
 export function chooseWhileOpen(run: Run, pick: (offer: RunSnapshot['offer']) => number): number {
   let choices = 0;
   while (run.status === 'choosing') {
@@ -131,6 +134,7 @@ export function chooseWhileOpen(run: Run, pick: (offer: RunSnapshot['offer']) =>
     if (!r.ok) throw new Error(`elección rechazada: ${r.error.code}`);
     choices++;
   }
+  if (run.status === 'shopping') run.leaveShop();
   return choices;
 }
 
