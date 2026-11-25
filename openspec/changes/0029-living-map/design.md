@@ -24,19 +24,21 @@ Vistas las hojas versionadas y las del pack local (`Tiny Swords (Update 010)/Dec
 - **`Wood_Tower_Red.png`** (1.024 × 192, 4 frames de 256 × 192): mismo cuerpo y patas en los cuatro; solo cambian
   las banderas, dentro del frame. Mismo razonamiento: `structureAspect` corta a ancho completo con el corte del
   frame; caja constante.
-- **Deco 01–03, 07–11** (64 × 64, 1 frame): figura centrada que cabe en el frame. Con escala 0,9375 el frame mide
-  60 × 60 = 1 celda. Encaje: origen (0,5, 1) en el punto medio del borde inferior de la celda ⇒ el frame cubre
-  exactamente la celda y el corte de la regla común sale 0 ⇒ **1 objeto** en la capa baja.
-- **Deco 16 y 17** (64 × 128): poste con la base en las filas ≈ 120–125 de 128. Origen (0,5, ≈ 0,95) en el punto
-  medio del borde inferior de la celda; corte = 0,95 · 128 − 64 ≈ 57,6 ⇒ base (57,6..128) en la baja y parte alta
-  (0..57,6) en la alta: **2 objetos**.
-- **Deco 18** (espantapájaros, 192 × 192): figura de ≈ 90 × 145 px con el pie del palo y la sombra en ≈ y 165–170.
-  Misma escala 0,9375 que el resto del pack (densidad de píxel común: ≈ 84 × 136 px de mundo, 1,4 × 2,3 celdas, más
-  bajo que un árbol). Origen (0,5, ≈ 0,88); corte ≈ 0,88 · 192 − 64 ≈ 105 ⇒ **2 objetos**. Rebasa 12 px por cada
-  lado de su celda: aceptable (se permite junto a troncos; nunca toca huellas excluidas porque estas se excluyen
-  enteras y la parte que rebasa va bajo estructuras y vetas, ver orden de capas).
-- Los orígenes `y` de 16, 17 y 18 son estimaciones a ojo: el implementador fija en los datos la última fila opaca
-  (sombra incluida) / alto del frame. No son contrato de la spec (la spec fija la regla, no el número).
+- **Deco 01–03, 07–11** (64 × 64, 1 frame, bajas): figura centrada que cabe en el frame. Con escala 0,9375 el frame
+  mide 60 × 60 = 1 celda. Encaje: origen (0,5, 1) en el punto medio del borde inferior de la celda de anclaje ⇒ el
+  dibujo entero (1 objeto, capa baja) cubre exactamente esa celda.
+- **Deco 16 y 17** (64 × 128, altas): poste con la base en las filas ≈ 120–125 de 128. Con origen (0,5, 1) la base
+  (filas 64..128) cubre exactamente la celda de anclaje y la parte alta (0..64) la celda de encima; el pie del poste
+  queda ≈ 3–8 frame px por encima del borde inferior. **2 objetos**.
+- **Deco 18** (espantapájaros, 192 × 192, alta): figura de ≈ 90 × 145 px con el pie del palo y la sombra en
+  ≈ y 165–170. Misma escala 0,9375 que el resto del pack (≈ 84 × 136 px de mundo). Con origen (0,5, 1) la base
+  (filas 128..192) mide 180 × 60 px: cubre la celda de anclaje y sus vecinas este y oeste (**huella de base de
+  3 × 1 celdas**); el pie del palo queda ≈ 20 px por encima del borde inferior de la celda. **2 objetos**.
+- **Origen por defecto (0,5, 1)** en las 11: así la caja de la base nunca baja de la fila de anclaje y la regla de
+  la spec ("toda celda que comparte > 1 px con la base es válida") se reduce a la huella de base (§Colocación). La
+  tarea de medición de apply mide la última fila opaca de 16, 17 y 18; si el hueco del pie se ve mal, se puede
+  bajar el origen (p. ej. ≈ 0,95 / 0,88): la huella de base pasa a incluir la fila de abajo y la regla de colocación
+  lo absorbe sin código nuevo (se calcula con la caja, no con supuestos).
 
 ## Piezas por capa
 | Capa | Pieza | Nueva/Mod. | Notas |
@@ -45,10 +47,10 @@ Vistas las hojas versionadas y las del pack local (`Tiny Swords (Update 010)/Dec
 | application | — | — | Sin cambios. |
 | infrastructure · contenido | `appearanceSchema.ts` | Mod. | `map.trees`: `models` → `idle` (`frames`, `fps`, `loop: true` como la espuma) + `flip`. `map.decor` nuevo (ver §Datos). `MODELS_REQUIRED` se sustituye por `TREE_MUST_LOOP`. |
 | infrastructure · contenido | `loadAppearance.ts` | Mod. | `mapSheetsOf` añade las hojas de `map.decor.items[i].sheet.file` (campo `map.decor.items.<i>.sheet.file`): la comprobación de procedencia (`SHEET_NOT_REGISTERED`) las cubre sin código nuevo. |
-| infrastructure · render | `map/decorChoices.ts` | Nueva | Pura. Candidatas, selección por rango de hash, tipo ponderado y volteo (§Colocación). Constantes de sal documentadas. |
+| infrastructure · render | `map/decorChoices.ts` | Nueva | Pura. Celdas válidas, huella de base, selección por rango de hash con huellas sin solape, tipo por hash y tope (§Colocación). Constantes de sal documentadas. |
 | infrastructure · render | `map/treeChoices.ts` | Mod. | `treeModel` → `treeLook`: devuelve `phase = h mod n` (los mismos bits que el modelo de hoy) y `flipX` (bit 31, igual). En `ms = 0` cada árbol muestra el frame que mostraba antes. |
 | infrastructure · render | `map/mapLooks.ts` | Mod. | `trees` comprueba todos los `idle.frames`; `decor` por ítem (`On`/`Off` con su frame); `resolveStructureLooks` comprueba **todos** los `idle.frames` del aspecto (antes solo el 0) para que una torre sin su frame 3 caiga a reserva y no pida un frame inexistente. |
-| infrastructure · render | `map/planMapArt.ts` | Mod. | `decorDraws` (regla común de corte de `structureAspect`, generalizada a una celda); `counts.decor`; `animations: PlannedAnimation[]`; offsets de índices de estructuras y solares recalculados con la decoración. |
+| infrastructure · render | `map/planMapArt.ts` | Mod. | `decor.placed` (colocación sobre datos) y `decorDraws` (solo piezas con arte, corte en el borde superior de la celda de anclaje); `counts.decor` (`planned`/`painted`/`unpainted`); `animations: PlannedAnimation[]`; offsets de índices de estructuras y solares recalculados con la decoración. |
 | infrastructure · render | `art/animation.ts` | Mod. | `phasedFrameAt(anim, ms, phase) = frames[(⌊ms·fps/1000⌋ + phase) mod n]` (bucle). `frameAt` = fase 0. |
 | infrastructure · render | `map/mapAnimation.ts` (`MapAnimator`) | Nueva | Pura, sin motor (§Animación). |
 | infrastructure · render | `map/mapCulling.ts` | Mod. | `isVisible(i)` de solo lectura. La regla de recorte no cambia. |
@@ -74,20 +76,22 @@ No hay puerto nuevo: todo es adaptador interno y funciones puras.
 Forma (estricta en todos los niveles):
 ```jsonc
 "decor": {
-  "cellsPerItem": 25,      // entero ≥ 1: 1 decoración por cada N celdas candidatas (decisión 2)
-  "maxObjects": 120,       // entero ≥ 0: tope duro en OBJETOS de escena (decisión 7)
+  "density": 25,           // número > 0: celdas válidas por decoración esperada (decisión 2)
+  "maxObjects": 120,       // entero ≥ 0: tope en OBJETOS de escena, sobre los datos (decisión 7)
   "castleMargin": 1,       // entero ≥ 0: huella del castillo ampliada N celdas (decisión 3)
-  "items": [               // ≥ 1; `id` único (error con la ruta `map.decor.items.<i>.id`)
-    { "id": "mushroom-small", "sheet": { "file": "Deco/01.png", "frameWidth": 64, "frameHeight": 64 },
-      "frame": 0, "scale": 0.9375, "origin": { "x": 0.5, "y": 1 }, "flip": true, "weight": 4 }
-    // … 02, 03, 07–11 con weight 4; 16 y 17 con weight 2; 18 con weight 1
+  "items": [               // ≥ 1; la hoja identifica el aspecto: dos ítems con la misma hoja ⇒ error
+    { "sheet": { "file": "Deco/01.png", "frameWidth": 64, "frameHeight": 64 },
+      "frame": 0, "scale": 0.9375, "origin": { "x": 0.5, "y": 1 }, "tall": false }
+    // … 02, 03, 07–11 bajas; 16 y 17 (64 × 128) y 18 (192 × 192) con "tall": true
   ]
 }
 ```
-- `weight` (entero ≥ 1) reparte el tipo: con 8 × 4 + 2 × 2 + 1 = 37, las piezas altas son 5/37 ≈ 13,5 % y el
-  espantapájaros ≈ 2,7 % (≈ 1–2 por mapa). Los pesos son datos ajustables, no contrato de la spec salvo que existan.
-- Ninguna hoja de `items` puede ser una de las rocas de la piedra (`pickups.stone.rocks.*`): refine con error en
-  `map.decor.items.<i>.sheet.file` (no confundir decoración con piedra, decisión 1).
+- Los campos son exactamente los de la spec (hoja, tamaño de frame, frame, escala, origen, si es alta; tope;
+  densidad). Sin pesos ni volteo de decoración: el tipo es uniforme entre los 11 (altas 3/11; ≈ 5–6 espantapájaros
+  por mapa) y la decoración no se voltea. Añadir pesos sería solo un campo de datos más (cambio de spec).
+- Errores con la ruta del campo: lista vacía (`map.decor.items`), tope negativo o no entero (`map.decor.maxObjects`),
+  densidad ≤ 0 (`map.decor.density`), hoja repetida (nombra la hoja, p. ej. `Deco/07.png`), hoja de una roca de la
+  piedra (`pickups.stone.rocks.*`, nombra la hoja) y hoja fuera de la nota (`SHEET_NOT_REGISTERED`, nombra la hoja).
 - Árbol: `map.trees = { sheet, scale, origin, idle: { frames, fps, loop: true }, flip }`.
 - Torre: el `idle` del aspecto ya existe en `StructureAspectSchema`; solo cambian los datos. **Regla de código**:
   solo se anima el aspecto **intacto** de un tipo de estructura con `idle.frames.length ≥ 2`; ruinas, vetas,
@@ -98,32 +102,46 @@ Forma (estricta en todos los niveles):
 ## Colocación de la decoración (sin PRNG)
 Solo si `map.castle !== null` (mapa generado; el vacío y los explícitos no tienen huella ⇒ 0 decoración).
 
-1. **Candidatas**, en orden de filas: celda `grass` (tipo de terreno de `MapSnapshot.cells`; los solares son
-   hierba en el terreno inmutable y se excluyen aparte) que **no** está en: la zona de inicio (misma regla que
+1. **Celdas válidas** (máscara `Uint8Array`): celda `grass` (tipo de terreno de `MapSnapshot.cells`; los solares
+   son hierba en el terreno inmutable y se excluyen aparte) que **no** está en: la zona de inicio (misma regla que
    `MapRules.inStartZone`, recalculada con `map.start` — punto más cercano del rectángulo de la celda a distancia
    < radio —; un test la contrasta con la del dominio en 1..50), la huella del castillo ampliada `castleMargin`, la
    huella de un solar, la de una casa o torre goblin, una celda de orilla (`shoreCells`), la celda de un montón de
-   madera (`⌊x/s⌋, ⌊y/s⌋`) o la de una veta (`col`, `row`). Junto a troncos sí.
-2. **Cuántas**: `n = ⌊candidatas / cellsPerItem⌋`.
-3. **Cuáles**: `placeSeed = deriveSeed(decorSeed, DECOR_PLACE_KEY)` y `h(i) = deriveSeed(placeSeed, i)`; se
-   eligen las `n` candidatas de **menor `h`** (empate por índice). Reparto uniforme, independiente del orden de
-   recorrido y de la carga de hojas; ninguna firma dorada se calcula con `decorSeed`, así que no se tocan.
-4. **Tipo y volteo**: `k(i) = deriveSeed(deriveSeed(decorSeed, DECOR_KIND_KEY), i)`; tipo por peso acumulado con
-   `k mod Σweight`; volteo = `item.flip && bit 31 de k`.
-5. **Tope**: en orden de rango (menor `h` primero) se acepta cada decoración si `objetos + piezas(item) ≤
-   maxObjects`; si no cabe se salta (las siguientes de 1 pieza aún pueden entrar). `piezas(item)` sale de los
-   **datos** (corte > 0 ⇒ 2), no de si la hoja cargó: la colocación es idéntica con una hoja caída (decisión 6).
-6. **Pieza**: posición = punto medio del borde inferior de la celda; `cut = clamp(origin.y·h − s/scale, 0, h)`;
-   baja = recorte `cut..h`, alta = `0..cut` si `cut > 0` (la misma regla que `structureAspect` con huella 1 × 1).
+   madera (`⌊x/s⌋, ⌊y/s⌋`) o la de una veta (`col`, `row`). Junto a troncos sí. Los solares salen de
+   `MapSnapshot.sites` (estático): construir no cambia la decoración.
+2. **Pieza y huella de base** (de los datos, nunca de la carga): origen en el punto medio del borde inferior de la
+   celda de anclaje. Baja (`tall: false`): 1 pieza, el dibujo entero. Alta: corte en el borde superior de la celda,
+   `cut = clamp(origin.y·h − s/scale, 0, h)`; base = recorte `cut..h` (capa baja), parte alta = `0..cut` (capa
+   alta) ⇒ 2 piezas. **Huella de base** = celdas cuyo rectángulo comparte > 1 px² con la caja de la base (la pieza
+   entera si es baja). Con los datos del repositorio: la celda de anclaje (01–03, 07–11, 16, 17) o anclaje ± 1
+   columna (18).
+3. **Cuántas se intentan**: `n = ⌊válidas / density⌋`.
+4. **Orden**: `placeSeed = deriveSeed(decorSeed, DECOR_PLACE_KEY)`, `h(i) = deriveSeed(placeSeed, i)`; las celdas
+   válidas se recorren por **menor `h`** (empate por índice). Tipo: `k(i) = deriveSeed(deriveSeed(decorSeed,
+   DECOR_KIND_KEY), i) mod items.length`.
+5. **Aceptación** (voraz, en ese orden, hasta `n` intentos): la decoración de la celda i entra si (a) toda su huella
+   de base es válida y está libre (ninguna celda de la huella de base de una decoración ya aceptada) y (b)
+   `objetos + piezas ≤ maxObjects`. Si no, se descarta y se pasa a la siguiente (una de 1 pieza aún puede entrar con
+   el tope casi lleno). Al aceptar, su huella de base se marca ocupada. Así se cumplen "toda celda bajo la base es
+   válida", "1 decoración por anclaje" y "bases sin solape" por construcción.
+6. Todo es independiente del orden de recorrido del mapa, de la cámara, del tick y de la carga de hojas; ninguna
+   firma dorada se calcula con `decorSeed`, así que no se tocan.
+
+**Tope frente a recuento (compatibles)**: el tope se aplica a los **datos** (piezas nominales de lo colocado): la
+lista de decoraciones del plan no depende de qué hojas cargaron (escenarios "Recuento de la decoración sin una hoja" y
+"Pintar la decoración no cambia la simulación"). Los **objetos del mapa** de la sonda y `drawn` cuentan lo
+**pintado**: una decoración cuya hoja falló no crea objetos (spec "Pintado de la decoración"). Como pintados ≤
+colocados, objetos de decoración pintados ≤ objetos nominales ≤ tope: las dos reglas se cumplen a la vez. En el plan,
+`decor.placed` (lista con celda, hoja y origen) es la colocación; `low`/`high` solo llevan las piezas con arte.
 
 Sales: `DECOR_PLACE_KEY = 0x10000`, `DECOR_KIND_KEY = 0x10001`, `TOWER_PHASE_KEY = 0x10002` en
 `decorChoices.ts`. Van por encima de 2¹⁶ para no coincidir con ningún índice de celda (la rejilla tiene 2.304; el
 árbol usa `deriveSeed(decorSeed, índice)` directamente). Son sales de hash, no contenido de juego (como `FLIP_BIT`).
 Entran en el addendum de ADR-0013 (`DECOR_STREAM` es presentación, fuera del contrato de la simulación).
 
-**Estimación** (a medir en apply; la spec fijará las cifras exactas): ≈ 1.500–1.600 candidatas ⇒ n ≈ 60–64 y
-≈ 70 objetos (×1,135). Semilla 42: ≈ 737 + 70 ≈ 807; 123: ≈ 820 + 70 ≈ 890. Peor caso por construcción:
-820 + 120 = 940 ≤ 950.
+**Estimación** (a medir en apply; las cifras exactas van al verify-report, como pide la spec): ≈ 1.500–1.600
+válidas ⇒ n ≈ 60–64 intentos, algunos descartados por huella ⇒ ≈ 75 objetos (×1,27 con altas 3/11). Semilla 42:
+≈ 737 + 75 ≈ 812; 123: ≈ 820 + 75 ≈ 895. Peor caso por construcción: 820 + 120 = 940 ≤ 950.
 
 ## Orden de capas e índices
 - Capa baja: agua, espuma, orillas, puentes, **decoración (base)**, troncos, fachada, estructuras, vetas, solares.
@@ -161,16 +179,18 @@ sus tests; fusionarla en el animador sería trivial pero no aporta.
 
 ## Reloj (decisión 9, resuelta por el autor)
 Un **solo `AnimClock`**, el de `RenderLayers` que ya mueve la espuma: árboles y torres leen `this.clock.ms`. Ese
-reloj se congela con pausa o `status !== 'running'` (oferta, tienda, obra, fin), así que **árboles, torres y
-espuma se congelan juntos** en esos estados y reanudan desde el mismo instante (el criterio de éxito "avanzan
-también en pausa…" queda sustituido por "se congelan como la espuma"). Sin segundo reloj del mapa; la espuma no
-cambia de comportamiento. En modo manual `advance(ticks · TICK_MS)` sigue siendo la única fuente, así que los E2E
-siguen deterministas.
+reloj se congela con pausa o `status !== 'running'` (oferta `choosing`, tienda `shopping`, obra `building` y
+partida terminada `won`/`lost`, como exige la spec), así que **árboles, torres y espuma se congelan juntos** en esos
+estados y reanudan desde el mismo valor (el criterio de éxito "avanzan también en pausa…" queda sustituido por "se
+congelan como la espuma"). Sin segundo reloj del mapa; la espuma no cambia de comportamiento. En modo manual
+`advance(ticks · TICK_MS)` sigue siendo la fuente del reloj (comportamiento de 0014, sin cambios), así que los E2E
+siguen deterministas; ver §Abierto sobre la frase de la spec "no depende de `step(n)`".
 
 ## Sonda y procedencia
-- `sprites.mapArt.decor = { painted, fallback }` en **decoraciones** (no objetos): `painted` = colocadas con su hoja
-  y pintadas; `fallback` = colocadas cuya hoja falló (no se pintan, decisión 6). `painted + fallback` = colocadas.
-  `objects` y `drawn` incluyen los objetos de decoración. 0 en el menú, en el vacío y en los explícitos.
+- `sprites.mapArt.decor = { planned, painted, unpainted }` en **decoraciones** (no objetos): `planned` = las del
+  plan (colocación, independiente de la carga); `painted` = las pintadas con su hoja; `unpainted` = las de hojas que
+  fallaron (decisión 6), con `painted + unpainted = planned`. `objects` y `drawn` cuentan solo objetos **pintados**
+  (una decoración no pintada no aporta ninguno). Todo 0 en el menú, en el vacío y en los explícitos.
 - Procedencia: 11 entradas nuevas; `guard-assets.mjs` no cambia (exige entrada por PNG versionado y prohíbe el Free
   Pack). El test "Solo las tres rocas de Deco" se rehace: `Deco/` versionado = exactamente 01–11 y 16–18, una vez
   cada uno, ninguno de 12–15.
@@ -190,21 +210,24 @@ siguen deterministas.
 ## Estrategia de test (ADR-0018, test-after en infraestructura y contenido)
 - **Esquema** (`appearance-map.test.ts`, `appearance-repo.test.ts`): datos del repositorio (árbol 0–5 a 6 fps,
   torre intacta 0–3 a 5 fps, casa/ruinas/vetas/solares/castillo de 1 frame, 11 ítems de decoración con hojas de
-  `Deco/` admitidas); inválidos con ruta del campo (`idle` sin bucle, `cellsPerItem` 0, `id` repetido, peso 0, hoja
-  de roca como decoración, campo extra).
+  `Deco/` admitidas, altas 16–18, tope 120, densidad 25); inválidos con ruta del campo (`idle` del árbol ausente, sin
+  bucle o `[]`; `models` extra; lista vacía; tope −1 / 2,5; densidad 0; hoja repetida; hoja de roca; hoja fuera de
+  la nota).
 - **Plan sin navegador** (`plan-map-art.test.ts`, `plan-sites.test.ts`, nuevo `plan-decor.test.ts`): seeds 1..50
-  con 1..120 objetos de decoración, todas en candidatas válidas y de los 11 ítems; vacío y explícito 0; misma
-  semilla ⇒ misma lista (celda, ítem, volteo) en dos cálculos; ≥ 2 fases de árbol por mapa; objetos exactos de 42 y
-  123 (sustituyen 737/820) y ≤ 950; encaje base/copa (borde superior de la celda); colocación idéntica con hojas de
-  decoración caídas y `fallback` contado; zona de inicio igual a `MapRules.inStartZone`.
+  con 1..120 objetos de decoración, huellas de base en celdas válidas y sin solape, anclajes únicos, ≥ 1 junto a un
+  tronco; vacío y explícitos 0; misma semilla ⇒ misma lista (celda, hoja, origen); 42 ≠ 43; tope 0 / 1 / 3; con tope
+  0, 737 y 820 objetos; con los datos del repositorio, esos más la decoración y ≤ 950; encaje base/parte alta (borde
+  superior de la celda); colocación idéntica con hojas de decoración caídas y recuento `unpainted`; zona de inicio
+  igual a `MapRules.inStartZone`; ≥ 2 fases de árbol por mapa; cajas de tronco, copa y torre que cubren todos sus
+  frames.
 - **Animación** (`map-animation.test.ts` nuevo, `render-layers.test.ts`): `phasedFrameAt`; tronco y copa con el
   mismo frame; torre recorre 0–3 con su fase; solo visibles reciben `setFrame`; reaparición cebada con el frame
   vigente; ruina sin `setFrame`; castillo, casas, mina y edificios nunca cambian; árboles y torres congelados en
-  pausa/oferta/tienda/obra igual que la espuma (§Reloj); snapshots iguales con y sin capas en 1.200 ticks de la 42.
+  pausa/oferta/tienda/obra/fin igual que la espuma (§Reloj); snapshots iguales con y sin capas en 1.200 ticks de la 42.
 - **Firmas doradas y balance**: los tests existentes sin regenerar.
-- **E2E** (0 nuevos, 2 ampliados, modo manual): "Recuentos del mapa pintado" añade `decor.painted ≥ 1`,
-  `fallback 0`; "Hojas del mapa bloqueadas" bloquea además las 11 hojas de decoración ⇒ `decor.painted 0`,
-  `fallback` = colocadas, sin errores no capturados.
+- **E2E** (0 nuevos, 2 ampliados, modo manual): "Recuentos del mapa pintado" añade `decor.planned ≥ 1`,
+  `painted = planned`, `unpainted 0`; "Hojas del mapa bloqueadas" bloquea además `Deco/18.png` ⇒ `unpainted` = las
+  del espantapájaros en el plan (0 si no hay), el resto pintadas, sin errores no capturados.
 
 ## Dependencias nuevas
 | Paquete | Versión exacta | Motivo | Alternativa descartada |
@@ -216,5 +239,9 @@ siguen deterministas.
   amplían el addendum de ADR-0013 (`DECOR_STREAM` como presentación) sin flujo nuevo, y el arte sigue ADR-0012.
 
 ## Abierto
-- Cifras exactas de objetos (42/123), `drawn` de la sonda y orígenes `y` de 16/17/18: se miden en apply y se
-  trasladan a la spec antes de cerrar tasks.
+- Cifras exactas de objetos (42/123) y `drawn`: se miden en apply (tarea de medición) y van al verify-report; la
+  spec solo fija 737/820 con tope 0 y ≤ 950.
+- Orígenes `y` de 16/17/18: por defecto 1 (§Comprobación); la tarea de medición confirma o los baja.
+- Nit de spec para el orquestador: el término "Reloj de render" dice que "no depende de `step(n)`", pero en modo
+  manual el reloj avanza `ticks · TICK_MS` desde 0014 (y así lo usan los E2E). El diseño conserva ese comportamiento;
+  conviene matizar la frase en la spec ("fuera del modo manual").

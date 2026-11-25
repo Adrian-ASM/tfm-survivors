@@ -20,7 +20,8 @@
 > - **Reloj de render**: el tiempo de render acumulado de la partida, en ms, con el que ya se anima la espuma (un
 >   solo reloj para todo el arte del mapa). Solo avanza en los frames pintados con la partida en curso y sin pausa:
 >   se congela en pausa, con una oferta de mejora abierta, en la tienda, en la obra y con la partida terminada, y
->   sigue desde el mismo valor al reanudar. No depende de los ticks simulados, de `speed` ni de `step(n)`.
+>   sigue desde el mismo valor al reanudar. Fuera del modo manual no depende de los ticks simulados ni de `speed`; en
+>   modo manual (`?e2e&manual`, change 0014) avanza `n × TICK_MS` con cada `step(n)` que ejecuta n ticks en curso.
 
 ## ADDED Requirements
 
@@ -29,10 +30,10 @@ El sistema SHALL añadir al plan del arte de cada mapa generado un conjunto de d
 determinista de la semilla de la partida y de cada celda, sin colisión ni efecto sobre la simulación:
 - cada decoración tiene su celda de anclaje en una celda válida para decoración, y el punto de origen de su dibujo
   dentro del rectángulo de mundo de esa celda (error ≤ 1 px);
-- toda celda cuyo rectángulo de mundo comparte más de 1 px de área con la caja de la base de una decoración (la
-  parte baja entera, si es baja) es también una celda válida para decoración;
-- hay como máximo 1 decoración por celda de anclaje y las cajas de las bases de dos decoraciones distintas no
-  comparten más de 1 px de área;
+- la **huella de la base** de una decoración es su celda de anclaje (1 celda) salvo en el espantapájaros
+  (`Deco/18`), cuya base ocupa 3 × 1 celdas: la de anclaje y sus vecinas oeste y este; toda celda de la huella de la
+  base es una celda válida para decoración;
+- las huellas de las bases de dos decoraciones distintas no comparten ninguna celda;
 - su hoja es una de las hojas de decoración de los datos de aspecto (con los del repositorio, las 11 de
   `asset-provenance`: `Deco/01`–`03`, `07`–`11` y `16`–`18`), nunca una hoja de roca de la piedra recogible;
 - el número de objetos de escena de la decoración de un mapa (baja 1, alta 2) MUST ser ≤ el **tope de decoración**
@@ -49,8 +50,9 @@ las ovejas, ni los proyectiles, ni el campo de flujo la tienen en cuenta. Un map
 vacío MUST NOT tener decoración.
 
 Los datos de aspecto tienen, validados con zod en el arranque con las reglas de "Datos de aspecto validados": la
-lista de aspectos de decoración (≥ 1; cada uno con hoja, tamaño de frame, índice de su frame, escala, origen y si es
-alta), el tope de decoración (entero ≥ 0) y la densidad (número > 0). Una lista vacía, un tope negativo o no entero,
+lista de aspectos de decoración (≥ 1; cada uno con una sola hoja, tamaño de frame, índice de su frame, escala, origen
+y `tall`, si es alta; sin pesos, sin volteo y sin `id`: la hoja identifica la decoración), el tope de decoración
+(entero ≥ 0) y `density` (número > 0). Una lista vacía, un tope negativo o no entero,
 una densidad ≤ 0, dos aspectos de decoración con la misma hoja o un aspecto de decoración con la hoja de una roca de
 la piedra MUST hacer fallar el arranque con un error que nombre el campo o la hoja.
 
@@ -64,10 +66,10 @@ la piedra MUST hacer fallar el arranque con un error que nombre el campo o la ho
 #### Scenario: Zonas excluidas
 - **GIVEN** el contenido por defecto y los mapas de las semillas 1 a 50 con sus estructuras, recursos y solares
 - **WHEN** se comprueba cada decoración de su plan
-- **THEN** ninguna celda que comparte más de 1 px de área con la caja de su base es de la zona de inicio, de la huella
-  del castillo ampliada 1 celda, de la huella de un solar o de una estructura goblin, de orilla, de recurso ni de
-  terreno distinto de `grass`
-- **AND** las cajas de las bases de dos decoraciones del mismo mapa no comparten más de 1 px de área
+- **THEN** ninguna celda de la huella de su base (1 celda, o 3 × 1 en `Deco/18`) es de la zona de inicio, de la
+  huella del castillo ampliada 1 celda, de la huella de un solar o de una estructura goblin, de orilla, de recurso ni
+  de terreno distinto de `grass`
+- **AND** las huellas de las bases de dos decoraciones del mismo mapa no comparten ninguna celda
 
 #### Scenario: Junto a los troncos
 - **GIVEN** el contenido por defecto y los mapas de las semillas 1 a 50
@@ -539,8 +541,8 @@ El sistema SHALL exponer, solo con `?e2e` y como parte de la sonda `window.__spr
 - por elemento del mapa, cuántos se pintan y cuántos de ellos con reserva: agua (celdas `water`), orilla (celdas de
   orilla con su pieza), espuma (celdas de orilla con espuma), árbol (celdas `trunk`), copa (árboles con copa), puente
   (celdas `bridge`) y castillo (0 o 1);
-- de la decoración (`sprites.mapArt`, campo de nombre fijado por el diseño): cuántas decoraciones tiene el plan,
-  cuántas se pintan con su arte y cuántas no se pintan por fallo de su hoja (pintadas + no pintadas = las del plan);
+- de la decoración, `sprites.mapArt.decor` con `planned` (decoraciones del plan), `painted` (pintadas con su arte) y
+  `unpainted` (no pintadas por fallo de su hoja), con `painted` + `unpainted` = `planned`;
 - por tipo de estructura, cuántas se pintan intactas, cuántas como ruina y cuántas de ellas con reserva;
 - cuántas vetas se pintan activas, cuántas agotadas y cuántas de ellas con reserva;
 - el número de objetos de escena usados para pintar el mapa, estructuras, vetas, solares y decoración incluidos;
