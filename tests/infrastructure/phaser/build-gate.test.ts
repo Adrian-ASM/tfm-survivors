@@ -12,7 +12,9 @@ import {
 } from '../../../src/infrastructure/phaser/BuildGate';
 import { PauseGate } from '../../../src/infrastructure/phaser/PauseGate';
 import { playScreen } from '../../../src/infrastructure/phaser/ShopGate';
+import { BuildPanel } from '../../../src/infrastructure/dom/BuildPanel';
 import { TICK_MS } from '../../support/builders';
+import { fakeDom, type FakeElement } from '../../support/fakeDom';
 import { aSiteConfig, startWithSites, withStock } from '../../support/sites';
 
 // Spec build-sites 0026 "Panel de obra", main-menu "Pausa con Esc" y simulation-loop "Step en obra":
@@ -85,6 +87,21 @@ describe('BuildGate (build-sites y main-menu 0026)', () => {
     frame(true);
 
     expect(pause.paused).toBe(true);
+  });
+
+  it('Scenario: Panel con la torre no asequible (clic en la torre: sin caso de uso, sigue en obra)', () => {
+    const { frame, first } = scene(30, 14);
+    const { doc, root, fake } = fakeDom();
+    const panel = new BuildPanel(doc, root, { wood: 'w.png', stone: 's.png' });
+    panel.sync(first);
+    panel.setVisible(true);
+    const tower = (fake.children[0] as FakeElement).findAll((e) => e.dataset.building === 'tower');
+    tower[0]?.click();
+
+    const s = frame(false, panel.takeAction());
+
+    expect([s.status, s.tick, s.sites[0]?.state]).toEqual(['building', first.tick, 'free']);
+    expect([s.resources.wood, s.resources.stone]).toEqual([30, 14]);
   });
 
   it('el movimiento no llega a la simulación con el panel: 0 ticks por frame', () => {

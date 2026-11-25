@@ -48,7 +48,7 @@ describe('planMapArt · solares (spec sprite-rendering 0026)', () => {
   });
 
   it.each([42, 123] as const)(
-    'Scenario: Presupuesto de objetos con solares (%i: ≤ 1.000; 737 y 820)',
+    'Scenario: Presupuesto de objetos con solares · Objetos del mapa sin cambios (%i: 737 y 820)',
     (seed) => {
       const map = startSeededRun(aDefaultConfig(), seed).map;
       const plan = planFor(map, seed);

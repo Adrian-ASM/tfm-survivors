@@ -97,22 +97,22 @@ Design §1.1–§1.3, §1.7 y §5. Este grupo cambia la partida: termina regener
 ## 3. Infraestructura y composición: panel de obra con iconos y sonda
 Design §3. Test-after.
 
-- [ ] 3.1 `dom/resourceIcons` (función pura `(appearance, assetUrl) → { wood, stone }`, las URL de `W_Idle` y
+- [x] 3.1 `dom/resourceIcons` (función pura `(appearance, assetUrl) → { wood, stone }`, las URL de `W_Idle` y
   `Deco/05`) y `menuText` (`buildMissing(n)`, `alt` `madera`/`piedra`). Tests
   `tests/infrastructure/dom/resource-icons.test.ts` (nuevo) y el de `menuText` si existe.
-- [ ] 3.2 `BuildPanel` con siempre dos filas (casa, torre), nombre y coste en elementos distintos, coste 0 omitido,
+- [x] 3.2 `BuildPanel` con siempre dos filas (casa, torre), nombre y coste en elementos distintos, coste 0 omitido,
   `.is-unavailable` + `disabled` + `aria-disabled`, `.is-short` y «faltan N», saldo con iconos, sin atributo `style`;
   CSS en `styles.css` (grid con `column-gap` 1,25em, icono 2em `pixelated`, recorte al frame 0 por
   `object-fit`/`object-position`). Tests `tests/infrastructure/dom/build-panel.test.ts` y
   `tests/infrastructure/phaser/build-gate.test.ts`. Escenarios [bs]: "Panel con las dos opciones asequibles",
   "Panel con la torre no asequible", "Panel sin nada asequible", "Nombre y coste separados", "Clic en la casa",
   "Salir con Esc o con el botón", "Sin panel fuera de la obra".
-- [ ] 3.3 Composición y sonda: `main`/`contentBoot` pasan `resourceIcons(appearance, assetUrl)` al `BuildPanel`;
+- [x] 3.3 Composición y sonda: `main`/`contentBoot` pasan `resourceIcons(appearance, assetUrl)` al `BuildPanel`;
   `__sprint.sites` sin `access` y con `options[].affordable`/`missing`; `tests/infrastructure/phaser/site-art.test.ts`
   y `plan-sites.test.ts` sin acceso. Objetos del mapa 737/820 en 42/123 (test sin navegador existente). Escenarios
   [bs]: "Objetos del mapa sin cambios", "Sonda de solares en el menú" (cubierta por el E2E de humo existente que la
   lee; si no la lee, se añade la aserción en 4.1).
-- [ ] 3.4 Regresión "solo se podían construir casas" (informe del usuario jugando en `main` tras 0026: nunca vio
+- [x] 3.4 Regresión "solo se podían construir casas" (informe del usuario jugando en `main` tras 0026: nunca vio
   la torre, ni con recursos aparentemente suficientes). Análisis del orquestador: en el dominio la oferta sí incluye
   la torre con ≥ 30 madera y ≥ 15 piedra (`run-sites-open` lo cubre con la config de prueba), pero (a) el panel solo
   listaba lo asequible, (b) abría en cuanto la casa era asequible (15 madera), así que el jugador solía gastar en

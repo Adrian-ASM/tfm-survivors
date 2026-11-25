@@ -35,8 +35,11 @@ export const MENU_LABELS = {
   shopFullHealth: 'Vida llena',
   build: 'Obra',
   buildLeave: 'Salir',
-  buildWood: 'Madera',
-  buildStone: 'Piedra',
+  buildWood: 'madera',
+  buildStone: 'piedra',
   buildHouse: 'Casa',
   buildTower: 'Torre',
 } as const;
+
+/** Texto de lo que falta de un recurso en el panel de obra (0027): «faltan N». */
+export const buildMissing = (n: number): string => `faltan ${String(n)}`;
