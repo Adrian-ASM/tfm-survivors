@@ -143,7 +143,7 @@ describe('Plazos del jugador quieto con el contenido final (0019)', () => {
 // política de tienda fija (0024). M1 de 0024: el quieto muere como muy tarde en el tick 6.081
 // (generado) y 6.475 (vacío), frente a 10.800 (margen 4.325 ticks); nunca pasa por la tienda.
 describe('Jugador quieto pierde (0010)', () => {
-  it('Scenario: Jugador quieto pierde con todas las semillas (mapa generado) · Quieto pierde con ovejas · Quieto pierde con la tienda · Mejoras de arma fuera de la oferta', () => {
+  it('Scenario: Jugador quieto pierde con todas las semillas (mapa generado) · Quieto pierde con ovejas · Quieto pierde con la tienda · Mejoras de arma fuera de la oferta · Quieto pierde con los solares', () => {
     const t0 = performance.now();
     const traces = traceStillBatch(aDefaultConfig());
     const maxTick = Math.max(...traces.map((t) => t.final.tick));
@@ -155,6 +155,8 @@ describe('Jugador quieto pierde (0010)', () => {
     expect(stillAlive(traces)).toEqual([]);
     expect(maxTick).toBeLessThan(STILL_LIMIT_TICKS);
     expect(traces.filter((t) => t.shopped).map((t) => t.seed)).toEqual([]);
+    // Spec build-sites (0026), "Quieto pierde con los solares": ninguna pasa por en obra.
+    expect(traces.filter((t) => t.built).map((t) => t.seed)).toEqual([]);
     // Spec upgrades (0024), "Mejoras de arma fuera de la oferta": ninguna opción del catálogo de arma.
     const weaponIds = new Set(DEFAULT_CONFIG.upgrades.weapons.map((u) => u.id));
     const offeredWeapons = traces.flatMap((t) => [...t.offered].filter((id) => weaponIds.has(id)));
@@ -168,6 +170,7 @@ describe('Jugador quieto pierde (0010)', () => {
     expect(stillAlive(traces)).toEqual([]);
     expect(Math.max(...traces.map((t) => t.final.tick))).toBeLessThan(STILL_LIMIT_TICKS);
     expect(traces.some((t) => t.shopped)).toBe(false);
+    expect(traces.some((t) => t.built)).toBe(false);
   });
 
   it('Scenario: Muerte quieta en el límite de 180 s (viva en el tick 10.799 cuenta como fallo)', () => {
@@ -242,6 +245,17 @@ describe('Balance con el contenido por defecto y el bot v4 (0024)', () => {
     expect(rows).toEqual(BALANCE_BASELINE.map((r) => [...r]));
     expect(wins).toBe(30);
     expect(traces.some((t) => t.economy.stoneDropped + t.economy.stoneCollected >= 1)).toBe(true);
+  });
+
+  // Spec build-sites (0026), "Línea base intacta con el bot v4": el v4 cierra cada oferta de obra
+  // sin construir (política de obra fija) y la línea base no se regenera.
+  it('Scenario: Línea base intacta con el bot v4 (30/50 semilla a semilla, ningún solar construido)', () => {
+    const rows = finals.map((s, i) => [BALANCE_SEEDS[i], s.outcome, s.tick, s.kills]);
+
+    expect(rows).toEqual(BALANCE_BASELINE.map((r) => [...r]));
+    expect(finals.every((s) => s.sites.length === 6)).toBe(true);
+    expect(finals.flatMap((s) => s.sites).every((x) => x.state === 'free')).toBe(true);
+    expect(traces.every((t) => t.buildings.houses + t.buildings.towers === 0)).toBe(true);
   });
 
   it('Scenario: Barril que cumple su papel · Mechas por partida (> 16,3; 30,44 en M2)', () => {

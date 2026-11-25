@@ -6,7 +6,14 @@ import { BALANCE_SEEDS, STILL_LIMIT_TICKS } from './balanceSeeds';
 import { botWorld, referenceBot, threateningWarnings, type ReferenceBot } from './policies';
 import type { MapMode } from '../../src/composition/seedSource';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
-import { chooseWhileOpen, play, startSeededRun, stillSurvivors, visitShop } from './runs';
+import {
+  chooseWhileOpen,
+  play,
+  startSeededRun,
+  stillSurvivors,
+  visitShop,
+  visitSite,
+} from './runs';
 
 /** Duración objetivo de la partida (content/run.json): 600 s = 36.000 ticks. */
 export const TEN_MINUTES = 36_000;
@@ -29,7 +36,28 @@ export interface BotTrace {
   readonly sheepDeaths: number;
   /** Economía de la tienda (0024, informativa): ver `EconomyTrace`. */
   readonly economy: EconomyTrace;
+  /** Edificios del bot v5 (0026, informativo): ver `BuildingTrace`. */
+  readonly buildings: BuildingTrace;
 }
+
+/** Construcciones de una partida (0026, M1 del verify-report). */
+export interface BuildingTrace {
+  readonly houses: number;
+  readonly towers: number;
+  /** `snapshot.tick` de cada construcción, en orden. */
+  readonly builtTicks: readonly number[];
+  /** Oro de los pagos de las casas (sin bonificación: pagos × oro por pago). */
+  readonly houseGold: number;
+  /**
+   * Bajas por flechas (estimación): enemigos que desaparecen en un tick en el que una flecha de
+   * torre que los alcanzaba (a ≤ radio + radio de la flecha + un paso) deja de existir antes de
+   * caducar.
+   */
+  readonly arrowKills: number;
+}
+
+/** Una comprobación por tick con el snapshot tras el tick (invariantes, 0026); sin efecto. */
+export type TickCheck = (after: RunSnapshot, run: Run) => void;
 
 /** Oro y tienda de una partida del bot v4 (design 0024 §9, M1). */
 export interface EconomyTrace {
@@ -91,6 +119,7 @@ export function playBotTraced(
   run: Run,
   bot: ReferenceBot,
   maxTicks: number,
+  check?: TickCheck,
 ): BotTrace {
   const guards = new Set(config.enemies.types.filter(isGuard).map((t) => t.id));
   const world = botWorld(config, run.map);
@@ -110,8 +139,21 @@ export function playBotTraced(
   // Recogibles en orden de creación con ids crecientes: los nuevos del tick están al final.
   let lastPickup = -1;
   const healId = config.shop.heal.id;
+  const built = { houses: 0, towers: 0, builtTicks: [] as number[], arrowKills: 0 };
+  const houseBuiltAt: number[] = [];
   for (let t = 0; t < maxTicks && run.status !== 'over'; t++) {
     let shopped = false;
+    const openSite = run.status === 'building' ? run.snapshot().build.siteId : null;
+    const kind = visitSite(run, bot);
+    if (kind !== null) {
+      if (kind === 'house') {
+        built.houses++;
+        if (openSite !== null) houseBuiltAt.push(run.snapshot().tick);
+      } else built.towers++;
+      built.builtTicks.push(run.snapshot().tick);
+      shopped = true;
+      check?.(run.snapshot(), run);
+    }
     if (run.status === 'shopping') {
       const pre = run.snapshot();
       const bought = visitShop(run, bot);
@@ -134,6 +176,8 @@ export function playBotTraced(
     run.tick(input);
     const after = run.snapshot();
     last = after;
+    check?.(after, run);
+    built.arrowKills += arrowKillsBetween(before, after);
     healed += healedBetween(before, after);
     sheepDeaths += sheepLost(before, after);
     eco.earned += Math.max(0, after.resources.gold - before.resources.gold);
@@ -176,7 +220,15 @@ export function playBotTraced(
       w3Damage += lost;
   }
   const economy = { ...eco, ...visit, purchaseTicks, ...stone };
+  const final = run.snapshot();
+  const { gold, everyTicks } = config.buildings.house.income;
+  // Pagos en b + k · periodo, sin el tick final si la partida termina en él (no se paga).
+  const houseGold = houseBuiltAt.reduce(
+    (sum, at) => sum + Math.max(0, Math.floor((final.tick - 1 - at) / everyTicks)) * gold,
+    0,
+  );
   return {
+    buildings: { ...built, houseGold },
     final: run.snapshot(),
     fuses: fused.size,
     barrelBlasts,
@@ -187,15 +239,33 @@ export function playBotTraced(
   };
 }
 
+/** Estimación de bajas por flechas de torre entre dos snapshots (ver `BuildingTrace`). */
+function arrowKillsBetween(before: RunSnapshot, after: RunSnapshot): number {
+  if (before.towerProjectiles.length === 0) return 0;
+  const alive = new Set(after.enemies.map((e) => e.id));
+  const flying = new Set(after.towerProjectiles.map((p) => p.id));
+  const gone = before.towerProjectiles.filter((p) => !flying.has(p.id));
+  if (gone.length === 0) return 0;
+  return before.enemies.filter(
+    (e) =>
+      !alive.has(e.id) &&
+      gone.some((p) => Math.hypot(p.x - e.x, p.y - e.y) <= e.radius + p.radius + 8),
+  ).length;
+}
+
 /** ¿Victoria en el tick 36.000 (spec run-outcome)? */
 export const isWin = (s: RunSnapshot): boolean =>
   s.status === 'over' && s.outcome === 'won' && s.tick === TEN_MINUTES;
 
 /** Juega el bot de referencia con rastro en cada semilla de `BALANCE_SEEDS`, con su mapa. */
-export function traceBotBatch(config: RunConfig): BotTrace[] {
+export function traceBotBatch(
+  config: RunConfig,
+  makeBot: (config: RunConfig, map: Run['map']) => ReferenceBot = referenceBot,
+  check?: (seed: number) => TickCheck,
+): BotTrace[] {
   return BALANCE_SEEDS.map((seed) => {
     const run = startSeededRun(config, seed);
-    return playBotTraced(config, run, referenceBot(config, run.map), TEN_MINUTES);
+    return playBotTraced(config, run, makeBot(config, run.map), TEN_MINUTES, check?.(seed));
   });
 }
 
@@ -209,6 +279,8 @@ export interface StillTrace {
   readonly offered: ReadonlySet<string>;
   /** La partida pasó por en tienda en algún tick (0024: el quieto nunca debe). */
   readonly shopped: boolean;
+  /** La partida pasó por en obra en algún tick (0026: el quieto nunca debe). */
+  readonly built: boolean;
 }
 
 /**
@@ -222,6 +294,7 @@ export function traceStillBatch(config: RunConfig, mode: MapMode = 'generated'):
     let healed = 0;
     const offered = new Set<string>();
     let shopped = false;
+    let built = false;
     for (let t = 1; t < STILL_LIMIT_TICKS && run.status !== 'over'; t++) {
       chooseWhileOpen(run, (offer) => {
         for (const o of offer) offered.add(o.id);
@@ -230,10 +303,11 @@ export function traceStillBatch(config: RunConfig, mode: MapMode = 'generated'):
       run.tick(PlayerInput.NONE);
       const now = run.snapshot();
       shopped ||= now.status === 'shopping';
+      built ||= now.status === 'building';
       healed += healedBetween(prev, now);
       prev = now;
     }
-    return { seed, final: run.snapshot(), healed, offered, shopped };
+    return { seed, final: run.snapshot(), healed, offered, shopped, built };
   });
 }
 

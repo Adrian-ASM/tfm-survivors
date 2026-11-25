@@ -168,6 +168,22 @@ export function visitShop(run: Run, bot: Pick<ReferenceBot, 'shop'>): string[] {
   return bought;
 }
 
+/**
+ * Visita de obra de un bot (0026): con la obra abierta, construye lo que elija `bot.build` o, sin
+ * él o con `null`, sale (política de obra fija). Devuelve el tipo construido o `null`.
+ */
+export function visitSite(run: Run, bot: Pick<ReferenceBot, 'build'>): string | null {
+  if (run.status !== 'building') return null;
+  const kind = bot.build?.(run.snapshot()) ?? null;
+  if (kind !== null) {
+    const r = run.build(kind);
+    if (!r.ok) throw new Error(`obra rechazada (${kind}): ${r.error.code}`);
+    return kind;
+  }
+  run.leaveSite();
+  return null;
+}
+
 /** Elige la opción 0 mientras haya una oferta abierta (política de elección fija). */
 export const chooseFirstWhileOpen = (run: Run): number => chooseWhileOpen(run, () => 0);
 
@@ -179,6 +195,7 @@ export const chooseFirstWhileOpen = (run: Run): number => chooseWhileOpen(run, (
 export function playReferenceBot(run: Run, bot: ReferenceBot, maxTicks: number): RunSnapshot {
   for (let t = 0; t < maxTicks && run.status !== 'over'; t++) {
     visitShop(run, bot);
+    visitSite(run, bot);
     chooseWhileOpen(run, (offer) => bot.pick(offer));
     run.tick(bot.input(run.snapshot()));
   }

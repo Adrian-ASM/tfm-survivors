@@ -28,7 +28,7 @@ import { STONE_PER_DROP, StoneDrops } from '../resource/StoneDrops';
 import type { GoldVein } from '../resource/GoldVein';
 import { resolveResources, type ResourceSites } from '../resource/resolveResources';
 import type { PlayerRules } from '../player/PlayerRules';
-import { err, ok, type DomainError, type Result } from '../shared/Result';
+import { err, invalidConfig, ok, type DomainError, type Result } from '../shared/Result';
 import type { UpgradeChoiceError } from '../upgrade/UpgradeChoiceError';
 import type { ShopError } from '../shop/ShopError';
 import { maxHealthBonus, upgradedPlayer, upgradedWeapon } from '../upgrade/upgradeStats';
@@ -82,6 +82,8 @@ import { CastleGate } from '../shop/CastleGate';
 import {
   SETUP_HEALTH_OUT_OF_RANGE,
   SETUP_POSITION_MUST_BE_FINITE,
+  SETUP_SITE_OVERLAPS_PLAYER,
+  SETUP_TOO_MANY_SITES,
   initialState,
   type InitialState,
   type RunSetup,
@@ -247,18 +249,46 @@ export class Run {
       sheep.value,
     );
     if (!initial.ok) return initial;
-    return ok(
-      new Run(
-        rules.value,
-        random,
-        map.value,
-        initial.value,
-        sites.value,
-        resources.value,
-        stoneRandom ?? null,
-        buildSites,
-      ),
+    if ((setup.sites?.length ?? 0) > buildSites.length) {
+      return err(invalidConfig('setup.sites', SETUP_TOO_MANY_SITES));
+    }
+    const run = new Run(
+      rules.value,
+      random,
+      map.value,
+      initial.value,
+      sites.value,
+      resources.value,
+      stoneRandom ?? null,
+      buildSites,
     );
+    return run.prebuild(setup.sites ?? []);
+  }
+
+  /** Solares construidos al empezar (`RunSetup.sites`): en el tick 0, como en la obra, sin azar. */
+  private prebuild(entries: NonNullable<RunSetup['sites']>): Result<Run, DomainError> {
+    for (const [i, entry] of entries.entries()) {
+      const site = this.settlement.sites[i];
+      if (!site || !entry.state) continue;
+      const { x, y } = this.player.position;
+      const s = this.terrain.cellSize;
+      const ex = Math.max(site.col * s - x, 0, x - (site.col + site.cols) * s);
+      const ey = Math.max(site.row * s - y, 0, y - (site.row + site.rows) * s);
+      if (ex * ex + ey * ey < this.player.radius ** 2) {
+        return err(invalidConfig(`setup.sites.${String(i)}`, SETUP_SITE_OVERLAPS_PLAYER));
+      }
+      this.raise(site, entry.state);
+    }
+    return ok(this);
+  }
+
+  /** Construye `kind` en el solar: estado, obra en el mapa, torre y despeje (sin azar). */
+  private raise(site: BuildSite, kind: 'house' | 'tower'): void {
+    site.markBuilt(kind, this.tickCount);
+    if (kind === 'tower') this.towers.add(site);
+    const built = this.terrain.build(site.col, site.row, site.cols, site.rows);
+    if (!built.ok) throw new Error(`Invariante rota: ${built.error.message}`);
+    this.clearFootprint();
   }
 
   /** Mapa de la partida (spec procedural-map): la misma vista congelada durante toda la partida. */
@@ -421,11 +451,7 @@ export class Run {
     if (!site || !offered.includes(kind)) return err({ code: 'not-affordable', kind });
     const { wood, stone } = this.rules.buildings.cost(kind);
     if (!this.stock.spendMaterials(wood, stone)) return err({ code: 'not-affordable', kind });
-    site.markBuilt(kind, this.tickCount);
-    if (kind === 'tower') this.towers.add(site);
-    const built = this.terrain.build(site.col, site.row, site.cols, site.rows);
-    if (!built.ok) throw new Error(`Invariante rota: ${built.error.message}`);
-    this.clearFootprint();
+    this.raise(site, kind);
     this.closeSite();
     return ok(undefined);
   }

@@ -124,18 +124,18 @@
   - Tests: `tests/infrastructure/dom/build-panel.test.ts` y `tests/infrastructure/phaser/build-gate.test.ts`.
 
 ## 8. Tests globales sin navegador · bots, balance e invariantes (test-after)
-- [ ] 8.1 Política de obra fija en el harness (`chooseWhileOpen` sale de `building`) y bot v4 que sale sin
+- [x] 8.1 Política de obra fija en el harness (`chooseWhileOpen` sale de `building`) y bot v4 que sale sin
   construir.
   - Escenarios: bs "Línea base intacta con el bot v4" y "Quieto pierde con los solares"; sl "La política de obra
     fija no cambia la partida" y "Partida con edificios reproducible".
   - Tests: `tests/balance/*.test.ts` y `tests/domain/determinism-build.test.ts`.
-- [ ] 8.2 Bot v5 (`builderBot`, `REFERENCE_BUILD_POLICY`: torre si es asequible y, si no, casa; ruta por
+- [x] 8.2 Bot v5 (`builderBot`, `REFERENCE_BUILD_POLICY`: torre si es asequible y, si no, casa; ruta por
   `FlowField`) con un lote propio entre 25 y 35. Invariantes largos con edificios.
   - Escenarios: bs "Victorias del bot v5" y "Nada en la huella tras construir"; eb "Semillas del conjunto con
     edificios"; mv "Partida larga sin solapes con edificios".
   - Tests: `tests/balance/balance-builder.test.ts` y `tests/domain/invariants-build.test.ts`.
   - Si el lote se sale de la banda, se recalibra solo `tower`.
-- [ ] 8.3 Bench informativo (no bloquea).
+- [x] 8.3 Bench informativo (no bloquea).
   - Escenarios: sl "Peor caso con 6 torres" y "Recalcular los campos al construir".
   - Test: `tests/bench/run-tick-buildings.bench.ts`. Las medias se anotan para el verify-report.
 
