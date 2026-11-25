@@ -136,7 +136,7 @@ Design §3. Test-after.
 - [x] 4.2 GDD (delegar en el subagente `game-designer`): entrada **0027 `site-contact`**, renumerar
   `goblin-tower-archers` → **0028** y `characters` → **0029**, con las referencias de `balance-pass-2` y la mención
   "bloque 0020-0028" (líneas señaladas en `exploration.md`).
-- [ ] 4.3 Al cerrar (fase archive): párrafo de 0027 en AGENTS.md §1 (solar libre bloqueante desde el tick 0 con
+- [x] 4.3 Al cerrar (fase archive): párrafo de 0027 en AGENTS.md §1 (solar libre bloqueante desde el tick 0 con
   `BUILT`, contacto g ≤ ε con `CONTACT_EPS` 1 px y re-armado `contact.rearmDistance` 64, oferta siempre con casa y
   torre, panel con iconos y «faltan N», `MAP_SITE_OVERLAPS_PLAYER`, cifras finales v4/v5 y lotes), nota "matizada
   por ADR-0026" en ADR-0025 y comprobación de que `docs/adr/0026-solar-bloqueante-y-oferta-por-contacto.md` recoge

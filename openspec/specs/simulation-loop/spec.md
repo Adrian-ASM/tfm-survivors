@@ -320,9 +320,10 @@ pintar:
 - la lista de estructuras de la partida, destruidas incluidas (ver "Estructuras en el snapshot" en
   `goblin-structures`);
 - la lista de vetas de la partida, agotadas incluidas (ver "Vetas de oro al pasar" en `resources`);
-- la lista de solares de la partida, construidos incluidos, con los campos de "Solares de la partida" (`build-sites`),
-  en todos los estados de la partida;
-- la oferta de obra, si la partida está en obra (ver "Oferta de obra" en `build-sites`);
+- la lista de solares de la partida, construidos incluidos, con los campos de "Solares de la partida" (`build-sites`:
+  identificador, huellas de casa y torre, estado y armado; sin acceso), en todos los estados de la partida;
+- la oferta de obra, si la partida está en obra, con sus dos opciones y si cada una es asequible (ver "Oferta de obra"
+  en `build-sites`);
 - la lista de armas equipadas, en el orden de `content/weapons.json`, con su identificador y si está cargada;
 - la lista de recogibles en el suelo, de los cinco tipos (ver `xp-gems`); las gemas son los de tipo `xp`;
 - el nivel, la XP actual y la XP para el siguiente nivel (ver `leveling`);
@@ -523,15 +524,16 @@ conservan su orden y su longitud durante toda la partida.
 - **GIVEN** el mapa vacío con dos solares declarados s1 y s2, s1 con una torre construida que ha creado las flechas f1 y
   f2 en ese orden, y s2 en `free` y desarmado
 - **WHEN** f1 desaparece por impacto, se crea f3 y se lee el snapshot
-- **THEN** la lista de solares es s1 (`tower`) y s2 (`free`, desarmado), con sus accesos y huellas, y la de flechas de
-  torre es f2, f3, cada una con su posición y su radio
+- **THEN** la lista de solares es s1 (`tower`) y s2 (`free`, desarmado), con sus huellas y sin acceso, y la de flechas
+  de torre es f2, f3, cada una con su posición y su radio
 - **AND** la lista de proyectiles del jugador no contiene ninguna flecha
 
 #### Scenario: Snapshot de los solares no mutable desde fuera
-- **GIVEN** una partida en el tick 10 con un solar en `free` y armado y sin ninguna oferta de obra en el tick 11
-- **WHEN** el adaptador cambia en el `RunSnapshot` recibido el estado de ese solar a `house` y su armado a falso, y se
-  ejecuta 1 tick
-- **THEN** el snapshot del tick 11 tiene el solar en `free` y armado, y sus celdas siguen caminables
+- **GIVEN** una partida en el tick 10 con un solar en `free` y armado, sin ninguna oferta de obra en el tick 11
+- **WHEN** el adaptador cambia en el `RunSnapshot` recibido el estado de ese solar a `house`, su armado a falso y una
+  celda de su huella, y se ejecuta 1 tick
+- **THEN** el snapshot del tick 11 tiene el solar en `free`, armado y con la huella original, y sus celdas siguen no
+  caminables
 
 ### Requirement: Semilla de la partida
 El sistema SHALL arrancar cada partida con una semilla que sea un entero sin signo de 32 bits
@@ -684,9 +686,9 @@ respecto a la posición del jugador, de modo que el contacto se mantenga sea cua
 
 ### Requirement: Orden de los pasos del tick
 El sistema SHALL ejecutar cada tick de una partida en curso en este orden:
-1. movimiento del jugador según el input (velocidad efectiva, ver `upgrades`); después, movimiento de las ovejas vivas,
-   en el orden de su lista, con la posición del jugador ya movido: huida o deambular (ver "Huida del jugador" y
-   "Deambular de las ovejas" en `sheep`);
+1. movimiento del jugador según el input (velocidad efectiva, ver `upgrades`), con la colisión con las celdas no
+   caminables, las de obra incluidas; después, movimiento de las ovejas vivas, en el orden de su lista, con la posición
+   del jugador ya movido: huida o deambular (ver "Huida del jugador" y "Deambular de las ovejas" en `sheep`);
 2. comportamiento de los enemigos vivos, en el orden de la lista de enemigos (ver "Estado de comportamiento de cada
    enemigo" en `enemy-behavior`): primero, las esperas que terminan en este tick pasan a su estado de destino; después,
    los enemigos en persecución o en alerta persiguen la nueva posición del jugador, con el campo de distancias de la
@@ -756,8 +758,9 @@ El sistema SHALL ejecutar cada tick de una partida en curso en este orden:
 11. puerta de la tienda (ver "Apertura por la puerta con re-armado" en `castle-shop`): se arma si procede y, si la
     partida sigue en curso, se abre la tienda si procede y la partida pasa a en tienda; el tick cuenta igualmente;
 12. solares, en el orden de su lista (ver "Apertura del solar con re-armado" en `build-sites`): cada solar `free` se arma
-    si procede y, si la partida sigue en curso, se abre la oferta del primero que procede y la partida pasa a en obra;
-    el tick cuenta igualmente.
+    si el jugador se ha separado lo suficiente de su huella y, si la partida sigue en curso, se abre la oferta del
+    primero armado que el jugador toca, se pueda pagar algo o no, y la partida pasa a en obra; el tick cuenta
+    igualmente.
 
 En una partida terminada, que está eligiendo mejora, que está en tienda o que está en obra no se ejecuta ningún paso
 (ver `run-state`).
@@ -988,10 +991,10 @@ En una partida terminada, que está eligiendo mejora, que está en tienda o que 
 - **THEN** el oro vale 3: primero el recogible (⌊150 / 100⌋ = 1, resto 50) y después la casa (⌊(150 + 50) / 100⌋ = 2)
 
 #### Scenario: Solar abierto con los recursos del mismo tick
-- **GIVEN** el solar de prueba armado con el jugador a d = 10, madera 14 y un recogible `wood` de valor 1 que se recoge
-  en el tick n
+- **GIVEN** el solar de prueba (`build-sites`) armado, madera 14 y un recogible `wood` de valor 1 que se recoge en el
+  tick n, el mismo en que el jugador toca la huella por primera vez
 - **WHEN** se ejecuta el tick n
-- **THEN** la partida está en obra en el snapshot del tick n
+- **THEN** la partida está en obra en el snapshot del tick n y la opción `house` de la oferta es asequible
 
 ### Requirement: Pintado de los enemigos vivos
 El adaptador de render SHALL mostrar en cada frame exactamente un sprite de enemigo visible por cada enemigo del
@@ -1723,17 +1726,19 @@ Convención para todas las specs (desde 0026): en un escenario que ejecuta ticks
 oferta de un solar y no dice nada de ella, cada vez que se abre se sale sin construir antes de pedir el siguiente tick,
 y "N ticks" son N ticks ejecutados. Las construcciones y las salidas de la obra son input del determinismo, igual que el
 movimiento, las elecciones de mejora y las compras. Con esta política, una partida MUST producir en cada tick los mismos
-snapshots que la misma partida sin solares, salvo la fase en obra y la oferta de obra del snapshot del tick en que se
-abre y la lista de solares (estado de armado).
+snapshots que la misma partida con los mismos solares (igual de bloqueantes) en la que ninguna oferta de obra llega a
+abrirse, salvo la fase en obra y la oferta de obra del snapshot del tick en que se abre y la lista de solares (estado
+de armado). Como los solares libres bloquean desde el tick 0, la comparación ya no es con la partida sin solares.
 
 #### Scenario: La política de obra fija no cambia la partida
 - **GIVEN** dos partidas con el contenido por defecto, la semilla 42 con su mapa generado, madera 100 y piedra 100 de
-  escenario y la misma secuencia de 3.600 inputs que lleva al jugador al acceso de ≥ 2 solares, una con sus solares y
-  otra con 0 solares por mapa, ambas con las políticas de elección, tienda y obra fijas
+  escenario y la misma secuencia de 3.600 inputs que lleva al jugador a tocar ≥ 2 solares; en una los solares se
+  comportan con normalidad y en la otra empiezan desarmados y no se arman nunca (escenario preparado), ambas con las políticas de elección,
+  tienda y obra fijas
 - **WHEN** ambas ejecutan 3.600 ticks
-- **THEN** la primera abre la oferta de obra ≥ 2 veces y en cada tick los enemigos, el jugador, las ovejas, los
-  recogibles, el oro, la madera, la piedra, la XP, el nivel, las ofertas, las mejoras y el estado del azar son iguales
-  en las dos
+- **THEN** la primera abre la oferta de obra ≥ 2 veces y la segunda ninguna
+- **AND** en cada tick los enemigos, el jugador, las ovejas, los recogibles, el oro, la madera, la piedra, la XP, el
+  nivel, las ofertas, las mejoras y el estado del azar son iguales en las dos
 
 ### Requirement: Sin tiempo acumulado en obra
 El sistema SHALL no ejecutar ticks ni acumular tiempo real mientras la partida está en obra, con las mismas reglas que
@@ -1801,3 +1806,4 @@ nuevos por tick para las flechas de torre (reserva del tope de flechas) ni para 
 <!-- historial: 0024-split-progression-castle (2026-11-25) -->
 <!-- historial: 0025-stone-resource (2026-11-25) -->
 <!-- historial: 0026-build-sites (2026-11-25) -->
+<!-- historial: 0027-site-contact (2026-11-25) -->
