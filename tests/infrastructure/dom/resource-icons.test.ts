@@ -36,7 +36,7 @@ function pngSize(file: string): { width: number; height: number } {
 }
 
 describe('resourceIcons (panel de obra 0027 y guía 0028)', () => {
-  it('Scenario: Iconos de las páginas de recursos y de obra (G_Idle, W_Idle, M_Idle y Deco/05)', () => {
+  it('Scenario: Iconos de las páginas de recursos y de obra (hojas del HUD)', () => {
     const icons = resourceIcons(appearance, (file) => assetUrl('/tfm-survivors/', file));
     const base = '/tfm-survivors/assets/tiny-swords/';
     expect({ ...icons, xp: undefined }).toEqual({

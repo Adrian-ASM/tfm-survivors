@@ -7,7 +7,8 @@ export type MenuState = 'idle' | 'confirming' | 'guide' | 'leaving';
 /**
  * Reglas del menú de inicio (ADR-0011), sin DOM ni motor: se prueban en Node. Jugar solo actúa
  * una vez (doble clic ⇒ 1 partida) y, con el diálogo o la guía abiertos, ninguna opción del menú
- * tiene efecto (spec main-menu y menu-guide). Los paneles DOM solo llaman a estos métodos; la escena consume `takePlay`.
+ * tiene efecto (spec main-menu y menu-guide). Los paneles DOM solo llaman a estos métodos; la
+ * escena consume `takePlay`.
  */
 export class MenuController {
   private current: MenuState = 'idle';

@@ -97,8 +97,8 @@ function checkStructureRefs(appearance: Appearance, config: RunConfig): Result<t
 
 /**
  * Valida el contenido de juego, los datos de aspecto (con las hojas registradas en la nota de
- * procedencia), su cruce y la guía del menú. Ante el primer error lo informa y devuelve `null`: no se crea ni el menú
- * ni la partida. Sin motor ni DOM (se prueba en Node).
+ * procedencia), su cruce y la guía del menú. Ante el primer error lo informa y devuelve `null`:
+ * no se crea ni el menú ni la partida. Sin motor ni DOM (se prueba en Node).
  */
 export function bootContent(
   raw: RawBoot,

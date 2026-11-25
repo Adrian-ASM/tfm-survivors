@@ -16,7 +16,7 @@ export function formatCount(n: number): string {
   return sign + String(Math.trunc(Math.abs(n))).replace(THOUSANDS, '.');
 }
 
-/** Segundos de unos ticks con como mucho una decimal y coma decimal (1800 → `30`, 1350 → `22,5`). */
+/** Segundos de unos ticks, con una decimal como mucho y coma (1800 → `30`, 1350 → `22,5`). */
 export function formatSeconds(ticks: number): string {
   const tenths = Math.round((ticks / TICKS_PER_SECOND) * TENTHS);
   const whole = formatCount(Math.trunc(tenths / TENTHS));

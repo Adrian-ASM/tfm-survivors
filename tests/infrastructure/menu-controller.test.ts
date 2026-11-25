@@ -39,7 +39,7 @@ describe('MenuController (spec main-menu)', () => {
     ]);
   });
 
-  it('Scenario: Opciones bloqueadas con el diálogo abierto (todas dan false, también la guía)', () => {
+  it('Scenario: Opciones bloqueadas con el diálogo abierto (todas false, también la guía)', () => {
     const menu = confirming();
 
     const actions = [

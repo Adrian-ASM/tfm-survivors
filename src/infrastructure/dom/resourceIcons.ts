@@ -30,9 +30,10 @@ export function gemShapeUrl(rgb: number): string {
 
 /**
  * Iconos de los cinco recursos con las mismas hojas que el contador del HUD (`counterIcon`):
- * `pickups.gold` (`G_Idle`), `pickups.wood` (`W_Idle`), `pickups.meat` (`M_Idle`) y la roca `medium`
- * de `pickups.stone` (`Deco/05`), con la URL que carga `BootScene` (mismo origen). La gema usa su
- * hoja si la tiene y, si se pinta como forma, el rombo de su color. Función pura: sin Phaser ni DOM.
+ * `pickups.gold` (`G_Idle`), `pickups.wood` (`W_Idle`), `pickups.meat` (`M_Idle`) y la roca
+ * `medium` de `pickups.stone` (`Deco/05`), con la URL que carga `BootScene` (mismo origen). La gema
+ * usa su hoja si la tiene y, si se pinta como forma, el rombo de su color. Función pura: sin Phaser
+ * ni DOM.
  */
 export function resourceIcons(
   appearance: Pick<Appearance, 'pickups'>,

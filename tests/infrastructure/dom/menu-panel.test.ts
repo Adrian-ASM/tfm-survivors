@@ -213,7 +213,7 @@ describe('Opciones del menú bloqueadas con la guía abierta', () => {
     expect(s.read.indicator).toBe('2 de 7');
   });
 
-  it('con la guía abierta el controlador también rechaza las opciones (aunque llegue el clic)', () => {
+  it('con la guía abierta el controlador rechaza las opciones (aunque llegue el clic)', () => {
     const s = setup();
     openGuideAt(s, 2);
     for (const label of MENU_ORDER) {
@@ -285,7 +285,7 @@ describe('La guía nunca aparece sola', () => {
     expect(s.read.visible).toBe(false);
   });
 
-  it('Scenario: Volver al menú en modo E2E (show() deja la guía cerrada y el menú operativo)', () => {
+  it('Scenario: Volver al menú en modo E2E (show() cierra la guía; menú operativo)', () => {
     const s = setup();
     openGuideAt(s, 4);
     s.panel.show();

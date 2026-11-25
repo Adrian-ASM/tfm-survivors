@@ -25,7 +25,8 @@ export const GUIDE_TITLE_TOO_LONG = `El título de una página tiene como mucho 
   GUIDE_TITLE_MAX,
 )} caracteres.`;
 export const GUIDE_PARAGRAPHS_EMPTY = 'Cada página de la guía tiene al menos un párrafo.';
-export const GUIDE_PAGE_COUNT = `La guía tiene exactamente ${String(GUIDE_PAGE_IDS.length)} páginas.`;
+const PAGE_COUNT = String(GUIDE_PAGE_IDS.length);
+export const GUIDE_PAGE_COUNT = `La guía tiene exactamente ${PAGE_COUNT} páginas.`;
 export const GUIDE_PAGE_ORDER = 'Las páginas de la guía van en el orden fijo de sus temas.';
 export const GUIDE_ICON_REPEATED = 'Un recurso citado no se repite en la misma página.';
 export const GUIDE_MARKER_UNKNOWN = 'Marcador desconocido en la guía';

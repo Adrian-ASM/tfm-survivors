@@ -119,7 +119,7 @@
     - Spec `main-menu`: «Opciones bloqueadas con el diálogo abierto» y «Teclas con el diálogo abierto», ambos con
       la guía no visible.
   - Tests:
-    - `tests/infrastructure/menu/menu-controller.test.ts` (ampliar).
+    - `tests/infrastructure/menu-controller.test.ts` (ampliar).
     - `tests/infrastructure/dom/menu-panel.test.ts` (nuevo).
 - [x] 4.4 Cierre del grupo: `npm run verify` en verde y commit 2.
 

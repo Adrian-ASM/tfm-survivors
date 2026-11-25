@@ -54,7 +54,7 @@ async function expectInside(
   expect(box.y + box.height).toBeLessThanOrEqual(size.height);
 }
 
-test('Arranque y menú: botones, guía, título y sin errores de consola ni violaciones de CSP', async ({
+test('Arranque y menú: botones, guía, título, sin errores de consola ni de CSP', async ({
   page,
 }) => {
   const problems = collect(page, ['error', 'warning']);
@@ -83,15 +83,32 @@ test('Arranque y menú: botones, guía, título y sin errores de consola ni viol
   await expect(guide).toBeVisible();
   await expect(indicator).toHaveText('1 de 7');
   await expect(control('Anterior')).toBeHidden();
-  for (let k = 2; k <= 7; k += 1) {
+  await expect(guide.locator('img.resource-icon')).toHaveCount(0);
+  for (let k = 2; k <= 3; k += 1) {
+    await page.keyboard.press('ArrowRight');
+    await expect(indicator).toHaveText(`${String(k)} de 7`);
+  }
+  // "Iconos de las páginas de recursos y de obra": los cinco de la página 3, en orden, con la CSP
+  // de siempre (hojas del mismo origen y la gema como `data:`).
+  const icons = guide.locator('img.resource-icon');
+  await expect(icons).toHaveCount(5);
+  expect(await icons.evaluateAll((list) => list.map((i) => i.getAttribute('alt')))).toEqual([
+    'gemas',
+    'oro',
+    'madera',
+    'carne',
+    'piedra',
+  ]);
+  for (let k = 4; k <= 7; k += 1) {
     await page.keyboard.press('ArrowRight');
     await expect(indicator).toHaveText(`${String(k)} de 7`);
   }
   await page.keyboard.press('ArrowRight');
   await expect(indicator).toHaveText('7 de 7');
   await expect(control('Siguiente')).toBeHidden();
-  // Spec main-menu, "Guía entera en la ventana mínima y con escala ×2" (página 7) y world-camera,
-  // "Redimensionado con la guía abierta": recuadro y botones enteros, centrados y en la misma página.
+  // Spec main-menu, "Guía entera en la ventana mínima y con escala ×2" (página 7) y
+  // world-camera, "Redimensionado con la guía abierta": recuadro y botones enteros, centrados y
+  // en la misma página.
   for (const size of [
     { width: 960, height: 540 },
     { width: 1920, height: 1080 },
@@ -117,7 +134,7 @@ test('Arranque y menú: botones, guía, título y sin errores de consola ni viol
   expect(problems).toEqual([]);
 });
 
-test('Jugar desde el menú: oculta el menú y empieza una partida nueva en el tick 0', async ({
+test('Jugar desde el menú tras cerrar la guía: partida nueva en el tick 0 y Esc pausa', async ({
   page,
 }) => {
   const problems = collect(page, ['error', 'warning']);
@@ -134,6 +151,18 @@ test('Jugar desde el menú: oculta el menú y empieza una partida nueva en el ti
   await waitFrames(page, 60);
   expect((await probe(page))?.hud).toBeNull();
 
+  // Spec menu-guide (0028): con la guía abierta sigue el menú, sin HUD (sonda null); se cierra con
+  // Esc y, después, "Jugar y pausa tras cerrar la guía".
+  const guide = page.locator('.guide-modal');
+  await menuButton(page, 'Cómo jugar').click();
+  await expect(guide).toBeVisible();
+  await waitFrames(page, 2);
+  expect([(await probe(page))?.screen, (await probe(page))?.hud]).toEqual(['menu', null]);
+  await page.keyboard.press('Escape');
+  await expect(guide).toBeHidden();
+  await expect(pauseOverlay(page)).toBeHidden();
+  expect([(await probe(page))?.screen, (await probe(page))?.hud]).toEqual(['menu', null]);
+
   await menuButton(page, 'Jugar').click();
 
   await expect(menuPanel(page)).toBeHidden();
@@ -145,6 +174,10 @@ test('Jugar desde el menú: oculta el menú y empieza una partida nueva en el ti
   // Sin step la partida nueva sigue en su primer frame (modo manual).
   expect(await tickOf(page)).toBe(0);
   expect(await step(page, 30)).toBe(30);
+  // Una sola pulsación de Esc, sin otro clic, pausa la partida nueva (la guía ya no escucha).
+  await page.keyboard.press('Escape');
+  await expect(pauseOverlay(page)).toBeVisible();
+  await expect(guide).toBeHidden();
   expect(problems).toEqual([]);
 });
 

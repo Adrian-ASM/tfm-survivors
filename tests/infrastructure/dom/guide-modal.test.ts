@@ -300,8 +300,8 @@ describe('Iconos de recurso en la guía', () => {
   it('Scenario: Hoja de icono que no carga (el render no depende de la carga)', () => {
     const { read, openAt } = setup();
     openAt(3);
-    // Ninguna escucha de carga o error en los iconos: título, texto, indicador y controles se pintan
-    // en el mismo render, cargue o no la hoja de la madera.
+    // Ninguna escucha de carga o error en los iconos: título, texto, indicador y controles se
+    // pintan en el mismo render, cargue o no la hoja de la madera.
     expect(read.icons.map((i) => i.listenerCount('error') + i.listenerCount('load'))).toEqual([
       0, 0, 0, 0, 0,
     ]);

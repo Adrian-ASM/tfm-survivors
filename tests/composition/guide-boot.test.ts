@@ -7,8 +7,14 @@ import type { DomainError } from '../../src/domain/shared/Result';
 import { GUIDE_PAGE_IDS } from '../../src/infrastructure/content/guideSchema';
 import { rawContent } from '../support/builders';
 
-// Spec menu-guide, "Contenido de la guía validado": un guide.json inválido pasa por `report` (la vía
-// de showContentError) y bootContent devuelve null, así que no se crea el menú (design 0028 §1).
+// Spec menu-guide, "Contenido de la guía validado": un guide.json inválido pasa por `report` (la
+// vía de showContentError) y bootContent devuelve null, así que no se crea el menú (design 0028
+// §1).
+//
+// "Marcador sin valor en el contenido" no figura en INVALID: por bootContent es inalcanzable,
+// porque el schema de structures.json (StructuresSchema, objeto estricto) exige `goblin-tower` y un
+// fichero sin ella falla antes, en parseContent. Se cubre con parseGuide y una RunConfig sin ese
+// tipo en guide-markers.test.ts; aquí se comprueba que ese fichero tampoco crea el menú.
 const REGISTERED = provenanceJson.files.map((f) => f.path);
 
 type Page = { id: string; title: string; paragraphs: string[]; icons?: string[] } & Record<
@@ -69,6 +75,14 @@ describe('bootContent con la guía (0028)', () => {
     const { booted, errors } = boot(undefined);
     expect(booted).toBeNull();
     expect(errors[0]?.field).toBe('guide');
+  });
+
+  it('structures.json sin goblin-tower no crea el menú (falla el schema, antes de la guía)', () => {
+    const content = rawContent();
+    Reflect.deleteProperty(content.structures.types, 'goblin-tower');
+    const { booted, errors } = boot(guideJson, content);
+    expect(booted).toBeNull();
+    expect(errors.map((e) => e.field)).toEqual(['structures.types.goblin-tower']);
   });
 
   it('con el contenido por defecto, booted.guide sale interpolada', () => {
