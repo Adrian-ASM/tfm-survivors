@@ -47,6 +47,9 @@ Tras cada fase, resume al usuario en ≤ 5 líneas: qué se produjo, decisiones 
 - En apply, al cerrar cada sección de `tasks.md`, haz `git fetch` y mira si `origin/main` avanzó; si avanzó,
   rebasa antes de seguir (0014).
 - Fases pequeñas pueden fusionarse (`spec+design+tasks` en un paso) si el usuario lo pide: anótalo en la retrospectiva.
+- **Comportamiento actual en las preguntas al autor**: si una opción dice "como X hoy" (la espuma, el reloj, un
+  tope), comprueba en el código qué hace X antes de preguntar. En 0029 se ofreció "como la espuma, que sigue en
+  pausa" y la espuma se congela; el architect lo detectó y hubo que repreguntar.
 - **Decisiones abiertas al gate de propuesta**: si la exploración deja abierta una regla de azar (cuántos valores
   consume cada evento, cuándo no consume) o en qué fichero de `content/` vive un dato, pregúntalo al usuario antes
   de *propose* y escríbelo en `proposal.md`. Si no, spec ∥ design lo resuelven distinto (0025: consumo por baja y
