@@ -21,6 +21,7 @@ import type { Experience } from '../progression/Experience';
 import { levelUpHeal } from '../progression/LevelUpHeal';
 import { PickupGain, type PickupField } from '../pickup/PickupField';
 import type { Stockpile } from '../resource/Stockpile';
+import { STONE_PER_DROP, StoneDrops } from '../resource/StoneDrops';
 import type { GoldVein } from '../resource/GoldVein';
 import { resolveResources, type ResourceSites } from '../resource/resolveResources';
 import type { PlayerRules } from '../player/PlayerRules';
@@ -119,6 +120,8 @@ export class Run {
   /** Lo recogido en el paso 7.1 (reutilizado: sin asignar por tick). */
   private readonly gain = new PickupGain();
   private readonly stock: Stockpile;
+  /** Tirada de piedra por baja con su propio azar (ADR-0024); sin él, no suelta ni consume. */
+  private readonly stones: StoneDrops;
   private readonly experience: Experience;
   private readonly board: UpgradeBoard;
   private readonly mapView: MapSnapshot;
@@ -142,8 +145,10 @@ export class Run {
     initial: InitialState,
     sites: readonly StructureSite[],
     resources: ResourceSites,
+    stoneRandom: RandomGenerator | null,
   ) {
     this.arena = rules.arena;
+    this.stones = new StoneDrops(rules.resources, stoneRandom);
     this.mapView = toMapSnapshot(
       terrain,
       sites.map((s) => ({ ...s, type: s.type.id })),
@@ -172,13 +177,15 @@ export class Run {
   /**
    * Crea una partida. `random` es el azar de la partida (oleadas y ofertas); el mapa sale de
    * `terrain`, que si se genera trae su propio generador (ADR-0013): generar el mapa no consume
-   * `random`. Sin `terrain`, el mapa vacío (escenarios sin mapa declarado).
+   * `random`. Sin `terrain`, el mapa vacío (escenarios sin mapa declarado). `stoneRandom` es el azar
+   * de la piedra (ADR-0024, 1 valor por baja); sin él (escenarios), ninguna baja suelta piedra.
    */
   static start(
     config: RunConfig,
     random: RandomGenerator,
     setup: RunSetup = {},
     terrain: TerrainSource = OPEN_TERRAIN,
+    stoneRandom?: RandomGenerator,
   ): Result<Run, DomainError> {
     const rules = buildRunRules(config);
     if (!rules.ok) return rules;
@@ -201,7 +208,17 @@ export class Run {
       sheep.value,
     );
     if (!initial.ok) return initial;
-    return ok(new Run(rules.value, random, map.value, initial.value, sites.value, resources.value));
+    return ok(
+      new Run(
+        rules.value,
+        random,
+        map.value,
+        initial.value,
+        sites.value,
+        resources.value,
+        stoneRandom ?? null,
+      ),
+    );
   }
 
   /** Mapa de la partida (spec procedural-map): la misma vista congelada durante toda la partida. */
@@ -338,8 +355,8 @@ export class Run {
   }
 
   /**
-   * Paso 7 (spec simulation-loop): 7.1 recogibles de los cuatro tipos en una pasada, en orden de
-   * creación; la XP sube de nivel, el oro y la madera van a sus contadores y la carne cura; 7.2 vetas en el orden
+   * Paso 7 (spec simulation-loop): 7.1 recogibles de los cinco tipos en una pasada, en orden de
+   * creación; la XP sube de nivel, el oro, la madera y la piedra van a sus contadores y la carne cura; 7.2 vetas en el orden
    * de su lista: cada una activa en contacto suma su oro y queda agotada.
    */
   private collect(x: number, y: number): void {
@@ -349,6 +366,8 @@ export class Run {
     if (gain.xp > 0) this.experience.gain(gain.xp, this.player.effective.xpBonusPercent ?? 0);
     const goldBonus = this.player.effective.goldBonusPercent ?? 0;
     this.stock.add(gain.gold, gain.wood, goldBonus);
+    // La piedra, tal cual: sin bonificación (0025).
+    if (gain.stone > 0) this.stock.addStone(gain.stone);
     if (gain.meat > 0) this.heal(gain.meat);
     for (const v of this.veins) this.stock.add(v.tap(x, y, this.player.radius), 0, goldBonus);
   }
@@ -450,6 +469,10 @@ export class Run {
       const gold = resources.goldForEnemy(type.id);
       if (gold > 0) this.pickups.drop('gold', x, y, gold);
     }
+    // 1 valor del azar de la piedra por baja, también detonada o con probabilidad 0 (ADR-0024).
+    if (this.stones.roll(type.id, dead.detonated)) {
+      this.pickups.drop('stone', x, y, STONE_PER_DROP, false, type.id);
+    }
     dead.post?.release();
   };
 
@@ -519,7 +542,11 @@ export class Run {
       ),
       pickups,
       gems,
-      resources: Object.freeze({ gold: this.stock.gold, wood: this.stock.wood }),
+      resources: Object.freeze({
+        gold: this.stock.gold,
+        wood: this.stock.wood,
+        stone: this.stock.stone,
+      }),
       veins: Object.freeze(this.veins.map(toVeinSnapshot)),
       progression: toProgressionSnapshot(this.experience),
       offer: toOfferSnapshot(this.board),

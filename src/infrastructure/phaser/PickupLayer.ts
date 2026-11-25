@@ -27,6 +27,7 @@ export class PickupLayer {
     gold: { visible: 0, placeholder: 0 },
     wood: { visible: 0, placeholder: 0 },
     meat: { visible: 0, placeholder: 0 },
+    stone: { visible: 0, placeholder: 0 },
   };
   private readonly pool: SlotPool<PickupSnapshot, PickupSlot>;
 

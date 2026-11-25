@@ -99,15 +99,17 @@ export interface RunSetup {
   readonly dynamites?: readonly SetupDynamite[];
   /**
    * Recogibles en el suelo, en orden de creación (ids tras los montones del mapa); `kind` por
-   * defecto `xp` (gemas) y `attracted` por defecto false.
+   * defecto `xp` (gemas) y `attracted` por defecto false. `source` (0025): origen de una piedra de
+   * escenario (solo en `stone`; sin él, la piedra no tiene origen).
    */
   readonly gems?: readonly (Point & {
     readonly value: number;
     readonly attracted?: boolean;
     readonly kind?: PickupKind;
+    readonly source?: string;
   })[];
-  /** Oro y madera ya acumulados al empezar (enteros ≥ 0; por defecto, 0). */
-  readonly resources?: { readonly gold: number; readonly wood: number };
+  /** Oro, madera y piedra ya acumulados al empezar (enteros ≥ 0; por defecto, 0). */
+  readonly resources?: { readonly gold: number; readonly wood: number; readonly stone?: number };
   /**
    * Por índice de la lista de vetas de la partida (tests): oro (entero ≥ 1; por defecto, el del
    * contenido) y si ya está agotada (por defecto, activa). Como mucho tantas entradas como vetas.
@@ -292,7 +294,8 @@ export function initialPickups(
     if (field.count(kind) >= rules.pickups.max(kind)) {
       return err(invalidConfig('setup.gems', SETUP_TOO_MANY_GEMS));
     }
-    field.drop(kind, g.x, g.y, g.value, g.attracted ?? false);
+    const source = kind === 'stone' ? (g.source ?? null) : null;
+    field.drop(kind, g.x, g.y, g.value, g.attracted ?? false, source);
   }
   return ok(field);
 }
@@ -320,12 +323,12 @@ export function initialVeins(
   return ok(veins);
 }
 
-/** Oro y madera iniciales (por defecto, 0). */
+/** Oro, madera y piedra iniciales (por defecto, 0). */
 export function initialStockpile(setup: RunSetup): Result<Stockpile, DomainError> {
-  const { gold, wood } = setup.resources ?? { gold: 0, wood: 0 };
-  const valid = [gold, wood].every((v) => Number.isInteger(v) && v >= 0);
+  const { gold, wood, stone = 0 } = setup.resources ?? { gold: 0, wood: 0 };
+  const valid = [gold, wood, stone].every((v) => Number.isInteger(v) && v >= 0);
   if (!valid) return err(invalidConfig('setup.resources', SETUP_RESOURCES_MUST_BE_INTEGER));
-  return ok(new Stockpile(gold, wood));
+  return ok(new Stockpile(gold, wood, stone));
 }
 
 export function initialBoard(rules: RunRules, setup: RunSetup): Result<UpgradeBoard, DomainError> {

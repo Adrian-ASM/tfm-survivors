@@ -267,14 +267,18 @@ export function startDeclared(
   return startOn(config, { kind: 'open', structures }, setup, random);
 }
 
-/** Partida en el mapa dado (azar de la partida: semilla 42 salvo que se pase otro). */
+/**
+ * Partida en el mapa dado (azar de la partida: semilla 42 salvo que se pase otro). Sin
+ * `stoneRandom`, partida de escenario sin azar de la piedra (0025: no suelta piedra).
+ */
 export function startOn(
   config: RunConfig,
   terrain: TerrainSource,
   setup: RunSetup = {},
   random: RandomGenerator = new Mulberry32RandomGenerator(42),
+  stoneRandom?: RandomGenerator,
 ): Run {
-  const r = Run.start(config, random, setup, terrain);
+  const r = Run.start(config, random, setup, terrain, stoneRandom);
   if (!r.ok) throw new Error(r.error.message);
   return r.value;
 }

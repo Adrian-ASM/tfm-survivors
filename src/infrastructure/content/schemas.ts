@@ -44,6 +44,7 @@ import {
   MAX_GEMS_MUST_BE_INTEGER,
   MAX_GOLD_MUST_BE_INTEGER,
   MAX_MEAT_MUST_BE_INTEGER,
+  MAX_STONE_MUST_BE_INTEGER,
   MAX_WOOD_MUST_BE_INTEGER,
 } from '../../domain/pickup/PickupRules';
 import {
@@ -339,6 +340,7 @@ export const ProgressionSchema = z.strictObject({
   maxGold: RequiredCount(MAX_GOLD_MUST_BE_INTEGER),
   maxWood: RequiredCount(MAX_WOOD_MUST_BE_INTEGER),
   maxMeat: RequiredCount(MAX_MEAT_MUST_BE_INTEGER),
+  maxStone: RequiredCount(MAX_STONE_MUST_BE_INTEGER),
   levelUpHealPercent: z
     .number({ error: LEVEL_UP_HEAL_PERCENT_OUT_OF_RANGE })
     .int({ error: LEVEL_UP_HEAL_PERCENT_OUT_OF_RANGE })

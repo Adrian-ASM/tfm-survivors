@@ -159,7 +159,7 @@ describe('Carne como recogible (spec xp-gems)', () => {
     ]);
     const [s] = ticks(run, 1);
     expect(s?.pickups).toEqual([]);
-    expect(s?.resources).toEqual({ gold: 12, wood: 3 });
+    expect(s?.resources).toEqual({ gold: 12, wood: 3, stone: 0 });
     expect(s?.player.health).toBe(70);
     expect(s?.progression).toMatchObject({ level: 1, xp: 0, pendingLevelUps: 0 });
   });

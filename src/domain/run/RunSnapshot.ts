@@ -129,12 +129,16 @@ export interface PickupSnapshot {
   readonly x: number;
   readonly y: number;
   readonly radius: number;
+  /** Tipo de enemigo que soltó la piedra (0025): solo en recogibles `stone` con origen. */
+  readonly source?: string;
 }
 
 /** Contadores de la partida (spec resources). */
 export interface ResourcesSnapshot {
   readonly gold: number;
   readonly wood: number;
+  /** Piedra de la partida (0025): solo sube, sin bonificación. */
+  readonly stone: number;
 }
 
 /** Veta de oro (spec resources, "Vetas de oro al pasar"): fija, activa o agotada. */
@@ -252,7 +256,7 @@ export interface RunSnapshotBody {
    * `deprecated`, que `no-deprecated` convierte en ~70 errores de lint en los usos vivos).
    */
   readonly gems: readonly GemSnapshot[];
-  /** Oro y madera de la partida (spec resources). */
+  /** Oro, madera y piedra de la partida (spec resources). */
   readonly resources: ResourcesSnapshot;
   /** Vetas de la partida en su orden fijo, agotadas incluidas (misma longitud toda la partida). */
   readonly veins: readonly VeinSnapshot[];

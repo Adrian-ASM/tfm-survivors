@@ -23,6 +23,9 @@ const canon = (v: unknown): string => {
   return JSON.stringify(v);
 };
 const sha = (v: unknown): string => createHash('sha256').update(canon(v)).digest('hex');
+/** Copia sin un campo (proyección de los ficheros que 0025 amplía sobre la huella de 0024). */
+const withoutKey = (v: object, key: string): Record<string, unknown> =>
+  Object.fromEntries(Object.entries(v).filter(([k]) => k !== key));
 
 /**
  * Huellas de `main` antes de 0024 (tasks 0.1) de lo que la calibración no puede tocar (spec
@@ -73,7 +76,8 @@ describe('Huella del contenido calibrado (0024)', () => {
     upgrades: sha(upgradesJson),
     player: sha(playerJson),
     resources: sha(resourcesJson),
-    progression: sha(progressionJson),
+    // 0025 añade `maxStone`: la huella de 0024 se calcula sin él (constante intacta).
+    progression: sha(withoutKey(progressionJson, 'maxStone')),
     shop: sha(shopJson),
   });
 

@@ -161,7 +161,7 @@ describe('RecordRun (spec progress-persistence, "Registro" y "Guardado automáti
 describe('RecordRun sin oro ni madera (0022)', () => {
   it('Scenario: Sin rastro en resultados ni en el guardado (oro 30 y madera 8)', () => {
     const { repo, record } = recorder();
-    const rich: RunSnapshot = { ...firstDefeat(), resources: { gold: 30, wood: 8 } };
+    const rich: RunSnapshot = { ...firstDefeat(), resources: { gold: 30, wood: 8, stone: 12 } };
 
     record.execute(aRunSource(rich));
 

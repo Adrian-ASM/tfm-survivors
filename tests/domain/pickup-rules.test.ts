@@ -5,13 +5,22 @@ import {
   MAX_GEMS_MUST_BE_INTEGER,
   MAX_GOLD_MUST_BE_INTEGER,
   MAX_MEAT_MUST_BE_INTEGER,
+  MAX_STONE_MUST_BE_INTEGER,
   MAX_WOOD_MUST_BE_INTEGER,
   PickupRules,
 } from '../../src/domain/pickup/PickupRules';
 import { Pickup } from '../../src/domain/pickup/Pickup';
 import { PICKUP_KINDS } from '../../src/domain/pickup/PickupKind';
 
-const DEFAULT = { gemRadius: 5, magnetSpeed: 360, maxGems: 300, maxGold: 32, maxWood: 64, maxMeat: 8 };
+const DEFAULT = {
+  gemRadius: 5,
+  magnetSpeed: 360,
+  maxGems: 300,
+  maxGold: 32,
+  maxWood: 64,
+  maxMeat: 8,
+  maxStone: 32,
+};
 
 describe('PickupRules (spec xp-gems, "Contenido de gemas validado")', () => {
   it('con los valores por defecto, el imán avanza 6 px por tick y los topes son por tipo', () => {
@@ -19,8 +28,9 @@ describe('PickupRules (spec xp-gems, "Contenido de gemas validado")', () => {
     if (!r.ok) throw new Error(r.error.message);
     expect(r.value).toMatchObject(DEFAULT);
     expect(r.value.pullPerTick).toBeCloseTo(6, 12);
-    expect(PICKUP_KINDS.map((k) => r.value.max(k))).toEqual([300, 32, 64, 8]);
-    expect(r.value.capacity).toBe(404);
+    expect(PICKUP_KINDS).toEqual(['xp', 'gold', 'wood', 'meat', 'stone']);
+    expect(PICKUP_KINDS.map((k) => r.value.max(k))).toEqual([300, 32, 64, 8, 32]);
+    expect(r.value.capacity).toBe(436);
   });
 
   it.each([
@@ -32,6 +42,8 @@ describe('PickupRules (spec xp-gems, "Contenido de gemas validado")', () => {
     ['maxGold', 0, MAX_GOLD_MUST_BE_INTEGER],
     ['maxWood', 0, MAX_WOOD_MUST_BE_INTEGER],
     ['maxMeat', 0, MAX_MEAT_MUST_BE_INTEGER],
+    ['maxStone', 0, MAX_STONE_MUST_BE_INTEGER],
+    ['maxStone', -1, MAX_STONE_MUST_BE_INTEGER],
   ])('Scenario: Valores no positivos (%s %s)', (key, value, message) => {
     const r = PickupRules.create({ ...DEFAULT, [key]: value });
     expect(r.ok ? null : r.error).toEqual({
@@ -45,13 +57,15 @@ describe('PickupRules (spec xp-gems, "Contenido de gemas validado")', () => {
     ['maxGems', 12.5, MAX_GEMS_MUST_BE_INTEGER],
     ['maxGold', 2.5, MAX_GOLD_MUST_BE_INTEGER],
     ['maxMeat', 1.5, MAX_MEAT_MUST_BE_INTEGER],
+    ['maxStone', 2.5, MAX_STONE_MUST_BE_INTEGER],
   ])('Scenario: Tope de gemas no entero (%s %s)', (key, value, message) => {
     const r = PickupRules.create({ ...DEFAULT, [key]: value });
     expect(r.ok ? null : r.error).toMatchObject({ field: `progression.${key}`, message });
   });
 
-  it('Scenario: Tope mínimo válido (maxGems 1, tope de oro 1 y tope de carne 1)', () => {
-    expect(PickupRules.create({ ...DEFAULT, maxGems: 1, maxGold: 1, maxMeat: 1 }).ok).toBe(true);
+  it('Scenario: Tope mínimo válido (maxGems 1, oro 1, carne 1 y maxStone 1)', () => {
+    const minimal = { ...DEFAULT, maxGems: 1, maxGold: 1, maxMeat: 1, maxStone: 1 };
+    expect(PickupRules.create(minimal).ok).toBe(true);
   });
 });
 

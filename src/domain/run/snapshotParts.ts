@@ -137,8 +137,12 @@ export function toPickupSnapshots(
   const pickups: PickupSnapshot[] = [];
   const gems: GemSnapshot[] = [];
   for (const p of list) {
-    const { id, kind, value, x, y } = p;
-    const snap = Object.freeze({ id, kind, value, x, y, radius });
+    const { id, kind, value, x, y, source } = p;
+    const snap: PickupSnapshot = Object.freeze(
+      source === null
+        ? { id, kind, value, x, y, radius }
+        : { id, kind, value, x, y, radius, source },
+    );
     pickups.push(snap);
     if (kind === 'xp') gems.push(snap);
   }

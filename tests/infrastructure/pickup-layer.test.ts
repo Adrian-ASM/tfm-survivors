@@ -93,6 +93,7 @@ describe('PickupLayer', () => {
       gold: { visible: 32, placeholder: 0 },
       wood: { visible: 64, placeholder: 0 },
       meat: { visible: 8, placeholder: 0 },
+      stone: { visible: 0, placeholder: 0 },
     });
   });
 
@@ -182,6 +183,7 @@ describe('PickupLayer', () => {
       gold: { visible: 2, placeholder: 0 },
       wood: { visible: 2, placeholder: 2 },
       meat: { visible: 2, placeholder: 0 },
+      stone: { visible: 0, placeholder: 0 },
     });
   });
 });

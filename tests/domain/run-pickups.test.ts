@@ -28,7 +28,7 @@ describe('Recogida según el tipo (spec xp-gems, resources)', () => {
     });
     const [s] = ticks(run, 1);
     expect(s?.pickups).toEqual([]);
-    expect(s?.resources).toEqual({ gold: 12, wood: 3 });
+    expect(s?.resources).toEqual({ gold: 12, wood: 3, stone: 0 });
     expect(s?.progression).toMatchObject({ level: 1, xp: 0, pendingLevelUps: 0 });
   });
 
@@ -42,7 +42,7 @@ describe('Recogida según el tipo (spec xp-gems, resources)', () => {
     });
     const [s] = ticks(run, 1);
     expect(s?.pickups).toEqual([]);
-    expect(s?.resources).toEqual({ gold: 10, wood: 3 });
+    expect(s?.resources).toEqual({ gold: 10, wood: 3, stone: 0 });
     expect(s?.progression.xp).toBe(1);
   });
 
@@ -59,7 +59,7 @@ describe('Recogida según el tipo (spec xp-gems, resources)', () => {
     // Golpe de 10 (invulnerable) y, sin mejoras disponibles, la subida cura el 10 % (0024): 100.
     expect([s?.player.health, s?.player.invulnerable]).toEqual([100, true]);
     expect(s?.progression.level).toBe(2);
-    expect(s?.resources).toEqual({ gold: 25, wood: 6 });
+    expect(s?.resources).toEqual({ gold: 25, wood: 6, stone: 0 });
   });
 
   it('Scenario: Valores grandes (99.990 + 10 = 100.000 exacto)', () => {
@@ -120,7 +120,7 @@ describe('Recursos en el tick de la victoria (spec simulation-loop)', () => {
   it('control: con la duración por defecto se recogen en el tick 120', () => {
     const snaps = ticks(startRun(quiet(), incoming), 120);
     expect(snaps[118]?.pickups).toHaveLength(2);
-    expect(snaps[119]?.resources).toEqual({ gold: 4, wood: 2 });
+    expect(snaps[119]?.resources).toEqual({ gold: 4, wood: 2, stone: 0 });
   });
 
   it('Scenario: Sin recursos en el tick de la victoria (recogibles: siguen y contadores a 0)', () => {
@@ -128,7 +128,7 @@ describe('Recursos en el tick de la victoria (spec simulation-loop)', () => {
     const last = snaps[119];
     expect(last).toMatchObject({ status: 'over', outcome: 'won' });
     expect(last?.pickups).toHaveLength(2);
-    expect(last?.resources).toEqual({ gold: 0, wood: 0 });
+    expect(last?.resources).toEqual({ gold: 0, wood: 0, stone: 0 });
   });
 });
 
@@ -165,7 +165,7 @@ describe('Azar y snapshot de los recogibles', () => {
 
   it('Scenario: Partida recién creada (mapa vacío: oro, madera, recogibles y vetas vacíos)', () => {
     const s = startRun(quiet()).snapshot();
-    expect(s.resources).toEqual({ gold: 0, wood: 0 });
+    expect(s.resources).toEqual({ gold: 0, wood: 0, stone: 0 });
     expect(s.pickups).toEqual([]);
     expect(s.veins).toEqual([]);
     expect(Object.isFrozen(s.resources) && Object.isFrozen(s.pickups)).toBe(true);
@@ -195,6 +195,6 @@ describe('Azar y snapshot de los recogibles', () => {
       ['xp', 1000, 2],
       ['wood', 1200, 3],
     ]);
-    expect(again.resources).toEqual({ gold: 7, wood: 1 });
+    expect(again.resources).toEqual({ gold: 7, wood: 1, stone: 0 });
   });
 });

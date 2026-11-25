@@ -381,7 +381,7 @@ describe('createHud con relayout (0017)', () => {
 describe('HUD · oro y madera (0022)', () => {
   const withResources = (s: RunSnapshot, gold: number, wood: number): RunSnapshot => ({
     ...s,
-    resources: { gold, wood },
+    resources: { gold, wood, stone: 0 },
   });
   const counters = (h: ReturnType<typeof hud>) => [h.gold.text, h.wood.text];
 

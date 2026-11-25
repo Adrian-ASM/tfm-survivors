@@ -76,7 +76,10 @@ describe('Overlay de resultados: contenido (spec run-results)', () => {
 // Spec resources (0022): la pantalla de resultados no muestra oro ni madera (sin cambios de código).
 describe('Resultados sin oro ni madera (0022)', () => {
   it('Scenario: Sin rastro en resultados ni en el guardado (las 5 líneas de antes)', () => {
-    const view = resultsView({ ...ended('lost', 1259, 3, 41), resources: { gold: 30, wood: 8 } });
+    const view = resultsView({
+      ...ended('lost', 1259, 3, 41),
+      resources: { gold: 30, wood: 8, stone: 12 },
+    });
 
     expect(Object.keys(view ?? {})).toEqual(['title', 'time', 'level', 'kills', 'hint']);
     expect(JSON.stringify(view)).not.toMatch(/30|\b8\b/);

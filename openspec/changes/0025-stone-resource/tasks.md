@@ -53,7 +53,7 @@
 
 ## 3. Dominio: recogible `stone` y tirada en la partida (TDD)
 
-- [ ] 3.1 *TDD* Unión y recogibles: `'stone'` en `PickupKind`/`PICKUP_KINDS`, `PickupRules.maxStone`
+- [x] 3.1 *TDD* Unión y recogibles: `'stone'` en `PickupKind`/`PICKUP_KINDS`, `PickupRules.maxStone`
   (`MAX_STONE_MUST_BE_INTEGER`, `capacity` = Σ 5), `PickupGain.stone`, `counts.stone`, `Pickup.source` y
   `drop(..., source = null)`; el relleno conserva el origen. Andamiaje de compilación en la misma tarea:
   `progression.maxStone` en `schemas.ts` y `"maxStone": 32` en `content/progression.json`, `builders.ts`,
@@ -61,14 +61,14 @@
   huella `BALANCE_CONTENT_SHA256.progression` calculada **sin `maxStone`** en `combat-content.test.ts` (constante
   intacta). Tests `pickup-field.test.ts` y `pickup-rules.test.ts`. Escenarios: `xp-gems` "Tope de piedra lleno",
   "Plaza de piedra liberada por una recogida" y "Tope de piedra lleno sin tocar los otros tipos" (a nivel de campo).
-- [ ] 3.2 *TDD* Tirada en `Run`: `Run.start(..., stoneRandom?)`, `StoneDrops` en el constructor y llamada en `onDeath`
+- [x] 3.2 *TDD* Tirada en `Run`: `Run.start(..., stoneRandom?)`, `StoneDrops` en el constructor y llamada en `onDeath`
   tras madera y oro. Doble `CountingRandom` y `SequenceRandom` de la piedra en `tests/support/`. Test
   `tests/domain/run-stone.test.ts`. Escenarios: `resources` "Tipo con 100 suelta siempre", "Tipo con 0 consume y no
   suelta", "Orden con el barril abatido", "Piedra por baja intercalada", "Piedra sobre un tronco", "Tirada con el tope
   de piedra lleno", "La probabilidad de un tipo no desplaza las tiradas de los demás"; `xp-gems` "Una secuencia de
   identificadores" y "Tope de piedra lleno"; `simulation-loop` "Piedra de la baja tras su oro y antes de la
   estructura".
-- [ ] 3.3 *TDD* Paso 4, bordes, recogida y snapshot: `collect` con `addStone`, `snapshot.resources.stone`,
+- [x] 3.3 *TDD* Paso 4, bordes, recogida y snapshot: `collect` con `addStone`, `snapshot.resources.stone`,
   `PickupSnapshot.source` solo en piedras, `RunSetup.resources.stone?`. Mismo fichero de test y
   `run-stone-pickup.test.ts`. Escenarios: `resources` "El barril que explota consume y no suelta", "Baja por explosión
   ajena", "Tiradas del paso de armas antes que las del de peligros", "Partida recién creada", "Recogida de piedra con

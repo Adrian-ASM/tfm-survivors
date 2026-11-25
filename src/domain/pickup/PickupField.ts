@@ -10,12 +10,14 @@ export class PickupGain {
   gold = 0;
   wood = 0;
   meat = 0;
+  stone = 0;
 
   reset(): void {
     this.xp = 0;
     this.gold = 0;
     this.wood = 0;
     this.meat = 0;
+    this.stone = 0;
   }
 
   add(kind: PickupKind, value: number): void {
@@ -33,7 +35,13 @@ export class PickupGain {
 export class PickupField {
   private readonly active: Pickup[] = [];
   private readonly free: Pickup[] = [];
-  private readonly counts: Record<PickupKind, number> = { xp: 0, gold: 0, wood: 0, meat: 0 };
+  private readonly counts: Record<PickupKind, number> = {
+    xp: 0,
+    gold: 0,
+    wood: 0,
+    meat: 0,
+    stone: 0,
+  };
   private nextId = 0;
   /** Punto de creación tras la recolocación (reutilizado: sin asignar por suelta). */
   private readonly spot = { x: 0, y: 0 };
@@ -62,9 +70,17 @@ export class PickupField {
   /**
    * Suelta un recogible de `kind` y `value` en (x, y), o en el centro de la celda caminable más
    * cercana si (x, y) cae en una no caminable (spec xp-gems). Con el tope de su tipo lleno no crea
-   * ni recoloca nada: suma `value` al más antiguo de su tipo, sin perder valor.
+   * ni recoloca nada: suma `value` al más antiguo de su tipo, sin perder valor (que conserva su
+   * `source`). `source`: el tipo de enemigo que soltó una piedra (0025); `null` en el resto.
    */
-  drop(kind: PickupKind, x: number, y: number, value: number, attracted = false): void {
+  drop(
+    kind: PickupKind,
+    x: number,
+    y: number,
+    value: number,
+    attracted = false,
+    source: string | null = null,
+  ): void {
     if (this.counts[kind] >= this.rules.max(kind)) {
       // Barrido desde el principio (orden de creación), sin cierre: el primero de su tipo.
       for (const p of this.active) {
@@ -77,7 +93,7 @@ export class PickupField {
     const pickup = this.free.pop();
     if (!pickup) throw new Error('Invariante rota: pool de recogibles agotado bajo los topes');
     this.map.nearestWalkable(x, y, this.spot);
-    pickup.set(this.nextId, kind, this.spot.x, this.spot.y, value, attracted);
+    pickup.set(this.nextId, kind, this.spot.x, this.spot.y, value, attracted, source);
     this.nextId += 1;
     this.counts[kind] += 1;
     this.active.push(pickup);
