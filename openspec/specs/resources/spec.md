@@ -84,13 +84,14 @@ suma su valor, y solo baja al construir, en el coste en madera del edificio (ver
 `build-sites`). El oro sube con cada **ingreso** (la recogida de un recogible `gold`, el agotamiento de una veta, ver
 "Vetas de oro al pasar", o el pago de una casa construida, ver "Oro periódico de las casas" en `build-sites`) y solo
 baja con las compras de la tienda (ver "Compra en la tienda" en `castle-shop`). Ninguno de los dos es nunca negativo:
-una construcción o una compra que no alcanza no se hace. Cada ingreso de valor v suma v más la bonificación de oro
-efectiva g (`goldBonusPercent`, ver "Estadísticas de personaje nuevas" en `upgrades`; 0 sin mejoras), con la misma
-regla de resto arrastrado que la XP (ver "Subida de nivel con arrastre" en `leveling`) y un resto propio del oro,
-compartido por todos los ingresos: suma ⌊(v × (100 + g) + r) / 100⌋. Con g = 0 cada ingreso suma exactamente v. No
-bajan al recibir daño ni al subir de nivel y no se conservan entre partidas. Recoger oro o madera MUST NOT sumar XP, y
-recoger XP MUST NOT cambiar el oro ni la madera. Los contadores no se guardan en récords ni en el historial
-(`progress-persistence` sin cambios) ni se muestran en la pantalla de resultados (`run-results` sin cambios).
+una construcción o una compra que no alcanza no se hace (una opción de obra no asequible se ofrece igualmente, pero
+construirla devuelve un error, ver "Oferta de obra" en `build-sites`). Cada ingreso de valor v suma v más la
+bonificación de oro efectiva g (`goldBonusPercent`, ver "Estadísticas de personaje nuevas" en `upgrades`; 0 sin
+mejoras), con la misma regla de resto arrastrado que la XP (ver "Subida de nivel con arrastre" en `leveling`) y un
+resto propio del oro, compartido por todos los ingresos: suma ⌊(v × (100 + g) + r) / 100⌋. Con g = 0 cada ingreso suma
+exactamente v. No bajan al recibir daño ni al subir de nivel y no se conservan entre partidas. Recoger oro o madera
+MUST NOT sumar XP, y recoger XP MUST NOT cambiar el oro ni la madera. Los contadores no se guardan en récords ni en el
+historial (`progress-persistence` sin cambios) ni se muestran en la pantalla de resultados (`run-results` sin cambios).
 
 #### Scenario: Partida recién creada
 - **GIVEN** el contenido por defecto y la semilla 42 con su mapa generado
@@ -146,7 +147,8 @@ recoger XP MUST NOT cambiar el oro ni la madera. Los contadores no se guardan en
 - **GIVEN** una partida en obra con madera 22 y oro 9
 - **WHEN** se construye una casa (15 madera)
 - **THEN** la madera vale 7 y el oro sigue en 9
-- **AND** con madera 14 la casa no se ofrece y la madera sigue en 14
+- **AND** con madera 14 y piedra 0 la oferta de obra incluye `house` como no asequible, construir `house` devuelve un
+  error tipado, la partida sigue en obra y la madera sigue en 14
 
 #### Scenario: Pago de una casa como ingreso
 - **GIVEN** g = 10, oro 0, resto 0 y una casa construida
@@ -603,3 +605,4 @@ del lote.
 <!-- historial: 0024-split-progression-castle (2026-11-25) -->
 <!-- historial: 0025-stone-resource (2026-11-25) -->
 <!-- historial: 0026-build-sites (2026-11-25) -->
+<!-- historial: 0027-site-contact (2026-11-25) -->

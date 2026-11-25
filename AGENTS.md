@@ -159,6 +159,15 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   segunda `ProjectileLayer`, `BuildPanel` + `BuildGate` (Shop → Build → Pause); sondas `__sprint.sites`, `map.sites`,
   `sprites.sites`/`towerArrows` y pantalla `build`. Bot v4 sale de la obra: `BALANCE_BASELINE` idéntica; bot v5
   (`builderBot`, torre si es asequible y si no casa) **29/50**; 737/820 objetos del mapa en 42/123.
+  Oferta por contacto (change 0027, ADR-0026): sin punto de acceso. El solar libre es **celda de obra** (`BUILT` 5
+  en la capa viva, marcado en `Run.start` sin azar) y bloquea a jugador, enemigos (`FlowField`) y `GuardPost` desde
+  el tick 0; construir no cambia la caminabilidad (huellas iguales). Tocar = separación g (distancia del centro del
+  jugador a la huella − radio) ≤ `CONTACT_EPS` 1 px; re-armado con g ≥ `contact.rearmDistance` 64
+  (`buildings.json`). La oferta se abre **siempre** al tocar uno armado, con casa y torre (`affordable`, `missing`);
+  `Run.build` rechaza lo no asequible. `MAP_SITE_OVERLAPS_PLAYER` (`map.sites.<i>`); oveja declarada sobre una
+  huella es error. `BuildPanel` con iconos del HUD (`resourceIcons`: `W_Idle`, `Deco/05`), coste 0 omitido y «faltan
+  N». Solo cambia `STONE_GOLDEN`; `BALANCE_BASELINE` regenerada (v4 **34/50**), `BUILDER_REFERENCE` 34/50, 0
+  quietos. Lotes en CI 52 s (v4) y 89 s (v5, timeout propio 300 s por el invariante por tick).
   Fuente de verdad del comportamiento: `openspec/specs/`.
 
 ## 2. Comandos
