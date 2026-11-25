@@ -44,6 +44,7 @@ import {
   type RunRules,
 } from './RunConfig';
 import { Arsenal } from '../weapon/Arsenal';
+import { TowerBattery } from '../weapon/TowerBattery';
 import type { UpgradeBoard } from '../upgrade/UpgradeBoard';
 import type { BuildSnapshot, RunSnapshot, ShopSnapshot, SiteSnapshot } from './RunSnapshot';
 import { Settlement } from '../site/Settlement';
@@ -157,6 +158,8 @@ export class Run {
   private shopKey = '';
   /** Solares de obra, su paso 12 y la oferta abierta (0026). */
   private readonly settlement: Settlement;
+  /** Torres construidas y su reserva de flechas (0026, pasos 3.1 y 3.2). */
+  private readonly towers: TowerBattery;
   /** Últimos solares del snapshot y su clave (estado y armado): se rehacen solo si cambian. */
   private sitesView: readonly SiteSnapshot[] = [];
   private sitesKey = '';
@@ -196,6 +199,7 @@ export class Run {
     this.flock = initial.flock;
     this.gate = new CastleGate(terrain.door, rules.shop, initial.shopArmed);
     this.settlement = new Settlement(buildSites, rules.buildings);
+    this.towers = new TowerBattery(rules.buildings, buildSites);
     for (const w of rules.loadout.weapons) this.retune(w.id);
     const bonus = maxHealthBonus(rules.upgrades, this.board.levels);
     this.player = this.player.withRules(this.effectivePlayer(), bonus);
@@ -368,10 +372,13 @@ export class Run {
     this.flock.step(n, x, y, this.terrain, this.arena);
     this.field.retarget(this.terrain.colAt(x), this.terrain.rowAt(y));
     this.horde.act(n, x, y, TICK_SECONDS, this.field);
-    const { horde, structures, flock } = this;
-    if (this.arsenal.step(n, x, y, horde.alive, structures.all, flock.all) > 0) {
-      horde.removeDead(this.onDeath);
-    }
+    const { horde, structures, flock, arsenal, towers } = this;
+    // Paso 3 (0026): 3.1 proyectiles del jugador y flechas; 3.2 armas del jugador y torres.
+    let kills = arsenal.advance(n, horde.alive, structures.all, flock.all);
+    kills += towers.advance(n, horde.alive);
+    kills += arsenal.fireAll(n, x, y, horde.alive);
+    towers.fire(n, horde.alive);
+    if (kills > 0) horde.removeDead(this.onDeath);
     structures.settle(this.onRuin);
     flock.settle(n, this.onSheepDeath);
     this.stepHazards(n, x, y);
@@ -381,6 +388,7 @@ export class Run {
     }
     this.collect(x, y);
     this.regenerate(n);
+    this.settlement.payIncome(n, this.payHouse);
     this.director.step(n, horde.alive.length, this.place);
     structures.spawnGuards(n, horde, this.rules.spawn.maxAlive);
     this.flock.respawn(n, x, y);
@@ -414,6 +422,7 @@ export class Run {
     const { wood, stone } = this.rules.buildings.cost(kind);
     if (!this.stock.spendMaterials(wood, stone)) return err({ code: 'not-affordable', kind });
     site.markBuilt(kind, this.tickCount);
+    if (kind === 'tower') this.towers.add(site);
     const built = this.terrain.build(site.col, site.row, site.cols, site.rows);
     if (!built.ok) throw new Error(`Invariante rota: ${built.error.message}`);
     this.clearFootprint();
@@ -580,6 +589,14 @@ export class Run {
     dead.post?.release();
   };
 
+  /**
+   * Paso 7.4 (0026): el pago de una casa es un ingreso de oro con la bonificación y el resto propio
+   * del oro, directo al contador (sin recogible ni tope). Se crea una sola vez: no asigna por tick.
+   */
+  private readonly payHouse = (gold: number): void => {
+    this.stock.add(gold, 0, this.player.effective.goldBonusPercent ?? 0);
+  };
+
   /** Una estructura que queda en ruina suelta su oro en su posición (spec goblin-structures). */
   private readonly onRuin = (ruin: Structure): void => {
     const gold = this.rules.resources.goldFor(ruin.site.type.id);
@@ -632,6 +649,7 @@ export class Run {
       enemies: Object.freeze(enemies),
       sheep: Object.freeze(this.flock.all.map((o) => toSheepSnapshot(o, o.damagedAt(k, flash)))),
       projectiles: Object.freeze(this.arsenal.projectiles.map(toProjectileSnapshot)),
+      towerProjectiles: Object.freeze(this.towers.projectiles.map(toProjectileSnapshot)),
       pulses: Object.freeze(this.arsenal.pulses.map(toPulseSnapshot)),
       dynamites: Object.freeze(
         this.hazards.dynamites.map((d) =>

@@ -273,8 +273,10 @@ export interface RunSnapshotBody {
   readonly enemies: readonly EnemySnapshot[];
   /** Ovejas vivas en orden de creación (0023). */
   readonly sheep: readonly SheepSnapshot[];
-  /** Proyectiles vivos en orden de creación. */
+  /** Proyectiles vivos del jugador en orden de creación. */
   readonly projectiles: readonly ProjectileSnapshot[];
+  /** Flechas de torre vivas en orden de creación (0026; ids propios, fuera del tope del jugador). */
+  readonly towerProjectiles: readonly ProjectileSnapshot[];
   /** Pulsos visibles en orden de disparo. */
   readonly pulses: readonly PulseSnapshot[];
   /** Dinamitas en vuelo en orden de creación. */

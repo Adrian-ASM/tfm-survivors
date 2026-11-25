@@ -6,6 +6,7 @@ import { Weapon } from './Weapon';
 import type { WeaponLoadout } from './WeaponLoadout';
 import type { TargetingConfig, WeaponType } from './WeaponType';
 import type { WeaponTarget } from './WeaponTarget';
+import { firstOverlapping } from './hits';
 import { selectTarget } from './targeting';
 
 type PulseAttack = Extract<Weapon['type']['attack'], { type: 'pulse' }>;
@@ -78,13 +79,37 @@ export class Arsenal {
     structures: readonly WeaponTarget[] = NO_TARGETS,
     sheep: readonly WeaponTarget[] = NO_TARGETS,
   ): number {
+    return this.advance(n, targets, structures, sheep) + this.fireAll(n, px, py, targets);
+  }
+
+  /**
+   * Paso 3.1 del tick n (0026): ecos caducados, proyectiles existentes y compactación, con los
+   * niveles de reserva del tick (que usa después `fireAll`). Devuelve las bajas de enemigos.
+   */
+  advance(
+    n: number,
+    targets: readonly WeaponTarget[],
+    structures: readonly WeaponTarget[] = NO_TARGETS,
+    sheep: readonly WeaponTarget[] = NO_TARGETS,
+  ): number {
     const { reserves } = this;
     reserves[0] = structures;
     reserves[1] = sheep;
     this.expireEchoes(n);
-    let kills = this.moveProjectiles(n, targets, reserves);
+    const kills = this.moveProjectiles(n, targets, reserves);
     this.compactProjectiles();
-    for (const weapon of this.weapons) kills += this.fire(weapon, n, px, py, targets, reserves);
+    return kills;
+  }
+
+  /**
+   * Paso 3.2 del tick n (0026): disparos en el orden del loadout con el jugador en (px, py) y los
+   * niveles de reserva de `advance`. Devuelve las bajas de enemigos (pulsos).
+   */
+  fireAll(n: number, px: number, py: number, targets: readonly WeaponTarget[]): number {
+    let kills = 0;
+    for (const weapon of this.weapons) {
+      kills += this.fire(weapon, n, px, py, targets, this.reserves);
+    }
     return kills;
   }
 
@@ -254,17 +279,4 @@ function reach(t: TargetingConfig): number {
     default:
       return assertNever(t);
   }
-}
-
-function firstOverlapping(
-  x: number,
-  y: number,
-  r: number,
-  targets: readonly WeaponTarget[],
-): WeaponTarget | undefined {
-  for (let i = 0; i < targets.length; i++) {
-    const t = targets[i];
-    if (t?.alive && circlesOverlap(x, y, r, t.x, t.y, t.radius)) return t;
-  }
-  return undefined;
 }

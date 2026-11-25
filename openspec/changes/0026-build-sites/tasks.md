@@ -70,13 +70,13 @@
   - Test: `tests/domain/run-build-clearance.test.ts`.
 
 ## 4. Dominio · casas y torres (design §5 pasos 3 y 7.4, §6)
-- [ ] 4.1 Ingreso de las casas en el paso 7.4: n = `builtAt` + k × periodo, orden de solares, `stock.add` con
+- [x] 4.1 Ingreso de las casas en el paso 7.4: n = `builtAt` + k × periodo, orden de solares, `stock.add` con
   bonificación y resto compartido.
   - Escenarios: bs "Pagos de una casa", "Dos casas", "Con bonificación de oro", "Sin recogible ni tope", "Sin pago
     en el tick de la victoria" y "Las pausas no adelantan el pago"; sl "Pago de la casa tras la regeneración"; res
     "Pago de una casa como ingreso"; rs "Peligros, invulnerabilidad y pagos en pausa durante la obra".
   - Test: `tests/domain/run-house-income.test.ts`.
-- [ ] 4.2 `TowerBattery` (pool propio, ids propios, solo tier 0, sin mejoras) y `Arsenal.step` partido en
+- [x] 4.2 `TowerBattery` (pool propio, ids propios, solo tier 0, sin mejoras) y `Arsenal.step` partido en
   `advance` + `fire` (3.1 y 3.2). Se mueve `firstOverlapping` a `weapon/hits.ts` y se añade
   `snapshot.towerProjectiles`.
   - Escenarios: bs "Primer disparo de la torre", "Límite del alcance", "Cadencia de la torre", "Solo enemigos",

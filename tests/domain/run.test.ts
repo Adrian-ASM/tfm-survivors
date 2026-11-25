@@ -29,6 +29,7 @@ describe('Run', () => {
       enemies: [],
       sheep: [],
       projectiles: [],
+      towerProjectiles: [],
       pulses: [],
       dynamites: [],
       warnings: [],

@@ -58,6 +58,20 @@ export class Settlement {
     return opened;
   }
 
+  /**
+   * Casas que pagan en el tick n (spec build-sites, "Oro periódico de las casas"): cada casa
+   * construida en b paga en n = b + k · periodo (k ≥ 1). Llama a `pay` una vez por casa, en el orden
+   * de los solares, con el oro por pago. Sin azar ni asignaciones.
+   */
+  payIncome(n: number, pay: (gold: number) => void): void {
+    const { gold, everyTicks } = this.rules.income;
+    for (const site of this.sites) {
+      const b = site.builtAt;
+      if (site.state !== 'house' || b === null || n <= b) continue;
+      if ((n - b) % everyTicks === 0) pay(gold);
+    }
+  }
+
   /** Cierra la oferta (al construir o al salir); el solar sigue desarmado. */
   close(): void {
     this.openSite = null;
