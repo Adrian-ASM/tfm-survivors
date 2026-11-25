@@ -57,8 +57,19 @@ function benchConfig(weapons?: WeaponsConfig): RunConfig {
       ? upgrades.weapons.filter((u) => u.stat !== 'cooldownTicks')
       : upgrades.weapons,
   };
+  // Las tablas por tipo (oro por baja 0024, piedra 0025) son completas: el tipo de bench, con 0.
+  const { drops } = config.value.resources;
+  const resources = {
+    ...config.value.resources,
+    drops: {
+      ...drops,
+      goldPerKill: { ...drops.goldPerKill, [BENCH_TYPE.id]: 0 },
+      stoneChance: { ...drops.stoneChance, [BENCH_TYPE.id]: 0 },
+    },
+  };
   return {
     ...config.value,
+    resources,
     player: { ...player, maxHealth: BENCH_HEALTH },
     enemies: { ...enemies, types: [...types, BENCH_TYPE] },
     weapons: weapons ?? config.value.weapons,
@@ -360,7 +371,11 @@ test('Peor caso con gemas: 300 vivos, 32 proyectiles y 300 gemas atraídas (60 t
  * atraídos en las esquinas inferiores, a ≥ 400 px del jugador. Los montones del mapa, a > 308 px de
  * la salida, no se atraen ni se recogen en los 100 ticks.
  */
-function runWorstCaseThreeTopes(config: RunConfig = benchConfig(BENCH_WEAPONS), meat = 0): Run {
+function runWorstCaseThreeTopes(
+  config: RunConfig = benchConfig(BENCH_WEAPONS),
+  meat = 0,
+  stone = 0,
+): Run {
   const { maxGems, maxGold, maxWood } = config.progression;
   const piles = config.resources.woodPiles.count;
   const corners = [
@@ -380,6 +395,7 @@ function runWorstCaseThreeTopes(config: RunConfig = benchConfig(BENCH_WEAPONS), 
     ...Array<'gold'>(maxGold).fill('gold'),
     ...Array<'wood'>(maxWood - piles).fill('wood'),
     ...Array<'meat'>(meat).fill('meat'),
+    ...Array<'stone'>(stone).fill('stone'),
   ];
   const gems = kinds.map((kind, i) => ({ kind, ...at(i), value: 1, attracted: true }));
   const run = start(
@@ -434,6 +450,33 @@ test('Peor caso con los cuatro topes llenos: 300 vivos, 32 proyectiles, 404 reco
   expect(snap.status).toBe('running');
   expect(snap.pickups).toHaveLength(topes);
   expect(snap.sheep).toHaveLength(config.sheep.maxAlive);
+  expect(snap.sheep.every((o) => o.state === 'flee')).toBe(true);
+  expect(result.latency.mean).toBeLessThanOrEqual(MAX_MEAN_MS);
+});
+
+/**
+ * Peor caso de 0025 (spec simulation-loop, "Peor caso con los cinco topes llenos"): el de los cuatro
+ * topes más `maxStone` recogibles `stone` atraídos lejos del jugador (reserva de Σ 5 topes = 436).
+ */
+test('Peor caso con los cinco topes llenos: 300 vivos, 32 proyectiles, 436 recogibles y ovejas en huida', async ({
+  bench,
+}) => {
+  const base = benchConfig(BENCH_WEAPONS);
+  const config = { ...base, sheep: { ...base.sheep, flee: { ...base.sheep.flee, radius: REACH } } };
+  const { maxGems, maxGold, maxWood, maxMeat, maxStone } = config.progression;
+  const run = runWorstCaseThreeTopes(config, maxMeat, maxStone);
+  const topes = maxGems + maxGold + maxWood + maxMeat + maxStone;
+  const result = await bench(
+    'Run.tick · 300 vivos + 32 proyectiles + cinco topes + ovejas en huida',
+    () => {
+      step(run);
+    },
+  ).run({ ...OPTIONS, iterations: GEM_MEASURED_TICKS, warmupIterations: GEM_WARMUP_TICKS });
+  report(result.name, result.latency);
+  const snap = run.snapshot();
+  expect(snap.status).toBe('running');
+  expect(snap.pickups).toHaveLength(topes);
+  expect(snap.pickups.filter((p) => p.kind === 'stone')).toHaveLength(maxStone);
   expect(snap.sheep.every((o) => o.state === 'flee')).toBe(true);
   expect(result.latency.mean).toBeLessThanOrEqual(MAX_MEAN_MS);
 });

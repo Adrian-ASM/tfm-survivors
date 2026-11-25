@@ -7,5 +7,6 @@
   "maxGold": 32,
   "maxWood": 64,
   "maxMeat": 8,
+  "maxStone": 32,
   "levelUpHealPercent": 10
 }

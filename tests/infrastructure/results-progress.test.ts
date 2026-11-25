@@ -79,7 +79,11 @@ describe('ResultsProgress (spec run-results y progress-persistence)', () => {
     const { results, repo } = presenter();
     const restart = new RestartRun(
       lethalConfig(),
-      () => ({ random: new Mulberry32RandomGenerator(7), terrain: OPEN_TERRAIN }),
+      () => ({
+        random: new Mulberry32RandomGenerator(7),
+        terrain: OPEN_TERRAIN,
+        stoneRandom: new Mulberry32RandomGenerator(8),
+      }),
       new DoomedStartRun(),
     );
     const first = new DoomedStartRun().execute(lethalConfig(), new Mulberry32RandomGenerator(42));

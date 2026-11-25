@@ -46,6 +46,12 @@ export interface EconomyTrace {
   readonly heals: number;
   /** Tick de cada nivel de arma comprado, en orden. */
   readonly purchaseTicks: readonly number[];
+  /**
+   * Piedra (0025, informativa): recogibles `stone` nuevos vistos en el snapshot de su tick (cota
+   * inferior: no cuenta los que se crean y se recogen en el mismo tick) y piedra recogida.
+   */
+  readonly stoneDropped: number;
+  readonly stoneCollected: number;
 }
 
 /** Vida curada entre dos snapshots (0 si cambió la máxima: una mejora no es curación). */
@@ -98,6 +104,7 @@ export function playBotTraced(
   let sheepDeaths = 0;
   let last: RunSnapshot | null = null;
   const eco = { droppedByKills: 0, droppedByStructures: 0, veins: 0, earned: 0, spent: 0 };
+  const stone = { stoneDropped: 0, stoneCollected: 0 };
   const visit = { visits: 0, purchases: 0, heals: 0 };
   const purchaseTicks: number[] = [];
   // Recogibles en orden de creación con ids crecientes: los nuevos del tick están al final.
@@ -134,8 +141,10 @@ export function playBotTraced(
     const { pickups } = after;
     let first = pickups.length;
     while (first > 0 && (pickups[first - 1]?.id ?? -1) > lastPickup) first--;
+    stone.stoneCollected += after.resources.stone - before.resources.stone;
     for (const p of pickups.slice(first)) {
       lastPickup = Math.max(lastPickup, p.id);
+      if (p.kind === 'stone') stone.stoneDropped += p.value;
       if (p.kind !== 'gold') continue;
       const fromStructure =
         ruined && after.structures.some((x) => x.destroyed && x.x === p.x && x.y === p.y);
@@ -166,7 +175,7 @@ export function playBotTraced(
     )
       w3Damage += lost;
   }
-  const economy = { ...eco, ...visit, purchaseTicks };
+  const economy = { ...eco, ...visit, purchaseTicks, ...stone };
   return {
     final: run.snapshot(),
     fuses: fused.size,

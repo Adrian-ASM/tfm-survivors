@@ -80,8 +80,19 @@ export function aBehaviorConfig(
   };
 }
 
-export function startRun(config: RunConfig, setup?: RunSetup, random?: RandomGenerator): Run {
-  const r = Run.start(config, random ?? new Mulberry32RandomGenerator(42), setup);
+export function startRun(
+  config: RunConfig,
+  setup?: RunSetup,
+  random?: RandomGenerator,
+  stoneRandom?: RandomGenerator,
+): Run {
+  const r = Run.start(
+    config,
+    random ?? new Mulberry32RandomGenerator(42),
+    setup,
+    undefined,
+    stoneRandom,
+  );
   if (!r.ok) throw new Error(r.error.message);
   return r.value;
 }
@@ -96,8 +107,8 @@ export function startSeededRun(
   mode: MapMode = 'generated',
   setup?: RunSetup,
 ): Run {
-  const { random, terrain } = seededRun(seed, mode);
-  const r = Run.start(config, random, setup, terrain);
+  const { random, terrain, stoneRandom } = seededRun(seed, mode);
+  const r = Run.start(config, random, setup, terrain, stoneRandom);
   if (!r.ok) throw new Error(r.error.message);
   return r.value;
 }

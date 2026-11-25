@@ -7,6 +7,7 @@ import {
   RESOURCE_DROP_UNKNOWN_ENEMY,
   RESOURCE_DROP_UNKNOWN_STRUCTURE,
   RESOURCE_PLACEMENT_MUST_BE_INTEGER,
+  STONE_CHANCE_INVALID,
   VEIN_RADIUS_MUST_BE_POSITIVE,
   type ResourcesConfig,
 } from '../../src/domain/resource/ResourceRules';
@@ -159,5 +160,60 @@ describe('Tope de madera y montones (spec xp-gems, "Contenido de gemas validado"
       message: MAX_WOOD_BELOW_WOOD_PILES,
     });
     expect(buildRunRules(withPilesAndTope(6, 6)).ok).toBe(true);
+  });
+});
+
+// Spec resources (0025), "Piedra por enemigo abatido": tabla completa del catálogo, enteros 0..100.
+describe('Tabla de piedra por baja (dominio)', () => {
+  const complete = {
+    'goblin-torch': 10,
+    'goblin-tnt': 15,
+    'goblin-barrel': 5,
+    'goblin-tnt-guard': 25,
+  };
+  const stones = (stoneChance: Record<string, number>): RunConfig =>
+    config((r) => ({ ...r, drops: { ...r.drops, stoneChance } }));
+
+  it('stoneChanceFor da la probabilidad de cada tipo y 0 sin tabla', () => {
+    const r = buildRunRules(stones(complete));
+    if (!r.ok) throw new Error(r.error.message);
+    expect(r.value.resources.stoneChanceFor('goblin-tnt')).toBe(15);
+    expect(r.value.resources.stoneChanceFor('goblin-tnt-guard')).toBe(25);
+
+    const none = buildRunRules(
+      config((res) => ({
+        ...res,
+        drops: { enemies: res.drops.enemies, structures: res.drops.structures },
+      })),
+    );
+    if (!none.ok) throw new Error(none.error.message);
+    expect(none.value.resources.stoneChanceFor('goblin-torch')).toBe(0);
+  });
+
+  it.each([
+    [
+      'falta goblin-tnt-guard',
+      { 'goblin-torch': 10, 'goblin-tnt': 15, 'goblin-barrel': 5 },
+      'goblin-tnt-guard',
+    ],
+    ['sobra goblin-ogre', { ...complete, 'goblin-ogre': 3 }, 'goblin-ogre'],
+    ['goblin-torch −1', { ...complete, 'goblin-torch': -1 }, 'goblin-torch'],
+    ['goblin-torch 101', { ...complete, 'goblin-torch': 101 }, 'goblin-torch'],
+    ['goblin-torch 12,5', { ...complete, 'goblin-torch': 12.5 }, 'goblin-torch'],
+  ])('Scenario: Tabla de piedra inválida (%s)', (_name, table, id) => {
+    const e = failure(stones(table));
+
+    expect(e.field).toBe(`resources.drops.stoneChance.${id}`);
+    expect(e.message).toContain(STONE_CHANCE_INVALID);
+    expect(e.message).toContain(id);
+  });
+
+  it.each([
+    ['0 en todos', 0],
+    ['100 en todos', 100],
+  ])('Scenario: Límites válidos de la tabla (%s)', (_name, p) => {
+    const all = Object.fromEntries(Object.keys(complete).map((id) => [id, p]));
+
+    expect(buildRunRules(stones(all)).ok).toBe(true);
   });
 });

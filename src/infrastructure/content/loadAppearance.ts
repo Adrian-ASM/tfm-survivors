@@ -2,6 +2,7 @@ import { err, invalidConfig, ok, type DomainError, type Result } from '../../dom
 import {
   ASSET_DIR,
   AppearanceSchema,
+  ROCK_SIZES,
   SHEET_NOT_REGISTERED,
   type Appearance,
   type Aspect,
@@ -9,11 +10,19 @@ import {
   type StructureAspect,
 } from './appearanceSchema';
 
-/** Aspectos con hoja de los recogibles (0022): la gema solo si tiene hoja; luego oro y madera. */
+/**
+ * Aspectos con hoja de los recogibles (0022, 0025): la gema solo si tiene hoja; luego oro, madera,
+ * carne y las tres rocas de la piedra, cada una con el color de reserva de `stone` (así la carga, la
+ * nota de procedencia y la reserva por hoja las tratan como cualquier otro aspecto).
+ */
 export function pickupAspectsOf(appearance: Appearance): [string[], StillAspect][] {
-  const { xp, gold, wood, meat } = appearance.pickups;
+  const { xp, gold, wood, meat, stone } = appearance.pickups;
   const out: [string[], StillAspect][] = 'sheet' in xp ? [[['pickups', 'xp'], xp]] : [];
   out.push([['pickups', 'gold'], gold], [['pickups', 'wood'], wood], [['pickups', 'meat'], meat]);
+  for (const size of ROCK_SIZES) {
+    const rock = { ...stone.rocks[size], placeholderColor: stone.placeholderColor };
+    out.push([['pickups', 'stone', 'rocks', size], rock]);
+  }
   return out;
 }
 

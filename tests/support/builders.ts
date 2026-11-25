@@ -204,16 +204,32 @@ export const withGoldPerKill = (
 };
 
 /**
+ * Probabilidad de piedra por baja de escenario (0025): tabla completa por tipo del contenido, 0 en
+ * los que no se nombran. Va después de `withDrops`, que rehace los drops.
+ */
+export const withStoneChance = (
+  config: RunConfig,
+  chance: Readonly<Record<string, number>>,
+): RunConfig => {
+  const stoneChance = Object.fromEntries(
+    config.enemies.types.map((t) => [t.id, chance[t.id] ?? 0]),
+  );
+  const { drops } = config.resources;
+  return withResources(config, { ...config.resources, drops: { ...drops, stoneChance } });
+};
+
+/**
  * El mismo contenido con tipos de enemigo de escenario añadidos; si el contenido tiene tabla de oro
- * por baja (0024: completa por tipo), los tipos nuevos entran con 0.
+ * por baja (0024) o de piedra (0025), completas por tipo, los tipos nuevos entran con 0.
  */
 export const withExtraTypes = (config: RunConfig, ...types: EnemyTypeConfig[]): RunConfig => {
   const next = {
     ...config,
     enemies: { ...config.enemies, types: [...config.enemies.types, ...types] },
   };
-  const table = config.resources.drops.goldPerKill;
-  return table ? withGoldPerKill(next, table) : next;
+  const { goldPerKill, stoneChance } = config.resources.drops;
+  const withGold = goldPerKill ? withGoldPerKill(next, goldPerKill) : next;
+  return stoneChance ? withStoneChance(withGold, stoneChance) : withGold;
 };
 
 /** Ovejas por defecto, leídas de content/sheep.json (0023, una sola fuente). */
@@ -520,6 +536,7 @@ export interface RawContent {
     maxGold: number;
     maxWood: number;
     maxMeat: number;
+    maxStone: number;
     levelUpHealPercent: number;
     [extra: string]: unknown;
   };

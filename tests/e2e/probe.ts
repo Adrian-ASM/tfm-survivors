@@ -79,14 +79,15 @@ export interface SnapshotView {
   /** Recogibles de los cuatro tipos (0022, `meat` desde 0023), contadores y vetas. */
   pickups: {
     id: number;
-    kind: 'xp' | 'gold' | 'wood' | 'meat';
+    kind: 'xp' | 'gold' | 'wood' | 'meat' | 'stone';
+    source?: string;
     value: number;
     x: number;
     y: number;
   }[];
   /** Ovejas vivas (0023). */
   sheep: { id: number; x: number; y: number; state: 'graze' | 'wander' | 'flee' }[];
-  resources: { gold: number; wood: number };
+  resources: { gold: number; wood: number; stone: number };
   veins: { id: number; x: number; y: number; radius: number; gold: number; depleted: boolean }[];
   /** Peligros (0020): dinamitas en vuelo, avisos y explosiones visibles. */
   dynamites: { id: number; x: number; y: number }[];
@@ -141,7 +142,7 @@ export interface SpritesView {
   pulses: SpriteCountView;
   gems: SpriteCountView;
   /** Recogibles por tipo (0022, `meat` desde 0023); `gems` es el mismo objeto que `pickups.xp`. */
-  pickups: Record<'xp' | 'gold' | 'wood' | 'meat', SpriteCountView>;
+  pickups: Record<'xp' | 'gold' | 'wood' | 'meat' | 'stone', SpriteCountView>;
   /** Ovejas pintadas, con reserva y por estado (0023). */
   sheep: SpriteCountView & { byState: Record<'graze' | 'wander' | 'flee', number> };
   /** Vetas pintadas (0022): activas, agotadas y con reserva. */
@@ -267,7 +268,7 @@ interface Probe {
     manual?: boolean;
     step?: (n: unknown) => Promise<number>;
     /** Oro y madera que muestra el HUD (0022); null en el menú. */
-    hud?: { gold: string; wood: string } | null;
+    hud?: { gold: string; wood: string; stone: string } | null;
   };
 }
 
@@ -355,8 +356,9 @@ export async function startSpriteSampler(page: Page, placeholderType?: string): 
       if (s) {
         result.maxCorpses = Math.max(result.maxCorpses, s.corpses.visible);
         if (s.corpses.visible > 64) miss(`cadáveres ${String(s.corpses.visible)}`);
-        const { xp, gold, wood } = s.pickups;
+        const { xp, gold, wood, stone } = s.pickups;
         const kinds = [s.player, s.enemies, s.corpses, s.projectiles, s.pulses, xp, gold, wood];
+        kinds.push(stone);
         if (!snap) {
           result.menuFrames += 1;
           if (kinds.some((k) => k.visible !== 0)) miss('menú con sprites visibles');
@@ -376,6 +378,8 @@ export async function startSpriteSampler(page: Page, placeholderType?: string): 
             // 0022: recogibles por tipo y vetas por estado, iguales a los del snapshot.
             ['oro', gold.visible, snap.pickups.filter((x) => x.kind === 'gold').length],
             ['madera', wood.visible, snap.pickups.filter((x) => x.kind === 'wood').length],
+            // 0025: la piedra, sumando sus tres rocas.
+            ['piedra', stone.visible, snap.pickups.filter((x) => x.kind === 'stone').length],
             ['vetas activas', s.veins.active, snap.veins.filter((v) => !v.depleted).length],
             ['vetas agotadas', s.veins.depleted, snap.veins.filter((v) => v.depleted).length],
           ];

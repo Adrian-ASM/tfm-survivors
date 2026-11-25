@@ -13,6 +13,10 @@ export const WOOD_FILE = 'Resources/Resources/W_Idle.png';
 export const MEAT_FILE = 'Resources/Resources/M_Idle.png';
 export const SHEEP_IDLE_FILE = 'Resources/Sheep/HappySheep_Idle.png';
 export const SHEEP_BOUNCE_FILE = 'Resources/Sheep/HappySheep_Bouncing.png';
+/** Rocas de la piedra (0025): `small`, `medium` y `large`. */
+export const ROCK_SMALL_FILE = 'Deco/04.png';
+export const ROCK_MEDIUM_FILE = 'Deco/05.png';
+export const ROCK_LARGE_FILE = 'Deco/06.png';
 export const VEIN_FILE = 'Resources/Gold Mine/GoldMine_Active.png';
 export const VEIN_DEPLETED_FILE = 'Resources/Gold Mine/GoldMine_Inactive.png';
 export const GROUND_FILE = 'Terrain/Ground/Tilemap_Flat.png';
@@ -54,6 +58,9 @@ const FILES = [
   SHEEP_BOUNCE_FILE,
   VEIN_FILE,
   VEIN_DEPLETED_FILE,
+  ROCK_SMALL_FILE,
+  ROCK_MEDIUM_FILE,
+  ROCK_LARGE_FILE,
 ];
 
 /** Los 15 casos de orilla (lados de río, letras en orden N-E-S-W; design 0016 §12.2 B2). */
@@ -99,6 +106,15 @@ function moving(file: string, size: number, color: string): Json {
     walk: anim([6, 7, 8, 9], 10, true),
   };
 }
+
+/** Roca de la piedra (0025): aspecto quieto de 64 × 64 sin color propio. */
+const rock = (file: string): Json => ({
+  sheet: { file, frameWidth: 64, frameHeight: 64 },
+  scale: 0.5,
+  origin: { x: 0.5, y: 0.5 },
+  facing: 'right',
+  idle: anim([0], 1, true),
+});
 
 const still = (file: string, size: number, color: string): Json => ({
   ...base(file, size, color),
@@ -194,11 +210,16 @@ export function rawAppearance(): RawAppearance {
     maxCorpses: 64,
     player: moving(ARCHER_FILE, 192, '#4cc38a'),
     enemies: {
-      'goblin-torch': moving(TORCH_FILE, 192, '#e5484d'),
-      'goblin-tnt': { ...moving(TNT_FILE, 192, '#8e4ec6'), throw: anim([14, 15, 16], 14, false) },
+      'goblin-torch': { ...moving(TORCH_FILE, 192, '#e5484d'), rock: 'small' },
+      'goblin-tnt': {
+        ...moving(TNT_FILE, 192, '#8e4ec6'),
+        throw: anim([14, 15, 16], 14, false),
+        rock: 'medium',
+      },
       'goblin-barrel': {
         ...moving(BARREL_FILE, 128, '#f76b15'),
         fuse: anim([30, 31, 32], 10, true),
+        rock: 'small',
       },
     },
     projectile: still(ARROW_FILE, 64, '#ffd60a'),
@@ -207,6 +228,14 @@ export function rawAppearance(): RawAppearance {
       gold: still(GOLD_FILE, 128, '#e8c547'),
       wood: still(WOOD_FILE, 128, '#9c6b3c'),
       meat: still(MEAT_FILE, 128, '#c8504a'),
+      stone: {
+        placeholderColor: '#9aa0a6',
+        rocks: {
+          small: rock(ROCK_SMALL_FILE),
+          medium: rock(ROCK_MEDIUM_FILE),
+          large: rock(ROCK_LARGE_FILE),
+        },
+      },
     },
     sheep: {
       scale: 0.6,

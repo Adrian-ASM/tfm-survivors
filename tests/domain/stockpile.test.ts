@@ -41,6 +41,41 @@ describe('Stockpile (unidad)', () => {
   });
 });
 
+// Spec resources (0025), "Contador de piedra de la partida": solo sube, sin bonificación ni resto.
+describe('Stockpile: piedra (unidad)', () => {
+  it('empieza en 0 y en el valor dado', () => {
+    expect(new Stockpile().stone).toBe(0);
+    expect(new Stockpile(0, 0, 7).stone).toBe(7);
+  });
+
+  it('Scenario: Sin bonificación (10 piedras de 1 con g = 20: 10)', () => {
+    const s = new Stockpile();
+    for (let i = 0; i < 10; i++) {
+      s.add(0, 0, 20);
+      s.addStone(1);
+    }
+    expect([s.stone, s.gold, s.wood]).toEqual([10, 0, 0]);
+  });
+
+  it('Scenario: Valores grandes (99.999 + 1 = 100.000)', () => {
+    const s = new Stockpile(0, 0, 99_999);
+    s.addStone(1);
+    expect(s.stone).toBe(100_000);
+  });
+
+  it('Scenario: No baja al comprar (piedra 5, compra de 30)', () => {
+    const s = new Stockpile(30, 0, 5);
+    expect(s.spend(30)).toBe(true);
+    expect([s.gold, s.stone]).toEqual([0, 5]);
+  });
+
+  it('el oro y la madera no tocan la piedra', () => {
+    const s = new Stockpile(0, 0, 2);
+    s.add(10, 3, 0);
+    expect(s.stone).toBe(2);
+  });
+});
+
 /** Contenido por defecto sin oleadas, veta de 15 y radio 24, con `prospector` +g en nivel 1. */
 const prospecting = (g: number): RunConfig => {
   const base = aDefaultConfig();

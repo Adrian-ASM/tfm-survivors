@@ -510,7 +510,7 @@ function legTo(at: Waypoint, to: Waypoint): { key: string; ticks: number } | nul
 // Spec hud (0022), "Contadores en el navegador": semilla 42 con el mapa real, el jugador va al
 // montón más cercano a la salida por un recorrido sin bloqueos y, en cada lectura, el oro y la
 // madera del HUD son los del snapshot pintado. Modo manual, sin esperas de reloj.
-test('Recursos: el HUD muestra el oro y la madera del snapshot mientras se va al montón más cercano', async ({
+test('Recursos: el HUD muestra el oro, la madera y la piedra del snapshot mientras se va al montón más cercano', async ({
   page,
 }) => {
   slowMapRealOnCi();
@@ -537,11 +537,21 @@ test('Recursos: el HUD muestra el oro y la madera del snapshot mientras se va al
       mismatches.push('sin lectura');
       return null;
     }
-    const want = { gold: String(snap.resources.gold), wood: String(snap.resources.wood) };
-    if (shown.gold !== want.gold || shown.wood !== want.wood) {
+    // 0025, "Piedra en el navegador": también la piedra del HUD y los sprites de piedra.
+    const want = {
+      gold: String(snap.resources.gold),
+      wood: String(snap.resources.wood),
+      stone: String(snap.resources.stone),
+    };
+    if (shown.gold !== want.gold || shown.wood !== want.wood || shown.stone !== want.stone) {
       mismatches.push(
         `tick ${String(snap.tick)}: ${JSON.stringify(shown)}≠${JSON.stringify(want)}`,
       );
+    }
+    const stones = snap.pickups.filter((x) => x.kind === 'stone').length;
+    const painted = p.sprites?.pickups.stone.visible;
+    if (painted !== stones) {
+      mismatches.push(`tick ${String(snap.tick)}: piedras ${String(painted)}≠${String(stones)}`);
     }
     return snap;
   };

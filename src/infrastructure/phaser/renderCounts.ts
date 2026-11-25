@@ -77,7 +77,7 @@ export function emptyCounts(
 ): SpriteCounts {
   const enemyPlaceholders: Record<string, number> = {};
   for (const id of enemyIds) enemyPlaceholders[id] = 0;
-  const pickups = { xp: zero(), gold: zero(), wood: zero(), meat: zero() };
+  const pickups = { xp: zero(), gold: zero(), wood: zero(), meat: zero(), stone: zero() };
   return {
     ground: zero(),
     player: zero(),

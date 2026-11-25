@@ -5,6 +5,7 @@ import { Hud, type HudPlacement } from '../../src/infrastructure/phaser/Hud';
 import { screenFrame } from '../../src/infrastructure/phaser/ui/screenFrame';
 import { hudLayout, type HudLayout } from '../../src/infrastructure/phaser/ui/uiLayout';
 import {
+  counterIcon,
   createHud,
   createResultsOverlay,
   createUpgradeOverlay,
@@ -16,6 +17,7 @@ import { aDefaultConfig, withPlayer, withShop } from '../support/builders';
 import { aBehaviorConfig, aProbeType, startRun } from '../support/runs';
 import { buyAll, startAtDoor, untilShopping } from '../support/shop';
 import { FakeBar, FakeLabel } from '../support/sprites';
+import { someLooks } from '../support/looks';
 
 const HEALTH_WIDTH = 200;
 const XP_WIDTH = 300;
@@ -27,6 +29,7 @@ const fresh = (): RunSnapshot => startRun(aDefaultConfig()).snapshot();
 const ICONS = {
   gold: { texture: 'Resources/Resources/G_Idle.png', frame: 0, color: 0xe8c547 },
   wood: { texture: null, frame: 0, color: 0x9c6b3c },
+  stone: { texture: 'Deco/05.png', frame: 0, color: 0x9aa0a6 },
 };
 
 /** Snapshot por defecto con cambios (vida, bajas, tick, progresión, estado). */
@@ -78,6 +81,7 @@ function hud() {
     level: new FakeLabel(),
     gold: new FakeLabel(),
     wood: new FakeLabel(),
+    stone: new FakeLabel(),
   };
   const xpBar = new XpBar(parts.xpFill, parts.level, XP_WIDTH, BAR_HEIGHT);
   const view = new Hud(
@@ -89,6 +93,7 @@ function hud() {
       kills: parts.kills,
       gold: parts.gold,
       wood: parts.wood,
+      stone: parts.stone,
     },
     HEALTH_WIDTH,
     BAR_HEIGHT,
@@ -315,6 +320,7 @@ function placedHud(frame = screenFrame(960, 540)) {
       kills: new FakeLabel(),
       gold: new FakeLabel(),
       wood: new FakeLabel(),
+      stone: new FakeLabel(),
       placement,
     },
     layout.barWidth,
@@ -381,7 +387,7 @@ describe('createHud con relayout (0017)', () => {
 describe('HUD · oro y madera (0022)', () => {
   const withResources = (s: RunSnapshot, gold: number, wood: number): RunSnapshot => ({
     ...s,
-    resources: { gold, wood },
+    resources: { gold, wood, stone: 0 },
   });
   const counters = (h: ReturnType<typeof hud>) => [h.gold.text, h.wood.text];
 
@@ -389,7 +395,7 @@ describe('HUD · oro y madera (0022)', () => {
     const h = hud();
     h.view.sync(fresh());
     expect(counters(h)).toEqual(['0', '0']);
-    expect(h.view.shown).toEqual({ gold: '0', wood: '0' });
+    expect(h.view.shown).toEqual({ gold: '0', wood: '0', stone: '0' });
   });
 
   it('Scenario: HUD al empezar (con oro 0 y madera 0)', () => {
@@ -462,6 +468,7 @@ describe('HUD · oro y madera (0022)', () => {
     const icons = {
       gold: { texture: null, frame: 0, color: 0xe8c547 },
       wood: { texture: 'Resources/Resources/W_Idle.png', frame: 0, color: 0x9c6b3c },
+      stone: { texture: 'Deco/05.png', frame: 0, color: 0x9aa0a6 },
     };
     const h = createHud(scene, screenFrame(960, 540), icons);
     const l = hudLayout(screenFrame(960, 540));
@@ -471,7 +478,98 @@ describe('HUD · oro y madera (0022)', () => {
     expect(() => {
       h.sync(fresh());
     }).not.toThrow();
-    expect(h.shown).toEqual({ gold: '0', wood: '0' });
+    expect(h.shown).toEqual({ gold: '0', wood: '0', stone: '0' });
+  });
+});
+
+// Spec hud (0025): "Piedra en el HUD" y los escenarios de "Contenido y visibilidad del HUD" con
+// piedra.
+describe('HUD · piedra (0025)', () => {
+  const withStone = (s: RunSnapshot, stone: number, gold = 0, wood = 0): RunSnapshot => ({
+    ...s,
+    resources: { gold, wood, stone },
+  });
+  const counters = (h: ReturnType<typeof hud>) => [h.gold.text, h.wood.text, h.stone.text];
+
+  it('Scenario: Piedra al empezar (piedra 0 junto a oro 0 y madera 0)', () => {
+    const h = hud();
+    h.view.sync(fresh());
+    expect(counters(h)).toEqual(['0', '0', '0']);
+    expect(h.view.shown).toEqual({ gold: '0', wood: '0', stone: '0' });
+  });
+
+  it('Scenario: HUD al empezar (vida, tiempo, nivel, bajas, oro, madera y piedra)', () => {
+    const h = hud();
+    h.view.sync(fresh());
+    expect([...shown(h), ...counters(h)]).toEqual([
+      '100/100',
+      1,
+      '10:00',
+      'Nv 1',
+      0,
+      'Bajas: 0',
+      '0',
+      '0',
+      '0',
+    ]);
+  });
+
+  it('Scenario: Piedra que cambia entre snapshots (2 ⇒ 9; oro y madera sin cambios)', () => {
+    const h = hud();
+    h.view.sync(withStone(fresh(), 2, 7, 3));
+    const writes = [h.gold.writes, h.wood.writes];
+    h.view.sync(withStone(fresh(), 9, 7, 3));
+    expect(counters(h)).toEqual(['7', '3', '9']);
+    expect([h.gold.writes, h.wood.writes]).toEqual(writes);
+  });
+
+  it('Scenario: Número grande (12345 completo)', () => {
+    const h = hud();
+    h.view.sync(withStone(fresh(), 12_345));
+    expect(h.stone.text).toBe('12345');
+  });
+
+  it('Scenario: Piedra congelada en pausa y en la tienda (piedra 6 en 600 frames y tras comprar)', () => {
+    const h = hud();
+    const paused = withStone(snap({ tick: 600 }), 6, 30);
+    for (let i = 0; i < 600; i++) h.view.sync(paused);
+    expect(h.stone.text).toBe('6');
+    const run = startAtDoor(
+      withShop(aBehaviorConfig([aProbeType()]), {}, { amount: 25, price: 10 }),
+      { player: { x: 1039, y: 1000, health: 40 }, resources: { gold: 30, wood: 0, stone: 6 } },
+    );
+    untilShopping(run, 1);
+    for (let i = 0; i < 600; i++) h.view.sync(run.snapshot());
+    buyAll(run, ['heal']);
+    h.view.sync(run.snapshot());
+    expect([h.gold.text, h.stone.text]).toEqual(['20', '6']);
+  });
+
+  it('Scenario: Icono de la piedra que no carga (cuadrado de reserva; oro y madera con imagen)', () => {
+    const { scene, made } = fakeScene({ width: 960, height: 540 });
+    const icons = {
+      gold: { texture: 'Resources/Resources/G_Idle.png', frame: 0, color: 0xe8c547 },
+      wood: { texture: 'Resources/Resources/W_Idle.png', frame: 0, color: 0x9c6b3c },
+      stone: { texture: null, frame: 0, color: 0x9aa0a6 },
+    };
+    const h = createHud(scene, screenFrame(960, 540), icons);
+    const l = hudLayout(screenFrame(960, 540));
+    const at = (p: { x: number; y: number }) => made.filter((m) => m.x === p.x && m.y === p.y);
+    expect(at(l.stone.icon).map((m) => m.kind)).toEqual(['rectangle']);
+    expect([...at(l.gold.icon), ...at(l.wood.icon)].map((m) => m.kind)).toEqual(['image', 'image']);
+    expect(() => {
+      h.sync(fresh());
+    }).not.toThrow();
+    expect(h.shown.stone).toBe('0');
+  });
+
+  it('el icono de la piedra es siempre la roca medium (Deco/05) del aspecto', () => {
+    const looks = someLooks();
+    expect(counterIcon(looks.pickups.stone)).toEqual({
+      texture: 'Deco/05.png',
+      frame: 0,
+      color: 0x9aa0a6,
+    });
   });
 });
 

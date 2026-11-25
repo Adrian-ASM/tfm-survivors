@@ -14,7 +14,12 @@ import { chooseFirstWhileOpen, startSeededRun } from '../support/runs';
 import { SHEEP_AT, aSheepConfig, startWithSheep } from '../support/sheep';
 
 // Spec sprite-rendering (0023), "Pintado de las ovejas", con dobles del motor (sin navegador).
-const lamb = (id: number, x: number, y: number, over: Partial<SheepSnapshot> = {}): SheepSnapshot => ({
+const lamb = (
+  id: number,
+  x: number,
+  y: number,
+  over: Partial<SheepSnapshot> = {},
+): SheepSnapshot => ({
   id,
   x,
   y,
@@ -95,7 +100,13 @@ describe('SheepLayer', () => {
       modes.push(s?.tintMode ?? -1);
       sizes.push([s?.scale ?? 0, s?.x ?? 0, s?.y ?? 0]);
     }
-    expect(modes).toEqual([FAKE_TINT.fill, FAKE_TINT.fill, FAKE_TINT.fill, FAKE_TINT.fill, FAKE_TINT.multiply]);
+    expect(modes).toEqual([
+      FAKE_TINT.fill,
+      FAKE_TINT.fill,
+      FAKE_TINT.fill,
+      FAKE_TINT.fill,
+      FAKE_TINT.multiply,
+    ]);
     expect(new Set(sizes.map((v) => v.join())).size).toBe(1);
   });
 
@@ -106,17 +117,24 @@ describe('SheepLayer', () => {
     expect(visible(created)).toHaveLength(1);
     l.clear();
     expect(visible(created)).toHaveLength(0);
-    expect(l.counts).toEqual({ visible: 0, placeholder: 0, byState: { graze: 0, wander: 0, flee: 0 } });
+    expect(l.counts).toEqual({
+      visible: 0,
+      placeholder: 0,
+      byState: { graze: 0, wander: 0, flee: 0 },
+    });
   });
 
   it.each([
     [42, 701],
     [123, 784],
-  ] as const)('Scenario: Ovejas fuera del plan del mapa (semilla %i: %i objetos, como antes)', (seed, objects) => {
-    const run = startSeededRun(aDefaultConfig(), seed);
-    expect(run.snapshot().sheep.length).toBeGreaterThan(0);
-    expect(planFor(run.map, seed).objects).toBe(objects);
-  });
+  ] as const)(
+    'Scenario: Ovejas fuera del plan del mapa (semilla %i: %i objetos, como antes)',
+    (seed, objects) => {
+      const run = startSeededRun(aDefaultConfig(), seed);
+      expect(run.snapshot().sheep.length).toBeGreaterThan(0);
+      expect(planFor(run.map, seed).objects).toBe(objects);
+    },
+  );
 
   it('Scenario: Pintar las ovejas no cambia la simulación (semilla 42, 1.200 ticks, con y sin hojas)', () => {
     const inputs = randomInputs(1200, 2026);
@@ -125,7 +143,7 @@ describe('SheepLayer', () => {
       const kit = fakeKit();
       const looks = someLooks(undefined, missing);
       const sheep = new SheepLayer(5, kit, looks.sheep);
-      const pickups = new PickupLayer(404, kit, looks.pickups);
+      const pickups = new PickupLayer(436, kit, looks.pickups, looks.stones);
       const snaps: RunSnapshot[] = [];
       for (const [i, input] of inputs.entries()) {
         chooseFirstWhileOpen(run);

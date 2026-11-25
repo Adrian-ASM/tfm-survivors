@@ -37,7 +37,7 @@ describe('Run', () => {
       weapons: [],
       pickups: [],
       gems: [],
-      resources: { gold: 0, wood: 0 },
+      resources: { gold: 0, wood: 0, stone: 0 },
       veins: [],
       progression: { level: 1, xp: 0, xpToNext: 5, pendingLevelUps: 0 },
       offer: [],

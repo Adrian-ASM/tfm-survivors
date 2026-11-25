@@ -244,6 +244,8 @@ export class GameScene extends Phaser.Scene {
       hud: createHud(this, frame, {
         gold: counterIcon(looks.pickups.gold),
         wood: counterIcon(looks.pickups.wood),
+        // La piedra usa siempre la roca `medium` (0025).
+        stone: counterIcon(looks.pickups.stone),
       }),
       offer: createUpgradeOverlay(this, frame),
       results: results.overlay,
@@ -368,8 +370,8 @@ export class GameScene extends Phaser.Scene {
     return this.started?.tickRun.map() ?? null;
   }
 
-  /** Números de oro y madera que muestra el HUD (0022; null sin partida), para la sonda E2E. */
-  hudView(): { readonly gold: string; readonly wood: string } | null {
+  /** Números de oro, madera y piedra del HUD (0022, 0025; null sin partida), para la sonda E2E. */
+  hudView(): { readonly gold: string; readonly wood: string; readonly stone: string } | null {
     // Solo con la escena de la partida activa: en el menú (escena parada, `leave`) no hay HUD.
     if (!this.started || !this.sys.isActive()) return null;
     return this.w?.hud.shown ?? null;

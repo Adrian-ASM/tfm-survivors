@@ -79,7 +79,7 @@ export class RenderLayers {
     const { kit, looks, capacity } = parts;
     this.parts = parts;
     this.pulses = new PulseLayer(capacity.pulses, capacity.visualTicks, parts.ring);
-    this.pickups = new PickupLayer(capacity.pickups, kit, looks.pickups);
+    this.pickups = new PickupLayer(capacity.pickups, kit, looks.pickups, looks.stones);
     this.sheep = new SheepLayer(capacity.sheep ?? 0, kit, looks.sheep);
     this.corpses = new CorpseLayer(capacity.corpses, kit, looks.corpse);
     this.enemies = new EnemyLayer(capacity.enemies, kit, looks.enemies, this.corpses);

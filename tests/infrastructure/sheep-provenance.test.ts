@@ -45,8 +45,9 @@ describe('Procedencia de las hojas de ovejas y carne (asset-provenance)', () => 
     const { checkAssets } = await guard();
     const list = [...new Set([...versioned(), ...files.map((f) => f.path)])].filter(Boolean);
     expect(checkAssets({ files: list, provenance: provenanceJson, digest: digestOf })).toEqual([]);
-    expect(files).toHaveLength(ENTRIES_BEFORE + 3);
-    const added = files.slice(ENTRIES_BEFORE);
+    // 0025 añade al final las rocas de la piedra: estas 3 siguen en su sitio.
+    expect(files.length).toBeGreaterThanOrEqual(ENTRIES_BEFORE + 3);
+    const added = files.slice(ENTRIES_BEFORE, ENTRIES_BEFORE + 3);
     expect(added.map((f) => f.source)).toEqual(SOURCES);
     for (const entry of added) {
       expect(entry.path).toBe(ASSET_DIR + entry.source.replace('Tiny Swords (Update 010)/', ''));
@@ -75,7 +76,10 @@ describe('Procedencia de las hojas de ovejas y carne (asset-provenance)', () => 
     const list = versioned().filter((f) => !f.startsWith('openspec/'));
     expect(list.filter((f) => /HappySheep_All|M_Spawn|M_Idle_\(NoShadow\)/.test(f))).toEqual([]);
     for (const name of ['HappySheep_Idle.png', 'HappySheep_Bouncing.png', 'M_Idle.png']) {
-      expect(list.filter((f) => f.endsWith(`/${name}`)), name).toHaveLength(1);
+      expect(
+        list.filter((f) => f.endsWith(`/${name}`)),
+        name,
+      ).toHaveLength(1);
     }
   });
 });

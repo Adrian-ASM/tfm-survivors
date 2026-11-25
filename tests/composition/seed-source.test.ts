@@ -5,13 +5,25 @@ import {
   DECOR_STREAM,
   MAP_STREAM,
   RESOURCE_STREAM,
+  SHEEP_STREAM,
+  STONE_STREAM,
   STRUCT_STREAM,
   deriveSeed,
 } from '../../src/infrastructure/random/deriveSeed';
 import { RestartRun } from '../../src/application/RestartRun';
 import { StartRun, type StartedRun } from '../../src/application/StartRun';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
-import { TICK_MS, aDefaultConfig } from '../support/builders';
+import {
+  TICK_MS,
+  aDefaultConfig,
+  aSegment,
+  aWavesConfig,
+  withStoneChance,
+} from '../support/builders';
+import type { CellType } from '../../src/domain/map/CellType';
+import { Run } from '../../src/domain/run/Run';
+import { cellsWith, mapRules } from '../support/mapLayouts';
+import { CountingRandom } from '../support/random';
 import { mapForSeed, typesOf } from '../support/mapStats';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 
@@ -86,6 +98,72 @@ describe('seededRun', () => {
 
   it('con el modo vacío el mapa es el abierto', () => {
     expect(seededRun(42, 'empty').terrain).toEqual({ kind: 'open' });
+  });
+});
+
+// ADR-0024 (0025): el azar de la piedra, STONE_STREAM = 6, en todo mapa e independiente de los demás.
+describe('Azar de la piedra (simulation-loop 0025)', () => {
+  it('piedra con Mulberry32(deriveSeed(seed, STONE_STREAM)), STONE_STREAM = 6, distinto de los demás', () => {
+    expect(STONE_STREAM).toBe(6);
+    const streams = [MAP_STREAM, DECOR_STREAM, STRUCT_STREAM, RESOURCE_STREAM, SHEEP_STREAM];
+    expect(new Set([...streams, STONE_STREAM]).size).toBe(6);
+    const stoneRandom = new Mulberry32RandomGenerator(deriveSeed(42, STONE_STREAM));
+    expect(sequence(seededRun(42).stoneRandom, 5)).toEqual(sequence(stoneRandom, 5));
+  });
+
+  it('Scenario: Mismo azar de la piedra en cualquier mapa (generado, vacío y de celdas: 100 valores)', () => {
+    const config = aDefaultConfig();
+    const cells: CellType[] = cellsWith(mapRules(), { '10,4': 'trunk' });
+    const seedings = [
+      seededRun(42, 'generated'),
+      seededRun(42, 'empty'),
+      { ...seededRun(42, 'empty'), terrain: { kind: 'cells' as const, cells } },
+    ];
+    for (const { random, terrain, stoneRandom } of seedings) {
+      expect(Run.start(config, random, undefined, terrain, stoneRandom).ok).toBe(true);
+    }
+    const [generated, empty, declared] = seedings.map((s) => sequence(s.stoneRandom, 100));
+
+    expect(empty).toEqual(generated);
+    expect(declared).toEqual(generated);
+  });
+
+  it('Scenario: Semillas distintas, azares distintos (1 y 2: 100 valores)', () => {
+    const one = sequence(seededRun(1).stoneRandom, 100);
+    const two = sequence(seededRun(2).stoneRandom, 100);
+
+    expect(one.some((v, i) => v !== two[i])).toBe(true);
+  });
+
+  it('Scenario: Independiente de los demás flujos (semilla 42, mapa generado y vacío)', () => {
+    const P = { x: 1950, y: 1250 };
+    const base = withStoneChance(aDefaultConfig(), { 'goblin-torch': 100 });
+    const config = {
+      ...base,
+      waves: aWavesConfig({ segments: [aSegment(['goblin-torch'], 0)] }).waves,
+    };
+    const after = (mode: 'generated' | 'empty') => {
+      const { random, terrain, stoneRandom } = seededRun(42, mode);
+      const stones = new CountingRandom(stoneRandom);
+      const r = Run.start(
+        config,
+        random,
+        { player: P, enemies: [{ type: 'goblin-torch', x: P.x + 60, y: P.y, health: 4 }] },
+        terrain,
+        stones,
+      );
+      if (!r.ok) throw new Error(r.error.message);
+      let kills = 0;
+      for (let i = 0; i < 300 && kills === 0; i++) {
+        r.value.tick(PlayerInput.NONE);
+        kills = r.value.snapshot().kills;
+      }
+      return { kills, calls: stones.calls, next: stones.next() };
+    };
+    const generated = after('generated');
+
+    expect(generated).toMatchObject({ kills: 1, calls: 1 });
+    expect(after('empty')).toEqual(generated);
   });
 });
 

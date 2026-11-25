@@ -81,9 +81,13 @@ describe('Recursos sin efecto en el combate (resources)', () => {
       expect(withRes.snapshot().sheep.length).toBeGreaterThan(0);
       const diverged = lockstep(withRes, without, inputs, (x, y) => combat(x) === combat(y));
       expect(diverged).toBe(-1);
-      const { gold, wood } = withRes.snapshot().resources;
+      const { gold, wood, stone } = withRes.snapshot().resources;
       expect(gold + wood).toBeGreaterThan(0);
-      expect(without.snapshot().resources).toEqual({ gold: 0, wood: 0 });
+      // 0025: sin fuentes también es probabilidad de piedra 0 (NO_RESOURCES no tiene tabla); con
+      // recursos se ha soltado ≥ 1 piedra (recogida o en el suelo).
+      const onGround = withRes.snapshot().pickups.filter((p) => p.kind === 'stone').length;
+      expect(stone + onGround).toBeGreaterThan(0);
+      expect(without.snapshot().resources).toEqual({ gold: 0, wood: 0, stone: 0 });
     },
     60_000,
   );
@@ -130,9 +134,9 @@ describe('Recursos sin efecto en el combate (resources)', () => {
     const sa = a.snapshot();
     expect(sa.status).toBe('running');
     expect(sa.veins[0]?.depleted).toBe(true);
-    expect(sa.resources).toEqual({ gold: 6 + (sa.veins[0]?.gold ?? 0), wood: 2 });
+    expect(sa.resources).toEqual({ gold: 6 + (sa.veins[0]?.gold ?? 0), wood: 2, stone: 0 });
     expect(sa.pickups.map((p) => p.kind)).toEqual(['xp', 'wood']);
-    expect(b.snapshot().resources).toEqual({ gold: 0, wood: 0 });
+    expect(b.snapshot().resources).toEqual({ gold: 0, wood: 0, stone: 0 });
     expect(busy.calls).toBe(idle.calls);
     expect(busy.next()).toBe(idle.next());
     expect(busySheep.calls).toBe(idleSheep.calls);

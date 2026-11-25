@@ -233,6 +233,17 @@ describe('Balance con el contenido por defecto y el bot v4 (0024)', () => {
     expect(rows).toEqual(BALANCE_BASELINE.map((r) => [...r]));
   });
 
+  // Spec resources (0025), "Balance idéntico con la piedra": el lote juega con el azar de la piedra
+  // (`startSeededRun`) y la línea base de 0024 no se regenera.
+  it('Scenario: Línea base intacta (30/50 semilla a semilla y ≥ 1 piedra soltada)', () => {
+    const rows = finals.map((s, i) => [BALANCE_SEEDS[i], s.outcome, s.tick, s.kills]);
+    const wins = finals.filter((s) => s.outcome === 'won' && s.tick === TEN_MINUTES).length;
+
+    expect(rows).toEqual(BALANCE_BASELINE.map((r) => [...r]));
+    expect(wins).toBe(30);
+    expect(traces.some((t) => t.economy.stoneDropped + t.economy.stoneCollected >= 1)).toBe(true);
+  });
+
   it('Scenario: Barril que cumple su papel · Mechas por partida (> 16,3; 30,44 en M2)', () => {
     const fuses = perRun(traces, (t) => t.fuses);
 
@@ -246,7 +257,8 @@ describe('Balance con el contenido por defecto y el bot v4 (0024)', () => {
     const secs = (batchMs / 1000).toFixed(1);
     console.info(
       `oro ganado ${e((x) => x.earned)} · gastado ${e((x) => x.spent)} · visitas ${e((x) => x.visits)}` +
-        ` · compras ${e((x) => x.purchases)} · curaciones ${e((x) => x.heals)} · lote ${secs} s`,
+        ` · compras ${e((x) => x.purchases)} · curaciones ${e((x) => x.heals)} · lote ${secs} s` +
+        ` · piedra soltada ${e((x) => x.stoneDropped)} · recogida ${e((x) => x.stoneCollected)}`,
     );
     expect(Number.isFinite(batchMs)).toBe(true);
   });

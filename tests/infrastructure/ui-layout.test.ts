@@ -15,6 +15,8 @@ const LONGEST = {
   // 0022: oro 123.456 y madera 12.345, enteros completos.
   gold: String(123456),
   wood: String(12345),
+  // 0025: piedra 12.345.
+  stone: String(12345),
 };
 
 const inside = (b: Box, w: number, h: number): boolean =>
@@ -104,7 +106,7 @@ describe('hudLayout · oro y madera (0022)', () => {
   /** Distancia al borde derecho y al superior de la caja de cada contador. */
   const anchors = (w: number, h: number) => {
     const boxes = hudBoxes(hudLayout(frame(w, h)), LONGEST);
-    return (['gold', 'wood'] as const).map((k) => {
+    return (['gold', 'wood', 'stone'] as const).map((k) => {
       const b = boxes[k];
       return b ? [w - (b.x + b.width), b.y, b.width, b.height] : [];
     });
@@ -130,10 +132,13 @@ describe('hudLayout · oro y madera (0022)', () => {
     near([big ?? []], [(ref ?? []).map((v) => 2 * v)]);
   });
 
-  it('icono a la derecha del número, en la fila de la XP (oro) y bajo él (madera)', () => {
+  it('icono a la derecha del número, en la fila de la XP (oro) y bajo él (madera y piedra)', () => {
     const l = hudLayout(frame(960, 540));
     expect(l.gold.label.x).toBeLessThan(l.gold.icon.x - l.gold.icon.size / 2);
-    expect([l.gold.icon.y, l.wood.icon.y]).toEqual([l.xp.bar.y, 52]);
+    expect([l.gold.icon.y, l.wood.icon.y, l.stone.icon.y]).toEqual([l.xp.bar.y, 52, 70]);
     expect(l.gold.label.originX).toBe(1);
+    // 0025: a ×2 la piedra baja a 140, alineada con los demás contadores.
+    const two = hudLayout(frame(2560, 1440));
+    expect([two.stone.icon.y, two.stone.icon.x]).toEqual([140, two.gold.icon.x]);
   });
 });

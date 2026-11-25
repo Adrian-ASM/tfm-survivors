@@ -10,6 +10,7 @@ interface Topes {
   maxGold?: number;
   maxWood?: number;
   maxMeat?: number;
+  maxStone?: number;
 }
 
 function field(topes: Topes = {}, map = GameMap.open(mapRules())): PickupField {
@@ -20,6 +21,7 @@ function field(topes: Topes = {}, map = GameMap.open(mapRules())): PickupField {
     maxGold: topes.maxGold ?? 32,
     maxWood: topes.maxWood ?? 64,
     maxMeat: topes.maxMeat ?? 8,
+    maxStone: topes.maxStone ?? 32,
   });
   if (!r.ok) throw new Error(r.error.message);
   return new PickupField(r.value, map);
@@ -31,7 +33,7 @@ const gain = new PickupGain();
 /** Un paso del campo con el jugador en (px, py); devuelve lo recogido por tipo. */
 const step = (f: PickupField, px = 480, py = 270, reach = PICKUP) => {
   f.step(px, py, PR, reach, gain);
-  return { xp: gain.xp, gold: gain.gold, wood: gain.wood, meat: gain.meat };
+  return { xp: gain.xp, gold: gain.gold, wood: gain.wood, meat: gain.meat, stone: gain.stone };
 };
 const xpOf = (f: PickupField, px = 480, py = 270) => step(f, px, py).xp;
 
@@ -108,6 +110,55 @@ describe('PickupField.drop', () => {
     expect(values(f, 'wood')).toEqual([7, 4]);
     expect(ids(f, 'wood')).toEqual([0, 1]);
     expect(ids(f)).toEqual([2]);
+  });
+
+  it('Scenario: Tope de piedra lleno (tope 2: s1 vale 3 y conserva su origen, mismos ids)', () => {
+    const f = field({ maxStone: 2 });
+    f.drop('stone', 3000, 100, 1, false, 'goblin-tnt-guard');
+    f.drop('stone', 3000, 200, 1, false, 'goblin-torch');
+    f.drop('xp', 800, 300, 1);
+    f.drop('stone', 800, 300, 1, false, 'goblin-torch');
+    f.drop('xp', 900, 300, 1);
+    f.drop('stone', 900, 300, 1, false, 'goblin-torch');
+    expect(of(f, 'stone').map((p) => [p.id, p.value, p.source])).toEqual([
+      [0, 3, 'goblin-tnt-guard'],
+      [1, 1, 'goblin-torch'],
+    ]);
+    expect(ids(f)).toEqual([2, 3]);
+  });
+
+  it('Scenario: Plaza de piedra liberada por una recogida (maxStone 1: nueva y distinta)', () => {
+    const f = field({ maxStone: 1 });
+    f.drop('stone', 480, 270, 1, false, 'goblin-torch');
+    expect(step(f).stone).toBe(1);
+    f.drop('stone', 3000, 100, 1, false, 'goblin-torch');
+    expect(of(f, 'stone').map((p) => [p.id, p.value])).toEqual([[1, 1]]);
+  });
+
+  it('Scenario: Tope de piedra lleno sin tocar los otros tipos (maxStone 1)', () => {
+    const f = field({ maxStone: 1 });
+    f.drop('stone', 3000, 100, 1, false, 'goblin-torch');
+    for (let i = 0; i < 10; i++) f.drop('wood', 3000, 200, 3);
+    for (let i = 0; i < 4; i++) f.drop('gold', 3000, 300, 2);
+    for (let i = 0; i < 2; i++) f.drop('meat', 3000, 400, 1);
+    for (let i = 0; i < 5; i++) f.drop('xp', 3000, 500, 1);
+    const before = f.pickups.filter((p) => p.kind !== 'stone' && p.kind !== 'xp');
+    const snapshot = before.map((p) => [p.id, p.kind, p.value]);
+    f.drop('xp', 900, 300, 1);
+    f.drop('stone', 900, 300, 1, false, 'goblin-torch');
+    expect(values(f, 'stone')).toEqual([2]);
+    expect(of(f, 'xp')).toHaveLength(6);
+    expect(before.map((p) => [p.id, p.kind, p.value])).toEqual(snapshot);
+  });
+
+  it('solo la piedra lleva origen; un registro reutilizado lo pierde al cambiar de tipo', () => {
+    const f = field();
+    f.drop('stone', 480, 270, 1, false, 'goblin-tnt');
+    f.drop('gold', 3000, 100, 2);
+    expect(f.pickups.map((p) => p.source)).toEqual(['goblin-tnt', null]);
+    step(f);
+    f.drop('xp', 3000, 200, 1);
+    expect(f.pickups.map((p) => p.source)).toEqual([null, null]);
   });
 
   it('el valor desbordado nunca va a otro tipo (oro lleno con gemas más antiguas)', () => {
@@ -266,8 +317,9 @@ describe('PickupField.step · recogida', () => {
     f.drop('wood', 480, 270, 3);
     f.drop('xp', 480, 270, 1);
     f.drop('meat', 480, 270, 2);
-    expect(step(f)).toEqual({ xp: 1, gold: 10, wood: 3, meat: 2 });
-    expect(step(f)).toEqual({ xp: 0, gold: 0, wood: 0, meat: 0 });
+    f.drop('stone', 480, 270, 4, false, 'goblin-tnt');
+    expect(step(f)).toEqual({ xp: 1, gold: 10, wood: 3, meat: 2, stone: 4 });
+    expect(step(f)).toEqual({ xp: 0, gold: 0, wood: 0, meat: 0, stone: 0 });
   });
 
   it('Scenario: Plaza liberada por una recogida (maxGems 1: nueva y distinta de g1)', () => {

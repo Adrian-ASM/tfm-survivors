@@ -15,10 +15,21 @@ export class Pickup {
   attracted = false;
   /** Marcado en el paso de recogibles; la compactación lo devuelve al pool. */
   collected = false;
+  /** Tipo de enemigo que soltó la piedra (0025); `null` en el resto. Solo decide su aspecto. */
+  source: string | null = null;
 
-  set(id: number, kind: PickupKind, x: number, y: number, value: number, attracted: boolean): void {
+  set(
+    id: number,
+    kind: PickupKind,
+    x: number,
+    y: number,
+    value: number,
+    attracted: boolean,
+    source: string | null = null,
+  ): void {
     this.id = id;
     this.kind = kind;
+    this.source = source;
     this.x = x;
     this.y = y;
     this.value = value;

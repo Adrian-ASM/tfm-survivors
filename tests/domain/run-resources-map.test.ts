@@ -42,7 +42,7 @@ describe('Montones y vetas del mapa generado en la partida', () => {
   });
 
   it('Scenario: Partida recién creada (semilla 42: oro y madera 0)', () => {
-    expect(startSeededRun(CONFIG, 42).snapshot().resources).toEqual({ gold: 0, wood: 0 });
+    expect(startSeededRun(CONFIG, 42).snapshot().resources).toEqual({ gold: 0, wood: 0, stone: 0 });
   });
 
   it('Scenario: Partida recién creada (mapa generado: estructuras, vetas activas y montones)', () => {

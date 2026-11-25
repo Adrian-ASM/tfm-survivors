@@ -32,18 +32,19 @@ function failure(change: (raw: RawAppearance) => void): string {
 }
 
 describe('Aspectos de los recogibles y de las vetas (sprite-rendering)', () => {
-  it('Scenario: Datos del repositorio (xp, gold, wood, meat, veta activa y agotada; colores distintos)', () => {
+  it('Scenario: Datos del repositorio (xp, gold, wood, meat, stone, vetas; colores distintos)', () => {
     const a = repository();
-    expect(Object.keys(a.pickups)).toEqual(['xp', 'gold', 'wood', 'meat']);
+    expect(Object.keys(a.pickups)).toEqual(['xp', 'gold', 'wood', 'meat', 'stone']);
     expect(Object.keys(a.veins)).toEqual(['active', 'depleted']);
     const colors = [
       a.pickups.xp.placeholderColor,
       a.pickups.gold.placeholderColor,
       a.pickups.wood.placeholderColor,
       a.pickups.meat.placeholderColor,
+      a.pickups.stone.placeholderColor,
       a.veinColor,
     ];
-    expect(new Set(colors).size).toBe(5);
+    expect(new Set(colors).size).toBe(6);
     const elsewhere = new Set([...Object.values(a.terrain), ...Object.values(a.structureColors)]);
     expect(colors.some((c) => elsewhere.has(c))).toBe(false);
     expect(a.pickups.gold.sheet.file.endsWith('G_Idle.png')).toBe(true);

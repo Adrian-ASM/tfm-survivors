@@ -26,6 +26,13 @@ export const RESOURCE_STREAM = 4;
  */
 export const SHEEP_STREAM = 5;
 
+/**
+ * Flujo de la piedra (ADR-0024): 1 valor por baja, en el orden de las bajas, para la tirada de
+ * "Piedra por enemigo abatido". Existe en todo mapa (también el vacío) e independiente de los demás.
+ * Cambiarlo cambia todas las piedras (`STONE_GOLDEN`).
+ */
+export const STONE_STREAM = 6;
+
 /** Sal de los flujos (constante áurea de 32 bits, como en las mezclas de hash habituales). */
 const STREAM_SALT = 0x9e3779b9;
 

@@ -2,9 +2,11 @@ import type {
   Appearance,
   Aspect,
   PickupLooksAppearance,
+  RockSize,
   SheepAspect,
   StillAspect,
 } from '../../content/appearanceSchema';
+import { ROCK_SIZES } from '../../content/appearanceSchema';
 import type { PickupKind } from '../../../domain/pickup/PickupKind';
 import type { AnimSpec, Facing } from './animation';
 
@@ -62,6 +64,15 @@ export interface SheepLook {
   readonly placeholder: boolean;
 }
 
+/**
+ * Rocas de la piedra (0025): una vista por tamaño y la de cada piedra según su origen (el tipo de
+ * enemigo que la soltó). Sin origen, o con un origen sin aspecto, la roca `medium`.
+ */
+export interface StoneLooks {
+  readonly rocks: Readonly<Record<RockSize, PickupLook>>;
+  of(source: string | undefined): PickupLook;
+}
+
 /** Color y opacidad de un aviso en el suelo (sin hoja: nunca es reserva). */
 export interface WarningLook {
   readonly color: number;
@@ -72,9 +83,11 @@ export interface Looks {
   readonly player: MovingLook;
   readonly enemies: ReadonlyMap<string, EnemyLook>;
   readonly projectile: StillLook;
-  /** Por tipo de recogible (0022): la gema, el oro y la madera. */
+  /** Por tipo de recogible (0022, 0025): la piedra, con la roca `medium` (icono y sin origen). */
   readonly pickups: Readonly<Record<PickupKind, PickupLook>>;
   readonly sheep: SheepLook;
+  /** Rocas de la piedra (0025), elegidas por el origen de cada piedra. */
+  readonly stones: StoneLooks;
   readonly ground: StillLook;
   readonly corpse: CorpseLook;
   readonly dynamite: StillLook;
@@ -140,7 +153,7 @@ const SHAPE_IDLE: AnimSpec = Object.freeze({ frames: Object.freeze([0]), fps: 1,
 function pickupLooks(
   p: PickupLooksAppearance,
   still: (a: StillAspect) => StillLook,
-): Record<PickupKind, PickupLook> {
+): Omit<Record<PickupKind, PickupLook>, 'stone'> {
   const sheet = (a: StillAspect): PickupLook => ({ ...still(a), shape: false });
   const xp: PickupLook =
     'sheet' in p.xp
@@ -159,6 +172,26 @@ function pickupLooks(
   return { xp, gold: sheet(p.gold), wood: sheet(p.wood), meat: sheet(p.meat) };
 }
 
+/** Rocas de la piedra (0025): cada una con su hoja o su reserva, y la roca de cada tipo de enemigo. */
+function stoneLooks(appearance: Appearance, still: (a: StillAspect) => StillLook): StoneLooks {
+  const { stone } = appearance.pickups;
+  const view = (size: RockSize): PickupLook => ({
+    ...still({ ...stone.rocks[size], placeholderColor: stone.placeholderColor }),
+    shape: false,
+  });
+  const rocks = Object.fromEntries(ROCK_SIZES.map((size) => [size, view(size)])) as Record<
+    RockSize,
+    PickupLook
+  >;
+  const bySource = new Map(
+    Object.entries(appearance.enemies).map(([id, a]) => [id, rocks[a.rock]]),
+  );
+  return {
+    rocks,
+    of: (source) => (source === undefined ? undefined : bySource.get(source)) ?? rocks.medium,
+  };
+}
+
 /**
  * Resuelve los aspectos contra las texturas cargadas (design "Fallback"): si la hoja falta o algún
  * índice usado no existe, el aspecto usa el disco de reserva. Puro: sin motor.
@@ -170,6 +203,7 @@ export function resolveLooks(appearance: Appearance, frames: FrameCount): Looks 
     walk: a.walk,
   });
   const still = (a: StillAspect): StillLook => ({ ...base(a, frames), idle: a.idle });
+  const stones = stoneLooks(appearance, still);
   return {
     player: moving(appearance.player),
     enemies: new Map(
@@ -179,8 +213,10 @@ export function resolveLooks(appearance: Appearance, frames: FrameCount): Looks 
       ]),
     ),
     projectile: still(appearance.projectile),
-    pickups: pickupLooks(appearance.pickups, still),
+    // La piedra sin origen (y el icono del HUD) usa la roca `medium` (0025).
+    pickups: { ...pickupLooks(appearance.pickups, still), stone: stones.rocks.medium },
     sheep: sheepLook(appearance.sheep, frames),
+    stones,
     ground: still(appearance.ground),
     corpse: { ...base(appearance.corpse, frames), death: appearance.corpse.death },
     dynamite: still(appearance.dynamite),

@@ -18,25 +18,26 @@ export interface HudParts {
   readonly healthLabel: LabelSprite;
   readonly clock: LabelSprite;
   readonly kills: LabelSprite;
-  /** Números de oro y de madera (0022); sus iconos solo los coloca `placement`. */
+  /** Números de oro, de madera (0022) y de piedra (0025); sus iconos solo los coloca `placement`. */
   readonly gold: LabelSprite;
   readonly wood: LabelSprite;
+  readonly stone: LabelSprite;
   /** Recolocación al redimensionar (opcional: sin ella el HUD no se mueve). */
   readonly placement?: HudPlacement;
 }
 
 /**
- * HUD (spec hud): vida (barra y número), tiempo restante, nivel/XP, bajas, oro y madera (0022). Solo
- * depende del último snapshot y solo toca el motor cuando un valor cambia (el reloj, una vez por
- * segundo; oro y madera, al recoger).
+ * HUD (spec hud): vida (barra y número), tiempo restante, nivel/XP, bajas, oro, madera (0022) y
+ * piedra (0025). Solo depende del último snapshot y solo toca el motor cuando un valor cambia (el
+ * reloj, una vez por segundo; oro, madera y piedra, al recoger).
  */
 export class Hud {
   private fillWidth = -1;
   private health = '';
   private clock = '';
   private kills = '';
-  /** Números de oro y madera mostrados (sonda E2E `hud`, 0022). */
-  readonly shown = { gold: '', wood: '' };
+  /** Números de oro, madera y piedra mostrados (sonda E2E `hud`, 0022 y 0025). */
+  readonly shown = { gold: '', wood: '', stone: '' };
   private layoutKey = '';
   private uiScale = 0;
   private last: RunSnapshot | null = null;
@@ -78,9 +79,10 @@ export class Hud {
     const clock = formatClock(remainingSeconds(s.tick, s.durationTicks));
     this.clock = write(this.parts.clock, this.clock, clock);
     this.kills = write(this.parts.kills, this.kills, killsLabel(s.kills));
-    const { gold, wood } = s.resources;
+    const { gold, wood, stone } = s.resources;
     this.shown.gold = write(this.parts.gold, this.shown.gold, String(gold));
     this.shown.wood = write(this.parts.wood, this.shown.wood, String(wood));
+    this.shown.stone = write(this.parts.stone, this.shown.stone, String(stone));
   }
 }
 
