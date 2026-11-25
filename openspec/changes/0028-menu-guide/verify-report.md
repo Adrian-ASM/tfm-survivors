@@ -113,3 +113,19 @@ Ninguno.
 ## Recuento
 
 C: 0 · W: 2 · S: 3
+
+## Re-verify (diff 65f5cda..HEAD, commit 9e8fc7c)
+
+Ejecución: `npm run verify` en verde (300 ficheros, 3.583 tests) y `npm run test:e2e -- smoke.spec` 5/5.
+
+| Hallazgo | Estado |
+|---|---|
+| W1 (Esc pausa tras cerrar la guía) | Resuelto. El smoke "Jugar desde el menú tras cerrar la guía" abre la guía, comprueba menú sin HUD, cierra con Esc, pulsa Jugar, avanza 30 ticks y una sola Esc muestra la pausa. Sin esperas de reloj. |
+| W2 (marcador sin valor por `bootContent`) | Resuelto con justificación. Por `bootContent` es inalcanzable: el schema de structures exige `goblin-tower` y falla antes. Un test nuevo comprueba que ese fichero no crea el menú y el comentario lo explica. La cobertura del escenario sigue en `guide-markers.test.ts`. |
+| S1 (HUD y página 3 en el smoke) | Resuelto. El smoke comprueba 0 iconos en la página 1, los 5 de la página 3 en orden (alt) y la sonda `screen: 'menu'` con `hud: null` con la guía abierta y tras cerrarla. |
+| S2 (líneas > 100) | Resuelto en los ficheros del diff. Solo reflujo de comentarios, sin cambio de código. |
+| S3 (ruta del test del controlador) | Resuelto: `tasks.md` (línea 122) ya cita `tests/infrastructure/menu-controller.test.ts` (corrección del orquestador al revisar el informe). |
+
+Sin hallazgos nuevos. El smoke sigue dentro del límite de E2E del change (no se añaden tests, se amplían dos).
+
+Recuento final: C: 0 · W: 0 · S: 0
