@@ -52,6 +52,7 @@ import {
   RESOURCE_AMOUNT_MUST_BE_INTEGER,
   RESOURCE_COUNT_MUST_BE_INTEGER,
   RESOURCE_GOLD_PER_KILL_INVALID,
+  STONE_CHANCE_INVALID,
   RESOURCE_PLACEMENT_MUST_BE_INTEGER,
   VEIN_RADIUS_MUST_BE_POSITIVE,
 } from '../../domain/resource/ResourceRules';
@@ -524,6 +525,11 @@ export const ResourcesSchema = z.strictObject({
     enemies: z.record(z.string(), z.strictObject({ wood: ResourceAmount })),
     structures: z.record(z.string(), z.strictObject({ gold: ResourceAmount })),
     goldPerKill: z.record(z.string(), NonNegativeInt(RESOURCE_GOLD_PER_KILL_INVALID)),
+    /** Probabilidad de piedra por baja (0025): porcentaje entero 0..100 por tipo de enemigo. */
+    stoneChance: z.record(
+      z.string(),
+      NonNegativeInt(STONE_CHANCE_INVALID).max(100, { error: STONE_CHANCE_INVALID }),
+    ),
   }),
   woodPiles: z.strictObject({ count: ResourceCount, wood: ResourceAmount }),
   goldVeins: z.strictObject({

@@ -75,7 +75,11 @@ describe('Huella del contenido calibrado (0024)', () => {
   const now = () => ({
     upgrades: sha(upgradesJson),
     player: sha(playerJson),
-    resources: sha(resourcesJson),
+    // 0025 añade `drops.stoneChance`: la huella de 0024 se calcula sin él (constante intacta).
+    resources: sha({
+      ...resourcesJson,
+      drops: withoutKey(resourcesJson.drops, 'stoneChance'),
+    }),
     // 0025 añade `maxStone`: la huella de 0024 se calcula sin él (constante intacta).
     progression: sha(withoutKey(progressionJson, 'maxStone')),
     shop: sha(shopJson),

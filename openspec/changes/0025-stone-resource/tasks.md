@@ -91,7 +91,7 @@
 
 ## 5. Contenido de recursos (test-after)
 
-- [ ] 5.1 `ResourcesSchema.drops.stoneChance` (obligatorio, enteros 0..100) y `content/resources.json` con torch 10,
+- [x] 5.1 `ResourcesSchema.drops.stoneChance` (obligatorio, enteros 0..100) y `content/resources.json` con torch 10,
   tnt 15, barrel 5, guard 25. Huella `BALANCE_CONTENT_SHA256.resources` calculada **sin `drops.stoneChance`**
   (constante intacta). Tests `content-schemas.test.ts`, `progression-content.test.ts` y `resources-content.test.ts`.
   Escenarios: `resources` "Tabla de piedra inválida" y "Límites válidos de la tabla" (carga), "Contenido por defecto",
