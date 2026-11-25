@@ -11,10 +11,11 @@ El HUD de la partida: vida, tiempo restante, nivel/XP, bajas, oro y madera, deri
 La vista SHALL mostrar un HUD con seis elementos: la vida del jugador (barra y número), el tiempo restante de la
 partida, el nivel y la XP (la barra de XP de `leveling`), las bajas de la partida (ver `run-outcome`), el oro y la
 madera (ver "Oro y madera en el HUD"). El HUD MUST verse si y solo si existe una partida: en todos sus estados (en
-curso, eligiendo mejora y terminada) y también con la partida en pausa. En el menú de inicio (ver `main-menu`), donde
-no existe partida, el HUD MUST NOT verse. El HUD muestra siempre los valores del último snapshot pintado: mientras la
-partida está en pausa, eligiendo mejora o terminada, sus valores no cambian. El HUD solo depende del snapshot: no
-cambia la simulación.
+curso, eligiendo mejora, en tienda y terminada) y también con la partida en pausa. En el menú de inicio (ver
+`main-menu`), donde no existe partida, el HUD MUST NOT verse. El HUD muestra siempre los valores del último snapshot
+pintado: mientras la partida está en pausa, eligiendo mejora o terminada, sus valores no cambian; en la tienda solo
+cambian el oro y la vida, por las compras. No hay ningún botón ni indicador de tienda en el HUD. El HUD solo depende
+del snapshot: no cambia la simulación.
 
 #### Scenario: HUD al empezar
 - **GIVEN** el snapshot de una partida recién creada con el contenido por defecto
@@ -58,6 +59,14 @@ cambia la simulación.
   llamada
 - **THEN** en cada lectura los números de oro y madera del HUD son iguales a los del snapshot pintado
 - **AND** en la última lectura la madera mostrada es > 0 y no hay errores no capturados
+
+#### Scenario: HUD en la tienda
+- **GIVEN** una partida con duración objetivo 36.000 ticks que abre la tienda en el tick 600 con vida 40 de 100 y oro
+  30
+- **WHEN** el motor informa de 600 frames de 16,667 ms, se compra una curación de porción 25 y precio 10 y se pinta 1
+  frame
+- **THEN** durante los 600 frames el HUD es visible con tiempo `09:50`, vida `40/100` y oro 30
+- **AND** tras la compra muestra vida `65/100`, oro 20 y tiempo `09:50`
 
 ### Requirement: Vida en el HUD
 La vista SHALL mostrar la vida como una barra cuyo relleno es vida actual / vida máxima efectiva del último
@@ -255,3 +264,4 @@ cambian solo cuando cambia el snapshot pintado.
 <!-- historial: 0009-main-menu (2026-11-20) -->
 <!-- historial: 0017-fullscreen-view (2026-11-24) -->
 <!-- historial: 0022-resources-sheep (2026-11-24) -->
+<!-- historial: 0024-split-progression-castle (2026-11-25) -->

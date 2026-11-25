@@ -195,59 +195,51 @@ MUST tener exactamente uno, que no cambia nunca.
 ### Requirement: Partida ganable y perdible con el contenido por defecto
 El sistema SHALL permitir, con el contenido por defecto, tanto ganar como perder una partida sin motor, con una
 dificultad medida sobre el conjunto de semillas 1..50 (ver "Semillas de los tests de balance"), cada partida con el
-mapa que genera su semilla, castillo, casas, torres y guardias incluidos, el jugador en su punto de salida (ver
-`procedural-map` y "Posición inicial en el punto de salida del mapa" en `player-movement`), los enemigos navegando por
-ese mapa y con su comportamiento por tipo (ver `enemy-behavior`) y sus peligros (ver `enemy-hazards`), con el tope de
-vivos por defecto (ver `enemy-spawning`):
-- **Ganable**: el bot de referencia (ver "Bot de referencia para el balance") MUST llegar vivo al tick 36.000
+mapa que genera su semilla, castillo y puerta de la tienda, casas, torres, guardias, recursos y ovejas incluidos, el
+jugador en su punto de salida (ver `procedural-map` y "Posición inicial en el punto de salida del mapa" en
+`player-movement`), los enemigos navegando por ese mapa y con su comportamiento por tipo (ver `enemy-behavior`) y sus
+peligros (ver `enemy-hazards`), con el tope de vivos por defecto (ver `enemy-spawning`):
+- **Ganable**: el bot de referencia v4 (ver "Bot de referencia para el balance") MUST llegar vivo al tick 36.000
   (resultado victoria) con **al menos 25 y como mucho 35** de las 50 semillas (del 50 % al 70 %, ambos incluidos).
   Una semilla cuenta como victoria solo si la partida termina con resultado victoria en el tick 36.000; cualquier
   otra, como derrota.
-- **Perdible**: con input (0, 0) en todos los ticks y la política de elección fija (ver `simulation-loop`), la
-  partida MUST terminar con resultado derrota en un tick < 10.800 (antes de 180 s) con **cada una** de las 50
-  semillas, tanto con el mapa generado como con el mapa vacío. Un jugador quieto MUST NOT ganar con ninguna semilla
-  del conjunto (0 quietos supervivientes).
+- **Perdible**: con input (0, 0) en todos los ticks, la política de elección fija y la política de tienda fija (ver
+  `simulation-loop`), la partida MUST terminar con resultado derrota en un tick < 10.800 (antes de 180 s) con **cada
+  una** de las 50 semillas, tanto con el mapa generado como con el mapa vacío. Un jugador quieto MUST NOT ganar con
+  ninguna semilla del conjunto (0 quietos supervivientes).
 
 La dificultad MUST ser la misma con cualquier tamaño de ventana: los tests de balance no reciben ventana ni vista.
 Los números de contenido que producen esta dificultad viven en `content/*.json` y no se fijan en esta spec. En este
-change:
+change (0024):
 - MUST NOT cambiar el presupuesto de oleadas de `content/waves.json` (tramos, `fromSecond`, `types`,
-  `budgetPerSecond` y `maxBudget`), `maxAlive` (300), el anillo de aparición (`ringRadius` 1.500) ni `player.speed`
-  (215), ni la velocidad, el radio, el coste, la vida, el daño por contacto ni la XP de `goblin-torch` y
-  `goblin-tnt`, ni la velocidad, el radio, el coste, la XP ni la ausencia de daño por contacto de `goblin-barrel`
-  (ver "Stats por defecto" en `enemy-spawning`), ni la distancia de lanzamiento del `goblin-tnt` ni la progresión de
-  XP (`baseXp` 9, `xpGrowth` 4), ni las armas ni las mejoras. Los stats del `goblin-tnt-guard` son los del
-  `goblin-tnt`;
-- la calibración MUST hacerse con los parámetros de comportamiento y de peligros (distancias, duraciones, radios y
-  daños de explosión, tope de dinamitas), salvo la distancia de lanzamiento del `goblin-tnt`; empezando por los del
-  `goblin-barrel` (distancia de activación, duración de la mecha, radio y daño de su explosión); con la vida del
-  `goblin-barrel`, que es el único stat de tipo autorizado (decisión A3); y con los parámetros de las estructuras y de los guardias (número por mapa, distancias de colocación,
-  vida, tope e intervalo de nacimiento, radios de patrulla, detección y abandono, y parámetros de su carga y su
-  espera), todo dentro de las cotas de "Comportamiento por defecto legible y esquivable" (`enemy-behavior`) y validado
-  por sus esquemas. La candidata aprobada del barril es activación 60, vida 25 y radio de explosión 80, y se
-  recalibra con las casas y los guardias presentes;
+  `budgetPerSecond` y `maxBudget`), `maxAlive`, el anillo de aparición, `player.speed`, los stats, comportamientos y
+  peligros de los tipos de enemigo, las armas base (`content/weapons.json`), la progresión de XP (`baseXp` 9,
+  `xpGrowth` 4), las estructuras salvo su oro, las vetas, los montones ni los parámetros de las ovejas y la carne;
+- MUST NOT cambiar las 6 mejoras de arma ni `guardrail`, `shortcuts` y `context-window` salvo `name` y `description`
+  (ver "Mejoras de arma y de personaje sin cambios" en `upgrades`);
+- la calibración MUST hacerse solo con: los precios por nivel de las mejoras de arma, el precio y la porción de la
+  curación de pago, el radio de interacción y la distancia de re-armado, el oro por baja de cada tipo, el oro por casa
+  y por torre (por encima de 5 y de 8), el tope de oro en el suelo, el `perLevel` y el `maxLevel` de las 6 mejoras de
+  personaje nuevas, el intervalo de regeneración, la curación por subida sin mejoras y los parámetros del bot v4
+  (lista de prioridad de personaje, orden de compra de arma, umbral de vida y radio de peligro);
 - todo valor de contenido que una spec viva o una spec delta de este change fije de forma explícita y que la
   calibración cambie MUST actualizarse en una spec delta de este change antes de verify;
 - los plazos de las specs vivas para el jugador quieto con el contenido por defecto (primer golpe, primer pulso y
   primera oferta en ≤ 4.800 ticks; primera baja en ≤ 900) MUST seguir cumpliéndose con el contenido final, y los ticks
-  medidos (incluida la primera oferta de la semilla 7, 2.082 antes del change) MUST anotarse en el design o en el
-  verify-report;
+  medidos (incluida la primera oferta de la semilla 7) MUST anotarse en el design o en el verify-report;
 - el tiempo del lote del bot (50 partidas de hasta 36.000 ticks) MUST anotarse en el verify-report, en local y
-  multiplicado por 2,8 como equivalente de CI, con el objetivo de ≤ 90 s equivalentes; el tiempo máximo del lote en
-  los tests no se sube salvo decisión registrada en el design.
+  multiplicado por 2,8 como equivalente de CI (solo anotado, sin objetivo); el lote MUST caber en el tiempo máximo
+  del lote en los tests (180 s), que no se sube; si el CI real lo desmiente, se optimiza en otro change.
 
 La banda y las reglas mandan sobre cualquier valor concreto y MUST NOT relajarse en este change: si ninguna
 combinación de esas palancas devuelve a la vez la banda 25–35 y 0 quietos supervivientes (con ambos mapas), el change
-MUST detenerse antes de verify y la decisión vuelve al usuario (también si hiciera falta tocar oleadas, `maxAlive`,
-otros stats de los tipos, la distancia de lanzamiento del `goblin-tnt`, la progresión de XP, armas o mejoras). Si el
-mundo, el anillo, la huella del castillo, las estructuras, la navegación, los comportamientos o el contenido cambian
-en apply, el balance MUST volver a medirse con el contenido final antes de verify.
+MUST detenerse antes de verify y la decisión vuelve al usuario. Si el contenido cambia en apply, el balance MUST
+volver a medirse con el contenido final antes de verify.
 
 #### Scenario: Tasa de victoria del bot de referencia
-- **GIVEN** el contenido por defecto (mundo de 3.840 × 2.160, `ringRadius` 1.500, `maxAlive` 300), la navegación y
-  los comportamientos de los enemigos, las casas, torres y guardias de cada mapa generado y el bot de referencia v3
-- **WHEN** se juega una partida con cada semilla de 1 a 50, con su mapa generado (castillo y estructuras incluidos) y
-  el jugador en su salida, cada una hasta que termina o hasta el tick 36.000
+- **GIVEN** el contenido por defecto, cada mapa generado con sus estructuras, recursos, ovejas y puerta, y el bot de
+  referencia v4
+- **WHEN** se juega una partida con cada semilla de 1 a 50, cada una hasta que termina o hasta el tick 36.000
 - **THEN** el número de partidas terminadas con resultado victoria en el tick 36.000 es ≥ 25 y ≤ 35
 
 #### Scenario: Toda partida del bot termina
@@ -275,15 +267,12 @@ en apply, el balance MUST volver a medirse con el contenido final antes de verif
 
 #### Scenario: Presupuesto de oleadas y stats intactos
 - **GIVEN** el contenido por defecto tras el change y el de `main` antes del change
-- **WHEN** se comparan `content/waves.json`, `player.speed`, la progresión de XP, las armas, las mejoras, los stats de
-  los tipos de enemigo y la distancia de lanzamiento del `goblin-tnt`
-- **THEN** los tramos (`fromSecond`, `types`, `budgetPerSecond`), `maxBudget`, `maxAlive` (300), `ringRadius`,
-  `player.speed`, `baseXp` y `xpGrowth`, las armas, las mejoras, la distancia de lanzamiento del `goblin-tnt` y la
-  velocidad, el radio, el coste, la vida, la XP y el `damage` de `goblin-torch` y `goblin-tnt` son iguales
-- **AND** de `goblin-barrel` solo puede haber cambiado la vida (velocidad, radio, coste y XP iguales, y sigue sin
-  `damage`)
-- **AND** el único tipo nuevo es `goblin-tnt-guard`, con velocidad, radio, coste, vida, XP y `damage` iguales a los de
-  `goblin-tnt`
+- **WHEN** se comparan `content/waves.json`, `player.speed`, la progresión de XP, `content/weapons.json`, los stats,
+  comportamientos y peligros de los tipos de enemigo, las estructuras sin su oro, las vetas, los montones, las ovejas y
+  la carne
+- **THEN** son iguales campo a campo
+- **AND** las 9 mejoras que existían antes del change son iguales salvo `name`, `description`, el catálogo y los
+  precios
 
 #### Scenario: Plazos del jugador quieto con el contenido final
 - **GIVEN** el contenido por defecto final, input (0, 0), la política de elección fija y la semilla 7 con su mapa
@@ -293,17 +282,20 @@ en apply, el balance MUST volver a medirse con el contenido final antes de verif
   un tick ≤ 4.800, y la primera baja ocurre en un tick ≤ 900
 
 ### Requirement: Bot de referencia para el balance
-El proyecto SHALL tener un **bot de referencia** (versión **v3**) versionado como helper de test (`tests/support/`),
-puro y determinista, que es la única referencia de dificultad de los tests de balance. El bot MUST jugar así:
-- **Esquiva** (nuevo en v3): en cada tick, a partir del snapshot anterior, un aviso (ver "Aviso en el suelo" en
+El proyecto SHALL tener un **bot de referencia** (versión **v4**) versionado como helper de test (`tests/support/`),
+puro y determinista, que es la única referencia de dificultad de los tests de balance. Sus parámetros (lista de
+prioridad de personaje, orden de compra de arma, umbral de vida como fracción de la vida máxima y radio de peligro) son
+constantes del bot, fijadas en `tests/support/` y anotadas en el design. El bot MUST jugar así:
+- **Esquiva**: igual que en v3. En cada tick, a partir del snapshot anterior, un aviso (ver "Aviso en el suelo" en
   `enemy-hazards`) es **amenazante** si la distancia entre su centro y el centro del jugador es estrictamente menor
   que radio del aviso + radio del jugador + s, con s = velocidad efectiva del jugador × 1/60 (un tick de movimiento).
   Si hay ≥ 1 aviso amenazante, el bot suma, por cada uno, el vector unitario que va del centro del aviso al centro del
   jugador; cuantiza la suma a una de las 8 direcciones y aplica la regla de direcciones bloqueadas del paso 3 de
   **Movimiento**. Si la suma es el vector nulo (o el jugador está exactamente en el centro de todos los avisos
   amenazantes), usa el input de **Movimiento**. Sin avisos amenazantes, el input es el de **Movimiento**.
-- **Movimiento**: el input es el de la política de huida `fleeInput` aplicada al snapshot anterior y al mapa de la
-  partida:
+- **Movimiento**: si el bot **quiere comprar** (ver **Ir a la tienda**), la tienda está armada y no hay ningún enemigo
+  vivo a menos del radio de peligro, el input es el de **Ir a la tienda**; si no, es el de la política de huida
+  `fleeInput` de v3, aplicada al snapshot anterior y al mapa de la partida:
   1. suma una repulsión 1/d² de cada enemigo vivo a menos de 150 px, de cada pared del mundo a menos de 64 px y de
      cada celda no caminable (`trunk`, `water` o `castle`) a menos de 64 px. La distancia a una pared se mide desde el
      centro del jugador; la distancia a una celda, desde el centro del jugador hasta el punto más cercano del
@@ -316,32 +308,29 @@ puro y determinista, que es la única referencia de dificultad de los tests de b
      están, el input es (0, 0). Una dirección está bloqueada si un tick de movimiento sin obstáculos en ella, a la
      velocidad efectiva y desde la posición del snapshot, dejaría el círculo del jugador solapando una celda no
      caminable (ver "Colisión con el mapa" en `player-movement`). Las paredes del mundo no bloquean.
+- **Ir a la tienda**: el bot quiere comprar si su oro es ≥ el precio de algún producto que compraría (una mejora de
+  arma por debajo de su `maxLevel` o, con la vida por debajo del umbral, la curación). Para ir, sigue el campo de
+  distancias hacia la celda de la puerta (ver "Campo de distancias hacia una celda" en `procedural-map`): con línea
+  libre, en recta hacia la puerta; si no, hacia el centro del vecino con distancia − 1; cuantiza a una de las 8
+  direcciones y aplica la regla de direcciones bloqueadas.
+- **Compra**: cada vez que se abre la tienda, antes del siguiente tick, repite hasta que no pueda comprar nada: si la
+  vida está por debajo del umbral y le alcanza el oro, compra la curación; si no, compra la primera mejora de arma de
+  su orden de compra que no esté en su `maxLevel` y cuyo precio le alcance. Después sale de la tienda.
 - **Elección**: cada vez que se abre una oferta, antes del siguiente tick, elige la opción cuyo id aparece antes en
-  la lista de prioridad `guardrail` > `strict-rules` > `fast-ci` > `hard-asserts` > `watch-mode`, sea cual sea su
-  posición en la oferta; si la oferta no contiene ninguno de esos ids, elige la opción de índice 0.
+  su lista de prioridad de personaje, sea cual sea su posición en la oferta; si la oferta no contiene ninguno de esos
+  ids, elige la opción de índice 0.
 
 El bot solo lee el snapshot y el mapa: no conoce el tick de explosión ni el daño de los avisos más allá de lo que
-expone el snapshot, ni las dinamitas que aún no se han lanzado. El castillo no añade lógica al bot: sus celdas
-cuentan como cualquier otra celda no caminable. El bot no recibe la vista ni la ventana. El bot de referencia es un
-concepto aparte de la "política de elección fija" de `simulation-loop`, que sigue valiendo para los escenarios que no
-dicen nada de elecciones. Cualquier cambio de su esquiva, de su movimiento o de su lista de prioridad MUST hacerse con
-un change que revise los requisitos de balance de esta spec. Los escenarios de este requisito con posiciones
-explícitas y sin mapa declarado usan el mapa vacío, el jugador con radio 16 y velocidad efectiva 215 (s = 3,5833).
-
-#### Scenario: Elige por prioridad, no por posición
-- **GIVEN** una oferta abierta con las opciones `watch-mode`, `fast-ci` y una tercera que no está en la lista de
-  prioridad, en ese orden
-- **WHEN** el bot de referencia elige
-- **THEN** elige el índice 1 (`fast-ci`)
-
-#### Scenario: La prioridad más alta gana
-- **GIVEN** una oferta abierta con las opciones `strict-rules`, `hard-asserts` y `guardrail`, en ese orden
-- **WHEN** el bot de referencia elige
-- **THEN** elige el índice 2 (`guardrail`)
+expone el snapshot, ni las dinamitas que aún no se han lanzado; los precios, los niveles, el estado de la puerta y su
+posición los lee de los productos y de la tienda del snapshot. El bot no recibe la vista ni la ventana. El bot de
+referencia es un concepto aparte de las políticas de elección y de tienda fijas de `simulation-loop`, que siguen
+valiendo para los escenarios que no dicen nada. Cualquier cambio de su esquiva, de su movimiento, de sus compras o de
+sus parámetros MUST hacerse con un change que revise los requisitos de balance de esta spec. Los escenarios de este
+requisito con posiciones explícitas y sin mapa declarado usan el mapa vacío (sin puerta, así que el bot nunca quiere ir
+a la tienda), el jugador con radio 16 y velocidad efectiva 215 (s = 3,5833).
 
 #### Scenario: Ningún id priorizado en la oferta
-- **GIVEN** una oferta abierta de 3 opciones, ninguna con id `guardrail`, `strict-rules`, `fast-ci`,
-  `hard-asserts` ni `watch-mode`
+- **GIVEN** una oferta abierta de 3 opciones, ninguna en la lista de prioridad de personaje del bot
 - **WHEN** el bot de referencia elige
 - **THEN** elige el índice 0
 
@@ -461,6 +450,42 @@ explícitas y sin mapa declarado usan el mapa vacío, el jugador con radio 16 y 
 - **THEN** ambas terminan con el mismo resultado, en el mismo tick, con las mismas bajas y la misma lista de
   mejoras adquiridas con sus niveles
 
+#### Scenario: Elige por prioridad de personaje, no por posición
+- **GIVEN** la lista de prioridad de personaje del bot y una oferta cuyas opciones son, en este orden, dos ids fuera
+  de la lista y el id de mayor prioridad de la lista
+- **WHEN** el bot de referencia elige
+- **THEN** elige el índice 2
+
+#### Scenario: Va a la tienda con oro y sin peligro
+- **GIVEN** el mapa vacío con puerta declarada en (1.000, 1.000) y la tienda armada, un snapshot con el jugador en
+  (1.400, 1.000), ningún enemigo ni aviso y oro igual al precio de la mejora de arma más barata
+- **WHEN** el bot de referencia calcula el input
+- **THEN** el input es (−1, 0)
+
+#### Scenario: Sin oro suficiente no va
+- **GIVEN** el escenario anterior con oro igual a ese precio − 1 y la vida llena
+- **WHEN** el bot de referencia calcula el input
+- **THEN** el input es (0, 0)
+
+#### Scenario: El peligro gana a la tienda
+- **GIVEN** el escenario "Va a la tienda con oro y sin peligro" con un enemigo vivo en (1.300, 1.000), a 100 px y
+  dentro del radio de peligro y de los 150 px de la huida
+- **WHEN** el bot de referencia calcula el input
+- **THEN** el input es (1, 0) (huye)
+
+#### Scenario: Orden de compra
+- **GIVEN** una tienda abierta con la vida por debajo del umbral del bot, oro para la curación y para la primera
+  mejora de su orden de compra, pero no para las dos
+- **WHEN** el bot compra
+- **THEN** compra solo la curación y sale de la tienda
+- **AND** con la vida por encima del umbral compra solo esa mejora de arma y sale
+
+#### Scenario: Compra hasta agotar el oro
+- **GIVEN** una tienda abierta con la vida llena y oro para exactamente 3 compras sucesivas de su orden de compra
+- **WHEN** el bot compra
+- **THEN** hace 3 compras, sale de la tienda y el oro restante es menor que el precio de cualquier mejora de arma no
+  agotada
+
 ### Requirement: Semillas de los tests de balance
 Los tests de balance SHALL usar como conjunto fijo de semillas los enteros **1..50** (ambos incluidos) y medir sobre
 el conjunto completo. Ningún test (unitario ni E2E) MUST afirmar que una semilla concreta gana o pierde salvo cuando
@@ -536,3 +561,4 @@ MUST anotarse en el verify-report.
 <!-- historial: 0019-flow-field (2026-11-24) -->
 <!-- historial: 0020-enemy-behaviors (2026-11-24) -->
 <!-- historial: 0021-goblin-camps (2026-11-24) -->
+<!-- historial: 0024-split-progression-castle (2026-11-25) -->
