@@ -128,10 +128,10 @@
 
 ## 8. E2E y documentación
 
-- [ ] 8.1 E2E (único, ampliado): en `tests/e2e/gameplay.spec.ts`, "Contadores en el navegador" (seed 42, mapa real,
+- [x] 8.1 E2E (único, ampliado): en `tests/e2e/gameplay.spec.ts`, "Contadores en el navegador" (seed 42, mapa real,
   `?e2e&manual`, `step(n)`) compara además `hud.stone` con `resources.stone` y `sprites.pickups.stone.visible` con las
   piedras del snapshot en cada lectura. En `smoke.spec.ts`, solo `{ gold: '0', wood: '0', stone: '0' }`. Escenario:
   `hud` "Piedra en el navegador [E2E]". `npm.cmd run test:e2e` en verde.
-- [ ] 8.2 Documentación: estado de ADR-0024 a *aceptada* con addendum de apply (tamaño real de las hojas, media de
+- [x] 8.2 Documentación: estado de ADR-0024 a *aceptada* con addendum de apply (tamaño real de las hojas, media de
   piedra, bench); `AGENTS.md` §1 (párrafo del change 0025); comentario del contrato de determinismo de `Run` y del
   puerto `RandomGenerator`; diario de IA (`docs/ai-log/`).

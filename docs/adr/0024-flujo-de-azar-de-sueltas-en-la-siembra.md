@@ -1,6 +1,6 @@
 # ADR-0024 · Flujo de azar de sueltas en la siembra de la partida (STONE_STREAM 6)
 
-- **Estado**: propuesta (design de 0025, 2026-11-25)
+- **Estado**: aceptada (apply de 0025, 2026-11-25)
 - **Fecha**: 2026-11-25
 
 ## Contexto
@@ -47,3 +47,15 @@ El change 0025 hace que un enemigo abatido suelte una piedra con una probabilida
   - Cambiar `STONE_STREAM`, la regla de consumo o `stoneChance` cambia `STONE_GOLDEN`, pero no el balance.
 - **Cómo revertirla**: no pasar `stoneRandom` (o poner `stoneChance` a 0) deja la partida bit a bit como en 0024. Quitar
   el flujo no toca ningún otro.
+
+## Addendum (apply de 0025, 2026-11-25)
+- Implementada tal cual: `StoneDrops` en el dominio (1 valor por baja, también con probabilidad 0 o barril
+  detonado), `STONE_STREAM` 6, `RunSeeding.stoneRandom` obligatorio y `Run.start(..., stoneRandom?)` opcional.
+- Hojas medidas: `Deco/04.png`, `05.png` y `06.png` de Update 010 son de **64 × 64 px con un solo frame** (cabecera
+  IHDR), así que el `appearance.json` del design (frame 64 × 64, escala 0,5, `idle [0]`) no cambió.
+- Balance: el lote del bot v4 juega con la piedra y coincide con `BALANCE_BASELINE` semilla a semilla (30/50, 0
+  quietos con los dos mapas) sin regenerarla. Piedra por partida del lote: **48,2 soltadas** (cota inferior: no cuenta
+  las que se crean y se recogen en el mismo tick) y **30,7 recogidas**; lote 35,5 s en local.
+- Bench del núcleo (local, informativo): cinco topes llenos + 300 vivos + 32 proyectiles + ovejas en huida
+  **0,254 ms/tick** (cuatro topes 0,252–0,279; tres topes 0,247–0,255 frente a 0,27 de 0022; gemas 0,176–0,187).
+- `STONE_GOLDEN` (quieto, 3.600 ticks o hasta morir): 3 piedras en la 42 y 2 en la 123, todas de `goblin-torch`.

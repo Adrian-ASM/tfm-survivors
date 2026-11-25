@@ -136,6 +136,14 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   fija dentro de `chooseWhileOpen`, puerta de escenario en `tests/support/shop.ts`. Bot v4 (va a la puerta con un
   `FlowField`, cura bajo 0,5 y compra por `REFERENCE_SHOP_ORDER`): **30/50**, 0 quietos, línea base M2 en
   `balanceBaseline.ts` (un solo lote, ~35 s local).
+  Piedra (change 0025, ADR-0024): quinto recogible `stone` (valor 1, tope `maxStone` 32, pool de 436) con
+  **origen** (`source`, el tipo que la soltó; solo en piedras). Toda baja consume **1 valor** de un sexto flujo
+  `STONE_STREAM` 6 que viaja en `RunSeeding.stoneRandom` (existe también con `map=empty`) y suelta si está abatida y
+  `⌊u × 100⌋ < p` (`resources.drops.stoneChance`: torch 10, tnt 15, barril 5, guardia 25), tras su madera y su
+  oro. `Stockpile.stone` sin bonificación; `snapshot.resources.stone`, HUD (tercera fila, `stoneY` 70) y sondas
+  `hud.stone`/`sprites.pickups.stone`. Roca por tipo en `appearance.json` (`rock`: `Deco/04`–`06`, 64 × 64, un
+  frame; reserva `medium`). Sin `stoneRandom` (`Run.start` de los escenarios) no hay piedra ni consumo.
+  `STONE_GOLDEN` nueva; balance **idéntico** a `BALANCE_BASELINE` (30/50, 0 quietos) sin regenerarla.
   Fuente de verdad del comportamiento: `openspec/specs/`.
 
 ## 2. Comandos

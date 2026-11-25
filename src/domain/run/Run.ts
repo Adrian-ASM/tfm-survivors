@@ -104,7 +104,9 @@ export {
  * (ADR-0013), y sus casas y torres de otro (ADR-0020); no cambia durante la partida. Las ovejas
  * consumen solo su flujo (ADR-0022), en este orden: colocación (1 valor por oveja), primer pasto (1 por
  * oveja colocada), y en partida 1 por paseo aleatorio (paso 1) y 1 por reaparición con candidatas
- * (paso 9.2); nunca el azar de la partida. La navegación
+ * (paso 9.2); nunca el azar de la partida. La piedra (ADR-0024) consume solo su flujo
+ * (`stoneRandom`): exactamente 1 valor por baja, en el orden de las bajas (pasos 3.3 y 4.2, tras la
+ * madera y el oro de esa baja), también con probabilidad 0 o barril detonado. La navegación
  * (ADR-0017): BFS 4-vecina con orden izquierda, derecha, arriba, abajo, campo solo función de (mapa,
  * celda del jugador) y empates por ese orden.
  */
