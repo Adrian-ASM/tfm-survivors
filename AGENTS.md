@@ -174,6 +174,16 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   Anterior/Siguiente/Cerrar, Esc y flechas con un `keydown` en `document` solo mientras está abierto, foco en el
   recuadro y de vuelta en «Cómo jugar»; estado `guide` de `MenuController` bloquea el resto. Iconos de los cinco
   recursos (`ResourceIcons`; gema como SVG `data:` de su color). Sin núcleo ni sonda; balance intacto.
+  Mapa vivo (change 0029, solo render y datos de aspecto): decoración no bloqueante del mapa generado
+  (`appearance.json` `map.decor`: 11 hojas `Deco/01`–`03`, `07`–`11`, `16`–`18`, densidad 25, tope 120 objetos,
+  margen del castillo 1; altas 16–18 partidas en base y parte alta) colocada en `map/decorChoices.ts` por hash de
+  `decorSeed` y de la celda (sales `DECOR_PLACE_KEY`/`DECOR_KIND_KEY`, sin PRNG): hierba fuera de inicio, castillo
+  ampliado, solares, campamentos, orilla y recursos; huella de base 1 celda (3 × 1 el espantapájaros). Árbol con
+  `idle` 0–5 a 6 fps y fase `h mod n` por celda; torre goblin intacta `idle` 0–3 a 5 fps con fase por estructura
+  (`TOWER_PHASE_KEY`). `MapArtPlan.animations` + `MapAnimator` (`setFrame` solo a lo dibujado, cebado al
+  reaparecer) con el `AnimClock` de la espuma. Sonda `sprites.mapArt.decor` (`planned`/`painted`/`unpainted`).
+  Objetos del mapa **820/904** en 42/123 (737/820 con tope 0), `drawn` 119/90 a 1.280 × 720 al empezar. Firmas y
+  balance intactos.
   Fuente de verdad del comportamiento: `openspec/specs/`.
 
 ## 2. Comandos

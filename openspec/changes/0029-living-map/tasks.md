@@ -84,10 +84,10 @@
 ## 4. E2E y documentación
 
 ### Grupo D · E2E de humo y docs (commit 4)
-- [ ] 4.1 Ampliar (sin E2E nuevos, modo manual `?e2e&manual` + `step(n)`) "Recuentos del mapa pintado [E2E]"
+- [x] 4.1 Ampliar (sin E2E nuevos, modo manual `?e2e&manual` + `step(n)`) "Recuentos del mapa pintado [E2E]"
   (`decor.planned ≥ 1`, `painted = planned`, `unpainted 0`) y "Hojas del mapa bloqueadas [E2E]" (además
   `Deco/18.png`: `unpainted` = espantapájaros del plan, resto pintado, tick 60, sin errores no capturados).
   — SR: esos dos escenarios — tests: `tests/e2e/gameplay.spec.ts` (`npm run test:e2e`).
-- [ ] 4.2 Docs: estado de 0029 en `AGENTS.md` (§1) con las cifras medidas (objetos 42/123, `drawn`) y entrada del
+- [x] 4.2 Docs: estado de 0029 en `AGENTS.md` (§1) con las cifras medidas (objetos 42/123, `drawn`) y entrada del
   diario de IA; medición informativa `realtime` con `CI_LIKE=1` (fps 42/123) si se ejecuta, para el verify-report
   ("Fps con el mapa real [realtime]", "Objetos del mapa [realtime]": a demanda, no bloquean).

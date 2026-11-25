@@ -330,6 +330,10 @@ describe('Pintado de la decoración (plan)', () => {
     expect(play([])).toEqual(play(ADMITTED));
   });
 
+  it('la semilla 42 tiene 3 espantapájaros en su plan (cifra del E2E "Hojas del mapa bloqueadas")', () => {
+    expect(planFor(seedMap(42), 42).decor.filter((d) => d.file === 'Deco/18.png')).toHaveLength(3);
+  });
+
   it('ninguna decoración usa la hoja de una roca de la piedra', () => {
     for (const seed of [42, 123]) {
       expect(planFor(seedMap(seed), seed).decor.some((d) => ROCKS.includes(d.file))).toBe(false);
