@@ -115,12 +115,12 @@
 
 ## 7. Determinismo y balance (tests de soporte, test-after)
 
-- [ ] 7.1 `tests/support/stoneGolden.ts` con `STONE_GOLDEN` (42 y 123; design §10) y tests de regresión en
+- [x] 7.1 `tests/support/stoneGolden.ts` con `STONE_GOLDEN` (42 y 123; design §10) y tests de regresión en
   `tests/domain/determinism-stone.test.ts`. Escenarios: `simulation-loop` "Firma dorada de las piedras", "Firmas
   anteriores intactas", "Oleadas intactas", "Piedra con el mapa vacío", "Partida con piedra reproducible" y "… en el
   mapa vacío"; `resources` "Valores consumidos igual a bajas", "Ninguna otra fuente de piedra", "Mismo combate con y sin
   recursos" (ampliado con `stoneChance` 0) y "La piedra solo consume su azar".
-- [ ] 7.2 Balance y rendimiento: `balanceMeasure` con piedra soltada y recogida por partida (informativo); el lote
+- [x] 7.2 Balance y rendimiento: `balanceMeasure` con piedra soltada y recogida por partida (informativo); el lote
   existente compara con `BALANCE_BASELINE` **sin regenerarla**; los quietos con mapa generado y vacío. Bench de
   `tests/bench/run.bench.ts` con cinco topes llenos. Escenarios: `resources` "Línea base intacta" (30/50 y ≥ 1 piedra)
   y "Quieto sigue perdiendo"; `simulation-loop` "Peor caso con los cinco topes llenos". Anotar para el verify-report:
