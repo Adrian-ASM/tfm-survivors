@@ -45,6 +45,15 @@ export function veinAspectsOf(appearance: Appearance): [string[], StructureAspec
   ];
 }
 
+/** Aspectos de los solares (0026) con su ruta: obra común, casa y torre. */
+export function siteAspectsOf(appearance: Appearance): [string[], StructureAspect][] {
+  return [
+    [['sites', 'construction'], appearance.sites.construction],
+    [['sites', 'house'], appearance.sites.house],
+    [['sites', 'tower'], appearance.sites.tower],
+  ];
+}
+
 /** Cada aspecto con su ruta de campo, en el orden del fichero (el error nombra el primero). */
 export function aspectsOf(appearance: Appearance): [string[], Aspect][] {
   return [
@@ -142,6 +151,10 @@ export function parseAppearance(
       ...sheepSheetsOf(appearance).map(([path, sheet]): [string[], string] => [
         [...path, 'file'],
         sheet.file,
+      ]),
+      ...siteAspectsOf(appearance).map(([path, a]): [string[], string] => [
+        [...path, 'sheet', 'file'],
+        a.sheet.file,
       ]),
     ];
     for (const [path, file] of sheets) {

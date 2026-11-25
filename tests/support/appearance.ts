@@ -31,6 +31,10 @@ export const HOUSE_FILE = 'Factions/Goblins/Buildings/Wood_House/Goblin_House.pn
 export const HOUSE_RUIN_FILE = 'Factions/Goblins/Buildings/Wood_House/Goblin_House_Destroyed.png';
 export const TOWER_FILE = 'Factions/Goblins/Buildings/Wood_Tower/Wood_Tower_Red.png';
 export const TOWER_RUIN_FILE = 'Factions/Goblins/Buildings/Wood_Tower/Wood_Tower_Destroyed.png';
+/** Solares (0026): obra común, casa y torre de caballeros. */
+export const SITE_CONSTRUCTION_FILE = 'Factions/Knights/Buildings/House/House_Construction.png';
+export const SITE_HOUSE_FILE = 'Factions/Knights/Buildings/House/House_Blue.png';
+export const SITE_TOWER_FILE = 'Factions/Knights/Buildings/Tower/Tower_Blue.png';
 
 const FILES = [
   TORCH_FILE,
@@ -61,6 +65,9 @@ const FILES = [
   ROCK_SMALL_FILE,
   ROCK_MEDIUM_FILE,
   ROCK_LARGE_FILE,
+  SITE_CONSTRUCTION_FILE,
+  SITE_HOUSE_FILE,
+  SITE_TOWER_FILE,
 ];
 
 /** Los 15 casos de orilla (lados de río, letras en orden N-E-S-W; design 0016 §12.2 B2). */
@@ -140,6 +147,8 @@ export interface RawAppearance {
   map: Record<string, Json>;
   structures: Record<string, Record<string, Json>>;
   structureColors: Record<string, unknown>;
+  sites: Record<string, Json>;
+  siteColors: Record<string, unknown>;
   [extra: string]: unknown;
 }
 
@@ -273,5 +282,11 @@ export function rawAppearance(): RawAppearance {
       },
     },
     veinColor: '#d4a017',
+    sites: {
+      construction: structureLook(SITE_CONSTRUCTION_FILE, 128, 192),
+      house: structureLook(SITE_HOUSE_FILE, 128, 192),
+      tower: structureLook(SITE_TOWER_FILE, 128, 256),
+    },
+    siteColors: { construction: '#b8a27a', house: '#3f6fb5', tower: '#2c4a7d' },
   };
 }

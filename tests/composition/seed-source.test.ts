@@ -7,6 +7,7 @@ import {
   MAP_STREAM,
   RESOURCE_STREAM,
   SHEEP_STREAM,
+  SITE_STREAM,
   STONE_STREAM,
   STRUCT_STREAM,
   deriveSeed,
@@ -95,6 +96,17 @@ describe('seededRun', () => {
     if (seeding.terrain.kind !== 'generated') throw new Error('se esperaba un mapa generado');
     const resourceRandom = new Mulberry32RandomGenerator(deriveSeed(42, RESOURCE_STREAM));
     expect(sequence(seeding.terrain.resourceRandom, 5)).toEqual(sequence(resourceRandom, 5));
+  });
+
+  // 0026: los solares con su propio flujo, SITE_STREAM = 7, distinto de los demás; solo generado.
+  it('solares con Mulberry32(deriveSeed(seed, SITE_STREAM)), SITE_STREAM = 7', () => {
+    expect(SITE_STREAM).toBe(7);
+    const streams = [MAP_STREAM, DECOR_STREAM, STRUCT_STREAM, RESOURCE_STREAM, SHEEP_STREAM];
+    expect(new Set([...streams, STONE_STREAM, SITE_STREAM]).size).toBe(7);
+    const seeding = seededRun(42, 'generated');
+    if (seeding.terrain.kind !== 'generated') throw new Error('se esperaba un mapa generado');
+    const siteRandom = new Mulberry32RandomGenerator(deriveSeed(42, SITE_STREAM));
+    expect(sequence(seeding.terrain.siteRandom, 5)).toEqual(sequence(siteRandom, 5));
   });
 
   it('con el modo vacío el mapa es el abierto', () => {

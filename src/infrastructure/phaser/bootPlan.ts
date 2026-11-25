@@ -2,6 +2,7 @@ import type { Appearance, SheetRect } from '../content/appearanceSchema';
 import {
   aspectsOf,
   sheepSheetsOf,
+  siteAspectsOf,
   structureAspectsOf,
   veinAspectsOf,
 } from '../content/loadAppearance';
@@ -28,7 +29,7 @@ function mapSheets(appearance: Appearance) {
   return [water.sheet, shore.sheet, foam.sheet, trees.sheet, castle.sheet];
 }
 
-/** Una carga por `file` distinto: aspectos, mapa, estructuras, vetas y ovejas, en ese orden. Puro. */
+/** Una carga por `file` distinto: aspectos, mapa, estructuras, vetas, ovejas y solares. Puro. */
 export function sheetsToLoad(appearance: Appearance): SheetLoad[] {
   const byFile = new Map<string, SheetLoad>();
   const sheets = [
@@ -37,6 +38,7 @@ export function sheetsToLoad(appearance: Appearance): SheetLoad[] {
     ...structureAspectsOf(appearance).map(([, a]) => a.sheet),
     ...veinAspectsOf(appearance).map(([, a]) => a.sheet),
     ...sheepSheetsOf(appearance).map(([, sheet]) => sheet),
+    ...siteAspectsOf(appearance).map(([, a]) => a.sheet),
   ];
   for (const { file, frameWidth, frameHeight } of sheets) {
     if (!byFile.has(file)) byFile.set(file, { key: file, file, frameWidth, frameHeight });

@@ -52,13 +52,14 @@ describe('Procedencia de las hojas de la piedra (asset-provenance)', () => {
     const list = [...new Set([...versioned(), ...files.map((f) => f.path)])];
 
     expect(checkAssets({ files: list, provenance: provenanceJson, digest: digestOf })).toEqual([]);
-    expect(files).toHaveLength(ENTRIES_BEFORE + 3);
-    expect(files.slice(ENTRIES_BEFORE).map((f) => f.source)).toEqual(SOURCES);
+    // 0026 añade 3 entradas de caballeros al final: estas 3 siguen en su sitio, sin cambios.
+    expect(files.length).toBeGreaterThanOrEqual(ENTRIES_BEFORE + 3);
+    expect(files.slice(ENTRIES_BEFORE, ENTRIES_BEFORE + 3).map((f) => f.source)).toEqual(SOURCES);
   });
 
   it('Scenario: Integridad de las hojas de la piedra (sha256 y bytes; 05 alterado falla)', async () => {
     const { checkAssets, PROVENANCE_PATH } = await guard();
-    for (const entry of files.slice(ENTRIES_BEFORE)) {
+    for (const entry of files.slice(ENTRIES_BEFORE, ENTRIES_BEFORE + 3)) {
       expect(entry.path).toBe(ASSET_DIR + entry.source.replace('Tiny Swords (Update 010)/', ''));
       expect(entry.version).toBe('Update 010');
       expect(digestOf(entry.path)).toEqual({ sha256: entry.sha256, bytes: entry.bytes });

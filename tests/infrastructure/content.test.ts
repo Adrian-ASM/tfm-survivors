@@ -672,8 +672,8 @@ describe('Contenido del mapa validado', () => {
   it('Scenario: Celda en el límite del radio del jugador (32 carga, 31 falla con cellSize)', () => {
     const at32 = rawContent();
     at32.map.cellSize = 32;
-    // PENDIENTE del orquestador (0026): la regla cruzada del acceso (design §1, radio + radio del
-    // jugador < 1,5 celdas) rechaza el radio 40 por defecto con celdas de 32 (40 + 16 ≥ 48).
+    // El escenario no fija el radio de oferta de los solares (0026): con celdas de 32, la regla del
+    // acceso (radio + radio del jugador < 1,5 celdas, design §1) exige uno compatible, < 32.
     at32.buildings.access.radius = 30;
     expect(parseRunConfig(at32).ok).toBe(true);
     const at31 = rawContent();

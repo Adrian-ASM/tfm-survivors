@@ -305,6 +305,35 @@ function checkStructureColors(
   }
 }
 
+/** Aspectos de los solares (0026): la obra común a todo solar libre, la casa y la torre. */
+const SiteLooksSchema = z.strictObject({
+  construction: StructureAspectSchema,
+  house: StructureAspectSchema,
+  tower: StructureAspectSchema,
+});
+
+export const SITE_COLORS_MUST_DIFFER =
+  'Los colores de reserva de los solares son distintos entre sí y de los del mapa y las estructuras.';
+
+/** Colores de reserva de los solares (0026): obra, casa y torre, `#RRGGBB`. */
+const SiteColorsSchema = z.strictObject({ construction: Hex, house: Hex, tower: Hex });
+
+/**
+ * Colores de los solares distintos dos a dos y de los del mapa y de las estructuras (spec
+ * sprite-rendering 0026); el error nombra el primero repetido en el orden obra, casa, torre.
+ */
+function checkSiteColors(a: z.output<typeof AppearanceShape>, ctx: z.RefinementCtx): void {
+  const seen = new Set<number>([...Object.values(a.terrain), ...Object.values(a.structureColors)]);
+  for (const key of ['construction', 'house', 'tower'] as const) {
+    const color = a.siteColors[key];
+    if (seen.has(color)) {
+      ctx.addIssue({ code: 'custom', path: ['siteColors', key], message: SITE_COLORS_MUST_DIFFER });
+      return;
+    }
+    seen.add(color);
+  }
+}
+
 /**
  * Gema (`xp`) sin hoja (0022, design §5): forma de color con el pintado de reserva. Nunca cuenta como
  * reserva en la sonda y no exige `idle`.
@@ -421,16 +450,22 @@ const AppearanceShape = z.strictObject({
   veins: VeinLooksSchema,
   /** Color de reserva de la veta: círculo de su radio de contacto. */
   veinColor: Hex,
+  /** Solares (0026): obra común, casa y torre, en el plan del mapa. */
+  sites: SiteLooksSchema,
+  siteColors: SiteColorsSchema,
 });
 
 export const AppearanceSchema = AppearanceShape.superRefine((a, ctx) => {
   checkStructureColors(a.structureColors, a.terrain, ctx);
   checkResourceColors(a, ctx);
+  checkSiteColors(a, ctx);
 });
 
 export type Appearance = z.output<typeof AppearanceSchema>;
 export type StructureAspect = z.output<typeof StructureAspectSchema>;
 export type StructureLooksAppearance = z.output<typeof StructureLooksSchema>;
+export type SiteLooksAppearance = z.output<typeof SiteLooksSchema>;
+export type SiteColors = z.output<typeof SiteColorsSchema>;
 export type MapAppearance = z.output<typeof MapAppearanceSchema>;
 /** Recorte en px de una hoja no regular (marcos del puente). */
 export type SheetRect = z.output<typeof RectSchema>;

@@ -94,14 +94,14 @@
   - Tests: `tests/application/build-on-site.test.ts` y `tests/application/fixed-step-building.test.ts`.
 
 ## 6. Infraestructura y composición · contenido, azar y arte (test-after)
-- [ ] 6.1 `content/buildings.json` con su esquema zod (reutiliza el esquema de arma) y su parser, y `siteColors` y
+- [x] 6.1 `content/buildings.json` con su esquema zod (reutiliza el esquema de arma) y su parser, y `siteColors` y
   `sites` en `appearance.json` con validación de color. Además, `SITE_STREAM = 7`, `seededRun` con `siteRandom`
   (solo `generated`) y `contentBoot`/`main` cableando los casos de uso.
   - Escenarios: bs "Contenido por defecto", "Valores inválidos", "Límites válidos" y "Campo ausente"; sr "Colores
     de los solares inválidos".
   - Tests: `tests/infrastructure/content/buildings-content.test.ts` y `tests/composition/seed-source.test.ts`
     (ampliado).
-- [ ] 6.2 Hojas `House_Construction`, `House_Blue` y `Tower_Blue` copiadas byte a byte, con su entrada (sha256 y
+- [x] 6.2 Hojas `House_Construction`, `House_Blue` y `Tower_Blue` copiadas byte a byte, con su entrada (sha256 y
   bytes) en `content/asset-provenance.json`. Hay que confirmar 128 × 192 y 128 × 256 en la cabecera IHDR.
   - Escenarios: ap "Hojas de caballeros registradas", "Hoja de caballeros sin entrada" y "Hojas de caballeros no
     usadas".

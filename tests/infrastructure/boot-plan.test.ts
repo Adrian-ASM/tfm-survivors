@@ -34,9 +34,9 @@ describe('BootScene · plan de carga', () => {
     // comparte la del fondo) + casa y torre, intactas y en ruina (0021). 0022: la gema pasa a forma de
     // color (sin hoja), su bolsa es la del oro y se suman la madera y las dos vetas: 18 + 3 = 21.
     // 0023: más la carne (M_Idle) y las dos hojas de la oveja (idle y bounce) = 24.
-    // 0025: más las tres rocas de la piedra (Deco/04–06) = 27.
-    expect(sheets).toHaveLength(27);
-    expect(new Set(sheets.map((s) => s.key)).size).toBe(27);
+    // 0025: más las tres rocas de la piedra (Deco/04–06) = 27. 0026: más obra, casa y torre = 30.
+    expect(sheets).toHaveLength(30);
+    expect(new Set(sheets.map((s) => s.key)).size).toBe(30);
     expect(sheets.find((s) => s.key === TOWER_FILE)).toMatchObject({
       frameWidth: 256,
       frameHeight: 192,
