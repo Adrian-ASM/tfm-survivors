@@ -1251,8 +1251,8 @@ ausente, con otro formato o repetido MUST hacer fallar el arranque con un error 
 pintan con la forma rellena de "Aspecto de reserva ante un fallo de carga" (diámetro 2 × su radio) con el color de la
 oveja, sin errores no capturados. Con el mapa vacío sin ovejas declaradas no se pinta ninguna; en modo menú no se ve
 ninguna; al empezar una partida nueva no queda visible ninguna oveja de la anterior. Las ovejas no forman parte del plan
-del mapa ni de sus objetos (`drawn` y los objetos del mapa no cambian por ellas), y la decoración no depende de dónde
-estén. Pintar las ovejas MUST NOT cambiar la simulación.
+del mapa ni de sus objetos (`drawn` y los objetos del mapa no cambian por ellas), y la decoración no cambia porque se
+muevan durante la partida. Pintar las ovejas MUST NOT cambiar la simulación.
 
 #### Scenario: Oveja en pasto y en huida
 - **GIVEN** la oveja de prueba en (1.000, 1.000), los datos de aspecto del repositorio con todas las hojas cargadas y
@@ -1296,10 +1296,13 @@ estén. Pintar las ovejas MUST NOT cambiar la simulación.
 - **THEN** sus snapshots son iguales campo a campo en cada tick
 
 #### Scenario: Ovejas fuera del plan del mapa
-- **GIVEN** el contenido por defecto y las semillas 42 y 123, en un caso con el tope de ovejas del contenido y en otro
-  con tope 0
-- **WHEN** se calcula el plan del mapa sin navegador
-- **THEN** los objetos del mapa y la decoración son iguales en los dos casos, y ningún objeto es de una oveja
+- **GIVEN** el contenido por defecto y las semillas 42 y 123
+- **WHEN** se calcula el plan del mapa sin navegador con el tope de decoración 0, y en otro caso con los datos de
+  aspecto del repositorio al crear la partida y tras 1.200 ticks en los que las ovejas se mueven
+- **THEN** con tope de decoración 0 los objetos del mapa son los de antes de este change (737 y 820 respectivamente)
+  y ningún objeto es de una oveja
+- **AND** con los datos del repositorio la decoración del plan es la misma, celda a celda, al crear la partida y tras
+  los 1.200 ticks
 
 ## REMOVED Requirements
 (ninguno)
