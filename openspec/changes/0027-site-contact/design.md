@@ -59,9 +59,11 @@ ovejas declaradas → `new Run` → despeje inicial → `prebuild`.
 - **Puerta**: se **retira** `MAP_SITE_COVERS_DOOR`. Ninguna spec lo pide y un mapa declarado no tiene que
   cumplir la conectividad (`procedural-map`, "Mapa explícito y mapa vacío"). `resolveSites.fits` deja de
   comprobar el acceso: solo exige que la huella quepa en la rejilla (`MAP_SITE_OUTSIDE`, texto sin "acceso").
-- **Despeje inicial**: tras marcar, `Run` aplica una vez `clearFootprint`. Recoloca enemigos y recogibles de
-  `RunSetup` y puestos y puntos de patrulla de guardia (`GuardPost.evict`) que hayan quedado en una huella
-  (spec "Punto de patrulla sobre el solar libre": fuera de la huella desde el nacimiento). Las ovejas no llegan
+- **Despeje inicial**: tras marcar, `Run` recoloca solo los puestos y puntos de patrulla de guardia
+  (`GuardPost.evict`) que hayan quedado en una huella (spec "Punto de patrulla sobre el solar libre": fuera de la
+  huella desde el nacimiento). Los enemigos y recogibles de `RunSetup` **no** se recolocan al arrancar: las specs
+  "Enemigo dentro de la huella", "Recogibles dentro de la huella" y "Despejar no consume azar" exigen que sigan ahí
+  hasta construir (corrección en apply, 0027 G1+G2; manda la spec). Las ovejas no llegan
   aquí (ya validadas). No consume azar. En el mapa generado no hace nada, porque la zona del solar excluye
   estructuras y puertas, vetas, montones y ovejas iniciales, y `minStructureCells` 4 es mayor que el radio de
   patrulla. Lo cubre el test de las 50 semillas ("Nada en las celdas de obra").
