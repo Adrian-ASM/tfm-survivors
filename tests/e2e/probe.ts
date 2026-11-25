@@ -223,6 +223,8 @@ export type MapArtView = Record<
   'water' | 'shore' | 'foam' | 'tree' | 'canopy' | 'bridge' | 'castle',
   ElementCountView
 > & {
+  /** Decoración (0029): del plan, pintadas con su hoja y sin pintar por fallo de su hoja. */
+  decor: { planned: number; painted: number; unpainted: number };
   objects: number;
   /** Objetos del mapa dibujados en el último frame tras el recorte por cámara (0018). */
   drawn: number;
@@ -430,6 +432,7 @@ export async function startSpriteSampler(page: Page, placeholderType?: string): 
             result.cellMisses += 1;
           }
           if (s.mapArt.objects !== 0 || s.mapArt.drawn !== 0) result.cellMisses += 1;
+          if (s.mapArt.decor.planned !== 0) miss('menú con decoración');
           if (s.veins.active + s.veins.depleted !== 0) miss('menú con vetas');
         } else {
           result.frames += 1;

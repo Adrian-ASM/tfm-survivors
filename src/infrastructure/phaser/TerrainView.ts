@@ -28,6 +28,11 @@ export interface MapArtCanvas {
   /** Pone el frame dado a todas las espumas pintadas, ocultas incluidas (animación de render). */
   foam(frame: number): void;
   /**
+   * Pone el frame de hoja `frame` al sprite pintado `index` (mismo índice que `show`), conservando
+   * su recorte: árboles y torres animados (0029). Sin efecto si el objeto no es un sprite.
+   */
+  frame(index: number, frame: number): void;
+  /**
    * Muestra u oculta el objeto `index` del mapa pintado, en el orden de llamada de `tiles`, `sprite` y
    * `rect` (y `circle`, 0022) desde el último `clear` (recorte por cámara, 0018).
    */

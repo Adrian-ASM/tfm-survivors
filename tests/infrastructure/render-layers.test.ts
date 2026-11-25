@@ -10,7 +10,8 @@ import {
   type FakeSprite,
 } from '../support/FakeSprite';
 import { someLooks } from '../support/looks';
-import { startRun } from '../support/runs';
+import { startRun, startSeededRun } from '../support/runs';
+import { phasedFrameAt } from '../../src/infrastructure/phaser/art/animation';
 import { toMapSnapshot } from '../../src/domain/map/MapSnapshot';
 import {
   CameraRig,
@@ -236,6 +237,7 @@ describe('RenderLayers · espuma animada', () => {
       rect: () => undefined,
       circle: () => undefined,
       foam: (f) => calls.push(f),
+      frame: () => undefined,
       show: () => undefined,
     };
     const plan = planFor(toMapSnapshot(mapForSeed(aDefaultConfig(), 123)), 123);
@@ -273,6 +275,7 @@ describe('RenderLayers · espuma animada', () => {
       rect: () => undefined,
       circle: () => undefined,
       foam: (f) => calls.push(f),
+      frame: () => undefined,
       show: () => undefined,
     };
     s.layers.paintMap(
@@ -293,6 +296,10 @@ interface PaintedObject {
   foam: boolean;
   visible: boolean;
   frame: number;
+  /** Frame de hoja del sprite (0029: el del plan al pintarlo y el de `frame` después). */
+  sheet: number | string;
+  /** Llamadas a `frame` recibidas mientras estaba oculto (deben ser 0). */
+  hiddenFrames: number;
 }
 
 /**
@@ -304,10 +311,18 @@ function mapCanvas() {
   const pool: PaintedObject[] = [];
   const objects: PaintedObject[] = [];
   let shows = 0;
-  const add = (id: string, foam = false) => {
-    const o = pool[objects.length] ?? { id, foam, visible: false, frame: -1 };
+  let frames = 0;
+  const add = (id: string, foam = false, sheet: number | string = -1) => {
+    const o = pool[objects.length] ?? {
+      id,
+      foam,
+      visible: false,
+      frame: -1,
+      sheet,
+      hiddenFrames: 0,
+    };
     if (!pool.includes(o)) pool.push(o);
-    Object.assign(o, { id, foam, visible: true });
+    Object.assign(o, { id, foam, visible: true, sheet, hiddenFrames: 0 });
     objects.push(o);
   };
   const canvas: MapArtCanvas = {
@@ -319,7 +334,7 @@ function mapCanvas() {
       add(`low:tiles:${String(t.x)},${String(t.y)}`);
     },
     sprite: (layer, s) => {
-      add(`${layer}:${s.role}:${String(s.x)},${String(s.y)}`, s.role === 'foam');
+      add(`${layer}:${s.role}:${String(s.x)},${String(s.y)}`, s.role === 'foam', s.frame);
     },
     rect: (r) => {
       add(`low:rect:${String(r.x)},${String(r.y)}`);
@@ -330,13 +345,20 @@ function mapCanvas() {
     foam: (f) => {
       for (const o of objects) if (o.foam) o.frame = f;
     },
+    frame: (i, f) => {
+      frames++;
+      const o = objects[i];
+      if (!o) return;
+      if (!o.visible) o.hiddenFrames++;
+      o.sheet = f;
+    },
     show: (i, v) => {
       shows++;
       const o = objects[i];
       if (o) o.visible = v;
     },
   };
-  return { canvas, objects, pool, shows: () => shows };
+  return { canvas, objects, pool, shows: () => shows, frames: () => frames };
 }
 
 /** Cámara doble con lo que usa `CameraRig` (sin preRender: la vista del recorte se calcula). */
@@ -455,10 +477,12 @@ describe('RenderLayers · recorte del mapa (0018)', () => {
     expect(objects[s]?.frame).not.toBe(-1);
   });
 
-  it('Scenario: Pausa, oferta y partida terminada (mismo conjunto 300 frames y 0 show tras el primero)', () => {
+  it('Scenario: Pausa, oferta, tienda, obra y partida terminada (mismo conjunto 300 frames y 0 show tras el primero)', () => {
     const states: [string, Partial<RunSnapshot>, boolean][] = [
       ['pausa', {}, true],
       ['oferta', { status: 'choosing' }, false],
+      ['tienda', { status: 'shopping' }, false],
+      ['obra', { status: 'building' }, false],
       ['terminada', { status: 'over', outcome: 'lost' }, false],
     ];
     for (const [name, over, paused] of states) {
@@ -643,6 +667,194 @@ describe('RenderLayers · sonda drawn (0018)', () => {
     );
     expect(unpainted).toEqual([]);
   });
+});
+
+// Spec sprite-rendering (0029), "Animación del arte del mapa" y "El recorte no cambia lo que se ve":
+// árboles y torres con el reloj de render, solo lo dibujado, cebado al reaparecer.
+const SNAP_42 = startSeededRun(aDefaultConfig(), 42).snapshot();
+const PLAN_42_FULL = () => planFor(startSeededRun(aDefaultConfig(), 42).map, 42);
+const at42 = (tick: number, x: number, y: number, over: Partial<RunSnapshot> = {}) =>
+  ({ ...SNAP_42, tick, player: { ...SNAP_42.player, x, y }, ...over }) as RunSnapshot;
+/** Frame de hoja que debe mostrar cada objeto animado del plan con el reloj `ms`. */
+const expectedSheets = (plan: MapArtPlan, ms: number): Map<number, number> =>
+  new Map(
+    plan.animations.flatMap((g) =>
+      g.indices.map((i) => [i, phasedFrameAt(g, ms, g.phase)] as const),
+    ),
+  );
+const towerParts = (plan: MapArtPlan) =>
+  plan.structures.filter((s) => s.type === 'goblin-tower').flatMap((s) => [...s.intact]);
+const treeParts = (plan: MapArtPlan) =>
+  plan.animations.filter((g) => g.frames.length === 6).flatMap((g) => [...g.indices]);
+
+describe('RenderLayers · animación del mapa (0029)', () => {
+  it('Scenario: Árbol y torre al reaparecer (dibujados en f, ocultos en f + 1, en f + 37 con su fase y el reloj)', () => {
+    const plan = PLAN_42_FULL();
+    const view = (p: { x: number; y: number }) => visibleByRule(plan, viewOf(p));
+    const trees = treeParts(plan);
+    const towers = towerParts(plan);
+    // P en una rejilla de paso 120 px y Q = P ± 1.600 px en x (la cámara se aleja).
+    const grid = Array.from({ length: 32 * 18 }, (_, k) => ({
+      x: 120 * (k % 32) + 60,
+      y: 120 * Math.floor(k / 32) + 60,
+    }));
+    const pick = grid
+      .flatMap((p) => [-1600, 1600].map((dx) => ({ p, q: { x: p.x + dx, y: p.y } })))
+      .filter(({ q }) => q.x >= 0 && q.x <= WORLD_42.width)
+      .find(({ p, q }) => {
+        const a = view(p);
+        const b = view(q);
+        return trees.some((i) => a[i] && !b[i]) && towers.some((i) => a[i] && !b[i]);
+      });
+    if (!pick) throw new Error('sin posiciones con árbol y torre que salen');
+    const { p, q } = pick;
+    const tree = trees.find((i) => view(p)[i] && !view(q)[i]) ?? -1;
+    const tower = towers.find((i) => view(p)[i] && !view(q)[i]) ?? -1;
+    const { paint, objects, layers } = culled(plan);
+
+    paint(at42(0, p.x, p.y));
+    paint(at42(1, q.x, q.y));
+    expect([objects[tree]?.visible, objects[tower]?.visible]).toEqual([false, false]);
+    for (let f = 2; f < 37; f++) paint(at42(f, q.x, q.y));
+    paint(at42(37, p.x, p.y));
+
+    const want = expectedSheets(plan, layers.renderMs);
+    expect([objects[tree]?.visible, objects[tower]?.visible]).toEqual([true, true]);
+    expect(objects[tree]?.sheet).toBe(want.get(tree));
+    expect(objects[tower]?.sheet).toBe(want.get(tower));
+    expect(objects.filter((o) => o.hiddenFrames > 0)).toEqual([]);
+  });
+
+  it('Scenario: Árboles y torres congelados en pausa, oferta, tienda, obra y fin (60 frames, el reloj no cambia)', () => {
+    const plan = PLAN_42_FULL();
+    const centre = { x: 1950, y: 1170 };
+    const states: [string, Partial<RunSnapshot>, boolean][] = [
+      ['pausa', {}, true],
+      ['oferta', { status: 'choosing' }, false],
+      ['tienda', { status: 'shopping' }, false],
+      ['obra', { status: 'building' }, false],
+      ['terminada', { status: 'over', outcome: 'lost' }, false],
+    ];
+    for (const [name, over, paused] of states) {
+      const { paint, objects, layers } = culled(plan);
+      for (let f = 0; f < 500; f++) paint(at42(f, centre.x, centre.y));
+      // El reloj se congela desde el primer frame que pinta ese estado (como la espuma desde 0016).
+      const frozen = at42(500, centre.x, centre.y, over);
+      paint(frozen, paused);
+      const r0 = layers.renderMs;
+      const animated = [...expectedSheets(plan, r0).keys()].filter((i) => objects[i]?.visible);
+      expect(animated.length, name).toBeGreaterThan(0);
+      const sheets = () => animated.map((i) => objects[i]?.sheet);
+      const first = sheets();
+      for (let f = 0; f < 59; f++) paint(frozen, paused);
+      expect(layers.renderMs, name).toBe(r0);
+      expect(sheets(), name).toEqual(first);
+      const want = expectedSheets(plan, r0);
+      expect(first, name).toEqual(animated.map((i) => want.get(i)));
+    }
+    // Al reanudar la pausa: 1 frame más de reloj y el frame que da esa hora.
+    const { paint, objects, layers } = culled(plan);
+    for (let f = 0; f < 500; f++) paint(at42(f, centre.x, centre.y));
+    const r0 = layers.renderMs;
+    for (let f = 0; f < 60; f++) paint(at42(500, centre.x, centre.y), true);
+    paint(at42(501, centre.x, centre.y));
+    expect(Math.abs(layers.renderMs - (r0 + FRAME_MS))).toBeLessThanOrEqual(0.001);
+    const want = expectedSheets(plan, layers.renderMs);
+    const shown = [...want].filter(([i]) => objects[i]?.visible === true);
+    expect(shown.length).toBeGreaterThan(0);
+    expect(shown.map(([i]) => objects[i]?.sheet)).toEqual(shown.map(([, f]) => f));
+  });
+
+  it('Scenario: Torre que cae en ruina (desde el tick n, ruina estática y nunca el aspecto intacto)', () => {
+    const plan = PLAN_42_FULL();
+    const k = plan.structures.findIndex((s) => s.type === 'goblin-tower');
+    const tower = plan.structures[k];
+    if (!tower) throw new Error('sin torre');
+    const site = SNAP_42.structures[k];
+    if (!site) throw new Error('sin estructura en el snapshot');
+    const { x, y } = { x: site.x, y: site.y };
+    const ruined = SNAP_42.structures.map((s, j) => (j === k ? { ...s, destroyed: true } : s));
+    const { paint, objects } = culled(plan);
+    paint(at42(99, x, y));
+    expect(tower.intact.every((i) => objects[i]?.visible)).toBe(true);
+    const ruinSheets: (number | string | undefined)[][] = [];
+    for (let n = 100; n <= 160; n++) {
+      paint(at42(n, x, y, { structures: ruined }));
+      expect(tower.intact.some((i) => objects[i]?.visible)).toBe(false);
+      expect(tower.ruin.every((i) => objects[i]?.visible)).toBe(true);
+      ruinSheets.push(tower.ruin.map((i) => objects[i]?.sheet));
+    }
+    expect(new Set(ruinSheets.map((s) => JSON.stringify(s))).size).toBe(1);
+    expect(tower.intact.map((i) => objects[i]?.hiddenFrames)).toEqual(tower.intact.map(() => 0));
+  });
+
+  it('Scenario: Elementos estáticos (600 frames: ningún objeto sin grupo recibe un frame)', () => {
+    const plan = PLAN_42_FULL();
+    const animated = new Set(plan.animations.flatMap((g) => [...g.indices]));
+    const ruined = SNAP_42.structures.map((s) => ({ ...s, destroyed: true }));
+    const depleted = SNAP_42.veins.map((v) => ({ ...v, depleted: true }));
+    const built = SNAP_42.sites.map(
+      (s, j) => ({ ...s, state: j === 0 ? 'house' : 'tower' }) as const,
+    );
+    const { paint, objects } = culled(plan);
+    const painted = objects.map((o) => o.sheet);
+    for (let f = 0; f < 600; f++) {
+      paint(at42(f, 1950, 1170, { structures: ruined, veins: depleted, sites: built }));
+    }
+    const changed = objects.flatMap((o, i) =>
+      !animated.has(i) && o.sheet !== painted[i] ? [i] : [],
+    );
+    expect(changed).toEqual([]);
+    expect(plan.decor.length).toBeGreaterThan(0);
+  });
+
+  it('Scenario: Movimiento continuo sin huecos (los animados dibujados muestran el frame de su fase)', () => {
+    const plan = PLAN_42_FULL();
+    const { paint, objects, layers } = culled(plan);
+    const wrong: string[] = [];
+    for (let f = 0; f < 600; f++) {
+      const p = pathAt(f, 600);
+      paint(at42(f, p.x, p.y));
+      for (const [i, want] of expectedSheets(plan, layers.renderMs)) {
+        const o = objects[i];
+        if (o?.visible === true && o.sheet !== want) wrong.push(`${String(f)}:${String(i)}`);
+      }
+    }
+    expect(wrong).toEqual([]);
+    expect(objects.filter((o) => o.hiddenFrames > 0)).toEqual([]);
+  });
+
+  it.each([42, 123] as const)(
+    'Scenario: Totales del mapa con estructuras y vetas (semilla %i: iguales con toda vista, posición y reloj)',
+    (seed) => {
+      const map = startSeededRun(aDefaultConfig(), seed).map;
+      const plan = planFor(map, seed);
+      const totals = new Set<string>();
+      for (const [w, h] of [
+        [960, 540],
+        [1280, 720],
+        [3840, 2160],
+      ] as const) {
+        for (const p of [
+          { x: 1920, y: 1080 },
+          { x: 16, y: 16 },
+        ]) {
+          for (const ms of [0, 10_000]) {
+            const { paint, layers } = culled(plan, screenFrame(w, h));
+            layers.advance(ms, false);
+            paint(at42(0, p.x, p.y));
+            totals.add(
+              JSON.stringify({ cells: layers.counts.cells, ...layers.counts.mapArt, drawn: null }),
+            );
+          }
+        }
+      }
+      expect(totals.size).toBe(1);
+      const decor = plan.decor.reduce((n, d) => n + d.pieces, 0);
+      expect(plan.objects).toBe((seed === 42 ? 737 : 820) + decor);
+      expect(plan.objects).toBeLessThanOrEqual(950);
+    },
+  );
 });
 
 describe('RenderLayers · recuentos para la sonda', () => {

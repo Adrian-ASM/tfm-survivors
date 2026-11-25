@@ -26,6 +26,7 @@ const quietCanvas = (): MapArtCanvas => ({
   rect: () => undefined,
   circle: () => undefined,
   foam: () => undefined,
+  frame: () => undefined,
   show: () => undefined,
 });
 

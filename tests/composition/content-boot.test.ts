@@ -160,7 +160,7 @@ describe('bootContent', () => {
     expect(checkAppearanceRefs(booted.appearance, booted.config).ok).toBe(true);
   });
 
-  it('Scenario: Los aspectos no cambian la simulación (entidades y estructuras × 2, colores cambiados)', () => {
+  it('Scenario: Los aspectos no cambian la simulación (entidades y estructuras × 2, colores cambiados, decoración 0)', () => {
     const doubled = raw();
     const a = doubled.appearance as {
       player: { scale: number };
@@ -197,6 +197,9 @@ describe('bootContent', () => {
       'goblin-tower': '#060606',
       ruin: '#070707',
     };
+    // 0029: y el tope de decoración 0.
+    const map = doubled.appearance['map'] as { decor: { maxObjects: number } };
+    map.decor.maxObjects = 0;
     const one = boot(raw()).booted;
     const two = boot(doubled).booted;
     if (!one || !two) throw new Error('arranque inválido');
@@ -225,5 +228,6 @@ describe('bootContent', () => {
     expect(two.appearance.player.scale).toBe(one.appearance.player.scale * 2);
     const house = (b: typeof one) => b.appearance.structures['goblin-house']?.intact.scale ?? 0;
     expect(house(two)).toBe(house(one) * 2);
+    expect(two.appearance.map.decor.maxObjects).toBe(0);
   });
 });

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { toMapSnapshot, type MapSnapshot } from '../../src/domain/map/MapSnapshot';
+import { phasedFrameAt } from '../../src/infrastructure/phaser/art/animation';
+import { MapAnimator } from '../../src/infrastructure/phaser/map/mapAnimation';
 import type { RectDraw, SpriteDraw } from '../../src/infrastructure/phaser/map/planMapArt';
 import { aDefaultConfig } from '../support/builders';
 import { HOUSE_AT_20_10, aCampsConfig, startDeclared, startOn } from '../support/camps';
@@ -103,6 +105,38 @@ describe('planMapArt · estructuras', () => {
       ['sprite', file],
       ['sprite', file],
     ]);
+  });
+
+  // 0029: la torre intacta se anima con su fase ψ; sus dos partes, con el mismo frame de hoja.
+  it('Scenario: Torre intacta animada (origen (2.460, 420), partes por y = 360, 60 frames con ψ y el reloj)', () => {
+    const map = declaredMap(TOWER_AT_40_5);
+    const plan = planFor(map, 42);
+    const [tower] = plan.structures;
+    const parts = drawsAt(map, [], tower?.intact ?? []) as SpriteDraw[];
+    expect(parts.map((s) => [s.texture, s.x, s.y])).toEqual([
+      [TOWER?.intact.sheet.file, 2460, 420],
+      [TOWER?.intact.sheet.file, 2460, 420],
+    ]);
+    const [low, high] = parts;
+    expect(low?.bounds.y).toBeCloseTo(360, 3);
+    expect((high?.bounds.y ?? 0) + (high?.bounds.height ?? 0)).toBeCloseTo(360, 3);
+    const group = plan.animations.find((g) =>
+      (tower?.intact ?? []).every((i) => g.indices.includes(i)),
+    );
+    if (!group) throw new Error('la torre intacta no está animada');
+    const animator = new MapAnimator();
+    animator.reset(plan);
+    const sheets = new Map<number, number>();
+    const seen = new Set<number>();
+    for (let f = 0; f < 60; f++) {
+      const ms = f * 16.667;
+      animator.tick(ms, { isVisible: () => true }, { frame: (i, fr) => sheets.set(i, fr) });
+      const [a = -1, b = -2] = (tower?.intact ?? []).map((i) => sheets.get(i) ?? -3);
+      expect(a).toBe(phasedFrameAt(group, ms, group.phase));
+      expect(b).toBe(a);
+      seen.add(a);
+    }
+    expect([...seen].sort()).toEqual([0, 1, 2, 3]);
   });
 
   it('cada objeto del plan pertenece como mucho a un aspecto de una estructura', () => {

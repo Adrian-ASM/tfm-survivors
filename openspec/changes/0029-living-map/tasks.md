@@ -65,7 +65,7 @@
   `tree-choices.test.ts`, `animation.test.ts`, `map-looks.test.ts`, `plan-map-animation.test.ts` (nuevo).
 
 ### Grupo C · Animación y sonda en el adaptador (commit 3)
-- [ ] 3.5 `MapAnimator` (puro) + `MapCuller.isVisible` + `MapArtCanvas.frame` (`phaserArt`: `setFrame` sobre el
+- [x] 3.5 `MapAnimator` (puro) + `MapCuller.isVisible` + `MapArtCanvas.frame` (`phaserArt`: `setFrame` sobre el
   sprite pintado) + `RenderLayers` (mismo `AnimClock` que la espuma, `tick` tras los `sync` de estructuras, cebado
   en `cullMap` con un `MapVisibility` creado una vez).
   — SR: "Árbol y torre al reaparecer", "Torre que cae en ruina", "Elementos estáticos", "Árboles y torres congelados en
@@ -73,7 +73,7 @@
   "Espuma al reaparecer", "Movimiento continuo sin huecos", "`drawn` igual al recorte", "Totales del mapa con
   estructuras y vetas" — tests: `map-animation.test.ts` (nuevo), `render-layers.test.ts`, `map-art-canvas.test.ts`,
   `structure-art.test.ts`.
-- [ ] 3.6 Sonda `sprites.mapArt.decor` (`planned`/`painted`/`unpainted`; objetos solo pintados) en `paintMap`,
+- [x] 3.6 Sonda `sprites.mapArt.decor` (`planned`/`painted`/`unpainted`; objetos solo pintados) en `paintMap`,
   `zeroMapArt` y el tipo de la sonda E2E; invariancia de la simulación con y sin decoración/animación.
   — SR: "Recuento de la decoración sin una hoja", "Sonda en el menú", "Partida nueva y menú", "Mapa vacío"
   (recuentos), "Recuento coherente con el snapshot" (decoración constante), "Elegir la decoración no consume azar",
