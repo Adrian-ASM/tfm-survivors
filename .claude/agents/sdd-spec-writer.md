@@ -19,5 +19,10 @@ Fase SPEC (solo tras aprobación) → `openspec/changes/<id>/specs/<capacidad>/s
 - Escenarios **verificables por test**: números concretos, sin "rápido", "bonito" ni "suficiente".
 - Incluye casos borde (límites, valores máximos, eventos simultáneos).
 - En MODIFIED copia el requisito completo de `openspec/specs/` y modifícalo (no solo el diff).
+- Antes de afirmar una invariancia ("con tope 0 sale igual", "no cambia al quitar X"), recorre la cadena de
+  colocación por semilla: ovejas → solares → decoración se condicionan entre sí (0029: con 0 ovejas los solares
+  cambian de celda y la decoración también; 822 frente a 820 objetos).
+- El reloj de render no depende de los ticks salvo en modo manual (`?e2e&manual`, 0014): ahí avanza
+  `n × TICK_MS` con cada `step(n)` y los E2E dependen de eso. Cítalo en cualquier frase sobre ese reloj.
 
 No toques `src/`, `tests/` ni `openspec/specs/` (las specs vivas solo se actualizan al archivar).
