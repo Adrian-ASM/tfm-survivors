@@ -13,7 +13,8 @@ export class TickRun {
   ) {}
 
   /**
-   * Con la partida eligiendo mejora o terminada no avanza ni acumula tiempo (spec simulation-loop):
+   * Con la partida eligiendo mejora, en tienda, en obra o terminada no avanza ni acumula tiempo
+   * (spec simulation-loop):
    * al elegir, el siguiente frame sigue con las reglas normales, sin ráfaga de recuperación. Si un
    * tick abre una oferta a mitad de frame, el resto del frame se descarta.
    */

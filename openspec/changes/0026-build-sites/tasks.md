@@ -87,7 +87,7 @@
   - Tests: `tests/domain/weapon/tower-battery.test.ts` y `tests/domain/run-towers.test.ts`.
 
 ## 5. Aplicación
-- [ ] 5.1 Casos de uso `BuildOnSite` y `LeaveSite` (patrón `BuyFromShop`/`LeaveShop`). El bucle de paso fijo se
+- [x] 5.1 Casos de uso `BuildOnSite` y `LeaveSite` (patrón `BuyFromShop`/`LeaveShop`). El bucle de paso fijo se
   comprueba en `building` como regresión.
   - Escenarios: sl "Frames en obra" y "Obra a mitad de frame"; bs "Construir una casa" y "Salir fuera de la obra"
     (a través de los casos de uso).
