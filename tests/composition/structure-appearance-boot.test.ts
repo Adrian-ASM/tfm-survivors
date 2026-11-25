@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import guideJson from '../../content/guide.json';
 import appearanceJson from '../../content/appearance.json';
 import provenanceJson from '../../content/asset-provenance.json';
 import { APPEARANCE_THROW_REQUIRED, bootContent } from '../../src/composition/contentBoot';
@@ -16,8 +17,12 @@ import { rawContent } from '../support/builders';
 const REGISTERED = provenanceJson.files.map((f) => f.path);
 
 type Json = Record<string, unknown>;
-type Raw = { content: ReturnType<typeof rawContent>; appearance: Json };
-const raw = (): Raw => ({ content: rawContent(), appearance: structuredClone(appearanceJson) });
+type Raw = { content: ReturnType<typeof rawContent>; appearance: Json; guide: unknown };
+const raw = (): Raw => ({
+  content: rawContent(),
+  appearance: structuredClone(appearanceJson),
+  guide: guideJson,
+});
 
 function failure(change: (a: Json) => void): DomainError {
   const r = raw();

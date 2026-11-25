@@ -12,7 +12,7 @@
 
 ## 3. Contenido de la guía y arranque (infraestructura `content/` + composición) · commit 1
 
-- [ ] 3.1 **`guideSchema.ts` + `parseGuide` (forma)** (design §1).
+- [x] 3.1 **`guideSchema.ts` + `parseGuide` (forma)** (design §1).
   - Implementa:
     - Schema zod con `GUIDE_PAGE_IDS`, `GUIDE_ICONS` y textos no vacíos tras `trim`.
     - Exactamente 7 páginas, orden por `id`, `strictObject` e iconos únicos.
@@ -25,7 +25,7 @@
     - «Recurso citado desconocido o repetido».
     - «Campo desconocido» (nombra `image` y la página 6).
   - Test: `tests/infrastructure/content/guide-schema.test.ts`.
-- [ ] 3.2 **Marcadores, interpolación y `content/guide.json`** (design §2).
+- [x] 3.2 **Marcadores, interpolación y `content/guide.json`** (design §2).
   - Implementa:
     - `GUIDE_MARKERS` con las 14 claves, `formatCount` (punto de miles, sin `Intl`) y `formatSeconds` (como mucho
       una decimal, coma).
@@ -48,7 +48,7 @@
   - Tests:
     - `tests/infrastructure/content/guide-markers.test.ts`.
     - Los casos de marcador y llave en `guide-schema.test.ts`.
-- [ ] 3.3 **`bootContent` con la guía** (design §1).
+- [x] 3.3 **`bootContent` con la guía** (design §1).
   - Implementa:
     - `RawBoot.guide` obligatorio y `BootedContent.guide`. `parseGuide` va el último.
     - `main.ts` importa `content/guide.json`.
@@ -58,7 +58,7 @@
       Cubre «guide.json inválido impide el menú» de «Contenido de la guía validado».
     - Con el contenido por defecto, `booted.guide` sale interpolada.
   - Test: `tests/composition/guide-boot.test.ts`.
-- [ ] 3.4 Cierre del grupo: `npm run verify` en verde (balance intacto, `BALANCE_BASELINE` sin regenerar) y
+- [x] 3.4 Cierre del grupo: `npm run verify` en verde (balance intacto, `BALANCE_BASELINE` sin regenerar) y
   commit 1.
 
 ## 4. Guía en el menú (infraestructura `dom/` + `menu/` + composición) · commit 2

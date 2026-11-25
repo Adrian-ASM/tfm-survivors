@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import guideJson from '../../content/guide.json';
 import appearanceJson from '../../content/appearance.json';
 import arenaJson from '../../content/arena.json';
 import provenanceJson from '../../content/asset-provenance.json';
@@ -15,9 +16,9 @@ import { chooseFirstWhileOpen, startRun, startSeededRun } from '../support/runs'
 const REGISTERED = provenanceJson.files.map((f) => f.path);
 
 type Json = Record<string, unknown>;
-type Raw = { content: ReturnType<typeof rawContent>; appearance: Json };
+type Raw = { content: ReturnType<typeof rawContent>; appearance: Json; guide: unknown };
 function raw(): Raw {
-  return { content: rawContent(), appearance: structuredClone(appearanceJson) };
+  return { content: rawContent(), appearance: structuredClone(appearanceJson), guide: guideJson };
 }
 
 function boot(r: Raw) {

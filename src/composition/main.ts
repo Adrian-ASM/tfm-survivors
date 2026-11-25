@@ -3,6 +3,7 @@
 import '../infrastructure/validation/cspSafeZod';
 import Phaser from 'phaser';
 import appearanceJson from '../../content/appearance.json';
+import guideJson from '../../content/guide.json';
 import provenanceJson from '../../content/asset-provenance.json';
 import { RestartRun } from '../application/RestartRun';
 import { buildRunRules, type RunConfig } from '../domain/run/RunConfig';
@@ -135,7 +136,7 @@ function bootstrap(): void {
 
   // Contenido de juego + datos de aspecto + su cruce, antes de crear el menú o la partida (0012).
   const booted = bootContent(
-    { content: repositoryContent(), appearance: appearanceJson },
+    { content: repositoryContent(), appearance: appearanceJson, guide: guideJson },
     (error) => {
       console.error(`Contenido inválido en ${error.field}: ${error.message}`);
       showContentError(root, error);
