@@ -76,7 +76,7 @@ describe('Semilla de decoración de la composición', () => {
     for (const other of rest) expect(other).toEqual(first);
   });
 
-  it('Scenario: Fases deterministas (árboles en [0, 5] y torres en [0, 3], iguales tras 600 frames y R)', () => {
+  it('Scenario: Fases deterministas (árboles y torres en [0, 3], iguales tras 600 frames y R)', () => {
     const phases = (plan: MapArtPlan) =>
       plan.animations.map(
         (a) => `${String(a.frames.length)}:${String(a.phase)}:${a.indices.join()}`,
@@ -85,11 +85,11 @@ describe('Semilla de decoración de la composición', () => {
     const [first, ...rest] = plans.map(phases);
     for (const other of rest) expect(other).toEqual(first);
     const groups = plans[0]?.animations ?? [];
-    const trees = groups.filter((a) => a.frames.length === 6);
-    const towers = groups.filter((a) => a.frames.length === 4);
+    const trees = groups.filter((a) => a.fps === 4);
+    const towers = groups.filter((a) => a.fps === 5);
     expect(trees.length).toBeGreaterThan(0);
     expect(towers.length).toBeGreaterThan(0);
-    expect(trees.every((a) => a.phase >= 0 && a.phase <= 5)).toBe(true);
+    expect(trees.every((a) => a.phase >= 0 && a.phase <= 3)).toBe(true);
     expect(towers.every((a) => a.phase >= 0 && a.phase <= 3)).toBe(true);
   });
 });

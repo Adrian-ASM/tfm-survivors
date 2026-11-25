@@ -44,7 +44,7 @@ describe('planMapArt · grupos de animación (0029)', () => {
   it('Scenario: Frame de un árbol según su fase (tronco y copa del mismo árbol en el mismo grupo y frame)', () => {
     const plan = planFor(map42(), 42);
     const draws = all(plan);
-    const trees = plan.animations.filter((a) => a.frames.length === 6);
+    const trees = plan.animations.filter((a) => a.fps === 4);
     expect(trees.length).toBeGreaterThanOrEqual(2);
     for (const g of trees) {
       const roles = g.indices.map((i) => (draws[i] as SpriteDraw).role);
@@ -125,12 +125,12 @@ describe('planMapArt · grupos de animación (0029)', () => {
 
   it('Scenario: Reserva de árbol y torre (sin Tree.png o sin la hoja de la torre intacta: sin grupos)', () => {
     const noTree = planFor(map42(), 42, [TREE_FILE]);
-    expect(noTree.animations.some((a) => a.frames.length === 6)).toBe(false);
+    expect(noTree.animations.some((a) => a.fps === 4)).toBe(false);
     expect(noTree.low.some((d) => d.kind === 'rect' && d.color === APPEARANCE.terrain.trunk)).toBe(
       true,
     );
     const noTower = planFor(map42(), 42, [TOWER_FILE]);
-    expect(noTower.animations.some((a) => a.frames.length === 4)).toBe(false);
+    expect(noTower.animations.some((a) => a.fps === 5)).toBe(false);
     const towers = noTower.structures.filter((s) => s.type === 'goblin-tower');
     expect(towers.every((t) => t.fallback.intact && t.intact.length === 1)).toBe(true);
   });

@@ -685,7 +685,7 @@ const expectedSheets = (plan: MapArtPlan, ms: number): Map<number, number> =>
 const towerParts = (plan: MapArtPlan) =>
   plan.structures.filter((s) => s.type === 'goblin-tower').flatMap((s) => [...s.intact]);
 const treeParts = (plan: MapArtPlan) =>
-  plan.animations.filter((g) => g.frames.length === 6).flatMap((g) => [...g.indices]);
+  plan.animations.filter((g) => g.fps === 4).flatMap((g) => [...g.indices]);
 
 describe('RenderLayers · animación del mapa (0029)', () => {
   it('Scenario: Árbol y torre al reaparecer (dibujados en f, ocultos en f + 1, en f + 37 con su fase y el reloj)', () => {

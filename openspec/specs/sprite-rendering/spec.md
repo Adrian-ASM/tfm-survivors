@@ -60,7 +60,7 @@ empieza ninguna partida. Los datos de aspecto MUST NOT cambiar la simulación.
   en bucle y la explosión `explode` de 9 frames sin bucle
 - **AND** hay color de aviso de mecha y de dinamita, cada uno con opacidad > 0 y < 1
 - **AND** hay aspecto de agua, de orilla con los 15 casos, de espuma con `idle` de 8 frames en bucle, de árbol con
-  `idle` `[0, 1, 2, 3, 4, 5]` a 6 fps en bucle, de puente con sus 2 recortes y de castillo
+  `idle` `[0, 1, 2, 3]` a 4 fps en bucle, de puente con sus 2 recortes y de castillo
 - **AND** hay aspecto intacto y de ruina para exactamente `goblin-house` y `goblin-tower`, la `idle` intacta de
   `goblin-tower` tiene los frames `[0, 1, 2, 3]` a 5 fps en bucle, y hay colores de reserva de `goblin-house`,
   `goblin-tower` y ruina
@@ -921,7 +921,7 @@ tick, del número de frames pintados ni de las partidas anteriores de la carga: 
 siempre las mismas fases y volteos.
 
 #### Scenario: Variedad dentro de un mapa
-- **GIVEN** los datos de aspecto del repositorio (`idle` del árbol de 6 frames) y el contenido por defecto
+- **GIVEN** los datos de aspecto del repositorio (`idle` del árbol de 4 frames) y el contenido por defecto
 - **WHEN** se calculan las fases de las celdas `trunk` del mapa de cada semilla de 1 a 50
 - **THEN** en cada mapa hay ≥ 2 fases distintas
 
@@ -1145,7 +1145,7 @@ E2E").
 #### Scenario: Caja de los objetos animados
 - **GIVEN** el contenido por defecto, la semilla 42 y los datos de aspecto del repositorio
 - **WHEN** se compara la caja del plan de cada tronco, copa y parte de torre goblin intacta con el rectángulo que
-  ocupa su dibujo con cada frame de su `idle` (6 del árbol, 4 de la torre)
+  ocupa su dibujo con cada frame de su `idle` (4 del árbol, 4 de la torre)
 - **THEN** cada uno de esos rectángulos está dentro de la caja (error ≤ 1 px), y la caja es la misma con el reloj de
   render en 0 y en 10.000 ms
 
@@ -1791,7 +1791,8 @@ la decoración MUST NOT cambiar la simulación.
 El sistema SHALL animar en el arte del mapa solo la espuma (como antes), los árboles y las torres goblin intactas, con
 el reloj de render R (en ms):
 - **árbol**: cada árbol pintado con arte reproduce en bucle la animación `idle` de su aspecto (con los datos del
-  repositorio, los frames `[0, 1, 2, 3, 4, 5]` de `Tree.png` a 6 fps; el tocón, frame 8, nunca se muestra), con su
+  repositorio, los frames `[0, 1, 2, 3]` de `Tree.png` a 4 fps, como en las slides; los frames 4 y 5 y el
+  tocón, frame 8, nunca se muestran), con su
   **fase** φ, un entero en [0, n − 1] (n = número de frames de `idle`): en un frame de render de reloj R muestra el
   frame de posición (⌊R × fps / 1.000⌋ + φ) mod n de `idle`. El tronco y la copa del mismo árbol muestran siempre el
   mismo frame de hoja en el mismo frame de render;
