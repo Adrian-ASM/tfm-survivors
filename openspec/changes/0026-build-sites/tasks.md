@@ -105,7 +105,7 @@
   bytes) en `content/asset-provenance.json`. Hay que confirmar 128 × 192 y 128 × 256 en la cabecera IHDR.
   - Escenarios: ap "Hojas de caballeros registradas", "Hoja de caballeros sin entrada" y "Hojas de caballeros no
     usadas".
-  - Ver la contradicción con ap sobre `Tower_Construction`, que está pendiente del orquestador.
+  - Resuelto: `Tower_Construction` no se versiona (todo solar libre usa `House_Construction`; spec ajustada).
   - Test: `tests/hooks/guard-assets.test.ts` (ampliado).
 
 ## 7. Infraestructura · render, panel y sonda (test-after)

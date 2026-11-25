@@ -187,6 +187,23 @@ espacio en el pool, la torre conserva la carga, igual que `Arsenal`. El arma de 
   acceso del solar más cercano. "Sonda de solares en el menú" amplía el test de humo del menú (no es un E2E nuevo).
   El resto de escenarios del panel se cubren con tests de DOM de `BuildPanel`/`BuildGate`, como `ShopPanel`.
 
+## 9. Ajustes del apply (registrados tras verify, W2/W3/S2)
+- API de dominio nueva en `GameMap`: `isBuiltAt(cell)` y `nearestWalkableCenter(point)`. La oveja desalojada de
+  una huella va al centro de la celda caminable más cercana (mismo desempate que `nearestWalkable`) y la
+  reaparición de ovejas descarta las celdas que solapan una obra.
+- `snapshot.sites` lleva, además de id, estado y armado, el acceso y las huellas de casa y torre (lo pide la spec).
+- `Run.build` lanza un error de invariante si el jugador solapa la huella. Es defensivo: `BuildingRules` lo impide
+  (radio de oferta + radio del jugador < distancia del acceso a la huella).
+- `RunSetup.sites` permite que un escenario empiece con solares ya construidos en el tick 0 (bench y tests). Por
+  eso "Semillas del conjunto con edificios" se prueba con las obras en el tick 0 y no en el 1.800 de la spec: el
+  invariante comprobado (conectividad y nada en la huella) no depende del tick de la obra.
+- La regla de contenido "radio de oferta + radio del jugador < 1,5 celdas" obliga a que el fixture de
+  "Celda en el límite del radio del jugador" (`cellSize` 32, radio del jugador 16) use un radio de oferta 30. El
+  escenario no fija ese dato; el valor de `content/` no cambia.
+- "Reserva de las torres llena", "El jugador conserva su tope", "Con el tope del jugador lleno…" y
+  "Recogible creado sobre el edificio" se prueban sobre `TowerBattery` + `Arsenal` y `PickupField`, no sobre `Run`,
+  porque en una partida no se puede montar el estado de partida exacto.
+
 ## Dependencias nuevas
 | Paquete | Versión exacta | Motivo | Alternativa descartada |
 |---|---|---|---|
