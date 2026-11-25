@@ -66,6 +66,7 @@ interface HudObjects {
   readonly kills: Txt;
   readonly gold: Counter;
   readonly wood: Counter;
+  readonly stone: Counter;
 }
 
 /** Contador del HUD (0022): icono (imagen o cuadrado de reserva) y número. */
@@ -110,10 +111,12 @@ function placement(o: HudObjects): HudPlacement {
     [o.kills, (l) => l.kills],
     [o.gold.label, (l) => l.gold.label],
     [o.wood.label, (l) => l.wood.label],
+    [o.stone.label, (l) => l.stone.label],
   ];
   const icons: [Counter, (l: HudLayout) => CounterAnchor][] = [
     [o.gold, (l) => l.gold],
     [o.wood, (l) => l.wood],
+    [o.stone, (l) => l.stone],
   ];
   return {
     place(l, rescale) {
@@ -136,7 +139,7 @@ function placement(o: HudObjects): HudPlacement {
 export function createHud(
   scene: Scene,
   frame: ScreenFrame,
-  icons: { readonly gold: CounterIcon; readonly wood: CounterIcon },
+  icons: { readonly gold: CounterIcon; readonly wood: CounterIcon; readonly stone: CounterIcon },
 ): Hud {
   const l = hudLayout(frame);
   const o: HudObjects = {
@@ -148,6 +151,7 @@ export function createHud(
     kills: hudText(scene, l, l.kills),
     gold: counter(scene, l, l.gold, icons.gold),
     wood: counter(scene, l, l.wood, icons.wood),
+    stone: counter(scene, l, l.stone, icons.stone),
   };
   const xpBar = new XpBar(o.xp.fill, o.level, l.barWidth, l.barHeight);
   const parts = {
@@ -158,6 +162,7 @@ export function createHud(
     kills: o.kills,
     gold: o.gold.label,
     wood: o.wood.label,
+    stone: o.stone.label,
     placement: placement(o),
   };
   const hud = new Hud(parts, l.barWidth, l.barHeight);

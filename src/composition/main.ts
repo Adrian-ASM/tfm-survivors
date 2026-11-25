@@ -66,7 +66,7 @@ interface E2EProbe {
   /** Ventana y escala de UI del último frame (0017); también en el menú. */
   readonly viewport: ViewportView | null;
   /** Oro y madera que muestra el HUD (0022); null en el menú. */
-  readonly hud: { readonly gold: string; readonly wood: string } | null;
+  readonly hud: { readonly gold: string; readonly wood: string; readonly stone: string } | null;
   /** Overlay de la tienda (0024): si se ve, el oro y, por producto, nivel, precio y si es comprable. */
   readonly shop: ShopPanelView;
   /** Pantallas vistas desde la carga (0024: el E2E comprueba que Esc en la tienda no pausa). */
@@ -152,7 +152,11 @@ function bootstrap(): void {
   let cameraView = (): CameraView | null => null;
   let mapView = (): MapSnapshot | null => null;
   let viewportView = (): ViewportView | null => null;
-  let hudView = (): { readonly gold: string; readonly wood: string } | null => null;
+  let hudView = (): {
+    readonly gold: string;
+    readonly wood: string;
+    readonly stone: string;
+  } | null => null;
   const probe: E2EProbe = {
     seed,
     speed: advance.speed,
@@ -245,7 +249,7 @@ function bootstrap(): void {
   mapView = () => game.mapView();
   hudView = () => {
     const shown = game.hudView();
-    return shown ? { gold: shown.gold, wood: shown.wood } : null;
+    return shown ? { gold: shown.gold, wood: shown.wood, stone: shown.stone } : null;
   };
   const menu = new MenuScene({
     ...progress.menu,

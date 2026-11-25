@@ -196,7 +196,7 @@ describe('Vista limpia tras reiniciar (spec run-results y sprite-rendering)', ()
   it('Scenario: Sonda en el menú (recuentos a 0 con las claves de enemigo)', () => {
     const c = emptyCounts(['goblin-torch', 'goblin-tnt', 'goblin-barrel']);
     const kinds = [c.player, c.enemies, c.corpses, c.projectiles, c.pulses, c.gems];
-    kinds.push(c.dynamites, c.warnings, c.explosions, c.pickups.meat, c.sheep);
+    kinds.push(c.dynamites, c.warnings, c.explosions, c.pickups.meat, c.pickups.stone, c.sheep);
     expect(c.enemyStates).toEqual({
       chase: 0,
       fuse: 0,

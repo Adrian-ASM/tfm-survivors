@@ -100,13 +100,13 @@
 
 ## 6. Render y HUD (test-after)
 
-- [ ] 6.1 `PickupLayer`: el hueco guarda su `PickupLook`; la piedra usa `stones.of(p.source)`; reserva por roca; sonda
+- [x] 6.1 `PickupLayer`: el hueco guarda su `PickupLook`; la piedra usa `stones.of(p.source)`; reserva por roca; sonda
   `sprites.pickups.stone`. Tests `pickup-layer.test.ts`, `render-counts.test.ts` y el de simulación con dos aspectos.
   Escenarios: `xp-gems` "Topes de los cinco tipos pintados" y "Sprite reutilizado para la piedra"; `sprite-rendering`
   "Cada piedra con la roca de su origen", "Cambiar la roca es solo de datos", "Reserva de una roca", "Pintar la piedra
   no cambia la simulación", "Recuento de piedras por roca agregado", "Sonda en el menú" y "Totales del mapa con
   estructuras y vetas" (701/784 sin cambios).
-- [ ] 6.2 HUD: `HUD_BASE.stoneY = 70`, `hudLayout().stone`, `HudTexts.stone`, `hudBoxes.stone`, contador con icono
+- [x] 6.2 HUD: `HUD_BASE.stoneY = 70`, `hudLayout().stone`, `HudTexts.stone`, `hudBoxes.stone`, contador con icono
   `counterIcon(looks.pickups.stone)` (roca `medium`), `Hud.shown.stone`, `GameScene.hudView().stone` y sonda
   `window.__sprint.hud.stone` (`main.ts`, `tests/e2e/probe.ts`). Tests `hud.test.ts` y `ui-layout.test.ts`.
   Escenarios: `hud` "Piedra al empezar", "Piedra que cambia entre snapshots", "Número grande", "Icono de la piedra que no

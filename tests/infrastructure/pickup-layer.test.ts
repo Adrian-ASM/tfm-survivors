@@ -4,7 +4,17 @@ import type { PickupSnapshot } from '../../src/domain/run/RunSnapshot';
 import { PLACEHOLDER_TEXTURE, resolveLooks } from '../../src/infrastructure/phaser/art/looks';
 import { PickupLayer } from '../../src/infrastructure/phaser/PickupLayer';
 import { parseAppearance } from '../../src/infrastructure/content/loadAppearance';
-import { GOLD_FILE, MEAT_FILE, REGISTERED, WOOD_FILE, rawAppearance } from '../support/appearance';
+import {
+  GOLD_FILE,
+  MEAT_FILE,
+  REGISTERED,
+  ROCK_LARGE_FILE,
+  ROCK_MEDIUM_FILE,
+  ROCK_SMALL_FILE,
+  WOOD_FILE,
+  rawAppearance,
+  type RawAppearance,
+} from '../support/appearance';
 import { fakeKit } from '../support/FakeSprite';
 
 // Specs xp-gems ("Pintado de las gemas") y sprite-rendering ("Aspectos de los recogibles", "Flechas
@@ -20,16 +30,37 @@ const pick = (id: number, kind: PickupKind, x: number, y: number, radius = 5): P
 const gems = (from: number, n: number) =>
   Array.from({ length: n }, (_, i) => pick(from + i, 'xp', 10 * i, 3 * i));
 
-/** Aspectos del fixture con las hojas cargadas salvo las de `missing`. */
-function looks(missing: readonly string[] = []) {
-  const r = parseAppearance(rawAppearance(), REGISTERED);
+/** Piedra del snapshot con su origen (o sin él). */
+const stone = (id: number, x: number, y: number, source?: string): PickupSnapshot => ({
+  ...pick(id, 'stone', x, y),
+  ...(source === undefined ? {} : { source }),
+});
+/** Fixture con el guardia (roca `large`); torch `small` y tnt `medium` como en el fixture. */
+const withGuard = (r: RawAppearance) => {
+  r.enemies['goblin-tnt-guard'] = { ...(r.enemies['goblin-tnt'] as object), rock: 'large' };
+};
+
+/** Aspectos del fixture (con el guardia) con las hojas cargadas salvo las de `missing`. */
+function looks(
+  missing: readonly string[] = [],
+  change: (r: RawAppearance) => void = () => undefined,
+) {
+  const raw = rawAppearance();
+  withGuard(raw);
+  change(raw);
+  const r = parseAppearance(raw, REGISTERED);
   if (!r.ok) throw new Error(r.error.message);
-  return resolveLooks(r.value, (key) => (missing.includes(key) ? null : 64)).pickups;
+  return resolveLooks(r.value, (key) => (missing.includes(key) ? null : 64));
 }
 
-function layer(capacity: number, missing: readonly string[] = []) {
+function layer(
+  capacity: number,
+  missing: readonly string[] = [],
+  change?: (r: RawAppearance) => void,
+) {
   const kit = fakeKit();
-  const l = new PickupLayer(capacity, kit, looks(missing));
+  const all = looks(missing, change);
+  const l = new PickupLayer(capacity, kit, all.pickups, all.stones);
   return { l, created: kit.created };
 }
 
@@ -73,28 +104,105 @@ describe('PickupLayer', () => {
     expect([visible(created).length, l.counts.xp.visible]).toEqual([0, 0]);
   });
 
-  it('Scenario: Topes de los cuatro tipos pintados (uno por recogible, con su aspecto, sin reserva)', () => {
-    const { l, created } = layer(404);
+  it('Scenario: Topes de los cinco tipos pintados (uno por recogible, con su aspecto, sin reserva)', () => {
+    const { l, created } = layer(436);
+    const sources = ['goblin-torch', 'goblin-tnt', 'goblin-tnt-guard'];
     const all = [
       ...gems(0, 300),
       ...Array.from({ length: 32 }, (_, i) => pick(300 + i, 'gold', 1000 + i, 500)),
       ...Array.from({ length: 64 }, (_, i) => pick(332 + i, 'wood', 2000 + i, 800)),
       ...Array.from({ length: 8 }, (_, i) => pick(396 + i, 'meat', 2500 + i, 900)),
+      ...Array.from({ length: 32 }, (_, i) => stone(404 + i, 3000 + i, 950, sources[i % 3])),
     ];
     l.sync(all);
     const shown = visible(created);
-    expect(shown).toHaveLength(404);
-    expect(created).toHaveLength(404);
+    expect(shown).toHaveLength(436);
+    expect(created).toHaveLength(436);
     expect(shown.filter((s) => s.texture === GOLD_FILE)).toHaveLength(32);
     expect(shown.filter((s) => s.texture === WOOD_FILE)).toHaveLength(64);
     expect(shown.filter((s) => s.texture === MEAT_FILE)).toHaveLength(8);
+    expect(shown.filter((s) => s.texture === ROCK_SMALL_FILE)).toHaveLength(11);
+    expect(shown.filter((s) => s.texture === ROCK_MEDIUM_FILE)).toHaveLength(11);
+    expect(shown.filter((s) => s.texture === ROCK_LARGE_FILE)).toHaveLength(10);
     expect(l.counts).toEqual({
       xp: { visible: 300, placeholder: 0 },
       gold: { visible: 32, placeholder: 0 },
       wood: { visible: 64, placeholder: 0 },
       meat: { visible: 8, placeholder: 0 },
-      stone: { visible: 0, placeholder: 0 },
+      stone: { visible: 32, placeholder: 0 },
     });
+  });
+
+  it('Scenario: Sprite reutilizado para la piedra (la de goblin-tnt-guard recogida; la nueva small)', () => {
+    const { l, created } = layer(1);
+    l.sync([stone(0, 10, 10, 'goblin-tnt-guard')]);
+    expect(visible(created)[0]?.texture).toBe(ROCK_LARGE_FILE);
+    l.sync([stone(1, 70, 80, 'goblin-torch')]);
+    const shown = visible(created);
+
+    expect(shown).toHaveLength(1);
+    expect([shown[0]?.texture, shown[0]?.x, shown[0]?.y]).toEqual([ROCK_SMALL_FILE, 70, 80]);
+    expect(l.counts.stone).toEqual({ visible: 1, placeholder: 0 });
+  });
+
+  it('Scenario: Cada piedra con la roca de su origen (torch 04, tnt 05, guard 06 y sin origen 05)', () => {
+    const { l, created } = layer(4);
+    const snap = [
+      stone(0, 100, 100, 'goblin-torch'),
+      stone(1, 200, 100, 'goblin-tnt'),
+      stone(2, 300, 100, 'goblin-tnt-guard'),
+      stone(3, 400, 100),
+    ];
+    l.sync(snap);
+    const textures = snap.map((p) => at(visible(created), p).map((s) => [s.texture, s.originX]));
+
+    expect(textures).toEqual([
+      [[ROCK_SMALL_FILE, 0.5]],
+      [[ROCK_MEDIUM_FILE, 0.5]],
+      [[ROCK_LARGE_FILE, 0.5]],
+      [[ROCK_MEDIUM_FILE, 0.5]],
+    ]);
+  });
+
+  it('Scenario: Cambiar la roca es solo de datos (goblin-torch large: Deco/06)', () => {
+    const { l, created } = layer(1, [], (r) => {
+      (r.enemies['goblin-torch'] as Record<string, unknown>).rock = 'large';
+    });
+    l.sync([stone(0, 10, 10, 'goblin-torch')]);
+
+    expect(visible(created)[0]?.texture).toBe(ROCK_LARGE_FILE);
+  });
+
+  it('Scenario: Reserva de una roca (sin Deco/04: la de torch, forma de 10 px del color de stone)', () => {
+    const { l, created } = layer(3, [ROCK_SMALL_FILE]);
+    l.sync([
+      stone(0, 700, 400, 'goblin-torch'),
+      stone(1, 800, 400, 'goblin-tnt-guard'),
+      pick(2, 'gold', 50, 50),
+    ]);
+    const [torch] = at(visible(created), { x: 700, y: 400 });
+
+    expect([torch?.texture, torch?.tint]).toEqual([PLACEHOLDER_TEXTURE, 0x9aa0a6]);
+    expect((torch?.scale ?? 0) * 64).toBeCloseTo(10, 6);
+    expect(at(visible(created), { x: 800, y: 400 })[0]?.texture).toBe(ROCK_LARGE_FILE);
+    expect(at(visible(created), { x: 50, y: 50 })[0]?.texture).toBe(GOLD_FILE);
+    expect(l.counts.stone).toEqual({ visible: 2, placeholder: 1 });
+  });
+
+  it('Scenario: Recuento de piedras por roca agregado (2 torch, 1 tnt y 3 guard sin Deco/06)', () => {
+    const { l } = layer(6, [ROCK_LARGE_FILE]);
+    l.sync([
+      stone(0, 1, 1, 'goblin-torch'),
+      stone(1, 2, 1, 'goblin-torch'),
+      stone(2, 3, 1, 'goblin-tnt'),
+      stone(3, 4, 1, 'goblin-tnt-guard'),
+      stone(4, 5, 1, 'goblin-tnt-guard'),
+      stone(5, 6, 1, 'goblin-tnt-guard'),
+    ]);
+
+    expect(l.counts.stone).toEqual({ visible: 6, placeholder: 3 });
+    l.sync([]);
+    expect(l.counts.stone).toEqual({ visible: 0, placeholder: 0 });
   });
 
   it('Scenario: Sprite reutilizado para la carne (el wood recogido; la carne con su aspecto)', () => {

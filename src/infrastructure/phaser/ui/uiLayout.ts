@@ -14,6 +14,8 @@ export const HUD_BASE = {
   fontSize: 14,
   /** 0022: contadores de oro (fila de la XP) y madera bajo las bajas, a la derecha. */
   woodY: 52,
+  /** 0025: contador de piedra, tercera fila de contadores bajo la madera. */
+  stoneY: 70,
   iconSize: 16,
   iconGap: 4,
 } as const;
@@ -44,9 +46,10 @@ export interface HudLayout {
   readonly xp: { readonly bar: BarAnchor; readonly label: TextAnchor };
   readonly clock: TextAnchor;
   readonly kills: TextAnchor;
-  /** Contadores de oro y de madera (0022): icono + número, un solo elemento. */
+  /** Contadores de oro, de madera (0022) y de piedra (0025): icono + número, un solo elemento. */
   readonly gold: CounterAnchor;
   readonly wood: CounterAnchor;
+  readonly stone: CounterAnchor;
 }
 
 /** Icono cuadrado centrado en (x, y), de lado `size`. */
@@ -93,6 +96,7 @@ export function hudLayout(frame: ScreenFrame): HudLayout {
     kills: { x: frame.width - margin, y: healthY, originX: 1 },
     gold: counterAt(frame, xpY),
     wood: counterAt(frame, HUD_BASE.woodY * k),
+    stone: counterAt(frame, HUD_BASE.stoneY * k),
   };
 }
 
@@ -141,6 +145,7 @@ export interface HudTexts {
   readonly kills: string;
   readonly gold: string;
   readonly wood: string;
+  readonly stone: string;
 }
 
 /** Cajas de los elementos del HUD con los textos dados (comprobación de solapes y contención). */
@@ -154,6 +159,7 @@ export function hudBoxes(l: HudLayout, texts: HudTexts): Record<string, Box> {
     kills: textBox(l.kills, texts.kills, l.fontSize),
     gold: counterBox(l.gold, texts.gold, l.fontSize),
     wood: counterBox(l.wood, texts.wood, l.fontSize),
+    stone: counterBox(l.stone, texts.stone, l.fontSize),
   };
 }
 
