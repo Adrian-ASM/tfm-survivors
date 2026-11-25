@@ -29,8 +29,8 @@ export function createRunLauncher(options: RunLauncherOptions): RunLauncher {
     launch: () => {
       const seed = first ? options.urlSeed : options.randomSeed();
       first = false;
-      const { random, terrain } = seededRun(seed, options.mapMode ?? 'generated');
-      const started = start.execute(options.config, random, undefined, terrain);
+      const { random, terrain, stoneRandom } = seededRun(seed, options.mapMode ?? 'generated');
+      const started = start.execute(options.config, random, undefined, terrain, stoneRandom);
       if (!started.ok) {
         options.onContentError(started.error);
         return null;

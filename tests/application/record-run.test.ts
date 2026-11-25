@@ -82,7 +82,11 @@ describe('RecordRun (spec progress-persistence, "Registro" y "Guardado automáti
     const { repo, clock, record } = recorder();
     const restart = new RestartRun(
       lethalConfig(),
-      () => ({ random: new Mulberry32RandomGenerator(7), terrain: OPEN_TERRAIN }),
+      () => ({
+        random: new Mulberry32RandomGenerator(7),
+        terrain: OPEN_TERRAIN,
+        stoneRandom: new Mulberry32RandomGenerator(8),
+      }),
       new DoomedStartRun(),
     );
     let current: ReturnType<RestartRun['execute']> = new DoomedStartRun().execute(
@@ -159,14 +163,15 @@ describe('RecordRun (spec progress-persistence, "Registro" y "Guardado automáti
 // Spec resources (0022), "Contadores de oro y madera" › "Sin rastro en resultados ni en el guardado":
 // el récord y el historial no ganan ningún campo de oro ni de madera (sin cambios de código).
 describe('RecordRun sin oro ni madera (0022)', () => {
-  it('Scenario: Sin rastro en resultados ni en el guardado (oro 30 y madera 8)', () => {
+  // 0025: también con piedra 12 (spec resources, "Contador de piedra de la partida").
+  it('Scenario: Sin rastro en resultados ni en el guardado (oro 30, madera 8 y piedra 12)', () => {
     const { repo, record } = recorder();
     const rich: RunSnapshot = { ...firstDefeat(), resources: { gold: 30, wood: 8, stone: 12 } };
 
     record.execute(aRunSource(rich));
 
     const stored = JSON.stringify(repo.stored);
-    expect(stored).not.toMatch(/gold|wood|oro|madera/i);
+    expect(stored).not.toMatch(/gold|wood|stone|oro|madera|piedra/i);
     expect(Object.keys(repo.stored?.history[0] ?? {}).sort()).toEqual(
       ['kills', 'level', 'outcome', 'playedAt', 'seed', 'timeSeconds'].sort(),
     );

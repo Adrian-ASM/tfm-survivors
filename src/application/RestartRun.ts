@@ -23,7 +23,7 @@ export class RestartRun {
 
   execute(current: TickRun): Result<StartedRun, RestartError | DomainError> {
     if (current.status !== 'over') return err({ code: 'not-over' });
-    const { random, terrain } = this.nextSeeding();
-    return this.start.execute(this.config, random, undefined, terrain);
+    const { random, terrain, stoneRandom } = this.nextSeeding();
+    return this.start.execute(this.config, random, undefined, terrain, stoneRandom);
   }
 }

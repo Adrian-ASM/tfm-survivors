@@ -80,11 +80,11 @@
 
 ## 4. Aplicación y siembra
 
-- [ ] 4.1 *TDD* `RunSeeding.stoneRandom` (obligatorio), `StartRun.execute(..., stoneRandom?)` y `RestartRun` que lo pasa.
+- [x] 4.1 *TDD* `RunSeeding.stoneRandom` (obligatorio), `StartRun.execute(..., stoneRandom?)` y `RestartRun` que lo pasa.
   Tests `tests/application/restart-run.test.ts` y `start-run.test.ts`; el de resultados y guardado con
   `RecordRun`/`resultsText`/export. Escenarios: `resources` "Partida nueva tras R" y "Sin rastro en resultados ni en el
   guardado".
-- [ ] 4.2 *test-after* `STONE_STREAM = 6` en `deriveSeed.ts`; `seededRun` crea el flujo antes de la rama `empty`;
+- [x] 4.2 *test-after* `STONE_STREAM = 6` en `deriveSeed.ts`; `seededRun` crea el flujo antes de la rama `empty`;
   `runLauncher` lo pasa; `tests/support/runs.ts` `startSeededRun` lo pasa (desde aquí el lote de balance juega con
   piedra). Test `tests/composition/seed-source.test.ts`. Escenarios: `simulation-loop` "Mismo azar de la piedra en
   cualquier mapa", "Semillas distintas, azares distintos" e "Independiente de los demás flujos".

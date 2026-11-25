@@ -10,6 +10,7 @@ import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulbe
 import { TICK_MS, aDefaultConfig, withScenarioCurve } from '../support/builders';
 import { randomInputs } from '../support/inputs';
 import { seededRun } from '../../src/composition/seedSource';
+import { CountingRandom } from '../support/random';
 
 const CENTER = { x: 480, y: 270 };
 
@@ -19,7 +20,11 @@ function nextRandomSpy(seed = 123) {
     calls: 0,
     next: (): RunSeeding => {
       spy.calls += 1;
-      return { random: new Mulberry32RandomGenerator(seed), terrain: OPEN_TERRAIN };
+      return {
+        random: new Mulberry32RandomGenerator(seed),
+        terrain: OPEN_TERRAIN,
+        stoneRandom: new Mulberry32RandomGenerator(seed + 1),
+      };
     },
   };
   return spy;
@@ -162,6 +167,34 @@ describe('RestartRun · partida nueva desde una terminada (spec run-results)', (
 
     expect(ended).toMatchObject({ status: 'over', resources: { gold: 40, wood: 12 } });
     expect(fresh).toMatchObject({ tick: 0, resources: { gold: 0, wood: 0 }, pickups: [] });
+  });
+
+  // Spec resources (0025), "Contador de piedra de la partida".
+  it('Scenario: Partida nueva tras R (piedra 7 al terminar; 0 en el tick 0 y su azar en uso)', () => {
+    const s = started(lethal(), {
+      player: CENTER,
+      enemies: [{ type: 'goblin-torch', ...CENTER }],
+      resources: { gold: 0, wood: 0, stone: 7 },
+    });
+    s.tickRun.execute(TICK_MS, PlayerInput.NONE);
+    const ended = s.tickRun.snapshot();
+    const stoneRandom = new CountingRandom(new Mulberry32RandomGenerator(5));
+    const seeding = (): RunSeeding => ({
+      random: new Mulberry32RandomGenerator(123),
+      terrain: OPEN_TERRAIN,
+      stoneRandom,
+    });
+
+    const r = new RestartRun(withScenarioCurve(aDefaultConfig()), seeding).execute(s.tickRun);
+    if (!r.ok) throw new Error(r.error.code);
+    const fresh = r.value.tickRun.snapshot();
+    frames(r.value, 1200);
+    const kills = r.value.tickRun.snapshot().kills;
+
+    expect(ended).toMatchObject({ status: 'over', resources: { stone: 7 } });
+    expect(fresh).toMatchObject({ tick: 0, resources: { gold: 0, wood: 0, stone: 0 } });
+    expect(kills).toBeGreaterThan(0);
+    expect(stoneRandom.calls).toBe(kills);
   });
 
   it('reinicia también tras una victoria, con un generador nuevo por reinicio', () => {

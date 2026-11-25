@@ -82,7 +82,8 @@ describe('Resultados sin oro ni madera (0022)', () => {
     });
 
     expect(Object.keys(view ?? {})).toEqual(['title', 'time', 'level', 'kills', 'hint']);
-    expect(JSON.stringify(view)).not.toMatch(/30|\b8\b/);
+    // 0025: tampoco la piedra (12).
+    expect(JSON.stringify(view)).not.toMatch(/30|\b8\b|\b12\b|piedra/i);
   });
 });
 

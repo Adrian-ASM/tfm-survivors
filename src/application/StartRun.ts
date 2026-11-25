@@ -18,17 +18,20 @@ export interface StartedRun {
 
 /**
  * Siembra de una partida que resuelve la composición (ADR-0013): el azar de la partida y el origen
- * de su mapa, con su propio generador si se genera.
+ * de su mapa, con su propio generador si se genera, y el azar de la piedra (ADR-0024), que existe
+ * en todo mapa.
  */
 export interface RunSeeding {
   readonly random: RandomGenerator;
   readonly terrain: TerrainSource;
+  readonly stoneRandom: RandomGenerator;
 }
 
 /**
  * Caso de uso: crear una partida a partir de contenido ya validado en forma y de un generador ya
  * sembrado (la composición resuelve la semilla; el núcleo no conoce su origen). `setup` solo lo
- * usan los tests; sin `terrain`, el mapa vacío.
+ * usan los tests; sin `terrain`, el mapa vacío; sin `stoneRandom` (escenarios), ninguna baja suelta
+ * piedra.
  */
 export class StartRun {
   execute(
@@ -36,8 +39,9 @@ export class StartRun {
     random: RandomGenerator,
     setup?: RunSetup,
     terrain?: TerrainSource,
+    stoneRandom?: RandomGenerator,
   ): Result<StartedRun, DomainError> {
-    const run = Run.start(config, random, setup, terrain);
+    const run = Run.start(config, random, setup, terrain, stoneRandom);
     if (!run.ok) return run;
     return ok({
       tickRun: new TickRun(run.value),
