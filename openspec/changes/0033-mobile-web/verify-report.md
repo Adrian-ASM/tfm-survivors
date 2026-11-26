@@ -42,3 +42,12 @@ E2E nuevos: 2 (móvil táctil; escritorio sin controles táctiles), en manual, s
 - S2: el diario `docs/ai-log/2026-11-26-0033-mobile-web.md` ya recoge ambas desviaciones. Añadir el veredicto de este verify (delta de spec solo para la 2).
 
 C: 0 · W: 2 · S: 2
+
+## Re-verify (c937228 E2E, b5a1352 spec/design/tasks/diario)
+
+- W1 resuelto: el requisito "Documento táctil" y el escenario "Sin estilos inline" exceptúan ahora el lienzo y `#game` (solo propiedades `--*`), igual que el E2E.
+- W2 resuelto: `expectNoInlineStyles` se ejecuta en partida, pausa, aviso, redimensionado, resultados y menú en móvil, y en partida, pausa, resultados y menú en escritorio (con CSP vigilada). Sigue habiendo 2 E2E nuevos, en manual, sin fps.
+- S1 y S2 resueltos: `tasks.md`, design y diario actualizados.
+- `npm run test:e2e` tras c937228: 19 passed (35,8 s). `verify` no repetido (en verde según el coordinador; el diff solo toca E2E y documentos).
+
+Recuento final: C: 0 · W: 0 · S: 0
