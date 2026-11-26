@@ -205,6 +205,19 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   `sprites.damageNumbers` (por clase y `created`) y `sprites.healthBars`, a 0 en el menú. Escenarios:
   `tests/support/combat.ts` (enemigos quietos, salto del jugador) y `feedback.ts` (dobles de `Text`/`Graphics`).
   Balance y seis firmas idénticos; 820/904 objetos del mapa.
+  Kit de UI (change 0032, ADR-0028): 8 piezas de `Tiny Swords (Update 010)/UI/` (`Carved_9Slides`, botones azul,
+  hover, pulsado, desactivado, rojo y rojo pulsado, `Ribbon_Yellow_3Slides`) en `appearance.json` `ui` (8 roles
+  cerrados, márgenes medidos: `panel` 16, botones 20/20/28/20, cabecera 48/48 y alto 64; contraste ≥ 4,5 de
+  `text`/`muted`/`accent`; `danger` roja solo en `panel` y `buttonDisabled`) y fuente Departure Mono 1.500 (OFL 1.1,
+  `public/assets/fonts/` con `OFL.txt`, lista `fonts[]` de la nota; `guard-assets` vigila `.woff2/.woff/.ttf/.otf`).
+  `parseAppearance` recibe una sola lista de rutas registradas (`registeredPaths`: `files[]` + `fonts[]`). DOM:
+  `uiKitVariables`/`applyUiKit` publican en `#game` relleno, tintas y familia siempre e imagen y márgenes solo de las
+  piezas cargadas; `styles.css` viste los 7 paneles con `border-image` (estados por `--ui-b-*`, `Confirmar` rojo,
+  cabecera 3-slice) sin URL ni cambios de DOM; tienda con lista desplazable. Fuente con `FontFace` y plazo
+  `FONT_WAIT_MS` 3.000 (`BootScene` espera la fuente o el plazo y aplica `NEAREST` a las piezas). Phaser: un
+  `NineSlice` de `button` por carta (zona de clic = `Rectangle` transparente) y 3 de `panel` en el HUD (`hudPanels`
+  con textos de reserva), solo con WebGL y textura; reserva con el aspecto de antes. HUD desplazado (margen 24,
+  filas 28/46/64/82) y `MONO_CHAR_RATIO` 0,64. Sin núcleo ni sonda; balance, firmas y 820/904 intactos.
   Fuente de verdad del comportamiento: `openspec/specs/`.
 
 ## 2. Comandos

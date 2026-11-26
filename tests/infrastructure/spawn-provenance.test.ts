@@ -8,10 +8,12 @@ import appearanceJson from '../../content/appearance.json';
 import provenanceJson from '../../content/asset-provenance.json';
 import { ASSET_DIR } from '../../src/infrastructure/content/appearanceSchema';
 import {
+  registeredPaths,
   aspectsOf,
   mapSheetsOf,
   parseAppearance,
   pickupSpawnSheetsOf,
+  uiSheetsOf,
   sheepSheetsOf,
   siteAspectsOf,
   structureAspectsOf,
@@ -67,10 +69,7 @@ const withEntries = (change: (f: Entry) => Entry | null) => ({
 
 /** Hojas que usan los datos de aspecto, aparición incluida ("Solo las hojas usadas"). */
 function usedSheets(): Set<string> {
-  const r = parseAppearance(
-    structuredClone(appearanceJson),
-    files.map((f) => f.path),
-  );
+  const r = parseAppearance(structuredClone(appearanceJson), registeredPaths(provenanceJson));
   if (!r.ok) throw new Error(`${r.error.field}: ${r.error.message}`);
   const a = r.value;
   return new Set([
@@ -81,6 +80,7 @@ function usedSheets(): Set<string> {
     ...sheepSheetsOf(a).map(([, sheet]) => ASSET_DIR + sheet.file),
     ...siteAspectsOf(a).map(([, x]) => ASSET_DIR + x.sheet.file),
     ...pickupSpawnSheetsOf(a).map(([, sheet]) => ASSET_DIR + sheet.file),
+    ...uiSheetsOf(a).map(([, file]) => ASSET_DIR + file),
   ]);
 }
 
@@ -90,8 +90,9 @@ describe('Procedencia de las hojas de aparición de los recogibles (asset-proven
     const list = [...new Set([...versioned(), ...files.map((f) => f.path)])];
 
     expect(checkAssets({ files: list, provenance: provenanceJson, digest: digestOf })).toEqual([]);
-    expect(files).toHaveLength(ENTRIES_BEFORE + 3);
-    const added = files.slice(ENTRIES_BEFORE);
+    // 0032 añade al final las 8 piezas de UI: estas 3 siguen en su sitio.
+    expect(files.length).toBeGreaterThanOrEqual(ENTRIES_BEFORE + 3);
+    const added = files.slice(ENTRIES_BEFORE, ENTRIES_BEFORE + 3);
     expect(added.map((f) => f.source)).toEqual(SOURCES);
     expect(added.map((f) => f.path)).toEqual(NAMES.map(pathOf));
     expect(files[ENTRIES_BEFORE - 1]).toEqual(LAST_BEFORE);
@@ -100,7 +101,7 @@ describe('Procedencia de las hojas de aparición de los recogibles (asset-proven
 
   it('Scenario: Integridad de las hojas de aparición (sha256 y bytes; W_Spawn alterado falla)', async () => {
     const { checkAssets, PROVENANCE_PATH } = await guard();
-    for (const entry of files.slice(ENTRIES_BEFORE)) {
+    for (const entry of files.slice(ENTRIES_BEFORE, ENTRIES_BEFORE + 3)) {
       expect(entry.version).toBe('Update 010');
       expect(digestOf(entry.path)).toEqual({ sha256: entry.sha256, bytes: entry.bytes });
     }

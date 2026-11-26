@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { ASSET_DIR, type Aspect } from '../../src/infrastructure/content/appearanceSchema';
 import { framesUsed } from '../../src/infrastructure/phaser/art/looks';
 import {
+  registeredPaths,
   aspectsOf,
   mapSheetsOf,
   structureAspectsOf,
@@ -13,6 +14,7 @@ import {
   veinAspectsOf,
   parseAppearance,
   pickupSpawnSheetsOf,
+  uiSheetsOf,
 } from '../../src/infrastructure/content/loadAppearance';
 
 // Spec sprite-rendering: "Datos del repositorio" y "Hoja de cada elemento" (change 0012, design D4 y D9).
@@ -24,8 +26,11 @@ interface Entry {
   path: string;
   source: string;
 }
-const provenance = readJson('content/asset-provenance.json') as { files: Entry[] };
-const registered = provenance.files.map((f) => f.path);
+const provenance = readJson('content/asset-provenance.json') as {
+  files: Entry[];
+  fonts: { path: string }[];
+};
+const registered = registeredPaths(provenance);
 const enemyIds = (readJson('content/enemies.json') as { types: { id: string }[] }).types.map(
   (t) => t.id,
 );
@@ -68,8 +73,9 @@ describe('Datos de aspecto del repositorio', () => {
     },
   );
 
-  it('Scenario: Solo las hojas usadas (cada hoja en la nota y cada entrada usada)', () => {
-    const used = new Set([
+  /** Hojas que usan los datos de aspecto: aspectos, apariciones y (0032) piezas de UI. */
+  const usedSheets = (): Set<string> =>
+    new Set([
       ...aspects.map(([, a]) => ASSET_DIR + a.sheet.file),
       ...mapSheetsOf(appearance).map(([, file]) => ASSET_DIR + file),
       ...structureAspectsOf(appearance).map(([, a]) => ASSET_DIR + a.sheet.file),
@@ -77,9 +83,43 @@ describe('Datos de aspecto del repositorio', () => {
       ...sheepSheetsOf(appearance).map(([, sheet]) => ASSET_DIR + sheet.file),
       ...siteAspectsOf(appearance).map(([, a]) => ASSET_DIR + a.sheet.file),
       ...pickupSpawnSheetsOf(appearance).map(([, sheet]) => ASSET_DIR + sheet.file),
+      ...uiSheetsOf(appearance).map(([, file]) => ASSET_DIR + file),
     ]);
-    expect([...used].every((p) => registered.includes(p))).toBe(true);
-    expect([...registered].sort()).toEqual([...used].sort());
+  /** Assets de la nota que no son hoja de nada (vacío si todo se usa). */
+  const unusedOf = (art: readonly string[]): string[] => {
+    const used = usedSheets();
+    return art.filter((p) => !used.has(p));
+  };
+  const artRegistered = provenance.files.map((f) => f.path);
+
+  it('Scenario: Solo las hojas usadas (cada hoja en la nota y cada entrada usada)', () => {
+    const used = usedSheets();
+    expect([...used].every((p) => artRegistered.includes(p))).toBe(true);
+    expect([...artRegistered].sort()).toEqual([...used].sort());
+    expect(unusedOf(artRegistered)).toEqual([]);
+  });
+
+  it('Scenario: Solo las hojas usadas (nada de UI/Icons ni UI/Pointers versionado)', () => {
+    const files = execFileSync('git', ['ls-files'], { cwd: root, encoding: 'utf8' }).split('\n');
+    expect(files.filter((f) => /\/UI\/(Icons|Pointers)\//.test(f))).toEqual([]);
+    expect(provenance.files.filter((f) => /\/UI\/(Icons|Pointers)\//.test(f.source))).toEqual([]);
+  });
+
+  it('Scenario: Pieza de UI de más (Button_Red_3Slides.png registrada sin rol)', () => {
+    const extra = `${ASSET_DIR}UI/Buttons/Button_Red_3Slides.png`;
+    const unused = unusedOf([...artRegistered, extra]);
+    expect(unused).toEqual([extra]);
+    expect(unused.join('\n')).toContain('Button_Red_3Slides.png');
+  });
+
+  it('Scenario: Hoja de cada elemento (cada pieza de la interfaz, bajo UI/Banners|Buttons|Ribbons)', () => {
+    const sheets = uiSheetsOf(appearance);
+    expect(sheets).toHaveLength(8);
+    for (const [, file] of sheets) {
+      expect(sourceOfFile(file)).toMatch(
+        /^Tiny Swords \(Update 010\)\/UI\/(Banners|Buttons|Ribbons)\//,
+      );
+    }
   });
 
   it('Scenario: Solo las hojas usadas (ningún otro castillo ni Rocks versionado)', () => {

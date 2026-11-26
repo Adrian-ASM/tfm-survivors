@@ -3,8 +3,11 @@ import { err, invalidConfig, ok, type DomainError, type Result } from '../../dom
 import {
   ASSET_DIR,
   AppearanceSchema,
+  FONT_DIR,
+  FONT_NOT_REGISTERED,
   ROCK_SIZES,
   SHEET_NOT_REGISTERED,
+  UI_PIECES,
   type Appearance,
   type Aspect,
   type StillAspect,
@@ -168,9 +171,32 @@ function closestIssue(issue: Issue | undefined): Issue | undefined {
   return closestIssue({ ...inner, path: [...issue.path, ...inner.path] });
 }
 
+/** Hojas de las piezas de UI (0032) con su ruta de campo (`ui.pieces.<rol>.image`), por rol. */
+export function uiSheetsOf(appearance: Appearance): [string[], string][] {
+  return UI_PIECES.map((role): [string[], string] => [
+    ['ui', 'pieces', role, 'image'],
+    appearance.ui.pieces[role].image,
+  ]);
+}
+
+/** Lo que `registeredPaths` necesita de la nota de procedencia. */
+export interface ProvenanceLists {
+  readonly files: readonly { readonly path: string }[];
+  readonly fonts?: readonly { readonly path: string }[];
+}
+
 /**
- * Valida los datos de aspecto (design D9). `registered` son las rutas de `files[].path` de la nota de
- * procedencia: una hoja solo vale si figura ahí. El error nombra el campo con su ruta unida por `.`.
+ * Rutas registradas en la nota (0032): las del arte (`files[]`) y las de las fuentes (`fonts[]`), en
+ * una sola lista; no chocan porque viven en carpetas distintas (`ASSET_DIR` y `FONT_DIR`).
+ */
+export function registeredPaths(note: ProvenanceLists): string[] {
+  return [...note.files.map((f) => f.path), ...(note.fonts ?? []).map((f) => f.path)];
+}
+
+/**
+ * Valida los datos de aspecto (design D9). `registered` son las rutas registradas en la nota de
+ * procedencia (`registeredPaths`): una hoja o la fuente solo valen si figuran ahí. El error nombra
+ * el campo con su ruta unida por `.`.
  */
 export function parseAppearance(
   raw: unknown,
@@ -204,6 +230,7 @@ export function parseAppearance(
         [...path, 'file'],
         sheet.file,
       ]),
+      ...uiSheetsOf(appearance),
     ];
     for (const [path, file] of sheets) {
       if (known.has(ASSET_DIR + file)) continue;
@@ -211,6 +238,14 @@ export function parseAppearance(
       const message =
         path[1] === 'decor' ? `${SHEET_NOT_REGISTERED} ${file}` : SHEET_NOT_REGISTERED;
       ctx.addIssue({ code: 'custom', path, message });
+    }
+    // 0032: la fuente figura en `fonts[]` de la nota (misma lista de rutas registradas).
+    if (!known.has(FONT_DIR + appearance.ui.font.file)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['ui', 'font', 'file'],
+        message: `${FONT_NOT_REGISTERED} ${appearance.ui.font.file}`,
+      });
     }
   });
   const parsed = schema.safeParse(raw);

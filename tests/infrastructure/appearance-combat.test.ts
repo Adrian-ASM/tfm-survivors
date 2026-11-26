@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import guideJson from '../../content/guide.json';
 import { bootContent } from '../../src/composition/contentBoot';
 import {
+  FONT_DIR,
   BAR_FILL_MUST_DIFFER,
   BAR_SIZE_MUST_BE_INTEGER,
   HIT_COLORS_MUST_DIFFER,
@@ -12,21 +13,27 @@ import {
   NUMBER_POOL_MUST_BE_INTEGER,
   PLAYER_HIT_MUST_BE_RED,
 } from '../../src/infrastructure/content/appearanceSchema';
-import { parseAppearance } from '../../src/infrastructure/content/loadAppearance';
+import { parseAppearance, registeredPaths } from '../../src/infrastructure/content/loadAppearance';
 import { REGISTERED, rawAppearance, type RawAppearance } from '../support/appearance';
 import { rawContent } from '../support/builders';
 
 // Spec sprite-rendering (0031), "Datos de aspecto del combate".
 const root = join(import.meta.dirname, '..', '..');
 const readJson = (path: string): unknown => JSON.parse(readFileSync(join(root, path), 'utf8'));
-const provenance = readJson('content/asset-provenance.json') as { files: { path: string }[] };
-const registered = provenance.files.map((f) => f.path);
+const provenance = readJson('content/asset-provenance.json') as {
+  files: { path: string }[];
+  fonts: { path: string }[];
+};
+const registered = registeredPaths(provenance).filter((p) => !p.startsWith(FONT_DIR));
+const withFonts = registeredPaths(provenance);
 
 /** Entradas de la nota de procedencia antes de este change (0030). */
 const PROVENANCE_ENTRIES_BEFORE = 45;
+/** Piezas de la interfaz que añade 0032 a la lista de arte. */
+const UI_PIECE_ENTRIES = 8;
 
 function repository() {
-  const r = parseAppearance(readJson('content/appearance.json'), registered);
+  const r = parseAppearance(readJson('content/appearance.json'), withFonts);
   if (!r.ok) throw new Error(`${r.error.field}: ${r.error.message}`);
   return r.value;
 }
@@ -119,14 +126,17 @@ describe('Datos de aspecto del combate (sprite-rendering 0031)', () => {
     expect(errors).toEqual(['combat.colors.player']);
   });
 
-  it('Scenario: Sin assets nuevos', () => {
+  it('Scenario: Bloque de combate sin hojas', () => {
     // `npm run guard:all` (en `verify`) comprueba la procedencia; aquí, que el bloque no tiene hojas
-    // y que la nota sigue con las mismas entradas.
+    // y que la nota solo crece con las 8 piezas de UI de 0032 (la fuente va aparte, en `fonts`).
     const block = JSON.stringify(
       (readJson('content/appearance.json') as { combat: unknown }).combat,
     );
     expect(block).not.toMatch(/\.png|sheet|file/);
-    expect(provenance.files).toHaveLength(PROVENANCE_ENTRIES_BEFORE);
-    expect(new Set(registered).size).toBe(PROVENANCE_ENTRIES_BEFORE);
+    expect(provenance.files).toHaveLength(PROVENANCE_ENTRIES_BEFORE + UI_PIECE_ENTRIES);
+    expect(new Set(registered).size).toBe(PROVENANCE_ENTRIES_BEFORE + UI_PIECE_ENTRIES);
+    const added = provenance.files.slice(PROVENANCE_ENTRIES_BEFORE).map((f) => f.path);
+    expect(added.every((p) => p.startsWith('public/assets/tiny-swords/UI/'))).toBe(true);
+    expect(provenance.files.some((f) => f.path.startsWith('public/assets/fonts/'))).toBe(false);
   });
 });

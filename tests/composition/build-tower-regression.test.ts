@@ -15,6 +15,7 @@ import { BuildGate } from '../../src/infrastructure/phaser/BuildGate';
 import { TICK_MS } from '../support/builders';
 import { fakeDom, type FakeElement } from '../support/fakeDom';
 import { startSeededRun } from '../support/runs';
+import { registeredPaths } from '../../src/infrastructure/content/loadAppearance';
 
 // Regresión de tasks 0027 §3.4 ("solo se podían construir casas"): de extremo a extremo sin
 // navegador, con el contenido y el aspecto reales del repositorio (como `main`), el mapa generado de
@@ -27,7 +28,7 @@ describe('Torre construible con el contenido real (regresión 0027 §3.4)', () =
       (e) => {
         throw new Error(`${e.field}: ${e.message}`);
       },
-      provenanceJson.files.map((f) => f.path),
+      registeredPaths(provenanceJson),
     );
     if (!booted) throw new Error('el contenido real no arranca');
     const { config, appearance } = booted;

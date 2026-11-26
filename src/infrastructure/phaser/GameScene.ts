@@ -26,6 +26,7 @@ import { hudLayout, veilLayout } from './ui/uiLayout';
 import { watchScreen } from './ui/watchScreen';
 import type { UpgradeOverlay } from './UpgradeOverlay';
 import type { Appearance } from '../content/appearanceSchema';
+import { damageNumberStyle } from './art/combatFeedback';
 import { resolveLooks } from './art/looks';
 import {
   resolveMapLooks,
@@ -50,8 +51,6 @@ import { CameraRig, type CameraView, type WorldSize } from './CameraRig';
 
 const PULSE_COLOR = 0x7ce2fe;
 const PULSE_LINE_WIDTH = 2;
-/** Relleno de los números de daño: blanco, para que el tinte de su clase dé el color (0031). */
-const NUMBER_BASE_COLOR = '#ffffff';
 
 /**
  * Tamaño de los pools de sprites, calculado en la composición desde el contenido validado:
@@ -248,11 +247,7 @@ export class GameScene extends Phaser.Scene {
         structureTypes: Object.keys(appearance.structures),
         // Capa de combate (0031): números con relleno blanco y tinte por clase; barras en un Graphics.
         feedback: {
-          text: () =>
-            this.add.text(0, 0, '', {
-              fontSize: `${String(appearance.combat.numbers.fontPx)}px`,
-              color: NUMBER_BASE_COLOR,
-            }),
+          text: () => this.add.text(0, 0, '', damageNumberStyle(appearance.combat.numbers.fontPx)),
           bars: () => this.add.graphics(),
           looks: appearance.combat,
         },
@@ -271,13 +266,18 @@ export class GameScene extends Phaser.Scene {
       mapArt,
       mapLooks,
       layers,
-      hud: createHud(this, frame, {
-        gold: counterIcon(looks.pickups.gold),
-        wood: counterIcon(looks.pickups.wood),
-        // La piedra usa siempre la roca `medium` (0025).
-        stone: counterIcon(looks.pickups.stone),
-      }),
-      offer: createUpgradeOverlay(this, frame),
+      hud: createHud(
+        this,
+        frame,
+        {
+          gold: counterIcon(looks.pickups.gold),
+          wood: counterIcon(looks.pickups.wood),
+          // La piedra usa siempre la roca `medium` (0025).
+          stone: counterIcon(looks.pickups.stone),
+        },
+        appearance.ui,
+      ),
+      offer: createUpgradeOverlay(this, frame, appearance.ui),
       results: results.overlay,
       resultsVeil: results.veil,
       move: new KeyboardInput(keyboard),

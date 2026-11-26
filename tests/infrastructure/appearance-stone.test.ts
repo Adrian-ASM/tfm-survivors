@@ -2,7 +2,12 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ASSET_DIR, ROCK_SIZES } from '../../src/infrastructure/content/appearanceSchema';
-import { parseAppearance, pickupAspectsOf } from '../../src/infrastructure/content/loadAppearance';
+import {
+  registeredPaths,
+  type ProvenanceLists,
+  parseAppearance,
+  pickupAspectsOf,
+} from '../../src/infrastructure/content/loadAppearance';
 import { PLACEHOLDER_TEXTURE } from '../../src/infrastructure/phaser/art/looks';
 import {
   REGISTERED,
@@ -18,9 +23,7 @@ import { someLooks } from '../support/looks';
 // rocas de Deco, la roca de cada tipo de enemigo y la reserva por roca.
 const root = join(import.meta.dirname, '..', '..');
 const readJson = (path: string): unknown => JSON.parse(readFileSync(join(root, path), 'utf8'));
-const registered = (
-  readJson('content/asset-provenance.json') as { files: { path: string }[] }
-).files.map((f) => f.path);
+const registered = registeredPaths(readJson('content/asset-provenance.json') as ProvenanceLists);
 const enemyIds = (readJson('content/enemies.json') as { types: { id: string }[] }).types.map(
   (t) => t.id,
 );

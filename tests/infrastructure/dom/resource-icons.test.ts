@@ -5,14 +5,17 @@ import appearanceJson from '../../../content/appearance.json';
 import provenanceJson from '../../../content/asset-provenance.json';
 import { assetUrl } from '../../../src/composition/assetUrl';
 import { ASSET_DIR } from '../../../src/infrastructure/content/appearanceSchema';
-import { parseAppearance } from '../../../src/infrastructure/content/loadAppearance';
+import {
+  registeredPaths,
+  parseAppearance,
+} from '../../../src/infrastructure/content/loadAppearance';
 import { gemShapeUrl, resourceIcons } from '../../../src/infrastructure/dom/resourceIcons';
 import { MENU_LABELS, buildMissing } from '../../../src/infrastructure/dom/menuText';
 
 // Design 0027 §3 y 0028 §6: iconos de recurso con las hojas del contador del HUD (G_Idle, W_Idle,
 // M_Idle y la roca `medium`, Deco/05) y la URL de `BootScene` (mismo origen); la gema como forma de
 // su color en un SVG `data:`; textos `madera`, `piedra` y «faltan N».
-const REGISTERED = provenanceJson.files.map((f) => f.path);
+const REGISTERED = registeredPaths(provenanceJson);
 
 const parsed = (raw: unknown) => {
   const r = parseAppearance(raw, REGISTERED);
@@ -102,10 +105,15 @@ describe('resourceIcons (panel de obra 0027 y guía 0028)', () => {
     }
   });
 
-  it('Scenario: Sin assets nuevos (cada hoja de icono figura en la nota de procedencia)', () => {
+  it('Scenario: Iconos sin hojas propias (hojas de recogibles de antes de 0032, ninguna de UI)', () => {
     const icons = resourceIcons(appearance, (file) => ASSET_DIR + file);
     const files = [icons.gold, icons.wood, icons.meat, icons.stone];
     expect(files.filter((f) => !REGISTERED.includes(f))).toEqual([]);
+    // Las 45 entradas de la nota de antes de 0032: ninguna pieza de la interfaz.
+    const before = provenanceJson.files.slice(0, 45).map((f) => f.path);
+    expect(files.filter((f) => !before.includes(f))).toEqual([]);
+    expect(files.some((f) => f.includes('/UI/'))).toBe(false);
+    expect(icons.xp.startsWith('data:image/svg+xml,')).toBe(true);
   });
 
   it('textos del panel: alternativas en minúscula y «faltan N»', () => {

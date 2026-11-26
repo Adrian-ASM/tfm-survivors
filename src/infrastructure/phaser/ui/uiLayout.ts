@@ -3,25 +3,33 @@ import type { ScreenFrame } from './screenFrame';
 // Layout puro del HUD (design 0017 D5): medidas de ×1 multiplicadas por el escalón de UI y anclajes
 // a los bordes del lienzo. Sin motor: se prueba en Node y lo aplican los widgets en cada RESIZE.
 
-/** Medidas del HUD a ×1 (las de antes de 0017). */
+/**
+ * Medidas del HUD a ×1. 0032: margen y filas desplazadas 8 y 12 px para que el contenido quede a
+ * ≥ `panelInset` + margen de la pieza `panel` (16) del borde de la ventana; el anclaje no cambia.
+ */
 export const HUD_BASE = {
-  margin: 16,
+  margin: 24,
   barWidth: 240,
   barHeight: 10,
-  healthY: 16,
-  xpY: 34,
+  healthY: 28,
+  xpY: 46,
   labelGap: 8,
   fontSize: 14,
   /** 0022: contadores de oro (fila de la XP) y madera bajo las bajas, a la derecha. */
-  woodY: 52,
+  woodY: 64,
   /** 0025: contador de piedra, tercera fila de contadores bajo la madera. */
-  stoneY: 70,
+  stoneY: 82,
   iconSize: 16,
   iconGap: 4,
+  /** 0032: separación mínima entre un panel del HUD y el borde de la ventana. */
+  panelInset: 4,
 } as const;
 
-/** Ancho de un carácter de la fuente monoespaciada del HUD, en múltiplos del tamaño de fuente. */
-export const MONO_CHAR_RATIO = 0.6;
+/**
+ * Ancho de un carácter de la fuente monoespaciada del HUD, en múltiplos del tamaño de fuente. 0032:
+ * 0,64 ≥ el avance de Departure Mono (350/550 = 0,636 em); `monospace` es más estrecha.
+ */
+export const MONO_CHAR_RATIO = 0.64;
 
 /** Punto de anclaje de un texto: x, y (centro vertical) y origen horizontal (0, 0,5 o 1). */
 export interface TextAnchor {
@@ -174,4 +182,62 @@ export interface CenteredRect {
 /** Velo de la oferta y de los resultados: todo el lienzo, centrado. */
 export function veilLayout(frame: ScreenFrame): CenteredRect {
   return { x: frame.width / 2, y: frame.height / 2, width: frame.width, height: frame.height };
+}
+
+/**
+ * Textos de reserva de los paneles del HUD (spec hud 0032): vida `120/120`, nivel 99, 12.345 bajas,
+ * oro 123.456, madera y piedra 12.345. Los paneles se miden con ellos, nunca con el texto vivo.
+ */
+export const HUD_RESERVE_TEXTS: HudTexts = {
+  health: '120/120',
+  clock: '00:00',
+  level: 'Nv 99',
+  kills: 'Bajas: 12345',
+  gold: '123456',
+  wood: '12345',
+  stone: '12345',
+};
+
+/** Márgenes de la pieza del panel (l, t, r, b) en px de la hoja. */
+export interface PanelMargins {
+  readonly left: number;
+  readonly top: number;
+  readonly right: number;
+  readonly bottom: number;
+}
+
+/** Los 3 paneles del HUD (0032): izquierda (vida y XP), centro (tiempo) y derecha (bajas y recursos). */
+export interface HudPanels {
+  readonly left: CenteredRect;
+  readonly center: CenteredRect;
+  readonly right: CenteredRect;
+}
+
+/** Unión de cajas ampliada con los márgenes × k, como rectángulo centrado. */
+function panelAround(boxes: readonly Box[], m: PanelMargins, k: number): CenteredRect {
+  const x0 = Math.min(...boxes.map((b) => b.x)) - m.left * k;
+  const y0 = Math.min(...boxes.map((b) => b.y)) - m.top * k;
+  const x1 = Math.max(...boxes.map((b) => b.x + b.width)) + m.right * k;
+  const y1 = Math.max(...boxes.map((b) => b.y + b.height)) + m.bottom * k;
+  return { x: (x0 + x1) / 2, y: (y0 + y1) / 2, width: x1 - x0, height: y1 - y0 };
+}
+
+/**
+ * Paneles del HUD (0032, design §5): cada uno rodea sus elementos, medidos con los textos de
+ * reserva, con un margen de (margen de la pieza × k) por lado. Dependen solo de la ventana y de k;
+ * no entran en `hudBoxes` (el panel no es un elemento del HUD en las comprobaciones de solape).
+ */
+export function hudPanels(l: HudLayout, m: PanelMargins): HudPanels {
+  const b = hudBoxes(l, HUD_RESERVE_TEXTS);
+  const pick = (...keys: string[]): Box[] =>
+    keys.flatMap((key) => {
+      const box = b[key];
+      return box ? [box] : [];
+    });
+  const k = l.uiScale;
+  return {
+    left: panelAround(pick('healthBar', 'healthLabel', 'xpBar', 'xpLabel'), m, k),
+    center: panelAround(pick('clock'), m, k),
+    right: panelAround(pick('kills', 'gold', 'wood', 'stone'), m, k),
+  };
 }

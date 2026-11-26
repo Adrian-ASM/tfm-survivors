@@ -1,7 +1,17 @@
 import type { OfferSnapshot } from '../../domain/run/RunSnapshot';
-import { CARD_FONT_SIZE, CARD_TEXT_WRAP, cardLayout, type CardRect } from './cardLayout';
+import {
+  CARD_FONT_SIZE,
+  CARD_LINE_HEIGHT,
+  CARD_TEXT_GAP,
+  cardLayout,
+  cardTextLayout,
+  wrapLines,
+  type CardMargins,
+  type CardRect,
+} from './cardLayout';
 import type { ScreenFrame } from './ui/screenFrame';
-import { veilLayout } from './ui/uiLayout';
+import type { UiPanelPart } from './ui/uiPanel';
+import { MONO_CHAR_RATIO, veilLayout } from './ui/uiLayout';
 
 /**
  * Lo mínimo que el overlay necesita del motor (`Rectangle` y `Text` de Phaser, con un adaptador
@@ -15,6 +25,10 @@ export interface OverlayPart {
 export interface VeilPart extends OverlayPart {
   setSize(width: number, height: number): unknown;
 }
+/**
+ * Texto de una carta. 0032: el nombre se ancla por arriba, la descripción por arriba bajo el nombre
+ * y el nivel por abajo (orígenes fijados por la fábrica: (0,5, 0), (0,5, 0) y (0,5, 1)).
+ */
 export interface CardText extends OverlayPart {
   setText(text: string): unknown;
   /** Tamaño final del texto (se pinta a su tamaño, no se reescala el objeto; design 0017 D5). */
@@ -26,37 +40,47 @@ export interface CardBox extends OverlayPart {
   onPointerDown(handler: () => void): void;
 }
 export interface CardParts {
+  /** Marco de la carta (0032): `NineSlice` de `button` o `NO_PANEL` en reserva. */
+  readonly frame: UiPanelPart;
+  /** Zona de clic: el rectángulo entero de la carta (transparente si hay marco). */
   readonly box: CardBox;
   readonly name: CardText;
   readonly description: CardText;
   readonly level: CardText;
 }
 
-/** Separación vertical de los textos dentro de la carta a ×1 (presentación). */
-const NAME_DY = -55;
-const DESCRIPTION_DY = -20;
-const LEVEL_DY = 55;
+/** Márgenes de texto sin pieza: los 16 px de siempre por lado. */
+export const PLAIN_CARD_MARGINS: CardMargins = { left: 16, top: 16, right: 16, bottom: 16 };
 
 const keyOf = (offer: readonly OfferSnapshot[]): string =>
   offer.map((o) => `${o.id}:${String(o.level)}`).join('|');
+
+/** Texto de la cabecera de una carta (índice 0 → `[1]`). */
+export const cardName = (i: number, option: OfferSnapshot): string =>
+  `[${String(i + 1)}] ${option.name}`;
+export const cardLevel = (option: OfferSnapshot): string =>
+  `Nv ${String(option.level)} → ${String(option.nextLevel)}`;
 
 /**
  * Overlay de elección (spec upgrades): velo y una carta por opción, en el orden de la oferta.
  * Las cartas se crean una vez fuera (preasignadas); aquí solo se colocan, se muestran u ocultan y
  * se rellenan sus textos cuando cambia la oferta. Un clic en una carta visible guarda su índice
  * para que la escena lo lea con `takeClicked`. No elige nada por sí mismo. `relayout` las vuelve a
- * colocar con el frame nuevo sin tocar la oferta (0017).
+ * colocar con el frame nuevo sin tocar la oferta (0017) ni crear piezas (0032).
  */
 export class UpgradeOverlay {
   private key = '';
   private shown = 0;
   private clicked = -1;
   private frame: ScreenFrame;
+  private names: string[] = [];
 
   constructor(
     private readonly veil: VeilPart,
     private readonly cards: readonly CardParts[],
     frame: ScreenFrame,
+    /** Márgenes de la pieza `button` (0032): fijan el área útil del texto, con o sin pieza. */
+    private readonly margins: CardMargins = PLAIN_CARD_MARGINS,
   ) {
     this.frame = frame;
     veil.setVisible(false);
@@ -81,6 +105,7 @@ export class UpgradeOverlay {
     this.shown = Math.min(offer.length, this.cards.length);
     this.clicked = -1;
     this.veil.setVisible(this.shown > 0);
+    this.names = offer.slice(0, this.shown).map((o, i) => cardName(i, o));
     const rects = cardLayout(this.frame, this.shown);
     this.cards.forEach((card, i) => {
       const option = offer[i];
@@ -89,10 +114,10 @@ export class UpgradeOverlay {
         this.setCardVisible(card, false);
         return;
       }
-      this.placeCard(card, rect);
-      card.name.setText(`[${String(i + 1)}] ${option.name}`);
+      this.placeCard(card, rect, i);
+      card.name.setText(cardName(i, option));
       card.description.setText(option.description);
-      card.level.setText(`Nv ${String(option.level)} → ${String(option.nextLevel)}`);
+      card.level.setText(cardLevel(option));
       this.setCardVisible(card, true);
     });
   }
@@ -106,7 +131,7 @@ export class UpgradeOverlay {
     const rects = cardLayout(frame, this.shown);
     rects.forEach((rect, i) => {
       const card = this.cards[i];
-      if (card) this.placeCard(card, rect);
+      if (card) this.placeCard(card, rect, i);
     });
   }
 
@@ -126,23 +151,31 @@ export class UpgradeOverlay {
   private applyScale(): void {
     const k = this.frame.uiScale;
     for (const card of this.cards) {
-      for (const t of [card.name, card.description, card.level]) {
-        t.setFontSize(CARD_FONT_SIZE * k);
-        t.setWordWrapWidth(CARD_TEXT_WRAP * k);
-      }
+      for (const t of [card.name, card.description, card.level]) t.setFontSize(CARD_FONT_SIZE * k);
     }
   }
 
-  private placeCard(card: CardParts, rect: CardRect): void {
+  private placeCard(card: CardParts, rect: CardRect, i: number): void {
     const k = this.frame.uiScale;
+    const t = cardTextLayout(rect, this.margins, k);
+    const font = CARD_FONT_SIZE * k;
+    const nameLines = wrapLines(this.names[i] ?? '', t.wrapWidth / (font * MONO_CHAR_RATIO));
+    card.frame.place(rect, k);
     card.box.setPosition(rect.x, rect.y);
     card.box.setSize(rect.width, rect.height);
-    card.name.setPosition(rect.x, rect.y + NAME_DY * k);
-    card.description.setPosition(rect.x, rect.y + DESCRIPTION_DY * k);
-    card.level.setPosition(rect.x, rect.y + LEVEL_DY * k);
+    for (const text of [card.name, card.description, card.level]) {
+      text.setWordWrapWidth(t.wrapWidth);
+    }
+    card.name.setPosition(t.x, t.nameTop);
+    card.description.setPosition(
+      t.x,
+      t.nameTop + nameLines * font * CARD_LINE_HEIGHT + CARD_TEXT_GAP * k,
+    );
+    card.level.setPosition(t.x, t.levelBottom);
   }
 
   private setCardVisible(card: CardParts, visible: boolean): void {
+    card.frame.setVisible(visible);
     card.box.setVisible(visible);
     card.name.setVisible(visible);
     card.description.setVisible(visible);

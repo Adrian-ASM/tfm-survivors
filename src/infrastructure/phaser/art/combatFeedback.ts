@@ -45,6 +45,17 @@ export function newHits(hits: readonly HitSnapshot[], lastId: number, pool: numb
 /** Texto del número: el daño en cifras decimales, sin signo, decimales ni separador de miles. */
 export const damageText = (amount: number): string => String(amount);
 
+/** Relleno de los números de daño: blanco, para que el tinte de su clase dé el color (0031). */
+export const NUMBER_BASE_COLOR = '#ffffff';
+
+/**
+ * Estilo de texto de un número de daño (0031): solo tamaño y relleno; la familia es la de siempre
+ * de Phaser (0032 no la cambia: la fuente pixel es solo de cartas, HUD y paneles DOM).
+ */
+export function damageNumberStyle(fontPx: number): { fontSize: string; color: string } {
+  return { fontSize: `${String(fontPx)}px`, color: NUMBER_BASE_COLOR };
+}
+
 /** Medidas de la barra de vida de los datos de aspecto. */
 export interface BarSpec {
   readonly width: number;

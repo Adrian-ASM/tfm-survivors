@@ -833,5 +833,59 @@
     },
     "numbers": { "durationMs": 800, "risePx": 32, "liftPx": 20, "fontPx": 16, "pool": 48 },
     "bar": { "width": 48, "height": 6, "gap": 8, "fill": "#e63946", "back": "#1d1d1d" }
+  },
+  "ui": {
+    "pieces": {
+      "panel": {
+        "image": "UI/Banners/Carved_9Slides.png",
+        "slice": { "top": 16, "right": 16, "bottom": 16, "left": 16 },
+        "fill": "#cbb18d",
+        "ink": { "text": "#2b1d0e", "muted": "#4a3820", "accent": "#1f3f66", "danger": "#7a0f0f" }
+      },
+      "button": {
+        "image": "UI/Buttons/Button_Blue_9Slides.png",
+        "slice": { "top": 20, "right": 20, "bottom": 28, "left": 20 },
+        "fill": "#8cc2c3",
+        "ink": { "text": "#10222e", "muted": "#1f3a47", "accent": "#0b3a5c", "danger": "#7a1010" }
+      },
+      "buttonHover": {
+        "image": "UI/Buttons/Button_Hover_9Slides.png",
+        "slice": { "top": 20, "right": 20, "bottom": 28, "left": 20 },
+        "fill": "#c2c0a6",
+        "ink": { "text": "#2b2418", "muted": "#3e3424", "accent": "#1f3a5c", "danger": "#7a1010" }
+      },
+      "buttonPressed": {
+        "image": "UI/Buttons/Button_Blue_9Slides_Pressed.png",
+        "slice": { "top": 20, "right": 20, "bottom": 28, "left": 20 },
+        "fill": "#83a1ab",
+        "ink": { "text": "#0a1820", "muted": "#14303c", "accent": "#0a2a44", "danger": "#600808" }
+      },
+      "buttonDisabled": {
+        "image": "UI/Buttons/Button_Disable_9Slides.png",
+        "slice": { "top": 20, "right": 20, "bottom": 28, "left": 20 },
+        "fill": "#bda187",
+        "ink": { "text": "#2a1c10", "muted": "#3a2a1c", "accent": "#1a3050", "danger": "#6e0a0a" }
+      },
+      "buttonDanger": {
+        "image": "UI/Buttons/Button_Red_9Slides.png",
+        "slice": { "top": 20, "right": 20, "bottom": 28, "left": 20 },
+        "fill": "#c78176",
+        "ink": { "text": "#2b0f0f", "muted": "#3a1414", "accent": "#1a1030", "danger": "#5a0000" }
+      },
+      "buttonDangerPressed": {
+        "image": "UI/Buttons/Button_Red_9Slides_Pressed.png",
+        "slice": { "top": 20, "right": 20, "bottom": 28, "left": 20 },
+        "fill": "#996878",
+        "ink": { "text": "#000000", "muted": "#000000", "accent": "#000000", "danger": "#300000" }
+      },
+      "header": {
+        "image": "UI/Ribbons/Ribbon_Yellow_3Slides.png",
+        "slice": { "left": 48, "right": 48 },
+        "height": 64,
+        "fill": "#b0a64c",
+        "ink": { "text": "#2b2418", "muted": "#3a3020", "accent": "#102a44", "danger": "#600000" }
+      }
+    },
+    "font": { "family": "Departure Mono", "file": "DepartureMono-Regular.woff2", "format": "woff2" }
   }
 }

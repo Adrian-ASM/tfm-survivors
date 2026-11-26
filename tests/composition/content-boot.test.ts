@@ -5,7 +5,10 @@ import arenaJson from '../../content/arena.json';
 import provenanceJson from '../../content/asset-provenance.json';
 import { bootContent, checkAppearanceRefs } from '../../src/composition/contentBoot';
 import type { DomainError } from '../../src/domain/shared/Result';
-import { TILE_SCALE_MISMATCH } from '../../src/infrastructure/content/loadAppearance';
+import {
+  registeredPaths,
+  TILE_SCALE_MISMATCH,
+} from '../../src/infrastructure/content/loadAppearance';
 import { canopyCut, roofCut } from '../../src/infrastructure/phaser/map/mapCuts';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import { rawContent } from '../support/builders';
@@ -13,7 +16,7 @@ import { randomInputs } from '../support/inputs';
 import { chooseFirstWhileOpen, startRun, startSeededRun } from '../support/runs';
 
 // Spec sprite-rendering, "Datos de aspecto validados" en el arranque (change 0012, design D9).
-const REGISTERED = provenanceJson.files.map((f) => f.path);
+const REGISTERED = registeredPaths(provenanceJson);
 
 type Json = Record<string, unknown>;
 type Raw = { content: ReturnType<typeof rawContent>; appearance: Json; guide: unknown };

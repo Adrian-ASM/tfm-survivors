@@ -11,6 +11,7 @@ import type { MapSnapshot } from '../domain/map/MapSnapshot';
 import type { RunSnapshot } from '../domain/run/RunSnapshot';
 import type { DomainError } from '../domain/shared/Result';
 import { repositoryContent } from '../infrastructure/content/loadRunConfig';
+import { registeredPaths } from '../infrastructure/content/loadAppearance';
 import { PausePanel } from '../infrastructure/dom/PausePanel';
 import { ShopPanel, type ShopPanelView } from '../infrastructure/dom/ShopPanel';
 import { BuildPanel, type BuildPanelView } from '../infrastructure/dom/BuildPanel';
@@ -27,7 +28,9 @@ import { requestStep } from '../infrastructure/e2e/stepRequest';
 import { viewportProbe, type ViewportView } from '../infrastructure/e2e/viewportProbe';
 import { applyUiScale } from '../infrastructure/dom/applyUiScale';
 import { screenFrame } from '../infrastructure/phaser/ui/screenFrame';
-import { assetUrl } from './assetUrl';
+import { applyUiKit, uiKitVariables } from '../infrastructure/dom/uiKit';
+import { FONT_WAIT_MS, loadUiFont, withDeadline } from '../infrastructure/dom/uiFont';
+import { assetUrl, fontUrl } from './assetUrl';
 import { scaleConfig } from './scaleConfig';
 import { bootContent } from './contentBoot';
 import { resolveSeed } from '../infrastructure/url/resolveSeed';
@@ -141,11 +144,25 @@ function bootstrap(): void {
       console.error(`Contenido inválido en ${error.field}: ${error.message}`);
       showContentError(root, error);
     },
-    provenanceJson.files.map((f) => f.path),
+    registeredPaths(provenanceJson),
   );
   if (!booted) return;
   const config = { value: booted.config };
   const { appearance } = booted;
+  // Fuente pixel (0032, design §6): en paralelo con la carga de Phaser; como mucho FONT_WAIT_MS.
+  const fontReady = withDeadline(
+    loadUiFont(
+      document.fonts,
+      (family, source) => new FontFace(family, source),
+      appearance.ui.font.family,
+      fontUrl(import.meta.env.BASE_URL, appearance.ui.font.file),
+    ),
+    FONT_WAIT_MS,
+    (ms) =>
+      new Promise<void>((resolve) => {
+        window.setTimeout(resolve, ms);
+      }),
+  );
   const menuSprites = emptyCounts(
     Object.keys(appearance.enemies),
     Object.keys(appearance.structures),
@@ -305,6 +322,11 @@ function bootstrap(): void {
     appearance,
     assetUrl: sheetUrl,
     e2e,
+    fontReady,
+    // Al terminar la carga: variables CSS de las piezas que cargaron (0032, design §4).
+    onUiLoaded: (loaded) => {
+      applyUiKit(root.style, uiKitVariables(appearance.ui, loaded, sheetUrl));
+    },
   });
 
   // Lienzo a ventana completa con tope (0017, ADR-0014): RESIZE recortado a `maxView`, que no
