@@ -34,7 +34,8 @@ import { TouchJoystick, type InputLike, type JoystickSettings } from './touch/To
 import { pressedOnce, type TouchBarView } from '../dom/TouchBar';
 import { hudLayout, veilLayout } from './ui/uiLayout';
 import { watchScreen } from './ui/watchScreen';
-import type { UpgradeOverlay } from './UpgradeOverlay';
+import type { OfferIconView, UpgradeOverlay } from './UpgradeOverlay';
+import type { IconChoice } from '../icons/upgradeIcons';
 import type { Appearance } from '../content/appearanceSchema';
 import { damageNumberStyle } from './art/combatFeedback';
 import { resolveLooks } from './art/looks';
@@ -166,6 +167,8 @@ export interface GameSceneDeps {
   readonly touch?: SceneTouch;
   /** Retención externa (0033: aviso de orientación visible). Sin ella, nunca retenida. */
   readonly hold?: () => boolean;
+  /** Icono de cada opción de mejora (0034, IconBook.resolve). Sin él, ninguno (hueco vacío). */
+  readonly iconFor?: (id: string) => IconChoice;
 }
 
 /** Controles táctiles que recibe la escena en modo móvil (0033, design §4). */
@@ -312,7 +315,7 @@ export class GameScene extends Phaser.Scene {
         },
         appearance.ui,
       ),
-      offer: createUpgradeOverlay(this, frame, appearance.ui),
+      offer: createUpgradeOverlay(this, frame, appearance.ui, this.deps.iconFor),
       results: results.overlay,
       resultsVeil: results.veil,
       move: touch ? preferKeyboard(keys, touch.stick) : keys,
@@ -502,6 +505,12 @@ export class GameScene extends Phaser.Scene {
     // Solo con la escena de la partida activa: en el menú (escena parada, `leave`) no hay HUD.
     if (!this.started || !this.sys.isActive()) return null;
     return this.w?.hud.shown ?? null;
+  }
+
+  /** Icono de cada carta de la oferta visible (0034; vacío sin oferta o sin partida), sonda E2E. */
+  offerIconsView(): readonly OfferIconView[] {
+    if (!this.started || !this.sys.isActive()) return [];
+    return this.w?.offer.iconStates ?? [];
   }
 
   /** Indicación en reposo visible en el último frame (0033; falso sin partida), para la sonda. */

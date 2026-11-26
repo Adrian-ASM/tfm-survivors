@@ -11,7 +11,9 @@ import type { MapSnapshot } from '../domain/map/MapSnapshot';
 import type { RunSnapshot } from '../domain/run/RunSnapshot';
 import type { DomainError } from '../domain/shared/Result';
 import { repositoryContent } from '../infrastructure/content/loadRunConfig';
-import { registeredPaths } from '../infrastructure/content/loadAppearance';
+import { generatedPaths, registeredPaths } from '../infrastructure/content/loadAppearance';
+import { IconBook } from '../infrastructure/icons/upgradeIcons';
+import type { OfferIconView } from '../infrastructure/phaser/UpgradeOverlay';
 import { PausePanel } from '../infrastructure/dom/PausePanel';
 import { ShopPanel, type ShopPanelView } from '../infrastructure/dom/ShopPanel';
 import { BuildPanel, type BuildPanelView } from '../infrastructure/dom/BuildPanel';
@@ -30,7 +32,7 @@ import { applyUiScale } from '../infrastructure/dom/applyUiScale';
 import type { FullscreenLike } from '../infrastructure/dom/FullscreenControl';
 import { applyUiKit, uiKitVariables } from '../infrastructure/dom/uiKit';
 import { FONT_WAIT_MS, loadUiFont, withDeadline } from '../infrastructure/dom/uiFont';
-import { assetUrl, fontUrl } from './assetUrl';
+import { assetUrl, fontUrl, iconUrl } from './assetUrl';
 import { scaleConfig } from './scaleConfig';
 import { bootContent } from './contentBoot';
 import { resolveSeed } from '../infrastructure/url/resolveSeed';
@@ -78,6 +80,11 @@ interface E2EProbe {
   readonly hud: { readonly gold: string; readonly wood: string; readonly stone: string } | null;
   /** Overlay de la tienda (0024): si se ve, el oro y, por producto, nivel, precio y si es comprable. */
   readonly shop: ShopPanelView;
+  /**
+   * Icono de cada carta de la oferta abierta en el último frame pintado (0034, design D7): id de la
+   * opción y painted | fallback | none. Vacío sin oferta y en el menú.
+   */
+  readonly offerIcons: readonly OfferIconView[];
   /** Pantallas vistas desde la carga (0024: el E2E comprueba que Esc en la tienda no pausa). */
   readonly screens: readonly Screen[];
   /**
@@ -173,6 +180,7 @@ function bootstrap(): void {
       showContentError(root, error);
     },
     registeredPaths(provenanceJson),
+    generatedPaths(provenanceJson),
   );
   if (!booted) return;
   const config = { value: booted.config };
@@ -221,7 +229,14 @@ function bootstrap(): void {
   // lleva la guía ya validada e interpolada (0028).
   const progress = wireProgress(root, () => probe.seed, { guide: booted.guide, icons });
   const pause = new PausePanel(document, root);
-  const shopPanel = new ShopPanel(document, root);
+  // Iconos de mejora (0034, D2/D6): un solo IconBook para cartas (Phaser) y filas (DOM); todo
+  // none hasta que BootScene publica las texturas cargadas.
+  const iconBook = new IconBook(booted.icons);
+  const iconFileUrl = (file: string) => iconUrl(import.meta.env.BASE_URL, file);
+  const shopPanel = new ShopPanel(document, root, {
+    resolve: (id) => iconBook.resolve(id),
+    url: iconFileUrl,
+  });
   const buildPanel = new BuildPanel(document, root, icons);
   // Barra táctil, aviso de orientación y dependencias de la escena: solo en modo móvil.
   const mobile = wireMobile(mobileMode.on, booted.mobile, {
@@ -238,6 +253,7 @@ function bootstrap(): void {
   let cameraView = (): CameraView | null => null;
   let mapView = (): MapSnapshot | null => null;
   let viewportView = (): ViewportView | null => null;
+  let offerIconsView = (): readonly OfferIconView[] => [];
   let hudView = (): {
     readonly gold: string;
     readonly wood: string;
@@ -277,6 +293,9 @@ function bootstrap(): void {
     },
     get shop() {
       return shopPanel.view;
+    },
+    get offerIcons() {
+      return offerIconsView();
     },
     screens,
     get sites() {
@@ -347,7 +366,9 @@ function bootstrap(): void {
     ...(stepper ? { manual: stepper } : {}),
     // Regla de frame, joystick, barra y retención: solo con el modo móvil (vacío en escritorio).
     ...mobile.sceneDeps,
+    iconFor: (id) => iconBook.resolve(id),
   });
+  offerIconsView = () => game.offerIconsView();
   cameraView = () => game.cameraView();
   mapView = () => game.mapView();
   hudView = () => {
@@ -370,6 +391,11 @@ function bootstrap(): void {
     // Al terminar la carga: variables CSS de las piezas que cargaron (0032, design §4).
     onUiLoaded: (loaded) => {
       applyUiKit(root.style, uiKitVariables(appearance.ui, loaded, sheetUrl));
+    },
+    // Iconos de mejora (0034, D5): mismo origen bajo la base; los que cargaron, al IconBook.
+    iconUrl: iconFileUrl,
+    onIconsLoaded: (loaded) => {
+      iconBook.setLoaded(loaded);
     },
   });
 

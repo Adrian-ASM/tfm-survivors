@@ -172,8 +172,8 @@ export class ShopPanel {
     setPanelHidden(this.root, !visible);
   }
 
-  /** Lo que el panel muestra (sonda E2E). */
+  /** Lo que el panel muestra (sonda E2E); 0034: con la tienda cerrada, sin filas. */
   get view(): ShopPanelView {
-    return this.shown;
+    return this.shown.visible ? this.shown : { ...this.shown, products: [] };
   }
 }

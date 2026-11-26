@@ -4,6 +4,7 @@ import { RUIN_COLOR_KEY, type Appearance } from '../infrastructure/content/appea
 import type { Guide } from '../infrastructure/content/guideSchema';
 import { checkTileScales, parseAppearance } from '../infrastructure/content/loadAppearance';
 import { parseGuide } from '../infrastructure/content/loadGuide';
+import { iconCatalog, type IconCatalog, type IconIds } from '../infrastructure/icons/upgradeIcons';
 import type { MobileDisplay } from '../infrastructure/content/schemas';
 import {
   parseContent,
@@ -19,6 +20,7 @@ export const APPEARANCE_THROW_REQUIRED =
   'El aspecto de un tipo con un estado de carga necesita la animación throw.';
 export const STRUCTURE_APPEARANCE_MISSING =
   'Falta el aspecto o el color de reserva de este tipo de estructura.';
+export const ICON_UNKNOWN_ID = 'Icono de un id que no es ninguna mejora ni la curación.';
 export const STRUCTURE_APPEARANCE_UNKNOWN =
   'Aspecto o color de un tipo de estructura que no existe en structures.json.';
 
@@ -41,6 +43,8 @@ export interface BootedContent {
   readonly appearance: Appearance;
   /** Guía «Cómo jugar» ya validada e interpolada con la config (0028). */
   readonly guide: Guide;
+  /** Catálogo de iconos de mejora ya cruzado con el contenido (0034): presentación. */
+  readonly icons: IconCatalog;
 }
 
 /**
@@ -98,15 +102,43 @@ function checkStructureRefs(appearance: Appearance, config: RunConfig): Result<t
   return ok(true);
 }
 
+/** Ids del contenido con icono (0034, D2): mejoras de personaje; de arma y la curación (`heal`). */
+export function iconIdsOf(config: RunConfig): IconIds {
+  return {
+    character: config.upgrades.character.map((u) => u.id),
+    weapon: [...config.upgrades.weapons.map((u) => u.id), config.shop.heal.id],
+  };
+}
+
+/**
+ * Cruce de los iconos con el contenido (0034, design D2): cada clave de `icons.byId` es el id de una
+ * mejora de cualquiera de los dos catálogos o el de la curación; si no, `ICON_UNKNOWN_ID` con el
+ * campo `icons.byId.<id>`. Una mejora sin entrada es válida (usa la reserva de su categoría).
+ */
+export function checkIconRefs(
+  appearance: Appearance,
+  config: RunConfig,
+): Result<IconCatalog, DomainError> {
+  const ids = iconIdsOf(config);
+  const known = new Set([...ids.character, ...ids.weapon]);
+  const unknown = Object.keys(appearance.icons?.byId ?? {}).find((id) => !known.has(id));
+  if (unknown !== undefined) {
+    return err(invalidConfig(`icons.byId.${unknown}`, `${ICON_UNKNOWN_ID} (${unknown})`));
+  }
+  return ok(iconCatalog(appearance.icons, ids));
+}
+
 /**
  * Valida el contenido de juego, los datos de aspecto (con las hojas registradas en la nota de
  * procedencia), su cruce y la guía del menú. Ante el primer error lo informa y devuelve `null`:
- * no se crea ni el menú ni la partida. Sin motor ni DOM (se prueba en Node).
+ * no se crea ni el menú ni la partida. Sin motor ni DOM (se prueba en Node). `generated` (0034) son
+ * las rutas de la lista de imágenes con IA: las únicas que valen como icono.
  */
 export function bootContent(
   raw: RawBoot,
   report: (error: DomainError) => void,
   registered: readonly string[],
+  generated: readonly string[] = [],
 ): BootedContent | null {
   const content = parseContent(raw.content);
   if (!content.ok) {
@@ -114,7 +146,7 @@ export function bootContent(
     return null;
   }
   const { config, maxView, mobile } = content.value;
-  const appearance = parseAppearance(raw.appearance, registered);
+  const appearance = parseAppearance(raw.appearance, registered, generated);
   if (!appearance.ok) {
     report(appearance.error);
     return null;
@@ -122,6 +154,11 @@ export function bootContent(
   const refs = checkAppearanceRefs(appearance.value, config);
   if (!refs.ok) {
     report(refs.error);
+    return null;
+  }
+  const icons = checkIconRefs(appearance.value, config);
+  if (!icons.ok) {
+    report(icons.error);
     return null;
   }
   const scales = checkTileScales(appearance.value, config.map.cellSize);
@@ -135,5 +172,12 @@ export function bootContent(
     report(guide.error);
     return null;
   }
-  return { config, maxView, mobile, appearance: appearance.value, guide: guide.value };
+  return {
+    config,
+    maxView,
+    mobile,
+    appearance: appearance.value,
+    guide: guide.value,
+    icons: icons.value,
+  };
 }

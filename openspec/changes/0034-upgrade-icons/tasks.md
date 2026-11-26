@@ -52,10 +52,10 @@
   `dom/ui-kit.test.ts`, `dom/dom-unchanged.test.ts`
 
 ## 5. Composición · cruce de ids, cableado y sonda
-- [ ] 5.1 `checkIconRefs` en `contentBoot.ts` (ids de los dos catálogos y `heal`, `ICON_UNKNOWN_ID`,
+- [x] 5.1 `checkIconRefs` en `contentBoot.ts` (ids de los dos catálogos y `heal`, `ICON_UNKNOWN_ID`,
   `BootedContent.icons`, `heal` con la reserva de arma) — escenarios: "Id desconocido" (con y sin `?e2e`), "Mejora
   sin entrada" — test: `tests/composition/content-boot.test.ts`
-- [ ] 5.2 `assetUrl.iconUrl`, `IconBook` en `main.ts`, `iconFor` a `GameScene`/`UpgradeOverlay`, sondas
+- [x] 5.2 `assetUrl.iconUrl`, `IconBook` en `main.ts`, `iconFor` a `GameScene`/`UpgradeOverlay`, sondas
   `__sprint.offerIcons` y `shop.products[i].icon`; partida con iconos sin cargar y simulación igual con y sin sección
   `icons` — escenarios: "URLs de los iconos bajo la base", "Estados en la sonda", "Partida entera con todos los iconos
   sin cargar", "Los iconos no cambian la simulación ni el mapa" (snapshots; 820/904, balance y firmas por los gates
