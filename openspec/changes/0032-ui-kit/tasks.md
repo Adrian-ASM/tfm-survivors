@@ -86,7 +86,7 @@
   no carga" (se crea el menú sin errores), "Directivas sin cambios" (el test existente de la CSP sigue en verde).
 
 ## 4. Infraestructura Phaser (cartas y HUD con NineSlice)
-- [ ] 4.1 `src/infrastructure/phaser/ui/uiPanel.ts` (`nineSliceGeometry`, `UiPanelPart`, `NineSlicePanel`,
+- [x] 4.1 `src/infrastructure/phaser/ui/uiPanel.ts` (`nineSliceGeometry`, `UiPanelPart`, `NineSlicePanel`,
   `NO_PANEL`, `createUiPanel` con `textures.exists` y renderizador WebGL) y cartas: `CardParts.frame`, `box`
   transparente con pieza y de siempre en reserva, `cardTextLayout` (texto a ≥ `max(16, l)`·k, `t`·k y `b`·k; subir
   `CARD_HEIGHT` si la descripción más larga no cabe), tinta `text` y familia con caída. Dobles de Phaser con
@@ -95,7 +95,7 @@
   — escenarios: upgrades "Una pieza por carta", "Esquinas y texto de la carta a ×1 y a ×2", "Descripción más larga del
   catálogo", "Clic en el margen de la carta", "Redimensionar sin crear piezas"; sprite-rendering "Carta sin textura",
   "Pieza de UI que falla sin reserva de sprites", "Familia con caída en el DOM y en Phaser" (cartas).
-- [ ] 4.2 HUD: `hudPanels` puro (cajas fijas por caracteres de reserva, fuera de `hudBoxes`), `HUD_BASE.panelInset`
+- [x] 4.2 HUD: `hudPanels` puro (cajas fijas por caracteres de reserva, fuera de `hudBoxes`), `HUD_BASE.panelInset`
   y filas desplazadas (§5; pasar los literales `[52, 70]`/`140` de `ui-layout.test.ts` a `HUD_BASE`), 3
   `UiPanelPart` en `createHud` recolocados solo en `HudPlacement.place`, tinta `text` de `panel` con paneles y
   `#ffffff` sin ellos, familia con caída; `MONO_CHAR_RATIO` al avance medido en 1.2 si es mayor. Tests:
@@ -103,7 +103,12 @@
   — escenarios: hud "Tres paneles con su contenido", "Paneles independientes del snapshot", "Seiscientos frames sin
   crear objetos", "Fuente pixel en los textos del HUD"; sprite-rendering "HUD sin textura", "Los números de daño
   conservan su fuente", "Familia con caída en el DOM y en Phaser" (HUD).
-- [ ] 4.3 Partidas con todo en reserva, con dobles de Phaser y DOM de prueba: 3.600 ticks de la semilla 42 con el bot
+  Apply: con `panel` 16 (no 12), `HUD_BASE.margin` 24 y filas 28/46/64/82 (antes 16/16/34/52/70);
+  `MONO_CHAR_RATIO` 0,64; `CARD_HEIGHT` se queda en 170 (la descripción más larga cabe: 6 líneas,
+  117 ≤ 122 px a ×1); textos de la carta anclados (nombre arriba, nivel abajo) en lugar de `NAME_DY`/`LEVEL_DY`;
+  `WEBGL_RENDERER` 2 local (= `Phaser.WEBGL`) para probar `uiPanel.ts` sin importar el motor; estilo de los
+  números de daño extraído a `damageNumberStyle` (sin cambio de valores). Sin estructuras por frame nuevas.
+- [x] 4.3 Partidas con todo en reserva, con dobles de Phaser y DOM de prueba: 3.600 ticks de la semilla 42 con el bot
   de referencia, las 8 texturas y la fuente sin cargar, comparados tick a tick con la misma partida con todo
   cargado, y flujos de menú, tienda, obra y resultados en reserva. Test:
   `tests/infrastructure/ui-fallback-run.test.ts`.

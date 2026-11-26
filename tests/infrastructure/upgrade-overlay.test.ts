@@ -8,6 +8,7 @@ import {
   type CardText,
   type OverlayPart,
 } from '../../src/infrastructure/phaser/UpgradeOverlay';
+import { NO_PANEL } from '../../src/infrastructure/phaser/ui/uiPanel';
 import { DEFAULT_UPGRADE_LIST } from '../support/builders';
 
 class FakePart implements OverlayPart {
@@ -67,6 +68,7 @@ const VIEW = screenFrame(960, 540);
 function overlay() {
   const veil = new FakePart();
   const cards = Array.from({ length: 3 }, () => ({
+    frame: NO_PANEL,
     box: new FakeBox(),
     name: new FakeText(),
     description: new FakeText(),
@@ -245,7 +247,8 @@ describe('UpgradeOverlay.relayout (0017)', () => {
 
     const [first] = cardLayout(screenFrame(1920, 1080), 3);
     expect(cards[0]?.name.fontSize).toBe(28);
+    // 0032: área útil de 16 px por lado sin pieza (el overlay de prueba no la tiene).
     expect(cards[0]?.name.wrap).toBe(2 * 208);
-    expect(cards[0]?.name.y).toBe((first?.y ?? 0) - 2 * 55);
+    expect(cards[0]?.name.y).toBe((first?.y ?? 0) - (first?.height ?? 0) / 2 + 2 * 16);
   });
 });

@@ -1,19 +1,39 @@
 import type Phaser from 'phaser';
-import { CARD_TEXT_WRAP } from './cardLayout';
+import type { UiAppearance, UiPieceRole } from '../content/appearanceSchema';
+import { cssHex, fontStack } from '../dom/uiKit';
 import { Hud, type HudPlacement } from './Hud';
 import { ResultsOverlay, type ResultsTexts } from './ResultsOverlay';
-import { UpgradeOverlay, type CardBox, type CardParts, type CardText } from './UpgradeOverlay';
+import {
+  PLAIN_CARD_MARGINS,
+  UpgradeOverlay,
+  type CardBox,
+  type CardParts,
+  type CardText,
+} from './UpgradeOverlay';
 import { XpBar } from './XpBar';
 import type { PickupLook } from './art/looks';
+import { uiMargins } from './ui/nineSlice';
 import type { ScreenFrame } from './ui/screenFrame';
 import {
   hudLayout,
+  hudPanels,
   veilLayout,
   type BarAnchor,
   type CounterAnchor,
   type HudLayout,
+  type PanelMargins,
   type TextAnchor,
 } from './ui/uiLayout';
+import { NO_PANEL, createUiPanel, type UiPanelPart } from './ui/uiPanel';
+
+/** Sin datos de UI: el HUD no tiene paneles, así que sus márgenes no importan. */
+const NO_MARGINS: PanelMargins = { left: 0, top: 0, right: 0, bottom: 0 };
+/** Estilo de los textos del HUD y de las cartas. */
+interface TextStyle {
+  readonly fontFamily: string;
+  readonly fontSize: string;
+  readonly color: string;
+}
 
 // Fábricas de objetos del motor para el HUD y los overlays (presentación, sin lógica). Se llaman
 // una vez en `GameScene.create()`; la lógica vive en `Hud`, `UpgradeOverlay` y `ResultsOverlay`.
@@ -30,9 +50,22 @@ const VEIL_ALPHA = 0.6;
 const RESULTS_VEIL_ALPHA = 0.75;
 const CARD_COLOR = 0x23233a;
 const CARD_BORDER = 0x7ce2fe;
-const TEXT_STYLE = { fontFamily: 'monospace', fontSize: '14px', color: '#ffffff' } as const;
+/** Texto blanco de siempre: el de la reserva (sin pieza). */
+const PLAIN_TEXT = '#ffffff';
+const TEXT_STYLE: TextStyle = { fontFamily: 'monospace', fontSize: '14px', color: PLAIN_TEXT };
 
 type Scene = Phaser.Scene;
+
+/** Estilo de texto con la familia de `ui` y su caída (0032) y el color dado. */
+function textStyle(ui: UiAppearance | undefined, color: string): TextStyle {
+  return { ...TEXT_STYLE, fontFamily: ui ? fontStack(ui) : TEXT_STYLE.fontFamily, color };
+}
+
+/** Pieza de UI en Phaser o `null` (sin datos de UI, sin textura o sin WebGL: reserva). */
+function uiPanel(scene: Scene, ui: UiAppearance | undefined, role: UiPieceRole, depth: number) {
+  if (!ui) return null;
+  return createUiPanel(scene, ui.pieces[role], depth);
+}
 
 type Rect = Phaser.GameObjects.Rectangle;
 type Txt = Phaser.GameObjects.Text;
@@ -48,9 +81,9 @@ function bar(scene: Scene, l: HudLayout, at: BarAnchor, color: number): { back: 
   return { back: make(l.barWidth, BAR_BACK), fill: make(0, color) };
 }
 
-function hudText(scene: Scene, l: HudLayout, at: TextAnchor): Txt {
+function hudText(scene: Scene, l: HudLayout, at: TextAnchor, style = TEXT_STYLE): Txt {
   return scene.add
-    .text(at.x, at.y, '', { ...TEXT_STYLE, fontSize: l.fontSize })
+    .text(at.x, at.y, '', { ...style, fontSize: l.fontSize })
     .setOrigin(at.originX, 0.5)
     .setScrollFactor(0)
     .setDepth(HUD_DEPTH);
@@ -90,16 +123,30 @@ export const counterIcon = (look: PickupLook): CounterIcon => ({
 });
 
 /** Icono y número de un contador, creados una vez (sin errores si la hoja no cargó: reserva). */
-function counter(scene: Scene, l: HudLayout, at: CounterAnchor, look: CounterIcon): Counter {
+function counter(
+  scene: Scene,
+  l: HudLayout,
+  at: CounterAnchor,
+  look: CounterIcon,
+  style: TextStyle,
+): Counter {
   const { x, y, size } = at.icon;
   const icon = look.texture
     ? scene.add.image(x, y, look.texture, look.frame).setDisplaySize(size, size)
     : scene.add.rectangle(x, y, size, size, look.color);
   icon.setScrollFactor(0).setDepth(HUD_DEPTH);
-  return { icon, label: hudText(scene, l, at.label) };
+  return { icon, label: hudText(scene, l, at.label, style) };
 }
 
-function placement(o: HudObjects): HudPlacement {
+/** Los 3 paneles del HUD (0032): piezas de `panel` o, en reserva, ninguno. */
+interface HudFrames {
+  readonly left: UiPanelPart;
+  readonly center: UiPanelPart;
+  readonly right: UiPanelPart;
+  readonly margins: PanelMargins;
+}
+
+function placement(o: HudObjects, frames: HudFrames): HudPlacement {
   const placeBar = (b: { back: Rect; fill: Rect }, at: BarAnchor, l: HudLayout): void => {
     b.back.setPosition(at.x, at.y).setSize(l.barWidth, l.barHeight);
     b.fill.setPosition(at.x, at.y);
@@ -120,6 +167,11 @@ function placement(o: HudObjects): HudPlacement {
   ];
   return {
     place(l, rescale) {
+      // Paneles fijos por ventana y k (0032): solo aquí, nunca por frame.
+      const p = hudPanels(l, frames.margins);
+      frames.left.place(p.left, l.uiScale);
+      frames.center.place(p.center, l.uiScale);
+      frames.right.place(p.right, l.uiScale);
       placeBar(o.health, l.health.bar, l);
       placeBar(o.xp, l.xp.bar, l);
       for (const [t, at] of texts) {
@@ -140,18 +192,33 @@ export function createHud(
   scene: Scene,
   frame: ScreenFrame,
   icons: { readonly gold: CounterIcon; readonly wood: CounterIcon; readonly stone: CounterIcon },
+  /** Interfaz (0032): 3 paneles de `panel` detrás de los textos y la fuente pixel. */
+  ui?: UiAppearance,
 ): Hud {
   const l = hudLayout(frame);
+  // Paneles antes que el resto: detrás de barras y textos (profundidad HUD − 1).
+  // La textura y el renderizador son los mismos para los 3: o hay 3 piezas o ninguna.
+  const left = uiPanel(scene, ui, 'panel', HUD_DEPTH - 1);
+  const center = left ? uiPanel(scene, ui, 'panel', HUD_DEPTH - 1) : null;
+  const right = left ? uiPanel(scene, ui, 'panel', HUD_DEPTH - 1) : null;
+  const ink = left && ui ? cssHex(ui.pieces.panel.ink.text) : PLAIN_TEXT;
+  const style = textStyle(ui, ink);
+  const frames: HudFrames = {
+    left: left ?? NO_PANEL,
+    center: center ?? NO_PANEL,
+    right: right ?? NO_PANEL,
+    margins: ui ? uiMargins(ui.pieces.panel) : NO_MARGINS,
+  };
   const o: HudObjects = {
     health: bar(scene, l, l.health.bar, HEALTH_FILL),
-    healthLabel: hudText(scene, l, l.health.label),
+    healthLabel: hudText(scene, l, l.health.label, style),
     xp: bar(scene, l, l.xp.bar, XP_FILL),
-    level: hudText(scene, l, l.xp.label),
-    clock: hudText(scene, l, l.clock),
-    kills: hudText(scene, l, l.kills),
-    gold: counter(scene, l, l.gold, icons.gold),
-    wood: counter(scene, l, l.wood, icons.wood),
-    stone: counter(scene, l, l.stone, icons.stone),
+    level: hudText(scene, l, l.xp.label, style),
+    clock: hudText(scene, l, l.clock, style),
+    kills: hudText(scene, l, l.kills, style),
+    gold: counter(scene, l, l.gold, icons.gold, style),
+    wood: counter(scene, l, l.wood, icons.wood, style),
+    stone: counter(scene, l, l.stone, icons.stone, style),
   };
   const xpBar = new XpBar(o.xp.fill, o.level, l.barWidth, l.barHeight);
   const parts = {
@@ -163,30 +230,44 @@ export function createHud(
     gold: o.gold.label,
     wood: o.wood.label,
     stone: o.stone.label,
-    placement: placement(o),
+    placement: placement(o, frames),
   };
   const hud = new Hud(parts, l.barWidth, l.barHeight);
   hud.relayout(l);
   return hud;
 }
 
-/** Overlay de elección (spec upgrades): velo y 3 cartas preasignadas. */
-export function createUpgradeOverlay(scene: Scene, frame: ScreenFrame): UpgradeOverlay {
+/**
+ * Overlay de elección (spec upgrades): velo y 3 cartas preasignadas. 0032: con la textura de
+ * `button` y WebGL, cada carta tiene su `NineSlice` y el `Rectangle` queda transparente como zona de
+ * clic; si no, el `Rectangle` de siempre. Textos con la familia de `ui` y la tinta de `button`.
+ */
+export function createUpgradeOverlay(
+  scene: Scene,
+  frame: ScreenFrame,
+  ui?: UiAppearance,
+): UpgradeOverlay {
   const { width, height } = frame;
   const veil = scene.add
     .rectangle(width / 2, height / 2, width, height, VEIL_COLOR, VEIL_ALPHA)
     .setScrollFactor(0)
     .setDepth(OVERLAY_DEPTH);
-  const text = (wrap: number): CardText =>
+  // Marcos primero (OVERLAY_DEPTH + 1), luego la zona de clic (+ 1, creada después) y los textos.
+  const frames = [0, 1, 2].map(() => uiPanel(scene, ui, 'button', OVERLAY_DEPTH + 1));
+  const framed = frames.every((f) => f !== null);
+  const ink = framed && ui ? cssHex(ui.pieces.button.ink.text) : PLAIN_TEXT;
+  const style = textStyle(ui, ink);
+  const text = (originY: number): CardText =>
     scene.add
-      .text(0, 0, '', { ...TEXT_STYLE, align: 'center', wordWrap: { width: wrap } })
-      .setOrigin(0.5)
+      .text(0, 0, '', { ...style, align: 'center', wordWrap: { width: 1 } })
+      .setOrigin(0.5, originY)
       .setScrollFactor(0)
       .setDepth(OVERLAY_DEPTH + 2);
-  const cards: CardParts[] = [0, 1, 2].map(() => {
-    const rect = scene.add
-      .rectangle(0, 0, 1, 1, CARD_COLOR)
-      .setStrokeStyle(2, CARD_BORDER)
+  const cards: CardParts[] = frames.map((f) => {
+    const rect = framed
+      ? scene.add.rectangle(0, 0, 1, 1, CARD_COLOR, 0)
+      : scene.add.rectangle(0, 0, 1, 1, CARD_COLOR).setStrokeStyle(2, CARD_BORDER);
+    rect
       .setScrollFactor(0)
       .setDepth(OVERLAY_DEPTH + 1)
       .setInteractive({ useHandCursor: true });
@@ -200,13 +281,16 @@ export function createUpgradeOverlay(scene: Scene, frame: ScreenFrame): UpgradeO
       },
     };
     return {
+      frame: framed && f ? f : NO_PANEL,
       box,
-      name: text(CARD_TEXT_WRAP),
-      description: text(CARD_TEXT_WRAP),
-      level: text(CARD_TEXT_WRAP),
+      // Nombre anclado arriba, descripción bajo él y nivel anclado abajo (área útil, 0032).
+      name: text(0),
+      description: text(0),
+      level: text(1),
     };
   });
-  return new UpgradeOverlay(veil, cards, frame);
+  const margins = ui ? uiMargins(ui.pieces.button) : PLAIN_CARD_MARGINS;
+  return new UpgradeOverlay(veil, cards, frame, margins);
 }
 
 /**

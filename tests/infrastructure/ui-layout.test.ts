@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { formatClock, healthLabel, killsLabel } from '../../src/infrastructure/phaser/hudFormat';
 import { screenFrame } from '../../src/infrastructure/phaser/ui/screenFrame';
-import { hudBoxes, hudLayout, type Box } from '../../src/infrastructure/phaser/ui/uiLayout';
+import {
+  HUD_BASE,
+  HUD_RESERVE_TEXTS,
+  hudBoxes,
+  hudLayout,
+  hudPanels,
+  type Box,
+  type CenteredRect,
+} from '../../src/infrastructure/phaser/ui/uiLayout';
 import { levelLabel } from '../../src/infrastructure/phaser/XpBar';
 
 // Spec hud (0017): "HUD anclado a la ventana" y "Escala del HUD por escalones" (design D5).
@@ -135,10 +143,86 @@ describe('hudLayout · oro y madera (0022)', () => {
   it('icono a la derecha del número, en la fila de la XP (oro) y bajo él (madera y piedra)', () => {
     const l = hudLayout(frame(960, 540));
     expect(l.gold.label.x).toBeLessThan(l.gold.icon.x - l.gold.icon.size / 2);
-    expect([l.gold.icon.y, l.wood.icon.y, l.stone.icon.y]).toEqual([l.xp.bar.y, 52, 70]);
+    // 0032: filas de HUD_BASE (desplazadas para los paneles), no literales.
+    expect([l.gold.icon.y, l.wood.icon.y, l.stone.icon.y]).toEqual([
+      l.xp.bar.y,
+      HUD_BASE.woodY,
+      HUD_BASE.stoneY,
+    ]);
     expect(l.gold.label.originX).toBe(1);
-    // 0025: a ×2 la piedra baja a 140, alineada con los demás contadores.
+    // 0025: a ×2 la piedra baja al doble, alineada con los demás contadores.
     const two = hudLayout(frame(2560, 1440));
-    expect([two.stone.icon.y, two.stone.icon.x]).toEqual([140, two.gold.icon.x]);
+    expect([two.stone.icon.y, two.stone.icon.x]).toEqual([2 * HUD_BASE.stoneY, two.gold.icon.x]);
+  });
+});
+
+// Spec hud (0032), "Paneles del HUD con piezas de UI" (parte de layout, pura).
+describe('hudPanels (0032)', () => {
+  const PANEL = { left: 16, top: 16, right: 16, bottom: 16 };
+  const toBox = (r: CenteredRect): Box => ({
+    x: r.x - r.width / 2,
+    y: r.y - r.height / 2,
+    width: r.width,
+    height: r.height,
+  });
+  /** `inner` está dentro de `outer` con al menos `m` px por lado. */
+  const contains = (outer: Box, inner: Box, m: number): boolean =>
+    inner.x - outer.x >= m - 1e-9 &&
+    inner.y - outer.y >= m - 1e-9 &&
+    outer.x + outer.width - (inner.x + inner.width) >= m - 1e-9 &&
+    outer.y + outer.height - (inner.y + inner.height) >= m - 1e-9;
+  const GROUPS = {
+    left: ['healthBar', 'healthLabel', 'xpBar', 'xpLabel'],
+    center: ['clock'],
+    right: ['kills', 'gold', 'wood', 'stone'],
+  } as const;
+
+  it.each([
+    [960, 540, 1],
+    [1280, 720, 1],
+    [2560, 1440, 2],
+    [1920, 1080, 2],
+  ])('Scenario: Tres paneles con su contenido (%i × %i, k = %i)', (w, h, k) => {
+    const l = hudLayout(frame(w, h));
+    expect(l.uiScale).toBe(k);
+    const p = hudPanels(l, PANEL);
+    const boxes = hudBoxes(l, HUD_RESERVE_TEXTS);
+    const panels = { left: toBox(p.left), center: toBox(p.center), right: toBox(p.right) };
+    for (const [side, keys] of Object.entries(GROUPS)) {
+      const panel = panels[side as keyof typeof panels];
+      for (const key of keys) {
+        const box = boxes[key];
+        if (!box) throw new Error(key);
+        expect(contains(panel, box, 16 * k), `${side}/${key}`).toBe(true);
+      }
+      expect(inside(panel, w, h), side).toBe(true);
+      // A ≥ panelInset × k de los bordes de la ventana que toca.
+      expect(panel.y).toBeGreaterThanOrEqual(HUD_BASE.panelInset * k - 1e-9);
+    }
+    expect(overlap(panels.left, panels.center)).toBe(false);
+    expect(overlap(panels.center, panels.right)).toBe(false);
+    expect(overlap(panels.left, panels.right)).toBe(false);
+  });
+
+  it('Scenario: Paneles independientes del snapshot (texto vivo largo, mismo panel y contenido dentro)', () => {
+    const l = hudLayout(frame(1280, 720));
+    const p = hudPanels(l, PANEL);
+    // El panel no depende del snapshot: es función de la ventana, k y los márgenes.
+    expect(hudPanels(hudLayout(frame(1280, 720)), PANEL)).toEqual(p);
+    const live = hudBoxes(l, LONGEST);
+    for (const [side, keys] of Object.entries(GROUPS)) {
+      const panel = toBox(p[side as keyof typeof p]);
+      for (const key of keys) {
+        const box = live[key];
+        if (!box) throw new Error(key);
+        expect(contains(panel, box, 16), `${side}/${key}`).toBe(true);
+      }
+    }
+  });
+
+  it('los textos de reserva son los más largos del escenario (mismo número de caracteres)', () => {
+    for (const key of Object.keys(LONGEST) as (keyof typeof LONGEST)[]) {
+      expect(HUD_RESERVE_TEXTS[key].length, key).toBeGreaterThanOrEqual(LONGEST[key].length);
+    }
   });
 });
