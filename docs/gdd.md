@@ -79,7 +79,7 @@ Máquina de estados por tipo, definida en contenido:
 - **Campamentos de guardianes** en zonas ricas en recursos (generados con el mapa).
 - **Casas y torres de madera goblin**: generadores/defensas **destruibles** (única excepción a "edificios
   indestructibles"). Destruirlas da recompensa: oro por objetivos.
-  Llevan barra de vida (0031 `combat-feedback`) y, desde 0032, cada torre lleva un arquero goblin que dispara al
+  Llevan barra de vida (0031 `combat-feedback`) y, desde 0035, cada torre lleva un arquero goblin que dispara al
   jugador en su radio.
 
 **Bestiario solo con el pack** (no se dibujan enemigos nuevos con IA; el Enemy Pack de pago queda descartado por
@@ -109,9 +109,10 @@ Objetivo ~8–10 tipos.
 - **Casa**: da oro cada X s. **Torre**: dispara flechas a enemigos cercanos (reutiliza el arma de proyectil con
   origen fijo). **Castillo**: tienda única de mejoras de arma + curación; uno por partida, ya en el mapa, en el punto de inicio.
 
-### UI con el pack (*Could*, al final)
-Barras, cintas, papel/mesa para las cartas, botones; nine-slice; fuente pixel local (la CSP estricta impide cargarla
-de fuera).
+### UI con el pack (*Should*, 0032 `ui-kit`; sube desde *Could* el 2026-11-26)
+Banners, botones, cintas y paneles para menú, guía, pausa, resultados, cartas, tienda, obra y HUD; nine-slice; fuente
+pixel local (la CSP estricta impide cargarla de fuera). Los iconos de las mejoras (0033) y el audio (0034) van
+después.
 
 ## Backlog MoSCoW (v2.0, tentativo)
 Propuesta de alcance para el TFM; los changes concretos están en "Orden tentativo". Un Must nuevo exige bajar otro a
@@ -121,13 +122,13 @@ Should.
 |---|---|
 | **Must** (hecho) | Movimiento · 2 armas automáticas · oleadas · colisiones y vida · gemas de XP · subida de nivel con 3 opciones · temporizador, victoria y derrota · HUD · menú · guardado local + exportar/importar · despliegue público (0001–0011) |
 | **Must** (nuevo) | Arte con sprites del pack CC0 y tema medieval (0012) · mundo grande con cámara y límites (0013) · mapa procedural por semilla con colisión (0015) · arte del mapa (0016) · vista a pantalla completa (0017) · recorte del arte del mapa fuera de cámara (0018) · navegación por campo de flujo (0019) |
-| **Should** | Comportamientos de enemigos (0020, parte A hecha) · casas y torres goblin con TNT de guardia (0021) · recursos (0022, hecho) · ovejas, carne y curación (0023, hecho) · progresión separada y castillo-tienda (0024, hecho) · piedra como recurso (0025, hecho) · solares de obra: casa y torre (0026, hecho) · oferta de obra al tocar el solar (0027, hecho) · guía «Cómo jugar» en el menú (0028) · mapa vivo: decoración y árboles animados (0029) · recogibles visibles y animados (0030) · barras de vida y números de daño (0031) · arqueros en las torres goblin (0032) · elección de personaje y Guerrero (0033, aplazado hasta tener cerrados 0024 y 0026) · pasada de equilibrio como diseño (balance-pass-2, número al empezar) · campamentos de guardianes en zonas ricas (sin número, tras 0023) ·
-modo Objetivos · meta-progresión guardada · un jefe final · opciones de audio y accesibilidad · controles táctiles |
-| **Could** | UI del pack · ciclo día/noche · minimapa/niebla de guerra · modo Infinito · victoria "defender el castillo" · talar árboles · colocación libre de edificios · jefes por escala · audio · login con Google + Supabase · reto diario con semilla compartida · i18n ES/EN · PWA |
+| **Should** | Comportamientos de enemigos (0020, parte A hecha) · casas y torres goblin con TNT de guardia (0021) · recursos (0022, hecho) · ovejas, carne y curación (0023, hecho) · progresión separada y castillo-tienda (0024, hecho) · piedra como recurso (0025, hecho) · solares de obra: casa y torre (0026, hecho) · oferta de obra al tocar el solar (0027, hecho) · guía «Cómo jugar» en el menú (0028) · mapa vivo: decoración y árboles animados (0029) · recogibles visibles y animados (0030) · barras de vida y números de daño (0031) · UI del pack aplicada a la apariencia general (0032) · iconos de las mejoras (0033) · audio: música, efectos y opciones de volumen (0034) · arqueros en las torres goblin (0035) · elección de personaje y Guerrero (0036, aplazado hasta tener cerrados 0024 y 0026) · pasada de equilibrio como diseño (balance-pass-2, número al empezar) · campamentos de guardianes en zonas ricas (sin número, tras 0023) ·
+modo Objetivos · meta-progresión guardada · un jefe final · accesibilidad (las opciones de audio las absorbe 0034) · controles táctiles |
+| **Could** | ciclo día/noche · minimapa/niebla de guerra · modo Infinito · victoria "defender el castillo" · talar árboles · colocación libre de edificios · jefes por escala · login con Google + Supabase · reto diario con semilla compartida · i18n ES/EN · PWA |
 | **Won't** | Multijugador · desniveles/terreno multinivel · monetización · leaderboard con re-simulación · enemigos dibujados con IA |
 
 Nota: v1 tenía "mapas procedurales complejos" en Won't. Se acota a un mapa de rejilla sin desniveles y entra como
-Must (0015); lo que baja a Should es todo el bloque de contenido 0020–0033.
+Must (0015); lo que baja a Should es todo el bloque de contenido 0020–0036.
 
 Renumeración (2026-11-23): 0014 acabó siendo `e2e-manual-step` (infraestructura de tests), así que el mapa
 procedural pasa a 0015. Al aprobar 0015 se partió en mapa puro (0015) y arte del mapa (0016), y se añadió la vista
@@ -171,6 +172,13 @@ arqueras, aprobados por el autor: 0028 `menu-guide`, 0029 `living-map`, 0030 `pi
 casas y torres goblin se mueven de `goblin-tower-archers` a 0031. Bloque Should resultante: 0028 `menu-guide`,
 0029 `living-map`, 0030 `pickup-visibility`, 0031 `combat-feedback`, 0032 `goblin-tower-archers`, 0033
 `characters`, balance-pass-2 y campamentos de guardianes. Los cuatro nuevos son Should y no suben ningún Must.
+
+Renumeración (2026-11-26): 0031 `combat-feedback` está hecho. Entran tres changes nuevos justo después, aprobados por
+el autor: 0032 `ui-kit`, 0033 `upgrade-icons` y 0034 `audio`. Los tres son Should y no suben ningún Must: "UI del
+pack" y "audio" suben desde Could, y las "opciones de audio" del Should quedan absorbidas por 0034.
+`goblin-tower-archers` pasa de 0032 a 0035 y `characters`, de 0033 a 0036. Bloque Should resultante: 0032 `ui-kit`,
+0033 `upgrade-icons`, 0034 `audio`, 0035 `goblin-tower-archers`, 0036 `characters`, balance-pass-2 y campamentos de
+guardianes. 0033 va después de 0032 porque el icono se encaja en el marco de carta de la UI del pack.
 
 ### Historias Must nuevas (criterios clave)
 
@@ -335,7 +343,7 @@ de XP), para no perderme lo que puedo recoger en una pantalla grande.**
 
 **0031 · combat-feedback · Como jugador quiero ver la vida de casas y torres goblin y el daño de cada golpe, para
 saber cuánto falta para destruir algo y cuánto daño hago y recibo.**
-- Motivo: no hay forma de saber cuánto falta para destruir una casa o torre (criterio movido desde 0032) ni cuánto
+- Motivo: no hay forma de saber cuánto falta para destruir una casa o torre (criterio movido desde `goblin-tower-archers`, entonces 0032) ni cuánto
   daño aplica cada golpe.
 - Given una casa o torre goblin con vida completa o dañada, When se renderiza, Then lleva una barra de vida sobre
   ella que refleja su vida actual.
@@ -351,7 +359,77 @@ saber cuánto falta para destruir algo y cuánto daño hago y recibo.**
   un pool de 48 números; tope de 48 golpes por tick (el del jugador aparte). Estado: hecho (apply 2026-11-26).
 - Prioridad: Should.
 
-**0032 · goblin-tower-archers · Como jugador quiero que las torres goblin me disparen, para que atacar un campamento
+**0032 · ui-kit · Como jugador quiero que menú, cartas, tienda y HUD usen los banners, botones y paneles del pack,
+para que el juego tenga una apariencia medieval coherente y no cajas de color planas.**
+- Motivo: el arte del mundo ya es Tiny Swords (0012, 0016, 0029, 0030) pero la interfaz sigue siendo DOM y formas de
+  Phaser sin el aspecto del pack.
+- Given el menú, la guía, la pausa, los resultados, las cartas de mejora, la tienda, el panel de obra y el HUD, When
+  se renderizan, Then usan piezas de UI del pack (banners, botones, cintas, paneles) en lugar de fondos planos.
+- Given un overlay con fondo de pieza de UI, When cambia el tamaño de la ventana o la escala de UI (×1/×2), Then el
+  marco se estira sin deformar las esquinas (nine-slice) y el texto no se desborda.
+- Given una pieza de UI que no carga, When se renderiza, Then se muestra el aspecto de reserva actual y el juego sigue
+  siendo jugable.
+- Given el repo, When se hace `git ls-files`, Then cada pieza de UI nueva tiene entrada en
+  `content/asset-provenance.json` y ninguna procede del Free Pack (lo vigila `guard-assets.mjs`).
+- Given las semillas 1..50 con el bot, When se mide, Then el balance es idéntico a `BALANCE_BASELINE` y las firmas
+  doradas no cambian.
+- Alcance: solo render, DOM y contenido de aspecto; el núcleo no cambia.
+- Riesgo de procedencia: comprobar en explore qué piezas de UI trae Update 010 (CC0) y que no vengan del Free Pack;
+  si falta alguna pieza (p. ej. un botón), se queda con el aspecto actual y no se dibuja con IA.
+- Preguntas abiertas: si los overlays DOM usan las piezas como CSS (`border-image` / 9-slice) y el HUD de Phaser como
+  `NineSlice` (propuesta: sí, un solo juego de piezas con dos adaptadores); fuente pixel local (CSP estricta);
+  qué overlays entran en el primer corte si el alcance aprieta (propuesta: menú, cartas y HUD primero).
+- Prioridad: Should (sube desde Could el 2026-11-26).
+
+**0033 · upgrade-icons · Como jugador quiero ver un icono en cada mejora de personaje y de arma, para reconocerlas de
+un vistazo y que cartas y tienda no sean solo texto.**
+- Motivo: las 9 mejoras de personaje (cartas por XP) y las 6 de arma (tienda) se distinguen hoy solo por su nombre.
+  Va después de 0032 porque el icono se encaja en el marco de carta de la UI del pack.
+- Contexto: hubo una prueba previa en otra sesión con 4 imágenes generadas con Antigravity (se agotó el cupo
+  gratuito). Faltan 15 para cubrir las 15 mejoras.
+- Given una carta de mejora de personaje o un artículo de la tienda, When se muestra, Then lleva el icono de su
+  mejora, ligado por id en `content/` (validado con zod, sin rutas fijas en el código).
+- Given una mejora sin icono o con la imagen rota, When se muestra, Then usa un icono de reserva por categoría y el
+  juego sigue siendo jugable.
+- Given los iconos, When se versionan, Then tienen fondo transparente, un tamaño común y una entrada en
+  `content/asset-provenance.json` con herramienta, fecha, términos de uso y prompt.
+- Given las semillas 1..50 con el bot, When se mide, Then el balance es idéntico a `BALANCE_BASELINE`; ids de mejora y
+  firmas intactos.
+- Alcance: render, DOM y contenido; el núcleo no cambia.
+- Riesgo de procedencia: hoy el Won't dice "enemigos dibujados con IA"; los iconos no son enemigos, pero hace falta
+  una regla y un registro de las imágenes generadas con IA. Probable ADR (política de procedencia para imágenes IA,
+  decisión del autor). Cualquier icono sin entrada de procedencia lo bloquea el guardarraíl.
+- Preguntas abiertas: qué herramienta genera las 15 que faltan (otra herramienta, lotes en varios días o iconos de
+  reserva por stat); coherencia de estilo con Tiny Swords (propuesta: revisar las 4 existentes antes de generar más);
+  alternativa sin IA con piezas de Update 010 recoloreadas.
+- Prioridad: Should.
+
+**0034 · audio · Como jugador quiero música de fondo y efectos de sonido con opciones de volumen y silencio, para que
+el juego tenga inmersión y pueda jugar sin sonido cuando quiera.**
+- Motivo: el juego es mudo. Tiny Swords no trae audio. Absorbe las "opciones de audio" que ya estaban en el Should.
+- Given el menú de inicio, When el jugador pulsa Jugar, Then arranca la música de fondo (el navegador bloquea el
+  autoplay hasta un gesto del usuario); antes de ese gesto no suena nada.
+- Given una partida, When ocurren golpe recibido, impacto de flecha, muerte de enemigo, recogida, subida de nivel,
+  explosión y compra u obra, Then suena el efecto correspondiente, disparado desde el snapshot (hits de 0031,
+  recogibles, fases).
+- Given cientos de golpes por segundo, When se solicitan efectos, Then no suenan más voces simultáneas que el tope de
+  contenido (los sobrantes se descartan).
+- Given las opciones de audio, When el jugador cambia volumen o silencio, Then el ajuste se aplica al instante y se
+  guarda en local (validado con zod al leerlo); con datos corruptos se usan los valores por defecto.
+- Given `?e2e` o una pestaña sin audio disponible, When arranca, Then el juego funciona igual y no falla si el audio no
+  carga.
+- Given las semillas 1..50 con el bot, When se mide, Then balance y firmas son idénticos: el audio es solo un adaptador
+  de infraestructura que reacciona al snapshot y no toca el núcleo.
+- Riesgo de procedencia: cada fichero de audio con su entrada de procedencia (fuente, licencia, URL, fecha) y el
+  guardarraíl `.claude/hooks/guard-assets.mjs`, hoy centrado en assets gráficos, debe cubrir también `.ogg`, `.mp3` y
+  `.wav`. Solo CC0 salvo que el autor acepte atribución (CC-BY).
+- Preguntas abiertas (decisión del autor, a cerrar en explore): fuentes candidatas (Kenney CC0, OpenGameArt filtrado
+  por CC0, Freesound filtrado por CC0, efectos generados con jsfxr/sfxr) y si se acepta CC-BY con atribución; si la
+  música encaja con el tema medieval o se empieza solo con efectos; dónde van las opciones (menú y pausa); formato y
+  peso de los ficheros para Pages.
+- Prioridad: Should (sube desde Could el 2026-11-26).
+
+**0035 · goblin-tower-archers · Como jugador quiero que las torres goblin me disparen, para que atacar un campamento
 sea una decisión de riesgo y no un paseo.**
 - Motivo: hoy las torres son estructuras destruibles sin comportamiento (decisión D4 de 0021).
 - Nota: los dos criterios de barra de vida de casas y torres se movieron a 0031 `combat-feedback`.
@@ -370,7 +448,7 @@ sea una decisión de riesgo y no un paseo.**
 - Efecto en balance: las torres con disparo cambian el riesgo de explorar; se vuelve a medir la banda del bot y se
   comprueba que el bot v3 sigue siendo representativo (deuda W3 de 0020).
 
-**0033 · characters · Como jugador quiero elegir entre Arquero y Guerrero para poder jugar de forma distinta.**
+**0036 · characters · Como jugador quiero elegir entre Arquero y Guerrero para poder jugar de forma distinta.**
 - Nota de orden: era 0022. Se movió al final del bloque porque el Guerrero necesita el formato de mejoras separado
   de 0024 (personaje por XP, arma por oro; hecho) y el balance ya estable con recursos, castillo y solares; así sus mejoras
   y su equilibrio se hacen una sola vez. Los criterios se redactan al proponer el change.
@@ -379,7 +457,7 @@ sea una decisión de riesgo y no un paseo.**
 justo para que la partida sea divertida y no solo "dentro de la banda".**
 - Motivo: desde 0010 cada change solo recalibra para mantener el gate (25–35/50 victorias del bot, quieto pierde
   antes de 180 s); es una red de seguridad, no diseño. En 0020 el gate cuadró pero el Goblin Barril casi nunca llega
-  a encender la mecha en partida real porque el arco lo mata antes. Se hace después de 0033 porque recursos,
+  a encender la mecha en partida real porque el arco lo mata antes. Se hace después de 0036 porque recursos,
   castillo-tienda, solares, arqueros de torre y personajes mueven los números; hacerlo antes no compensa.
 - Mientras tanto, los changes pueden hacer ajustes puntuales cuando una mecánica no se percibe (p. ej. el barril,
   que ya mide 0020b).
@@ -431,11 +509,14 @@ Pendientes:
 | 0029 living-map | Más decoración (Deco 01–18) no bloqueante, árboles animados con fase por árbol y torre goblin animada; ≤ 1.000 objetos del mapa; castillo, casas y mina quedan estáticos | Should | Densidad, zonas permitidas y fotogramas de los árboles (explore) |
 | 0030 pickup-visibility | Recogibles más grandes, hoja de aparición para oro, madera y carne (`*_Spawn`) y flote leve en los cinco; radio de recogida y balance intactos | Should | ¿Zoom de cámara por tamaño de ventana? (decisión del autor) |
 | 0031 combat-feedback | **Hecho (apply 2026-11-26)**: registro de golpes en el núcleo (daño aplicado sumado por objetivo y tick, ventana 15 y tope 48 en `content/combat.json`, ADR-0027); números de daño con color por clase (jugador en rojo) en un pool de 48 y barras de vida en casas y torres goblin (desaparecen en ruina). Balance y firmas idénticos | Should | |
-| 0032 goblin-tower-archers | Un arquero goblin en cada torre que dispara al jugador dentro de su radio (decisión D4 de 0021 superada); las barras de vida pasaron a 0031 | Should | ¿Hay goblin arquero en Update 010? (procedencia) |
-| 0033 characters | Elección de personaje y Guerrero. Aplazado desde 0022 hasta tener el formato de mejoras de 0024 (hecho) | Should | ¿Es divertido el Guerrero? |
+| 0032 ui-kit | Banners, botones, cintas y paneles de Tiny Swords Update 010 en menú, guía, pausa, resultados, cartas, tienda, obra y HUD (nine-slice: CSS en DOM, `NineSlice` en Phaser); solo render, DOM y contenido de aspecto; balance y firmas intactos | Should | Inventario de piezas de UI de Update 010 (CC0, no Free Pack) |
+| 0033 upgrade-icons | Iconos para las 9 mejoras de personaje y las 6 de arma de la tienda, encajados en el marco de carta de 0032; con reserva por categoría y procedencia registrada (probable ADR para imágenes generadas con IA) | Should | Política de imágenes IA y herramienta para las 15 que faltan |
+| 0034 audio | Música de fondo (arranca al pulsar Jugar) y efectos (golpe recibido, impacto de flecha, muerte, recogida, subida de nivel, explosión, compra y obra) con opciones de volumen y silencio guardadas en local; adaptador de infraestructura sobre el snapshot con tope de voces; el guardarraíl de procedencia cubre audio | Should | Fuentes CC0 (Kenney, OpenGameArt, Freesound, jsfxr) y si la música encaja |
+| 0035 goblin-tower-archers | Un arquero goblin en cada torre que dispara al jugador dentro de su radio (decisión D4 de 0021 superada); las barras de vida pasaron a 0031 | Should | ¿Hay goblin arquero en Update 010? (procedencia) |
+| 0036 characters | Elección de personaje y Guerrero. Aplazado desde 0022 hasta tener el formato de mejoras de 0024 (hecho) | Should | ¿Es divertido el Guerrero? |
 | balance-pass-2 (número al empezar) | Pasada de equilibrio como diseño, no como red de seguridad: stats por tipo de enemigo y de personaje, métricas más allá de la tasa de victoria, revisión del bot de referencia y playtest humano con notas | Should | |
 | goblin-guard-camps (sin número, tras 0023 sheep-meat) | Campamentos de guardianes en zonas ricas en recursos (sacados de 0021, D8) | Should | |
-| Resto | UI del pack, día/noche, minimapa, jefes, audio | Could | |
+| Resto | Día/noche, minimapa, jefes | Could | |
 
 Notas:
 - **Marcado Must/Should/Could es una propuesta para el TFM, no un compromiso.** Si el tiempo aprieta, se corta por
