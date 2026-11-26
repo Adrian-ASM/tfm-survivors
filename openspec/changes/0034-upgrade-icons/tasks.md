@@ -18,12 +18,12 @@
   repositorio" y "Origen del Free Pack" — test: `tests/guardrails/assets.test.ts`
 
 ## 2. Infraestructura · datos y resolución de iconos
-- [ ] 2.1 Esquema `icons` en `appearanceSchema.ts` (`IconFile`, `byId`, `fallback` obligatorio, `strictObject`;
+- [x] 2.1 Esquema `icons` en `appearanceSchema.ts` (`IconFile`, `byId`, `fallback` obligatorio, `strictObject`;
   sección `icons` **opcional de forma transitoria** hasta 6.1), `ICON_DIR`, `generatedPaths` en `loadAppearance.ts` y
   comprobación de hojas/piezas contra la lista de arte e iconos contra la IA (`ICON_NOT_REGISTERED`, D1/D8) —
   escenarios: "Datos de iconos inválidos" (los 11 casos), "Aspecto con una imagen con IA" (`goblin-torch`, oveja,
   `panel`) — test: `tests/infrastructure/icons-appearance.test.ts` (nuevo) y `appearance-schema.test.ts`
-- [ ] 2.2 `src/infrastructure/icons/upgradeIcons.ts`: `IconCatalog`, `IconCategory`, `IconState`
+- [x] 2.2 `src/infrastructure/icons/upgradeIcons.ts`: `IconCatalog`, `IconCategory`, `IconState`
   (`painted | fallback | none`), `resolveIcon` puro e `IconBook` (D2/D3) — escenarios: "Tabla de resolución", "Reserva
   de otra categoría sin efecto" — test: `tests/infrastructure/upgrade-icons.test.ts`
 
