@@ -31,16 +31,16 @@
   `tests/infrastructure/audio/audio-run.test.ts`.
 
 ## 2. Contenido, ajustes y procedencia (test-after)
-- [ ] 2.1 `content/audio.json` (10 tipos, `file: null` transitorio, defaults 50/80/no), `audioSchema.ts` +
+- [x] 2.1 `content/audio.json` (10 tipos, `file: null` transitorio, defaults 50/80/no), `audioSchema.ts` +
   `loadAudio.ts` (`parseAudio`, `soundPaths`) y cruce `AUDIO_NOT_REGISTERED` en `bootContent` (D5) — escenarios:
   "Tipo de efecto ausente o desconocido", "Valores fuera de rango", "Fichero sin procedencia" y "Campo desconocido".
   Test: `tests/infrastructure/content/audio-content.test.ts` (+ `contentBoot` sin errores con el repositorio).
-- [ ] 2.2 `audioSettingsSchema`, `LocalStorageAudioSettingsRepository` y `AudioSettingsStore` (D9) — escenarios:
+- [x] 2.2 `audioSettingsSchema`, `LocalStorageAudioSettingsRepository` y `AudioSettingsStore` (D9) — escenarios:
   "Sin ajustes guardados" (valores y 0 escrituras), "Ajustes dañados" (4 casos, 1 aviso `audio`, valor intacto y
   sobrescritura al cambiar), "Almacenamiento que lanza", "Silencio y vuelta" (ajustes guardados 50/80) e
   "Independiente del progreso" (Exportar, Importar y Borrar datos no tocan la clave; el export sin `music`/`muted`).
   Test: `tests/infrastructure/audio/audio-settings.test.ts`, con un `Storage` falso.
-- [ ] 2.3 Guardarraíl: lista `sounds[]` en `guard-assets.mjs` (D13) y `audioFileProblems` (D14), con `sounds: []` en
+- [x] 2.3 Guardarraíl: lista `sounds[]` en `guard-assets.mjs` (D13) y `audioFileProblems` (D14), con `sounds: []` en
   la nota — escenarios de `asset-provenance`: "Audio sin registrar", "Registro de audio incompleto o incorrecto" (9
   casos), "Registro de audio sin fichero", "Audio en otra lista", "Audio fuera de su carpeta", "Audio sin red",
   "Entrada repetida" (lista de audio), "Ficheros prohibidos" (zip de audio), "Mayúsculas en la extensión" (`Hit.WAV`)

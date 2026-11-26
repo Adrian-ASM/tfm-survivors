@@ -1,6 +1,17 @@
 import type { SoundOut, MusicState } from '../../src/infrastructure/audio/SoundOut';
 import { EFFECT_TYPES, type EffectType } from '../../src/infrastructure/audio/effectTypes';
 import type { EffectRules } from '../../src/infrastructure/audio/EffectMixer';
+import type { AudioContent } from '../../src/infrastructure/content/audioSchema';
+import { parseAudio, soundPaths } from '../../src/infrastructure/content/loadAudio';
+import audioJson from '../../content/audio.json';
+import provenanceJson from '../../content/asset-provenance.json';
+
+/** Contenido de audio del repositorio, validado y cruzado con la nota (0035). */
+export function repositoryAudio(): AudioContent {
+  const parsed = parseAudio(audioJson, soundPaths(provenanceJson));
+  if (!parsed.ok) throw new Error(parsed.error.message);
+  return parsed.value;
+}
 
 /**
  * Salida de audio de prueba (0035): música con posición simulada por el reloj que avanza el test

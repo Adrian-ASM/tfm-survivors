@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import appearanceJson from '../../content/appearance.json';
 import guideJson from '../../content/guide.json';
+import audioJson from '../../content/audio.json';
 import provenanceJson from '../../content/asset-provenance.json';
 import { bootContent } from '../../src/composition/contentBoot';
 import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
@@ -39,7 +40,12 @@ function otherUi(): unknown {
 
 function boot(ui: unknown) {
   const booted = bootContent(
-    { content: repositoryContent(), appearance: { ...appearanceJson, ui }, guide: guideJson },
+    {
+      content: repositoryContent(),
+      appearance: { ...appearanceJson, ui },
+      guide: guideJson,
+      audio: audioJson,
+    },
     (e) => {
       throw new Error(`${e.field}: ${e.message}`);
     },

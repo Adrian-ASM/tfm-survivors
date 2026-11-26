@@ -2,6 +2,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import appearanceJson from '../../content/appearance.json';
 import guideJson from '../../content/guide.json';
+import audioJson from '../../content/audio.json';
 import provenanceJson from '../../content/asset-provenance.json';
 import { bootContent } from '../../src/composition/contentBoot';
 import {
@@ -244,7 +245,7 @@ describe('Datos de aspecto de la interfaz (sprite-rendering 0032)', () => {
     if (button) button.slice.top = 2.5;
     const errors: string[] = [];
     const booted = bootContent(
-      { content: rawContent(), appearance, guide: guideJson },
+      { content: rawContent(), appearance, guide: guideJson, audio: audioJson },
       (e) => errors.push(e.field),
       REGISTERED,
       GENERATED_PATHS,

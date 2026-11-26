@@ -280,9 +280,10 @@ describe('guard-assets · estado real del repositorio', () => {
   it('la nota del repositorio no enlaza capturas ni pruebas de la confirmación', () => {
     expect(JSON.stringify(real ?? {})).not.toMatch(/\.(png|jpe?g|pdf)"?\s*[,}]\s*$/m);
     // 0032: `fonts` es la lista aparte de las fuentes (OFL), fuera de la cabecera CC0; 0034:
-    // `generated` (imágenes con IA) y `generatedPolicy` (su ADR).
+    // `generated` (imágenes con IA) y `generatedPolicy` (su ADR); 0035: `sounds` (audio CC0).
     expect(Object.keys(real ?? {}).sort()).toEqual(
       [
+        'sounds',
         'author',
         'confirmedOn',
         'files',
@@ -674,5 +675,144 @@ describe('guard-assets · imágenes con IA del repositorio (asset-provenance 003
 
   it('Scenario: Imágenes con IA sin red (nota real: síncrono, sin red ni herramienta)', () => {
     expect(runReal()).toBe('');
+  });
+});
+
+// Spec asset-provenance (0035, design D13): lista `sounds[]` de audio CC0. La nota real tiene la
+// lista vacía hasta que lleguen los ficheros del autor (tarea 6.1): los casos simulan una entrada.
+describe('guard-assets · audio (spec asset-provenance 0035)', () => {
+  type SoundEntry = Record<string, unknown> & { path: string };
+  const versioned = execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8' })
+    .split('\0')
+    .filter(Boolean);
+  const real = JSON.parse(readFileSync(join(root, PROVENANCE_PATH), 'utf8')) as Provenance & {
+    sounds: SoundEntry[];
+    generated: SoundEntry[];
+  };
+  const diskDigest = (path: string): Digest => {
+    const blob = readFileSync(join(root, path));
+    return { sha256: createHash('sha256').update(blob).digest('hex'), bytes: blob.length };
+  };
+  const MUSIC = 'public/assets/audio/music-loop.ogg';
+  const HIT = 'public/assets/audio/hit.ogg';
+  const SHA_S = 'c'.repeat(64);
+  const SHA_M = 'd'.repeat(64);
+  const SIMULATED = new Map<string, Digest>([
+    [HIT, { sha256: SHA_S, bytes: 1200 }],
+    [MUSIC, { sha256: SHA_M, bytes: 90_000 }],
+  ]);
+  const aSound = (path: string, sha256: string, bytes: number): SoundEntry => ({
+    path,
+    title: 'Impact Sounds',
+    author: 'Kenney',
+    url: 'https://kenney.nl/assets/impact-sounds',
+    license: 'CC0',
+    downloadedOn: '2026-11-25',
+    sha256,
+    bytes,
+  });
+  const SOUNDS = [aSound(MUSIC, SHA_M, 90_000), aSound(HIT, SHA_S, 1200)];
+  const digest = (p: string): Digest => SIMULATED.get(p) ?? diskDigest(p);
+  const runSounds = (
+    sounds: SoundEntry[] = SOUNDS,
+    files: string[] = [...versioned, MUSIC, HIT],
+    note: Provenance = real,
+  ): string => checkAssets({ files, provenance: { ...note, sounds }, digest }).join('\n');
+  const withHit = (change: (e: SoundEntry) => void): SoundEntry[] =>
+    SOUNDS.map((e) => {
+      if (e.path !== HIT) return e;
+      const copy = { ...e };
+      change(copy);
+      return copy;
+    });
+
+  it('la nota real con dos audios simulados y sus ficheros pasa', () => {
+    expect(runSounds()).toBe('');
+  });
+
+  it('Scenario: Audio sin versión del pack (sin mensajes de versión ni Free Pack)', () => {
+    expect(runSounds()).not.toMatch(/version|Free Pack/i);
+  });
+
+  it('Scenario: Audio sin red (las reglas no hacen peticiones: pasa con fetch roto)', () => {
+    const saved = globalThis.fetch;
+    globalThis.fetch = () => Promise.reject(new Error('sin red'));
+    try {
+      expect(runSounds()).toBe('');
+    } finally {
+      globalThis.fetch = saved;
+    }
+  });
+
+  it.each(['public/assets/extra/hit.ogg', 'public/assets/extra/hit.MP3', 'docs/demo.wav'])(
+    'Scenario: Audio sin registrar (%s)',
+    (extra) => {
+      expect(runSounds(SOUNDS, [...versioned, MUSIC, HIT, extra])).toContain(
+        `${extra}: fichero de audio sin registro`,
+      );
+    },
+  );
+
+  it.each([
+    ['licencia CC-BY-4.0', (e: SoundEntry) => (e['license'] = 'CC-BY-4.0'), '"license"'],
+    ['sin licencia', (e: SoundEntry) => delete e['license'], '"license"'],
+    ['URL http', (e: SoundEntry) => (e['url'] = 'http://kenney.nl/assets/x'), '"url"'],
+    ['URL de otro host', (e: SoundEntry) => (e['url'] = 'https://example.com/x.ogg'), '"url"'],
+    ['sin autor', (e: SoundEntry) => delete e['author'], '"author"'],
+    ['fecha 2026-13-01', (e: SoundEntry) => (e['downloadedOn'] = '2026-13-01'), '"downloadedOn"'],
+    ['sha256 cambiado', (e: SoundEntry) => (e['sha256'] = `e${SHA_S.slice(1)}`), '"sha256"'],
+    ['bytes + 1', (e: SoundEntry) => (e['bytes'] = 1201), '"bytes"'],
+    ['campo extra attribution', (e: SoundEntry) => (e['attribution'] = 'x'), '"attribution"'],
+  ])('Scenario: Registro de audio incompleto o incorrecto (%s)', (_name, change, field) => {
+    const out = runSounds(withHit(change)).split('\n');
+    expect(out.some((line) => line.includes(HIT) && line.includes(field))).toBe(true);
+  });
+
+  it('Scenario: Registro de audio incompleto o incorrecto (www. es válido)', () => {
+    expect(runSounds(withHit((e) => (e['url'] = 'https://www.freesound.org/s/1/')))).toBe('');
+  });
+
+  it('Scenario: Registro de audio sin fichero', () => {
+    expect(runSounds(SOUNDS, [...versioned, HIT])).toContain(
+      `${MUSIC}: la nota lo registra como audio pero no está versionado`,
+    );
+  });
+
+  it('Scenario: Audio en otra lista (también en la de imágenes con IA)', () => {
+    const note = { ...real, generated: [...real.generated, { ...real.generated[0], path: HIT }] };
+    expect(runSounds(SOUNDS, undefined, note)).toContain(HIT);
+  });
+
+  it('Scenario: Audio en otra lista (solo en la de arte)', () => {
+    const note = { ...real, files: [...(real.files ?? []), entry(HIT, SHA_S, 1200)] };
+    const out = runSounds([aSound(MUSIC, SHA_M, 90_000)], undefined, note);
+    expect(out).toContain(`${HIT}: un fichero de audio solo puede registrarse en "sounds"`);
+  });
+
+  it('Scenario: Audio fuera de su carpeta', () => {
+    const beep = 'public/assets/icons/beep.wav';
+    SIMULATED.set(beep, { sha256: SHA_S, bytes: 1200 });
+    const out = runSounds([...SOUNDS, aSound(beep, SHA_S, 1200)], [...versioned, MUSIC, HIT, beep]);
+    expect(out).toContain(beep);
+  });
+
+  it('Scenario: Entrada repetida (lista de audio)', () => {
+    expect(runSounds([...SOUNDS, aSound(HIT, SHA_S, 1200)])).toContain(
+      `entrada repetida para ${HIT}`,
+    );
+  });
+
+  it('Scenario: Ficheros prohibidos (comprimido de un pack de audio)', () => {
+    const zip = 'public/assets/audio/kenney_rpg-audio.zip';
+    expect(runSounds(SOUNDS, [...versioned, MUSIC, HIT, zip])).toContain(zip);
+  });
+
+  it('Scenario: Mayúsculas en la extensión (public/assets/Hit.WAV)', () => {
+    const upper = 'public/assets/Hit.WAV';
+    expect(runSounds(SOUNDS, [...versioned, MUSIC, HIT, upper])).toContain(upper);
+  });
+
+  it('la lista real de audio está vacía hasta que lleguen los ficheros del autor (tarea 6.1)', () => {
+    expect(real.sounds).toEqual([]);
   });
 });

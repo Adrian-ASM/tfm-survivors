@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import guideJson from '../../content/guide.json';
+import audioJson from '../../content/audio.json';
 import { bootContent } from '../../src/composition/contentBoot';
 import {
   FONT_DIR,
@@ -119,7 +120,7 @@ describe('Datos de aspecto del combate (sprite-rendering 0031)', () => {
     appearance.combat.colors.player = '#3080FF';
     const errors: string[] = [];
     const booted = bootContent(
-      { content: rawContent(), appearance, guide: guideJson },
+      { content: rawContent(), appearance, guide: guideJson, audio: audioJson },
       (e) => errors.push(e.field),
       REGISTERED,
       GENERATED_PATHS,

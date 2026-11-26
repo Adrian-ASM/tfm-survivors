@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import guideJson from '../../content/guide.json';
+import audioJson from '../../content/audio.json';
 import appearanceJson from '../../content/appearance.json';
 import provenanceJson from '../../content/asset-provenance.json';
 import {
@@ -38,7 +39,7 @@ function parsed(a: Json) {
 function boot(a: Json): { ok: boolean; errors: DomainError[] } {
   const errors: DomainError[] = [];
   const booted = bootContent(
-    { content: rawContent(), appearance: a, guide: guideJson },
+    { content: rawContent(), appearance: a, guide: guideJson, audio: audioJson },
     (e) => errors.push(e),
     REGISTERED,
     GENERATED_PATHS,

@@ -1,0 +1,18 @@
+{
+  "maxVoices": 8,
+  "towerMatchPx": 24,
+  "defaults": { "music": 50, "effects": 80, "muted": false },
+  "music": { "file": null },
+  "effects": {
+    "playerHurt": { "file": null, "priority": 10, "minIntervalMs": 120, "gain": 0.9 },
+    "impactWeapon": { "file": null, "priority": 2, "minIntervalMs": 40, "gain": 0.5 },
+    "impactTower": { "file": null, "priority": 2, "minIntervalMs": 60, "gain": 0.5 },
+    "impactBlast": { "file": null, "priority": 4, "minIntervalMs": 80, "gain": 0.6 },
+    "enemyDeath": { "file": null, "priority": 5, "minIntervalMs": 60, "gain": 0.6 },
+    "pickup": { "file": null, "priority": 3, "minIntervalMs": 50, "gain": 0.5 },
+    "levelUp": { "file": null, "priority": 9, "minIntervalMs": 300, "gain": 0.8 },
+    "explosion": { "file": null, "priority": 7, "minIntervalMs": 100, "gain": 0.5 },
+    "purchase": { "file": null, "priority": 8, "minIntervalMs": 0, "gain": 0.8 },
+    "build": { "file": null, "priority": 8, "minIntervalMs": 0, "gain": 0.8 }
+  }
+}

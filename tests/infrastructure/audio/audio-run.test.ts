@@ -10,7 +10,7 @@ import {
   unavailableSoundOut,
   type SoundOut,
 } from '../../../src/infrastructure/audio/SoundOut';
-import { FakeSoundOut, scenarioRules } from '../../support/audio';
+import { FakeSoundOut, repositoryAudio } from '../../support/audio';
 import { aDefaultConfig, TICK_MS } from '../../support/builders';
 import { randomInputs } from '../../support/inputs';
 import { referenceBot } from '../../support/policies';
@@ -18,20 +18,9 @@ import { chooseFirstWhileOpen, playReferenceBot, startSeededRun } from '../../su
 
 const SETTINGS = { music: 50, effects: 80, muted: false };
 
-/** Contenido de audio de escenario: tope 8, tolerancia 24 e intervalos cortos en los impactos. */
-const AUDIO = {
-  maxVoices: 8,
-  towerMatchPx: 24,
-  effects: scenarioRules({
-    impactWeapon: { minIntervalMs: 40 },
-    impactTower: { minIntervalMs: 40 },
-    enemyDeath: { minIntervalMs: 60 },
-  }),
-};
-
-/** Director con el contenido de audio y la salida dada, con la partida ya empezada. */
+/** Director con el contenido de audio del repositorio y la salida dada, con la partida empezada. */
 function directorFor(out: SoundOut): { d: AudioDirector; mixer: EffectMixer } {
-  const audio = AUDIO;
+  const audio = repositoryAudio();
   const mixer = new EffectMixer(audio.effects, audio.maxVoices, out);
   const cues = new AudioCues({ towerMatchPx: audio.towerMatchPx, maxTowerProjectiles: 16 });
   const d = new AudioDirector({ out, cues, mixer, settings: SETTINGS });

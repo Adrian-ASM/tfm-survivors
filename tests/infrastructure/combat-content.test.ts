@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import guideJson from '../../content/guide.json';
+import audioJson from '../../content/audio.json';
 import weaponsJson from '../../content/weapons.json';
 import { MAX_TICKS_PER_FRAME } from '../../src/application/FixedStepLoop';
 import { bootContent } from '../../src/composition/contentBoot';
@@ -61,7 +62,7 @@ describe('Contenido de combate validado (spec simulation-loop 0031, con zod)', (
     raw.combat.hitWindowTicks = 14;
     const errors: string[] = [];
     const booted = bootContent(
-      { content: raw, appearance: rawAppearance(), guide: guideJson },
+      { content: raw, appearance: rawAppearance(), guide: guideJson, audio: audioJson },
       (e) => errors.push(e.field),
       REGISTERED,
       GENERATED_PATHS,

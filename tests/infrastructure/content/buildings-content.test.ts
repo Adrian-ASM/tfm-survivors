@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import guideJson from '../../../content/guide.json';
+import audioJson from '../../../content/audio.json';
 import { bootContent } from '../../../src/composition/contentBoot';
 import { CONTACT_EPS } from '../../../src/domain/site/BuildingRules';
 import { loadRunConfig, parseRunConfig } from '../../../src/infrastructure/content/loadRunConfig';
@@ -43,7 +44,7 @@ function bootErrors(
   changeAppearance(appearance);
   const errors: string[] = [];
   const booted = bootContent(
-    { content: raw, appearance, guide: guideJson },
+    { content: raw, appearance, guide: guideJson, audio: audioJson },
     (e) => errors.push(e.field),
     REGISTERED,
     GENERATED_PATHS,

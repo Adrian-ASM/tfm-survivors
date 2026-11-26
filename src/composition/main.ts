@@ -4,6 +4,7 @@ import '../infrastructure/validation/cspSafeZod';
 import Phaser from 'phaser';
 import appearanceJson from '../../content/appearance.json';
 import guideJson from '../../content/guide.json';
+import audioJson from '../../content/audio.json';
 import provenanceJson from '../../content/asset-provenance.json';
 import { RestartRun } from '../application/RestartRun';
 import { buildRunRules, type RunConfig } from '../domain/run/RunConfig';
@@ -12,6 +13,7 @@ import type { RunSnapshot } from '../domain/run/RunSnapshot';
 import type { DomainError } from '../domain/shared/Result';
 import { repositoryContent } from '../infrastructure/content/loadRunConfig';
 import { generatedPaths, registeredPaths } from '../infrastructure/content/loadAppearance';
+import { soundPaths } from '../infrastructure/content/loadAudio';
 import { IconBook } from '../infrastructure/icons/upgradeIcons';
 import type { OfferIconView } from '../infrastructure/phaser/UpgradeOverlay';
 import { PausePanel } from '../infrastructure/dom/PausePanel';
@@ -174,13 +176,19 @@ function bootstrap(): void {
 
   // Contenido de juego + datos de aspecto + su cruce, antes de crear el menú o la partida (0012).
   const booted = bootContent(
-    { content: repositoryContent(), appearance: appearanceJson, guide: guideJson },
+    {
+      content: repositoryContent(),
+      appearance: appearanceJson,
+      guide: guideJson,
+      audio: audioJson,
+    },
     (error) => {
       console.error(`Contenido inválido en ${error.field}: ${error.message}`);
       showContentError(root, error);
     },
     registeredPaths(provenanceJson),
     generatedPaths(provenanceJson),
+    soundPaths(provenanceJson),
   );
   if (!booted) return;
   const config = { value: booted.config };
