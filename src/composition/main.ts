@@ -42,6 +42,7 @@ import { resolveAdvance } from '../infrastructure/url/resolveAdvance';
 import { resolveMapMode } from '../infrastructure/url/resolveMapMode';
 import { resolveMobile } from '../infrastructure/url/resolveMobile';
 import { wireMobile } from './mobileWiring';
+import { wireAudioControls } from './audioWiring';
 import { wireProgress, type ProgressProbe } from './progressWiring';
 import { createRunLauncher } from './runLauncher';
 import { decorSeedOf, mapModeOf, restartRandoms } from './seedSource';
@@ -233,10 +234,25 @@ function bootstrap(): void {
   // Iconos del panel de obra y de la guía: las hojas del HUD con la URL que carga BootScene (0027).
   const sheetUrl = (file: string) => assetUrl(import.meta.env.BASE_URL, file);
   const icons = resourceIcons(appearance, sheetUrl);
+  // Ajustes de audio, panel Sonido y tecla M (0035): antes del menú; aparte del progreso.
+  const audio = wireAudioControls(booted.audio, {
+    doc: document,
+    root,
+    storage: () => window.localStorage,
+    warn: (m) => {
+      console.warn(m);
+    },
+    keys: document,
+  });
   // Antes de crear el juego: el panel queda en el DOM y el progreso cargado (nunca lanza). El menú
-  // lleva la guía ya validada e interpolada (0028).
-  const progress = wireProgress(root, () => probe.seed, { guide: booted.guide, icons });
-  const pause = new PausePanel(document, root);
+  // lleva la guía ya validada e interpolada (0028) y el panel Sonido (0035).
+  const progress = wireProgress(
+    root,
+    () => probe.seed,
+    { guide: booted.guide, icons },
+    audio.panel,
+  );
+  const pause = new PausePanel(document, root, audio.panel);
   // Iconos de mejora (0034, D2/D6): un solo IconBook para cartas (Phaser) y filas (DOM); todo
   // none hasta que BootScene publica las texturas cargadas.
   const iconBook = new IconBook(booted.icons);
@@ -252,6 +268,7 @@ function bootstrap(): void {
     root,
     classes: document.documentElement.classList,
     fullscreen: browserFullscreen(document),
+    mute: { requests: audio.requests, store: audio.store },
   });
   const screens: Screen[] = [];
   const e2e = new URLSearchParams(window.location.search).has('e2e');
@@ -375,6 +392,8 @@ function bootstrap(): void {
     // Regla de frame, joystick, barra y retención: solo con el modo móvil (vacío en escritorio).
     ...mobile.sceneDeps,
     iconFor: (id) => iconBook.resolve(id),
+    // Panel Sonido abierto desde la pausa: Esc y ⏸ lo cierran en la escena (0035, D10).
+    soundPanel: audio.panel,
   });
   offerIconsView = () => game.offerIconsView();
   cameraView = () => game.cameraView();
@@ -438,6 +457,10 @@ function bootstrap(): void {
       game.hintView(),
     );
   phaserGame.scale.on(Phaser.Scale.Events.RESIZE, onCanvas);
+  // M y el botón táctil de silencio (0035, D11): una vez por frame del juego, en cualquier escena.
+  phaserGame.events.on(Phaser.Core.Events.PRE_STEP, () => {
+    audio.frame();
+  });
   // `step(n)` resuelve con el frame ya pintado: POST_RENDER llega tras pintar todas las escenas,
   // una vez por frame, haya o no partida (Phaser 4.2.1, Game.step; design 0014 §3.6).
   if (stepper) {

@@ -113,6 +113,13 @@ exports[`Paneles DOM sin cambios (sprite-rendering 0032) > Scenario: DOM sin cam
             "hidden": false,
             "role": null,
             "tag": "button",
+            "text": "Sonido",
+          },
+          {
+            "cls": "",
+            "hidden": false,
+            "role": null,
+            "tag": "button",
             "text": "Exportar",
           },
           {
@@ -207,6 +214,13 @@ exports[`Paneles DOM sin cambios (sprite-rendering 0032) > Scenario: DOM sin cam
             "role": null,
             "tag": "button",
             "text": "Reanudar",
+          },
+          {
+            "cls": "",
+            "hidden": false,
+            "role": null,
+            "tag": "button",
+            "text": "Sonido",
           },
           {
             "cls": "",

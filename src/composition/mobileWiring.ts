@@ -1,4 +1,6 @@
 import type { MobileDisplay } from '../infrastructure/content/schemas';
+import type { AudioSettings } from '../infrastructure/audio/audioVolumes';
+import type { MuteRequests } from '../infrastructure/audio/MuteRequests';
 import { FullscreenControl, type FullscreenLike } from '../infrastructure/dom/FullscreenControl';
 import { RotateNotice, isPortrait } from '../infrastructure/dom/RotateNotice';
 import { TouchBar } from '../infrastructure/dom/TouchBar';
@@ -25,6 +27,17 @@ export interface MobileEnv {
   /** `classList` de `<html>` (CSSOM: lo permite la CSP). */
   readonly classes: { toggle(token: string, force: boolean): unknown };
   readonly fullscreen: FullscreenLike;
+  /**
+   * Silencio (0035): el botón de la barra marca en `requests` (como M) y su icono sigue a `store`.
+   * Sin él, la barra no lleva botón de silencio.
+   */
+  readonly mute?: {
+    readonly requests: MuteRequests;
+    readonly store: {
+      readonly settings: AudioSettings;
+      subscribe(listener: (s: AudioSettings) => void): void;
+    };
+  };
 }
 
 /** Dependencias de `GameScene` que solo existen en modo móvil (vacías en escritorio). */
@@ -58,14 +71,26 @@ const DESKTOP: MobileSetup = {
 /**
  * Cableado del modo móvil (spec mobile-display y touch-controls 0033, design §1, §4 y §5). Sin modo
  * móvil no crea ningún nodo ni dependencia: la escena y la página son las de siempre. Con él: clase
- * `is-mobile`, barra ⏸ ↻ (⛶ si hay pantalla completa), aviso «Gira el móvil» como retención,
+ * `is-mobile`, barra ⏸ ↻ silencio (⛶ si hay pantalla completa), aviso «Gira el móvil» como retención,
  * regla de frame con k fraccionario, escala DOM 1 y dos punteros táctiles.
  */
 export function wireMobile(on: boolean, mobile: MobileDisplay, env: MobileEnv): MobileSetup {
   env.classes.toggle(MOBILE_CLASS, on);
   if (!on) return DESKTOP;
   const fullscreen = new FullscreenControl(env.fullscreen);
-  const bar = new TouchBar(env.doc, env.root, fullscreen.available ? fullscreen : undefined);
+  const bar = new TouchBar(
+    env.doc,
+    env.root,
+    fullscreen.available ? fullscreen : undefined,
+    env.mute?.requests,
+  );
+  const mute = env.mute;
+  if (mute) {
+    bar.setMuted(mute.store.settings.muted);
+    mute.store.subscribe((s) => {
+      bar.setMuted(s.muted);
+    });
+  }
   const notice = new RotateNotice(env.doc, env.root);
   const frameRule = mobileFrameRule(mobile.minTextPx);
   let portrait = false;

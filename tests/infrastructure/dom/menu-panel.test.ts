@@ -1,3 +1,5 @@
+import { SoundPanel } from '../../../src/infrastructure/dom/SoundPanel';
+import { aSoundStore } from '../../support/audio';
 import { describe, expect, it, vi } from 'vitest';
 import { ConfirmDialog } from '../../../src/infrastructure/dom/ConfirmDialog';
 import { GuideModal } from '../../../src/infrastructure/dom/GuideModal';
@@ -11,14 +13,16 @@ import { GuideReader, TEST_ICONS, defaultGuide, isShown } from '../../support/gu
 // posición, la guía bloqueando el resto de opciones y el foco de vuelta en «Cómo jugar». En Node,
 // con el DOM falso y el mismo cableado del diálogo de Borrar datos que `wireProgress`.
 const L = MENU_LABELS;
-const MENU_ORDER = [L.play, L.guide, L.export, L.import, L.clear];
+const MENU_ORDER = [L.play, L.guide, L.sound, L.export, L.import, L.clear];
 
 function setup() {
   const { doc, root, fake, fakeDoc } = fakeDom();
   const controller = new MenuController();
   const guide = new GuideModal(doc, root, defaultGuide(), TEST_ICONS);
   const actions = { onExport: vi.fn(), onImport: vi.fn(), onOpenConfirm: vi.fn() };
-  const panel = new MenuPanel(doc, root, controller, actions, guide);
+  const audio = aSoundStore();
+  const sound = new SoundPanel(doc, root, audio.store);
+  const panel = new MenuPanel(doc, root, controller, actions, guide, sound);
   // Igual que wireProgress: abrir bloquea el menú y Cancelar lo desbloquea.
   const dialog = new ConfirmDialog(doc, root, {
     onConfirm: vi.fn(),
@@ -48,6 +52,9 @@ function setup() {
   return {
     controller,
     panel,
+    sound,
+    audio,
+    soundRoot: byClass(fake, 'sound-panel'),
     actions,
     menu,
     read,
@@ -89,7 +96,7 @@ function openGuideAt(s: ReturnType<typeof setup>, n: number): void {
 }
 
 describe('Menú de inicio con Cómo jugar (spec main-menu)', () => {
-  it('Scenario: Carga sin parámetros (5 botones en orden y la guía no visible)', () => {
+  it('Scenario: Carga sin parámetros (6 botones en orden y la guía no visible)', () => {
     const s = setup();
     expect(s.menu.findAll((e) => e.tagName === 'button').map((b) => b.textContent)).toEqual(
       MENU_ORDER,
@@ -113,10 +120,12 @@ describe('Menú de inicio con Cómo jugar (spec main-menu)', () => {
     s.menuButton(L.clear).click();
     s.menuButton(L.play).click();
     s.menuButton(L.guide).click();
+    s.menuButton(L.sound).click();
     s.menuButton(L.export).click();
     expect(s.played()).toBe(false);
     expect(s.actions.onExport).not.toHaveBeenCalled();
     expect(s.read.visible).toBe(false);
+    expect(isShown(s.soundRoot)).toBe(false);
     expect(isShown(s.dialogRoot)).toBe(true);
   });
 
@@ -154,7 +163,7 @@ describe('Abrir y cerrar la guía desde el menú (spec menu-guide)', () => {
     expect(s.played()).toBe(false);
   });
 
-  it('Scenario: Cerrar con el botón (foco en Cómo jugar y 5 opciones operativas)', () => {
+  it('Scenario: Cerrar con el botón (foco en Cómo jugar y 6 opciones operativas)', () => {
     const s = setup();
     openGuideAt(s, 4);
     s.read.control(L.guideClose).click();
@@ -165,7 +174,7 @@ describe('Abrir y cerrar la guía desde el menú (spec menu-guide)', () => {
     expect(s.played()).toBe(false);
   });
 
-  it('Scenario: Cerrar con Esc (foco en Cómo jugar y 5 opciones operativas)', () => {
+  it('Scenario: Cerrar con Esc (foco en Cómo jugar y 6 opciones operativas)', () => {
     const s = setup();
     openGuideAt(s, 7);
     s.key('Escape');
@@ -184,6 +193,7 @@ describe('Abrir y cerrar la guía desde el menú (spec menu-guide)', () => {
     expect(s.read.visible).toBe(false);
     expect(isShown(s.menu)).toBe(true);
     expect(isShown(s.dialogRoot)).toBe(false);
+    expect(isShown(s.soundRoot)).toBe(false);
     expect(s.controller.state).toBe('idle');
     expect(s.played()).toBe(false);
   });
@@ -204,8 +214,11 @@ describe('Opciones del menú bloqueadas con la guía abierta', () => {
   it('Scenario: Pulsaciones del menú con la guía abierta', () => {
     const s = setup();
     openGuideAt(s, 2);
-    for (const label of [L.play, L.export, L.import, L.clear]) s.menuButton(label).click();
+    for (const label of [L.play, L.sound, L.export, L.import, L.clear]) {
+      s.menuButton(label).click();
+    }
     expect(s.played()).toBe(false);
+    expect(isShown(s.soundRoot)).toBe(false);
     expect(s.actions.onExport).not.toHaveBeenCalled();
     expect(s.filePicker).not.toHaveBeenCalled();
     expect(isShown(s.dialogRoot)).toBe(false);
@@ -292,6 +305,30 @@ describe('La guía nunca aparece sola', () => {
     expect(s.read.visible).toBe(false);
     expect(s.listeners()).toBe(0);
     expect(s.controller.state).toBe('idle');
+    expect(s.operative()).toEqual(MENU_ORDER);
+  });
+});
+
+describe('Panel Sonido desde el menú (spec audio y menu-guide 0035)', () => {
+  it('Scenario: Cómo jugar con el panel Sonido abierto', () => {
+    const s = setup();
+    s.menuButton(L.sound).click();
+    s.menuButton(L.guide).click();
+    expect(s.read.visible).toBe(false);
+    expect(isShown(s.soundRoot)).toBe(true);
+
+    s.key('Escape');
+    s.menuButton(L.guide).click();
+
+    expect(s.read.visible).toBe(true);
+    expect(s.read.indicator).toBe('1 de 7');
+  });
+
+  it('Scenario: Volver al menú en modo E2E (show() cierra también el panel Sonido)', () => {
+    const s = setup();
+    s.menuButton(L.sound).click();
+    s.panel.show();
+    expect([isShown(s.soundRoot), s.listeners(), s.controller.state]).toEqual([false, 0, 'idle']);
     expect(s.operative()).toEqual(MENU_ORDER);
   });
 });

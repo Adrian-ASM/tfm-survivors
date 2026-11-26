@@ -4,7 +4,34 @@ import type { EffectRules } from '../../src/infrastructure/audio/EffectMixer';
 import type { AudioContent } from '../../src/infrastructure/content/audioSchema';
 import { parseAudio, soundPaths } from '../../src/infrastructure/content/loadAudio';
 import audioJson from '../../content/audio.json';
+import { AudioSettingsStore } from '../../src/infrastructure/audio/AudioSettingsStore';
+import {
+  AUDIO_STORAGE_KEY,
+  LocalStorageAudioSettingsRepository,
+} from '../../src/infrastructure/audio/LocalStorageAudioSettingsRepository';
+import { FakeStorage } from './FakeStorage';
 import provenanceJson from '../../content/asset-provenance.json';
+
+/** Ajustes de audio sobre un almacenamiento en memoria que cuenta las escrituras de su clave. */
+export function aSoundStore(initial?: { music: number; effects: number; muted: boolean }) {
+  const storage = new AudioMemoryStorage();
+  if (initial) storage.values.set(AUDIO_STORAGE_KEY, JSON.stringify({ version: 1, ...initial }));
+  const repo = new LocalStorageAudioSettingsRepository(() => storage);
+  const store = new AudioSettingsStore(repo, AUDIO_DEFAULTS, () => undefined);
+  return { store, storage };
+}
+
+/** `Storage` falso que cuenta las escrituras de la clave de audio. */
+export class AudioMemoryStorage extends FakeStorage {
+  audioWrites = 0;
+  override setItem(key: string, value: string): void {
+    super.setItem(key, value);
+    if (key === AUDIO_STORAGE_KEY) this.audioWrites += 1;
+  }
+}
+
+/** Ajustes por defecto del contenido de audio del repositorio (50/80/no). */
+export const AUDIO_DEFAULTS = { music: 50, effects: 80, muted: false } as const;
 
 /** Contenido de audio del repositorio, validado y cruzado con la nota (0035). */
 export function repositoryAudio(): AudioContent {

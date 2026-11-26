@@ -497,6 +497,97 @@ body {
   cursor: pointer;
 }
 
+/* Panel Sonido (change 0035, design D10): recuadro modal centrado por la rejilla de #game, sobre el
+   menú y la pausa, a la escala de UI; deslizadores Música y Efectos con su valor, la casilla y
+   Cerrar. Sin estilos en el DOM: todo aquí. */
+.sound-panel {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75em;
+  box-sizing: border-box;
+  width: min(24em, calc(100vw - 2em));
+  max-height: calc(100vh - 2em);
+  padding: max(1em, 12px, calc(var(--ui-panel-t, 0) * var(--ui-scale, 1) * 1px))
+    max(1.5em, 12px, calc(var(--ui-panel-r, 0) * var(--ui-scale, 1) * 1px))
+    max(1em, 12px, calc(var(--ui-panel-b, 0) * var(--ui-scale, 1) * 1px))
+    max(1.5em, 12px, calc(var(--ui-panel-l, 0) * var(--ui-scale, 1) * 1px));
+  font: calc(16px * var(--ui-scale, 1)) monospace;
+  color: #fff;
+  background: var(--ui-panel-on-bg, var(--ui-panel-fill, rgb(20 20 30 / 96%)));
+  border: 1px solid #7ce2fe;
+  border-radius: 8px;
+  outline: none;
+}
+
+.sound-panel[hidden] {
+  display: none;
+}
+
+.sound-panel__header {
+  display: flex;
+  flex: none;
+  justify-content: center;
+}
+
+.sound-panel__header h2 {
+  margin: 0;
+  font-size: 1.25em;
+}
+
+.sound-panel__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6em;
+}
+
+.sound-panel__row {
+  display: grid;
+  grid-template-columns: 5.5em 1fr 4em;
+  align-items: center;
+  gap: 0.6em;
+}
+
+.sound-panel__slider {
+  width: 100%;
+  margin: 0;
+  accent-color: var(--ui-panel-accent, #7ce2fe);
+}
+
+.sound-panel__value {
+  text-align: right;
+  color: var(--ui-panel-accent, #7ce2fe);
+}
+
+.sound-panel__check {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+}
+
+.sound-panel__check input {
+  width: 1.1em;
+  height: 1.1em;
+  margin: 0;
+  accent-color: var(--ui-panel-accent, #7ce2fe);
+}
+
+.sound-panel__actions {
+  display: flex;
+  flex: none;
+  justify-content: center;
+}
+
+.sound-panel button {
+  padding: max(0.375em, calc(var(--ui-b-t) * var(--ui-scale, 1) * 1px))
+    max(1em, calc(var(--ui-b-r) * var(--ui-scale, 1) * 1px))
+    max(0.375em, calc(var(--ui-b-b) * var(--ui-scale, 1) * 1px))
+    max(1em, calc(var(--ui-b-l) * var(--ui-scale, 1) * 1px));
+  font: inherit;
+  cursor: pointer;
+}
+
 /* ─── Kit de UI (change 0032, ADR-0028, design §4) ───────────────────────────────────────────────
    Piezas de Tiny Swords Update 010 por variables CSS que la composición publica en #game al
    terminar la carga (uiKitVariables): imagen y márgenes solo de las piezas que cargaron; relleno,
@@ -508,6 +599,7 @@ body {
 .pause-panel,
 .confirm-dialog,
 .guide-modal,
+.sound-panel,
 .results-panel,
 .shop-panel,
 .build-panel {
@@ -530,6 +622,7 @@ body {
     .pause-panel,
     .confirm-dialog,
     .guide-modal,
+    .sound-panel,
     .results-panel,
     .shop-panel,
     .build-panel
@@ -567,6 +660,7 @@ body {
     .pause-panel,
     .confirm-dialog,
     .guide-modal,
+    .sound-panel,
     .results-panel,
     .shop-panel,
     .build-panel
@@ -589,6 +683,7 @@ body {
     .pause-panel,
     .confirm-dialog,
     .guide-modal,
+    .sound-panel,
     .results-panel,
     .shop-panel,
     .build-panel
@@ -604,6 +699,7 @@ body {
     .pause-panel,
     .confirm-dialog,
     .guide-modal,
+    .sound-panel,
     .results-panel,
     .shop-panel,
     .build-panel
@@ -627,6 +723,7 @@ body {
     .pause-panel,
     .confirm-dialog,
     .guide-modal,
+    .sound-panel,
     .results-panel,
     .shop-panel,
     .build-panel
@@ -680,6 +777,7 @@ body {
 .menu-panel h1,
 .pause-panel h2,
 .guide-modal__header h2,
+.sound-panel__header h2,
 .results-panel__title,
 .shop-panel h2,
 .build-panel h2 {
@@ -732,6 +830,7 @@ html.is-mobile {
 .is-mobile .pause-panel,
 .is-mobile .confirm-dialog,
 .is-mobile .guide-modal,
+.is-mobile .sound-panel,
 .is-mobile .results-panel,
 .is-mobile .shop-panel,
 .is-mobile .build-panel {
@@ -748,6 +847,8 @@ html.is-mobile {
 .is-mobile .pause-panel button,
 .is-mobile .confirm-dialog button,
 .is-mobile .guide-modal button,
+.is-mobile .sound-panel button,
+.is-mobile .sound-panel input,
 .is-mobile .results-panel button,
 .is-mobile .shop-panel button,
 .is-mobile .build-panel button,

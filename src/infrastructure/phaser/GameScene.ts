@@ -16,6 +16,7 @@ import { BuildGate, buildVisible, type BuildAction } from './BuildGate';
 import type { ShopSnapshot } from '../../domain/run/RunSnapshot';
 import type { RingSprite } from './PulseLayer';
 import { RestartKey } from './RestartKey';
+import { SoundPanelGate, type SoundPanelLike } from './SoundPanelGate';
 import { GAME_SCENE_KEY, MENU_SCENE_KEY } from './sceneKeys';
 import type { ResultsOverlay, ResultsTexts } from './ResultsOverlay';
 import type { ResultsView } from './resultsText';
@@ -169,6 +170,11 @@ export interface GameSceneDeps {
   readonly hold?: () => boolean;
   /** Icono de cada opción de mejora (0034, IconBook.resolve). Sin él, ninguno (hueco vacío). */
   readonly iconFor?: (id: string) => IconChoice;
+  /**
+   * Panel Sonido abierto desde la pausa (0035, design D10): mientras está abierto, Esc o ⏸ lo
+   * cierran y la acción de la pausa, R y la elección se descartan. Sin él, nada cambia.
+   */
+  readonly soundPanel?: SoundPanelLike;
 }
 
 /** Controles táctiles que recibe la escena en modo móvil (0033, design §4). */
@@ -213,6 +219,8 @@ interface Widgets {
   readonly restart: RestartKey;
   readonly esc: PauseKey;
   readonly touch?: TouchWidgets;
+  /** Panel Sonido sobre la pausa (0035) y la captura global del teclado. */
+  readonly sound?: SoundPanelGate;
 }
 
 /**
@@ -323,6 +331,7 @@ export class GameScene extends Phaser.Scene {
       restart: new RestartKey(keyboard),
       esc: new PauseKey(keyboard),
       ...(touch ? { touch } : {}),
+      sound: new SoundPanelGate(this.deps.soundPanel, keyboard),
     };
     // Al entrar y en cada RESIZE (0017, design D6); la escucha se quita en SHUTDOWN.
     watchScreen(
@@ -364,10 +373,14 @@ export class GameScene extends Phaser.Scene {
     // frame, R y la elección se descartan. Sin oferta o sin partida terminada no hacen nada.
     // ⏸ y ↻ (0033) son otra fuente de Esc y de R: las dos se consumen antes de combinarse.
     const bar = this.deps.touch?.bar;
-    const esc = pressedOnce(w.esc.read(), bar?.takePause() ?? false);
-    const action = this.deps.pause.takeAction();
-    const restart = pressedOnce(w.restart.read(), bar?.takeRestart() ?? false);
-    const index = choiceIndex(this.last?.offer.length ?? 0, w.choice.read(), w.offer.takeClicked());
+    // Con el panel Sonido abierto (0035), Esc o ⏸ solo lo cierran y lo demás se descarta.
+    const keys = {
+      esc: pressedOnce(w.esc.read(), bar?.takePause() ?? false),
+      action: this.deps.pause.takeAction(),
+      restart: pressedOnce(w.restart.read(), bar?.takeRestart() ?? false),
+      index: choiceIndex(this.last?.offer.length ?? 0, w.choice.read(), w.offer.takeClicked()),
+    };
+    const { esc, action, restart, index } = w.sound?.step(keys) ?? keys;
     // Tienda (0024) antes que la pausa: en tienda, Esc sale y se consume (nunca pausa este frame);
     // 1–3 y R se leen y se descartan (sin oferta ni partida terminada no hacen nada).
     const shopAction = this.deps.shop.takeAction();

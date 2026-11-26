@@ -48,25 +48,25 @@
   2.097.153 bytes). Tests: `tests/guardrails/assets.test.ts` y `tests/guardrails/audio-files.test.ts` (nuevo).
 
 ## 3. Panel Sonido, tecla M y barra táctil (test-after, DOM falso)
-- [ ] 3.1 `SoundPanel` + estado `sound` de `MenuController` + 3.er botón `Sonido` de `MenuPanel` (D10, menú) —
+- [x] 3.1 `SoundPanel` + estado `sound` de `MenuController` + 3.er botón `Sonido` de `MenuPanel` (D10, menú) —
   escenarios: "Abrir desde el menú y cerrar con Esc", "Botones de debajo bloqueados" (menú), "Límites del
   deslizador", "Una escritura por cambio"; de `main-menu`: "Carga sin parámetros" (6 botones en orden) y "Opciones
   bloqueadas con el diálogo abierto"; de `menu-guide`: "Pulsaciones del menú con la guía abierta", "Cómo jugar con el
   panel Sonido abierto" y "Esc mantenido". Tests: `tests/infrastructure/dom/sound-panel.test.ts`,
   `menu-controller` y `menu-panel` (ampliados).
-- [ ] 3.2 Botón `Sonido` de `PausePanel` + puerta del panel en `GameScene` (Esc/⏸ cierran, acción, R y elección
+- [x] 3.2 Botón `Sonido` de `PausePanel` + puerta del panel en `GameScene` (Esc/⏸ cierran, acción, R y elección
   descartadas, captura global apagada mientras está abierto; extraer `soundPanelGate` puro con el patrón de
   `PauseGate`) — escenarios: "Abrir desde la pausa", "Botones de debajo bloqueados" (pausa); de `main-menu`: "Esc con
   el panel Sonido abierto", "Volver al menú bloqueado con el panel Sonido" y "Pausar y reanudar con Esc" (orden
   `Reanudar`, `Sonido`, `Volver al menú`); de `touch-controls`: "⏸ con el panel Sonido abierto". Tests:
   `tests/infrastructure/sound-panel-gate.test.ts` y `pause-panel` (ampliado).
-- [ ] 3.3 `MuteKey` + `MuteRequests` (una vez por frame) + botón de silencio de `TouchBar` con iconos, etiqueta y
+- [x] 3.3 `MuteKey` + `MuteRequests` (una vez por frame) + botón de silencio de `TouchBar` con iconos, etiqueta y
   `aria-pressed` (D11) — escenarios: "M en partida" (1 cambio con repeticiones y 1 escritura), "M en el menú con la
   guía abierta", "M con el panel abierto", "M con modificador"; de `main-menu`: "M en el menú"; de
   `touch-controls`: "Silenciar con la barra", "Silencio y M en el mismo frame", "Barra en el menú", "M con el joystick
   activo" y "M con el aviso visible"; de `simulation-loop`: "Silencio sin step" (parte sin navegador). Tests:
   `tests/infrastructure/dom/mute-key.test.ts` y `touch-bar` (ampliado).
-- [ ] 3.4 Estilos `.sound-panel` en `styles.css` (piezas del kit, centrado en la ventana, escala 1, desplazable con
+- [x] 3.4 Estilos `.sound-panel` en `styles.css` (piezas del kit, centrado en la ventana, escala 1, desplazable con
   `is-mobile`, controles ≥ 44 px) — escenarios: "Panel centrado"; de `main-menu`: "Panel Sonido abierto al
   redimensionar"; de `world-camera`: "Redimensionado con el panel Sonido abierto"; de `mobile-display`: "Paneles en un
   móvil horizontal" (panel `Sonido`) y "Deslizador táctil del panel Sonido". Test: guardarraíl de CSS sin navegador

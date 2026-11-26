@@ -1,3 +1,4 @@
+import type { MuteRequests } from '../audio/MuteRequests';
 import { TOUCH_ICONS } from './touchIcons';
 
 /** Etiquetas accesibles de la barra (el icono es una imagen sin texto alternativo propio). */
@@ -6,6 +7,8 @@ export const TOUCH_LABELS = {
   pause: 'Pausa',
   restart: 'Reiniciar',
   fullscreen: 'Pantalla completa',
+  mute: 'Silenciar',
+  unmute: 'Activar sonido',
 } as const;
 
 /** Lo que la escena necesita de la barra (la implementa `TouchBar`). */
@@ -40,17 +43,25 @@ function iconButton(doc: Document, label: string, icon: string, onTap: () => voi
 }
 
 /**
- * Barra táctil DOM (spec touch-controls 0033, design §4.2): ⏸, ↻ y, si el navegador ofrece la
- * pantalla completa, ⛶. Los toques solo dejan una pulsación en cola que la escena consume (patrón
- * `PausePanel`); ⛶ llama a su control directamente (gesto del usuario). Solo alterna `hidden`.
+ * Barra táctil DOM (spec touch-controls 0033, design §4.2): ⏸, ↻, silencio (0035) y, si el
+ * navegador ofrece la pantalla completa, ⛶. Los toques de ⏸ y ↻ solo dejan una pulsación en cola
+ * que la escena consume (patrón `PausePanel`); el de silencio marca una petición en `MuteRequests`
+ * (equivale a M); ⛶ llama a su control directamente (gesto del usuario). Solo alterna `hidden` y
+ * atributos.
  */
 export class TouchBar implements TouchBarView {
   private pause = false;
   private restart = false;
   private readonly pauseButton: HTMLButtonElement;
   private readonly restartButton: HTMLButtonElement;
+  private readonly muteButton: HTMLButtonElement | undefined;
 
-  constructor(doc: Document, parent: HTMLElement, fullscreen?: { toggle(): unknown }) {
+  constructor(
+    doc: Document,
+    parent: HTMLElement,
+    fullscreen?: { toggle(): unknown },
+    mute?: MuteRequests,
+  ) {
     const bar = doc.createElement('nav');
     bar.className = 'touch-bar';
     bar.setAttribute('aria-label', TOUCH_LABELS.bar);
@@ -61,6 +72,14 @@ export class TouchBar implements TouchBarView {
       this.restart = true;
     });
     bar.append(this.pauseButton, this.restartButton);
+    if (mute) {
+      // Siempre visible en modo móvil (menú y partida): equivale a una pulsación de M.
+      this.muteButton = iconButton(doc, TOUCH_LABELS.mute, TOUCH_ICONS.sound, () => {
+        mute.mark();
+      });
+      bar.append(this.muteButton);
+      this.setMuted(false);
+    }
     if (fullscreen) {
       bar.append(
         iconButton(doc, TOUCH_LABELS.fullscreen, TOUCH_ICONS.fullscreen, () => {
@@ -70,6 +89,15 @@ export class TouchBar implements TouchBarView {
     }
     this.sync({ inRun: false, ended: false });
     parent.append(bar);
+  }
+
+  /** Icono, etiqueta y `aria-pressed` del botón de silencio con el estado de los ajustes. */
+  setMuted(muted: boolean): void {
+    const b = this.muteButton;
+    if (!b) return;
+    b.setAttribute('aria-label', muted ? TOUCH_LABELS.unmute : TOUCH_LABELS.mute);
+    b.setAttribute('aria-pressed', String(muted));
+    b.children[0]?.setAttribute('src', muted ? TOUCH_ICONS.muted : TOUCH_ICONS.sound);
   }
 
   takePause(): boolean {

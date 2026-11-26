@@ -17,6 +17,8 @@ const PANELS = [
   '.pause-panel',
   '.confirm-dialog',
   '.guide-modal',
+  // 0035: el panel Sonido con las mismas piezas que la guía.
+  '.sound-panel',
   '.results-panel',
   '.shop-panel',
   '.build-panel',
@@ -34,6 +36,7 @@ const FONT_PX: Record<(typeof PANELS)[number], number> = {
   '.pause-panel': 16,
   '.confirm-dialog': 16,
   '.guide-modal': 16,
+  '.sound-panel': 16,
   '.results-panel': 14,
   '.shop-panel': 14,
   '.build-panel': 14,
