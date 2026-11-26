@@ -222,16 +222,23 @@ MUST producir la misma partida tick a tick en cualquier tamaño de ventana.
 
 ### Requirement: Vista a ventana completa con tope
 Mientras el juego está cargado (menú, partida en curso, en pausa, eligiendo mejora o terminada), el lienzo del juego
-SHALL ocupar la ventana entera, sin barras de desplazamiento del documento, a zoom 1: un segmento de L unidades de
-mundo MUST medir L px CSS en pantalla (error ≤ 1 px), sea cual sea la densidad de píxeles del dispositivo. El área de
-mundo visible en cada frame (la vista) MUST medir V_w × V_h = min(P_w, T_w) × min(P_h, T_h). Si la ventana supera el
-tope en algún eje, el espacio de la ventana fuera de la vista MUST NOT mostrar ninguna zona del mundo ni de fuera de
-él; cómo se rellena ese espacio no lo fija esta spec. No hay tamaño mínimo de ventana: una ventana menor que
-960 × 540 sigue ocupada entera y ve menos mundo. Una ventana con ancho o alto 0 (p. ej. minimizada) MUST NOT producir
-errores no capturados ni cambiar la simulación.
+SHALL ocupar la ventana entera, sin barras de desplazamiento del documento. **Sin modo móvil** (ver "Activación del modo
+móvil" en `mobile-display`), el lienzo va a zoom 1: un segmento de L unidades de mundo MUST medir L px CSS en pantalla
+(error ≤ 1 px), sea cual sea la densidad de píxeles del dispositivo, y el área de mundo visible en cada frame (la
+vista) MUST medir V_w × V_h = min(P_w, T_w) × min(P_h, T_h). **En modo móvil**, la vista MUST medir
+min(W, T_w) × min(H, T_h), con W × H el tamaño lógico del lienzo de "Tamaño lógico del lienzo en modo móvil"
+(`mobile-display`), y un segmento de L unidades de mundo MUST medir L × P_h / H px CSS (error ≤ 1 px); en modo móvil,
+las posiciones y tamaños "en la ventana" de la vista, el HUD y las cartas que fijan esta spec, `hud` y `upgrades` se
+miden en unidades del lienzo lógico, y los de los paneles DOM, en px CSS. Si la vista no llena la ventana (o el lienzo
+lógico) en algún eje por el tope, el espacio fuera de la vista MUST NOT mostrar ninguna zona del mundo ni de fuera de
+él; cómo se rellena ese espacio no lo fija esta spec. Sin modo móvil no hay tamaño mínimo de ventana: una ventana menor
+que 960 × 540 sigue ocupada entera y ve menos mundo. Una ventana con ancho o alto 0 (p. ej. minimizada) MUST NOT
+producir errores no capturados ni cambiar la simulación, en cualquier modo. Los escenarios de esta spec, de `hud`,
+`upgrades`, `main-menu`, `menu-guide`, `run-results`, `castle-shop`, `build-sites` y `sprite-rendering` que no
+mencionan el modo móvil se ejecutan sin él.
 
 #### Scenario: Ventana de las pruebas
-- **GIVEN** una ventana de 1.280 × 720 y una partida en curso
+- **GIVEN** una ventana de 1.280 × 720, sin modo móvil, y una partida en curso
 - **WHEN** se pinta un frame
 - **THEN** el lienzo mide 1.280 × 720 px CSS, el documento no tiene barras de desplazamiento y la vista mide
   1.280 × 720 unidades de mundo
@@ -266,6 +273,18 @@ errores no capturados ni cambiar la simulación.
 - **WHEN** la ventana pasa a 0 × 0 y después vuelve a 1.280 × 720
 - **THEN** no hay errores no capturados y, al volver, la vista mide 1.280 × 720 y cumple "Cámara que sigue al jugador
   dentro del mundo"
+
+#### Scenario: Misma ventana con y sin modo móvil
+- **GIVEN** una ventana de 844 × 390 con la URL `?mobile=0` y, en otra carga, con `?mobile=1`
+- **WHEN** se pinta un frame de una partida
+- **THEN** sin modo móvil la vista mide 844 × 390 unidades de mundo y 1 unidad mide 1 px CSS
+- **AND** con modo móvil la vista mide 1.385,03 × 640 unidades de mundo (error ≤ 1) y 640 unidades miden 390 px CSS
+  (error ≤ 1 px)
+
+#### Scenario: Modo móvil con densidad de píxeles 3
+- **GIVEN** el modo móvil y una ventana de 844 × 390 px CSS con densidad de píxeles 3
+- **WHEN** se pinta un frame de una partida
+- **THEN** la vista mide 1.385,03 × 640 unidades de mundo (error ≤ 1), igual que con densidad 1
 
 ### Requirement: Redimensionado de la ventana
 El sistema SHALL adaptarse a cada cambio de tamaño de la ventana en cualquier pantalla del juego (menú con o sin el
@@ -335,3 +354,4 @@ Un cambio a un tamaño igual al actual MUST NOT cambiar nada de lo pintado.
 <!-- historial: 0017-fullscreen-view (2026-11-24) -->
 <!-- historial: 0028-menu-guide (2026-11-25) -->
 <!-- historial: 0030-pickup-visibility (2026-11-26) -->
+<!-- historial: 0033-mobile-web (2026-11-26) -->

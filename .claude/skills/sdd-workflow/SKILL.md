@@ -73,6 +73,11 @@ Tras cada fase, resume al usuario en ≤ 5 líneas: qué se produjo, decisiones 
 - **Sin `--no-verify` tampoco en commits temporales**: al pedir apply, recuerda al `sdd-implementer` que para
   apartar trabajo durante un rebase use un commit WIP con hooks o `git stash push -u -m <tag>` (0032: tres WIP
   con `--no-verify`, ninguno en la rama final).
+- **Reglas «ningún elemento…» sobre el DOM**: pide al `sdd-spec-writer` que compruebe en el código qué atributos
+  ponen ya los changes anteriores antes de prohibirlos (0033: «Sin estilos inline» olvidaba el `style` con
+  variables `--*` de `#game` desde 0017/0032, W1).
+- **Sondas ampliadas**: si el change añade campos a una sonda E2E, el design no puede prometer «ningún test
+  cambia»; pide al `sdd-architect` que liste las aserciones `toEqual` afectadas (0033: tres, S1).
 - **Reglas transversales en las specs**: si el change cambia una regla que otras capacidades dan por supuesta
   ("solo se ofrece lo asequible", "un solar libre no bloquea"), pide al `sdd-spec-writer` que la busque en **todas**
   las specs vivas, no solo en las de la propuesta (0027: `resources` decía "con madera 14 la casa no se ofrece" y
