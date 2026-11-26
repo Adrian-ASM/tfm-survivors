@@ -9,6 +9,8 @@ const PANELS = [
   'pause-panel',
   'confirm-dialog',
   'guide-modal',
+  // 0035: el panel Sonido es un panel DOM más (spec mobile-display, "Paneles DOM en modo móvil").
+  'sound-panel',
   'results-panel',
   'shop-panel',
   'build-panel',

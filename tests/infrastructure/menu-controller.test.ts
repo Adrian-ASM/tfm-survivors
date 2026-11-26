@@ -159,3 +159,54 @@ describe('Título del juego en el menú (spec main-menu, change 0012)', () => {
     expect(texts.some((t) => t.includes('Sprint Survivors'))).toBe(false);
   });
 });
+
+describe('Panel Sonido en el menú (spec audio y main-menu 0035)', () => {
+  const sounding = (): MenuController => {
+    const menu = new MenuController();
+    menu.openSound();
+    return menu;
+  };
+
+  it('Scenario: Botones de debajo bloqueados (el controlador rechaza las opciones del menú)', () => {
+    const menu = sounding();
+
+    expect([
+      menu.requestPlay(),
+      menu.openGuide(),
+      menu.openConfirm(),
+      menu.requestExport(),
+      menu.requestImport(),
+      menu.openSound(),
+      menu.state,
+    ]).toEqual([false, false, false, false, false, false, 'sound']);
+  });
+
+  it('Scenario: Opciones bloqueadas con el diálogo abierto (Sonido no abre el panel)', () => {
+    const menu = new MenuController();
+    menu.openConfirm();
+
+    expect([menu.openSound(), menu.state]).toEqual([false, 'confirming']);
+  });
+
+  it('Scenario: Pulsaciones del menú con la guía abierta (Sonido no abre el panel)', () => {
+    const menu = new MenuController();
+    menu.openGuide();
+
+    expect([menu.openSound(), menu.state]).toEqual([false, 'guide']);
+  });
+
+  it('closeSound solo con el panel abierto y deja el menú operativo', () => {
+    const menu = sounding();
+
+    expect([menu.closeSound(), menu.closeSound(), menu.state]).toEqual([true, false, 'idle']);
+    expect([menu.requestPlay(), menu.takePlay()]).toEqual([true, true]);
+  });
+
+  it('show() con el panel abierto vuelve a idle', () => {
+    const menu = sounding();
+
+    menu.show();
+
+    expect([menu.state, menu.closeSound()]).toEqual(['idle', false]);
+  });
+});

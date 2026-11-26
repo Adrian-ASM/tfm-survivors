@@ -9,6 +9,7 @@ import { GuideModal } from '../infrastructure/dom/GuideModal';
 import type { ResourceIcons } from '../infrastructure/dom/resourceIcons';
 import type { Guide } from '../infrastructure/content/guideSchema';
 import { MenuPanel } from '../infrastructure/dom/MenuPanel';
+import type { SoundPanel } from '../infrastructure/dom/SoundPanel';
 import { ResultsPanel } from '../infrastructure/dom/ResultsPanel';
 import { PROGRESS_CORRUPT_WARNING } from '../infrastructure/dom/resultsPanelText';
 import { MenuController } from '../infrastructure/menu/MenuController';
@@ -46,13 +47,15 @@ export interface MenuGuide {
 /**
  * Guardado local y export/import (design 0007): carga el progreso antes de crear el juego (nunca
  * lanza), avisa una vez por consola si los datos guardados estaban dañados y crea el panel DOM
- * sobre el canvas. `seedOf` da la semilla de la partida actual. El menú lleva la guía `menuGuide`,
- * que `menu.show` deja cerrada (Volver al menú, también con `?e2e`).
+ * sobre el canvas. `seedOf` da la semilla de la partida actual. El menú lleva la guía `menuGuide` y
+ * el panel `sound` (0035), que `menu.show` deja cerrados (Volver al menú, también con `?e2e`). Los
+ * ajustes de audio no pasan por aquí: Exportar, Importar y Borrar datos no los tocan.
  */
 export function wireProgress(
   root: HTMLElement,
   seedOf: () => number,
   menuGuide: MenuGuide,
+  sound: SoundPanel,
 ): ProgressWiring {
   const repository = new LocalStorageProgressRepository(() => window.localStorage);
   const { session, issue } = new LoadProgress(repository).execute();
@@ -102,6 +105,7 @@ export function wireProgress(
       },
     },
     guideModal,
+    sound,
   );
   // Cancelar no llega a ClearProgress: 0 escrituras y 0 borrados por construcción.
   const closeDialog = (): void => {

@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import appearanceJson from '../../content/appearance.json';
 import guideJson from '../../content/guide.json';
+import audioJson from '../../content/audio.json';
 import provenanceJson from '../../content/asset-provenance.json';
 import { bootContent } from '../../src/composition/contentBoot';
 import type { DomainError } from '../../src/domain/shared/Result';
 import { GUIDE_PAGE_IDS } from '../../src/infrastructure/content/guideSchema';
 import { rawContent } from '../support/builders';
 import { registeredPaths } from '../../src/infrastructure/content/loadAppearance';
-import { GENERATED_PATHS } from '../support/generated';
+import { GENERATED_PATHS, SOUND_PATHS } from '../support/generated';
 
 // Spec menu-guide, "Contenido de la guía validado": un guide.json inválido pasa por `report` (la
 // vía de showContentError) y bootContent devuelve null, así que no se crea el menú (design 0028
@@ -28,10 +29,11 @@ type RawGuide = { pages: Page[] };
 function boot(guide: unknown, content = rawContent()) {
   const errors: DomainError[] = [];
   const booted = bootContent(
-    { content, appearance: structuredClone(appearanceJson), guide },
+    { content, appearance: structuredClone(appearanceJson), guide, audio: audioJson },
     (e) => errors.push(e),
     REGISTERED,
     GENERATED_PATHS,
+    SOUND_PATHS,
   );
   return { booted, errors };
 }

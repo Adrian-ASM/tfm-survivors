@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { TOUCH_LABELS, TouchBar, pressedOnce } from '../../src/infrastructure/dom/TouchBar';
 import { PauseGate } from '../../src/infrastructure/phaser/PauseGate';
+import { MuteRequests, applyMute } from '../../src/infrastructure/audio/MuteRequests';
+import { TOUCH_ICONS } from '../../src/infrastructure/dom/touchIcons';
+import { aSoundStore } from '../support/audio';
 import { fakeDom, type FakeElement } from '../support/fakeDom';
 
 // Spec touch-controls (0033), "Barra táctil" (sin navegador: DOM falso).
@@ -91,5 +94,91 @@ describe('TouchBar (0033)', () => {
 
     expect(gate.paused).toBe(true);
     expect(b.takePause()).toBe(false);
+  });
+});
+
+// Spec touch-controls (0035): botón de silencio de la barra (equivale a una pulsación de M).
+describe('TouchBar · silencio (0035)', () => {
+  function muteBar() {
+    const { doc, root, fake } = fakeDom();
+    const audio = aSoundStore();
+    const requests = new MuteRequests();
+    const b = new TouchBar(doc, root, { toggle: () => undefined }, requests);
+    audio.store.subscribe((s) => {
+      b.setMuted(s.muted);
+    });
+    const nav = fake.children[0] as FakeElement;
+    const mute = nav.findAll((e) => e.tagName === 'button')[2] as FakeElement;
+    /** Un frame del juego: la composición consume la petición (PRE_STEP). */
+    const frame = () => {
+      applyMute(requests, audio.store);
+    };
+    return { b, nav, mute, audio, requests, frame };
+  }
+
+  it('Scenario: Silenciar con la barra', () => {
+    const { mute, audio, frame } = muteBar();
+    const before = [mute.getAttribute('aria-label'), mute.getAttribute('aria-pressed')];
+
+    mute.click();
+    frame();
+    const first = [
+      audio.store.settings.muted,
+      mute.getAttribute('aria-label'),
+      mute.getAttribute('aria-pressed'),
+    ];
+    mute.click();
+    frame();
+
+    expect(before).toEqual([TOUCH_LABELS.mute, 'false']);
+    expect(first).toEqual([true, TOUCH_LABELS.unmute, 'true']);
+    expect([audio.store.settings.muted, mute.getAttribute('aria-label')]).toEqual([
+      false,
+      TOUCH_LABELS.mute,
+    ]);
+  });
+
+  it('Scenario: Silenciar con la barra (icono de altavoz y altavoz tachado, sin texto)', () => {
+    const { mute, frame } = muteBar();
+    const icon = () => mute.children[0]?.getAttribute('src');
+    const speaker = icon();
+    mute.click();
+    frame();
+
+    expect(speaker).toBe(TOUCH_ICONS.sound);
+    expect(icon()).toBe(TOUCH_ICONS.muted);
+    expect(mute.textContent).toBe('');
+  });
+
+  it('Scenario: Silencio y M en el mismo frame', () => {
+    const { mute, audio, requests, frame } = muteBar();
+
+    mute.click();
+    requests.mark();
+    frame();
+
+    expect([audio.store.settings.muted, audio.storage.audioWrites]).toEqual([true, 1]);
+  });
+
+  it('Scenario: Barra en el menú (el botón de silencio es visible con y sin pantalla completa)', () => {
+    const { doc, root, fake } = fakeDom();
+    const b = new TouchBar(doc, root, undefined, new MuteRequests());
+    b.sync({ inRun: false, ended: false });
+    const buttons = (fake.children[0] as FakeElement).findAll((e) => e.tagName === 'button');
+
+    expect(buttons.map((x) => [x.getAttribute('aria-label'), x.hidden])).toEqual([
+      [TOUCH_LABELS.pause, true],
+      [TOUCH_LABELS.restart, true],
+      [TOUCH_LABELS.mute, false],
+    ]);
+  });
+
+  it('Scenario: Silenciar con la barra (con la partida en curso o terminada sigue visible)', () => {
+    const { b, mute } = muteBar();
+    b.sync({ inRun: true, ended: false });
+    const running = mute.hidden;
+    b.sync({ inRun: true, ended: true });
+
+    expect([running, mute.hidden]).toEqual([false, false]);
   });
 });

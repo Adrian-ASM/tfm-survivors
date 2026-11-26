@@ -27,6 +27,7 @@ import {
   waitForRun,
   watchCsp,
   pauseOverlay,
+  type AudioProbeView,
   type MapView,
   type SnapshotView,
 } from './probe';
@@ -1043,12 +1044,24 @@ test.describe('Modo móvil (0033)', () => {
   });
 });
 
+/** En cada lectura de la sonda de audio, reproducidas + descartadas = pedidas (total y por tipo). */
+function expectAudioBalanced(audio: AudioProbeView | null | undefined): void {
+  if (!audio) throw new Error('sin sonda de audio');
+  const all = [audio, ...Object.values(audio.byType)];
+  expect(all.every((c) => c.requested === c.played + c.dropped)).toBe(true);
+}
+
 // Spec mobile-display (0033), "Sin controles táctiles en escritorio": puntero fino, sin `mobile`,
-// ventana más alta que ancha.
+// ventana más alta que ancha. Spec audio (0035), "Audio en la partida E2E [E2E]": con la salida
+// muda, la música sigue la pausa, M silencia sin step y no se pide ningún fichero de audio.
 test('Escritorio sin controles táctiles: 600 × 900 sin barra, aviso ni indicación y step avanza', async ({
   page,
 }) => {
   const problems = collect(page, ['error', 'warning']);
+  const audioRequests: string[] = [];
+  page.on('request', (r) => {
+    if (/\.(ogg|mp3|wav|flac)(\?|$)/i.test(r.url())) audioRequests.push(r.url());
+  });
   await watchCsp(page);
   await page.setViewportSize({ width: 600, height: 900 });
   await openGame(page, gameUrl({ seed: 42, manual: true }));
@@ -1060,13 +1073,28 @@ test('Escritorio sin controles táctiles: 600 × 900 sin barra, aviso ni indicac
   expect(await page.evaluate(() => document.documentElement.classList.contains('is-mobile'))).toBe(
     false,
   );
-  expect(await step(page, 60)).toBe(60);
+  expect(p?.audio?.music).toBe('playing');
+  expectAudioBalanced(p?.audio);
+  expect(await step(page, 600)).toBe(600);
   // "Sin estilos inline" en escritorio: pausa, resultados y menú.
   await page.keyboard.press('Escape');
   await expect(pauseOverlay(page)).toBeVisible();
   await expectNoInlineStyles(page, 'pausa');
+  const paused = (await probe(page))?.audio;
+  expect(paused?.music).toBe('paused');
+  expectAudioBalanced(paused);
+  // "Silencio sin step": M se atiende en el frame siguiente, sin ticks.
+  const pausedTick = (await snapshotOf(page))?.tick;
+  await page.keyboard.press('m');
+  await expect.poll(async () => (await probe(page))?.audio?.settings.muted).toBe(true);
+  expect((await snapshotOf(page))?.tick).toBe(pausedTick);
   await page.keyboard.press('Escape');
   await expect(pauseOverlay(page)).toBeHidden();
+  const resumed = (await probe(page))?.audio;
+  expect([resumed?.music, resumed?.volumes]).toEqual(['playing', { music: 0, effects: 0 }]);
+  expect([resumed?.filesRequested, resumed?.sounding, resumed?.loaded]).toEqual([0, 0, false]);
+  expectAudioBalanced(resumed);
+  expect(audioRequests).toEqual([]);
   await resultsThenMenu(page, (screen) => expectNoInlineStyles(page, screen));
   expect(await page.locator('.touch-bar, .rotate-notice').count()).toBe(0);
   expect(await cspState(page)).toEqual({ violations: [], metas: 1 });

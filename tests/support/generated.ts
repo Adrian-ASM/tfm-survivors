@@ -2,5 +2,9 @@
 // que valen como icono en `parseAppearance` / `bootContent` (design D8).
 import provenanceJson from '../../content/asset-provenance.json';
 import { generatedPaths } from '../../src/infrastructure/content/loadAppearance';
+import { soundPaths } from '../../src/infrastructure/content/loadAudio';
 
 export const GENERATED_PATHS: readonly string[] = generatedPaths(provenanceJson);
+
+/** Rutas de la lista de audio de la nota (0035, `sounds[]`): las que valen en `audio.json`. */
+export const SOUND_PATHS: readonly string[] = soundPaths(provenanceJson);

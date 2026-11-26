@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import provenanceJson from '../../content/asset-provenance.json';
 import { ASSET_DIR } from '../../src/infrastructure/content/appearanceSchema';
+import { REPO_CREDITS } from '../support/credits';
 
 // Spec asset-provenance (0022), "Procedencia de las hojas de los recursos": madera y vetas de
 // Update 010, al final de la nota y vigiladas por el guardarraíl. Las 19 de antes, intactas.
@@ -31,6 +32,7 @@ type CheckAssets = (input: {
   files: string[];
   provenance: unknown;
   digest: (path: string) => { sha256: string; bytes: number };
+  credits?: string;
 }) => string[];
 
 const files = provenanceJson.files;
@@ -52,7 +54,14 @@ describe('Procedencia de las hojas de los recursos (asset-provenance)', () => {
   it('Scenario: Hojas de recursos registradas (3 entradas más; G_Idle igual)', async () => {
     const { checkAssets } = await guard();
     const list = [...new Set([...versioned(), ...files.map((f) => f.path)])].filter(Boolean);
-    expect(checkAssets({ files: list, provenance: provenanceJson, digest: digestOf })).toEqual([]);
+    expect(
+      checkAssets({
+        credits: REPO_CREDITS,
+        files: list,
+        provenance: provenanceJson,
+        digest: digestOf,
+      }),
+    ).toEqual([]);
     // 0023 añade al final las hojas de la carne y de las ovejas: estas 3 siguen en su sitio.
     expect(files.length).toBeGreaterThanOrEqual(ENTRIES_BEFORE + 3);
     const added = files.slice(ENTRIES_BEFORE, ENTRIES_BEFORE + 3);
@@ -74,6 +83,7 @@ describe('Procedencia de las hojas de los recursos (asset-provenance)', () => {
       return { sha256: e?.sha256 ?? '', bytes: e?.bytes ?? 0 };
     };
     const problems = checkAssets({
+      credits: REPO_CREDITS,
       files: [...files.map((f) => f.path), PROVENANCE_PATH],
       provenance: note,
       digest,

@@ -1,3 +1,5 @@
+import { SoundPanel } from '../../src/infrastructure/dom/SoundPanel';
+import { aSoundStore } from '../support/audio';
 import { describe, expect, it, vi } from 'vitest';
 import { RestartRun } from '../../src/application/RestartRun';
 import { OPEN_TERRAIN } from '../../src/domain/map/TerrainSource';
@@ -251,7 +253,8 @@ describe('Flujos con las piezas en reserva (0032)', () => {
     const controller = new MenuController();
     const guide = new GuideModal(doc, root, defaultGuide(), TEST_ICONS);
     const actions = { onExport: vi.fn(), onImport: vi.fn(), onOpenConfirm: vi.fn() };
-    const menu = new MenuPanel(doc, root, controller, actions, guide);
+    const sound = new SoundPanel(doc, root, aSoundStore().store);
+    const menu = new MenuPanel(doc, root, controller, actions, guide, sound);
     const dialog = new ConfirmDialog(doc, root, {
       onConfirm: vi.fn(),
       onCancel: () => {

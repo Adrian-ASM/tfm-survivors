@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import guideJson from '../../content/guide.json';
+import audioJson from '../../content/audio.json';
 import appearanceJson from '../../content/appearance.json';
 import arenaJson from '../../content/arena.json';
 import provenanceJson from '../../content/asset-provenance.json';
@@ -24,20 +25,30 @@ import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulbe
 import { rawContent } from '../support/builders';
 import { randomInputs } from '../support/inputs';
 import { chooseFirstWhileOpen, startRun, startSeededRun } from '../support/runs';
-import { GENERATED_PATHS } from '../support/generated';
+import { GENERATED_PATHS, SOUND_PATHS } from '../support/generated';
 
 // Spec sprite-rendering, "Datos de aspecto validados" en el arranque (change 0012, design D9).
 const REGISTERED = registeredPaths(provenanceJson);
 
 type Json = Record<string, unknown>;
-type Raw = { content: ReturnType<typeof rawContent>; appearance: Json; guide: unknown };
+type Raw = {
+  content: ReturnType<typeof rawContent>;
+  appearance: Json;
+  guide: unknown;
+  audio: unknown;
+};
 function raw(): Raw {
-  return { content: rawContent(), appearance: structuredClone(appearanceJson), guide: guideJson };
+  return {
+    content: rawContent(),
+    appearance: structuredClone(appearanceJson),
+    guide: guideJson,
+    audio: audioJson,
+  };
 }
 
 function boot(r: Raw) {
   const errors: DomainError[] = [];
-  const booted = bootContent(r, (e) => errors.push(e), REGISTERED, GENERATED_PATHS);
+  const booted = bootContent(r, (e) => errors.push(e), REGISTERED, GENERATED_PATHS, SOUND_PATHS);
   return { booted, errors };
 }
 
@@ -290,7 +301,7 @@ describe('bootContent · iconos de mejora (0034)', () => {
   }
   function bootIcons(r: Raw) {
     const errors: DomainError[] = [];
-    const booted = bootContent(r, (e) => errors.push(e), REGISTERED, GENERATED);
+    const booted = bootContent(r, (e) => errors.push(e), REGISTERED, GENERATED, SOUND_PATHS);
     return { booted, errors };
   }
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import guideJson from '../../../content/guide.json';
+import audioJson from '../../../content/audio.json';
 import { bootContent } from '../../../src/composition/contentBoot';
 import { CONTACT_EPS } from '../../../src/domain/site/BuildingRules';
 import { loadRunConfig, parseRunConfig } from '../../../src/infrastructure/content/loadRunConfig';
@@ -11,7 +12,7 @@ import {
 } from '../../../src/infrastructure/content/loadAppearance';
 import { REGISTERED, rawAppearance, type RawAppearance } from '../../support/appearance';
 import { rawContent, type RawContent } from '../../support/builders';
-import { GENERATED_PATHS } from '../../support/generated';
+import { GENERATED_PATHS, SOUND_PATHS } from '../../support/generated';
 
 // Spec build-sites 0026 y 0027, "Contenido de los edificios validado" (content/buildings.json con zod
 // estricto y las reglas de `BuildingRules` desde el superRefine), y sprite-rendering, "Pintado de
@@ -43,10 +44,11 @@ function bootErrors(
   changeAppearance(appearance);
   const errors: string[] = [];
   const booted = bootContent(
-    { content: raw, appearance, guide: guideJson },
+    { content: raw, appearance, guide: guideJson, audio: audioJson },
     (e) => errors.push(e.field),
     REGISTERED,
     GENERATED_PATHS,
+    SOUND_PATHS,
   );
   return { booted: booted !== null, errors };
 }

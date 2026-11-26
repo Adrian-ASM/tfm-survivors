@@ -40,7 +40,7 @@ const mmss = (tick: number): string => {
   return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 };
 
-const MENU_BUTTONS = ['Jugar', 'Cómo jugar', 'Exportar', 'Importar', 'Borrar datos'];
+const MENU_BUTTONS = ['Jugar', 'Cómo jugar', 'Sonido', 'Exportar', 'Importar', 'Borrar datos'];
 
 /** La caja del elemento está entera dentro de la ventana. */
 async function expectInside(
@@ -144,6 +144,33 @@ test('Arranque y menú: botones, guía, título, sin errores de consola ni de CS
   await expect(menuPanel(page)).toBeVisible();
   expect(await menuPanel(page).getByRole('button').allTextContents()).toEqual(MENU_BUTTONS);
   await expect(menuButton(page, 'Cómo jugar')).toBeFocused();
+  expect(await cspState(page)).toEqual({ violations: [], metas: 1 });
+
+  // Spec audio (0035), "Panel Sonido sin sonda [E2E]": sin ?e2e y sin ajustes guardados, dos
+  // flechas a la izquierda sobre Música (con el foco al abrir), Cerrar, Jugar y recarga.
+  const sound = page.locator('.sound-panel');
+  const values = sound.locator('output');
+  await menuButton(page, 'Sonido').click();
+  await expect(sound).toBeVisible();
+  await expect(values).toHaveText(['50 %', '80 %']);
+  await expect(sound.getByRole('slider', { name: 'Música' })).toBeFocused();
+  await page.keyboard.press('ArrowLeft');
+  await page.keyboard.press('ArrowLeft');
+  await expect(values).toHaveText(['40 %', '80 %']);
+  await sound.getByRole('button', { name: 'Cerrar', exact: true }).click();
+  await expect(sound).toBeHidden();
+  await expect(menuButton(page, 'Sonido')).toBeFocused();
+  await menuButton(page, 'Jugar').click();
+  await expect(menuPanel(page)).toBeHidden();
+  await page.reload();
+  await expect(menuPanel(page)).toBeVisible();
+  expect(await page.evaluate(() => '__sprint' in window)).toBe(false);
+  const saved = await page.evaluate(() => localStorage.getItem('sprint-survivors/audio'));
+  expect(JSON.parse(saved ?? '{}')).toEqual({ version: 1, music: 40, effects: 80, muted: false });
+  await menuButton(page, 'Sonido').click();
+  await expect(values).toHaveText(['40 %', '80 %']);
+  await page.keyboard.press('Escape');
+  await expect(sound).toBeHidden();
 
   expect(nativeDialogs).toBe(0);
   expect(await cspState(page)).toEqual({ violations: [], metas: 1 });

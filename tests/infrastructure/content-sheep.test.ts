@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import guideJson from '../../content/guide.json';
+import audioJson from '../../content/audio.json';
 import { bootContent } from '../../src/composition/contentBoot';
 import { loadRunConfig, parseRunConfig } from '../../src/infrastructure/content/loadRunConfig';
 import { rawContent, type RawContent } from '../support/builders';
 import { REGISTERED, rawAppearance } from '../support/appearance';
-import { GENERATED_PATHS } from '../support/generated';
+import { GENERATED_PATHS, SOUND_PATHS } from '../support/generated';
 
 // Spec sheep (0023), "Contenido de las ovejas validado": content/sheep.json con zod estricto y las
 // invariantes de `SheepRules` desde el superRefine.
@@ -65,10 +66,11 @@ describe('Contenido de las ovejas validado (spec sheep, con zod)', () => {
     raw.sheep.health = 0;
     const errors: string[] = [];
     const booted = bootContent(
-      { content: raw, appearance: rawAppearance(), guide: guideJson },
+      { content: raw, appearance: rawAppearance(), guide: guideJson, audio: audioJson },
       (e) => errors.push(e.field),
       REGISTERED,
       GENERATED_PATHS,
+      SOUND_PATHS,
     );
     expect(booted).toBeNull();
     expect(errors).toEqual(['sheep.health']);

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import guideJson from '../../content/guide.json';
+import audioJson from '../../content/audio.json';
 import weaponsJson from '../../content/weapons.json';
 import { MAX_TICKS_PER_FRAME } from '../../src/application/FixedStepLoop';
 import { bootContent } from '../../src/composition/contentBoot';
@@ -8,7 +9,7 @@ import { HIT_WINDOW_BELOW_FRAME } from '../../src/infrastructure/content/schemas
 import { loadRunConfig, parseRunConfig } from '../../src/infrastructure/content/loadRunConfig';
 import { rawContent, type RawContent } from '../support/builders';
 import { REGISTERED, rawAppearance } from '../support/appearance';
-import { GENERATED_PATHS } from '../support/generated';
+import { GENERATED_PATHS, SOUND_PATHS } from '../support/generated';
 
 // Spec simulation-loop (0031), "Contenido de combate validado": content/combat.json con zod estricto.
 type Combat = RawContent['combat'];
@@ -61,10 +62,11 @@ describe('Contenido de combate validado (spec simulation-loop 0031, con zod)', (
     raw.combat.hitWindowTicks = 14;
     const errors: string[] = [];
     const booted = bootContent(
-      { content: raw, appearance: rawAppearance(), guide: guideJson },
+      { content: raw, appearance: rawAppearance(), guide: guideJson, audio: audioJson },
       (e) => errors.push(e.field),
       REGISTERED,
       GENERATED_PATHS,
+      SOUND_PATHS,
     );
     expect(booted).toBeNull();
     expect(errors).toEqual(['combat.hitWindowTicks']);

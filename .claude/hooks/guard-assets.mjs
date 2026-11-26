@@ -5,6 +5,9 @@
 // `digest(path) → { sha256, bytes }` inyectado. La ejecuta scripts/guard-staged.mjs (pre-commit y CI).
 // 0034 (ADR-0030): lista aparte `generated[]` de imágenes con IA, solo en `public/assets/icons/`,
 // con `generatedPolicy` apuntando al ADR; la cabecera del pack y el Free Pack solo afectan a `files[]`.
+// 0035 (ADR-0031): lista aparte `sounds[]` de audio CC0/CC-BY (kenney.nl, opengameart.org, freesound.org),
+// con la atribución de cada CC-BY en una línea de CREDITS.md;
+// solo en `public/assets/audio/`; un audio no vale en ninguna otra lista.
 import { relativePath, runAsHook } from './lib.mjs';
 
 /** Nota de procedencia (design D8; en content/ por R6: Vite no importa JSON de public/). */
@@ -75,7 +78,12 @@ function noteProblems(provenance) {
   });
   return problems;
 }
-/** Reglas de ruta de un fichero versionado: prohibidos y Free Pack. */
+/** Ficheros de audio (0035): cada uno con registro en `sounds[]`, solo en su carpeta. */
+export const AUDIO = /\.(ogg|mp3|wav|flac)$/i;
+/** Carpeta del audio (0035, design D13). */
+export const AUDIO_DIR = 'public/assets/audio/';
+
+/** Reglas de ruta de un fichero versionado: prohibidos, Free Pack y audio fuera de su carpeta. */
 function pathProblems(path) {
   const problems = [];
   const name = path.split('/').pop() ?? '';
@@ -83,6 +91,8 @@ function pathProblems(path) {
     problems.push(`${path}: fichero prohibido en el repositorio (sistema, edición o comprimido).`);
   if (FREE_PACK.test(path))
     problems.push(`${path}: ruta del Tiny Swords Free Pack, que no es CC0.`);
+  if (AUDIO.test(path) && !path.startsWith(AUDIO_DIR))
+    problems.push(`${path}: fichero de audio fuera de ${AUDIO_DIR}.`);
   return problems;
 }
 
@@ -246,8 +256,148 @@ function iconDirProblems(files, provenance) {
   return problems;
 }
 
-/** Reglas de procedencia. Devuelve las líneas de error ([] si cumple). */
-export function checkAssets({ files, provenance, digest }) {
+/** Licencias de audio admitidas (0035 rev. 4, design D13.3): exactas, sin NC, SA, ND ni otras. */
+export const AUDIO_LICENSES = ['CC0', 'CC-BY-3.0', 'CC-BY-4.0'];
+/** Créditos de las entradas con atribución (design D13.7), en la raíz del repositorio. */
+export const CREDITS_PATH = 'CREDITS.md';
+const CC_BY = /^CC-BY-/;
+const SOUND_HOSTS = new Set(['kenney.nl', 'opengameart.org', 'freesound.org']);
+const SOUND_TEXT_FIELDS = ['path', 'title', 'author'];
+const SOUND_FIELDS = new Set([
+  ...SOUND_TEXT_FIELDS,
+  'url',
+  'license',
+  'downloadedOn',
+  'sha256',
+  'bytes',
+]);
+
+const soundListOf = (provenance) => (Array.isArray(provenance?.sounds) ? provenance.sounds : []);
+
+/** URL `https:` de uno de los tres hosts CC0 (con o sin `www.`), sin red. */
+function isSoundUrl(value) {
+  if (typeof value !== 'string') return false;
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    return false;
+  }
+  return url.protocol === 'https:' && SOUND_HOSTS.has(url.hostname.replace(/^www\./, ''));
+}
+
+/** Campos de un registro de `sounds[]` (design 0035 D13, regla 3). */
+function soundFieldProblems(entry, at) {
+  const problems = [];
+  for (const field of SOUND_TEXT_FIELDS) {
+    if (!isText(entry?.[field])) problems.push(`${at}: "${field}" ausente o vacío.`);
+  }
+  if (!isSoundUrl(entry?.url))
+    problems.push(`${at}: "url" debe ser https de ${[...SOUND_HOSTS].join(', ')}.`);
+  if (!AUDIO_LICENSES.includes(entry?.license))
+    problems.push(
+      `${at}: "license" vale "${String(entry?.license ?? '')}"; debe ser ${AUDIO_LICENSES.join(', ')}.`,
+    );
+  if (!isCalendarDate(entry?.downloadedOn))
+    problems.push(`${at}: "downloadedOn" debe ser una fecha de calendario AAAA-MM-DD.`);
+  if (!SHA256.test(String(entry?.sha256 ?? '')))
+    problems.push(`${at}: "sha256" ausente o no es un SHA-256 en hexadecimal.`);
+  if (!Number.isInteger(entry?.bytes) || entry.bytes < 0)
+    problems.push(`${at}: "bytes" ausente o no es un entero ≥ 0.`);
+  for (const field of Object.keys(entry ?? {})) {
+    if (!SOUND_FIELDS.has(field)) problems.push(`${at}: campo desconocido "${field}".`);
+  }
+  return problems;
+}
+
+/** Un registro de `sounds[]`: campos, carpeta de audio, fichero versionado y digest. */
+function soundEntryProblems(entry, i, versioned, digest) {
+  const path = isText(entry?.path) ? entry.path : `sounds[${i}]`;
+  const at = `${NOTE}: audio ${path}`;
+  const problems = soundFieldProblems(entry, at);
+  if (!isText(entry?.path)) return problems;
+  if (!entry.path.startsWith(AUDIO_DIR) || !AUDIO.test(entry.path))
+    problems.push(
+      `${entry.path}: audio registrado fuera de ${AUDIO_DIR} (.ogg, .mp3, .wav o .flac).`,
+    );
+  if (!versioned.has(entry.path)) {
+    problems.push(`${entry.path}: la nota lo registra como audio pero no está versionado.`);
+    return problems;
+  }
+  const actual = digest(entry.path);
+  if (SHA256.test(String(entry.sha256 ?? '')) && actual.sha256 !== entry.sha256)
+    problems.push(`${at}: el "sha256" del fichero (${actual.sha256}) no coincide con la nota.`);
+  if (Number.isInteger(entry.bytes) && actual.bytes !== entry.bytes)
+    problems.push(`${at}: "bytes" = ${actual.bytes}, la nota dice ${entry.bytes}.`);
+  return problems;
+}
+
+/** Lista `sounds[]` (0035): audio sin registro, registros, repetidos y audio en otras listas. */
+function soundProblems(files, provenance, digest) {
+  const sounds = soundListOf(provenance);
+  const registered = new Set(sounds.map((e) => e?.path).filter(isText));
+  const versioned = new Set(files);
+  const problems = files
+    .filter((path) => AUDIO.test(path) && !registered.has(path))
+    .map((path) => `${path}: fichero de audio sin registro en "sounds" de ${PROVENANCE_PATH}.`);
+  const others = [
+    ...(provenance?.files ?? []),
+    ...(provenance?.fonts ?? []),
+    ...generatedListOf(provenance),
+  ]
+    .map((e) => e?.path)
+    .filter(isText);
+  for (const path of others.filter((p) => AUDIO.test(p)))
+    problems.push(`${path}: un fichero de audio solo puede registrarse en "sounds".`);
+  const otherSet = new Set(others);
+  const seen = new Set();
+  sounds.forEach((entry, i) => {
+    problems.push(...soundEntryProblems(entry, i, versioned, digest));
+    const path = entry?.path;
+    if (!isText(path)) return;
+    if (seen.has(path)) problems.push(`${NOTE}: entrada repetida para ${path}.`);
+    seen.add(path);
+    if (otherSet.has(path)) problems.push(`${path}: figura en dos listas de ${PROVENANCE_PATH}.`);
+  });
+  return problems;
+}
+
+/** Rutas de la lista de audio de la nota (`sounds[]`, 0035): no valen como hoja ni como icono. */
+export function soundPaths(provenance) {
+  return soundListOf(provenance)
+    .map((e) => e?.path)
+    .filter(isText);
+}
+
+/**
+ * Créditos (design D13.7): por cada entrada `CC-BY-*` admitida, una misma línea de `CREDITS.md` con
+ * su título, autor, URL y licencia literales. Sin `CREDITS.md` versionado y con entradas CC-BY, falla.
+ */
+function creditProblems(files, provenance, credits) {
+  const attributed = soundListOf(provenance).filter(
+    (e) => isText(e?.path) && AUDIO_LICENSES.includes(e?.license) && CC_BY.test(e.license),
+  );
+  if (attributed.length === 0) return [];
+  if (!files.includes(CREDITS_PATH) || typeof credits !== 'string') {
+    const paths = attributed.map((e) => e.path).join(', ');
+    return [`${CREDITS_PATH}: falta y hay audio con atribución (CC-BY): ${paths}.`];
+  }
+  const lines = credits.split(/\r?\n/);
+  const fields = ['title', 'author', 'url', 'license'];
+  return attributed
+    .filter((e) => !lines.some((l) => fields.every((f) => isText(e[f]) && l.includes(e[f]))))
+    .map(
+      (e) =>
+        `${e.path}: ${CREDITS_PATH} no tiene una línea con su título, autor, URL y licencia ` +
+        `(${e.license}).`,
+    );
+}
+
+/**
+ * Reglas de procedencia. Devuelve las líneas de error ([] si cumple). `credits` es el texto de
+ * `CREDITS.md` (0035 rev. 4), si está versionado.
+ */
+export function checkAssets({ files, provenance, digest, credits }) {
   const problems = files.flatMap(pathProblems);
   const entries = Array.isArray(provenance?.files) ? provenance.files : [];
   const registered = new Set(
@@ -262,6 +412,8 @@ export function checkAssets({ files, provenance, digest }) {
   if (provenance === undefined) return problems;
   problems.push(...iconDirProblems(files, provenance));
   problems.push(...generatedProblems(files, provenance, digest));
+  problems.push(...soundProblems(files, provenance, digest));
+  problems.push(...creditProblems(files, provenance, credits));
   problems.push(...noteProblems(provenance));
   for (const entry of entries) {
     if (!isText(entry?.path)) continue;

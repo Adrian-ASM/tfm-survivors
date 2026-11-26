@@ -20,6 +20,7 @@ import {
   veinAspectsOf,
 } from '../../src/infrastructure/content/loadAppearance';
 import { GENERATED_PATHS } from '../support/generated';
+import { REPO_CREDITS } from '../support/credits';
 
 // Spec asset-provenance (0030), "Procedencia de las hojas de aparición de los recogibles": G_Spawn,
 // W_Spawn y M_Spawn de Update 010, al final de la nota, idénticas al pack (con sombra) y vigiladas
@@ -43,6 +44,7 @@ type CheckAssets = (input: {
   files: string[];
   provenance: unknown;
   digest: (path: string) => { sha256: string; bytes: number };
+  credits?: string;
 }) => string[];
 type Entry = (typeof provenanceJson.files)[number];
 
@@ -94,7 +96,14 @@ describe('Procedencia de las hojas de aparición de los recogibles (asset-proven
     const { checkAssets } = await guard();
     const list = [...new Set([...versioned(), ...files.map((f) => f.path)])];
 
-    expect(checkAssets({ files: list, provenance: provenanceJson, digest: digestOf })).toEqual([]);
+    expect(
+      checkAssets({
+        credits: REPO_CREDITS,
+        files: list,
+        provenance: provenanceJson,
+        digest: digestOf,
+      }),
+    ).toEqual([]);
     // 0032 añade al final las 8 piezas de UI: estas 3 siguen en su sitio.
     expect(files.length).toBeGreaterThanOrEqual(ENTRIES_BEFORE + 3);
     const added = files.slice(ENTRIES_BEFORE, ENTRIES_BEFORE + 3);
@@ -117,6 +126,7 @@ describe('Procedencia de las hojas de aparición de los recogibles (asset-proven
     );
 
     const problems = checkAssets({
+      credits: REPO_CREDITS,
       files: [...files.map((f) => f.path), PROVENANCE_PATH],
       provenance: note,
       digest: digestOf,
@@ -130,6 +140,7 @@ describe('Procedencia de las hojas de aparición de los recogibles (asset-proven
     const target = pathOf('M_Spawn.png');
 
     const problems = checkAssets({
+      credits: REPO_CREDITS,
       files: [...files.map((f) => f.path), PROVENANCE_PATH],
       provenance: withEntries((f) => (f.path === target ? null : f)),
       digest: noted,
@@ -144,6 +155,7 @@ describe('Procedencia de las hojas de aparición de los recogibles (asset-proven
     const free = 'Tiny Swords (Free Pack)/Resources/Resources/G_Spawn.png';
 
     const problems = checkAssets({
+      credits: REPO_CREDITS,
       files: [...files.map((f) => f.path), PROVENANCE_PATH],
       provenance: withEntries((f) => (f.path === target ? { ...f, source: free } : f)),
       digest: noted,

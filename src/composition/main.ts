@@ -4,6 +4,7 @@ import '../infrastructure/validation/cspSafeZod';
 import Phaser from 'phaser';
 import appearanceJson from '../../content/appearance.json';
 import guideJson from '../../content/guide.json';
+import audioJson from '../../content/audio.json';
 import provenanceJson from '../../content/asset-provenance.json';
 import { RestartRun } from '../application/RestartRun';
 import { buildRunRules, type RunConfig } from '../domain/run/RunConfig';
@@ -12,6 +13,7 @@ import type { RunSnapshot } from '../domain/run/RunSnapshot';
 import type { DomainError } from '../domain/shared/Result';
 import { repositoryContent } from '../infrastructure/content/loadRunConfig';
 import { generatedPaths, registeredPaths } from '../infrastructure/content/loadAppearance';
+import { soundPaths } from '../infrastructure/content/loadAudio';
 import { IconBook } from '../infrastructure/icons/upgradeIcons';
 import type { OfferIconView } from '../infrastructure/phaser/UpgradeOverlay';
 import { PausePanel } from '../infrastructure/dom/PausePanel';
@@ -32,7 +34,7 @@ import { applyUiScale } from '../infrastructure/dom/applyUiScale';
 import type { FullscreenLike } from '../infrastructure/dom/FullscreenControl';
 import { applyUiKit, uiKitVariables } from '../infrastructure/dom/uiKit';
 import { FONT_WAIT_MS, loadUiFont, withDeadline } from '../infrastructure/dom/uiFont';
-import { assetUrl, fontUrl, iconUrl } from './assetUrl';
+import { assetUrl, audioUrl, fontUrl, iconUrl } from './assetUrl';
 import { scaleConfig } from './scaleConfig';
 import { bootContent } from './contentBoot';
 import { resolveSeed } from '../infrastructure/url/resolveSeed';
@@ -40,6 +42,21 @@ import { resolveAdvance } from '../infrastructure/url/resolveAdvance';
 import { resolveMapMode } from '../infrastructure/url/resolveMapMode';
 import { resolveMobile } from '../infrastructure/url/resolveMobile';
 import { wireMobile } from './mobileWiring';
+import {
+  exposeProbe,
+  wireAudioControls,
+  wireAudioPlayback,
+  type AudioPlayback,
+} from './audioWiring';
+import type { AudioView } from '../infrastructure/audio/AudioDirector';
+import {
+  AudioLoadStatus,
+  audioFilesToLoad,
+  audioMode,
+  hasWebAudio,
+  noAudio,
+} from '../infrastructure/audio/audioPlan';
+import { AudioLoadScene } from '../infrastructure/phaser/AudioLoadScene';
 import { wireProgress, type ProgressProbe } from './progressWiring';
 import { createRunLauncher } from './runLauncher';
 import { decorSeedOf, mapModeOf, restartRandoms } from './seedSource';
@@ -93,6 +110,12 @@ interface E2EProbe {
    * el menú.
    */
   readonly sites: SitesProbe | null;
+  /**
+   * Audio (0035, design D12): ficheros cargados y pedidos (falso y 0 con `?e2e`), estado de la
+   * música, ajustes y volúmenes efectivos, contadores de la carga y efectos sonando. También en el
+   * menú.
+   */
+  readonly audio: AudioView | null;
 }
 
 /** Sonda de los solares (0026). */
@@ -174,13 +197,19 @@ function bootstrap(): void {
 
   // Contenido de juego + datos de aspecto + su cruce, antes de crear el menú o la partida (0012).
   const booted = bootContent(
-    { content: repositoryContent(), appearance: appearanceJson, guide: guideJson },
+    {
+      content: repositoryContent(),
+      appearance: appearanceJson,
+      guide: guideJson,
+      audio: audioJson,
+    },
     (error) => {
       console.error(`Contenido inválido en ${error.field}: ${error.message}`);
       showContentError(root, error);
     },
     registeredPaths(provenanceJson),
     generatedPaths(provenanceJson),
+    soundPaths(provenanceJson),
   );
   if (!booted) return;
   const config = { value: booted.config };
@@ -225,10 +254,25 @@ function bootstrap(): void {
   // Iconos del panel de obra y de la guía: las hojas del HUD con la URL que carga BootScene (0027).
   const sheetUrl = (file: string) => assetUrl(import.meta.env.BASE_URL, file);
   const icons = resourceIcons(appearance, sheetUrl);
+  // Ajustes de audio, panel Sonido y tecla M (0035): antes del menú; aparte del progreso.
+  const audio = wireAudioControls(booted.audio, {
+    doc: document,
+    root,
+    storage: () => window.localStorage,
+    warn: (m) => {
+      console.warn(m);
+    },
+    keys: document,
+  });
   // Antes de crear el juego: el panel queda en el DOM y el progreso cargado (nunca lanza). El menú
-  // lleva la guía ya validada e interpolada (0028).
-  const progress = wireProgress(root, () => probe.seed, { guide: booted.guide, icons });
-  const pause = new PausePanel(document, root);
+  // lleva la guía ya validada e interpolada (0028) y el panel Sonido (0035).
+  const progress = wireProgress(
+    root,
+    () => probe.seed,
+    { guide: booted.guide, icons },
+    audio.panel,
+  );
+  const pause = new PausePanel(document, root, audio.panel);
   // Iconos de mejora (0034, D2/D6): un solo IconBook para cartas (Phaser) y filas (DOM); todo
   // none hasta que BootScene publica las texturas cargadas.
   const iconBook = new IconBook(booted.icons);
@@ -244,9 +288,15 @@ function bootstrap(): void {
     root,
     classes: document.documentElement.classList,
     fullscreen: browserFullscreen(document),
+    mute: { requests: audio.requests, store: audio.store },
   });
   const screens: Screen[] = [];
   const e2e = new URLSearchParams(window.location.search).has('e2e');
+  // Audio (0035, D1): muda con ?e2e, no disponible sin Web Audio y Phaser Sound en otro caso.
+  const soundMode = audioMode(e2e, hasWebAudio(window));
+  const audioStatus = new AudioLoadStatus();
+  // Se conecta tras crear el juego (necesita su gestor de sonido); antes no hay partida ni menú.
+  let playback: AudioPlayback | null = null;
   // El mundo es la arena del contenido; el lienzo, la vista (0013).
   const world: WorldSize = { width: config.value.arena.width, height: config.value.arena.height };
   // Se conecta a la escena al crearla; leerlo antes da null (sin partida).
@@ -312,10 +362,15 @@ function bootstrap(): void {
         panel: buildPanel.view,
       };
     },
+    get audio() {
+      return playback?.view() ?? null;
+    },
   };
   const started = (s: number): void => {
     probe.seed = s;
     probe.runs += 1;
+    // Partida nueva (Jugar, R, ↻ o ?e2e): música a 0 y nueva referencia de peticiones (D6).
+    playback?.newRun();
   };
   // Cada reinicio usa una semilla nueva (también con ?seed=), sin releer la URL ni avisar.
   const nextSeeding = restartRandoms(randomSeed, started, mapMode);
@@ -332,19 +387,21 @@ function bootstrap(): void {
   });
   const onScreen = (screen: Screen): void => {
     probe.screen = screen;
+    playback?.screen(screen);
     if (screens.at(-1) !== screen) screens.push(screen);
     if (screen !== 'menu') return;
     probe.snapshot = null;
     probe.results = null;
     probe.sprites = menuSprites;
   };
-  // Sin ?e2e no hay sonda (spec main-menu, "Sin sonda fuera de E2E").
-  if (e2e) Object.defineProperty(window, '__sprint', { value: probe });
+  // Sin ?e2e no hay sonda (spec main-menu, "Sin sonda fuera de E2E"), tampoco la de audio.
+  exposeProbe(window, e2e, probe);
 
+  const capacity = sceneCapacity(config.value, appearance.maxCorpses, appearance.maxBlastSprites);
   const game = new GameScene({
     launcher,
     restartRun: new RestartRun(config.value, nextSeeding),
-    capacity: sceneCapacity(config.value, appearance.maxCorpses, appearance.maxBlastSprites),
+    capacity,
     world,
     appearance,
     // Variedad de árboles de la partida en curso (0016): `probe.seed` ya es la de esa partida.
@@ -355,10 +412,11 @@ function bootstrap(): void {
     shop: shopPanel,
     build: buildPanel,
     // Snapshot y sprites en la misma llamada: cualquier lectura ve un par coherente (design D7).
-    onRender: (snapshot, results, sprites) => {
+    onRender: (snapshot, results, sprites, renderMs) => {
       probe.snapshot = snapshot;
       probe.results = results;
       probe.sprites = sprites;
+      playback?.render(snapshot, renderMs);
     },
     onScreen,
     simSpeed: advance.speed,
@@ -367,6 +425,8 @@ function bootstrap(): void {
     // Regla de frame, joystick, barra y retención: solo con el modo móvil (vacío en escritorio).
     ...mobile.sceneDeps,
     iconFor: (id) => iconBook.resolve(id),
+    // Panel Sonido abierto desde la pausa: Esc y ⏸ lo cierran en la escena (0035, D10).
+    soundPanel: audio.panel,
   });
   offerIconsView = () => game.offerIconsView();
   cameraView = () => game.cameraView();
@@ -397,6 +457,12 @@ function bootstrap(): void {
     onIconsLoaded: (loaded) => {
       iconBook.setLoaded(loaded);
     },
+    // Audio en paralelo (0035, D8): solo con Phaser Sound; el menú no la espera.
+    launchAudio: soundMode === 'web',
+  });
+  const audioLoad = new AudioLoadScene({
+    files: audioFilesToLoad(booted.audio, (file) => audioUrl(import.meta.env.BASE_URL, file)),
+    status: audioStatus,
   });
 
   // Lienzo a ventana completa con tope (0017, ADR-0014): RESIZE recortado a `maxView`, que no
@@ -410,9 +476,23 @@ function bootstrap(): void {
     backgroundColor: BACKGROUND,
     // Imágenes con <img> (sin XHR ni blob:): la CSP de index.html no cambia (design D2).
     loader: { imageLoadType: 'HTMLImageElement' },
+    // Sin HTML5 Audio (0035, D1): con ?e2e o sin Web Audio, el motor no crea sistema de sonido.
+    audio: { noAudio: noAudio(soundMode) },
     // Phaser arranca la primera escena: BootScene carga las hojas y arranca el menú o, con ?e2e,
     // la partida (arranque de antes, ADR-0011).
-    scene: [boot, menu, game],
+    scene: soundMode === 'web' ? [boot, menu, game, audioLoad] : [boot, menu, game],
+  });
+  playback = wireAudioPlayback(booted.audio, audio, {
+    mode: soundMode,
+    game: phaserGame,
+    events: {
+      hidden: Phaser.Core.Events.HIDDEN,
+      visible: Phaser.Core.Events.VISIBLE,
+      preStep: Phaser.Core.Events.PRE_STEP,
+    },
+    status: audioStatus,
+    maxTowerProjectiles: capacity.towerProjectiles,
+    ...(mobile.sceneDeps.hold ? { hold: mobile.sceneDeps.hold } : {}),
   });
   // Una sola escucha, que vive lo que el juego: escala de UI de los paneles DOM (design D6; en
   // móvil, 1 siempre) y aviso de orientación con el tamaño del padre (0033, solo en móvil).

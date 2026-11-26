@@ -1,0 +1,86 @@
+{
+  "maxVoices": 8,
+  "towerMatchPx": 24,
+  "defaults": {
+    "music": 50,
+    "effects": 80,
+    "muted": false
+  },
+  "music": {
+    "file": "song.mp3"
+  },
+  "effects": {
+    "playerHurt": {
+      "file": "receive-hit.flac",
+      "priority": 10,
+      "minIntervalMs": 120,
+      "gain": 0.9
+    },
+    "impactWeapon": {
+      "file": "arrow-impact.mp3",
+      "priority": 2,
+      "minIntervalMs": 40,
+      "gain": 0.5
+    },
+    "impactTower": {
+      "file": "arrow-impact.mp3",
+      "priority": 2,
+      "minIntervalMs": 60,
+      "gain": 0.5
+    },
+    "impactBlast": {
+      "file": "explosion.wav",
+      "priority": 4,
+      "minIntervalMs": 80,
+      "gain": 0.6
+    },
+    "enemyDeath": {
+      "file": "enemy-death.wav",
+      "priority": 5,
+      "minIntervalMs": 60,
+      "gain": 0.6
+    },
+    "pickupGold": {
+      "file": "get-gold.mp3",
+      "priority": 3,
+      "minIntervalMs": 50,
+      "gain": 0.5
+    },
+    "pickupStone": {
+      "file": "get-stone.wav",
+      "priority": 3,
+      "minIntervalMs": 50,
+      "gain": 0.5
+    },
+    "pickupWood": {
+      "file": "get-wood.wav",
+      "priority": 3,
+      "minIntervalMs": 50,
+      "gain": 0.5
+    },
+    "levelUp": {
+      "file": "level-up.wav",
+      "priority": 9,
+      "minIntervalMs": 300,
+      "gain": 0.8
+    },
+    "explosion": {
+      "file": "explosion.wav",
+      "priority": 7,
+      "minIntervalMs": 100,
+      "gain": 0.5
+    },
+    "purchase": {
+      "file": "buy-item.wav",
+      "priority": 8,
+      "minIntervalMs": 0,
+      "gain": 0.8
+    },
+    "build": {
+      "file": "build.mp3",
+      "priority": 8,
+      "minIntervalMs": 0,
+      "gain": 0.8
+    }
+  }
+}

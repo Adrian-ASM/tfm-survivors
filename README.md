@@ -85,4 +85,6 @@ Desde GitHub Actions: workflow `smoke-public` (*Actions → smoke-public → Run
   que usa el juego, en `public/assets/tiny-swords/`, con su procedencia (ruta en el pack, `sha256` y bytes) en
   `content/asset-provenance.json`. Nada del *Free Pack* (no es CC0): lo impide un guardarraíl en pre-commit y CI
   (ADR-0012).
+- Audio: CC0, CC-BY-3.0 o CC-BY-4.0, registrado en `content/asset-provenance.json`; la atribución de los CC-BY,
+  en [CREDITS.md](CREDITS.md).
 - Código: _pendiente_.

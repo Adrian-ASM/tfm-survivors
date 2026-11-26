@@ -43,7 +43,15 @@ export const MENU_LABELS = {
   guidePrev: 'Anterior',
   guideNext: 'Siguiente',
   guideClose: 'Cerrar',
+  sound: 'Sonido',
+  soundMusic: 'Música',
+  soundEffects: 'Efectos',
+  soundMute: 'Silenciar todo',
+  soundClose: 'Cerrar',
 } as const;
+
+/** Valor visible de un deslizador del panel Sonido (spec audio): «N %». */
+export const soundPercent = (n: number): string => `${String(n)} %`;
 
 /** Indicador de página de la guía (spec menu-guide): «n de total». */
 export const guidePage = (n: number, total: number): string => `${String(n)} de ${String(total)}`;

@@ -16,6 +16,9 @@ export class FakeElement {
   type = '';
   disabled = false;
   scrollTop = 0;
+  /** Valor de un `<input>` (0035: deslizadores del panel Sonido) y estado de una casilla. */
+  value = '';
+  checked = false;
   parent: FakeElement | null = null;
 
   constructor(
@@ -78,6 +81,11 @@ export class FakeElement {
     this.parent?.clickBubbling();
   }
 
+  /** Lanza las escuchas de un tipo (`input`, `change`…), como un evento sin burbujeo. */
+  dispatch(type: string): void {
+    for (const fn of [...(this.listeners.get(type) ?? [])]) fn({ type, target: this });
+  }
+
   focus(): void {
     this.ownerDocument.activeElement = this;
   }
@@ -104,6 +112,8 @@ export class FakeElement {
 
 /** Opciones de una tecla de `dispatchKey` (las de `KeyboardEvent` que mira la guía). */
 export interface FakeKeyOptions {
+  /** `KeyboardEvent.code` (0035: la tecla M); por defecto, `Key` + la tecla en mayúscula. */
+  readonly code?: string;
   readonly repeat?: boolean;
   readonly altKey?: boolean;
   readonly ctrlKey?: boolean;
@@ -142,6 +152,7 @@ export class FakeDocument {
     let defaultPrevented = false;
     const event = {
       key,
+      code: options.code ?? `Key${key.toUpperCase()}`,
       repeat: options.repeat ?? false,
       altKey: options.altKey ?? false,
       ctrlKey: options.ctrlKey ?? false,

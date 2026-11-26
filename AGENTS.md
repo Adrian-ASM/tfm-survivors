@@ -243,6 +243,24 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   `__sprint.offerIcons` y `shop.products[i].icon` (`products` vacío con la tienda cerrada). Tests con iconos: el
   tercer argumento `GENERATED_PATHS` (`tests/support/generated.ts`); forma de los PNG en `tests/support/pngProbe.ts`.
   Sin núcleo; balance, firmas y 820/904 intactos; E2E de la Tienda ampliado (7 filas y 3 cartas `painted`, 0 CSP).
+  Audio (change 0035, ADR-0031): 11 ficheros del autor en `public/assets/audio/` (4.947.600 B, sin recodificar;
+  7 CC0 y 4 CC-BY con su línea en `CREDITS.md`), `file` obligatorio en `audio.json`: todo en el adaptador. `AudioCues` saca las peticiones de los 12 tipos
+  (`effectTypes.ts`) comparando cada snapshot pintado con el anterior (ids de golpes y explosiones, bajas,
+  recogibles salvo en obra, por recurso con `PICKUP_EFFECT`: `pickupGold` oro/XP/carne, `pickupStone`,
+  `pickupWood`; nivel, compra con la tienda abierta, solares; impacto de explosión > torre por `towerMatchPx` > arma);
+  `EffectMixer` deja 1 por tipo y snapshot, con intervalo por el **reloj de render** (cuarto argumento de
+  `onRender`), tope `maxVoices − sonando` por prioridad y descarte con pausa, retención, pestaña oculta o volumen 0;
+  `musicState` + `AudioDirector` (stopped en menú y resultados, 0 con Jugar/R/↻). `SoundOut`: `PhaserSoundOut`
+  (pools perezosos, bucle, `canPlay` = `!locked` y caché), muda con `?e2e` y no disponible sin Web Audio
+  (`audio.noAudio`, `pauseOnBlur = false`); `AudioLoadScene` en paralelo desde `BootScene` (el menú no espera).
+  `content/audio.json` (zod estricto, cruce `AUDIO_NOT_REGISTERED` en `bootContent` con `soundPaths`), ajustes en
+  `sprint-survivors/audio` (`AudioSettingsStore`, 50/80/no, fuera de Exportar/Importar/Borrar). Panel DOM
+  `SoundPanel` (3.er botón del menú, estado `sound`; en la pausa entre Reanudar y Volver, con `SoundPanelGate` en
+  `GameScene`), tecla M y botón de silencio de la `TouchBar` vía `MuteRequests` (una vez por frame, `PRE_STEP`).
+  Guardarraíl: lista `sounds[]` (CC0, CC-BY-3.0 o CC-BY-4.0 con su línea en `CREDITS.md`, enlazado desde el
+  README; `kenney.nl`/`opengameart.org`/`freesound.org`, `public/assets/audio/`) y
+  `tests/guardrails/audio-files.test.ts` (uso y ≤ 6 MiB; `.ogg/.mp3/.wav/.flac`). Sonda `__sprint.audio`; E2E de
+  escritorio y de arranque ampliados. Núcleo, balance y firmas intactos.
   Fuente de verdad del comportamiento: `openspec/specs/`.
 
 ## 2. Comandos

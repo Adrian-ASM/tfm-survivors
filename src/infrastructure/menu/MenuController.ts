@@ -1,12 +1,12 @@
 /**
  * `idle`: menú operativo; `confirming`: diálogo de Borrar datos abierto; `guide`: guía «Cómo jugar»
- * abierta (0028); `leaving`: Jugar pulsado.
+ * abierta (0028); `sound`: panel Sonido abierto (0035); `leaving`: Jugar pulsado.
  */
-export type MenuState = 'idle' | 'confirming' | 'guide' | 'leaving';
+export type MenuState = 'idle' | 'confirming' | 'guide' | 'sound' | 'leaving';
 
 /**
  * Reglas del menú de inicio (ADR-0011), sin DOM ni motor: se prueban en Node. Jugar solo actúa
- * una vez (doble clic ⇒ 1 partida) y, con el diálogo o la guía abiertos, ninguna opción del menú
+ * una vez (doble clic ⇒ 1 partida) y, con el diálogo, la guía o el panel Sonido abiertos, ninguna opción del menú
  * tiene efecto (spec main-menu y menu-guide). Los paneles DOM solo llaman a estos métodos; la
  * escena consume `takePlay`.
  */
@@ -67,6 +67,20 @@ export class MenuController {
   /** La guía se ha cerrado (Cerrar o Esc): el menú vuelve a estar operativo. */
   closeGuide(): boolean {
     if (this.current !== 'guide') return false;
+    this.current = 'idle';
+    return true;
+  }
+
+  /** Sonido (0035): abre el panel, solo con el menú operativo (bloquea el resto, como la guía). */
+  openSound(): boolean {
+    if (this.current !== 'idle') return false;
+    this.current = 'sound';
+    return true;
+  }
+
+  /** El panel Sonido se ha cerrado (Cerrar o Esc): el menú vuelve a estar operativo. */
+  closeSound(): boolean {
+    if (this.current !== 'sound') return false;
     this.current = 'idle';
     return true;
   }

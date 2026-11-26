@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import appearanceJson from '../../content/appearance.json';
 import guideJson from '../../content/guide.json';
+import audioJson from '../../content/audio.json';
 import provenanceJson from '../../content/asset-provenance.json';
 import { bootContent } from '../../src/composition/contentBoot';
 import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
@@ -13,7 +14,7 @@ import { randomInputs } from '../support/inputs';
 import { planFor } from '../support/mapArt';
 import { fakeUiScene } from '../support/phaserUi';
 import { chooseFirstWhileOpen, startSeededRun } from '../support/runs';
-import { GENERATED_PATHS } from '../support/generated';
+import { GENERATED_PATHS, SOUND_PATHS } from '../support/generated';
 
 // Spec sprite-rendering (0032), "La interfaz no cambia la simulación ni el mapa": la sección `ui`
 // es presentación pura (no la lee ningún flujo de azar ni ninguna colocación).
@@ -39,12 +40,18 @@ function otherUi(): unknown {
 
 function boot(ui: unknown) {
   const booted = bootContent(
-    { content: repositoryContent(), appearance: { ...appearanceJson, ui }, guide: guideJson },
+    {
+      content: repositoryContent(),
+      appearance: { ...appearanceJson, ui },
+      guide: guideJson,
+      audio: audioJson,
+    },
     (e) => {
       throw new Error(`${e.field}: ${e.message}`);
     },
     REGISTERED,
     GENERATED_PATHS,
+    SOUND_PATHS,
   );
   if (!booted) throw new Error('arranque fallido');
   return booted;

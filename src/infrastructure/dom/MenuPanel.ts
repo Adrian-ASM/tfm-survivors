@@ -3,6 +3,7 @@ import { button, setPanelHidden } from './button';
 import type { GuideModal } from './GuideModal';
 import { MENU_LABELS } from './menuText';
 import { pickedFile } from './pickedFile';
+import type { SoundPanel } from './SoundPanel';
 
 /** Acciones de progreso del menú (la composición las conecta a `MenuProgress`). */
 export interface MenuPanelActions {
@@ -13,10 +14,10 @@ export interface MenuPanelActions {
 }
 
 /**
- * Panel DOM del menú de inicio (ADR-0011): Jugar, Cómo jugar, Exportar, Importar y Borrar datos, en
- * ese orden, el selector de fichero oculto y el mensaje (`role="status"`). Cada clic pasa por
- * `MenuController`, que decide si tiene efecto. Cómo jugar abre la guía (0028), que recibe ya
- * creada. Solo `textContent` y `addEventListener` (CSP).
+ * Panel DOM del menú de inicio (ADR-0011): Jugar, Cómo jugar, Sonido, Exportar, Importar y Borrar
+ * datos, en ese orden, el selector de fichero oculto y el mensaje (`role="status"`). Cada clic pasa
+ * por `MenuController`, que decide si tiene efecto. Cómo jugar abre la guía (0028) y Sonido el panel
+ * de audio (0035), que recibe ya creados. Solo `textContent` y `addEventListener` (CSP).
  */
 export class MenuPanel {
   private readonly root: HTMLElement;
@@ -29,6 +30,7 @@ export class MenuPanel {
     private readonly controller: MenuController,
     actions: MenuPanelActions,
     private readonly guide: GuideModal,
+    private readonly sound: SoundPanel,
   ) {
     this.root = doc.createElement('section');
     this.root.className = 'menu-panel';
@@ -64,11 +66,25 @@ export class MenuPanel {
         guideButton.focus();
       });
     });
+    // Sonido (0035): el panel cierra con Esc o Cerrar y el foco vuelve a este botón.
+    const soundButton = button(doc, MENU_LABELS.sound, () => {
+      if (!controller.openSound()) return;
+      this.setLocked(true);
+      sound.show(
+        () => {
+          controller.closeSound();
+          this.setLocked(false);
+          soundButton.focus();
+        },
+        { escCloses: true },
+      );
+    });
     this.buttons = [
       button(doc, MENU_LABELS.play, () => {
         if (controller.requestPlay()) this.hide();
       }),
       guideButton,
+      soundButton,
       button(doc, MENU_LABELS.export, () => {
         if (controller.requestExport()) actions.onExport();
       }),
@@ -86,9 +102,10 @@ export class MenuPanel {
     parent.append(this.root);
   }
 
-  /** Menú operativo, con la guía cerrada y sin mensajes heredados. */
+  /** Menú operativo, con la guía y el panel Sonido cerrados y sin mensajes heredados. */
   show(): void {
     this.guide.close();
+    this.sound.close();
     this.controller.show();
     this.setMessage(null);
     this.setLocked(false);
@@ -105,7 +122,7 @@ export class MenuPanel {
     this.message.hidden = text === null;
   }
 
-  /** Con el diálogo o la guía abiertos (o al salir) los botones no se pueden pulsar. */
+  /** Con el diálogo, la guía o el panel Sonido abiertos (o al salir) no se pueden pulsar. */
   setLocked(locked: boolean): void {
     for (const b of this.buttons) b.disabled = locked;
   }

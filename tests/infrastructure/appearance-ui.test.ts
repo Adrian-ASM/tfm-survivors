@@ -2,6 +2,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import appearanceJson from '../../content/appearance.json';
 import guideJson from '../../content/guide.json';
+import audioJson from '../../content/audio.json';
 import provenanceJson from '../../content/asset-provenance.json';
 import { bootContent } from '../../src/composition/contentBoot';
 import {
@@ -26,7 +27,7 @@ import {
 import { REGISTERED, rawAppearance, type RawAppearance } from '../support/appearance';
 import { rawContent } from '../support/builders';
 import { meanColor, readPng } from '../support/png';
-import { GENERATED_PATHS } from '../support/generated';
+import { GENERATED_PATHS, SOUND_PATHS } from '../support/generated';
 
 // Spec sprite-rendering (0032), "Datos de aspecto de la interfaz".
 const root = join(import.meta.dirname, '..', '..');
@@ -244,10 +245,11 @@ describe('Datos de aspecto de la interfaz (sprite-rendering 0032)', () => {
     if (button) button.slice.top = 2.5;
     const errors: string[] = [];
     const booted = bootContent(
-      { content: rawContent(), appearance, guide: guideJson },
+      { content: rawContent(), appearance, guide: guideJson, audio: audioJson },
       (e) => errors.push(e.field),
       REGISTERED,
       GENERATED_PATHS,
+      SOUND_PATHS,
     );
     expect(booted).toBeNull();
     expect(errors).toEqual(['ui.pieces.button.slice.top']);

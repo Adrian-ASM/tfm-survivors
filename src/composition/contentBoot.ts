@@ -4,6 +4,8 @@ import { RUIN_COLOR_KEY, type Appearance } from '../infrastructure/content/appea
 import type { Guide } from '../infrastructure/content/guideSchema';
 import { checkTileScales, parseAppearance } from '../infrastructure/content/loadAppearance';
 import { parseGuide } from '../infrastructure/content/loadGuide';
+import { parseAudio } from '../infrastructure/content/loadAudio';
+import type { AudioContent } from '../infrastructure/content/audioSchema';
 import { iconCatalog, type IconCatalog, type IconIds } from '../infrastructure/icons/upgradeIcons';
 import type { MobileDisplay } from '../infrastructure/content/schemas';
 import {
@@ -32,6 +34,8 @@ export interface RawBoot {
   readonly content: RawContentFiles;
   readonly appearance: unknown;
   readonly guide: unknown;
+  /** Contenido de audio (0035): presentación, obligatorio como el resto. */
+  readonly audio: unknown;
 }
 
 export interface BootedContent {
@@ -45,6 +49,8 @@ export interface BootedContent {
   readonly guide: Guide;
   /** Catálogo de iconos de mejora ya cruzado con el contenido (0034): presentación. */
   readonly icons: IconCatalog;
+  /** Contenido de audio ya cruzado con la lista de audio de la nota (0035): presentación. */
+  readonly audio: AudioContent;
 }
 
 /**
@@ -132,13 +138,15 @@ export function checkIconRefs(
  * Valida el contenido de juego, los datos de aspecto (con las hojas registradas en la nota de
  * procedencia), su cruce y la guía del menú. Ante el primer error lo informa y devuelve `null`:
  * no se crea ni el menú ni la partida. Sin motor ni DOM (se prueba en Node). `generated` (0034) son
- * las rutas de la lista de imágenes con IA: las únicas que valen como icono.
+ * las rutas de la lista de imágenes con IA: las únicas que valen como icono. `sounds` (0035) son las
+ * de la lista de audio: las únicas que valen como fichero de `audio.json`.
  */
 export function bootContent(
   raw: RawBoot,
   report: (error: DomainError) => void,
   registered: readonly string[],
   generated: readonly string[] = [],
+  sounds: readonly string[] = [],
 ): BootedContent | null {
   const content = parseContent(raw.content);
   if (!content.ok) {
@@ -166,6 +174,12 @@ export function bootContent(
     report(scales.error);
     return null;
   }
+  // Audio (0035, design D5) antes de la guía, con el mismo informe de errores.
+  const audio = parseAudio(raw.audio, sounds);
+  if (!audio.ok) {
+    report(audio.error);
+    return null;
+  }
   // La guía va la última: sus marcadores leen la config ya validada (design 0028 §1).
   const guide = parseGuide(raw.guide, config);
   if (!guide.ok) {
@@ -179,5 +193,6 @@ export function bootContent(
     appearance: appearance.value,
     guide: guide.value,
     icons: icons.value,
+    audio: audio.value,
   };
 }

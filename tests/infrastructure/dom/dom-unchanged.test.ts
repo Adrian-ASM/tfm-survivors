@@ -1,3 +1,5 @@
+import { SoundPanel } from '../../../src/infrastructure/dom/SoundPanel';
+import { aSoundStore } from '../../support/audio';
 import { describe, expect, it, vi } from 'vitest';
 import { BuildPanel } from '../../../src/infrastructure/dom/BuildPanel';
 import { ConfirmDialog } from '../../../src/infrastructure/dom/ConfirmDialog';
@@ -85,15 +87,20 @@ function mountAll(shopIcons: ShopIcons = SHOP_ICONS) {
   const { doc, root, fake, fakeDoc } = fakeDom();
   const controller = new MenuController();
   const guide = new GuideModal(doc, root, defaultGuide(), TEST_ICONS);
+  // El panel Sonido (0035) cuelga de otro contenedor: los 7 paneles de 0032 siguen en su orden; el
+  // menú y la pausa ganan su botón `Sonido` (instantánea regenerada en 0035).
+  const soundParent = fakeDoc.createElement('div') as unknown as HTMLElement;
+  const sound = new SoundPanel(doc, soundParent, aSoundStore().store);
   const menu = new MenuPanel(
     doc,
     root,
     controller,
     { onExport: vi.fn(), onImport: vi.fn(), onOpenConfirm: vi.fn() },
     guide,
+    sound,
   );
   const dialog = new ConfirmDialog(doc, root, { onConfirm: vi.fn(), onCancel: vi.fn() });
-  const pause = new PausePanel(doc, root);
+  const pause = new PausePanel(doc, root, sound);
   const results = new ResultsPanel(doc, root, { onExport: vi.fn(), onImport: vi.fn() });
   const shop = new ShopPanel(doc, root, shopIcons);
   const build = new BuildPanel(doc, root, ICONS);

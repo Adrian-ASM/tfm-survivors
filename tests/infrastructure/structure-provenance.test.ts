@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import provenanceJson from '../../content/asset-provenance.json';
 import { ASSET_DIR } from '../../src/infrastructure/content/appearanceSchema';
+import { REPO_CREDITS } from '../support/credits';
 
 // Spec asset-provenance (0021), "Procedencia de las hojas de las estructuras": las 4 hojas de casas,
 // torres y ruinas de Update 010, con su entrada en la nota y vigiladas por el guardarraíl.
@@ -25,6 +26,7 @@ type CheckAssets = (input: {
   files: string[];
   provenance: unknown;
   digest: (path: string) => { sha256: string; bytes: number };
+  credits?: string;
 }) => string[];
 
 const files = provenanceJson.files;
@@ -46,7 +48,12 @@ describe('Procedencia de las hojas de las estructuras (asset-provenance)', () =>
   it('Scenario: Hojas de estructuras registradas', async () => {
     const { checkAssets } = await guard();
     expect(
-      checkAssets({ files: versioned(), provenance: provenanceJson, digest: digestOf }),
+      checkAssets({
+        credits: REPO_CREDITS,
+        files: versioned(),
+        provenance: provenanceJson,
+        digest: digestOf,
+      }),
     ).toEqual([]);
     // 0022 añade 3 entradas de recursos al final: estas 4 siguen en su sitio, sin cambios.
     expect(files.length).toBeGreaterThanOrEqual(ENTRIES_BEFORE + 4);
@@ -68,6 +75,7 @@ describe('Procedencia de las hojas de las estructuras (asset-provenance)', () =>
       return { sha256: e?.sha256 ?? '', bytes: e?.bytes ?? 0 };
     };
     const problems = checkAssets({
+      credits: REPO_CREDITS,
       files: [...files.map((f) => f.path), PROVENANCE_PATH],
       provenance: note,
       digest,

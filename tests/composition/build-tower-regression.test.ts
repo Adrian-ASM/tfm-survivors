@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import guideJson from '../../content/guide.json';
+import audioJson from '../../content/audio.json';
 import appearanceJson from '../../content/appearance.json';
 import provenanceJson from '../../content/asset-provenance.json';
 import { BuildOnSite } from '../../src/application/BuildOnSite';
@@ -16,7 +17,7 @@ import { TICK_MS } from '../support/builders';
 import { fakeDom, type FakeElement } from '../support/fakeDom';
 import { startSeededRun } from '../support/runs';
 import { registeredPaths } from '../../src/infrastructure/content/loadAppearance';
-import { GENERATED_PATHS } from '../support/generated';
+import { GENERATED_PATHS, SOUND_PATHS } from '../support/generated';
 
 // Regresión de tasks 0027 §3.4 ("solo se podían construir casas"): de extremo a extremo sin
 // navegador, con el contenido y el aspecto reales del repositorio (como `main`), el mapa generado de
@@ -25,12 +26,18 @@ import { GENERATED_PATHS } from '../support/generated';
 describe('Torre construible con el contenido real (regresión 0027 §3.4)', () => {
   it('panel y sonda con la torre activada; el clic la construye (madera −30, piedra −15)', () => {
     const booted = bootContent(
-      { content: repositoryContent(), appearance: appearanceJson, guide: guideJson },
+      {
+        content: repositoryContent(),
+        appearance: appearanceJson,
+        guide: guideJson,
+        audio: audioJson,
+      },
       (e) => {
         throw new Error(`${e.field}: ${e.message}`);
       },
       registeredPaths(provenanceJson),
       GENERATED_PATHS,
+      SOUND_PATHS,
     );
     if (!booted) throw new Error('el contenido real no arranca');
     const { config, appearance } = booted;

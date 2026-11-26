@@ -10,11 +10,17 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { check as checkArchitecture } from '../.claude/hooks/guard-architecture.mjs';
-import { FONT, PROVENANCE_PATH, checkAssets } from '../.claude/hooks/guard-assets.mjs';
+import {
+  AUDIO,
+  CREDITS_PATH,
+  FONT,
+  PROVENANCE_PATH,
+  checkAssets,
+} from '../.claude/hooks/guard-assets.mjs';
 import { check as checkSecrets } from '../.claude/hooks/guard-secrets.mjs';
 
 const CHECKS = [checkSecrets, checkArchitecture];
-const BINARY = /\.(png|jpe?g|gif|webp|ico|bmp|mp3|ogg|wav|woff2?|ttf|otf|zip|gz|pdf)$/i;
+const BINARY = /\.(png|jpe?g|gif|webp|ico|bmp|mp3|ogg|wav|flac|woff2?|ttf|otf|zip|gz|pdf)$/i;
 const MAX_BUFFER = 256 * 1024 * 1024;
 // Assets cuyo hash comprueba la nota de procedencia (las imágenes, siempre binarias: design R2).
 const ASSET = /\.(png|jpe?g|gif|webp|svg|ico|bmp|aseprite)$/i;
@@ -92,8 +98,12 @@ failures.push(...provenanceFailures());
  */
 function provenanceFailures() {
   const versioned = git(['ls-files', '-z']).toString('utf8').split('\0').filter(Boolean);
-  // 0032: también las fuentes, cuyo sha256 comprueba `fonts[]` de la nota.
-  const wanted = versioned.filter((f) => f === PROVENANCE_PATH || ASSET.test(f) || FONT.test(f));
+  // 0032: también las fuentes, cuyo sha256 comprueba `fonts[]` de la nota; 0035: el audio
+  // (`sounds[]`) y `CREDITS.md`, cuyas líneas comprueban las entradas con atribución.
+  const wanted = versioned.filter(
+    (f) =>
+      f === PROVENANCE_PATH || f === CREDITS_PATH || ASSET.test(f) || FONT.test(f) || AUDIO.test(f),
+  );
   const blobs = readIndexBlobs(wanted);
   const note = blobs.get(PROVENANCE_PATH);
   let provenance;
@@ -108,7 +118,9 @@ function provenanceFailures() {
     const blob = blobs.get(path) ?? Buffer.alloc(0);
     return { sha256: createHash('sha256').update(blob).digest('hex'), bytes: blob.length };
   };
-  const lines = checkAssets({ files: versioned, provenance, digest });
+  const creditsBlob = blobs.get(CREDITS_PATH);
+  const credits = creditsBlob === undefined ? undefined : creditsBlob.toString('utf8');
+  const lines = checkAssets({ files: versioned, provenance, digest, credits });
   return lines.length > 0 ? [lines.join('\n')] : [];
 }
 
