@@ -381,10 +381,11 @@ primer frame de la hoja de su recogible en `content/appearance.json` (la de la p
 misma que el contador del HUD); el de las gemas usa la hoja de la gema si la tiene y, si la gema se pinta como forma
 de color, una forma con el color de la gema de `appearance.json`. Con el contenido por defecto, la página 3 MUST
 mostrar los cinco iconos y la página 5 al menos los de madera y piedra; una página que no declara recursos MUST NOT
-mostrar ningún icono de recurso. Los iconos MUST respetar la CSP (sin estilos ni scripts en línea). La guía MUST NOT
-usar ningún fichero gráfico que no esté ya en el repositorio ni añadir entradas a `content/asset-provenance.json`. Si
-la hoja de un icono no carga, la página MUST seguir mostrando su título, su texto y sus controles, sin errores no
-capturados.
+mostrar ningún icono de recurso. Los iconos MUST respetar la CSP (sin estilos ni scripts en línea). Los iconos MUST
+NOT usar ninguna hoja que no sea la de un recogible de `appearance.json` (ni una pieza de la interfaz) ni añadir por sí
+mismos entradas a `content/asset-provenance.json`; el marco y los botones de la guía usan las piezas de la interfaz
+(ver "Aspecto de la guía con piezas de UI"). Si la hoja de un icono no carga, la página MUST seguir mostrando su
+título, su texto y sus controles, sin errores no capturados.
 
 #### Scenario: Iconos de las páginas de recursos y de obra
 - **GIVEN** el contenido por defecto y la guía abierta
@@ -415,6 +416,13 @@ capturados.
 - **WHEN** se pinta la página
 - **THEN** el título, el texto, el indicador `3 de 7` y los controles son visibles y no hay errores no capturados
 
+#### Scenario: Iconos sin hojas propias
+- **GIVEN** el repositorio tras este change
+- **WHEN** se compone cada icono de recurso de las 7 páginas
+- **THEN** cada icono con hoja apunta a la hoja de un recogible de `appearance.json` que ya figuraba en la nota de
+  procedencia antes de 0032, ninguno apunta a la hoja de una pieza de la interfaz, y el de las gemas es una forma
+  `data:` sin fichero
+
 ### Requirement: Guía observable en el navegador
 El sistema SHALL permitir, en la build de producción y sin `?e2e`, abrir la guía, recorrer sus 7 páginas y cerrarla
 sin recargar la página, sin errores no capturados en la consola, sin diálogos nativos del navegador y sin violaciones
@@ -433,4 +441,30 @@ de la CSP. La guía no añade ninguna sonda a `window.__sprint`.
 - **AND** no hay errores no capturados, se han abierto 0 diálogos nativos y no se registra ningún evento
   `securitypolicyviolation`
 
+### Requirement: Aspecto de la guía con piezas de UI
+La vista SHALL pintar la guía (`.guide-modal`) con las piezas de "Piezas de UI en los paneles DOM" (`sprite-rendering`):
+el recuadro con el marco de `panel`; `Anterior`, `Siguiente` y `Cerrar` con las piezas de botón según su estado; el
+título de página (`.guide-modal__header h2`) con la cabecera `header`; el texto con la tinta `text` de `panel` y el
+indicador `n de 7` con la tinta `accent`; todo con la fuente pixel. Con
+una ventana ≥ 960 × 540 y cualquier k, el título, el indicador y los controles visibles MUST quedar dentro del área útil
+del recuadro, y el texto de la página dentro del área útil, entero o alcanzable desplazándolo dentro del recuadro, sin
+que la barra de desplazamiento tape el marco. Si la pieza o la fuente no carga, la guía se pinta con el aspecto actual y
+su navegación no cambia.
+
+#### Scenario: Guía dentro del marco a ×1 y a ×2
+- **GIVEN** la hoja de estilos del repositorio y los datos de `ui`, con k = 1 (ventana de 960 × 540) y k = 2 (ventana de
+  2.560 × 1.440)
+- **WHEN** se leen las reglas de `.guide-modal` y de su cuerpo
+- **THEN** el relleno interior del recuadro es ≥ (l·k, t·k, r·k, b·k) px y ≥ 12 px en cada lado, y el cuerpo de la
+  página conserva su desplazamiento vertical interno, de modo que el texto queda en el área útil, entero o alcanzable
+  desplazándolo
+- **AND** siguen valiendo "Guía entera en la ventana mínima y con escala ×2" (`main-menu`) y "Recorrido de la guía en
+  el smoke"
+
+#### Scenario: Controles de la guía con piezas de botón
+- **GIVEN** la hoja de estilos del repositorio
+- **WHEN** se leen las reglas de los botones de `.guide-modal`
+- **THEN** usan la pieza de `button`, con `buttonHover` en `:hover` y `:focus-visible` y `buttonPressed` en `:active`
+
 <!-- historial: 0028-menu-guide (2026-11-25) -->
+<!-- historial: 0032-ui-kit (2026-11-26) -->

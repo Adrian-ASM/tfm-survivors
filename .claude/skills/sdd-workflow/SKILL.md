@@ -67,6 +67,12 @@ Tras cada fase, resume al usuario en ≤ 5 líneas: qué se produjo, decisiones 
 - **Coste por tick con tope**: si el núcleo gana una estructura con tope (registro, pool), pide al `sdd-architect`
   que estime el **peor caso con el tope lleno** y al `sdd-implementer` que lo mida con `npm run bench` al cerrar el
   grupo de dominio (0031: la búsqueda lineal estimada en < 0,01 ms subía el tick +12–16 % con el tope saturado).
+- **Reglas sobre datos medibles**: si una spec añade una regla sobre valores que salen de assets (colores, márgenes,
+  tamaños), pide al `sdd-architect` que la compruebe contra los ficheros reales antes de *tasks* (0032: la tinta
+  `danger` roja con contraste 4,5 era imposible sobre el botón rojo pulsado y se descubrió en apply).
+- **Sin `--no-verify` tampoco en commits temporales**: al pedir apply, recuerda al `sdd-implementer` que para
+  apartar trabajo durante un rebase use un commit WIP con hooks o `git stash push -u -m <tag>` (0032: tres WIP
+  con `--no-verify`, ninguno en la rama final).
 - **Reglas transversales en las specs**: si el change cambia una regla que otras capacidades dan por supuesta
   ("solo se ofrece lo asequible", "un solar libre no bloquea"), pide al `sdd-spec-writer` que la busque en **todas**
   las specs vivas, no solo en las de la propuesta (0027: `resources` decía "con madera 14 la casa no se ofrece" y

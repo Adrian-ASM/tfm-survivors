@@ -1,6 +1,6 @@
 # ADR-0028 · Kit de UI de Update 010 por variables CSS y NineSlice, con fuente OFL bajo procedencia
 
-- **Estado**: propuesta (change 0032-ui-kit)
+- **Estado**: aceptada (change 0032-ui-kit, archivado 2026-11-26)
 - **Fecha**: 2026-11-26
 
 ## Contexto
