@@ -69,3 +69,27 @@ describe('relaxCspForDev (solo `vite` en desarrollo)', () => {
     expect(relaxCspForDev(html).match(META)).toHaveLength(1);
   });
 });
+
+// Spec mobile-display (0033), "Documento táctil": la meta viewport de la app a pantalla entera.
+describe('Meta viewport de index.html (0033)', () => {
+  const viewport = /<meta\s+name="viewport"\s+content="([^"]*)"\s*\/?>/i.exec(html)?.[1] ?? '';
+  const parts = new Map(
+    viewport.split(',').map((p) => {
+      const [k = '', v = ''] = p.split('=').map((x) => x.trim());
+      return [k, v] as const;
+    }),
+  );
+
+  it('Scenario: Meta viewport (viewport-fit=cover e impide el zoom del usuario)', () => {
+    expect(parts.get('viewport-fit')).toBe('cover');
+    expect(parts.get('user-scalable')).toBe('no');
+    expect(parts.get('maximum-scale')).toBe('1');
+    expect([parts.get('width'), parts.get('initial-scale')]).toEqual(['device-width', '1']);
+  });
+
+  it('la CSP no cambia por la meta viewport (una sola meta CSP, la misma política)', () => {
+    expect(html.match(META)).toHaveLength(1);
+    expect(sources('style-src')).toEqual(["'self'"]);
+    expect(sources('img-src')).toEqual(["'self'", 'data:']);
+  });
+});

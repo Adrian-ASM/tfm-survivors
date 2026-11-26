@@ -8,6 +8,7 @@ import { MAP_GOLDEN, signatureOf } from '../support/mapGolden';
 import { expect, test } from './fixtures';
 import {
   collect,
+  DESKTOP_VIEWPORT_EXTRA,
   expectManual,
   focusGame,
   gameUrl,
@@ -115,7 +116,7 @@ test('Redimensionado con la oferta abierta: vista 1.000 × 600, mismo tick y cli
   const s = p?.snapshot;
   const cam = p?.camera;
   if (!s || !cam) throw new Error('sin sonda');
-  expect(p.viewport).toEqual({ width: 1000, height: 600, uiScale: 1 });
+  expect(p.viewport).toEqual({ width: 1000, height: 600, uiScale: 1, ...DESKTOP_VIEWPORT_EXTRA });
   expect([cam.width, cam.height]).toEqual([1000, 600]);
   expect(Math.abs(cam.x - clamp(s.player.x - 500, 0, WORLD.width - 1000))).toBeLessThanOrEqual(1);
   expect(Math.abs(cam.y - clamp(s.player.y - 300, 0, WORLD.height - 600))).toBeLessThanOrEqual(1);
@@ -148,7 +149,7 @@ test('Cámara: centrada al empezar y sigue al jugador hacia la derecha sin salir
   const first = await probe(page);
   expect(first?.world).toEqual(WORLD);
   // 0017: ventana 1.280 × 720 a ×1; la vista mide lo mismo y sigue la fórmula de la cámara.
-  expect(first?.viewport).toEqual({ ...VIEW, uiScale: 1 });
+  expect(first?.viewport).toEqual({ ...VIEW, uiScale: 1, ...DESKTOP_VIEWPORT_EXTRA });
   const p0 = first?.snapshot?.player ?? { x: 0, y: 0 };
   expect(first?.camera).toEqual({
     x: clamp(p0.x - VIEW.width / 2, 0, WORLD.width - VIEW.width),

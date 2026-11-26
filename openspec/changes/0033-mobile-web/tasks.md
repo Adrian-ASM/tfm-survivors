@@ -90,7 +90,7 @@
     `shop-gate.test.ts`/`build-gate.test.ts` (ampliados con ⏸ como fuente de Esc).
 
 ## 6. Composición y web (grupo D, un commit)
-- [ ] 6.1 `src/composition/mobileWiring.ts` y `main.ts`:
+- [x] 6.1 `src/composition/mobileWiring.ts` y `main.ts`:
   - el modo se resuelve una vez; clase `is-mobile`;
   - EXPAND y `input.activePointers: 2` solo en móvil;
   - `--ui-scale` = 1 en móvil;

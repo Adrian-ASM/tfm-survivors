@@ -676,3 +676,114 @@ body {
   border-image-repeat: stretch;
   image-rendering: pixelated;
 }
+
+/* Modo móvil (0033, ADR-0029): todo cuelga de la clase is-mobile de <html>, que la composición pone
+   una vez al cargar; sin ella la cascada es la de siempre. Documento a pantalla entera sin zoom,
+   desplazamiento, rebote, selección ni menú contextual; alto visible dinámico (dvh). */
+html.is-mobile,
+.is-mobile body {
+  height: 100dvh;
+  overscroll-behavior: none;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Reserva horizontal de la barra táctil (3 botones de 44 px, 2 huecos de 8 px, margen de 12 px y
+   la zona segura derecha): ningún panel centrado llega a su columna. Alto de las zonas seguras. */
+html.is-mobile {
+  --touch-bar-reserve: calc(3 * 44px + 2 * 8px + 12px + env(safe-area-inset-right, 0px));
+  --safe-area-block: calc(env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px));
+}
+
+/* Zonas seguras (viewport-fit=cover): #game, que mide el motor, queda dentro de ellas. Sin padding
+   en #game, que getBoundingClientRect incluiría. */
+.is-mobile body {
+  box-sizing: border-box;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+    env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+}
+
+/* Paneles DOM a escala 1 (--ui-scale lo fija la composición): se desplazan dentro de sí mismos
+   si no caben en el alto, sin desplazar el documento, y no llegan a la barra. */
+.is-mobile .menu-panel,
+.is-mobile .pause-panel,
+.is-mobile .confirm-dialog,
+.is-mobile .guide-modal,
+.is-mobile .results-panel,
+.is-mobile .shop-panel,
+.is-mobile .build-panel {
+  box-sizing: border-box;
+  max-width: calc(100vw - 2 * var(--touch-bar-reserve));
+  max-height: calc(100dvh - 2em - var(--safe-area-block));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
+/* Zonas pulsables de al menos 44 × 44 px CSS, sin retardo de doble toque. */
+.is-mobile .menu-panel button,
+.is-mobile .pause-panel button,
+.is-mobile .confirm-dialog button,
+.is-mobile .guide-modal button,
+.is-mobile .results-panel button,
+.is-mobile .shop-panel button,
+.is-mobile .build-panel button,
+.is-mobile .touch-bar button {
+  min-width: 44px;
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+/* Barra táctil ⏸ ↻ ⛶ abajo a la derecha, fuera de las zonas seguras y bajo el aviso. */
+.is-mobile .touch-bar {
+  position: fixed;
+  right: calc(env(safe-area-inset-right, 0px) + 12px);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+  z-index: 4;
+  display: flex;
+  gap: 8px;
+}
+
+.is-mobile .touch-bar button {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background: rgb(20 20 30 / 70%);
+  border: 1px solid #7ce2fe;
+  border-radius: 8px;
+}
+
+.is-mobile .touch-bar button[hidden] {
+  display: none;
+}
+
+.is-mobile .touch-bar img {
+  display: block;
+  width: 24px;
+  height: 24px;
+  pointer-events: none;
+}
+
+/* Aviso «Gira el móvil»: tapa el juego, los paneles y la barra (el z-index más alto). */
+.is-mobile .rotate-notice {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1em;
+  font: 20px monospace;
+  color: #eee;
+  text-align: center;
+  background: #0b0b10;
+}
+
+.is-mobile .rotate-notice[hidden] {
+  display: none;
+}
