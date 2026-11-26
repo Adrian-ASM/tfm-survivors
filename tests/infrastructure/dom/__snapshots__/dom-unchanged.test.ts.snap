@@ -368,6 +368,12 @@ exports[`Paneles DOM sin cambios (sprite-rendering 0032) > Scenario: DOM sin cam
               {
                 "children": [
                   {
+                    "cls": "shop-panel__icon",
+                    "hidden": false,
+                    "role": null,
+                    "tag": "img",
+                  },
+                  {
                     "cls": "shop-panel__name",
                     "hidden": false,
                     "role": null,
@@ -417,6 +423,12 @@ exports[`Paneles DOM sin cambios (sprite-rendering 0032) > Scenario: DOM sin cam
             "children": [
               {
                 "children": [
+                  {
+                    "cls": "shop-panel__icon",
+                    "hidden": false,
+                    "role": null,
+                    "tag": "img",
+                  },
                   {
                     "cls": "shop-panel__name",
                     "hidden": false,
@@ -469,6 +481,12 @@ exports[`Paneles DOM sin cambios (sprite-rendering 0032) > Scenario: DOM sin cam
               {
                 "children": [
                   {
+                    "cls": "shop-panel__icon",
+                    "hidden": false,
+                    "role": null,
+                    "tag": "img",
+                  },
+                  {
                     "cls": "shop-panel__name",
                     "hidden": false,
                     "role": null,
@@ -518,6 +536,12 @@ exports[`Paneles DOM sin cambios (sprite-rendering 0032) > Scenario: DOM sin cam
             "children": [
               {
                 "children": [
+                  {
+                    "cls": "shop-panel__icon",
+                    "hidden": false,
+                    "role": null,
+                    "tag": "img",
+                  },
                   {
                     "cls": "shop-panel__name",
                     "hidden": false,
@@ -569,6 +593,12 @@ exports[`Paneles DOM sin cambios (sprite-rendering 0032) > Scenario: DOM sin cam
               {
                 "children": [
                   {
+                    "cls": "shop-panel__icon",
+                    "hidden": false,
+                    "role": null,
+                    "tag": "img",
+                  },
+                  {
                     "cls": "shop-panel__name",
                     "hidden": false,
                     "role": null,
@@ -619,6 +649,12 @@ exports[`Paneles DOM sin cambios (sprite-rendering 0032) > Scenario: DOM sin cam
               {
                 "children": [
                   {
+                    "cls": "shop-panel__icon",
+                    "hidden": false,
+                    "role": null,
+                    "tag": "img",
+                  },
+                  {
                     "cls": "shop-panel__name",
                     "hidden": false,
                     "role": null,
@@ -668,6 +704,12 @@ exports[`Paneles DOM sin cambios (sprite-rendering 0032) > Scenario: DOM sin cam
             "children": [
               {
                 "children": [
+                  {
+                    "cls": "shop-panel__icon",
+                    "hidden": false,
+                    "role": null,
+                    "tag": "img",
+                  },
                   {
                     "cls": "shop-panel__name",
                     "hidden": false,

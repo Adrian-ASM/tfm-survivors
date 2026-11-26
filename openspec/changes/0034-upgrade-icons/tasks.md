@@ -43,7 +43,7 @@
   sin reserva de sprites" — test: `tests/infrastructure/boot-plan.test.ts`
 
 ## 4. Infraestructura · fila de la tienda (DOM)
-- [ ] 4.1 `ShopPanel` con `IconBook`: un `<img class="shop-panel__icon" alt="">` por fila (URL propia, `hidden` y sin
+- [x] 4.1 `ShopPanel` con `IconBook`: un `<img class="shop-panel__icon" alt="">` por fila (URL propia, `hidden` y sin
   `src` en `none`), `ShopProductView.icon`; `styles.css` con la rejilla de 4 columnas, 32 px × `--ui-scale`,
   `pixelated` y `[hidden]`; instantánea de `dom-unchanged` regenerada (solo 1 imagen más por fila) — escenarios
   `castle-shop`: "Siete filas con su icono", "Producto sin icono propio", "Imagen que no carga", "Reglas del icono de

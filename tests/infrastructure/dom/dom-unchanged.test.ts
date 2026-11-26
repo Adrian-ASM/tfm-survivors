@@ -5,7 +5,12 @@ import { GuideModal } from '../../../src/infrastructure/dom/GuideModal';
 import { MenuPanel } from '../../../src/infrastructure/dom/MenuPanel';
 import { PausePanel } from '../../../src/infrastructure/dom/PausePanel';
 import { ResultsPanel } from '../../../src/infrastructure/dom/ResultsPanel';
-import { ShopPanel } from '../../../src/infrastructure/dom/ShopPanel';
+import {
+  NO_SHOP_ICONS,
+  ShopPanel,
+  type ShopIcons,
+} from '../../../src/infrastructure/dom/ShopPanel';
+import { iconKey } from '../../../src/infrastructure/icons/upgradeIcons';
 import { MENU_LABELS } from '../../../src/infrastructure/dom/menuText';
 import { MenuController } from '../../../src/infrastructure/menu/MenuController';
 import { fakeDom, type FakeElement } from '../../support/fakeDom';
@@ -69,8 +74,14 @@ function siteSnapshot(wood: number, stone: number) {
   return run.snapshot();
 }
 
-/** Los 7 paneles montados y visibles, en el estado del escenario. */
-function mountAll() {
+/** Iconos de las filas de la tienda (0034): todos cargados, URL bajo la base. */
+const SHOP_ICONS: ShopIcons = {
+  resolve: (id) => ({ state: 'painted', key: iconKey(`${id}.png`), file: `${id}.png` }),
+  url: (file) => `/tfm-survivors/assets/icons/${file}`,
+};
+
+/** Los 7 paneles montados y visibles, en el estado del escenario (0034: tienda con iconos). */
+function mountAll(shopIcons: ShopIcons = SHOP_ICONS) {
   const { doc, root, fake, fakeDoc } = fakeDom();
   const controller = new MenuController();
   const guide = new GuideModal(doc, root, defaultGuide(), TEST_ICONS);
@@ -84,7 +95,7 @@ function mountAll() {
   const dialog = new ConfirmDialog(doc, root, { onConfirm: vi.fn(), onCancel: vi.fn() });
   const pause = new PausePanel(doc, root);
   const results = new ResultsPanel(doc, root, { onExport: vi.fn(), onImport: vi.fn() });
-  const shop = new ShopPanel(doc, root);
+  const shop = new ShopPanel(doc, root, shopIcons);
   const build = new BuildPanel(doc, root, ICONS);
   menu.show();
   guide.open(vi.fn());
@@ -121,6 +132,23 @@ describe('Paneles DOM sin cambios (sprite-rendering 0032)', () => {
     expect(panels.flatMap(styled)).toEqual([]);
     expect(fakeDoc.activeElement?.textContent).toBe(MENU_LABELS.cancel);
     expect(panels.map(shape)).toMatchSnapshot();
+  });
+
+  it('Scenario: DOM sin cambios (0034: la única diferencia es 1 imagen más por fila de la tienda)', () => {
+    const withIcons = mountAll().fake.children.map(shape);
+    const without = mountAll(NO_SHOP_ICONS).fake.children.map(shape);
+    const strip = (sh: Shape): Shape => ({
+      ...sh,
+      ...(sh.children ? { children: sh.children.filter((c) => c.tag !== 'img').map(strip) } : {}),
+    });
+    const imgs = (sh: Shape): number =>
+      (sh.tag === 'img' ? 1 : 0) + (sh.children ?? []).reduce((n, c) => n + imgs(c), 0);
+    // Con o sin iconos cargados: los 6 paneles que no son la tienda, idénticos; la tienda, igual
+    // quitando su imagen de fila (visible u oculta), que es 1 por cada una de las 7 filas.
+    expect(withIcons.map(strip)).toEqual(without.map(strip));
+    expect(withIcons.filter((_, i) => i !== 5)).toEqual(without.filter((_, i) => i !== 5));
+    // La instantánea de arriba (regenerada en 0034) solo gana estas 7 imágenes respecto a la de 0032.
+    expect(imgs(withIcons[5] as Shape)).toBe(7);
   });
 });
 

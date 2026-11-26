@@ -255,15 +255,36 @@ body {
   cursor: pointer;
 }
 
+/* 0034: icono | nombre | nivel | precio; descripción y aviso bajo el nombre. */
 .shop-panel__product {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: auto 1fr auto auto;
   gap: 0 0.75em;
+}
+
+/* Icono de fila (0034): 32 px a ×1 y 64 (su tamaño nativo) a ×2, sin suavizado. En móvil
+   --ui-scale vale 1: 32 px ≤ los 44 px de alto mínimo de la fila. */
+.shop-panel__icon {
+  grid-row: 1 / span 2;
+  grid-column: 1;
+  align-self: center;
+  width: calc(32px * var(--ui-scale, 1));
+  height: calc(32px * var(--ui-scale, 1));
+  image-rendering: pixelated;
+}
+
+.shop-panel__icon[hidden] {
+  display: none;
+}
+
+/* El nombre siempre en la 2.ª columna: sin icono, los textos no cambian de columna. */
+.shop-panel__name {
+  grid-column: 2;
 }
 
 .shop-panel__description,
 .shop-panel__notice {
-  grid-column: 1 / -1;
+  grid-column: 2 / -1;
   font-size: 0.85em;
   color: var(--ui-b-muted, #c8c8d8);
 }
