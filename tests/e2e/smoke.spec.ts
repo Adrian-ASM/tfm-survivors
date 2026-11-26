@@ -69,6 +69,21 @@ test('Arranque y menú: botones, guía, título, sin errores de consola ni de CS
   // Unos frames con el menú pintado (un número de frames, no un tiempo).
   await waitFrames(page, 30);
 
+  // Spec main-menu (0032), "Menú con piezas en el navegador": a 1.280 × 720 (k = 1), marco de la
+  // pieza `panel` bajo la base, esquinas de margen × 1 px (16 con los datos del repositorio) y la
+  // fuente pixel disponible.
+  const kit = await menuPanel(page).evaluate((el) => {
+    const style = getComputedStyle(el);
+    return {
+      source: style.borderImageSource,
+      width: style.borderImageWidth,
+      font: document.fonts.check('16px "Departure Mono"'),
+    };
+  });
+  expect(kit.source).toContain('/tfm-survivors/assets/tiny-swords/UI/Banners/Carved_9Slides.png');
+  expect(kit.width).toMatch(/^16px( 16px){0,3}$/);
+  expect(kit.font).toBe(true);
+
   expect(await menuPanel(page).getByRole('button').allTextContents()).toEqual(MENU_BUTTONS);
   expect(await page.title()).toContain('Greentide Vanguard');
   // 0017 (D11): el título es el h1 del panel del menú (un único bloque centrado).

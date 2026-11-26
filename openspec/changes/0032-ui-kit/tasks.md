@@ -117,7 +117,7 @@
   build-sites "Construir con las piezas en reserva"; run-results "Botones de resultados con las piezas en reserva".
 
 ## 5. E2E, invariantes y documentación
-- [ ] 5.1 E2E (e2e-lite: **0 nuevos, 1 ampliado**): el test de humo de `smoke.spec` que ya abre el menú y vigila la
+- [x] 5.1 E2E (e2e-lite: **0 nuevos, 1 ampliado**): el test de humo de `smoke.spec` que ya abre el menú y vigila la
   CSP comprueba, a 1.280 × 720, `borderImageSource` de `.menu-panel` con `UI/Banners/Carved_9Slides.png` bajo
   `/tfm-survivors/`, `borderImageWidth` = márgenes de `panel` × 1 px y `document.fonts.check('16px "Departure
   Mono"')`; selectores y `probe.ts` intactos. Si `tests/remote/public.spec.ts` enumera las hojas con `bootPlan`, que
@@ -125,11 +125,16 @@
   — escenarios: main-menu "Menú con piezas en el navegador" [E2E]; sprite-rendering "Desde el menú", "Con e2e",
   "Partida con arte", "Hoja que no carga", "Fondo de reserva en el mundo entero" (E2E existentes, sin cambios), "Arte
   en la URL pública" (smoke remoto a demanda).
-- [ ] 5.2 Invariantes: test de 1.200 ticks de la semilla 42 con la `ui` del repositorio frente a otra válida
+  Apply: `public.spec.ts` no usa `bootPlan` (lista fija de hojas): no se toca; anchos de borde 16 px (márgenes
+  medidos de `panel`).
+- [x] 5.2 Invariantes: test de 1.200 ticks de la semilla 42 con la `ui` del repositorio frente a otra válida
   (márgenes a 0, otros colores, otra familia) con snapshots iguales tick a tick; confirmar en `verify` que
   `BALANCE_BASELINE` y `BUILDER_REFERENCE` son idénticos (1..50, 0 quietos), que las seis firmas no cambian (no se
   regeneran) y que los objetos del mapa siguen en 820/904 (42/123); diff de `src/domain` y `src/application` = 0
   líneas. Test: `tests/infrastructure/ui-invariance.test.ts`.
   — escenario: sprite-rendering "La interfaz no cambia la simulación ni el mapa".
-- [ ] 5.3 Documentación: línea de estado del change 0032 en `AGENTS.md` §1, ADR-0028 a "aceptada" tras verify,
+- [x] 5.3 Documentación: línea de estado del change 0032 en `AGENTS.md` §1, ADR-0028 a "aceptada" tras verify,
   diario de IA de apply en `docs/ai-log/` (medidas reales de 1.1, versión de la fuente, incidencias de hooks).
+  Apply: hechos `AGENTS.md` y `docs/ai-log/2026-11-26-0032-apply.md`; ADR-0028 sigue en «propuesta» hasta pasar
+  la fase verify (como ADR-0027 en 0031). El diff del núcleo (0 líneas) se comprobó a mano: un test con `git
+  merge-base origin/main` fallaría en el checkout superficial del CI.
