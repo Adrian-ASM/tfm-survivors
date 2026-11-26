@@ -117,12 +117,12 @@ const BASE: RunSnapshot = startSeededRun(aDefaultConfig(), 42, 'empty').snapshot
 
 describe('PhaserSoundOut (spec audio 0035, D7)', () => {
   it('Scenario: Fichero que no carga', () => {
-    const { out, keys, manager } = setup(['audio:pickup.ogg']);
+    const { out, keys, manager } = setup(['audio:pickupstone.ogg']);
     const { mixer } = directorOn(out, withFiles());
 
     expect(() => {
       mixer.decide(
-        { ...zeroCounts(), pickup: 1, levelUp: 1 },
+        { ...zeroCounts(), pickupStone: 1, pickupGold: 1, levelUp: 1 },
         {
           renderMs: 0,
           halted: false,
@@ -133,18 +133,52 @@ describe('PhaserSoundOut (spec audio 0035, D7)', () => {
         },
       );
     }).not.toThrow();
-    expect([out.canPlay('pickup'), out.canPlay('levelUp')]).toEqual([false, true]);
-    expect(mixer.stats.byType.pickup.dropped).toBe(1);
-    expect(manager.added.map((s) => s.key)).toEqual([keys.effects.levelUp]);
+    expect([out.canPlay('pickupStone'), out.canPlay('levelUp')]).toEqual([false, true]);
+    expect(mixer.stats.byType.pickupStone.dropped).toBe(1);
+    // Se reproducen pickupGold y levelUp (por prioridad: levelUp primero).
+    expect(manager.added.map((s) => s.key)).toEqual([
+      keys.effects.levelUp,
+      keys.effects.pickupGold,
+    ]);
   });
 
   it('Scenario: Fichero que no carga (nunca llama a add con una clave ausente)', () => {
-    const { out, manager } = setup(['audio:pickup.ogg']);
+    const { out, manager } = setup(['audio:pickupstone.ogg']);
 
     expect(() => {
-      out.play('pickup', 0.5);
+      out.play('pickupStone', 0.5);
     }).not.toThrow();
     expect(manager.added).toEqual([]);
+  });
+
+  it('Scenario: Fichero compartido que no carga', () => {
+    const audio = withFiles();
+    const shared = {
+      ...audio,
+      effects: {
+        ...audio.effects,
+        explosion: { ...audio.effects.explosion, file: 'explosion.wav' },
+        impactBlast: { ...audio.effects.impactBlast, file: 'explosion.wav' },
+      },
+    };
+    const keys = audioKeys(shared);
+    const status = new AudioLoadStatus();
+    status.failed.add('audio:explosion.wav');
+    const cache = new Set([keys.effects.impactWeapon ?? '']);
+    const out = new PhaserSoundOut(
+      new FakeManager(cache),
+      { exists: (k) => cache.has(k) },
+      keys,
+      shared.effects,
+      shared.maxVoices,
+      status,
+    );
+
+    expect([
+      out.canPlay('explosion'),
+      out.canPlay('impactBlast'),
+      out.canPlay('impactWeapon'),
+    ]).toEqual([false, false, true]);
   });
 
   it('Scenario: Desbloqueo rechazado', () => {
@@ -248,7 +282,7 @@ describe('PhaserSoundOut (spec audio 0035, D7)', () => {
 
   it('Scenario: Pausa con Esc (stopEffects deja 0 efectos sonando)', () => {
     const { out } = setup();
-    out.play('pickup', 0.5);
+    out.play('pickupGold', 0.5);
     out.play('levelUp', 0.5);
     out.play('build', 0.5);
 

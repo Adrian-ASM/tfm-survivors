@@ -42,7 +42,7 @@ function failure(change: (a: Json) => void, sounds?: readonly string[]): DomainE
 }
 
 describe('Contenido de audio validado (spec audio, 0035)', () => {
-  it('contenido del repositorio: arranca sin errores, 10 efectos, tope ≥ 1 y defaults 50/80/no', () => {
+  it('contenido del repositorio: arranca sin errores, 12 efectos, tope ≥ 1 y defaults 50/80/no', () => {
     const { booted, errors } = boot(audioJson);
 
     expect(errors).toEqual([]);
@@ -61,7 +61,7 @@ describe('Contenido de audio validado (spec audio, 0035)', () => {
 
   it('Scenario: Tipo de efecto ausente o desconocido (con jump)', () => {
     const e = failure((a) => {
-      effects(a)['jump'] = { ...effects(a)['pickup'] };
+      effects(a)['jump'] = { ...effects(a)['pickupGold'] };
     });
 
     expect(e.field).toBe('audio.effects.jump');
@@ -76,9 +76,9 @@ describe('Contenido de audio validado (spec audio, 0035)', () => {
       'audio.defaults.effects',
     ],
     [
-      'ganancia de pickup 1,2',
-      (a: Json) => ((effects(a)['pickup'] as Json)['gain'] = 1.2),
-      'audio.effects.pickup.gain',
+      'ganancia de pickupWood 1,2',
+      (a: Json) => ((effects(a)['pickupWood'] as Json)['gain'] = 1.2),
+      'audio.effects.pickupWood.gain',
     ],
     [
       'intervalo de enemyDeath −1',

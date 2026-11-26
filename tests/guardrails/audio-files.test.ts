@@ -8,11 +8,11 @@ import { audioFilesOf } from '../../src/infrastructure/content/loadAudio';
 import { repositoryAudio } from '../support/audio';
 
 // Spec audio (0035, design D14), "Ficheros de audio usados y peso": cada audio versionado está citado
-// por el contenido de audio, cada fichero citado está versionado y la suma de bytes no pasa de 2 MiB.
+// por el contenido de audio, cada fichero citado está versionado y la suma de bytes no pasa de 6 MiB.
 
-/** Tope de peso de todo el audio versionado (2 MiB). */
-const AUDIO_MAX_BYTES = 2_097_152;
-const AUDIO = /\.(ogg|mp3|wav)$/i;
+/** Tope de peso de todo el audio versionado (6 MiB, spec audio rev. tras el gate). */
+const AUDIO_MAX_BYTES = 6_291_456;
+const AUDIO = /\.(ogg|mp3|wav|flac)$/i;
 
 /**
  * Problemas de uso y de peso, pura: `files` es la lista versionada, `sizes` da los bytes de cada
@@ -68,25 +68,35 @@ describe('Ficheros de audio usados y peso (spec audio 0035, D14)', () => {
     expect(out.join('\n')).toContain(`${AUDIO_DIR}music-loop.ogg`);
   });
 
-  it('Scenario: Tope de peso (repositorio: ≤ 2.097.152 bytes)', () => {
+  it('Scenario: Tope de peso (repositorio: ≤ 6.291.456 bytes)', () => {
     const total = versioned.filter((f) => AUDIO.test(f)).reduce((s, f) => s + diskBytes(f), 0);
 
     expect(total).toBeLessThanOrEqual(AUDIO_MAX_BYTES);
   });
 
-  it('Scenario: Tope de peso (lista simulada con 2.097.153 bytes: falla y da el total)', () => {
+  it('Scenario: Tope de peso (lista simulada con 6.291.457 bytes: falla y da el total)', () => {
     const big = `${AUDIO_DIR}music-loop.ogg`;
-    const hit = `${AUDIO_DIR}hit.ogg`;
+    const hit = `${AUDIO_DIR}hit.flac`;
     const audio = structuredClone(audioJson) as unknown as AudioContent;
     const cited: AudioContent = {
       ...audio,
       music: { file: 'music-loop.ogg' },
-      effects: { ...audio.effects, pickup: { ...audio.effects.pickup, file: 'hit.ogg' } },
+      effects: { ...audio.effects, pickupGold: { ...audio.effects.pickupGold, file: 'hit.flac' } },
     };
-    const sizes = (p: string): number => (p === big ? 2_097_152 : 1);
+    const sizes = (p: string): number => (p === big ? 6_291_456 : 1);
 
     const out = audioFileProblems([...versioned, big, hit], sizes, cited);
 
-    expect(out).toEqual(['Audio versionado: 2097153 bytes > 2097152.']);
+    expect(out).toEqual(['Audio versionado: 6291457 bytes > 6291456.']);
+  });
+
+  it('Scenario: Tope de peso (lista simulada con exactamente 6.291.456 bytes: pasa)', () => {
+    const big = `${AUDIO_DIR}music-loop.ogg`;
+    const audio = structuredClone(audioJson) as unknown as AudioContent;
+    const cited: AudioContent = { ...audio, music: { file: 'music-loop.ogg' } };
+
+    const out = audioFileProblems([...versioned, big], () => 6_291_456, cited);
+
+    expect(out).toEqual([]);
   });
 });

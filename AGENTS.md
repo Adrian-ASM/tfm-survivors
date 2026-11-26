@@ -244,9 +244,10 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   tercer argumento `GENERATED_PATHS` (`tests/support/generated.ts`); forma de los PNG en `tests/support/pngProbe.ts`.
   Sin núcleo; balance, firmas y 820/904 intactos; E2E de la Tienda ampliado (7 filas y 3 cartas `painted`, 0 CSP).
   Audio (change 0035, ADR-0031; grupos 1–5, **sin ficheros**: `file: null` transitorio hasta que el autor entregue
-  el audio CC0, tarea 6.1): todo en el adaptador. `AudioCues` saca las peticiones de los 10 tipos (`effectTypes.ts`)
-  comparando cada snapshot pintado con el anterior (ids de golpes y explosiones, bajas, recogibles salvo en obra,
-  nivel, compra con la tienda abierta, solares; impacto de explosión > torre por `towerMatchPx` > arma);
+  el audio CC0, tarea 6.1): todo en el adaptador. `AudioCues` saca las peticiones de los 12 tipos
+  (`effectTypes.ts`) comparando cada snapshot pintado con el anterior (ids de golpes y explosiones, bajas,
+  recogibles salvo en obra, por recurso con `PICKUP_EFFECT`: `pickupGold` oro/XP/carne, `pickupStone`,
+  `pickupWood`; nivel, compra con la tienda abierta, solares; impacto de explosión > torre por `towerMatchPx` > arma);
   `EffectMixer` deja 1 por tipo y snapshot, con intervalo por el **reloj de render** (cuarto argumento de
   `onRender`), tope `maxVoices − sonando` por prioridad y descarte con pausa, retención, pestaña oculta o volumen 0;
   `musicState` + `AudioDirector` (stopped en menú y resultados, 0 con Jugar/R/↻). `SoundOut`: `PhaserSoundOut`
@@ -257,8 +258,8 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   `SoundPanel` (3.er botón del menú, estado `sound`; en la pausa entre Reanudar y Volver, con `SoundPanelGate` en
   `GameScene`), tecla M y botón de silencio de la `TouchBar` vía `MuteRequests` (una vez por frame, `PRE_STEP`).
   Guardarraíl: lista `sounds[]` (CC0, `kenney.nl`/`opengameart.org`/`freesound.org`, `public/assets/audio/`) y
-  `tests/guardrails/audio-files.test.ts` (uso y ≤ 2 MiB). Sonda `__sprint.audio`; E2E de escritorio y de arranque
-  ampliados. Núcleo, balance y firmas intactos.
+  `tests/guardrails/audio-files.test.ts` (uso y ≤ 6 MiB; `.ogg/.mp3/.wav/.flac`). Sonda `__sprint.audio`; E2E de
+  escritorio y de arranque ampliados. Núcleo, balance y firmas intactos.
   Fuente de verdad del comportamiento: `openspec/specs/`.
 
 ## 2. Comandos

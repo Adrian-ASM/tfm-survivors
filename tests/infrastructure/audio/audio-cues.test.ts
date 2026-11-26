@@ -35,9 +35,9 @@ const blast = (id: number, tick: number, x: number, y: number, radius: number): 
   radius,
 });
 
-const pickup = (id: number, value = 1): PickupSnapshot => ({
+const pickup = (id: number, value = 1, kind: PickupSnapshot['kind'] = 'xp'): PickupSnapshot => ({
   id,
-  kind: 'xp',
+  kind,
   value,
   x: 0,
   y: 0,
@@ -97,32 +97,49 @@ describe('AudioCues (spec audio, "Sucesos de audio desde el snapshot")', () => {
     expect(counts(cues, snap({ kills: 13 })).enemyDeath).toBe(3);
   });
 
-  it('Scenario: Recogidas y despeje (sin obra: 2 recogidas)', () => {
+  const before = [pickup(4, 1, 'gold'), pickup(5, 1, 'xp'), pickup(6, 1, 'wood')];
+
+  it('Scenario: Recogidas y despeje (sin obra: 2 pickupGold y 0 de piedra y madera)', () => {
     const cues = newCues();
-    cues.next(snap({ pickups: [pickup(4), pickup(5), pickup(6)], sites: [site(0, 'free')] }));
+    cues.next(snap({ pickups: before, sites: [site(0, 'free')] }));
 
-    const c = counts(cues, snap({ pickups: [pickup(6)], sites: [site(0, 'free')] }));
+    const c = counts(cues, snap({ pickups: [pickup(6, 1, 'wood')], sites: [site(0, 'free')] }));
 
-    expect(c).toEqual(only({ pickup: 2 }));
+    expect(c).toEqual(only({ pickupGold: 2 }));
   });
 
   it('Scenario: Recogidas y despeje (con obra: 0 recogidas y 1 obra)', () => {
     const cues = newCues();
-    cues.next(snap({ pickups: [pickup(4), pickup(5), pickup(6)], sites: [site(0, 'free')] }));
+    cues.next(snap({ pickups: before, sites: [site(0, 'free')] }));
 
-    const c = counts(cues, snap({ pickups: [pickup(6)], sites: [site(0, 'house')] }));
+    const c = counts(cues, snap({ pickups: [pickup(6, 1, 'wood')], sites: [site(0, 'house')] }));
 
     expect(c).toEqual(only({ build: 1 }));
   });
 
+  it('Scenario: Una recogida por tipo de recurso (peticiones por tipo de recogida)', () => {
+    const cues = newCues();
+    const kinds = ['xp', 'meat', 'gold', 'stone', 'stone', 'wood', 'wood'] as const;
+    cues.next(snap({ pickups: kinds.map((k, i) => pickup(10 + i, 1, k)) }));
+
+    const c = counts(cues, snap({ pickups: [] }));
+
+    expect(c).toEqual(only({ pickupGold: 3, pickupStone: 2, pickupWood: 2 }));
+  });
+
   it('Scenario: Relleno al tope no es recogida', () => {
     const cues = newCues();
-    const ids = Array.from({ length: 300 }, (_, i) => i);
-    cues.next(snap({ pickups: ids.map((id) => pickup(id)) }));
+    const xp = Array.from({ length: 300 }, (_, i) => i);
+    const wood = Array.from({ length: 64 }, (_, i) => 300 + i);
+    const all = (bump: number) => [
+      ...xp.map((id) => pickup(id, id === 0 ? bump : 1, 'xp')),
+      ...wood.map((id) => pickup(id, id === 300 ? bump : 1, 'wood')),
+    ];
+    cues.next(snap({ pickups: all(1) }));
 
-    const refilled = ids.map((id) => pickup(id, id === 0 ? 9 : 1));
+    const c = counts(cues, snap({ pickups: all(9) }));
 
-    expect(counts(cues, snap({ pickups: refilled })).pickup).toBe(0);
+    expect([c.pickupGold, c.pickupStone, c.pickupWood]).toEqual([0, 0, 0]);
   });
 
   it('Scenario: Varias subidas en un step', () => {

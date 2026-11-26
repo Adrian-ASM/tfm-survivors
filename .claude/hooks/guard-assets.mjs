@@ -78,7 +78,7 @@ function noteProblems(provenance) {
   return problems;
 }
 /** Ficheros de audio (0035): cada uno con registro en `sounds[]`, solo en su carpeta. */
-export const AUDIO = /\.(ogg|mp3|wav)$/i;
+export const AUDIO = /\.(ogg|mp3|wav|flac)$/i;
 /** Carpeta del audio (0035, design D13). */
 export const AUDIO_DIR = 'public/assets/audio/';
 
@@ -310,7 +310,9 @@ function soundEntryProblems(entry, i, versioned, digest) {
   const problems = soundFieldProblems(entry, at);
   if (!isText(entry?.path)) return problems;
   if (!entry.path.startsWith(AUDIO_DIR) || !AUDIO.test(entry.path))
-    problems.push(`${entry.path}: audio registrado fuera de ${AUDIO_DIR} (.ogg, .mp3 o .wav).`);
+    problems.push(
+      `${entry.path}: audio registrado fuera de ${AUDIO_DIR} (.ogg, .mp3, .wav o .flac).`,
+    );
   if (!versioned.has(entry.path)) {
     problems.push(`${entry.path}: la nota lo registra como audio pero no está versionado.`);
     return problems;

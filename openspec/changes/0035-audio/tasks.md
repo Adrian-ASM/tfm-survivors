@@ -98,7 +98,7 @@
 
 ## 6. Assets CC0 del autor (ficheros entregados; spec rev. e45b9dd, design rev. 3)
 <!-- Un commit y `verify` completo por tarea. 6.0 va antes que 6.1: los ficheros reales usan los 12 tipos y FLAC. -->
-- [ ] 6.0 Retoque por los cambios tras el gate (design D2, D5, D13, D14). TDD en `AudioCues` y `EffectMixer`;
+- [x] 6.0 Retoque por los cambios tras el gate (design D2, D5, D13, D14). TDD en `AudioCues` y `EffectMixer`;
   test-after en el resto.
   - `effectTypes.ts`: `pickup` se sustituye por `pickupGold`, `pickupStone` y `pickupWood`, en el orden de la spec
     (12 tipos), con la constante `PICKUP_EFFECT` (clase → tipo).

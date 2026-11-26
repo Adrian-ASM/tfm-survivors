@@ -1,5 +1,6 @@
 import type { RunSnapshot } from '../../domain/run/RunSnapshot';
-import { EFFECT_TYPES, zeroCounts, type EffectCounts } from './effectTypes';
+import type { PickupKind } from '../../domain/pickup/PickupKind';
+import { EFFECT_TYPES, PICKUP_EFFECT, zeroCounts, type EffectCounts } from './effectTypes';
 
 /** Lo que el audio lee del snapshot (nada más: spec audio, "Sucesos de audio desde el snapshot"). */
 export type CueSnapshot = Pick<
@@ -18,8 +19,8 @@ export interface AudioCuesOptions {
  * Peticiones de efecto por snapshot procesado (design 0035 D2/D3), pura y sin motor: compara cada
  * snapshot con el anterior de la misma partida. El primero tras crearla (o tras `newRun`) solo
  * siembra la referencia y da 0. Los ids de golpes y explosiones crecen sin reutilizarse, así que
- * basta con el último visto; recogibles y flechas de torre se comparan por id con dos `Set` que se
- * alternan. Devuelve siempre el mismo objeto de recuento (sin reservar memoria por frame).
+ * basta con el último visto; los recogibles se comparan por id (con su clase, para el tipo de
+ * recogida) en dos mapas que se alternan y las flechas de torre por id con un `Set`. Devuelve
  */
 export class AudioCues {
   private readonly out = zeroCounts();
@@ -31,8 +32,9 @@ export class AudioCues {
   private gold = 0;
   private shopOpen = false;
   private readonly siteFree: boolean[] = [];
-  private prevPickups = new Set<number>();
-  private curPickups = new Set<number>();
+  /** Recogibles del snapshot anterior (id → clase) y del actual: dos mapas que se alternan. */
+  private prevPickups = new Map<number, PickupKind>();
+  private curPickups = new Map<number, PickupKind>();
   private readonly arrowIds = new Set<number>();
   private arrowCount = 0;
   private arrowId: number[];
@@ -78,7 +80,8 @@ export class AudioCues {
     for (const b of s.blasts) if (b.id > this.lastBlastId) out.explosion += 1;
     if ((this.shopOpen || s.shop.open) && s.shop.gold < this.gold) out.purchase = 1;
     out.build = this.built(s);
-    out.pickup = out.build > 0 ? 0 : this.picked(s);
+    // Con una obra en este snapshot, los recogibles los quita el despeje de la huella: 0 recogidas.
+    if (out.build === 0) this.picked(s, out);
   }
 
   private fromBlast(s: CueSnapshot, h: CueSnapshot['hits'][number]): boolean {
@@ -111,13 +114,12 @@ export class AudioCues {
     return n;
   }
 
-  private picked(s: CueSnapshot): number {
+  /** Recogibles del anterior que faltan en el actual, por su tipo de recogida. */
+  private picked(s: CueSnapshot, out: EffectCounts): void {
     const cur = this.curPickups;
     cur.clear();
-    for (const p of s.pickups) cur.add(p.id);
-    let n = 0;
-    for (const id of this.prevPickups) if (!cur.has(id)) n += 1;
-    return n;
+    for (const p of s.pickups) cur.set(p.id, p.kind);
+    for (const [id, kind] of this.prevPickups) if (!cur.has(id)) out[PICKUP_EFFECT[kind]] += 1;
   }
 
   private remember(s: CueSnapshot): void {
@@ -136,7 +138,7 @@ export class AudioCues {
     // Alterna los dos conjuntos: el del actual pasa a ser el anterior del siguiente snapshot.
     const prev = this.curPickups;
     prev.clear();
-    for (const p of s.pickups) prev.add(p.id);
+    for (const p of s.pickups) prev.set(p.id, p.kind);
     this.curPickups = this.prevPickups;
     this.prevPickups = prev;
     this.rememberArrows(s);

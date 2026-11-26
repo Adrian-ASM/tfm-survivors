@@ -744,14 +744,16 @@ describe('guard-assets · audio (spec asset-provenance 0035)', () => {
     }
   });
 
-  it.each(['public/assets/extra/hit.ogg', 'public/assets/extra/hit.MP3', 'docs/demo.wav'])(
-    'Scenario: Audio sin registrar (%s)',
-    (extra) => {
-      expect(runSounds(SOUNDS, [...versioned, MUSIC, HIT, extra])).toContain(
-        `${extra}: fichero de audio sin registro`,
-      );
-    },
-  );
+  it.each([
+    'public/assets/extra/hit.ogg',
+    'public/assets/extra/hit.MP3',
+    'docs/demo.wav',
+    'public/assets/extra/hit.FLAC',
+  ])('Scenario: Audio sin registrar (%s)', (extra) => {
+    expect(runSounds(SOUNDS, [...versioned, MUSIC, HIT, extra])).toContain(
+      `${extra}: fichero de audio sin registro`,
+    );
+  });
 
   it.each([
     ['licencia CC-BY-4.0', (e: SoundEntry) => (e['license'] = 'CC-BY-4.0'), '"license"'],
@@ -807,9 +809,18 @@ describe('guard-assets · audio (spec asset-provenance 0035)', () => {
     expect(runSounds(SOUNDS, [...versioned, MUSIC, HIT, zip])).toContain(zip);
   });
 
-  it('Scenario: Mayúsculas en la extensión (public/assets/Hit.WAV)', () => {
-    const upper = 'public/assets/Hit.WAV';
-    expect(runSounds(SOUNDS, [...versioned, MUSIC, HIT, upper])).toContain(upper);
+  it.each(['public/assets/Hit.WAV', 'public/assets/Hit.FLAC'])(
+    'Scenario: Mayúsculas en la extensión (%s)',
+    (upper) => {
+      expect(runSounds(SOUNDS, [...versioned, MUSIC, HIT, upper])).toContain(upper);
+    },
+  );
+
+  it('Scenario: Audio sin registrar (un .flac en su carpeta, sin registro)', () => {
+    const flac = 'public/assets/audio/receive-hit.flac';
+    expect(runSounds(SOUNDS, [...versioned, MUSIC, HIT, flac])).toContain(
+      `${flac}: fichero de audio sin registro`,
+    );
   });
 
   it('la lista real de audio está vacía hasta que lleguen los ficheros del autor (tarea 6.1)', () => {

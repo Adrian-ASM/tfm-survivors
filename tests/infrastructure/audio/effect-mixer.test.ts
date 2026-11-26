@@ -69,26 +69,63 @@ describe('EffectMixer (spec audio, "Tope de voces y limitación por tipo")', () 
   it('Scenario: Tope con voces ocupadas', () => {
     const out = new SpyOut();
     const mixer = new EffectMixer(
-      rules({ levelUp: { priority: 9 }, enemyDeath: { priority: 5 }, pickup: { priority: 3 } }),
+      rules({
+        levelUp: { priority: 9 },
+        enemyDeath: { priority: 5 },
+        pickupStone: { priority: 3 },
+      }),
       8,
       out,
     );
 
-    mixer.decide(req({ levelUp: 1, enemyDeath: 1, pickup: 1 }), now({ sounding: 7 }));
+    mixer.decide(req({ levelUp: 1, enemyDeath: 1, pickupStone: 1 }), now({ sounding: 7 }));
 
     expect(out.played.map((p) => p.type)).toEqual(['levelUp']);
-    expect([mixer.stats.byType.enemyDeath.dropped, mixer.stats.byType.pickup.dropped]).toEqual([
-      1, 1,
-    ]);
+    expect([mixer.stats.byType.enemyDeath.dropped, mixer.stats.byType.pickupStone.dropped]).toEqual(
+      [1, 1],
+    );
   });
 
   it('Scenario: Tope con voces ocupadas (a igual prioridad, el orden de los tipos)', () => {
     const out = new SpyOut();
     const mixer = new EffectMixer(rules(), 8, out);
 
-    mixer.decide(req({ build: 1, pickup: 1, playerHurt: 1 }), now({ sounding: 6 }));
+    mixer.decide(req({ build: 1, pickupGold: 1, playerHurt: 1 }), now({ sounding: 6 }));
 
-    expect(out.played.map((p) => p.type)).toEqual(['playerHurt', 'pickup']);
+    expect(out.played.map((p) => p.type)).toEqual(['playerHurt', 'pickupGold']);
+  });
+
+  it('Scenario: Recogidas a igual prioridad con una voz libre', () => {
+    const out = new SpyOut();
+    const mixer = new EffectMixer(
+      rules({
+        pickupGold: { priority: 3 },
+        pickupStone: { priority: 3 },
+        pickupWood: { priority: 3 },
+      }),
+      8,
+      out,
+    );
+
+    mixer.decide(req({ pickupWood: 1, pickupStone: 1, pickupGold: 1 }), now({ sounding: 7 }));
+
+    expect(out.played.map((p) => p.type)).toEqual(['pickupGold']);
+    expect([mixer.stats.byType.pickupStone.dropped, mixer.stats.byType.pickupWood.dropped]).toEqual(
+      [1, 1],
+    );
+  });
+
+  it('Scenario: Una recogida por tipo de recurso (1 reproducida por tipo; el resto se descarta)', () => {
+    const out = new SpyOut();
+    const mixer = new EffectMixer(rules(), 8, out);
+
+    mixer.decide(req({ pickupGold: 3, pickupStone: 2, pickupWood: 2 }), now());
+
+    expect(out.played.map((p) => p.type)).toEqual(['pickupGold', 'pickupStone', 'pickupWood']);
+    const dropped = (['pickupGold', 'pickupStone', 'pickupWood'] as const).map(
+      (t) => mixer.stats.byType[t].dropped,
+    );
+    expect(dropped).toEqual([2, 1, 1]);
   });
 
   it('Scenario: Tope lleno', () => {
@@ -114,10 +151,13 @@ describe('EffectMixer (spec audio, "Tope de voces y limitación por tipo")', () 
     const out = new SpyOut();
     const mixer = new EffectMixer(rules(), 8, out);
 
-    mixer.decide(req({ pickup: 1, levelUp: 1 }), now({ canPlay: (t) => t !== 'pickup' }));
+    mixer.decide(
+      req({ pickupStone: 1, pickupGold: 1, levelUp: 1 }),
+      now({ canPlay: (t) => t !== 'pickupStone' }),
+    );
 
-    expect(out.played.map((p) => p.type)).toEqual(['levelUp']);
-    expect(mixer.stats.byType.pickup).toEqual({ requested: 1, played: 0, dropped: 1 });
+    expect(out.played.map((p) => p.type)).toEqual(['pickupGold', 'levelUp']);
+    expect(mixer.stats.byType.pickupStone).toEqual({ requested: 1, played: 0, dropped: 1 });
   });
 
   it('Scenario: Pestaña oculta en curso (todo se descarta y no se guarda para después)', () => {
@@ -134,7 +174,7 @@ describe('EffectMixer (spec audio, "Tope de voces y limitación por tipo")', () 
     const out = new SpyOut();
     const mixer = new EffectMixer(rules(), 8, out);
 
-    mixer.decide(req({ levelUp: 1, pickup: 3 }), now({ halted: true }));
+    mixer.decide(req({ levelUp: 1, pickupGold: 3 }), now({ halted: true }));
 
     expect([out.played.length, mixer.stats.dropped]).toEqual([0, 4]);
   });
@@ -150,11 +190,11 @@ describe('EffectMixer (spec audio, "Tope de voces y limitación por tipo")', () 
 
   it('Scenario: Partida nueva como referencia (el intervalo vuelve a empezar)', () => {
     const out = new SpyOut();
-    const mixer = new EffectMixer(rules({ pickup: { minIntervalMs: 500 } }), 8, out);
-    mixer.decide(req({ pickup: 1 }), now({ renderMs: 300 }));
+    const mixer = new EffectMixer(rules({ pickupWood: { minIntervalMs: 500 } }), 8, out);
+    mixer.decide(req({ pickupWood: 1 }), now({ renderMs: 300 }));
 
     mixer.newRun();
-    mixer.decide(req({ pickup: 1 }), now({ renderMs: 0 }));
+    mixer.decide(req({ pickupWood: 1 }), now({ renderMs: 0 }));
 
     expect(out.played).toHaveLength(2);
   });
@@ -164,7 +204,7 @@ describe('EffectMixer (spec audio, "Tope de voces y limitación por tipo")', () 
     const mixer = new EffectMixer(rules({ impactWeapon: { minIntervalMs: 40 } }), 3, out);
     for (let i = 0; i < 20; i++) {
       mixer.decide(
-        req({ impactWeapon: i % 4, pickup: 2, levelUp: i % 2 }),
+        req({ impactWeapon: i % 4, pickupGold: 2, levelUp: i % 2 }),
         now({ renderMs: i * TICK_MS, sounding: i % 4 }),
       );
     }

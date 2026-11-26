@@ -1060,7 +1060,7 @@ test('Escritorio sin controles táctiles: 600 × 900 sin barra, aviso ni indicac
   const problems = collect(page, ['error', 'warning']);
   const audioRequests: string[] = [];
   page.on('request', (r) => {
-    if (/\.(ogg|mp3|wav)(\?|$)/i.test(r.url())) audioRequests.push(r.url());
+    if (/\.(ogg|mp3|wav|flac)(\?|$)/i.test(r.url())) audioRequests.push(r.url());
   });
   await watchCsp(page);
   await page.setViewportSize({ width: 600, height: 900 });

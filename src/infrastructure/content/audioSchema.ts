@@ -8,10 +8,10 @@ import { EFFECT_TYPES, type EffectType } from '../audio/effectTypes';
 export const AUDIO_DIR = 'public/assets/audio/';
 
 /** Nombre plano de un fichero de audio de la carpeta. */
-export const AUDIO_FILE = /^[a-z0-9-]+\.(ogg|mp3|wav)$/;
+export const AUDIO_FILE = /^[a-z0-9-]+\.(ogg|mp3|wav|flac)$/;
 
 export const AUDIO_FILE_FORMAT =
-  'Nombre de fichero de audio: minúsculas, dígitos y guiones, con extensión .ogg, .mp3 o .wav.';
+  'Nombre de fichero de audio: minúsculas, dígitos y guiones, con extensión .ogg, .mp3, .wav o .flac.';
 export const AUDIO_NOT_REGISTERED =
   'Fichero de audio sin registro en la lista de audio de la nota de procedencia.';
 

@@ -58,7 +58,7 @@ describe('Ficheros de audio que se piden (D8)', () => {
       music: { file: 'loop.ogg' },
       effects: {
         ...base.effects,
-        pickup: { ...base.effects.pickup, file: 'coin.ogg' },
+        pickupGold: { ...base.effects.pickupGold, file: 'coin.ogg' },
         purchase: { ...base.effects.purchase, file: 'coin.ogg' },
       },
     });
