@@ -136,9 +136,16 @@ describe('Arte de Update 010 de los recursos (sprite-rendering)', () => {
     }
   });
 
-  it('Scenario: Solo las hojas usadas (sin GoldMine_Destroyed, M_Spawn, NoShadow ni HappySheep_All)', () => {
+  it('Scenario: Solo las hojas usadas (sin GoldMine_Destroyed, NoShadow ni HappySheep_All; _Spawn 3)', () => {
     const files = execFileSync('git', ['ls-files'], { cwd: root, encoding: 'utf8' }).split('\n');
-    const forbidden = /GoldMine_Destroyed|M_Spawn|NoShadow|HappySheep_All|Fire|Rocks/;
-    expect(files.filter((f) => forbidden.test(f) && !f.startsWith('openspec/'))).toEqual([]);
+    const outside = files.filter((f) => !f.startsWith('openspec/'));
+    const forbidden = /GoldMine_Destroyed|NoShadow|HappySheep_All|Fire|Rocks/;
+    expect(outside.filter((f) => forbidden.test(f))).toEqual([]);
+    // 0030: las únicas `_Spawn` son las 3 hojas de aparición, cada una 1 vez.
+    expect(outside.filter((f) => f.includes('_Spawn')).sort()).toEqual(
+      ['G_Spawn.png', 'M_Spawn.png', 'W_Spawn.png'].map(
+        (f) => `${ASSET_DIR}Resources/Resources/${f}`,
+      ),
+    );
   });
 });

@@ -14,7 +14,7 @@
 ## 3. Infraestructura y contenido
 
 ### Grupo A · Hojas, procedencia y datos de aspecto (commit 1)
-- [ ] 3.1 **Hojas y procedencia** (D6).
+- [x] 3.1 **Hojas y procedencia** (D6).
   - Copiar sin recomprimir `G_Spawn.png`, `W_Spawn.png` y `M_Spawn.png` desde
     `C:\Users\Adri\TFM\Tiny Swords (Update 010)\Resources\Resources\` a
     `public/assets/tiny-swords/Resources/Resources/`.
@@ -30,7 +30,7 @@
     «Ninguna hoja de más», «Hojas de recursos no usadas», «Una hoja de aparición de más» y «Hojas de ovejas y carne
     no usadas». Escenarios (sprite-rendering): «Solo las hojas usadas».
   - Tests: los cuatro citados más `npm run guard:all`.
-- [ ] 3.2 **Esquema zod y datos** (D1).
+- [x] 3.2 **Esquema zod y datos** (D1).
   - En `appearanceSchema.ts`: `SpawnSchema` (sin bucle), `ResourcePickupSchema` con `spawn` opcional en
     `gold`/`wood`/`meat`, `diameter` en `XpShapeSchema` y `PickupMotionSchema` en la raíz
     (`float.{amplitude, periodMs, phaseStepMs}`, `spawnStaggerMs`). Añadir las hojas `spawn` a `XP_SHEET_MUST_DIFFER`.

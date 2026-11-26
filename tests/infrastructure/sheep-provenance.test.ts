@@ -72,15 +72,29 @@ describe('Procedencia de las hojas de ovejas y carne (asset-provenance)', () => 
     expect(problems.join('\n')).toContain(bouncing);
   });
 
-  it('Scenario: Hojas de ovejas y carne no usadas (sin _All, M_Spawn ni M_Idle_(NoShadow))', () => {
+  it('Scenario: Hojas de ovejas y carne no usadas (sin _All ni NoShadow; M_Spawn solo 1 vez)', () => {
     const list = versioned().filter((f) => !f.startsWith('openspec/'));
-    expect(list.filter((f) => /HappySheep_All|M_Spawn|M_Idle_\(NoShadow\)/.test(f))).toEqual([]);
+    const forbidden = /HappySheep_All|M_Idle_\(NoShadow\)|M_Spawn_\(NoShadow\)/;
+    expect(list.filter((f) => forbidden.test(f))).toEqual([]);
+    // 0030: M_Spawn.png es la aparición de la carne (asset-provenance, hojas de aparición).
+    expect(list.filter((f) => f.includes('M_Spawn'))).toEqual([
+      `${ASSET_DIR}Resources/Resources/M_Spawn.png`,
+    ]);
     for (const name of ['HappySheep_Idle.png', 'HappySheep_Bouncing.png', 'M_Idle.png']) {
       expect(
         list.filter((f) => f.endsWith(`/${name}`)),
         name,
       ).toHaveLength(1);
     }
+  });
+
+  it('Scenario: Hojas de ovejas y carne no usadas (lista simulada con M_Spawn_(NoShadow): falla)', () => {
+    const extra = `${ASSET_DIR}Resources/Resources/M_Spawn_(NoShadow).png`;
+    const list = [...versioned(), extra].filter((f) => !f.startsWith('openspec/'));
+    const forbidden = /HappySheep_All|M_Idle_\(NoShadow\)|M_Spawn_\(NoShadow\)/;
+
+    expect(list.filter((f) => forbidden.test(f))).toEqual([extra]);
+    expect(list.filter((f) => f.includes('M_Spawn'))).toHaveLength(2);
   });
 });
 

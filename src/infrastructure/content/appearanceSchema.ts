@@ -377,11 +377,64 @@ function checkSiteColors(a: z.output<typeof AppearanceShape>, ctx: z.RefinementC
   }
 }
 
+export const GEM_DIAMETER_MUST_BE_POSITIVE = 'El diámetro de la gema es un número > 0.';
+export const SPAWN_MUST_NOT_LOOP = 'La animación de aparición no va en bucle.';
+export const FLOAT_AMPLITUDE_OUT_OF_RANGE = 'La amplitud del flote es un número ≥ 0.';
+export const FLOAT_PERIOD_MUST_BE_POSITIVE = 'El periodo del flote es un número > 0.';
+export const FLOAT_PHASE_STEP_OUT_OF_RANGE = 'El paso de fase del flote es un número ≥ 0.';
+export const SPAWN_STAGGER_OUT_OF_RANGE = 'El desfase de aparición es un número ≥ 0.';
+
 /**
  * Gema (`xp`) sin hoja (0022, design §5): forma de color con el pintado de reserva. Nunca cuenta como
- * reserva en la sonda y no exige `idle`.
+ * reserva en la sonda y no exige `idle`. `diameter` (0030): diámetro en px de la forma pintada;
+ * `gemRadius` sigue siendo solo lógica.
  */
-const XpShapeSchema = z.strictObject({ shape: z.literal(true), placeholderColor: Hex });
+const XpShapeSchema = z.strictObject({
+  shape: z.literal(true),
+  placeholderColor: Hex,
+  diameter: z
+    .number({ error: GEM_DIAMETER_MUST_BE_POSITIVE })
+    .positive({ error: GEM_DIAMETER_MUST_BE_POSITIVE }),
+});
+
+/**
+ * Aparición de un recogible (0030, design D1): una vez, con su propia hoja (como las animaciones de
+ * la oveja), y la escala, el origen y el color del `idle` de su tipo.
+ */
+const SpawnSchema = z.strictObject({
+  sheet: SheetSchema,
+  frames: Frames,
+  fps: Fps,
+  loop: z.literal(false, { error: SPAWN_MUST_NOT_LOOP }),
+});
+
+/** Oro, madera y carne (0030): un aspecto quieto con aparición opcional. */
+const ResourcePickupSchema = z.strictObject({
+  ...BaseShape,
+  idle: AnimSchema,
+  spawn: SpawnSchema.optional(),
+});
+
+/**
+ * Flote y desfase de aparición de los recogibles (0030, design D1): A (px, ≥ 0), T (ms, > 0), paso de
+ * fase s (ms, ≥ 0) y desfase e (ms, ≥ 0). En la raíz, fuera de `pickups` (que solo tiene los tipos).
+ */
+const PickupMotionSchema = z.strictObject({
+  float: z.strictObject({
+    amplitude: z
+      .number({ error: FLOAT_AMPLITUDE_OUT_OF_RANGE })
+      .min(0, { error: FLOAT_AMPLITUDE_OUT_OF_RANGE }),
+    periodMs: z
+      .number({ error: FLOAT_PERIOD_MUST_BE_POSITIVE })
+      .positive({ error: FLOAT_PERIOD_MUST_BE_POSITIVE }),
+    phaseStepMs: z
+      .number({ error: FLOAT_PHASE_STEP_OUT_OF_RANGE })
+      .min(0, { error: FLOAT_PHASE_STEP_OUT_OF_RANGE }),
+  }),
+  spawnStaggerMs: z
+    .number({ error: SPAWN_STAGGER_OUT_OF_RANGE })
+    .min(0, { error: SPAWN_STAGGER_OUT_OF_RANGE }),
+});
 
 /** Roca de la piedra (0025): un aspecto quieto sin color propio (el de reserva es de `stone`). */
 const RockAspectSchema = z.strictObject({
@@ -409,9 +462,9 @@ const StoneLooksSchema = z.strictObject({
  */
 const PickupLooksSchema = z.strictObject({
   xp: z.union([StillSchema, XpShapeSchema]),
-  gold: StillSchema,
-  wood: StillSchema,
-  meat: StillSchema,
+  gold: ResourcePickupSchema,
+  wood: ResourcePickupSchema,
+  meat: ResourcePickupSchema,
   stone: StoneLooksSchema,
 });
 
@@ -422,7 +475,8 @@ const VeinLooksSchema = z.strictObject({
 });
 
 export const XP_SHEET_MUST_DIFFER =
-  'La hoja de la gema (xp) debe ser distinta de las del oro, la madera, la carne y la piedra.';
+  'La hoja de la gema (xp) debe ser distinta de las del oro, la madera, la carne, la piedra y las ' +
+  'de aparición.';
 export const RESOURCE_COLORS_MUST_DIFFER =
   'Los colores de reserva de los recogibles y de la veta son distintos dos a dos, de los del mapa y ' +
   'de los de las estructuras.';
@@ -453,7 +507,9 @@ function checkResourceColors(a: z.output<typeof AppearanceShape>, ctx: z.Refinem
   }
   const { xp, gold, wood, meat, stone } = a.pickups;
   const rocks = ROCK_SIZES.map((size) => stone.rocks[size].sheet.file);
-  const others = [gold.sheet.file, wood.sheet.file, meat.sheet.file, ...rocks];
+  // 0030: tampoco puede usar una hoja de aparición.
+  const spawns = [gold, wood, meat].flatMap((p) => (p.spawn ? [p.spawn.sheet.file] : []));
+  const others = [gold.sheet.file, wood.sheet.file, meat.sheet.file, ...rocks, ...spawns];
   if ('sheet' in xp && others.includes(xp.sheet.file)) {
     ctx.addIssue({
       code: 'custom',
@@ -477,6 +533,8 @@ const AppearanceShape = z.strictObject({
   projectile: StillSchema,
   /** Por tipo de recogible (0022, 0023, 0025): `xp` (la gema), `gold`, `wood`, `meat` y `stone`. */
   pickups: PickupLooksSchema,
+  /** Flote y desfase de aparición de los recogibles (0030). */
+  pickupMotion: PickupMotionSchema,
   /** Oveja (0023): `idle` y `bounce` con su hoja cada una. */
   sheep: SheepAspectSchema,
   ground: StillSchema,
@@ -540,6 +598,10 @@ export type Anim =
 export type StillAspect = z.output<typeof StillSchema>;
 /** Gema sin hoja (0022): forma de color. */
 export type XpShapeAspect = z.output<typeof XpShapeSchema>;
+/** Oro, madera y carne (0030): quietos con aparición opcional. */
+export type ResourcePickupAspect = z.output<typeof ResourcePickupSchema>;
+export type SpawnAspect = z.output<typeof SpawnSchema>;
+export type PickupMotionAppearance = z.output<typeof PickupMotionSchema>;
 export type PickupLooksAppearance = z.output<typeof PickupLooksSchema>;
 export type StoneLooksAppearance = z.output<typeof StoneLooksSchema>;
 export type SheepAspect = z.output<typeof SheepAspectSchema>;

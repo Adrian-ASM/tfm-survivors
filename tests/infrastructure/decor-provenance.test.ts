@@ -11,6 +11,7 @@ import {
   aspectsOf,
   mapSheetsOf,
   parseAppearance,
+  pickupSpawnSheetsOf,
   sheepSheetsOf,
   siteAspectsOf,
   structureAspectsOf,
@@ -70,6 +71,7 @@ function usedSheets(): Set<string> {
     ...veinAspectsOf(a).map(([, x]) => ASSET_DIR + x.sheet.file),
     ...sheepSheetsOf(a).map(([, sheet]) => ASSET_DIR + sheet.file),
     ...siteAspectsOf(a).map(([, x]) => ASSET_DIR + x.sheet.file),
+    ...pickupSpawnSheetsOf(a).map(([, sheet]) => ASSET_DIR + sheet.file),
   ]);
 }
 
@@ -79,9 +81,11 @@ describe('Procedencia de las hojas de la decoración (asset-provenance)', () => 
     const list = [...new Set([...versioned(), ...files.map((f) => f.path)])];
 
     expect(checkAssets({ files: list, provenance: provenanceJson, digest: digestOf })).toEqual([]);
-    expect(files).toHaveLength(ENTRIES_BEFORE + DECOR.length);
-    expect(files.slice(ENTRIES_BEFORE).map((f) => f.source)).toEqual(SOURCES);
-    expect(files.slice(ENTRIES_BEFORE).map((f) => f.path)).toEqual(DECOR.map(pathOf));
+    // 0030 añade al final las 3 hojas de aparición: estas 11 siguen en su sitio.
+    expect(files.length).toBeGreaterThanOrEqual(ENTRIES_BEFORE + DECOR.length);
+    const added = files.slice(ENTRIES_BEFORE, ENTRIES_BEFORE + DECOR.length);
+    expect(added.map((f) => f.source)).toEqual(SOURCES);
+    expect(added.map((f) => f.path)).toEqual(DECOR.map(pathOf));
   });
 
   it('Scenario: Hojas de la decoración registradas (las de antes, iguales campo a campo)', () => {
@@ -99,7 +103,7 @@ describe('Procedencia de las hojas de la decoración (asset-provenance)', () => 
 
   it('Scenario: Integridad de las hojas de la decoración (sha256 y bytes; 18 alterado falla)', async () => {
     const { checkAssets, PROVENANCE_PATH } = await guard();
-    for (const entry of files.slice(ENTRIES_BEFORE)) {
+    for (const entry of files.slice(ENTRIES_BEFORE, ENTRIES_BEFORE + DECOR.length)) {
       expect(entry.version).toBe('Update 010');
       expect(digestOf(entry.path)).toEqual({ sha256: entry.sha256, bytes: entry.bytes });
       expect(entry.path).toBe(ASSET_DIR + entry.source.replace('Tiny Swords (Update 010)/', ''));

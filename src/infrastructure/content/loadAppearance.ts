@@ -1,3 +1,4 @@
+import type { z } from 'zod';
 import { err, invalidConfig, ok, type DomainError, type Result } from '../../domain/shared/Result';
 import {
   ASSET_DIR,
@@ -24,6 +25,26 @@ export function pickupAspectsOf(appearance: Appearance): [string[], StillAspect]
     out.push([['pickups', 'stone', 'rocks', size], rock]);
   }
   return out;
+}
+
+/**
+ * Hojas de aparición de los recogibles (0030) con su ruta de campo (`pickups.<tipo>.spawn.sheet`):
+ * las de oro, madera y carne que declaran `spawn`, en ese orden.
+ */
+export function pickupSpawnSheetsOf(
+  appearance: Appearance,
+): [string[], { file: string; frameWidth: number; frameHeight: number }][] {
+  const { gold, wood, meat } = appearance.pickups;
+  const kinds = [
+    ['gold', gold],
+    ['wood', wood],
+    ['meat', meat],
+  ] as const;
+  return kinds.flatMap(([kind, p]) =>
+    p.spawn
+      ? [[['pickups', kind, 'spawn', 'sheet'], p.spawn.sheet] as [string[], typeof p.spawn.sheet]]
+      : [],
+  );
 }
 
 /** Hojas de la oveja (0023) con su ruta de campo: la de `idle` y la de `bounce`. */
@@ -133,6 +154,20 @@ export function structureAspectsOf(appearance: Appearance): [string[], Structure
   ]);
 }
 
+type Issue = z.core.$ZodIssue;
+
+/**
+ * Error de una unión (la gema `xp`: con hoja o forma de color, 0030): el primero de la rama con menos
+ * errores, con la ruta completa, para que nombre el campo (p. ej. `pickups.xp.diameter`).
+ */
+function closestIssue(issue: Issue | undefined): Issue | undefined {
+  if (issue?.code !== 'invalid_union' || issue.errors.length === 0) return issue;
+  const branch = issue.errors.reduce((a, b) => (b.length < a.length ? b : a));
+  const inner = branch[0];
+  if (!inner) return issue;
+  return closestIssue({ ...inner, path: [...issue.path, ...inner.path] });
+}
+
 /**
  * Valida los datos de aspecto (design D9). `registered` son las rutas de `files[].path` de la nota de
  * procedencia: una hoja solo vale si figura ahí. El error nombra el campo con su ruta unida por `.`.
@@ -165,6 +200,10 @@ export function parseAppearance(
         [...path, 'sheet', 'file'],
         a.sheet.file,
       ]),
+      ...pickupSpawnSheetsOf(appearance).map(([path, sheet]): [string[], string] => [
+        [...path, 'file'],
+        sheet.file,
+      ]),
     ];
     for (const [path, file] of sheets) {
       if (known.has(ASSET_DIR + file)) continue;
@@ -176,7 +215,7 @@ export function parseAppearance(
   });
   const parsed = schema.safeParse(raw);
   if (parsed.success) return ok(parsed.data);
-  const issue = parsed.error.issues[0];
+  const issue = closestIssue(parsed.error.issues[0]);
   const path = (issue?.path ?? []).map(String);
   // Un campo desconocido se nombra a sí mismo (spec sprite-rendering: "nombra `lava`").
   if (issue?.code === 'unrecognized_keys' && issue.keys[0] !== undefined) path.push(issue.keys[0]);

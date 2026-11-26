@@ -12,6 +12,7 @@ import {
   siteAspectsOf,
   veinAspectsOf,
   parseAppearance,
+  pickupSpawnSheetsOf,
 } from '../../src/infrastructure/content/loadAppearance';
 
 // Spec sprite-rendering: "Datos del repositorio" y "Hoja de cada elemento" (change 0012, design D4 y D9).
@@ -75,6 +76,7 @@ describe('Datos de aspecto del repositorio', () => {
       ...veinAspectsOf(appearance).map(([, a]) => ASSET_DIR + a.sheet.file),
       ...sheepSheetsOf(appearance).map(([, sheet]) => ASSET_DIR + sheet.file),
       ...siteAspectsOf(appearance).map(([, a]) => ASSET_DIR + a.sheet.file),
+      ...pickupSpawnSheetsOf(appearance).map(([, sheet]) => ASSET_DIR + sheet.file),
     ]);
     expect([...used].every((p) => registered.includes(p))).toBe(true);
     expect([...registered].sort()).toEqual([...used].sort());

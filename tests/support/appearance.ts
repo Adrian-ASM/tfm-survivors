@@ -11,6 +11,10 @@ export const GEM_FILE = 'Resources/Resources/G_Idle.png';
 export const GOLD_FILE = GEM_FILE;
 export const WOOD_FILE = 'Resources/Resources/W_Idle.png';
 export const MEAT_FILE = 'Resources/Resources/M_Idle.png';
+/** Hojas de aparición (0030): 7 frames de 128 px, con sombra. */
+export const GOLD_SPAWN_FILE = 'Resources/Resources/G_Spawn.png';
+export const WOOD_SPAWN_FILE = 'Resources/Resources/W_Spawn.png';
+export const MEAT_SPAWN_FILE = 'Resources/Resources/M_Spawn.png';
 export const SHEEP_IDLE_FILE = 'Resources/Sheep/HappySheep_Idle.png';
 export const SHEEP_BOUNCE_FILE = 'Resources/Sheep/HappySheep_Bouncing.png';
 /** Rocas de la piedra (0025): `small`, `medium` y `large`. */
@@ -76,6 +80,9 @@ const FILES = [
   SITE_HOUSE_FILE,
   SITE_TOWER_FILE,
   ...DECOR_FILES,
+  GOLD_SPAWN_FILE,
+  WOOD_SPAWN_FILE,
+  MEAT_SPAWN_FILE,
 ];
 
 /** Los 15 casos de orilla (lados de río, letras en orden N-E-S-W; design 0016 §12.2 B2). */
@@ -157,7 +164,31 @@ export interface RawAppearance {
   structureColors: Record<string, unknown>;
   sites: Record<string, Json>;
   siteColors: Record<string, unknown>;
+  pickupMotion: { float: Record<string, unknown>; spawnStaggerMs: unknown } & Json;
   [extra: string]: unknown;
+}
+
+/** Flote de los escenarios de 0030 ("Desplazamiento según el reloj"): A 4, T 1.600 y s 200. */
+export const FLOAT_TEST = { amplitude: 4, periodMs: 1600, phaseStepMs: 200 } as const;
+
+/** `spawn` crudo de 7 frames `[0..6]` a 10 fps sin bucle sobre una hoja de 128 px (0030). */
+export const rawSpawn = (file: string): Json => ({
+  sheet: { file, frameWidth: 128, frameHeight: 128 },
+  ...anim([0, 1, 2, 3, 4, 5, 6], 10, false),
+});
+
+/**
+ * Datos de 0030: flote `FLOAT_TEST`, desfase `staggerMs` y `spawn` en oro, madera y carne (con las
+ * hojas `*_Spawn`).
+ */
+export function withPickupMotion(raw: RawAppearance, staggerMs = 0, spawns = true): void {
+  raw.pickupMotion = { float: { ...FLOAT_TEST }, spawnStaggerMs: staggerMs };
+  if (!spawns) return;
+  const files = { gold: GOLD_SPAWN_FILE, wood: WOOD_SPAWN_FILE, meat: MEAT_SPAWN_FILE } as const;
+  for (const [kind, file] of Object.entries(files)) {
+    const p = raw.pickups[kind];
+    if (p) p.spawn = rawSpawn(file);
+  }
 }
 
 const tile = (file: string, size: number, origin = { x: 0, y: 0 }): Json => ({
@@ -265,7 +296,7 @@ export function rawAppearance(): RawAppearance {
     },
     projectile: still(ARROW_FILE, 64, '#ffd60a'),
     pickups: {
-      xp: { shape: true, placeholderColor: '#3e9bff' },
+      xp: { shape: true, placeholderColor: '#3e9bff', diameter: 10 },
       gold: still(GOLD_FILE, 128, '#e8c547'),
       wood: still(WOOD_FILE, 128, '#9c6b3c'),
       meat: still(MEAT_FILE, 128, '#c8504a'),
@@ -277,6 +308,11 @@ export function rawAppearance(): RawAppearance {
           large: rock(ROCK_LARGE_FILE),
         },
       },
+    },
+    // 0030: sin flote ni desfase por defecto (posiciones del snapshot); ver `FLOAT_TEST`.
+    pickupMotion: {
+      float: { amplitude: 0, periodMs: 1600, phaseStepMs: 200 },
+      spawnStaggerMs: 0,
     },
     sheep: {
       scale: 0.6,
