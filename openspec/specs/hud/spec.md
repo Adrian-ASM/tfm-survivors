@@ -204,13 +204,16 @@ icono y el número de cada contador de oro, de madera y de piedra forman un solo
   factor de escala (error ≤ 1 px), enteros dentro de la ventana, sin solapar otro elemento y con los mismos números
 
 ### Requirement: Escala del HUD por escalones
-La vista SHALL pintar el HUD con un factor de escala k entero ≥ 1 que depende solo del tamaño de la ventana (nunca del
-snapshot): no hay escalado continuo. k MUST NOT disminuir cuando la ventana crece en un eje sin decrecer en el otro.
-k MUST valer 1 con cualquier ventana de hasta 1.280 × 720 en ambos ejes (incluidas las menores que 960 × 540) y MUST
-ser ≥ 2 con cualquier ventana de al menos 2.560 × 1.440 en ambos ejes. Con factor k, cada elemento del HUD MUST medir
-k veces lo que mide con factor 1, y su distancia al anclaje MUST ser k veces la de factor 1 (error ≤ 1 px). El
-cambio de escalón al redimensionar MUST verse desde el primer frame pintado tras el cambio. La escala MUST NOT cambiar
-la simulación ni los valores mostrados.
+**Sin modo móvil** (ver "Activación del modo móvil" en `mobile-display`), la vista SHALL pintar el HUD con un factor de
+escala k entero ≥ 1 que depende solo del tamaño de la ventana (nunca del snapshot): no hay escalado continuo. k MUST
+NOT disminuir cuando la ventana crece en un eje sin decrecer en el otro. k MUST valer 1 con cualquier ventana de hasta
+1.280 × 720 en ambos ejes (incluidas las menores que 960 × 540) y MUST ser ≥ 2 con cualquier ventana de al menos
+2.560 × 1.440 en ambos ejes. **En modo móvil**, k es el factor fraccionario de "Escala de la UI del lienzo en modo
+móvil" (`mobile-display`), que también depende solo del tamaño de la ventana y del contenido. En ambos modos, con
+factor k, cada elemento del HUD MUST medir k veces lo que mide con factor 1, y su distancia al anclaje MUST ser k veces
+la de factor 1 (error ≤ 1 px, o ≤ 1 unidad del lienzo en modo móvil). El cambio de factor al redimensionar MUST verse
+desde el primer frame pintado tras el cambio. La escala MUST NOT cambiar la simulación ni los valores mostrados. Los
+escenarios de este requisito que no mencionan el modo móvil se ejecutan sin él.
 
 #### Scenario: Escala mínima
 - **GIVEN** ventanas de 320 × 180, 960 × 540 y 1.280 × 720
@@ -237,6 +240,22 @@ la simulación ni los valores mostrados.
 - **GIVEN** una partida en pausa pintada con una ventana de 1.280 × 720 (factor 1)
 - **WHEN** la ventana pasa a 2.560 × 1.440 y se pinta el siguiente frame
 - **THEN** el HUD se pinta con un factor ≥ 2, muestra los mismos valores que antes y el snapshot no ha cambiado
+
+#### Scenario: Factor fraccionario en modo móvil
+- **GIVEN** el modo móvil, un contenido con texto mínimo 12 px CSS, una ventana de 844 × 390 y el mismo snapshot
+  pintado sin modo móvil con una ventana de 1.280 × 720 (factor 1)
+- **WHEN** se miden la barra de vida, la barra de XP y la altura del texto del tiempo restante en ambos
+- **THEN** el factor en modo móvil vale 1,4066 (error ≤ 0,001) y cada medida, en unidades del lienzo, es 1,4066 veces
+  la de factor 1 (error ≤ 1 unidad)
+- **AND** el texto del tiempo restante mide ≥ 12 px CSS en pantalla (error ≤ 0,1 px)
+
+#### Scenario: El mismo tamaño de ventana con y sin modo móvil
+- **GIVEN** una ventana de 1.280 × 720 con `?mobile=0` y, en otra carga, con `?mobile=1`, y un contenido con texto
+  mínimo 12 px CSS
+- **WHEN** se pinta el HUD
+- **THEN** el factor vale 1 en ambas (en la segunda, k_min ≈ 0,762 < 1 con el lienzo de 1.137,78 × 640)
+- **AND** el texto base mide 14 px CSS en la primera y 15,75 px CSS en la segunda (error ≤ 0,1 px), y ninguna cambia
+  el snapshot
 
 ### Requirement: Oro y madera en el HUD
 La vista SHALL mostrar en el HUD dos contadores, el de oro y el de madera, cada uno con un **icono** y el número del
@@ -356,3 +375,4 @@ el mismo layout.
 <!-- historial: 0024-split-progression-castle (2026-11-25) -->
 <!-- historial: 0025-stone-resource (2026-11-25) -->
 <!-- historial: 0032-ui-kit (2026-11-26) -->
+<!-- historial: 0033-mobile-web (2026-11-26) -->

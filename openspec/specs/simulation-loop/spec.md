@@ -1275,14 +1275,16 @@ pierda antes que otra.
   velocidad 1 en el tick 1.200
 
 ### Requirement: Sin tiempo acumulado durante la pausa ni antes de jugar
-El sistema SHALL no ejecutar ticks ni acumular tiempo real mientras la partida está en pausa (ver `main-menu`): los
-frames que el motor informe con la partida en pausa MUST ejecutar 0 ticks, sea cual sea su duración (incluidos
-frames largos por una pestaña oculta), y el acumulador MUST quedar a 0 desde el momento de pausar, descartando el
-tiempo sobrante que tuviera. Al reanudar no se pierde ni se gana tiempo simulado: el snapshot es el mismo que al
-pausar y el bucle sigue con las reglas de "Paso fijo de simulación" y "Avance acelerado por frame", sin ráfaga de
-ticks de recuperación por el tiempo pasado en pausa. Del mismo modo, la partida que empieza al pulsar `Jugar` MUST
-empezar con el acumulador a 0, sin ráfaga por el tiempo pasado en el menú. Esto vale con cualquier velocidad N en
-`1..15`.
+El sistema SHALL no ejecutar ticks ni acumular tiempo real mientras la partida está en pausa (ver `main-menu`) o
+mientras se ve el aviso de orientación vertical del modo móvil (ver "Aviso de orientación vertical" en
+`touch-controls`), y en lo que sigue "en pausa" incluye ambos casos: los frames que el motor informe con la partida en
+pausa MUST ejecutar 0 ticks, sea cual sea su duración (incluidos frames largos por una pestaña oculta), y el acumulador
+MUST quedar a 0 desde el momento de pausar, descartando el tiempo sobrante que tuviera. Al reanudar (o al desaparecer el
+aviso) no se pierde ni se gana tiempo simulado: el snapshot es el mismo que al pausar y el bucle sigue con las reglas de
+"Paso fijo de simulación" y "Avance acelerado por frame", sin ráfaga de ticks de recuperación por el tiempo pasado en
+pausa. Del mismo modo, la partida que empieza al pulsar `Jugar` MUST empezar con el acumulador a 0, sin ráfaga por el
+tiempo pasado en el menú. Esto vale con cualquier velocidad N en `1..15`. El aviso de orientación no es la pausa del
+jugador: no abre el overlay de pausa y no cambia si la partida estaba o no en pausa.
 
 #### Scenario: Frames durante la pausa
 - **GIVEN** una partida en curso en el tick n
@@ -1325,6 +1327,14 @@ empezar con el acumulador a 0, sin ráfaga por el tiempo pasado en el menú. Est
 - **WHEN** se pulsa `Jugar` y el motor informa de 16,667 ms
 - **THEN** la partida ejecuta exactamente 1 tick y su snapshot tiene tick 1
 - **AND** si en su lugar el motor informa de 8,334 ms, la partida ejecuta 0 ticks
+
+#### Scenario: Sobrante descartado con el aviso de orientación
+- **GIVEN** el modo móvil y un bucle con una partida en curso, sin pausa, que tras un frame de 25 ms ha ejecutado
+  1 tick y tiene 8,333 ms sobrantes
+- **WHEN** la ventana pasa a vertical, el motor informa de 1 frame de 5.000 ms, la ventana vuelve a horizontal y el
+  motor informa de 8,334 ms y después de otros 8,334 ms
+- **THEN** el frame de 5.000 ms y el primero de 8,334 ms ejecutan 0 ticks y el segundo ejecuta exactamente 1 tick
+- **AND** el overlay de pausa no se ha visto en ningún frame
 
 ### Requirement: Velocidad en todas las partidas de la carga
 El sistema SHALL aplicar el modo de avance y la velocidad de simulación resueltos para la carga (ver "Modo de
@@ -1457,9 +1467,11 @@ cuántos ha ejecutado. En modo manual, con n válido y la partida en curso, `ste
   ejecutados (0 ≤ k ≤ n), de modo que `snapshot.tick` final = tick inicial + k.
 
 `step(n)` MUST devolver 0 sin ejecutar ningún tick ni cambiar el snapshot cuando la partida está en pausa,
-eligiendo mejora, en tienda o terminada, cuando no hay partida (menú de inicio) y cuando el modo manual no está activo
-(en este último caso, además, emite 1 aviso por consola que menciona `manual` por llamada y no altera el avance
-en tiempo real).
+eligiendo mejora, en tienda o terminada, cuando se ve el aviso de orientación vertical del modo móvil (ver "Aviso de
+orientación vertical" en `touch-controls`), cuando no hay partida (menú de inicio) y cuando el modo manual no está
+activo (en este último caso, además, emite 1 aviso por consola que menciona `manual` por llamada y no altera el avance
+en tiempo real). Como en modo manual el reloj de render solo avanza n × `TICK_MS` con cada `step(n)` (0014), un
+`step(n)` que devuelve 0 no lo avanza.
 
 Valores de n: es válido un entero en `[1, 9.007.199.254.740.991]` (`Number.MAX_SAFE_INTEGER`). Cualquier otro
 valor (0, negativo, no entero, `NaN`, `Infinity`, texto, sin argumento) MUST rechazarse: `step` devuelve 0, no
@@ -1579,6 +1591,14 @@ una tras otra en el orden en que se hicieron, sin perder ni duplicar ticks; cada
 - **WHEN** se llama a `step(20)`
 - **THEN** devuelve 7, `snapshot.tick` vale n + 7 y la partida está en tienda
 - **AND** un `step(10)` posterior devuelve 0; tras salir de la tienda, `step(10)` devuelve 10
+
+#### Scenario: Step con el aviso de orientación
+- **GIVEN** la URL `?e2e&manual&mobile=1&seed=42`, una partida en curso y sin pausa en el tick n que no abre ofertas ni
+  termina en los próximos 60 ticks, y la ventana en vertical con el aviso visible
+- **WHEN** se llama a `step(60)`
+- **THEN** devuelve 0, el snapshot sigue igual campo a campo al del tick n, el reloj de render no ha avanzado y no se
+  emite ningún aviso que mencione `step` ni `manual`
+- **AND** con la ventana de nuevo en horizontal, `step(60)` devuelve 60 y `snapshot.tick` vale n + 60
 
 ### Requirement: Mismo resultado en avance manual
 El sistema SHALL producir en modo manual el mismo desenlace que en tiempo real para la misma semilla, el mismo
@@ -2104,3 +2124,4 @@ MUST NOT cambiar.
 <!-- historial: 0026-build-sites (2026-11-25) -->
 <!-- historial: 0027-site-contact (2026-11-25) -->
 <!-- historial: 0031-combat-feedback (2026-11-26) -->
+<!-- historial: 0033-mobile-web (2026-11-26) -->

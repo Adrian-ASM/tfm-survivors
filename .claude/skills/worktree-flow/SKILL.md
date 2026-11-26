@@ -29,6 +29,8 @@ principal que no existe, y entonces el pre-commit no se ejecuta (0011). Arrégla
 `git config --worktree --unset core.hooksPath`.
 Repítelo **cada vez que reutilices un worktree**: también puede apuntar a `.husky/_` de **otro** worktree, que
 desaparece al borrarlo (0014).
+Nunca escribas `git config core.hooksPath <ruta>` sin ámbito: con `extensions.worktreeConfig` va a la config
+**compartida** y afecta a todos los checkouts (0033). El valor compartido es el relativo `.husky/_`.
 
 ## Trabajar
 - Abre una sesión nueva de Claude Code dentro de la carpeta del worktree.

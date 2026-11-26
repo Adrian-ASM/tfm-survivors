@@ -1,6 +1,6 @@
 # ADR-0029 · Escalado EXPAND solo en modo móvil, elegido una vez al cargar
 
-- **Estado**: propuesta (change 0033-mobile-web)
+- **Estado**: aceptada (change 0033-mobile-web, archivado 2026-11-26)
 - **Fecha**: 2026-11-26
 
 ## Contexto
