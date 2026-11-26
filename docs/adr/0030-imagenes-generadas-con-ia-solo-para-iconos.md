@@ -1,6 +1,6 @@
 # ADR-0030 · Imágenes generadas con IA solo para iconos de mejora, con procedencia vigilada
 
-- **Estado**: propuesta (change 0034-upgrade-icons)
+- **Estado**: aceptada (change 0034-upgrade-icons, archivado 2026-11-26)
 - **Fecha**: 2026-11-26
 
 ## Contexto

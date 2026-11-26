@@ -54,6 +54,9 @@ Tras cada fase, resume al usuario en ≤ 5 líneas: qué se produjo, decisiones 
   consume cada evento, cuándo no consume) o en qué fichero de `content/` vive un dato, pregúntalo al usuario antes
   de *propose* y escríbelo en `proposal.md`. Si no, spec ∥ design lo resuelven distinto (0025: consumo por baja y
   roca en `resources.json` frente a `appearance.json`; costó una ronda más del spec-writer).
+- **Quién produce los assets**: si el change necesita arte o audio nuevo, confirma antes de *propose* quién lo
+  produce y con qué herramienta (el autor por su cuenta o la propia sesión). Sin generador de imágenes en la sesión,
+  ofrece una muestra dibujada por script determinista (0034: el plan contaba con Antigravity y se reescribió en apply).
 - **Mediciones previas**: si `exploration.md` las pide, ejecútalas antes de *propose* (test temporal fuera del
   repo o un `sdd-implementer` acotado que no versiona nada) y pasa los números al `sdd-spec-writer`. Un objetivo
   de balance no entra en la propuesta sin datos (0006: el design previó ajustes que no servían). Antes de pasar
