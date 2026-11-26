@@ -5,6 +5,7 @@ import { TickRun } from '../../src/application/TickRun';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
 import { PauseGate } from '../../src/infrastructure/phaser/PauseGate';
+import { pressedOnce } from '../../src/infrastructure/dom/TouchBar';
 import {
   ShopGate,
   playScreen,
@@ -111,5 +112,20 @@ describe('ShopGate (castle-shop y main-menu 0024)', () => {
     expect(shopVisible('shopping', true)).toBe(false);
     expect(shopVisible('over', false)).toBe(false);
     expect([shopVisible('shopping', false), playScreen('shopping', false)]).toEqual([true, 'shop']);
+  });
+});
+
+// Spec touch-controls (0033), "Barra táctil": ⏸ es una pulsación de Esc (`pressedOnce` con Esc).
+describe('ShopGate con ⏸ (0033)', () => {
+  it('Scenario: ⏸ en la tienda y en la obra (tienda: sale sin pausa; un segundo ⏸ pausa)', () => {
+    const { frame, pause, screens } = scene();
+    const tap = (tapped: boolean) => frame(pressedOnce(false, tapped));
+
+    const left = tap(true);
+    const screensAfterLeave = [...screens];
+    tap(true);
+
+    expect([left.status, screensAfterLeave.includes('paused')]).toEqual(['running', false]);
+    expect(pause.paused).toBe(true);
   });
 });

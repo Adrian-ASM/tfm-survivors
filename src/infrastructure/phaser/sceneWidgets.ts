@@ -11,6 +11,7 @@ import {
   type CardText,
 } from './UpgradeOverlay';
 import { XpBar } from './XpBar';
+import { JoystickView } from './touch/JoystickView';
 import type { PickupLook } from './art/looks';
 import { uiMargins } from './ui/nineSlice';
 import type { ScreenFrame } from './ui/screenFrame';
@@ -308,4 +309,23 @@ export function createResultsOverlay(
     .setScrollFactor(0)
     .setDepth(RESULTS_DEPTH);
   return { overlay: new ResultsOverlay(veil, texts), veil };
+}
+
+/**
+ * Joystick e indicación en reposo del modo móvil (0033): un `Graphics` y un `Text` en la capa del
+ * HUD, fijos a la cámara y bajo los overlays. Solo se crean con el modo móvil.
+ */
+export function createJoystickView(
+  scene: Scene,
+  hint: string,
+  radiusPx: number,
+  ui?: UiAppearance,
+): JoystickView {
+  const canvas = scene.add.graphics().setScrollFactor(0).setDepth(HUD_DEPTH);
+  const text = scene.add
+    .text(0, 0, '', textStyle(ui, PLAIN_TEXT))
+    .setOrigin(0, 1)
+    .setScrollFactor(0)
+    .setDepth(HUD_DEPTH);
+  return new JoystickView(canvas, text, hint, radiusPx);
 }

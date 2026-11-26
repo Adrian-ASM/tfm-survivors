@@ -255,3 +255,90 @@ describe('PauseGate.manualFrame (spec simulation-loop, "Step en pausa")', () => 
     expect([r.ticks, r.snapshot.tick]).toEqual([1, 501]);
   });
 });
+
+// Spec simulation-loop y touch-controls (0033): el aviso de orientación como retención externa.
+describe('PauseGate.hold (0033, aviso de orientación)', () => {
+  /** Partida en curso sin pausa en el tick n. */
+  function runningAt(n: number): { gate: PauseGate; tickRun: TickRun; loop: FixedStepLoop } {
+    const { loop, tickRun } = quiet();
+    for (let i = 0; i < n; i++) tickRun.execute(TICK_MS, PlayerInput.NONE);
+    return { gate: new PauseGate(), tickRun, loop };
+  }
+
+  it('Scenario: Sobrante descartado con el aviso de orientación (5.000 y 8,334 dan 0; luego 1)', () => {
+    const { gate, tickRun, loop } = runningAt(0);
+    gate.frame(tickRun, 25, PlayerInput.NONE, 1);
+    expect([tickRun.snapshot().tick, loop.accumulatedMs]).toEqual([1, 25 - TICK_MS]);
+
+    gate.hold(true, tickRun);
+    const long = gate.frame(tickRun, 5000, PlayerInput.NONE, 1);
+    gate.hold(false, tickRun);
+    const first = gate.frame(tickRun, FRAME_120HZ, PlayerInput.NONE, 1);
+    const second = gate.frame(tickRun, FRAME_120HZ, PlayerInput.NONE, 1);
+
+    expect([long.tick, first.tick, second.tick]).toEqual([1, 1, 2]);
+    expect(gate.paused).toBe(false);
+  });
+
+  it('Scenario: Girar en mitad de la partida (300 + 1 frame largo: 0 ticks; al volver, 1 tick)', () => {
+    const { gate, tickRun } = runningAt(500);
+    const before = tickRun.snapshot();
+
+    gate.hold(true, tickRun);
+    const during = [...frames(gate, tickRun, 300, FRAME_60HZ), ...frames(gate, tickRun, 1, 5000)];
+    gate.hold(false, tickRun);
+    const back = gate.frame(tickRun, FRAME_60HZ, PlayerInput.NONE, 1);
+
+    expect(during.every((s) => JSON.stringify(s) === JSON.stringify(before))).toBe(true);
+    expect([gate.paused, back.tick]).toEqual([false, 501]);
+  });
+
+  it('Scenario: Girar con la partida en pausa (sigue en pausa en 500; Reanudar y 1 frame: 501)', () => {
+    const { gate, tickRun } = pausedAt(500);
+    gate.hold(true, tickRun);
+    gate.hold(false, tickRun);
+    const still = frames(gate, tickRun, 60, FRAME_60HZ);
+
+    gate.step(false, 'resume', 'running', tickRun);
+    const next = gate.frame(tickRun, FRAME_60HZ, PlayerInput.NONE, 1);
+
+    expect([gate.paused, still.at(-1)?.tick]).toEqual([false, 500]);
+    expect(next.tick).toBe(501);
+  });
+
+  it('Scenario: Esc con el aviso visible (sin ticks; al volver, en pausa)', () => {
+    const { gate, tickRun } = runningAt(500);
+    gate.hold(true, tickRun);
+
+    gate.step(true, null, 'running', tickRun);
+    const during = frames(gate, tickRun, 60, FRAME_60HZ);
+    gate.hold(false, tickRun);
+
+    expect(during.at(-1)?.tick).toBe(500);
+    expect([gate.paused, gate.halted]).toEqual([true, true]);
+    expect(gate.frame(tickRun, FRAME_60HZ, PlayerInput.NONE, 1).tick).toBe(500);
+  });
+
+  it('Scenario: Ventana cuadrada (sin retención: 1 frame ejecuta 1 tick)', () => {
+    const { gate, tickRun } = runningAt(0);
+    gate.hold(false, tickRun);
+    expect(gate.frame(tickRun, FRAME_60HZ, PlayerInput.NONE, 1).tick).toBe(1);
+  });
+
+  it('Scenario: Step con el aviso de orientación (manualFrame: 0 ticks; sin aviso, 60)', () => {
+    const { gate, tickRun } = runningAt(10);
+    gate.hold(true, tickRun);
+    const held = gate.manualFrame(tickRun, 60, PlayerInput.NONE);
+    gate.hold(false, tickRun);
+    const free = gate.manualFrame(tickRun, 60, PlayerInput.NONE);
+
+    expect([held.ticks, held.snapshot.tick]).toEqual([0, 10]);
+    expect([free.ticks, free.snapshot.tick]).toEqual([60, 70]);
+  });
+
+  it('la retención no es la pausa del jugador: paused falso, halted verdadero', () => {
+    const { gate, tickRun } = runningAt(0);
+    gate.hold(true, tickRun);
+    expect([gate.paused, gate.held, gate.halted]).toEqual([false, true, true]);
+  });
+});

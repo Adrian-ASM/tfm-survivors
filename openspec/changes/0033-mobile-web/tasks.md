@@ -48,7 +48,7 @@
     `tests/infrastructure/viewport-probe.test.ts` y `tests/infrastructure/camera-rig.test.ts` (ampliados).
 
 ## 5. Infraestructura: controles táctiles y retención (grupo C, un commit)
-- [ ] 5.1 Joystick:
+- [x] 5.1 Joystick:
   - `phaser/touch/stickVector.ts` (px CSS, m = clamp((|d| − zR)/(R − zR), 0, 1));
   - `TouchJoystick` (captura en `pointerdown` sin `currentlyOver` y dentro de la zona; sondeo de `isDown`/`x`/`y`;
     un solo puntero; `setEnabled`);
@@ -65,7 +65,7 @@
       en cada partida nueva".
   - Tests: `tests/infrastructure/touch-joystick.test.ts` y `tests/infrastructure/joystick-view.test.ts` (dobles
     `FakeInput`/`FakePointer` y los de `tests/support/feedback.ts`).
-- [ ] 5.2 `dom/TouchBar.ts` + `dom/touchIcons.ts` (SVG `data:`, colas, `sync({ inRun, ended })`) y
+- [x] 5.2 `dom/TouchBar.ts` + `dom/touchIcons.ts` (SVG `data:`, colas, `sync({ inRun, ended })`) y
   `dom/FullscreenControl.ts` (costura `FullscreenLike`, alternar, bloqueo en `try/catch`). Lectura combinada «las dos
   fuentes y luego OR» en una función pura (`pressedOnce`).
   - Escenarios TC: "Barra en el menú", "Reiniciar con ↻" (visibilidad y cola), "⏸ y Esc en el mismo frame",
@@ -73,7 +73,7 @@
     completa".
   - Tests: `tests/infrastructure/touch-bar.test.ts` (con `tests/support/fakeDom.ts`) y
     `tests/infrastructure/fullscreen-control.test.ts`.
-- [ ] 5.3 Retención externa en `PauseGate` (`hold`, `held`, `halted`; `step` sin cambios; `discardPending` al
+- [x] 5.3 Retención externa en `PauseGate` (`hold`, `held`, `halted`; `step` sin cambios; `discardPending` al
   empezar la retención), `dom/RotateNotice.ts` y `isPortrait` (estricto). `GameScene` gana las dependencias opcionales
   `frameRule`, `touch` y `hold`:
   - lecturas combinadas de Esc/⏸ y R/↻;

@@ -20,8 +20,18 @@ import { GAME_SCENE_KEY, MENU_SCENE_KEY } from './sceneKeys';
 import type { ResultsOverlay, ResultsTexts } from './ResultsOverlay';
 import type { ResultsView } from './resultsText';
 import type { RunLauncher } from './RunLauncher';
-import { counterIcon, createHud, createResultsOverlay, createUpgradeOverlay } from './sceneWidgets';
-import { screenFrame, type ScreenFrame } from './ui/screenFrame';
+import {
+  counterIcon,
+  createHud,
+  createJoystickView,
+  createResultsOverlay,
+  createUpgradeOverlay,
+} from './sceneWidgets';
+import { desktopFrameRule, type FrameRule, type ScreenFrame } from './ui/screenFrame';
+import type { JoystickView } from './touch/JoystickView';
+import { preferKeyboard, type MoveSource } from './touch/preferKeyboard';
+import { TouchJoystick, type InputLike, type JoystickSettings } from './touch/TouchJoystick';
+import { pressedOnce, type TouchBarView } from '../dom/TouchBar';
 import { hudLayout, veilLayout } from './ui/uiLayout';
 import { watchScreen } from './ui/watchScreen';
 import type { UpgradeOverlay } from './UpgradeOverlay';
@@ -150,6 +160,26 @@ export interface GameSceneDeps {
    * que planifica y nunca por el tiempo del frame. Sin él, tiempo real como siempre.
    */
   readonly manual?: ManualFrames;
+  /** Regla del frame (0033): la móvil con k fraccionario; sin ella, la de escritorio de siempre. */
+  readonly frameRule?: FrameRule;
+  /** Controles táctiles del modo móvil (0033): joystick, indicación y barra. Sin ellos, ninguno. */
+  readonly touch?: SceneTouch;
+  /** Retención externa (0033: aviso de orientación visible). Sin ella, nunca retenida. */
+  readonly hold?: () => boolean;
+}
+
+/** Controles táctiles que recibe la escena en modo móvil (0033, design §4). */
+export interface SceneTouch {
+  /** Joystick del contenido (px CSS) y texto de la indicación en reposo. */
+  readonly joystick: JoystickSettings & { readonly hint: string };
+  /** Barra DOM ⏸ ↻ ⛶: ⏸ es una fuente más de Esc y ↻ de R. */
+  readonly bar: TouchBarView;
+}
+
+/** Joystick y su vista, creados en `create` solo con el modo móvil. */
+interface TouchWidgets {
+  readonly stick: TouchJoystick;
+  readonly view: JoystickView;
 }
 
 /** Lo que la escena necesita del modo manual (lo implementa `ManualStepper`, design 0014 §3.2). */
@@ -174,10 +204,12 @@ interface Widgets {
     setPosition(x: number, y: number): unknown;
     setSize(w: number, h: number): unknown;
   };
-  readonly move: KeyboardInput;
+  /** Teclado; en modo móvil, teclado con precedencia sobre el joystick (0033). */
+  readonly move: MoveSource;
   readonly choice: ChoiceKeys;
   readonly restart: RestartKey;
   readonly esc: PauseKey;
+  readonly touch?: TouchWidgets;
 }
 
 /**
@@ -260,8 +292,11 @@ export class GameScene extends Phaser.Scene {
     // En cada entrada: Volver al menú destruye la cámara de la escena y la recrea (design D2).
     this.rig = new CameraRig(this.cameras.main, this.deps.world);
     const snapshot = started.tickRun.snapshot();
-    const frame = screenFrame(this.scale.width, this.scale.height);
+    const frameRule = this.deps.frameRule ?? desktopFrameRule;
+    const frame = frameRule(this.scale.gameSize, this.scale.displaySize);
     const results = createResultsOverlay(this, frame, this.deps.resultsLines);
+    const keys = new KeyboardInput(keyboard);
+    const touch = this.deps.touch ? this.createTouch(this.deps.touch) : undefined;
     this.w = {
       mapArt,
       mapLooks,
@@ -280,15 +315,21 @@ export class GameScene extends Phaser.Scene {
       offer: createUpgradeOverlay(this, frame, appearance.ui),
       results: results.overlay,
       resultsVeil: results.veil,
-      move: new KeyboardInput(keyboard),
+      move: touch ? preferKeyboard(keys, touch.stick) : keys,
       choice: new ChoiceKeys(keyboard),
       restart: new RestartKey(keyboard),
       esc: new PauseKey(keyboard),
+      ...(touch ? { touch } : {}),
     };
     // Al entrar y en cada RESIZE (0017, design D6); la escucha se quita en SHUTDOWN.
-    watchScreen(this.scale, this.events, (f) => {
-      this.relayout(f);
-    });
+    watchScreen(
+      this.scale,
+      this.events,
+      (f, cssPerUnit) => {
+        this.relayout(f, cssPerUnit);
+      },
+      frameRule,
+    );
     this.render(snapshot);
     this.showPause(false);
   }
@@ -297,9 +338,11 @@ export class GameScene extends Phaser.Scene {
    * Recoloca la presentación al tamaño nuevo del lienzo: cámara, HUD, cartas y velo. No toca la
    * partida, la pausa ni el mapa (redimensionar no ejecuta ni salta ticks; spec world-camera).
    */
-  private relayout(frame: ScreenFrame): void {
+  private relayout(frame: ScreenFrame, cssPerUnit: number): void {
     const w = this.w;
     if (!w) return;
+    w.touch?.stick.relayout(frame, cssPerUnit);
+    w.touch?.view.relayout(frame, cssPerUnit);
     this.rig?.resize(frame);
     w.hud.relayout(hudLayout(frame));
     w.offer.relayout(frame);
@@ -312,11 +355,15 @@ export class GameScene extends Phaser.Scene {
     const w = this.w;
     const started = this.started;
     if (!w || !started) return;
+    // Retención externa (0033, aviso de orientación): solo quita ticks; el teclado sigue igual.
+    this.gate.hold(this.deps.hold?.() ?? false, started.tickRun);
     // Las teclas y los clics se leen siempre (se consumen). Esc va primero: si pausa en este
     // frame, R y la elección se descartan. Sin oferta o sin partida terminada no hacen nada.
-    const esc = w.esc.read();
+    // ⏸ y ↻ (0033) son otra fuente de Esc y de R: las dos se consumen antes de combinarse.
+    const bar = this.deps.touch?.bar;
+    const esc = pressedOnce(w.esc.read(), bar?.takePause() ?? false);
     const action = this.deps.pause.takeAction();
-    const restart = w.restart.read();
+    const restart = pressedOnce(w.restart.read(), bar?.takeRestart() ?? false);
     const index = choiceIndex(this.last?.offer.length ?? 0, w.choice.read(), w.offer.takeClicked());
     // Tienda (0024) antes que la pausa: en tienda, Esc sale y se consume (nunca pausa este frame);
     // 1–3 y R se leen y se descartan (sin oferta ni partida terminada no hacen nada).
@@ -334,10 +381,12 @@ export class GameScene extends Phaser.Scene {
       this.scene.start(MENU_SCENE_KEY);
       return;
     }
+    // Joystick (0033) solo con la partida en curso y sin pausa ni aviso: si no, se suelta.
+    this.enableStick(w, started);
     const manual = this.deps.manual;
     // Reloj de render: una vez por frame, congelado con el mundo detenido. En modo manual sigue
     // al tiempo simulado (más abajo), no al del frame.
-    if (!manual) w.layers.advance(deltaMs, this.gate.paused);
+    if (!manual) w.layers.advance(deltaMs, this.gate.halted);
     // Partida de este frame: la actual o, si R reinicia, la nueva.
     let current = started;
     if (!this.gate.paused) {
@@ -350,9 +399,48 @@ export class GameScene extends Phaser.Scene {
     } else {
       // `simSpeed` avances por frame con el input leído una vez (0 ticks en pausa); un render.
       const speed = this.deps.simSpeed ?? 1;
-      this.render(this.gate.frame(current.tickRun, deltaMs, w.move.read(), speed));
+      this.render(this.gate.frame(current.tickRun, deltaMs, this.readMove(w), speed));
     }
+    this.syncTouch(w, current);
     this.showPause(this.gate.paused);
+  }
+
+  /** Input de movimiento que lee la escena; el primero no nulo quita la indicación (0033). */
+  private readMove(w: Widgets): PlayerInput {
+    const input = w.move.read();
+    w.touch?.view.noteInput(input);
+    return input;
+  }
+
+  /** ¿Se juega? En curso, sin pausa ni aviso de orientación (joystick e indicación, 0033). */
+  private playing(run: StartedRun): boolean {
+    return !this.gate.halted && (this.last?.status ?? run.tickRun.status) === 'running';
+  }
+
+  private enableStick(w: Widgets, run: StartedRun): void {
+    const touch = w.touch;
+    if (!touch) return;
+    touch.stick.setEnabled(this.playing(run));
+    // Sondeo en cada frame: un dedo levantado se suelta aunque nadie lea el input (modo manual).
+    touch.stick.read();
+  }
+
+  /** Joystick pintado y barra táctil del frame (0033); sin modo móvil no hace nada. */
+  private syncTouch(w: Widgets, run: StartedRun): void {
+    const touch = w.touch;
+    if (!touch) return;
+    touch.view.sync(touch.stick.state, this.playing(run));
+    this.deps.touch?.bar.sync({ inRun: true, ended: this.last?.status === 'over' });
+  }
+
+  /** Joystick y su vista (solo modo móvil); el `InputPlugin` de la escena da los toques. */
+  private createTouch(touch: SceneTouch): TouchWidgets {
+    const { hint, ...settings } = touch.joystick;
+    const input: InputLike = this.input;
+    return {
+      stick: new TouchJoystick(input, settings),
+      view: createJoystickView(this, hint, settings.radiusPx, this.deps.appearance.ui),
+    };
   }
 
   /**
@@ -360,10 +448,10 @@ export class GameScene extends Phaser.Scene {
    * del frame (0 sin `step`). El reloj de render avanza lo mismo que el tiempo simulado.
    */
   private manualFrame(w: Widgets, manual: ManualFrames, run: TickRun): void {
-    const plan = manual.plan(() => w.move.read());
+    const plan = manual.plan(() => this.readMove(w));
     const r = this.gate.manualFrame(run, plan.ticks, plan.input);
-    manual.served(r.ticks, !this.gate.paused && run.status === 'running');
-    w.layers.advance(r.ticks * TICK_MS, this.gate.paused);
+    manual.served(r.ticks, !this.gate.halted && run.status === 'running');
+    w.layers.advance(r.ticks * TICK_MS, this.gate.halted);
     this.render(r.snapshot);
   }
 
@@ -375,6 +463,7 @@ export class GameScene extends Phaser.Scene {
     const next = this.deps.restartRun.execute(current.tickRun);
     if (!next.ok) return current;
     this.started = next.value;
+    w.touch?.view.resetHint();
     w.layers.clear();
     w.layers.paintMap(w.mapArt, this.mapPlan(next.value, w.mapLooks));
     return next.value;
@@ -390,6 +479,8 @@ export class GameScene extends Phaser.Scene {
 
   /** Volver al menú: el motor destruye los objetos de la escena; aquí se sueltan las referencias. */
   private leave(): void {
+    this.w?.touch?.stick.destroy();
+    this.deps.touch?.bar.sync({ inRun: false, ended: false });
     this.deps.pause.setVisible(false);
     this.deps.shop.setVisible(false);
     this.deps.build.setVisible(false);
@@ -411,6 +502,12 @@ export class GameScene extends Phaser.Scene {
     // Solo con la escena de la partida activa: en el menú (escena parada, `leave`) no hay HUD.
     if (!this.started || !this.sys.isActive()) return null;
     return this.w?.hud.shown ?? null;
+  }
+
+  /** Indicación en reposo visible en el último frame (0033; falso sin partida), para la sonda. */
+  hintView(): boolean {
+    if (!this.started || !this.sys.isActive()) return false;
+    return this.w?.touch?.view.hintVisible ?? false;
   }
 
   /** Rectángulo visible del último frame pintado (null sin partida), para la sonda E2E. */

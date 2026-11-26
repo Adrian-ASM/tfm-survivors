@@ -11,6 +11,7 @@ import {
   type BuildAction,
 } from '../../../src/infrastructure/phaser/BuildGate';
 import { PauseGate } from '../../../src/infrastructure/phaser/PauseGate';
+import { pressedOnce } from '../../../src/infrastructure/dom/TouchBar';
 import { playScreen } from '../../../src/infrastructure/phaser/ShopGate';
 import { BuildPanel } from '../../../src/infrastructure/dom/BuildPanel';
 import { TICK_MS } from '../../support/builders';
@@ -150,5 +151,20 @@ describe('ManualStepper con la obra (simulation-loop 0026)', () => {
     const second = await step(5);
 
     expect([first, second, run.snapshot().tick, run.status]).toEqual([3, 0, 3, 'building']);
+  });
+});
+
+// Spec touch-controls (0033), "Barra táctil": ⏸ es una pulsación de Esc (`pressedOnce` con Esc).
+describe('BuildGate con ⏸ (0033)', () => {
+  it('Scenario: ⏸ en la tienda y en la obra (obra: sale, solar libre, sin pausa; otro ⏸ pausa)', () => {
+    const { frame, pause, screens, run } = scene();
+
+    const left = frame(pressedOnce(false, true));
+    const sawPause = screens.includes('paused');
+    frame(pressedOnce(false, true));
+
+    expect([left.status, left.sites[0]?.state, sawPause]).toEqual(['running', 'free', false]);
+    expect(run.snapshot().sites[0]?.state).toBe('free');
+    expect(pause.paused).toBe(true);
   });
 });
