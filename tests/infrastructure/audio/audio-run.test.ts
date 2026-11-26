@@ -1,3 +1,5 @@
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { PlayerInput } from '../../../src/domain/player/PlayerInput';
 import type { RunSnapshot } from '../../../src/domain/run/RunSnapshot';
@@ -106,5 +108,27 @@ describe('Audio con partidas reales, sin navegador (spec audio)', () => {
 
     expect(differing).toBe(0);
     expect(b.mixer.stats.played).toBe(0);
+  });
+});
+
+/** Ficheros `.ts` bajo una carpeta, recursivo. */
+function tsFiles(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+    const path = join(dir, e.name);
+    if (e.isDirectory()) return tsFiles(path);
+    return e.name.endsWith('.ts') ? [path] : [];
+  });
+}
+
+describe('Audio sin efecto en la simulación (spec audio 0035)', () => {
+  it('Scenario: Balance y firmas (el núcleo no conoce el audio; balance y firmas los vigila verify)', () => {
+    const root = join(import.meta.dirname, '..', '..', '..', 'src');
+    const core = [...tsFiles(join(root, 'domain')), ...tsFiles(join(root, 'application'))];
+    const touching = core.filter((f) => /audio|sound/i.test(readFileSync(f, 'utf8')));
+
+    // BALANCE_BASELINE (tests/domain/balance.test.ts) y las seis firmas doradas corren en `verify`
+    // sin regenerarlas; aquí, que ningún fichero del núcleo nombra el audio.
+    expect(core.length).toBeGreaterThan(0);
+    expect(touching).toEqual([]);
   });
 });

@@ -344,6 +344,20 @@ export interface ShopProbeView {
   }[];
 }
 
+/** Sonda de audio (0035, design D12): contadores de la carga y estado de la música. */
+export interface AudioProbeView {
+  loaded: boolean;
+  filesRequested: number;
+  music: 'stopped' | 'playing' | 'paused';
+  settings: { music: number; effects: number; muted: boolean };
+  volumes: { music: number; effects: number };
+  requested: number;
+  played: number;
+  dropped: number;
+  byType: Record<string, { requested: number; played: number; dropped: number }>;
+  sounding: number;
+}
+
 interface Probe {
   __sprint?: {
     /** Mapa de la partida en curso (change 0015). */
@@ -377,6 +391,8 @@ interface Probe {
     hud?: { gold: string; wood: string; stone: string } | null;
     /** Icono de cada carta de la oferta abierta (0034): vacío sin oferta. */
     offerIcons?: { id: string; icon: IconStateView }[];
+    /** Audio (0035): también en el menú. */
+    audio?: AudioProbeView | null;
   };
 }
 
@@ -407,6 +423,8 @@ export const probe = (page: Page) =>
           sites: p.sites ?? null,
           screens: p.screens ?? [],
           offerIcons: p.offerIcons ?? [],
+          // Copia: el getter da una vista viva del director.
+          audio: p.audio ? (JSON.parse(JSON.stringify(p.audio)) as AudioProbeView) : null,
         }
       : null;
   });

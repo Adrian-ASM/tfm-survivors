@@ -86,13 +86,13 @@
   `tests/composition/audio-wiring.test.ts` (dependencias falsas: juego, ventana y almacenamiento).
 
 ## 5. E2E, regresión y documentación
-- [ ] 5.1 E2E: ampliar el test de humo de partida de `gameplay.spec` (`?e2e&manual&seed=42`) — escenario: "Audio en
+- [x] 5.1 E2E: ampliar el test de humo de partida de `gameplay.spec` (`?e2e&manual&seed=42`) — escenario: "Audio en
   la partida E2E [E2E]" (`playing` → `paused` → `playing`, M con volúmenes a 0, invariante de contadores, 0 peticiones
   `.ogg/.mp3/.wav`, 0 errores y 0 CSP). Cubre también "Silencio sin step" en el navegador.
-- [ ] 5.2 E2E: ampliar el test de humo del menú sin `?e2e` — escenario: "Panel Sonido sin sonda [E2E]", sin
+- [x] 5.2 E2E: ampliar el test de humo del menú sin `?e2e` — escenario: "Panel Sonido sin sonda [E2E]", sin
   `waitForTimeout` (esperar a que el menú se oculte; `logicGuard`), más las cuentas de 5 a 6 botones de "Menú con
   piezas en el navegador [E2E]" y "Recorrido de la guía en el smoke [E2E]". No es un test nuevo.
-- [ ] 5.3 Regresión y cierre — escenario: "Balance y firmas". `BALANCE_BASELINE` y las 6 firmas doradas pasan sin
+- [x] 5.3 Regresión y cierre — escenario: "Balance y firmas". `BALANCE_BASELINE` y las 6 firmas doradas pasan sin
   regenerarlas, y `git diff --stat main -- src/domain src/application` sale vacío. Actualizar AGENTS.md §1 (estado
   0035) y la entrada del diario de IA.
 
