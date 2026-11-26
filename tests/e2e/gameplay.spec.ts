@@ -666,11 +666,14 @@ test('Recursos: el HUD muestra el oro, la madera y la piedra del snapshot mientr
 // Spec castle-shop (0024), "Abrir, intentar comprar y salir [E2E]": recorrido determinista con
 // ?seed=42 y el mapa real (design §7). ↓ hasta que la tienda se arma y ↑ hasta que se abre; el oro
 // es 0 a esa altura (precondición comprobada), así que el clic en el producto más barato no compra.
+// 0034, sprite-rendering "Iconos en la oferta y en la tienda [E2E]": las 7 filas y, tras salir, las cartas de
+// la primera oferta con su icono (painted), y 0 violaciones de CSP.
 test('Tienda: se abre al volver a la puerta, un clic sin oro no compra y Esc sale sin pausa', async ({
   page,
 }) => {
   slowMapRealOnCi();
   const problems = collect(page, ['pageerror', 'error']);
+  await watchCsp(page);
   await openGame(page, gameUrl({ seed: 42, manual: true, map: 'real' }));
   const read = async () => {
     const s = await snapshotOf(page);
@@ -698,6 +701,8 @@ test('Tienda: se abre al volver a la puerta, un clic sin oro no compra y Esc sal
   const cheapest = [...priced].sort((a, b) => (a.price ?? 0) - (b.price ?? 0))[0];
   if (!cheapest) throw new Error('sin productos con precio');
   expect(cheapest.buyable).toBe(false);
+  // 0034: las 7 filas (6 mejoras de arma y la curación) con su propio icono.
+  expect(open?.products.map((p) => p.icon)).toEqual(Array.from({ length: 7 }, () => 'painted'));
 
   // La fila no comprable lleva aria-disabled (Playwright no la pulsa sin force); el clic llega al
   // caso de uso, que rechaza la compra sin cambios (spec "Clic sin oro").
@@ -720,6 +725,15 @@ test('Tienda: se abre al volver a la puerta, un clic sin oro no compra y Esc sal
   const seen = (await probe(page))?.screens ?? [];
   expect(seen).toContain('shop');
   expect(seen).not.toContain('paused');
+
+  // 0034: tras salir, hasta la primera oferta; cada carta con su icono (painted) y su id.
+  const offered = await stepUntil(page, (s) => s.offer.length > 0, FIRST_OFFER_LIMIT);
+  if (!offered) throw new Error('sin oferta de mejora');
+  const cards = (await probe(page))?.offerIcons ?? [];
+  expect(cards.map((c) => c.id)).toEqual(offered.offer.map((o) => o.id));
+  expect(cards.map((c) => c.icon)).toEqual(offered.offer.map(() => 'painted'));
+  expect(cards.length).toBe(3);
+  expect((await cspState(page)).violations).toEqual([]);
   expect(problems).toEqual([]);
 });
 

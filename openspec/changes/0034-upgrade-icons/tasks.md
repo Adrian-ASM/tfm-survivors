@@ -79,7 +79,7 @@
   (completo) — test: `tests/content/upgrade-icons.test.ts`, `guard:all`, gate de balance en `verify`
 
 ## 7. E2E
-- [ ] 7.1 Ampliar el test "Tienda: se abre al volver a la puerta…" de `gameplay.spec` (`?e2e&manual&seed=42`, mapa
+- [x] 7.1 Ampliar el test "Tienda: se abre al volver a la puerta…" de `gameplay.spec` (`?e2e&manual&seed=42`, mapa
   real): escucha de `securitypolicyviolation`, las 7 filas `painted` en tienda y, tras salir, `stepUntil` hasta la
   primera oferta con las 3 cartas `painted`; ampliar `tests/remote/public.spec.ts` para pedir los iconos (a demanda,
   no se lanza) — escenarios: "Iconos en la oferta y en la tienda [E2E]", "Arte en la URL pública"; regresión de
