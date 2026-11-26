@@ -8,24 +8,24 @@
      autor entregue los ficheros CC0 (fichero, URL, autor y fecha). Design: openspec/changes/0035-audio/design.md. -->
 
 ## 1. Lógica pura de audio (TDD)
-- [ ] 1.1 `AudioCues` (`src/infrastructure/audio/audioCues.ts`): peticiones por tipo y origen del impacto (design
+- [x] 1.1 `AudioCues` (`src/infrastructure/audio/audioCues.ts`): peticiones por tipo y origen del impacto (design
   D2/D3) — escenarios de `audio`: "Un golpe suena una vez en toda su ventana", "Golpe al jugador", "Bajas y mechas",
   "Recogidas y despeje", "Relleno al tope no es recogida", "Varias subidas en un step", "Explosión visible varios
   ticks", "Compra en la tienda", "Partida nueva como referencia", "Snapshot sin cambios", "Impacto de explosión",
   "Explosión de otro tick", "Impacto de torre", "Flecha de torre lejos del golpe", "Explosión gana a torre" y "El
   jugador en una explosión". Test: `tests/infrastructure/audio/audio-cues.test.ts`, con snapshots `{ ...run.snapshot(),
   ... }` armados a mano.
-- [ ] 1.2 `EffectMixer` (`audio/EffectMixer.ts`): 1 por tipo y snapshot, intervalo con el reloj de render, tope sobre
+- [x] 1.2 `EffectMixer` (`audio/EffectMixer.ts`): 1 por tipo y snapshot, intervalo con el reloj de render, tope sobre
   los efectos que suenan, prioridad y descarte con el mundo detenido, la pestaña oculta, el volumen 0 o `!canPlay`
   (D4) — escenarios: "Avalancha de impactos", "Intervalo mínimo con el reloj de render en modo manual", "Tope con voces
   ocupadas", "Tope lleno", "Efectos a 0" y "Fichero que no carga" (parte del mezclador). Test:
   `tests/infrastructure/audio/effect-mixer.test.ts`.
-- [ ] 1.3 `musicState` + `AudioDirector` con un `SoundOut` falso (posición simulada con el reloj de render) (D6) —
+- [x] 1.3 `musicState` + `AudioDirector` con un `SoundOut` falso (posición simulada con el reloj de render) (D6) —
   escenarios: "Menú mudo", "Jugar arranca la música", "Oferta, tienda y obra no paran la música", "Fin de partida y
   reinicio", "Volver al menú", "Bucle", "Pausa con Esc", "Retención por orientación", "Pestaña oculta sobre la pausa",
   "Pestaña oculta en curso", "Pestaña oculta en el menú", "Volúmenes efectivos", "Silencio y vuelta" (volúmenes y
   posición) y "Cambio al instante". Test: `tests/infrastructure/audio/audio-director.test.ts`.
-- [ ] 1.4 Integración sin navegador con partidas reales (test-after: lo cubren 1.1–1.3) — escenarios: "Cuentas
+- [x] 1.4 Integración sin navegador con partidas reales (test-after: lo cubren 1.1–1.3) — escenarios: "Cuentas
   cuadran" (semilla 42, `referenceBot`, 3.600 ticks en bloques de 60), "Contadores coherentes con el snapshot"
   (`enemyDeath` = bajas, salida muda) y "Misma partida con y sin audio" (M en los ticks 100 y 900). Test:
   `tests/infrastructure/audio/audio-run.test.ts`.
