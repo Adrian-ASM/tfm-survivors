@@ -2,11 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { parseAppearance } from '../../src/infrastructure/content/loadAppearance';
 import {
   addBridgeFrames,
+  finishBoot,
   imagesToLoad,
   nextSceneKey,
   sheetsToLoad,
+  uiImagesOf,
   type TextureBook,
 } from '../../src/infrastructure/phaser/bootPlan';
+import { FONT_WAIT_MS, withDeadline } from '../../src/infrastructure/dom/uiFont';
+import { TestTimer, flush } from '../support/testTimer';
 import { BRIDGE_FRAME_NAMES } from '../../src/infrastructure/phaser/map/mapLooks';
 import { GAME_SCENE_KEY, MENU_SCENE_KEY } from '../../src/infrastructure/phaser/sceneKeys';
 import {
@@ -16,6 +20,7 @@ import {
   DECOR_SCARECROW_FILE,
   TOWER_FILE,
   REGISTERED,
+  UI_FILES,
   TORCH_FILE,
   GOLD_SPAWN_FILE,
   MEAT_SPAWN_FILE,
@@ -107,7 +112,79 @@ describe('BootScene · plan de carga', () => {
   });
 
   it('la imagen del puente se carga como imagen (hoja no regular)', () => {
-    expect(imagesToLoad(appearance())).toEqual([{ key: BRIDGE_FILE, file: BRIDGE_FILE }]);
+    expect(imagesToLoad(appearance())[0]).toEqual({ key: BRIDGE_FILE, file: BRIDGE_FILE });
+  });
+
+  it('0032: las 8 piezas de UI se cargan como imágenes enteras, clave = image', () => {
+    const ui = uiImagesOf(appearance());
+    expect(ui.map((i) => i.file)).toEqual(UI_FILES);
+    expect(ui.every((i) => i.key === i.file)).toBe(true);
+    expect(imagesToLoad(appearance())).toEqual([{ key: BRIDGE_FILE, file: BRIDGE_FILE }, ...ui]);
+  });
+});
+
+// Spec sprite-rendering (0032): el menú nace tras la carga y tras la fuente o su plazo de 3.000 ms.
+describe('BootScene · final del arranque con la fuente (finishBoot)', () => {
+  function boot(fontReady: Promise<boolean>, missing: readonly string[] = []) {
+    const events: string[] = [];
+    const failed: string[] = [];
+    let loaded: ReadonlySet<string> | null = null;
+    const done = finishBoot({
+      fontReady,
+      fontFamily: 'Departure Mono',
+      uiKeys: UI_FILES,
+      exists: (key) => !missing.includes(key),
+      fail: (key) => failed.push(key),
+      onUiLoaded: (l) => {
+        loaded = l;
+        events.push('ui');
+      },
+      start: () => events.push('start'),
+    });
+    return { events, failed, done, loaded: () => loaded };
+  }
+
+  it('Scenario: Fuente que no responde (el menú se crea como muy tarde a los 3.000 ms)', async () => {
+    const clock = new TestTimer();
+    const fontReady = withDeadline(
+      new Promise<boolean>(() => undefined),
+      FONT_WAIT_MS,
+      clock.timer,
+    );
+    const b = boot(fontReady);
+    await clock.advance(2999);
+    expect(b.events).toEqual([]);
+    await clock.advance(1);
+    expect(b.events).toEqual(['ui', 'start']);
+    expect(b.failed).toEqual(['Departure Mono']);
+  });
+
+  it('Scenario: Fuente que no carga (se crea el menú sin errores; la familia en failed)', async () => {
+    const b = boot(Promise.resolve(false));
+    await b.done;
+    expect(b.events).toEqual(['ui', 'start']);
+    expect(b.failed).toEqual(['Departure Mono']);
+  });
+
+  it('una promesa de fuente que rechaza no rompe el arranque', async () => {
+    const b = boot(Promise.reject(new Error('x')));
+    await expect(b.done).resolves.toBeUndefined();
+    expect(b.events).toEqual(['ui', 'start']);
+  });
+
+  it('con la fuente cargada: avisa de las piezas cuya textura existe y arranca', async () => {
+    const missing = [UI_FILES[0] ?? ''];
+    const b = boot(Promise.resolve(true), missing);
+    await b.done;
+    expect(b.failed).toEqual([]);
+    expect([...(b.loaded() ?? [])]).toEqual(UI_FILES.slice(1));
+    expect(b.events).toEqual(['ui', 'start']);
+  });
+
+  it('nunca antes de la carga: sin resolver la fuente no arranca', async () => {
+    const b = boot(new Promise<boolean>(() => undefined));
+    await flush();
+    expect(b.events).toEqual([]);
   });
 });
 

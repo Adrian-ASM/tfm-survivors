@@ -73,11 +73,11 @@
   el puntero encima. "DOM sin cambios" con instantánea en `tests/infrastructure/dom/dom-unchanged.test.ts`.
 
 ## 3. Arranque: fuente y piezas (infraestructura Phaser + composición)
-- [ ] 3.1 `src/infrastructure/dom/uiFont.ts`: `loadUiFont` (`FontFace` + `document.fonts.add` + `check`; rechazo →
+- [x] 3.1 `src/infrastructure/dom/uiFont.ts`: `loadUiFont` (`FontFace` + `document.fonts.add` + `check`; rechazo →
   `false`) y `withDeadline` con temporizador inyectado y `FONT_WAIT_MS` 3.000. Test con dobles de `FontFace`/`fonts`
   y reloj de prueba: `tests/infrastructure/dom/ui-font.test.ts`.
   — escenarios: sprite-rendering "Fuente que no responde" (parte del plazo), "Fuente que no carga" (parte de la carga).
-- [ ] 3.2 `bootPlan.ts` (`uiImagesOf` en `imagesToLoad`), `BootScene` (filtro `NEAREST` a las de UI, espera de
+- [x] 3.2 `bootPlan.ts` (`uiImagesOf` en `imagesToLoad`), `BootScene` (filtro `NEAREST` a las de UI, espera de
   `fontReady`, `failed`, `onUiLoaded` con las claves cuya textura existe) y `main.ts` (lanza la fuente en
   `bootstrap`, publica `applyUiKit` al terminar la carga). Tests: `tests/infrastructure/boot-plan.test.ts` (o el
   existente) y uno de `BootScene` con dobles: arranca el menú al resolver la fuente o al vencer el plazo, nunca antes

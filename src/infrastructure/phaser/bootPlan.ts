@@ -2,6 +2,7 @@ import type { Appearance, SheetRect } from '../content/appearanceSchema';
 import {
   aspectsOf,
   pickupSpawnSheetsOf,
+  uiSheetsOf,
   sheepSheetsOf,
   siteAspectsOf,
   structureAspectsOf,
@@ -55,10 +56,48 @@ export function sheetsToLoad(appearance: Appearance): SheetLoad[] {
   return [...byFile.values()];
 }
 
-/** Imágenes enteras: la del puente, cuyos marcos se añaden con nombre tras cargarla. */
+/** Imágenes de las 8 piezas de UI (0032): enteras, clave = su `image`, una por fichero distinto. */
+export function uiImagesOf(appearance: Appearance): ImageLoad[] {
+  const files = new Set(uiSheetsOf(appearance).map(([, file]) => file));
+  return [...files].map((file) => ({ key: file, file }));
+}
+
+/**
+ * Imágenes enteras: la del puente, cuyos marcos se añaden con nombre tras cargarla, y (0032) las de
+ * las piezas de UI, que pintan los NineSlice de Phaser y el `border-image` del DOM (misma URL).
+ */
 export function imagesToLoad(appearance: Appearance): ImageLoad[] {
   const { image } = appearance.map.bridges;
-  return [{ key: image, file: image }];
+  return [{ key: image, file: image }, ...uiImagesOf(appearance)];
+}
+
+/** Lo que `finishBoot` necesita de la escena y de la composición (costura sin motor). */
+export interface BootFinish {
+  /** Fuente de la interfaz: `true` si cargó a tiempo (como mucho `FONT_WAIT_MS`). */
+  readonly fontReady: Promise<boolean>;
+  readonly fontFamily: string;
+  /** Claves de las piezas de UI que se pidieron. */
+  readonly uiKeys: readonly string[];
+  /** Si existe la textura de una clave (las que fallaron no existen). */
+  exists(key: string): boolean;
+  /** Anota una clave que no cargó (diagnóstico). */
+  fail(key: string): void;
+  /** Avisa de las piezas de UI cargadas (la composición publica las variables CSS). */
+  onUiLoaded(loaded: ReadonlySet<string>): void;
+  /** Arranca el menú o la partida. */
+  start(): void;
+}
+
+/**
+ * Final del arranque (0032, design Flujo 3): tras la carga de las hojas, espera la fuente (que ya
+ * trae su plazo), anota la familia si no llegó, avisa de las piezas de UI cuya textura existe y
+ * solo entonces arranca la escena siguiente. Nunca rechaza.
+ */
+export async function finishBoot(f: BootFinish): Promise<void> {
+  const ok = await f.fontReady.catch(() => false);
+  if (!ok) f.fail(f.fontFamily);
+  f.onUiLoaded(new Set(f.uiKeys.filter((key) => f.exists(key))));
+  f.start();
 }
 
 /** Lo que `addBridgeFrames` necesita de las texturas del motor (costura sin motor). */

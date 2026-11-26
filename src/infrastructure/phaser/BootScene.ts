@@ -2,7 +2,9 @@ import Phaser from 'phaser';
 import type { Appearance } from '../content/appearanceSchema';
 import {
   addBridgeFrames,
+  finishBoot,
   imagesToLoad,
+  uiImagesOf,
   nextSceneKey,
   sheetsToLoad,
   type TextureBook,
@@ -15,6 +17,13 @@ export interface BootSceneDeps {
   /** URL de una hoja (`BASE_URL` + `assets/tiny-swords/` + `file`), la compone la composición. */
   readonly assetUrl: (file: string) => string;
   readonly e2e: boolean;
+  /**
+   * Fuente de la interfaz (0032): `true` si cargó, ya con su plazo de `FONT_WAIT_MS`. Sin ella (los
+   * tests de antes) se arranca como siempre, sin esperar.
+   */
+  readonly fontReady?: Promise<boolean>;
+  /** Avisa de las piezas de UI cuya textura existe (la composición publica las variables CSS). */
+  readonly onUiLoaded?: (loaded: ReadonlySet<string>) => void;
 }
 
 /**
@@ -49,7 +58,29 @@ export class BootScene extends Phaser.Scene {
     ensurePlaceholderTexture(this);
     // Marcos con nombre del puente (0016): una vez, en la textura global, si caben en la imagen.
     addBridgeFrames(textureBook(this), this.deps.appearance);
-    this.scene.start(nextSceneKey(this.deps.e2e));
+    // Piezas de UI (0032): pixel art sin suavizar a ×2.
+    const uiKeys = uiImagesOf(this.deps.appearance).map((i) => i.key);
+    for (const key of uiKeys) {
+      if (this.textures.exists(key)) {
+        this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
+      }
+    }
+    // El menú (o la partida) nace tras la fuente o su plazo: los Text de cartas y HUD ya la usan.
+    void finishBoot({
+      fontReady: this.deps.fontReady ?? Promise.resolve(true),
+      fontFamily: this.deps.appearance.ui.font.family,
+      uiKeys,
+      exists: (key) => this.textures.exists(key),
+      fail: (key) => {
+        this.failed.push(key);
+      },
+      onUiLoaded: (loaded) => {
+        this.deps.onUiLoaded?.(loaded);
+      },
+      start: () => {
+        this.scene.start(nextSceneKey(this.deps.e2e));
+      },
+    });
   }
 }
 
