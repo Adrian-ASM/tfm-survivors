@@ -218,6 +218,16 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   `NineSlice` de `button` por carta (zona de clic = `Rectangle` transparente) y 3 de `panel` en el HUD (`hudPanels`
   con textos de reserva), solo con WebGL y textura; reserva con el aspecto de antes. HUD desplazado (margen 24,
   filas 28/46/64/82) y `MONO_CHAR_RATIO` 0,64. Sin núcleo ni sonda; balance, firmas y 820/904 intactos.
+  Modo móvil (change 0033, ADR-0029): se decide **una vez al cargar** (`resolveMobile`: `?mobile=1|0` gana,
+  otro valor avisa, `?e2e` solo apaga la autodetección, si no `(pointer: coarse)`). Solo en móvil, `Scale.EXPAND`
+  sobre `arena.mobile` (base 960 × 640, tope `maxView`; zod con reglas cruzadas, fuera de la `RunConfig`), HUD y
+  cartas con k fraccionario (`mobileFrameRule`: k = min(k_max, max(1, k_min)), texto ≥ `minTextPx` 12 px CSS),
+  `--ui-scale` 1, clase `is-mobile` (reglas CSS táctiles, safe areas, paneles desplazables) y `activePointers` 2.
+  Joystick flotante en la mitad izquierda (`TouchJoystick`, px CSS, R 44 y zona muerta 0,15) con indicación en
+  reposo, teclado con precedencia; barra DOM ⏸ ↻ ⛶ (⏸ = Esc, ↻ = R, ⛶ best effort) y aviso «Gira el móvil» como
+  **retención** de `PauseGate` (`hold`/`halted`: 0 ticks, `step(n)` devuelve 0, el teclado conserva Esc/R/1–3).
+  Sin modo móvil, la escena y la página son las de siempre. Sondas `viewport.mobile`/`domScale`/`displayScale`/
+  `hint`; 2 E2E nuevos en `gameplay.spec` (móvil táctil por CDP y escritorio 600 × 900). Balance y firmas intactos.
   Fuente de verdad del comportamiento: `openspec/specs/`.
 
 ## 2. Comandos

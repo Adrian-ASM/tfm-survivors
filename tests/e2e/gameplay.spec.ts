@@ -8,6 +8,7 @@ import { MAP_GOLDEN, signatureOf } from '../support/mapGolden';
 import { expect, test } from './fixtures';
 import {
   collect,
+  cspState,
   DESKTOP_VIEWPORT_EXTRA,
   expectManual,
   focusGame,
@@ -23,6 +24,8 @@ import {
   backToMenu,
   stopSpriteSampler,
   waitForRun,
+  watchCsp,
+  pauseOverlay,
   type MapView,
   type SnapshotView,
 } from './probe';
@@ -865,5 +868,158 @@ test('Solares: recoger madera, tocar el solar más cercano y construir una casa'
   expect(after?.sites?.panel.visible).toBe(false);
   expect(after?.snapshot?.resources.wood).toBe(wood - 15);
   expect(after?.sprites?.sites).toMatchObject({ empty: 5, house: 1, tower: 0 });
+  expect(problems).toEqual([]);
+});
+
+// Spec mobile-display y touch-controls (0033): modo móvil forzado con `?mobile=1`, pantalla táctil y
+// ventana de 844 × 390 (lienzo EXPAND 1.385 × 640). El arrastre va por CDP
+// (`Input.dispatchTouchEvent`): `page.touchscreen` solo tiene `tap`. Sin reloj: `step(n)` y
+// `expect.poll` sobre la cámara, el aviso o la indicación, nunca sobre el tick.
+const PHONE = { width: 844, height: 390 };
+const mobileUrl = (): string => `${gameUrl({ seed: 42, manual: true })}&mobile=1`;
+const near = (a: number, b: number, tol = 1): boolean => Math.abs(a - b) <= tol;
+
+test.describe('Modo móvil (0033)', () => {
+  test.use({ hasTouch: true, viewport: PHONE });
+
+  test('Móvil táctil: sonda, arrastre que mueve, ⏸, aviso que detiene step y tamaños de vista', async ({
+    page,
+  }) => {
+    const problems = collect(page, ['error', 'warning']);
+    await watchCsp(page);
+    await page.goto(mobileUrl());
+    await expectManual(page);
+    await waitForRun(page);
+
+    // "Sonda en móvil", "Móvil en horizontal" e "Indicación al empezar".
+    await expect.poll(async () => (await probe(page))?.viewport?.hint ?? null).toBe(true);
+    const start = await probe(page);
+    const v = start?.viewport;
+    const cam = start?.camera;
+    if (!v || !cam) throw new Error('sin sonda');
+    expect([v.mobile, v.width, v.height, v.domScale]).toEqual([true, 844, 390, 1]);
+    expect(Math.abs(v.uiScale - 1.4066)).toBeLessThanOrEqual(0.001);
+    expect(14 * v.uiScale * v.displayScale).toBeGreaterThanOrEqual(12 - 0.1);
+    expect([near(cam.width, 1385.03), near(cam.height, 640)]).toEqual([true, true]);
+    // 640 unidades de mundo miden 390 px CSS y el documento no tiene barras de desplazamiento.
+    expect(near(640 * v.displayScale, 390)).toBe(true);
+    expect(
+      await page.evaluate(() => [
+        document.documentElement.scrollWidth <= window.innerWidth,
+        document.documentElement.scrollHeight <= window.innerHeight,
+      ]),
+    ).toEqual([true, true]);
+
+    // "Arrastre que mueve al jugador [E2E]" y "Arrastre sin desplazar la página".
+    const p0 = start.snapshot?.player ?? { x: 0, y: 0 };
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [{ x: 200, y: 250 }],
+    });
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [{ x: 300, y: 250 }],
+    });
+    expect(await step(page, 60)).toBe(60);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    const moved = await probe(page);
+    const p1 = moved?.snapshot?.player ?? { x: 0, y: 0 };
+    expect(p1.x).toBeGreaterThan(p0.x);
+    expect(Math.abs(p1.y - p0.y)).toBeLessThanOrEqual(0.001);
+    expect(moved?.viewport?.hint).toBe(false);
+    expect(
+      await page.evaluate(() => [window.scrollX, window.scrollY, window.visualViewport?.scale]),
+    ).toEqual([0, 0, 1]);
+
+    // ⏸ con un toque: pausa visible, zonas pulsables de ≥ 44 × 44 px CSS y Reanudar operativo.
+    await page.locator('.touch-bar [aria-label="Pausa"]').tap();
+    await expect(pauseOverlay(page)).toBeVisible();
+    const buttons = page.locator('.pause-panel button:visible, .touch-bar button:visible');
+    expect(await buttons.count()).toBeGreaterThanOrEqual(3);
+    for (const box of await buttons.evaluateAll((els) =>
+      els.map((e) => e.getBoundingClientRect().toJSON() as { width: number; height: number }),
+    )) {
+      expect(box.width).toBeGreaterThanOrEqual(44);
+      expect(box.height).toBeGreaterThanOrEqual(44);
+    }
+    await pauseOverlay(page).getByRole('button', { name: 'Reanudar' }).tap();
+    await expect(pauseOverlay(page)).toBeHidden();
+
+    // "Aviso que detiene step [E2E]" y "Step con el aviso de orientación".
+    const n = (await snapshotOf(page))?.tick ?? -1;
+    await page.setViewportSize({ width: PHONE.height, height: PHONE.width });
+    await expect(page.locator('.rotate-notice')).toBeVisible();
+    await expect(page.locator('.rotate-notice')).toHaveText('Gira el móvil');
+    expect(await step(page, 60)).toBe(0);
+    expect((await snapshotOf(page))?.tick).toBe(n);
+    await page.setViewportSize(PHONE);
+    await expect(page.locator('.rotate-notice')).toBeHidden();
+    expect(await step(page, 60)).toBe(60);
+    expect((await snapshotOf(page))?.tick).toBe(n + 60);
+
+    // Tamaños de vista: "Redimensionado en móvil", "Tablet 4:3", "Aspecto 1,5 exacto",
+    // "Nunca menos mundo que el mínimo de escritorio" y "Aspecto muy alargado con tope".
+    const viewOf = async () => {
+      const c = (await probe(page))?.camera;
+      return c ? [Math.floor(c.width), Math.floor(c.height)] : null;
+    };
+    const table: [number, number, number, number][] = [
+      [915, 412, 1421, 640],
+      [1024, 768, 960, 720],
+      [800, 600, 960, 720],
+      [960, 640, 960, 640],
+      [640, 360, 1137, 640],
+      [3200, 640, arena.maxView.width, 640],
+    ];
+    for (const [w, h, vw, vh] of table) {
+      await page.setViewportSize({ width: w, height: h });
+      await expect.poll(viewOf).toEqual([vw, vh]);
+    }
+    expect(table.every(([, , vw, vh]) => vw >= 960 && vh >= 540)).toBe(true);
+    // Con el tope, el lienzo queda centrado y la ventana fuera de él no muestra mundo.
+    const canvas = await page.locator('#game canvas').boundingBox();
+    expect(canvas && near(canvas.x + canvas.width / 2, 1600)).toBe(true);
+    expect(canvas && canvas.width < 3200).toBe(true);
+    // "Redimensionado en móvil": la cámara sigue la fórmula con la posición del jugador.
+    await page.setViewportSize({ width: 915, height: 412 });
+    await expect.poll(viewOf).toEqual([1421, 640]);
+    const after = await probe(page);
+    const pl = after?.snapshot?.player ?? { x: 0, y: 0 };
+    const c = after?.camera ?? { x: -1, y: -1, width: 0, height: 0 };
+    expect(near(c.x, clamp(pl.x - c.width / 2, 0, WORLD.width - c.width))).toBe(true);
+    expect(near(c.y, clamp(pl.y - c.height / 2, 0, WORLD.height - c.height))).toBe(true);
+
+    // "Sin estilos inline": solo el lienzo del motor (y las variables CSS de #game, por CSSOM).
+    const styled = await page.evaluate(() =>
+      [...document.querySelectorAll('[style]')]
+        .filter((e) => e.tagName !== 'CANVAS')
+        .map((e) => ({
+          id: e.id,
+          vars: [...(e as HTMLElement).style].every((prop) => prop.startsWith('--')),
+        })),
+    );
+    expect(styled).toEqual([{ id: 'game', vars: true }]);
+    expect(await cspState(page)).toEqual({ violations: [], metas: 1 });
+    expect(problems).toEqual([]);
+  });
+});
+
+// Spec mobile-display (0033), "Sin controles táctiles en escritorio": puntero fino, sin `mobile`,
+// ventana más alta que ancha.
+test('Escritorio sin controles táctiles: 600 × 900 sin barra, aviso ni indicación y step avanza', async ({
+  page,
+}) => {
+  const problems = collect(page, ['error', 'warning']);
+  await page.setViewportSize({ width: 600, height: 900 });
+  await openGame(page, gameUrl({ seed: 42, manual: true }));
+
+  const p = await probe(page);
+  expect([p?.viewport?.mobile, p?.viewport?.hint]).toEqual([false, false]);
+  expect(await page.locator('.touch-bar, .rotate-notice').count()).toBe(0);
+  expect(await page.evaluate(() => document.documentElement.classList.contains('is-mobile'))).toBe(
+    false,
+  );
+  expect(await step(page, 60)).toBe(60);
   expect(problems).toEqual([]);
 });

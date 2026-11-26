@@ -107,7 +107,7 @@
     `tests/support/css.ts`) y `tests/composition/mobile-wiring.test.ts` (sin modo móvil no crea nodos táctiles).
 
 ## 7. E2E y documentación (grupo E, un commit)
-- [ ] 7.1 Dos E2E nuevos en `tests/e2e/gameplay.spec.ts` (proyecto `logic`, `?e2e&manual`, sin fps ni reloj;
+- [x] 7.1 Dos E2E nuevos en `tests/e2e/gameplay.spec.ts` (proyecto `logic`, `?e2e&manual`, sin fps ni reloj;
   `logicGuard` en verde). Ningún test actual cambia.
   - **Móvil táctil** (`hasTouch`, 844 × 390, `mobile=1&seed=42`):
     - sonda;
@@ -126,7 +126,7 @@
     inline" y "Sin controles táctiles en escritorio".
   - Escenarios TC: "Arrastre que mueve al jugador [E2E]" y "Aviso que detiene step [E2E]".
   - Escenario SL: "Step con el aviso de orientación".
-- [ ] 7.2 Docs:
+- [x] 7.2 Docs:
   - `docs/gdd.md`: «`?e2e` nunca activa el modo móvil» pasa a «`?e2e` solo desactiva la autodetección; `?e2e&mobile=1`
     lo activa».
   - Línea de estado del change 0033 en `AGENTS.md` §1 (EXPAND solo en móvil, ADR-0029, `arena.mobile`, joystick,
