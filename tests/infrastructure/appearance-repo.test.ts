@@ -2,11 +2,16 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { ASSET_DIR, type Aspect } from '../../src/infrastructure/content/appearanceSchema';
+import {
+  ASSET_DIR,
+  ICON_DIR,
+  type Aspect,
+} from '../../src/infrastructure/content/appearanceSchema';
 import { framesUsed } from '../../src/infrastructure/phaser/art/looks';
 import {
   registeredPaths,
   aspectsOf,
+  iconFilesOf,
   mapSheetsOf,
   structureAspectsOf,
   sheepSheetsOf,
@@ -16,6 +21,7 @@ import {
   pickupSpawnSheetsOf,
   uiSheetsOf,
 } from '../../src/infrastructure/content/loadAppearance';
+import { GENERATED_PATHS } from '../support/generated';
 
 // Spec sprite-rendering: "Datos del repositorio" y "Hoja de cada elemento" (change 0012, design D4 y D9).
 // La rejilla se comprueba leyendo la cabecera IHDR de cada PNG (ancho y alto en los bytes 16-23).
@@ -34,7 +40,7 @@ const registered = registeredPaths(provenance);
 const enemyIds = (readJson('content/enemies.json') as { types: { id: string }[] }).types.map(
   (t) => t.id,
 );
-const parsed = parseAppearance(readJson('content/appearance.json'), registered);
+const parsed = parseAppearance(readJson('content/appearance.json'), registered, GENERATED_PATHS);
 if (!parsed.ok) throw new Error(`${parsed.error.field}: ${parsed.error.message}`);
 const appearance = parsed.value;
 const aspects = aspectsOf(appearance);
@@ -97,6 +103,32 @@ describe('Datos de aspecto del repositorio', () => {
     expect([...used].every((p) => artRegistered.includes(p))).toBe(true);
     expect([...artRegistered].sort()).toEqual([...used].sort());
     expect(unusedOf(artRegistered)).toEqual([]);
+  });
+
+  // 0034: la lista de imágenes con IA, solo con las imágenes de los datos de iconos.
+  const usedIcons = (): Set<string> =>
+    new Set(iconFilesOf(appearance).map(([, file]) => ICON_DIR + file));
+  const unusedIconsOf = (ai: readonly string[]): string[] => {
+    const used = usedIcons();
+    return ai.filter((p) => !used.has(p));
+  };
+
+  it('Scenario: Solo las hojas usadas (cada imagen de la lista IA es un icono o una reserva)', () => {
+    expect(unusedIconsOf(GENERATED_PATHS)).toEqual([]);
+    expect([...GENERATED_PATHS].sort()).toEqual([...usedIcons()].sort());
+  });
+
+  it('Scenario: Icono de más (PNG en la lista IA sin id ni reserva que lo use)', () => {
+    const extra = `${ICON_DIR}dragon.png`;
+    const unused = unusedIconsOf([...GENERATED_PATHS, extra]);
+    expect(unused).toEqual([extra]);
+    expect(unused.join('\n')).toContain('dragon.png');
+  });
+
+  it('Scenario: Hoja de cada elemento (ninguna hoja de aspecto, aparición o pieza en la lista IA)', () => {
+    const ai = new Set(GENERATED_PATHS);
+    expect([...usedSheets()].filter((p) => ai.has(p))).toEqual([]);
+    expect(GENERATED_PATHS.every((p) => p.startsWith(ICON_DIR))).toBe(true);
   });
 
   it('Scenario: Solo las hojas usadas (nada de UI/Icons ni UI/Pointers versionado)', () => {

@@ -63,18 +63,18 @@
   `tests/infrastructure/ui-fallback-run.test.ts`, test de sonda con dobles
 
 ## 6. Contenido · iconos generados con IA (por lotes; requiere los PNG del autor)
-- [ ] 6.1 Lote 0: `scripts/icons/remove-white-bg.ps1` (versión parametrizada de `process_icons.ps1`, sin rutas de
-  usuario), las 2 reservas en `public/assets/icons/` con su entrada en `generated[]`, `generatedPolicy` y la sección
+- [x] 6.1 Lote 0 (en 0034 un solo lote con 6.2 y 6.3; sin `remove-white-bg.ps1`: los 18 los genera
+  `scripts/icons/draw-icons.mjs`, design D8), las 2 reservas en `public/assets/icons/` con su entrada en `generated[]`, `generatedPolicy` y la sección
   `icons` (`byId` vacío); quitar el `optional` transitorio de 2.1; lector `tests/support/pngProbe.ts` (`node:zlib`) y
   "Solo las hojas usadas" ampliado a la lista IA — escenarios: "Nota del repositorio", "Estado real del repositorio",
   "Icono registrado solo como imagen con IA", "Iconos del repositorio medidos" (sobre lo que haya), "Icono con otro
   tamaño o sin alfa", "Icono de más", "Hoja de cada elemento" — test: `tests/content/upgrade-icons.test.ts` (nuevo),
   `tests/infrastructure/appearance-repo.test.ts`, `guard:all`
-- [ ] 6.2 Lotes 1..n (repetible, un commit por lote): por cada PNG listo, post-proceso, sha256/bytes, entrada en
+- [x] 6.2 Lotes 1..n (repetible, un commit por lote): por cada PNG listo, post-proceso, sha256/bytes, entrada en
   `generated[]` y clave en `byId`; las 4 de prueba solo con prompt recuperado y términos válidos — escenarios:
   "Iconos del repositorio medidos", "Estado real del repositorio" — test: `tests/content/upgrade-icons.test.ts`,
   `guard:all`
-- [ ] 6.3 Cierre de cobertura: activar en `upgrade-icons.test.ts` la comprobación de las 16 claves exactas y las 2
+- [x] 6.3 Cierre de cobertura: activar en `upgrade-icons.test.ts` la comprobación de las 16 claves exactas y las 2
   reservas — escenarios: "Iconos del repositorio", "Lista del repositorio", "Iconos del repositorio medidos"
   (completo) — test: `tests/content/upgrade-icons.test.ts`, `guard:all`, gate de balance en `verify`
 

@@ -765,10 +765,10 @@ const AppearanceShape = z.strictObject({
   /** Piezas de UI y fuente de la interfaz (0032). */
   ui: UiSchema,
   /**
-   * Iconos de mejora (0034). Opcional solo de forma transitoria (design D9): sin la sección no hay
-   * ningún fichero y todo icono se resuelve a `none`; la tarea 6.1 la hace obligatoria.
+   * Iconos de mejora (0034): obligatoria desde la tarea 6.1 (design D9), con las 2 reservas; la
+   * cobertura de los 16 ids la exige el test de contenido, no el esquema.
    */
-  icons: IconsSchema.optional(),
+  icons: IconsSchema,
 });
 
 /**

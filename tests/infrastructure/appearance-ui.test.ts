@@ -26,13 +26,14 @@ import {
 import { REGISTERED, rawAppearance, type RawAppearance } from '../support/appearance';
 import { rawContent } from '../support/builders';
 import { meanColor, readPng } from '../support/png';
+import { GENERATED_PATHS } from '../support/generated';
 
 // Spec sprite-rendering (0032), "Datos de aspecto de la interfaz".
 const root = join(import.meta.dirname, '..', '..');
 const registered = registeredPaths(provenanceJson);
 
 function repository(): Appearance {
-  const r = parseAppearance(structuredClone(appearanceJson), registered);
+  const r = parseAppearance(structuredClone(appearanceJson), registered, GENERATED_PATHS);
   if (!r.ok) throw new Error(`${r.error.field}: ${r.error.message}`);
   return r.value;
 }
@@ -40,7 +41,7 @@ function repository(): Appearance {
 function failure(change: (raw: RawAppearance) => void): { field: string; message: string } {
   const raw = rawAppearance();
   change(raw);
-  const r = parseAppearance(raw, REGISTERED);
+  const r = parseAppearance(raw, REGISTERED, GENERATED_PATHS);
   if (r.ok) throw new Error('se esperaba un error de datos de aspecto');
   return r.error;
 }
@@ -94,7 +95,7 @@ describe('Datos de aspecto de la interfaz (sprite-rendering 0032)', () => {
     const raw = structuredClone(appearanceJson);
     raw.ui.pieces.buttonDangerPressed.ink.danger = '#996878';
     expect(raw.ui.pieces.buttonDangerPressed.fill).toBe('#996878');
-    expect(parseAppearance(raw, registered).ok).toBe(true);
+    expect(parseAppearance(raw, registered, GENERATED_PATHS).ok).toBe(true);
   });
 
   it('Scenario: Hojas de las piezas medidas (tamaño, márgenes y relleno ≤ 16 por canal)', () => {
@@ -246,6 +247,7 @@ describe('Datos de aspecto de la interfaz (sprite-rendering 0032)', () => {
       { content: rawContent(), appearance, guide: guideJson },
       (e) => errors.push(e.field),
       REGISTERED,
+      GENERATED_PATHS,
     );
     expect(booted).toBeNull();
     expect(errors).toEqual(['ui.pieces.button.slice.top']);

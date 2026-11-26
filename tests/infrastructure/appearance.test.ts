@@ -8,13 +8,14 @@ import {
   parseAppearance,
 } from '../../src/infrastructure/content/loadAppearance';
 import { REGISTERED, rawAppearance, type RawAppearance } from '../support/appearance';
+import { GENERATED_PATHS } from '../support/generated';
 
 // Spec sprite-rendering (0015), "Pintado del mapa": colores de las celdas en los datos de aspecto.
 const root = join(import.meta.dirname, '..', '..');
 const readJson = (path: string): unknown => JSON.parse(readFileSync(join(root, path), 'utf8'));
 
 function failure(raw: RawAppearance): { field: string; message: string } {
-  const r = parseAppearance(raw, REGISTERED);
+  const r = parseAppearance(raw, REGISTERED, GENERATED_PATHS);
   if (r.ok) throw new Error('se esperaba un error de datos de aspecto');
   return r.error;
 }
@@ -25,7 +26,7 @@ describe('Colores del mapa en los datos de aspecto', () => {
     const registered = registeredPaths(
       readJson('content/asset-provenance.json') as ProvenanceLists,
     );
-    const r = parseAppearance(raw, registered);
+    const r = parseAppearance(raw, registered, GENERATED_PATHS);
     if (!r.ok) throw new Error(`${r.error.field}: ${r.error.message}`);
     expect(Object.keys(raw.terrain)).toEqual(['trunk', 'water', 'bridge', 'castle']);
     for (const c of Object.values(raw.terrain)) expect(c).toMatch(/^#[0-9a-fA-F]{6}$/);

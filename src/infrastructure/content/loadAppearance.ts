@@ -206,7 +206,6 @@ export function generatedPaths(note: ProvenanceLists): string[] {
 /** Ficheros de icono con su ruta de campo (`icons.fallback.<cat>`, `icons.byId.<id>`), 0034. */
 export function iconFilesOf(appearance: Appearance): [string[], string][] {
   const icons = appearance.icons;
-  if (icons === undefined) return [];
   return [
     [['icons', 'fallback', 'character'], icons.fallback.character],
     [['icons', 'fallback', 'weapon'], icons.fallback.weapon],

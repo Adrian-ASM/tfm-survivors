@@ -19,6 +19,7 @@ import {
   type RawAppearance,
 } from '../support/appearance';
 import { fakeKit, type FakeSprite } from '../support/FakeSprite';
+import { GENERATED_PATHS } from '../support/generated';
 
 // Specs xp-gems ("Pintado de las gemas") y sprite-rendering ("Aspectos de los recogibles", "Flechas
 // y gemas", "Recogibles de los cinco tipos", "Flote de los recogibles" de 0030): un pool de
@@ -58,7 +59,7 @@ function looks(
   withGuard(raw);
   withPickupMotion(raw, 0, false);
   change(raw);
-  const r = parseAppearance(raw, REGISTERED);
+  const r = parseAppearance(raw, REGISTERED, GENERATED_PATHS);
   if (!r.ok) throw new Error(r.error.message);
   return resolveLooks(r.value, (key) => (missing.includes(key) ? null : 64));
 }

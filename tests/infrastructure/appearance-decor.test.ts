@@ -3,6 +3,7 @@ import appearanceJson from '../../content/appearance.json';
 import provenanceJson from '../../content/asset-provenance.json';
 import { registeredPaths, parseAppearance } from '../../src/infrastructure/content/loadAppearance';
 import { REGISTERED, rawAppearance, type RawAppearance } from '../support/appearance';
+import { GENERATED_PATHS } from '../support/generated';
 
 // Spec sprite-rendering (0029), "Decoración del mapa generado": datos de la decoración validados con
 // zod en el arranque; cada error nombra el campo o la hoja.
@@ -11,7 +12,7 @@ type Item = { sheet: { file: string } } & Json;
 const decorOf = (raw: RawAppearance) => raw.map.decor as { items: Item[] } & Json;
 
 function failure(raw: unknown, registered: readonly string[] = REGISTERED) {
-  const r = parseAppearance(raw, registered);
+  const r = parseAppearance(raw, registered, GENERATED_PATHS);
   if (r.ok) throw new Error('se esperaba un error de datos de aspecto');
   return { field: r.error.field, text: `${r.error.field} ${r.error.message}` };
 }
@@ -22,8 +23,8 @@ const repoFiles = registeredPaths(provenanceJson);
 
 describe('Datos de la decoración', () => {
   it('el fixture y el repositorio, con su decoración, son válidos', () => {
-    expect(parseAppearance(rawAppearance(), REGISTERED).ok).toBe(true);
-    expect(parseAppearance(repoRaw(), repoFiles).ok).toBe(true);
+    expect(parseAppearance(rawAppearance(), REGISTERED, GENERATED_PATHS).ok).toBe(true);
+    expect(parseAppearance(repoRaw(), repoFiles, GENERATED_PATHS).ok).toBe(true);
   });
 
   it('Scenario: Datos de la decoración inválidos (lista de aspectos [])', () => {

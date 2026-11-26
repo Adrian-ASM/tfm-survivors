@@ -33,12 +33,13 @@ import {
   rawAppearance,
   withPickupMotion,
 } from '../support/appearance';
+import { GENERATED_PATHS } from '../support/generated';
 
 // Spec sprite-rendering "Carga del arte compatible con la CSP" (parte unitaria, design D3).
 function appearance(edit: (raw: ReturnType<typeof rawAppearance>) => void = () => undefined) {
   const raw = rawAppearance();
   edit(raw);
-  const r = parseAppearance(raw, REGISTERED);
+  const r = parseAppearance(raw, REGISTERED, GENERATED_PATHS);
   if (!r.ok) throw new Error(r.error.message);
   return r.value;
 }
@@ -274,8 +275,8 @@ describe('BootScene · iconos de mejora (0034)', () => {
     expect(icons.every((i) => i.key === iconKey(i.file))).toBe(true);
   });
 
-  it('sin sección de iconos no se pide ninguno', () => {
-    expect(iconImagesOf(appearance())).toEqual([]);
+  it('con los datos del repositorio se piden las 16 + 2 imágenes', () => {
+    expect(iconImagesOf(appearance())).toHaveLength(18);
   });
 
   it('Scenario: Filtro sin suavizado (cada textura de icono y de reserva con NEAREST)', () => {

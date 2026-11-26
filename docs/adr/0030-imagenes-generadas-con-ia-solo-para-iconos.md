@@ -37,12 +37,17 @@ Opción **3**:
   - `createdOn` (fecha de calendario válida);
   - `terms` (URL de los términos sobre las salidas y fecha de lectura);
   - `prompt` completo;
-  - `postProcess` (script versionado, si lo hay);
+  - `postProcess` (script versionado, si lo hay; en 0034, el generador `scripts/icons/draw-icons.mjs`);
   - `sha256` y `bytes`. Commit y CI comprueban el sha y los bytes.
 - Un icono entra solo si sus términos, leídos en la fecha registrada, permiten publicar la salida en un repositorio
   público. Si no, no se versiona y el juego usa la reserva de su categoría.
 - Los pasos sobre la salida (quitar fondo, recortar, reescalar con vecino más cercano) se versionan como script, para
   que el PNG sea reproducible a partir de la imagen original.
+- Origen en 0034 (decisión del autor en apply): los 18 iconos los dibuja Claude Code (Claude Opus 5.5) como pixel
+  art con un script determinista sin dependencias, `scripts/icons/draw-icons.mjs` (rejilla 32 × 32, bisel y
+  contorno automático, salida 64 × 64 RGBA transparente). La salida IA es el script; el PNG se reproduce byte a byte
+  con `node scripts/icons/draw-icons.mjs public/assets/icons`. No se usan las 4 imágenes de prueba de otra
+  herramienta ni el post-proceso de quitar fondo.
 - La cabecera CC0 de la nota y `files[]` no cambian. La nota pasa a tener tres listas: arte CC0 del pack, fuentes
   OFL y salidas IA.
 
@@ -55,7 +60,8 @@ Opción **3**:
   - el guardarraíl crece con una tercera lista;
   - los términos se registran pero su lectura es humana: el guardarraíl comprueba que existan, no qué dicen;
   - el estilo puede desentonar con Tiny Swords;
-  - el post-proceso actual depende de PowerShell y `System.Drawing` (Windows).
+  - el estilo del script (formas simples en 32 × 32) es más pobre que el de una herramienta de imagen; a cambio, es
+    reproducible y no depende de Windows.
 - Cómo revertirla: borrar un icono, su entrada de `generated[]` y su clave de `icons.byId` deja esa mejora con la
   reserva. Retirar la política entera exige quitar también las 2 reservas y la sección `icons` (que es obligatoria),
   y después `generated[]` del guardarraíl.

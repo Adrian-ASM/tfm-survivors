@@ -14,6 +14,7 @@ import {
   withPickupMotion,
   type RawAppearance,
 } from '../support/appearance';
+import { GENERATED_PATHS } from '../support/generated';
 
 // Spec sprite-rendering (0030), "Aspectos de los recogibles y de las vetas": escalas, diámetro de la
 // gema, aparición `spawn` de oro, madera y carne, flote y desfase; y "Arte de Tiny Swords Update 010
@@ -29,7 +30,7 @@ const sourceOfFile = (file: string): string =>
   provenance.files.find((f) => f.path === ASSET_DIR + file)?.source ?? '';
 
 function repository() {
-  const r = parseAppearance(readJson('content/appearance.json'), registered);
+  const r = parseAppearance(readJson('content/appearance.json'), registered, GENERATED_PATHS);
   if (!r.ok) throw new Error(`${r.error.field}: ${r.error.message}`);
   return r.value;
 }
@@ -45,7 +46,7 @@ function failure(change: (raw: RawAppearance) => void): { field: string; message
   const raw = rawAppearance();
   withPickupMotion(raw);
   change(raw);
-  const r = parseAppearance(raw, REGISTERED);
+  const r = parseAppearance(raw, REGISTERED, GENERATED_PATHS);
   if (r.ok) throw new Error('se esperaba un error de datos de aspecto');
   return { field: r.error.field, message: r.error.message };
 }
@@ -188,7 +189,7 @@ describe('Aspectos de los recogibles: aparición, diámetro y flote (sprite-rend
   it('Scenario: Aparición opcional (sin spawn en oro, madera ni carne; y con A 0, s 0 y e 0)', () => {
     const noSpawn = rawAppearance();
     withPickupMotion(noSpawn, 120, false);
-    expect(parseAppearance(noSpawn, REGISTERED).ok).toBe(true);
+    expect(parseAppearance(noSpawn, REGISTERED, GENERATED_PATHS).ok).toBe(true);
 
     const still = rawAppearance();
     withPickupMotion(still);
@@ -196,7 +197,7 @@ describe('Aspectos de los recogibles: aparición, diámetro y flote (sprite-rend
       float: { amplitude: 0, periodMs: 1600, phaseStepMs: 0 },
       spawnStaggerMs: 0,
     };
-    expect(parseAppearance(still, REGISTERED).ok).toBe(true);
+    expect(parseAppearance(still, REGISTERED, GENERATED_PATHS).ok).toBe(true);
   });
 
   it('Scenario: Datos inválidos (sin regresión: la roca de stone sigue sin poder declarar spawn)', () => {

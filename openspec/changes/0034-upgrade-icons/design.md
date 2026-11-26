@@ -221,6 +221,17 @@ Post-proceso reproducible: `scripts/icons/remove-white-bg.ps1` versiona `process
 parametrizado (origen, destino, lienzo 64, interior 52) y sin rutas de usuario. Usa PowerShell + `System.Drawing`
 (Windows, la máquina del autor). Lo ejecuta el autor, no el CI: el CI solo comprueba sha y forma (test de contenido).
 
+**Cambio de origen en apply (decisión del autor, grupo 6).** No se usan las 4 imágenes de prueba de Antigravity ni
+`remove-white-bg.ps1` (no se crea). Los 18 iconos los dibuja el orquestador (Claude Code, Claude Opus 5.5) como pixel
+art con un script determinista sin dependencias, `scripts/icons/draw-icons.mjs` (rejilla 32 × 32, bisel y contorno
+automático, salida 64 × 64 RGBA transparente, ×2 por vecino más próximo). `node scripts/icons/draw-icons.mjs
+public/assets/icons` los reproduce byte a byte (comprobado tras pasarlo por prettier: mismos sha256). Cada entrada de
+`generated[]` registra `tool` "Claude Code (Claude Opus 5.5) · pixel art dibujado por script determinista",
+`createdOn` 2026-11-26, los términos de consumo de Anthropic §4 (leídos 2026-11-26), un `prompt` con el encargo común,
+el objeto y la función del script, y `postProcess` = `scripts/icons/draw-icons.mjs`. Matiz: el script no es un paso
+*posterior* a una imagen, es el propio generador; se registra en `postProcess` porque es el campo que exige un script
+versionado (D8, regla 3) y así el guardarraíl comprueba que está en el repositorio.
+
 ### D9 · Integración de los PNG separada del código
 - Los grupos de código (D1–D8) se cierran **sin** sección `icons` en `appearance.json` y sin `generated[]`: el
   esquema acepta `icons` ausente solo de forma transitoria (catálogo sin ficheros, todo `none`). Los tests de código
@@ -238,6 +249,12 @@ parametrizado (origen, destino, lienzo 64, interior 52) y sin rutas de usuario. 
   - la cobertura completa (16 claves exactas y 2 reservas) se activa en la última tarea de contenido.
 - Las 4 de prueba (`guardrail`, `shortcuts`, `strict-rules`, `heal`) entran solo si se recupera su prompt del
   historial de la herramienta y los términos lo permiten. Si no, se regeneran con prompt registrado.
+- **Aplicado (grupo 6)**: con el cambio de origen de D8 los 18 PNG llegaron a la vez, así que 6.1–6.3 van en un solo
+  lote (no hay lote 0 con `byId` vacío). El lector de forma vive en `tests/support/pngProbe.ts` (IHDR, esquinas y un
+  codificador mínimo para las copias alteradas) sobre el decodificador de `tests/support/png.ts` de 0032, sin
+  duplicarlo. Con `icons` obligatoria, los tests pasan `GENERATED_PATHS` (`tests/support/generated.ts`) como tercer
+  argumento de `parseAppearance` y cuarto de `bootContent`, y el aspecto crudo de prueba copia la sección del
+  repositorio.
 
 ## Piezas por capa
 | Capa | Pieza | Nueva/Mod. | Notas |

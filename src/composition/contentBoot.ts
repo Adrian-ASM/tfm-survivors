@@ -121,7 +121,7 @@ export function checkIconRefs(
 ): Result<IconCatalog, DomainError> {
   const ids = iconIdsOf(config);
   const known = new Set([...ids.character, ...ids.weapon]);
-  const unknown = Object.keys(appearance.icons?.byId ?? {}).find((id) => !known.has(id));
+  const unknown = Object.keys(appearance.icons.byId).find((id) => !known.has(id));
   if (unknown !== undefined) {
     return err(invalidConfig(`icons.byId.${unknown}`, `${ICON_UNKNOWN_ID} (${unknown})`));
   }

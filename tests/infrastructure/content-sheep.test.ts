@@ -4,6 +4,7 @@ import { bootContent } from '../../src/composition/contentBoot';
 import { loadRunConfig, parseRunConfig } from '../../src/infrastructure/content/loadRunConfig';
 import { rawContent, type RawContent } from '../support/builders';
 import { REGISTERED, rawAppearance } from '../support/appearance';
+import { GENERATED_PATHS } from '../support/generated';
 
 // Spec sheep (0023), "Contenido de las ovejas validado": content/sheep.json con zod estricto y las
 // invariantes de `SheepRules` desde el superRefine.
@@ -67,6 +68,7 @@ describe('Contenido de las ovejas validado (spec sheep, con zod)', () => {
       { content: raw, appearance: rawAppearance(), guide: guideJson },
       (e) => errors.push(e.field),
       REGISTERED,
+      GENERATED_PATHS,
     );
     expect(booted).toBeNull();
     expect(errors).toEqual(['sheep.health']);

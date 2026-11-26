@@ -9,6 +9,7 @@ import {
   veinAspectsOf,
 } from '../../src/infrastructure/content/loadAppearance';
 import { REGISTERED, rawAppearance, type RawAppearance } from '../support/appearance';
+import { GENERATED_PATHS } from '../support/generated';
 
 // Spec sprite-rendering (0022), "Aspectos de los recogibles y de las vetas" y "Arte de Tiny Swords
 // Update 010 por elemento" (recogibles y vetas).
@@ -23,7 +24,7 @@ const sourceOfFile = (file: string): string =>
   provenance.files.find((f) => f.path === ASSET_DIR + file)?.source ?? '';
 
 function repository() {
-  const r = parseAppearance(readJson('content/appearance.json'), registered);
+  const r = parseAppearance(readJson('content/appearance.json'), registered, GENERATED_PATHS);
   if (!r.ok) throw new Error(`${r.error.field}: ${r.error.message}`);
   return r.value;
 }
@@ -31,7 +32,7 @@ function repository() {
 function failure(change: (raw: RawAppearance) => void): string {
   const raw = rawAppearance();
   change(raw);
-  const r = parseAppearance(raw, REGISTERED);
+  const r = parseAppearance(raw, REGISTERED, GENERATED_PATHS);
   if (r.ok) throw new Error('se esperaba un error de datos de aspecto');
   return r.error.field;
 }

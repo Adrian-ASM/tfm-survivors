@@ -38,8 +38,8 @@ export function iconKey(file: string): string {
 export type IconIds = Readonly<Record<IconCategory, readonly string[]>>;
 
 /**
- * Catálogo de los ids del contenido con los datos de iconos (`undefined` = sin sección: ningún
- * fichero ni reserva, todo `none`). No valida los ids: eso lo hace `checkIconRefs` en el arranque.
+ * Catálogo de los ids del contenido con los datos de iconos (`undefined` = sin datos: ningún
+ * fichero ni reserva, todo `none`; lo usan los dobles). No valida los ids: eso lo hace `checkIconRefs` en el arranque.
  */
 export function iconCatalog(icons: IconsAppearance | undefined, ids: IconIds): IconCatalog {
   const entries = new Map<string, IconEntry>();

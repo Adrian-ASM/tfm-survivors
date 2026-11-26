@@ -12,6 +12,7 @@ import {
   registeredPaths,
 } from '../../src/infrastructure/content/loadAppearance';
 import { ARROW_FILE, REGISTERED, rawAppearance, type RawAppearance } from '../support/appearance';
+import { GENERATED_PATHS } from '../support/generated';
 
 // Spec sprite-rendering (0034), "Datos de los iconos de mejora" e "Imágenes con IA solo en los
 // iconos" (design D1/D8). Datos de prueba: la sección `icons` del repositorio llega en la tarea 6.1.
@@ -50,7 +51,7 @@ describe('datos de los iconos de mejora (spec sprite-rendering 0034)', () => {
     const r = parseAppearance(withIcons(), REGISTERED, GENERATED);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    expect(r.value.icons?.byId).toEqual({ armor: 'armor.png', guardrail: 'guardrail.png' });
+    expect(r.value.icons.byId).toEqual({ armor: 'armor.png', guardrail: 'guardrail.png' });
     expect(iconFilesOf(r.value).map(([path]) => path.join('.'))).toEqual([
       'icons.fallback.character',
       'icons.fallback.weapon',
@@ -68,10 +69,11 @@ describe('datos de los iconos de mejora (spec sprite-rendering 0034)', () => {
     expect(r.ok).toBe(true);
   });
 
-  it('sin sección de iconos (transitorio, design D9) la carga pasa y no hay ficheros', () => {
-    const r = parseAppearance(rawAppearance(), REGISTERED);
-    expect(r.ok).toBe(true);
-    if (r.ok) expect(iconFilesOf(r.value)).toEqual([]);
+  it('sin sección de iconos la carga falla (obligatoria desde la tarea 6.1, design D9)', () => {
+    const raw = rawAppearance();
+    Reflect.deleteProperty(raw, 'icons');
+    const r = parseAppearance(raw, REGISTERED, GENERATED_PATHS);
+    expect(r.ok ? null : r.error.field).toBe('icons');
   });
 
   it('Scenario: Datos de iconos inválidos (sin la reserva de arma)', () => {

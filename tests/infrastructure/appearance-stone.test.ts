@@ -18,6 +18,7 @@ import {
   type RawAppearance,
 } from '../support/appearance';
 import { someLooks } from '../support/looks';
+import { GENERATED_PATHS } from '../support/generated';
 
 // Spec sprite-rendering (0025), "Aspectos de los recogibles y de las vetas": la piedra con sus tres
 // rocas de Deco, la roca de cada tipo de enemigo y la reserva por roca.
@@ -29,7 +30,7 @@ const enemyIds = (readJson('content/enemies.json') as { types: { id: string }[] 
 );
 
 function repository() {
-  const r = parseAppearance(readJson('content/appearance.json'), registered);
+  const r = parseAppearance(readJson('content/appearance.json'), registered, GENERATED_PATHS);
   if (!r.ok) throw new Error(`${r.error.field}: ${r.error.message}`);
   return r.value;
 }
@@ -43,7 +44,7 @@ function pngSize(file: string): { width: number; height: number } {
 function failure(change: (raw: RawAppearance) => void): string {
   const raw = rawAppearance();
   change(raw);
-  const r = parseAppearance(raw, REGISTERED);
+  const r = parseAppearance(raw, REGISTERED, GENERATED_PATHS);
   if (r.ok) throw new Error('se esperaba un error de datos de aspecto');
   return r.error.field;
 }
@@ -190,6 +191,7 @@ describe('Datos de la piedra inválidos (sprite-rendering, "Datos inválidos")',
     const r = parseAppearance(
       rawAppearance(),
       REGISTERED.filter((p) => !p.endsWith(ROCK_LARGE_FILE)),
+      GENERATED_PATHS,
     );
 
     expect(r.ok ? null : r.error.field).toBe('pickups.stone.rocks.large.sheet.file');

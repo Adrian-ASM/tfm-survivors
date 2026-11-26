@@ -186,6 +186,7 @@ export interface RawAppearance {
   combat: { colors: Record<string, unknown>; numbers: Json; bar: Json } & Json;
   pickupMotion: { float: Record<string, unknown>; spawnStaggerMs: unknown } & Json;
   ui: RawUi;
+  icons: { fallback: Record<string, unknown>; byId: Record<string, unknown> } & Json;
   [extra: string]: unknown;
 }
 
@@ -390,6 +391,8 @@ export function rawAppearance(): RawAppearance {
       bar: { width: 48, height: 6, gap: 8, fill: '#e63946', back: '#1d1d1d' },
     },
     ui: rawUi(),
+    // 0034: los iconos del repositorio (sus rutas, en la lista IA: `GENERATED_PATHS`).
+    icons: structuredClone(appearanceJson.icons),
   };
 }
 

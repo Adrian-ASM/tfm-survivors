@@ -11,6 +11,7 @@ import {
 } from '../../../src/infrastructure/content/loadAppearance';
 import { gemShapeUrl, resourceIcons } from '../../../src/infrastructure/dom/resourceIcons';
 import { MENU_LABELS, buildMissing } from '../../../src/infrastructure/dom/menuText';
+import { GENERATED_PATHS } from '../../support/generated';
 
 // Design 0027 §3 y 0028 §6: iconos de recurso con las hojas del contador del HUD (G_Idle, W_Idle,
 // M_Idle y la roca `medium`, Deco/05) y la URL de `BootScene` (mismo origen); la gema como forma de
@@ -18,7 +19,7 @@ import { MENU_LABELS, buildMissing } from '../../../src/infrastructure/dom/menuT
 const REGISTERED = registeredPaths(provenanceJson);
 
 const parsed = (raw: unknown) => {
-  const r = parseAppearance(raw, REGISTERED);
+  const r = parseAppearance(raw, REGISTERED, GENERATED_PATHS);
   if (!r.ok) throw new Error(r.error.message);
   return r.value;
 };

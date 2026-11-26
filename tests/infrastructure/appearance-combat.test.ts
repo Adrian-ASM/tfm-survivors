@@ -16,6 +16,7 @@ import {
 import { parseAppearance, registeredPaths } from '../../src/infrastructure/content/loadAppearance';
 import { REGISTERED, rawAppearance, type RawAppearance } from '../support/appearance';
 import { rawContent } from '../support/builders';
+import { GENERATED_PATHS } from '../support/generated';
 
 // Spec sprite-rendering (0031), "Datos de aspecto del combate".
 const root = join(import.meta.dirname, '..', '..');
@@ -33,7 +34,7 @@ const PROVENANCE_ENTRIES_BEFORE = 45;
 const UI_PIECE_ENTRIES = 8;
 
 function repository() {
-  const r = parseAppearance(readJson('content/appearance.json'), withFonts);
+  const r = parseAppearance(readJson('content/appearance.json'), withFonts, GENERATED_PATHS);
   if (!r.ok) throw new Error(`${r.error.field}: ${r.error.message}`);
   return r.value;
 }
@@ -43,7 +44,7 @@ type Combat = RawAppearance['combat'];
 function failure(change: (c: Combat) => void): { field: string; message: string } {
   const raw = rawAppearance();
   change(raw.combat);
-  const r = parseAppearance(raw, REGISTERED);
+  const r = parseAppearance(raw, REGISTERED, GENERATED_PATHS);
   if (r.ok) throw new Error('se esperaba un error de datos de aspecto');
   return r.error;
 }
@@ -121,6 +122,7 @@ describe('Datos de aspecto del combate (sprite-rendering 0031)', () => {
       { content: rawContent(), appearance, guide: guideJson },
       (e) => errors.push(e.field),
       REGISTERED,
+      GENERATED_PATHS,
     );
     expect(booted).toBeNull();
     expect(errors).toEqual(['combat.colors.player']);

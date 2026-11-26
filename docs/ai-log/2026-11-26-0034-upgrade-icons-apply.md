@@ -28,3 +28,19 @@
 - Un `node -e` con comillas dobles en Git Bash interpretó los acentos graves de un comentario como sustitución de
   órdenes y estropeó `UpgradeOverlay.ts`; se revirtió con `git checkout` y se rehízo con Edit (AGENTS §8.1:
   código con Edit/Write). Ningún hook bloqueó nada.
+
+## Grupo 6 · contenido (un solo lote, 6.1–6.3)
+- Cambio de origen decidido por el autor: no entran las 4 imágenes de prueba de Antigravity ni
+  `remove-white-bg.ps1`. Los 18 iconos (16 `<id>.png` + 2 reservas) los dibujó el orquestador (Claude Code,
+  Claude Opus 5.5) con `scripts/icons/draw-icons.mjs`: pixel art determinista sin dependencias (rejilla 32 × 32,
+  bisel, contorno automático, 64 × 64 RGBA transparente). Anotado en design D8/D9 y en ADR-0030.
+- El script no pasaba prettier: se formateó sin tocar el dibujo y se regeneró en una carpeta temporal; los 18 sha256
+  salieron idénticos a los PNG entregados, así que no hubo que recalcular nada.
+- `generated[]`: 18 entradas con `tool`, `createdOn` 2026-11-26, términos de consumo de Anthropic §4 (leídos
+  2026-11-26), prompt (encargo común + objeto + función del script), `postProcess` = el propio generador (matiz en
+  design D8) y sha256/bytes medidos. `generatedPolicy` apunta al ADR-0030.
+- Sección `icons` obligatoria: unas 30 llamadas de test a `parseAppearance`/`bootContent` ganan `GENERATED_PATHS`
+  con un codemod de un solo uso (en el scratchpad, sin versionar). `JSON.stringify` + prettier habría reescrito el
+  formato compacto de `appearance.json`: se revirtió y la sección se añadió con Edit.
+- La comparación "listas de arte y fuentes iguales a las de antes" usa una huella sha256 fija: el CI clona sin
+  historia y `git show <sha>` fallaría.

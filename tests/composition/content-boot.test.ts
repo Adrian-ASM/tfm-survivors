@@ -24,6 +24,7 @@ import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulbe
 import { rawContent } from '../support/builders';
 import { randomInputs } from '../support/inputs';
 import { chooseFirstWhileOpen, startRun, startSeededRun } from '../support/runs';
+import { GENERATED_PATHS } from '../support/generated';
 
 // Spec sprite-rendering, "Datos de aspecto validados" en el arranque (change 0012, design D9).
 const REGISTERED = registeredPaths(provenanceJson);
@@ -36,7 +37,7 @@ function raw(): Raw {
 
 function boot(r: Raw) {
   const errors: DomainError[] = [];
-  const booted = bootContent(r, (e) => errors.push(e), REGISTERED);
+  const booted = bootContent(r, (e) => errors.push(e), REGISTERED, GENERATED_PATHS);
   return { booted, errors };
 }
 
@@ -349,7 +350,7 @@ describe('bootContent · iconos de mejora (0034)', () => {
       }),
     ).booted;
     if (!full || !empty) throw new Error('arranque inválido');
-    expect(Object.keys(empty.appearance.icons?.byId ?? {})).toEqual([]);
+    expect(Object.keys(empty.appearance.icons.byId)).toEqual([]);
     // Los iconos no llegan a la RunConfig: la del núcleo es la misma con cualquier sección.
     expect(empty.config).toEqual(full.config);
     const inputs = randomInputs(1200, 7);
@@ -366,10 +367,17 @@ describe('bootContent · iconos de mejora (0034)', () => {
     // de `verify` (el plan del mapa no lee `appearance.icons`).
   });
 
-  it('sin sección de iconos (transitorio, D9) arranca con el catálogo sin ficheros', () => {
+  it('con el contenido del repositorio: los 16 ids con su fichero y las 2 reservas', () => {
     const { booted, errors } = boot(raw());
     expect(errors).toEqual([]);
-    expect([...(booted?.icons.entries.values() ?? [])].every((e) => e.file === null)).toBe(true);
-    expect(booted?.icons.fallback).toEqual({ character: null, weapon: null });
+    expect([...(booted?.icons.entries.values() ?? [])].every((e) => e.file !== null)).toBe(true);
+    expect(booted?.icons.fallback).toEqual(FALLBACK);
+  });
+
+  it('sin sección de iconos el arranque falla (obligatoria desde 6.1, design D9)', () => {
+    const r = raw();
+    Reflect.deleteProperty(r.appearance, 'icons');
+    const { booted, errors } = boot(r);
+    expect([booted, errors.map((e) => e.field)]).toEqual([null, ['icons']]);
   });
 });
