@@ -4,11 +4,12 @@ import type { RunSnapshot } from '../../src/domain/run/RunSnapshot';
 import type { RingSprite } from '../../src/infrastructure/phaser/PulseLayer';
 import { emptyCounts } from '../../src/infrastructure/phaser/renderCounts';
 import { RenderLayers } from '../../src/infrastructure/phaser/RenderLayers';
+import type { Looks } from '../../src/infrastructure/phaser/art/looks';
 import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulberry32RandomGenerator';
 import { aDefaultConfig, withPlayer } from '../support/builders';
 import { FAKE_HAZARD_CAPACITY, FakeGraphics, fakeKit } from '../support/FakeSprite';
-import { someLooks } from '../support/looks';
-import { chooseFirstWhileOpen, startRun } from '../support/runs';
+import { repoLooks, someLooks } from '../support/looks';
+import { chooseFirstWhileOpen, startRun, startSeededRun } from '../support/runs';
 
 // Specs run-results ("Primer frame tras reiniciar", "Cinco reinicios seguidos") y sprite-rendering
 // ("R con cadáveres en curso", "Sonda en el menú") sobre `RenderLayers` (change 0012).
@@ -31,13 +32,14 @@ class FakeRing implements RingSprite {
   }
 }
 
-function view() {
+function view(looks: Looks = someLooks()) {
+  const kit = fakeKit();
   const layers = new RenderLayers(
     {
-      kit: fakeKit(),
+      kit,
       warnings: () => new FakeGraphics(),
       ring: () => new FakeRing(),
-      looks: someLooks(),
+      looks,
       capacity: {
         enemies: 200,
         projectiles: 32,
@@ -62,7 +64,7 @@ function view() {
     c.pulses.visible,
     c.pickups.xp.visible + c.pickups.gold.visible + c.pickups.wood.visible,
   ];
-  return { layers, paint, visible };
+  return { layers, paint, visible, kit };
 }
 
 const counts = (s: RunSnapshot) => [
@@ -174,6 +176,38 @@ describe('Vista limpia tras reiniciar (spec run-results y sprite-rendering)', ()
     }
   });
 
+  it('Scenario: R con apariciones en curso (semilla 42: montones en idle y un oro en el frame 3 → retardo de nuevo)', () => {
+    const W_SPAWN = 'Resources/Resources/W_Spawn.png';
+    const v = view(repoLooks());
+    const fresh = () => startSeededRun(aDefaultConfig(), 42).snapshot();
+    const first = fresh();
+    const piles = first.pickups.filter((p) => p.kind === 'wood');
+    expect(piles).toHaveLength(8);
+    for (let f = 0; f < 120; f++) v.paint(first);
+    const gold = { id: 999, kind: 'gold' as const, value: 1, x: 3000, y: 300, radius: 5 };
+    const withGold = { ...first, pickups: [...first.pickups, gold] };
+    for (let f = 0; f < 20; f++) v.paint(withGold);
+    const sprite = (p: { x: number; y: number }) =>
+      v.kit.created.find((s) => s.visible && s.x === p.x && Math.abs(s.y - p.y) <= 4.001);
+    expect([sprite(gold)?.texture, sprite(gold)?.frame]).toEqual([
+      'Resources/Resources/G_Spawn.png',
+      3,
+    ]);
+    expect(piles.every((p) => sprite(p)?.texture === 'Resources/Resources/W_Idle.png')).toBe(true);
+
+    v.layers.clear();
+    v.paint(fresh());
+
+    expect(piles.map((p) => [sprite(p)?.texture, sprite(p)?.frame])).toEqual(
+      piles.map(() => [W_SPAWN, 0]),
+    );
+    expect(v.kit.created.some((s) => s.visible && s.texture.includes('G_'))).toBe(false);
+    expect(v.layers.counts.pickupSpawns).toEqual({ xp: 0, gold: 0, wood: 8, meat: 0, stone: 0 });
+    // El id 0 ya ha empezado (deja el frame 0 a los 100 ms); el 1, en su retardo de 120 ms, aún no.
+    for (let f = 0; f < 7; f++) v.paint(fresh());
+    expect([sprite(piles[0] ?? gold)?.frame, sprite(piles[1] ?? gold)?.frame]).toEqual([1, 0]);
+  });
+
   it('Scenario: Cinco reinicios seguidos (en la sexta, sprites visibles = elementos del snapshot)', () => {
     const v = view();
     for (let game = 1; game <= 5; game++) {
@@ -209,5 +243,7 @@ describe('Vista limpia tras reiniciar (spec run-results y sprite-rendering)', ()
     expect(kinds.every((k) => k.visible === 0 && k.placeholder === 0)).toBe(true);
     expect(c.sheep.byState).toEqual({ graze: 0, wander: 0, flee: 0 });
     expect(c.enemyPlaceholders).toEqual({ 'goblin-torch': 0, 'goblin-tnt': 0, 'goblin-barrel': 0 });
+    // 0030: ningún recogible en aparición.
+    expect(c.pickupSpawns).toEqual({ xp: 0, gold: 0, wood: 0, meat: 0, stone: 0 });
   });
 });

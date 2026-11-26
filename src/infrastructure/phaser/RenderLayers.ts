@@ -123,6 +123,7 @@ export class RenderLayers {
       projectiles: this.projectiles.counts,
       pulses: this.pulses.counts,
       pickups: this.pickups.counts,
+      pickupSpawns: this.pickups.spawns,
       gems: this.pickups.counts.xp,
       sheep: this.sheep.counts,
       enemyPlaceholders: this.enemies.placeholdersByType,

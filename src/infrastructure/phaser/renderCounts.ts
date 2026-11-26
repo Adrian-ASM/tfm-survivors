@@ -1,6 +1,6 @@
 import type { StateCounts } from './EnemyLayer';
 import type { SpriteCount } from './PlayerView';
-import type { PickupCounts } from './PickupLayer';
+import type { PickupCounts, PickupSpawnCounts } from './PickupLayer';
 import { zeroSheepCounts, type SheepCounts } from './SheepLayer';
 import { zeroCells, zeroMapArt, type CellCounts, type MapArtProbe } from './TerrainView';
 import { zeroStructureCounts, type StructureCount } from './StructureArt';
@@ -19,6 +19,8 @@ export interface SpriteCounts {
   readonly pulses: SpriteCount;
   /** Recogibles visibles por tipo (0022). */
   readonly pickups: PickupCounts;
+  /** Recogibles en su aparición o su retardo, por tipo (0030; xp y stone siempre 0). */
+  readonly pickupSpawns: PickupSpawnCounts;
   /** Alias de `pickups.xp` (el mismo objeto), para las sondas de antes de 0022. */
   readonly gems: SpriteCount;
   /** Ovejas pintadas, con reserva y por estado (0023). */
@@ -91,6 +93,7 @@ export function emptyCounts(
     projectiles: zero(),
     pulses: zero(),
     pickups,
+    pickupSpawns: { xp: 0, gold: 0, wood: 0, meat: 0, stone: 0 },
     gems: pickups.xp,
     sheep: zeroSheepCounts(),
     enemyPlaceholders,

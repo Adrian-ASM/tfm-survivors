@@ -64,7 +64,7 @@
   - Tests: `pickup-layer.test.ts`, `stone-render` y `camera-rig.test.ts`.
 
 ### Grupo C · Aparición, retardo, limpieza y reloj (commit 3)
-- [ ] 3.5 **Aparición una vez por id** (D4).
+- [x] 3.5 **Aparición una vez por id** (D4).
   - Estado de aparición por id en el hueco (`spawnStart`, `spawnDelay`, `spawning` y `floatFrom` = R_f, todos
     reiniciados al aparecer).
   - Cambio `spawn` → `idle` con `setTexture`, d = 0 durante la aparición y flote sin salto desde R_f.
@@ -75,7 +75,7 @@
     cargada», «Reserva de un tipo de recogible» y «Reserva de la carne».
   - Escenarios (xp-gems): «Gema reutilizada por un recogible con aparición» y «Topes de los cinco tipos pintados».
   - Tests: `pickup-layer.test.ts`.
-- [ ] 3.6 **Retardo del primer pintado, limpieza y sonda** (D4, D5).
+- [x] 3.6 **Retardo del primer pintado, limpieza y sonda** (D4, D5).
   - Indicador `initial` en `PickupLayer`, que `clear()` vuelve a poner a true.
   - `counts.pickupSpawns` en `RenderLayers` y en `renderCounts.ts`, a 0 en el menú.
   - Escenarios (sprite-rendering): «Montones escalonados», «Recogible posterior sin retardo», «Desfase 0»,
@@ -83,7 +83,7 @@
     cadáveres en curso», «R con el mapa real», «R con apariciones en curso», «Recuentos de recogibles sin depender
     de la aparición ni del flote», «Recuento en aparición» y «Sonda en el menú».
   - Tests: `pickup-layer.test.ts`, `layers-clear.test.ts` y `render-layers.test.ts`.
-- [ ] 3.7 **Reloj congelado y modo manual** (D4).
+- [x] 3.7 **Reloj congelado y modo manual** (D4).
   - Prueba sobre `RenderLayers.advance(…, frozen)` con cada estado: `paused`, oferta, `shopping`, `building` y fin.
   - Escenarios (sprite-rendering): «Flote congelado en pausa, oferta, tienda, obra y fin», «Aparición congelada en
     pausa, oferta, tienda, obra y fin», «Flote en modo manual» y «Aparición en modo manual» (ticks × `TICK_MS`).
