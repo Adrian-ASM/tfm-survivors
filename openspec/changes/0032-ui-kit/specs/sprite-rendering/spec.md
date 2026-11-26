@@ -44,8 +44,11 @@ el menú o la partida, sin números mágicos en el código de render). La secci�
 - la fuente: la familia (letras, cifras y espacios, no vacía) y el fichero (`.woff2`, formato `woff2`), que figura en el
   registro de fuentes de la nota de procedencia (ver "Procedencia y licencia de la fuente" en `asset-provenance`).
 
-El contraste entre cada tinta de cada pieza y su relleno MUST ser ≥ 4,5. La tinta `danger` de cada pieza es roja:
-componente roja ≥ 96 y ≥ 2 veces la verde y ≥ 2 veces la azul. Un campo ausente o desconocido, un margen negativo o no
+El contraste entre las tintas `text`, `muted` y `accent` de cada pieza y su relleno MUST ser ≥ 4,5. La tinta `danger`
+solo se exige (por decisión del autor) en las piezas donde se pinta texto de peligro, `panel` (avisos) y
+`buttonDisabled` («faltan N», `Oro insuficiente`): en ellas MUST ser roja (componente roja ≥ 96 y ≥ 2 veces la verde y
+≥ 2 veces la azul) y tener contraste ≥ 4,5 con su relleno; en el resto de piezas (los botones rojos incluidos) no se
+pinta texto con ella y no se comprueba. Un campo ausente o desconocido, un margen negativo o no
 entero, una cabecera sin alto, un color con otro formato, un contraste insuficiente, una hoja que no figura en la nota o
 un fichero de fuente sin registro MUST hacer fallar el arranque con un error que nombre la pieza (o la fuente) y el
 campo, por la vía de siempre del contenido inválido: no se muestra el menú ni empieza ninguna partida. Con los datos del
@@ -62,7 +65,13 @@ semilla (ovejas, solares, decoración), de modo que con cualquier sección `ui` 
 - **THEN** la sección `ui` es válida, con exactamente los 8 roles, y la familia de la fuente es `Departure Mono` con el
   fichero `DepartureMono-Regular.woff2`
 - **AND** la hoja de cada pieza figura en la nota de procedencia con ruta de origen bajo `Tiny Swords (Update 010)/UI/`
-- **AND** cada tinta tiene contraste ≥ 4,5 con el relleno de su pieza y cada tinta `danger` cumple la regla de rojo
+- **AND** las tintas `text`, `muted` y `accent` de cada pieza tienen contraste ≥ 4,5 con su relleno, y la tinta
+  `danger` de `panel` y de `buttonDisabled` es roja y tiene contraste ≥ 4,5 con su relleno
+
+#### Scenario: Tinta de peligro no exigida en los botones rojos
+- **GIVEN** los datos del repositorio con la tinta `danger` de `buttonDangerPressed` igual a su relleno (`#996878`)
+- **WHEN** se carga el contenido
+- **THEN** la carga tiene éxito
 
 #### Scenario: Hojas de las piezas medidas
 - **GIVEN** los PNG versionados de las 8 piezas y los datos de `ui` del repositorio
@@ -73,12 +82,12 @@ semilla (ovejas, solares, decoración), de modo que con cualquier sección `ui` 
 #### Scenario: Datos de interfaz inválidos
 - **GIVEN** los datos de aspecto del repositorio con, en un caso cada vez: sin la pieza `buttonDanger`; una pieza extra
   `tooltip`; el margen `left` de `panel` −1; el margen `top` de `button` 2,5; `header` sin alto; la tinta `text` de
-  `panel` `white`; la tinta `text` de `panel` igual a su relleno; la tinta `danger` de `button` `#3080FF`; un campo
+  `panel` `white`; la tinta `text` de `panel` igual a su relleno; la tinta `danger` de `buttonDisabled` `#3080FF`; un campo
   extra `shadow` en `button`; la hoja de `panel` con una ruta `.png` que no figura en la nota; la familia de la fuente
   `Departure, Mono`; el fichero de la fuente `DepartureMono-Regular.ttf`; o un fichero `.woff2` sin registro en la nota
 - **WHEN** se carga el contenido
 - **THEN** la carga falla con un error que nombra respectivamente `buttonDanger`, `tooltip`, `panel` y `left`, `button`
-  y `top`, `header` y su alto, `panel` y `text` (dos veces), `button` y `danger`, `shadow`, la hoja de `panel`, la
+  y `top`, `header` y su alto, `panel` y `text` (dos veces), `buttonDisabled` y `danger`, `shadow`, la hoja de `panel`, la
   familia, el fichero y el fichero de la fuente
 - **AND** no se muestra el menú ni empieza ninguna partida
 

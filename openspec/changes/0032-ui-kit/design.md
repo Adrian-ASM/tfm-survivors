@@ -109,6 +109,9 @@ cifras que faltan (oro del saldo: `text`). Regla de rojo de `danger` en §3.
 - `superRefine` `checkUiInk`: contraste WCAG de cada tinta con el `fill` de su pieza ≥ 4,5
   (`UI_INK_CONTRAST`: nombra pieza y tinta). Es la prueba automática de "texto legible por pieza". Además
   `danger` es roja: R ≥ 96, R ≥ 2·G y R ≥ 2·B (`UI_DANGER_MUST_BE_RED`).
+  **Acotado en apply por decisión del autor**: la regla de `danger` (roja y contraste ≥ 4,5) solo se exige en
+  `panel` y `buttonDisabled`; en `buttonDanger`/`buttonDangerPressed` no se comprueba (centro medido `#996878`
+  no admite rojo con contraste 4,5 dentro de la tolerancia de 16). Ver spec delta de `sprite-rendering`.
 - El relleno declarado debe coincidir con el color medio del centro de la hoja (≤ 16 por canal): no lo comprueba el
   arranque (no tiene los píxeles), sino el test de píxeles de la tarea 1.1.
 - `font`: `family` texto no vacío sin comillas ni `;`/`,` (regex `^[A-Za-z0-9 ]+$`), `file` regex
