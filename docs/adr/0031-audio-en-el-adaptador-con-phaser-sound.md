@@ -22,16 +22,21 @@ bloquea el audio hasta un gesto. La CSP es estricta. Y el guardarraíl de proced
 
 ## Decisión
 Opción 2.
-- `AudioCues` (pura) compara cada snapshot pintado con el anterior. Deduplica por id (golpes y explosiones) o por
-  contador (`kills`, `level`, oro de la tienda, estado de los solares). Las recogidas solo se cuentan si el tick
-  avanzó. El origen del impacto se deduce cruzando `hits` con `blasts` y con los proyectiles desaparecidos.
-- `VoiceBudget` (pura) aplica el tope y la limitación con el reloj `tick × TICK_MS`.
-- `PhaserSoundOut` reproduce con pools preasignados y nunca llama a `add` con una clave sin cargar.
-- Con `?e2e` va `audio.noAudio` y no se pide ningún fichero. `pauseOnBlur` se apaga y la pestaña oculta se trata
-  con `HIDDEN`/`VISIBLE`.
+- `AudioCues` (pura) compara cada snapshot procesado con el anterior. Deduplica por id (golpes y explosiones) o por
+  contador (`kills`, `level`, oro de la tienda, estado de los solares). Las recogidas no cuentan en un snapshot en el
+  que se ha construido algo. El origen del impacto se deduce cruzando `hits` con `blasts` y con las flechas de torre
+  desaparecidas, dentro de una tolerancia de contenido.
+- `EffectMixer` (pura) deja pasar como mucho 1 efecto por tipo y snapshot. Aplica un intervalo mínimo medido con el
+  reloj de render del adaptador (en modo manual avanza `n × TICK_MS` por `step(n)`) y un tope de voces sobre los
+  efectos que suenan.
+- `SoundOut` tiene tres implementaciones: `PhaserSoundOut` (pools perezosos y acotados, nunca `add` con una clave
+  sin cargar), la muda de `?e2e` y la no disponible para navegadores sin Web Audio.
+- Con `?e2e` o sin Web Audio va `audio.noAudio`, sin camino HTML5 Audio. La carga va en una escena técnica en
+  paralelo y no retrasa el menú. `pauseOnBlur` se apaga y la pestaña oculta se trata con `HIDDEN`/`VISIBLE`.
 - El audio es **solo CC0**. Cada fichero tiene su entrada en la lista `sounds[]` de `content/asset-provenance.json`,
-  y `guard-assets` lo vigila junto con un tope de 2 MB en `public/assets/audio/`. El audio no cabe en `files[]`,
-  `fonts[]` ni `generated[]`.
+  con URL `https` de `kenney.nl`, `opengameart.org` o `freesound.org`, y `guard-assets` lo vigila en
+  `public/assets/audio/`. El audio no cabe en `files[]`, `fonts[]` ni `generated[]`. El tope de 2 MB lo comprueba un
+  test del repositorio dentro de `verify`.
 
 ## Consecuencias
 - Positivas: el núcleo, el balance y las firmas quedan intactos. La lógica se prueba sin motor ni navegador. Los

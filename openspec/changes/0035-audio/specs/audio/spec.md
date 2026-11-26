@@ -596,6 +596,6 @@ El sistema SHALL funcionar en la build de producción con la CSP actual (ver "Po
 - **GIVEN** la build de producción sin `?e2e`, sin ajustes de audio guardados, en el test de humo del menú (ampliado, sin
   test nuevo)
 - **WHEN** se pulsa `Sonido`, se pulsa flecha izquierda 2 veces sobre `Música`, se cierra con `Cerrar`, se pulsa `Jugar`,
-  se esperan 2 s y se recarga la página
+  se espera a que el menú se oculte y se recarga la página
 - **THEN** tras la recarga el panel muestra música `40 %` y efectos `80 %`, el valor guardado de
   `sprint-survivors/audio` tiene música 40 y no hay errores no capturados ni eventos `securitypolicyviolation`
