@@ -44,3 +44,13 @@
   formato compacto de `appearance.json`: se revirtió y la sección se añadió con Edit.
 - La comparación "listas de arte y fuentes iguales a las de antes" usa una huella sha256 fija: el CI clona sin
   historia y `git show <sha>` fallaría.
+
+## Grupos 7–8 · E2E y documentación
+- E2E: se amplió el test de la Tienda de `gameplay.spec` (escucha de CSP, 7 filas `painted` y, tras salir,
+  `stepUntil` hasta la primera oferta con 3 cartas `painted`). Suite `logic` entera en verde (19 tests).
+- Smoke remoto (`tests/remote/public.spec.ts`, a demanda, **no se ejecutó**): pide los 18 iconos con 200
+  `image/png`. De paso deja de leer `appearanceJson.gem`, que no existe desde 0022 (la lectura de `.sheet` habría
+  roto el módulo al lanzarlo).
+- Docs: GDD (Won't, nota de 0032, sección y fila de 0034) y AGENTS.md §1 con el estado de 0034. ADR-0030 sigue
+  "propuesta": pasa a "aceptada" al archivar. Sin cupo ni herramienta externa: el único "prompt" es el encargo
+  registrado en cada entrada de `generated[]`.

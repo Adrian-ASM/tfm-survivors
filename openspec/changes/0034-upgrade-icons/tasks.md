@@ -86,6 +86,6 @@
   "Desde el menú" y "Con e2e" — test: `npm run test:e2e -- gameplay.spec` y la suite `logic` entera
 
 ## 8. Documentación
-- [ ] 8.1 ADR-0030 a "aceptada" al archivar (ya escrito); `docs/gdd.md` (línea ~387 "no se dibuja con IA" y Won't
+- [x] 8.1 ADR-0030 a "aceptada" al archivar (ya escrito; queda para `sdd-archive`); `docs/gdd.md` (línea ~387 "no se dibuja con IA" y Won't
   de la línea 129: la IA solo en iconos de mejora, ADR-0030); estado de 0034 en `AGENTS.md` §1; nota en
   `docs/ai-log/` (herramienta, cupo, prompts, términos leídos) — escenario: — (documental) — test: `npm run verify`
