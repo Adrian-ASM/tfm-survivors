@@ -8,7 +8,7 @@
      integra los iconos que genera el autor y puede ir por lotes. El 7 (E2E) solo pasa con los 16 + 2. -->
 
 ## 1. Guardarraíl de procedencia IA
-- [ ] 1.1 `guard-assets.mjs`: lista `generated[]` y `generatedPolicy` (D8, reglas 1–6), con `checkAssets` puro y
+- [x] 1.1 `guard-assets.mjs`: lista `generated[]` y `generatedPolicy` (D8, reglas 1–6), con `checkAssets` puro y
   `digest` inyectado; los casos "tras el change" usan una nota simulada con una entrada IA de prueba (la real llega en
   6.1) — escenarios `asset-provenance`: "Registro de imagen con IA incompleto o incorrecto" (los 9 casos, fecha
   `2026-02-30` incluida), "Imagen con IA sin registro", "Registro de imagen con IA sin fichero", "Imagen con IA fuera

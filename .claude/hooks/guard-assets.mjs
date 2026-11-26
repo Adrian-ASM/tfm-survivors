@@ -3,6 +3,8 @@
 // Modo hook registrado en .claude/settings.json (verify-report W5).
 // `checkAssets` es pura: recibe la lista de ficheros versionados, la nota de procedencia ya leída y un
 // `digest(path) → { sha256, bytes }` inyectado. La ejecuta scripts/guard-staged.mjs (pre-commit y CI).
+// 0034 (ADR-0030): lista aparte `generated[]` de imágenes con IA, solo en `public/assets/icons/`,
+// con `generatedPolicy` apuntando al ADR; la cabecera del pack y el Free Pack solo afectan a `files[]`.
 import { relativePath, runAsHook } from './lib.mjs';
 
 /** Nota de procedencia (design D8; en content/ por R6: Vite no importa JSON de public/). */
@@ -138,11 +140,119 @@ function fontProblems(files, provenance, digest) {
   return problems;
 }
 
+/** Carpeta de los iconos generados con IA (0034, ADR-0030): la única que admite `generated[]`. */
+export const AI_DIR = 'public/assets/icons/';
+/** Carpeta de los ADR: `generatedPolicy` debe apuntar a un fichero versionado dentro. */
+const ADR_DIR = 'docs/adr/';
+const PNG = /\.png$/;
+const GENERATED_TEXT_FIELDS = ['path', 'tool', 'terms', 'prompt'];
+const GENERATED_FIELDS = new Set([
+  ...GENERATED_TEXT_FIELDS,
+  'createdOn',
+  'postProcess',
+  'sha256',
+  'bytes',
+]);
+
+/** `AAAA-MM-DD` y fecha de calendario real (`2026-02-30` no lo es). */
+function isCalendarDate(value) {
+  if (typeof value !== 'string' || !DATE.test(value)) return false;
+  const [y, m, d] = value.split('-').map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d;
+}
+
+const generatedListOf = (provenance) =>
+  Array.isArray(provenance?.generated) ? provenance.generated : [];
+
+/** Campos de un registro de `generated[]` (design D8, regla 3). */
+function generatedFieldProblems(entry, at) {
+  const problems = [];
+  for (const field of GENERATED_TEXT_FIELDS) {
+    if (!isText(entry?.[field])) problems.push(`${at}: "${field}" ausente o vacío.`);
+  }
+  if (!isCalendarDate(entry?.createdOn))
+    problems.push(`${at}: "createdOn" debe ser una fecha de calendario AAAA-MM-DD.`);
+  if (!SHA256.test(String(entry?.sha256 ?? '')))
+    problems.push(`${at}: "sha256" ausente o no es un SHA-256 en hexadecimal.`);
+  if (!Number.isInteger(entry?.bytes) || entry.bytes < 0)
+    problems.push(`${at}: "bytes" ausente o no es un entero ≥ 0.`);
+  for (const field of Object.keys(entry ?? {})) {
+    if (!GENERATED_FIELDS.has(field)) problems.push(`${at}: campo desconocido "${field}".`);
+  }
+  return problems;
+}
+
+/** Un registro de `generated[]`: campos, carpeta de iconos, post-proceso, fichero y digest. */
+function generatedEntryProblems(entry, i, versioned, digest) {
+  const path = isText(entry?.path) ? entry.path : `generated[${i}]`;
+  const at = `${NOTE}: imagen con IA ${path}`;
+  const problems = generatedFieldProblems(entry, at);
+  if (entry?.postProcess !== undefined && !versioned.has(entry.postProcess))
+    problems.push(`${at}: "postProcess" apunta a ${entry.postProcess}, que no está versionado.`);
+  if (!isText(entry?.path)) return problems;
+  if (!entry.path.startsWith(AI_DIR) || !PNG.test(entry.path))
+    problems.push(`${entry.path}: imagen con IA fuera de ${AI_DIR} (solo iconos .png, ADR-0030).`);
+  if (!versioned.has(entry.path)) {
+    problems.push(`${entry.path}: la nota la registra como imagen con IA pero no está versionada.`);
+    return problems;
+  }
+  const actual = digest(entry.path);
+  if (SHA256.test(String(entry.sha256 ?? '')) && actual.sha256 !== entry.sha256)
+    problems.push(`${at}: el "sha256" del fichero (${actual.sha256}) no coincide con la nota.`);
+  if (Number.isInteger(entry.bytes) && actual.bytes !== entry.bytes)
+    problems.push(`${at}: "bytes" = ${actual.bytes}, la nota dice ${entry.bytes}.`);
+  return problems;
+}
+
+/** Lista `generated[]` (0034, ADR-0030): política, registros, repetidos y rutas en dos listas. */
+function generatedProblems(files, provenance, digest) {
+  const generated = generatedListOf(provenance);
+  const versioned = new Set(files);
+  const problems = [];
+  const policy = provenance?.generatedPolicy;
+  if (generated.length > 0 && !isText(policy))
+    problems.push(`${NOTE}: falta "generatedPolicy" (ruta del ADR de las imágenes con IA).`);
+  if (isText(policy) && (!policy.startsWith(ADR_DIR) || !versioned.has(policy)))
+    problems.push(`${policy}: "generatedPolicy" debe ser un ADR versionado en ${ADR_DIR}.`);
+  const others = new Set(
+    [...(provenance?.files ?? []), ...(provenance?.fonts ?? [])].map((e) => e?.path),
+  );
+  const seen = new Set();
+  generated.forEach((entry, i) => {
+    problems.push(...generatedEntryProblems(entry, i, versioned, digest));
+    const path = entry?.path;
+    if (!isText(path)) return;
+    if (seen.has(path)) problems.push(`${NOTE}: entrada repetida para ${path}.`);
+    seen.add(path);
+    if (others.has(path)) problems.push(`${path}: figura en dos listas de ${PROVENANCE_PATH}.`);
+  });
+  return problems;
+}
+
+/** Gráficos de la carpeta de iconos: solo `.png` y solo en `generated[]` (regla 1). */
+function iconDirProblems(files, provenance) {
+  const generated = new Set(generatedListOf(provenance).map((e) => e?.path));
+  const art = new Set((provenance?.files ?? []).map((e) => e?.path));
+  const problems = [];
+  for (const path of files) {
+    if (!path.startsWith(AI_DIR) || !GRAPHIC.test(path)) continue;
+    if (!PNG.test(path)) problems.push(`${path}: en ${AI_DIR} solo se admiten iconos .png.`);
+    if (art.has(path))
+      problems.push(`${path}: un icono de ${AI_DIR} no puede estar en la lista de arte "files".`);
+    else if (!generated.has(path) && PNG.test(path))
+      problems.push(`${path}: icono sin entrada en "generated" de ${PROVENANCE_PATH}.`);
+  }
+  return problems;
+}
+
 /** Reglas de procedencia. Devuelve las líneas de error ([] si cumple). */
 export function checkAssets({ files, provenance, digest }) {
   const problems = files.flatMap(pathProblems);
   const entries = Array.isArray(provenance?.files) ? provenance.files : [];
-  const registered = new Set(entries.map((e) => e?.path).filter(isText));
+  const registered = new Set(
+    [...entries, ...generatedListOf(provenance)].map((e) => e?.path).filter(isText),
+  );
   const versioned = new Set(files);
   for (const path of files) {
     if (GRAPHIC.test(path) && !FORBIDDEN_EXT.test(path) && !registered.has(path))
@@ -150,6 +260,8 @@ export function checkAssets({ files, provenance, digest }) {
   }
   problems.push(...fontProblems(files, provenance, digest));
   if (provenance === undefined) return problems;
+  problems.push(...iconDirProblems(files, provenance));
+  problems.push(...generatedProblems(files, provenance, digest));
   problems.push(...noteProblems(provenance));
   for (const entry of entries) {
     if (!isText(entry?.path)) continue;
