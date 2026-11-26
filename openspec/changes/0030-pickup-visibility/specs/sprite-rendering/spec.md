@@ -609,14 +609,17 @@ cambiar la simulación ni lo que se pinta.
   celdas, iguales a los recuentos del mapa de la sonda
 
 #### Scenario: Recuentos de recogibles sin depender de la aparición ni del flote
-- **GIVEN** los datos de "Montones escalonados" (e 100, `spawn` de 7 frames a 10 fps) y un mismo snapshot con 3 gemas,
-  2 recogibles `gold` (uno en su aparición), 8 `wood` (los montones del inicio, ids 0 a 7), 1 `meat` y 2 `stone`, con
-  todas las hojas cargadas
-- **WHEN** se pinta y se lee la sonda con el reloj de render en R0 + 350, en R0 + 1.000 y, sin cambiar el snapshot, en
+- **GIVEN** los datos de "Montones escalonados" (e 100, `spawn` de 7 frames a 10 fps), todas las hojas cargadas, un
+  primer snapshot pintado con el reloj en R0 con 8 `wood` (los montones del inicio, ids 0 a 7), 3 gemas (ids 20 a 22) y
+  2 `stone` (ids 23 y 24), y un snapshot pintado con R0 + 50 que añade, sin retardo por llegar después del primer
+  pintado, 2 `gold` (ids 30 y 31) y 1 `meat` (id 32)
+- **WHEN** se pinta ese segundo snapshot, sin cambiarlo, y se lee la sonda con el reloj en R0 + 350, en R0 + 1.000 y en
   R0 + 10.000 (todos en `idle` y flotando)
 - **THEN** con R0 + 350 `sprites.pickups` informa de 3, 2, 4, 1 y 2 visibles para `xp`, `gold`, `wood`, `meat` y
-  `stone` (los `wood` de ids 4 a 7 en su retardo), y con R0 + 1.000 y R0 + 10.000 de 3, 2, 8, 1 y 2
-- **AND** en las tres lecturas hay 0 con reserva en cada tipo
+  `stone` (los `wood` de ids 4 a 7 en su retardo; los 2 `gold` y el `meat`, en su aparición), y con R0 + 1.000 y
+  R0 + 10.000 de 3, 2, 8, 1 y 2
+- **AND** en las tres lecturas hay 0 con reserva en cada tipo; si la sonda tiene `pickupSpawns`, con R0 + 350 el de
+  `gold` vale 2
 
 #### Scenario: Recuento en aparición [opcional, según design]
 - **GIVEN** el escenario "Montones escalonados" y una sonda con el recuento de recogibles en aparición
