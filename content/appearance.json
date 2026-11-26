@@ -163,7 +163,8 @@
   "pickups": {
     "xp": {
       "shape": true,
-      "placeholderColor": "#4fd1c5"
+      "placeholderColor": "#4fd1c5",
+      "diameter": 20
     },
     "gold": {
       "sheet": {
@@ -171,7 +172,7 @@
         "frameWidth": 128,
         "frameHeight": 128
       },
-      "scale": 0.3,
+      "scale": 0.5,
       "origin": {
         "x": 0.5,
         "y": 0.5
@@ -182,6 +183,16 @@
         "frames": [0],
         "fps": 1,
         "loop": true
+      },
+      "spawn": {
+        "sheet": {
+          "file": "Resources/Resources/G_Spawn.png",
+          "frameWidth": 128,
+          "frameHeight": 128
+        },
+        "frames": [0, 1, 2, 3, 4, 5, 6],
+        "fps": 10,
+        "loop": false
       }
     },
     "wood": {
@@ -190,7 +201,7 @@
         "frameWidth": 128,
         "frameHeight": 128
       },
-      "scale": 0.3,
+      "scale": 0.5,
       "origin": {
         "x": 0.5,
         "y": 0.5
@@ -201,6 +212,16 @@
         "frames": [0],
         "fps": 1,
         "loop": true
+      },
+      "spawn": {
+        "sheet": {
+          "file": "Resources/Resources/W_Spawn.png",
+          "frameWidth": 128,
+          "frameHeight": 128
+        },
+        "frames": [0, 1, 2, 3, 4, 5, 6],
+        "fps": 10,
+        "loop": false
       }
     },
     "meat": {
@@ -209,7 +230,7 @@
         "frameWidth": 128,
         "frameHeight": 128
       },
-      "scale": 0.3,
+      "scale": 0.5,
       "origin": {
         "x": 0.5,
         "y": 0.5
@@ -220,6 +241,16 @@
         "frames": [0],
         "fps": 1,
         "loop": true
+      },
+      "spawn": {
+        "sheet": {
+          "file": "Resources/Resources/M_Spawn.png",
+          "frameWidth": 128,
+          "frameHeight": 128
+        },
+        "frames": [0, 1, 2, 3, 4, 5, 6],
+        "fps": 10,
+        "loop": false
       }
     },
     "stone": {
@@ -231,7 +262,7 @@
             "frameWidth": 64,
             "frameHeight": 64
           },
-          "scale": 0.5,
+          "scale": 0.75,
           "origin": {
             "x": 0.5,
             "y": 0.5
@@ -249,7 +280,7 @@
             "frameWidth": 64,
             "frameHeight": 64
           },
-          "scale": 0.5,
+          "scale": 0.75,
           "origin": {
             "x": 0.5,
             "y": 0.5
@@ -267,7 +298,7 @@
             "frameWidth": 64,
             "frameHeight": 64
           },
-          "scale": 0.5,
+          "scale": 0.75,
           "origin": {
             "x": 0.5,
             "y": 0.5
@@ -281,6 +312,14 @@
         }
       }
     }
+  },
+  "pickupMotion": {
+    "float": {
+      "amplitude": 4,
+      "periodMs": 1600,
+      "phaseStepMs": 989
+    },
+    "spawnStaggerMs": 120
   },
   "sheep": {
     "scale": 0.6,

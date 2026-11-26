@@ -50,6 +50,20 @@ describe('resourceIcons (panel de obra 0027 y guía 0028)', () => {
     expect(svgOf(icons.xp)).toContain(`fill="${appearanceJson.pickups.xp.placeholderColor}"`);
   });
 
+  it('Scenario: Iconos de la guía y de la obra (hojas idle, ninguna *_Spawn; gema con su color)', () => {
+    const icons = resourceIcons(appearance, (file) => file);
+
+    expect([icons.gold, icons.wood, icons.meat, icons.stone]).toEqual([
+      'Resources/Resources/G_Idle.png',
+      'Resources/Resources/W_Idle.png',
+      'Resources/Resources/M_Idle.png',
+      'Deco/05.png',
+    ]);
+    const urls: string[] = [icons.xp, icons.gold, icons.wood, icons.meat, icons.stone];
+    expect(urls.some((url) => url.includes('_Spawn'))).toBe(false);
+    expect(svgOf(icons.xp)).toContain(`fill="${appearanceJson.pickups.xp.placeholderColor}"`);
+  });
+
   it('son las hojas de los recogibles del contenido (las del HUD)', () => {
     const icons = resourceIcons(appearance, (file) => file);
     const { gold, wood, meat, stone } = appearance.pickups;

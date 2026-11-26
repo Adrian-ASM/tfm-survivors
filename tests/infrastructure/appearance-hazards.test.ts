@@ -176,8 +176,8 @@ describe('Procedencia de las hojas de los peligros (asset-provenance)', () => {
     // 0021: 15 de antes más las 4 hojas de casas, torres y ruinas; 0022: más las 3 de recursos;
     // 0023: más la de la carne y las dos de la oveja; 0025: más las tres rocas de la piedra;
     // 0026: más las tres de los solares de caballeros.
-    // 0029: más las 11 de la decoración del mapa.
-    expect(files).toHaveLength(42);
+    // 0029: más las 11 de la decoración del mapa; 0030: más las 3 hojas de aparición.
+    expect(files).toHaveLength(45);
 
     expect(bySource(DYNAMITE_SOURCE)?.path).toBe(
       `${ASSET_DIR}Factions/Goblins/Troops/TNT/Dynamite/Dynamite.png`,
@@ -213,10 +213,15 @@ describe('Procedencia de las hojas de los peligros (asset-provenance)', () => {
     );
     const outsideSpecs = versioned.filter((f) => !f.startsWith('openspec/'));
     // 0021: se retira la prohibición de casas y torres; siguen fuera el fuego y la obra. 0022:
-    // W_Idle.png se versiona exactamente una vez (recogible de madera), sin sus variantes.
-    const forbidden = /Fire\.png|W_Idle_\(NoShadow\)\.png|W_Spawn\.png|Wood_Tower_InConstruction/;
+    // W_Idle.png se versiona exactamente una vez (recogible de madera), sin sus variantes. 0030:
+    // W_Spawn.png, exactamente una vez (aparición de la madera), sin su variante sin sombra.
+    const forbidden =
+      /Fire\.png|W_Idle_\(NoShadow\)\.png|W_Spawn_\(NoShadow\)\.png|Wood_Tower_InConstruction/;
     expect(outsideSpecs.filter((f) => forbidden.test(f))).toEqual([]);
     expect(outsideSpecs.filter((f) => /W_Idle\.png$/.test(f))).toHaveLength(1);
+    expect(outsideSpecs.filter((f) => /\/W_Spawn\.png$/.test(f))).toEqual([
+      `${ASSET_DIR}Resources/Resources/W_Spawn.png`,
+    ]);
     const buildings = outsideSpecs.filter((f) => /Goblin_House|Wood_Tower/.test(f)).sort();
     expect(buildings).toEqual(
       [

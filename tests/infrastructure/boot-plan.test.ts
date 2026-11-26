@@ -17,7 +17,11 @@ import {
   TOWER_FILE,
   REGISTERED,
   TORCH_FILE,
+  GOLD_SPAWN_FILE,
+  MEAT_SPAWN_FILE,
+  WOOD_SPAWN_FILE,
   rawAppearance,
+  withPickupMotion,
 } from '../support/appearance';
 
 // Spec sprite-rendering "Carga del arte compatible con la CSP" (parte unitaria, design D3).
@@ -64,6 +68,20 @@ describe('BootScene · plan de carga', () => {
       frameWidth: 192,
       frameHeight: 192,
     });
+  });
+
+  it('0030: las hojas de aparición de oro, madera y carne se cargan una vez cada una', () => {
+    const sheets = sheetsToLoad(
+      appearance((raw) => {
+        withPickupMotion(raw);
+      }),
+    );
+    expect(sheets).toHaveLength(44);
+    for (const file of [GOLD_SPAWN_FILE, WOOD_SPAWN_FILE, MEAT_SPAWN_FILE]) {
+      expect(sheets.filter((s) => s.key === file)).toEqual([
+        { key: file, file, frameWidth: 128, frameHeight: 128 },
+      ]);
+    }
   });
 
   it('una decoración con la hoja de otro aspecto la carga una vez', () => {

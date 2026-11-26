@@ -2,6 +2,7 @@ import type {
   Appearance,
   Aspect,
   PickupLooksAppearance,
+  ResourcePickupAspect,
   RockSize,
   SheepAspect,
   StillAspect,
@@ -9,6 +10,7 @@ import type {
 import { ROCK_SIZES } from '../../content/appearanceSchema';
 import type { PickupKind } from '../../../domain/pickup/PickupKind';
 import type { AnimSpec, Facing } from './animation';
+import type { PickupMotion } from './pickupMotion';
 
 /** Textura generada por el juego para el aspecto de reserva: disco blanco, sin ficheros. */
 export const PLACEHOLDER_TEXTURE = 'placeholder:disc';
@@ -52,6 +54,14 @@ export interface ExplosionLook extends LookBase {
  */
 export interface PickupLook extends StillLook {
   readonly shape: boolean;
+  /**
+   * Aparición (0030): la vista con la hoja `spawn` (sus frames en `idle`) y la escala, el origen y el
+   * color del `idle`; `null` si el tipo no la declara, si `idle` va con reserva o si la hoja `spawn`
+   * no cargó o no tiene alguno de sus frames (entonces va directo a `idle`, sin contar reserva).
+   */
+  readonly spawn: StillLook | null;
+  /** Radio en px de la gema sin hoja (`diameter / 2`, 0030); `null` en los aspectos con hoja. */
+  readonly shapeRadius: number | null;
 }
 /**
  * Aspecto de la oveja (0023): una vista por animación, cada una con la textura de su hoja (`idle`
@@ -93,6 +103,8 @@ export interface Looks {
   readonly dynamite: StillLook;
   readonly explosion: ExplosionLook;
   readonly warnings: { readonly fuse: WarningLook; readonly dynamite: WarningLook };
+  /** Flote y desfase de aparición de los recogibles (0030). */
+  readonly pickupMotion: PickupMotion;
 }
 
 /** Nº de frames de una textura cargada o `null` si no está (en Phaser: `exists` y `frameTotal − 1`). */
@@ -153,8 +165,18 @@ const SHAPE_IDLE: AnimSpec = Object.freeze({ frames: Object.freeze([0]), fps: 1,
 function pickupLooks(
   p: PickupLooksAppearance,
   still: (a: StillAspect) => StillLook,
+  frames: FrameCount,
 ): Omit<Record<PickupKind, PickupLook>, 'stone'> {
-  const sheet = (a: StillAspect): PickupLook => ({ ...still(a), shape: false });
+  const sheet = (a: StillAspect): PickupLook => ({
+    ...still(a),
+    shape: false,
+    spawn: null,
+    shapeRadius: null,
+  });
+  const resource = (a: ResourcePickupAspect): PickupLook => {
+    const look = sheet(a);
+    return { ...look, spawn: spawnLook(a, look, frames) };
+  };
   const xp: PickupLook =
     'sheet' in p.xp
       ? sheet(p.xp)
@@ -168,8 +190,27 @@ function pickupLooks(
           flips: false,
           idle: SHAPE_IDLE,
           shape: true,
+          spawn: null,
+          shapeRadius: p.xp.diameter / 2,
         };
-  return { xp, gold: sheet(p.gold), wood: sheet(p.wood), meat: sheet(p.meat) };
+  return { xp, gold: resource(p.gold), wood: resource(p.wood), meat: resource(p.meat) };
+}
+
+/**
+ * Vista de la aparición de oro, madera o carne (0030, design D3), como las de la oveja: la hoja
+ * `spawn` con la escala, el origen y el color de `idle`. `null` sin `spawn`, con `idle` en reserva o
+ * si la hoja `spawn` no cargó o no contiene alguno de sus frames.
+ */
+function spawnLook(a: ResourcePickupAspect, idle: StillLook, frames: FrameCount): StillLook | null {
+  const spawn = a.spawn;
+  if (!spawn || idle.placeholder) return null;
+  const count = frames(spawn.sheet.file);
+  if (count === null || !spawn.frames.every((i) => i < count)) return null;
+  return {
+    ...idle,
+    texture: spawn.sheet.file,
+    idle: { frames: spawn.frames, fps: spawn.fps, loop: false },
+  };
 }
 
 /** Rocas de la piedra (0025): cada una con su hoja o su reserva, y la roca de cada tipo de enemigo. */
@@ -178,6 +219,8 @@ function stoneLooks(appearance: Appearance, still: (a: StillAspect) => StillLook
   const view = (size: RockSize): PickupLook => ({
     ...still({ ...stone.rocks[size], placeholderColor: stone.placeholderColor }),
     shape: false,
+    spawn: null,
+    shapeRadius: null,
   });
   const rocks = Object.fromEntries(ROCK_SIZES.map((size) => [size, view(size)])) as Record<
     RockSize,
@@ -214,7 +257,7 @@ export function resolveLooks(appearance: Appearance, frames: FrameCount): Looks 
     ),
     projectile: still(appearance.projectile),
     // La piedra sin origen (y el icono del HUD) usa la roca `medium` (0025).
-    pickups: { ...pickupLooks(appearance.pickups, still), stone: stones.rocks.medium },
+    pickups: { ...pickupLooks(appearance.pickups, still, frames), stone: stones.rocks.medium },
     sheep: sheepLook(appearance.sheep, frames),
     stones,
     ground: still(appearance.ground),
@@ -222,6 +265,7 @@ export function resolveLooks(appearance: Appearance, frames: FrameCount): Looks 
     dynamite: still(appearance.dynamite),
     explosion: { ...base(appearance.explosion, frames), explode: appearance.explosion.explode },
     warnings: appearance.warnings,
+    pickupMotion: appearance.pickupMotion,
   };
 }
 

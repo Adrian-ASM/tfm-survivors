@@ -300,6 +300,27 @@
       "version": "Update 010",
       "sha256": "8ef2e9479438091df9622dd4aa4f943b2454916fadc7975cfa1f39d30231eb68",
       "bytes": 3595
+    },
+    {
+      "path": "public/assets/tiny-swords/Resources/Resources/G_Spawn.png",
+      "source": "Tiny Swords (Update 010)/Resources/Resources/G_Spawn.png",
+      "version": "Update 010",
+      "sha256": "c631caee640977312839cf533c5c48b20011ae826b2b64f8c1c1cd39a5e7d277",
+      "bytes": 5902
+    },
+    {
+      "path": "public/assets/tiny-swords/Resources/Resources/W_Spawn.png",
+      "source": "Tiny Swords (Update 010)/Resources/Resources/W_Spawn.png",
+      "version": "Update 010",
+      "sha256": "36b0b90b92784e6eff41a54f88fb45829eb923e3a5f60c8e1fd479354dabbf8a",
+      "bytes": 4583
+    },
+    {
+      "path": "public/assets/tiny-swords/Resources/Resources/M_Spawn.png",
+      "source": "Tiny Swords (Update 010)/Resources/Resources/M_Spawn.png",
+      "version": "Update 010",
+      "sha256": "1d86e71839a4c688bc1be59537fbe05c6fdb7dfe6bc868e5f0c4b3a32ca003d5",
+      "bytes": 7030
     }
   ]
 }

@@ -81,9 +81,43 @@ describe('Procedencia de las hojas de los recursos (asset-provenance)', () => {
     expect(problems.join('\n')).toContain(inactive);
   });
 
-  it('Scenario: Hojas de recursos no usadas (sin Destroyed, NoShadow, _Spawn ni HappySheep_All)', () => {
-    const list = versioned().filter((f) => !f.startsWith('openspec/'));
-    const unused = /GoldMine_Destroyed|NoShadow|_Spawn|HappySheep_All/;
-    expect(list.filter((f) => unused.test(f))).toEqual([]);
+  it('Scenario: Hojas de recursos no usadas (sin Destroyed ni NoShadow; _Spawn exactamente 3)', () => {
+    expect(unusedProblems(versioned())).toEqual([]);
+  });
+
+  it('Scenario: Una hoja de aparición de más (S_Spawn.png con entrada: 4 coincidencias)', () => {
+    const extra = `${ASSET_DIR}Resources/Resources/S_Spawn.png`;
+    const problems = unusedProblems([...versioned(), extra]);
+
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain('4');
+    expect(problems[0]).toContain('S_Spawn.png');
+  });
+
+  it('Scenario: Variante sin sombra de una hoja de aparición (W_Spawn_(NoShadow).png: NoShadow)', () => {
+    const extra = `${ASSET_DIR}Resources/Resources/W_Spawn_(NoShadow).png`;
+
+    expect(unusedProblems([...versioned(), extra]).join('\n')).toContain('NoShadow');
   });
 });
+
+/** Las 3 hojas de aparición de 0030, en la carpeta de `G_Idle.png`. */
+const SPAWNS = ['G_Spawn.png', 'W_Spawn.png', 'M_Spawn.png'].map(
+  (f) => `${ASSET_DIR}Resources/Resources/${f}`,
+);
+
+/**
+ * Comprobación de "Hojas de recursos no usadas" sobre una lista de ficheros versionados: ningún
+ * `GoldMine_Destroyed` ni `NoShadow`, y las coincidencias de `_Spawn` son exactamente las 3 de 0030.
+ */
+function unusedProblems(list: readonly string[]): string[] {
+  const outside = list.filter((f) => f !== '' && !f.startsWith('openspec/'));
+  const problems = outside
+    .filter((f) => /GoldMine_Destroyed|NoShadow|HappySheep_All/.test(f))
+    .map((f) => `no usada: ${f}`);
+  const spawns = outside.filter((f) => f.includes('_Spawn'));
+  if ([...spawns].sort().join('\n') !== [...SPAWNS].sort().join('\n')) {
+    problems.push(`${String(spawns.length)} coincidencias de _Spawn: ${spawns.join(', ')}`);
+  }
+  return problems;
+}

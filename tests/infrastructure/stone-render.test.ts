@@ -34,14 +34,20 @@ describe('Pintar la piedra no cambia la simulación (sprite-rendering 0025)', ()
     const play = (edit?: (r: RawAppearance) => void, missing: readonly string[] = []) => {
       const run = startSeededRun(aDefaultConfig(), 42);
       const looks = someLooks(edit, missing);
-      const pickups = new PickupLayer(436, fakeKit(), looks.pickups, looks.stones);
+      const pickups = new PickupLayer(
+        436,
+        fakeKit(),
+        looks.pickups,
+        looks.stones,
+        looks.pickupMotion,
+      );
       const snaps: RunSnapshot[] = [];
       let stones = 0;
       for (const input of inputs) {
         chooseFirstWhileOpen(run);
         run.tick(input);
         const s = run.snapshot();
-        pickups.sync(s.pickups);
+        pickups.sync(s.pickups, 0);
         stones = Math.max(stones, pickups.counts.stone.visible);
         snaps.push(s);
       }

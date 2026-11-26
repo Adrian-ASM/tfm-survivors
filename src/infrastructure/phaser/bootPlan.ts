@@ -1,6 +1,7 @@
 import type { Appearance, SheetRect } from '../content/appearanceSchema';
 import {
   aspectsOf,
+  pickupSpawnSheetsOf,
   sheepSheetsOf,
   siteAspectsOf,
   structureAspectsOf,
@@ -46,6 +47,7 @@ export function sheetsToLoad(appearance: Appearance): SheetLoad[] {
     ...veinAspectsOf(appearance).map(([, a]) => a.sheet),
     ...sheepSheetsOf(appearance).map(([, sheet]) => sheet),
     ...siteAspectsOf(appearance).map(([, a]) => a.sheet),
+    ...pickupSpawnSheetsOf(appearance).map(([, sheet]) => sheet),
   ];
   for (const { file, frameWidth, frameHeight } of sheets) {
     if (!byFile.has(file)) byFile.set(file, { key: file, file, frameWidth, frameHeight });
