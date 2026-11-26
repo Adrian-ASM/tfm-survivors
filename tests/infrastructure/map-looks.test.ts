@@ -134,13 +134,20 @@ describe('Aspectos de las estructuras resueltos', () => {
 // Spec sprite-rendering (0029): reserva del árbol y de la torre con su `idle` animada, y arte de la
 // decoración por aspecto (sin reserva de color).
 describe('resolveMapLooks · animaciones y decoración (0029)', () => {
-  it('Scenario: Reserva de árbol y torre (una hoja del árbol sin el frame 5: árbol a reserva)', () => {
-    const counts: FrameCount = (key) => (key === TREE_FILE ? 5 : loaded()(key));
-    expect(resolveMapLooks(map, terrain, counts, allBridgeFrames, STRUCTURES).trees.art).toBe(
+  it('Scenario: Reserva de árbol y torre (una hoja del árbol sin el frame 3: árbol a reserva)', () => {
+    // 0030: con la `idle` 0–3 del repositorio, una hoja de 5 frames ya cabe; sin el frame 3 (0–2), no.
+    const repoTrees = {
+      ...map,
+      trees: { ...map.trees, idle: { frames: [0, 1, 2, 3], fps: 4, loop: true as const } },
+    };
+    const counts: FrameCount = (key) => (key === TREE_FILE ? 3 : loaded()(key));
+    expect(resolveMapLooks(repoTrees, terrain, counts, allBridgeFrames, STRUCTURES).trees.art).toBe(
       false,
     );
-    const all: FrameCount = (key) => (key === TREE_FILE ? 6 : loaded()(key));
-    expect(resolveMapLooks(map, terrain, all, allBridgeFrames, STRUCTURES).trees.art).toBe(true);
+    const all: FrameCount = (key) => (key === TREE_FILE ? 4 : loaded()(key));
+    expect(resolveMapLooks(repoTrees, terrain, all, allBridgeFrames, STRUCTURES).trees.art).toBe(
+      true,
+    );
   });
 
   it('Scenario: Reserva de árbol y torre (sin Tree.png: árbol a reserva)', () => {

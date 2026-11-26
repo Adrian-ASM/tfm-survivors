@@ -90,12 +90,12 @@
   - Tests: `render-layers.test.ts`.
 
 ### Grupo D · Iconos e invariancias (commit 4)
-- [ ] 3.8 **Iconos sin aparición ni flote** (D3, riesgo R4).
+- [x] 3.8 **Iconos sin aparición ni flote** (D3, riesgo R4).
   - Comprobar que `counterIcon` y `ResourceIcons` no derivan su tamaño de `scale` ni de `diameter`. Si lo hacen,
     fijar el tamaño en su layout.
   - Escenarios (sprite-rendering): «Iconos del HUD con otra escala de recogible» y «Iconos de la guía y de la obra».
   - Tests: `hud.test.ts` y el test de `ResourceIcons` / `BuildPanel`.
-- [ ] 3.9 **Simulación, firmas y mapa intactos** (D8).
+- [x] 3.9 **Simulación, firmas y mapa intactos** (D8).
   - Un test que ejecuta 1.200 ticks de la semilla 42 con los datos del repositorio y con las variantes (A 0 y sin
     `spawn`, escalas de antes) pintando con `RenderLayers`, y compara los snapshots campo a campo.
   - Escenarios (sprite-rendering): «Flotar no cambia la simulación», «Aparecer no cambia la simulación», «Escalas
@@ -105,7 +105,7 @@
   - Comprobar que `git diff main -- src/domain src/application tests/support/*Golden* tests/support/balanceBaseline.ts`
     sale vacío y que el lote del bot de `verify` sigue dando `BALANCE_BASELINE` sin regenerarla.
   - Tests: `pickup-invariance.test.ts` (nuevo) y `map-probe.test.ts`.
-- [ ] 3.10 **Reserva del árbol sin el frame 3** (spec MODIFIED).
+- [x] 3.10 **Reserva del árbol sin el frame 3** (spec MODIFIED).
   - En `map-looks.test.ts`, el caso «sin el frame 5» (`FrameCount` 5) pasa a «sin el frame 3» (`FrameCount` 3,
     frames 0–2). Con la `idle` 0–3, una hoja de 5 frames ya cabe y no prueba la reserva. Sin cambios de código.
   - Escenario (sprite-rendering): «Reserva de árbol y torre».

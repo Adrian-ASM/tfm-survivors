@@ -17,7 +17,9 @@ import { aDefaultConfig, withPlayer, withShop } from '../support/builders';
 import { aBehaviorConfig, aProbeType, startRun } from '../support/runs';
 import { buyAll, startAtDoor, untilShopping } from '../support/shop';
 import { FakeBar, FakeLabel } from '../support/sprites';
-import { someLooks } from '../support/looks';
+import { repoLooks, someLooks } from '../support/looks';
+import type { Appearance } from '../../src/infrastructure/content/appearanceSchema';
+import type { Looks } from '../../src/infrastructure/phaser/art/looks';
 
 const HEALTH_WIDTH = 200;
 const XP_WIDTH = 300;
@@ -227,13 +229,17 @@ interface Made {
   y: number;
   scrollFactor: number | null;
   fontSize: number | null;
+  /** Imagen (0030): su hoja y su tamaño en pantalla (`setDisplaySize`). */
+  texture?: string;
+  size?: [number, number];
 }
 
 /** Escena falsa con `scale` (la vista) y `add.rectangle`/`add.text` que registran lo creado. */
 function fakeScene(view: { width: number; height: number }) {
   const made: Made[] = [];
-  const make = (kind: string, x: number, y: number): unknown => {
+  const make = (kind: string, x: number, y: number, texture?: string): unknown => {
     const state: Made = { kind, x, y, scrollFactor: null, fontSize: null };
+    if (texture !== undefined) state.texture = texture;
     made.push(state);
     const proxy: unknown = new Proxy(state, {
       get(target, prop) {
@@ -242,6 +248,9 @@ function fakeScene(view: { width: number; height: number }) {
         }
         if (prop === 'setFontSize') {
           return (v: number) => ((target.fontSize = v), proxy);
+        }
+        if (prop === 'setDisplaySize') {
+          return (w: number, h: number) => ((target.size = [w, h]), proxy);
         }
         if (prop === 'setPosition') {
           return (px: number, py: number) => ((target.x = px), (target.y = py), proxy);
@@ -257,7 +266,7 @@ function fakeScene(view: { width: number; height: number }) {
     add: {
       rectangle: (x: number, y: number) => make('rectangle', x, y),
       text: (x: number, y: number) => make('text', x, y),
-      image: (x: number, y: number) => make('image', x, y),
+      image: (x: number, y: number, texture: string) => make('image', x, y, texture),
     },
   };
   return { scene: scene as unknown as Phaser.Scene, made };
@@ -596,5 +605,67 @@ describe('HUD en la tienda (0024)', () => {
 
     expect(during).toEqual(['09:50', '40/100', '30']);
     expect([h.clock.text, h.healthLabel.text, h.gold.text]).toEqual(['09:50', '65/100', '20']);
+  });
+});
+
+// Spec sprite-rendering (0030), "Iconos de recurso sin aparición ni flote": el tamaño de los iconos
+// lo fija `hudLayout`, no la escala ni el diámetro de los aspectos de los recogibles.
+describe('Iconos del HUD sin aparición ni flote (0030)', () => {
+  /** Escalas de oro, madera, carne y rocas, y diámetro de la gema, multiplicados por 2. */
+  const doubled = (a: Appearance): Appearance => {
+    const { xp, gold, wood, meat, stone } = a.pickups;
+    const rocks = Object.fromEntries(
+      Object.entries(stone.rocks).map(([k, r]) => [k, { ...r, scale: r.scale * 2 }]),
+    ) as typeof stone.rocks;
+    return {
+      ...a,
+      pickups: {
+        xp: 'diameter' in xp ? { ...xp, diameter: xp.diameter * 2 } : xp,
+        gold: { ...gold, scale: gold.scale * 2 },
+        wood: { ...wood, scale: wood.scale * 2 },
+        meat: { ...meat, scale: meat.scale * 2 },
+        stone: { ...stone, rocks },
+      },
+    };
+  };
+
+  /** Imágenes de los iconos (hoja, posición y tamaño) en 60 frames con la partida en curso. */
+  const iconsOver60Frames = (looks: Looks) => {
+    const { scene, made } = fakeScene({ width: 1280, height: 720 });
+    const h = createHud(scene, screenFrame(1280, 720), {
+      gold: counterIcon(looks.pickups.gold),
+      wood: counterIcon(looks.pickups.wood),
+      stone: counterIcon(looks.pickups.stone),
+    });
+    const frames: unknown[] = [];
+    for (let f = 0; f < 60; f++) {
+      h.sync(snap({ tick: f }));
+      frames.push(made.filter((m) => m.kind === 'image').map((m) => [m.texture, m.x, m.y, m.size]));
+    }
+    return frames;
+  };
+
+  it('Scenario: Iconos del HUD con otra escala de recogible (×2: misma posición, tamaño y hoja)', () => {
+    const repo = iconsOver60Frames(repoLooks());
+    const scaled = iconsOver60Frames(repoLooks([], doubled));
+
+    expect(scaled).toEqual(repo);
+    expect(new Set(repo.map((f) => JSON.stringify(f))).size).toBe(1);
+    const l = hudLayout(screenFrame(1280, 720));
+    expect(repo[0]).toEqual([
+      [
+        'Resources/Resources/G_Idle.png',
+        l.gold.icon.x,
+        l.gold.icon.y,
+        [l.gold.icon.size, l.gold.icon.size],
+      ],
+      [
+        'Resources/Resources/W_Idle.png',
+        l.wood.icon.x,
+        l.wood.icon.y,
+        [l.wood.icon.size, l.wood.icon.size],
+      ],
+      ['Deco/05.png', l.stone.icon.x, l.stone.icon.y, [l.stone.icon.size, l.stone.icon.size]],
+    ]);
   });
 });
