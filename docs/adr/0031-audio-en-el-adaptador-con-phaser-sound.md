@@ -1,6 +1,6 @@
 # ADR-0031 · Audio en el adaptador, derivado del snapshot y con Phaser Sound
 
-- **Estado**: propuesta
+- **Estado**: aceptada
 - **Fecha**: 2026-11-26
 
 ## Contexto

@@ -3,15 +3,15 @@
 > Fuente de verdad del comportamiento actual. Solo se modifica al archivar un change (skill `sdd-archive`).
 
 ## Purpose
-El menú de inicio (Jugar, Cómo jugar, Exportar, Importar, Borrar datos), el arranque de la partida bajo
-demanda, el arranque directo con `?e2e` y la pausa con Esc (Reanudar, Volver al menú). La pausa no es un
+El menú de inicio (Jugar, Cómo jugar, Sonido, Exportar, Importar, Borrar datos), el arranque de la partida bajo
+demanda, el arranque directo con `?e2e` y la pausa con Esc (Reanudar, Sonido, Volver al menú). La pausa no es un
 estado de la partida.
 
 > Convenciones de esta spec:
 > - "Modo menú" es la situación en la que el menú de inicio está visible y no existe partida.
 > - "Partida en pausa" es una partida en curso cuyo avance está detenido por la pausa. La pausa **no** es un estado de
 >   la partida (ver `run-state`): el snapshot de una partida en pausa tiene estado en curso.
-> - Etiquetas visibles exactas: `Jugar`, `Cómo jugar`, `Exportar`, `Importar`, `Borrar datos`, `Confirmar`,
+> - Etiquetas visibles exactas: `Jugar`, `Cómo jugar`, `Sonido`, `Exportar`, `Importar`, `Borrar datos`, `Confirmar`,
 >   `Cancelar`, `Reanudar` y `Volver al menú`. El overlay de pausa contiene el texto `Pausa`.
 > - "La guía" es el modal de `Cómo jugar` (ver `menu-guide`).
 > - Los escenarios con `?e2e` pueden usar la sonda `window.__sprint`; los que cargan sin `?e2e` solo observan lo que
@@ -20,20 +20,23 @@ estado de la partida.
 ## Requirements
 
 ### Requirement: Menú de inicio al cargar
-El sistema SHALL mostrar, al cargar la página sin `?e2e`, un menú de inicio con exactamente cinco opciones
-visibles y pulsables con el ratón, en este orden: `Jugar`, `Cómo jugar`, `Exportar`, `Importar` y `Borrar datos`. En
-modo menú MUST NOT existir ninguna partida: no se ejecuta ningún tick, no se ve el HUD, ni el overlay de elección, ni
-el de resultados, ni el de pausa, ni ningún sprite de jugador, enemigo, proyectil, pulso o gema. En modo menú con la
-guía cerrada, las teclas Esc, R, 1, 2 y 3, las flechas izquierda y derecha y el input de movimiento MUST NOT tener
-efecto. Con la guía abierta, Esc y las flechas solo actúan sobre la guía y R, 1, 2, 3 y el input de movimiento siguen
-sin efecto (ver "Cerrar la guía" y "Teclado en la guía" en `menu-guide`).
+El sistema SHALL mostrar, al cargar la página sin `?e2e`, un menú de inicio con exactamente seis opciones
+visibles y pulsables con el ratón, en este orden: `Jugar`, `Cómo jugar`, `Sonido`, `Exportar`, `Importar` y
+`Borrar datos`. En modo menú MUST NOT existir ninguna partida: no se ejecuta ningún tick, no se ve el HUD, ni el overlay
+de elección, ni el de resultados, ni el de pausa, ni el panel `Sonido`, ni ningún sprite de jugador, enemigo,
+proyectil, pulso o gema. En modo menú con la guía y el panel `Sonido` cerrados, las teclas Esc, R, 1, 2 y 3, las
+flechas izquierda y derecha y el input de movimiento MUST NOT tener efecto, y M solo conmuta el silencio (ver "Tecla M"
+en `audio`). Con la guía abierta, Esc y las flechas solo actúan sobre la guía y R, 1, 2, 3 y el input de movimiento
+siguen sin efecto (ver "Cerrar la guía" y "Teclado en la guía" en `menu-guide`). Con el panel `Sonido` abierto, Esc
+solo lo cierra, las flechas solo actúan sobre el deslizador con el foco y R, 1, 2, 3 y el input de movimiento siguen
+sin efecto (ver "Panel Sonido" en `audio`).
 
 #### Scenario: Carga sin parámetros
 - **GIVEN** la build de producción servida sin parámetros en la URL
 - **WHEN** termina la carga y se pintan 300 frames sin pulsar nada
-- **THEN** el menú de inicio es visible con exactamente 5 botones, `Jugar`, `Cómo jugar`, `Exportar`, `Importar` y
-  `Borrar datos`, en ese orden de arriba abajo
-- **AND** el HUD, el overlay de resultados, el overlay de pausa y la guía no son visibles
+- **THEN** el menú de inicio es visible con exactamente 6 botones, `Jugar`, `Cómo jugar`, `Sonido`, `Exportar`,
+  `Importar` y `Borrar datos`, en ese orden de arriba abajo
+- **AND** el HUD, el overlay de resultados, el overlay de pausa, la guía y el panel `Sonido` no son visibles
 
 #### Scenario: Carga con semilla y sin e2e
 - **GIVEN** la URL `?seed=42`
@@ -41,15 +44,21 @@ sin efecto (ver "Cerrar la guía" y "Teclado en la guía" en `menu-guide`).
 - **THEN** el menú de inicio es visible y no ha empezado ninguna partida
 
 #### Scenario: Teclas sin efecto en el menú
-- **GIVEN** el modo menú con la guía cerrada
+- **GIVEN** el modo menú con la guía y el panel `Sonido` cerrados
 - **WHEN** se pulsan Esc, R, 1, 2 y 3, flecha izquierda y flecha derecha y se mantiene el input (1, 1) durante
   60 frames
-- **THEN** el menú sigue visible, no ha empezado ninguna partida y ni el overlay de pausa ni la guía son visibles
+- **THEN** el menú sigue visible, no ha empezado ninguna partida y ni el overlay de pausa, ni la guía, ni el panel
+  `Sonido` son visibles
 
 #### Scenario: El progreso guardado no cambia al cargar el menú
 - **GIVEN** un progreso válido G guardado en `localStorage`
 - **WHEN** se carga la página sin `?e2e` y se pintan 300 frames en el menú
 - **THEN** el valor guardado sigue siendo G byte a byte
+
+#### Scenario: M en el menú
+- **GIVEN** el modo menú con la guía y el panel `Sonido` cerrados y sin silencio
+- **WHEN** se pulsa M
+- **THEN** el silencio está activado, el menú sigue visible con sus 6 opciones y no ha empezado ninguna partida
 
 ### Requirement: Jugar arranca la partida
 El sistema SHALL, al pulsar `Jugar` en modo menú, ocultar el menú y empezar exactamente una partida nueva con el
@@ -79,7 +88,8 @@ El sistema SHALL, cuando la URL incluye `?e2e`, saltarse el menú de inicio al c
 primera partida, con el mismo comportamiento observable que antes de este change: la partida existe desde la carga,
 la sonda `window.__sprint` está disponible y la semilla y la velocidad se resuelven como hasta ahora (ver
 `simulation-loop`). El bypass solo afecta a la carga: con `?e2e`, `Volver al menú` muestra el menú de inicio igual
-que sin `?e2e`, con la guía cerrada. Sin `?e2e`, la sonda `window.__sprint` MUST NOT existir.
+que sin `?e2e`, con la guía y el panel `Sonido` cerrados. Sin `?e2e`, la sonda `window.__sprint` MUST NOT existir
+(tampoco `window.__sprint.audio`, ver `audio`).
 
 #### Scenario: Carga en modo E2E
 - **GIVEN** la URL `?e2e&seed=42`
@@ -95,8 +105,8 @@ que sin `?e2e`, con la guía cerrada. Sin `?e2e`, la sonda `window.__sprint` MUS
 #### Scenario: Menú tras Volver al menú en modo E2E
 - **GIVEN** la URL `?e2e&seed=42` y la partida en pausa
 - **WHEN** se pulsa `Volver al menú`
-- **THEN** el menú de inicio es visible con sus cinco opciones, la guía no es visible y la sonda no informa de
-  ninguna partida en curso
+- **THEN** el menú de inicio es visible con sus seis opciones, la guía y el panel `Sonido` no son visibles y la sonda
+  no informa de ninguna partida en curso
 
 #### Scenario: Sin sonda fuera de E2E
 - **GIVEN** la URL `?seed=42`
@@ -132,13 +142,15 @@ partida, y tras usarlos `Jugar` MUST seguir empezando una partida con una sola p
 - **THEN** se crea exactamente 1 partida en curso y el menú deja de verse, junto con sus mensajes
 
 ### Requirement: Confirmación de Borrar datos
-El sistema SHALL, al pulsar `Borrar datos` en modo menú con la guía cerrada, mostrar dentro del juego un diálogo de
-confirmación con `Confirmar` y `Cancelar`, sin usar diálogos nativos del navegador (`window.confirm`, `window.alert`
-ni `window.prompt`). Mientras el diálogo está abierto, `Jugar`, `Cómo jugar`, `Exportar`, `Importar` y
-`Borrar datos` MUST NOT tener efecto, y el diálogo solo se cierra con `Confirmar` o `Cancelar`. `Cancelar` cierra el
-diálogo sin cambiar nada. `Confirmar` cierra el diálogo y borra el progreso (ver "Borrado del progreso" en
-`progress-persistence`). En ambos casos el menú vuelve a estar operativo. Con la guía abierta, `Borrar datos` MUST
-NOT abrir el diálogo (ver "Opciones del menú bloqueadas con la guía abierta" en `menu-guide`).
+El sistema SHALL, al pulsar `Borrar datos` en modo menú con la guía y el panel `Sonido` cerrados, mostrar dentro del
+juego un diálogo de confirmación con `Confirmar` y `Cancelar`, sin usar diálogos nativos del navegador
+(`window.confirm`, `window.alert` ni `window.prompt`). Mientras el diálogo está abierto, `Jugar`, `Cómo jugar`,
+`Sonido`, `Exportar`, `Importar` y `Borrar datos` MUST NOT tener efecto, y el diálogo solo se cierra con `Confirmar` o
+`Cancelar`. `Cancelar` cierra el diálogo sin cambiar nada. `Confirmar` cierra el diálogo y borra el progreso (ver
+"Borrado del progreso" en `progress-persistence`), sin tocar los ajustes de audio (ver "Ajustes de audio guardados" en
+`audio`). En ambos casos el menú vuelve a estar operativo. Con la guía abierta, `Borrar datos` MUST NOT abrir el
+diálogo (ver "Opciones del menú bloqueadas con la guía abierta" en `menu-guide`), y tampoco con el panel `Sonido`
+abierto (ver "Panel Sonido" en `audio`).
 
 #### Scenario: Diálogo propio
 - **GIVEN** el modo menú y una prueba que cuenta los diálogos nativos del navegador
@@ -158,9 +170,9 @@ NOT abrir el diálogo (ver "Opciones del menú bloqueadas con la guía abierta" 
 
 #### Scenario: Opciones bloqueadas con el diálogo abierto
 - **GIVEN** el diálogo de `Borrar datos` abierto
-- **WHEN** se pulsan `Jugar`, `Cómo jugar` y `Exportar`
-- **THEN** no empieza ninguna partida, no se descarga ningún fichero, la guía no es visible y el diálogo sigue
-  visible
+- **WHEN** se pulsan `Jugar`, `Cómo jugar`, `Sonido` y `Exportar`
+- **THEN** no empieza ninguna partida, no se descarga ningún fichero, ni la guía ni el panel `Sonido` son visibles y
+  el diálogo sigue visible
 
 #### Scenario: Confirmar dos veces
 - **GIVEN** el diálogo de `Borrar datos` abierto sobre un progreso con 3 entradas
@@ -176,18 +188,22 @@ NOT abrir el diálogo (ver "Opciones del menú bloqueadas con la guía abierta" 
 
 ### Requirement: Pausa con Esc
 El sistema SHALL, al pulsar Esc con la partida en curso y sin pausa, poner la partida en pausa y mostrar un overlay
-de pausa con el texto `Pausa` y los botones `Reanudar` y `Volver al menú`, pulsables con el ratón. Con la partida en
-pausa, pulsar Esc o `Reanudar` quita la pausa y oculta el overlay. Cada pulsación de Esc MUST cambiar la pausa, la
-tienda o la obra como mucho una vez, aunque la tecla se mantenga pulsada. Con la partida eligiendo mejora o terminada,
-Esc MUST NOT tener efecto. Con la partida en tienda, Esc MUST salir de la tienda (ver "Overlay de la tienda" en
-`castle-shop`) y, con la partida en obra, Esc MUST salir de la obra sin construir (ver "Panel de obra" en
-`build-sites`); en ambos casos MUST NOT abrir la pausa: la partida queda en curso y sin pausa, y solo una pulsación
-posterior la pausa. Mientras la partida está en pausa:
+de pausa con el texto `Pausa` y los botones `Reanudar`, `Sonido` y `Volver al menú`, en ese orden y pulsables con el
+ratón. Con la partida en pausa y el panel `Sonido` cerrado, pulsar Esc o `Reanudar` quita la pausa y oculta el
+overlay. Con la partida en pausa y el panel `Sonido` abierto, Esc MUST cerrar solo el panel: la partida sigue en pausa
+con su overlay, y solo una pulsación posterior la reanuda (ver "Panel Sonido" en `audio`). Cada pulsación de Esc MUST
+cambiar la pausa, la tienda, la obra o el panel `Sonido` como mucho una vez, aunque la tecla se mantenga pulsada. Con
+la partida eligiendo mejora o terminada, Esc MUST NOT tener efecto. Con la partida en tienda, Esc MUST salir de la
+tienda (ver "Overlay de la tienda" en `castle-shop`) y, con la partida en obra, Esc MUST salir de la obra sin
+construir (ver "Panel de obra" en `build-sites`); en ambos casos MUST NOT abrir la pausa: la partida queda en curso y
+sin pausa, y solo una pulsación posterior la pausa. Mientras la partida está en pausa:
 - no se ejecuta ningún tick ni se acumula tiempo (ver `simulation-loop`), y el snapshot no cambia;
 - el estado de la partida sigue siendo en curso (la pausa no es un estado de `run-state`);
 - el HUD sigue visible con los valores del snapshot de la pausa (ver `hud`);
-- las teclas R, 1, 2 y 3 y el input de movimiento MUST NOT tener efecto, ni durante la pausa ni al reanudar;
-- no se ven el overlay de elección, el de la tienda, el panel de obra ni el de resultados.
+- las teclas R, 1, 2 y 3 y el input de movimiento MUST NOT tener efecto, ni durante la pausa ni al reanudar; M solo
+  conmuta el silencio (ver "Tecla M" en `audio`);
+- no se ven el overlay de elección, el de la tienda, el panel de obra ni el de resultados;
+- la música está en pausa (ver "El audio se detiene con la pausa, la retención y la pestaña oculta" en `audio`).
 
 Pausar y reanudar MUST NOT cambiar la simulación: una partida pausada y reanudada que recibe la misma secuencia de
 inputs por tick que otra sin pausa produce los mismos snapshots en cada tick.
@@ -195,8 +211,8 @@ inputs por tick que otra sin pausa produce los mismos snapshots en cada tick.
 #### Scenario: Pausar y reanudar con Esc
 - **GIVEN** una partida en curso en el tick 500
 - **WHEN** se pulsa Esc, el motor informa de 300 frames de 16,667 ms y se vuelve a pulsar Esc
-- **THEN** durante los 300 frames el overlay de pausa es visible y el snapshot sigue igual campo a campo al del
-  tick 500, con estado en curso
+- **THEN** durante los 300 frames el overlay de pausa es visible, con `Reanudar`, `Sonido` y `Volver al menú` en ese
+  orden, y el snapshot sigue igual campo a campo al del tick 500, con estado en curso
 - **AND** tras la segunda pulsación el overlay de pausa no es visible
 
 #### Scenario: Reanudar con el botón
@@ -251,22 +267,29 @@ inputs por tick que otra sin pausa produce los mismos snapshots en cada tick.
   curso sin pausa
 - **AND** una segunda pulsación de Esc pone la partida en pausa
 
+#### Scenario: Esc con el panel Sonido abierto
+- **GIVEN** una partida en pausa en el tick 500 con el panel `Sonido` abierto desde la pausa
+- **WHEN** se pulsa Esc, se mantiene pulsada 60 frames y se suelta
+- **THEN** el panel `Sonido` no es visible, el overlay de pausa sí y el snapshot sigue en el tick 500
+- **AND** una segunda pulsación de Esc quita la pausa
+
 ### Requirement: Volver al menú
-El sistema SHALL, al pulsar `Volver al menú` con la partida en pausa, descartar la partida en pausa y mostrar el menú
-de inicio en modo menú, con la guía cerrada. La partida descartada no está terminada: MUST NOT registrarse en el
-historial ni en los récords ni provocar ninguna escritura del progreso (ver `progress-persistence`). Desde el primer
-frame del menú MUST NOT quedar visible ningún sprite de jugador, enemigo, cadáver (aunque su animación de muerte no
-haya terminado, ver `sprite-rendering`), proyectil, pulso ni gema, ni el HUD, el overlay de pausa ni el de
-resultados. El siguiente `Jugar` empieza una partida nueva desde cero con una semilla aleatoria nueva (ver
-`simulation-loop`), cuya vista contiene solo los elementos de su snapshot. En esta spec, "sprites de enemigo" son los
-de enemigos vivos; los cadáveres se cuentan aparte.
+El sistema SHALL, al pulsar `Volver al menú` con la partida en pausa y el panel `Sonido` cerrado, descartar la partida
+en pausa y mostrar el menú de inicio en modo menú, con la guía y el panel `Sonido` cerrados y la música parada (ver
+"Música de fondo en bucle" en `audio`). La partida descartada no está terminada: MUST NOT registrarse en el historial
+ni en los récords ni provocar ninguna escritura del progreso (ver `progress-persistence`). Desde el primer frame del
+menú MUST NOT quedar visible ningún sprite de jugador, enemigo, cadáver (aunque su animación de muerte no haya
+terminado, ver `sprite-rendering`), proyectil, pulso ni gema, ni el HUD, el overlay de pausa ni el de resultados. El
+siguiente `Jugar` empieza una partida nueva desde cero con una semilla aleatoria nueva (ver `simulation-loop`), cuya
+vista contiene solo los elementos de su snapshot. En esta spec, "sprites de enemigo" son los de enemigos vivos; los
+cadáveres se cuentan aparte.
 
 #### Scenario: Volver al menú desde la pausa
 - **GIVEN** `?e2e` y una partida en pausa en el tick 3.000 con ≥ 1 enemigo, ≥ 1 proyectil y ≥ 1 gema en el snapshot
 - **WHEN** se pulsa `Volver al menú` y se pinta el siguiente frame
-- **THEN** el menú de inicio es visible con sus cinco opciones y la sonda de render informa de 0 sprites visibles
+- **THEN** el menú de inicio es visible con sus seis opciones y la sonda de render informa de 0 sprites visibles
   de jugador, enemigo, cadáver, proyectil, pulso y gema
-- **AND** el HUD, la guía y los overlays de pausa y de resultados no son visibles
+- **AND** el HUD, la guía, el panel `Sonido` y los overlays de pausa y de resultados no son visibles
 
 #### Scenario: Volver al menú con cadáveres en curso
 - **GIVEN** `?e2e&seed=7` y una partida en pausa en un frame en que la sonda de render informa de ≥ 1 cadáver
@@ -298,6 +321,11 @@ de enemigos vivos; los cadáveres se cuentan aparte.
   jugador, enemigo, cadáver, proyectil, pulso y gema
 - **AND** en el primer frame de cada partida hay 0 cadáveres, en ningún frame hay más de 64 y existe exactamente 1
   partida durante el sexto ciclo
+
+#### Scenario: Volver al menú bloqueado con el panel Sonido
+- **GIVEN** una partida en pausa en el tick 500 con el panel `Sonido` abierto
+- **WHEN** se pulsa `Volver al menú` en su posición
+- **THEN** el panel sigue visible, la partida sigue en pausa en el tick 500 y el menú de inicio no es visible
 
 ### Requirement: Flujo del menú observable en el navegador
 El sistema SHALL permitir, en la build de producción y sin `?e2e`, recorrer el flujo menú → Jugar → pausa → Volver
@@ -346,24 +374,25 @@ nombre del fichero exportado `sprint-survivors-progress.json` ni la sonda `windo
 - **THEN** el menú muestra un mensaje que contiene `importado` y un `Exportar` posterior contiene esas 2 entradas
 
 ### Requirement: Menú y pausa centrados en la ventana
-La vista SHALL centrar en la ventana el menú de inicio (título, sus cinco opciones y sus mensajes), el diálogo de
-`Borrar datos`, la guía y el overlay de pausa: el centro horizontal de cada uno MUST coincidir con el de la ventana
-(error ≤ 1 px) y su contenido MUST quedar centrado en vertical dentro de la ventana (la distancia de su borde superior
-al de la ventana y la de su borde inferior al de la ventana difieren ≤ 1 px). Con una ventana ≥ 960 × 540 en ambos
-ejes, con cualquier escala de UI, todos sus botones y textos MUST quedar enteros dentro de la ventana y sin
-solaparse; en la guía, el recuadro, su título de página, el indicador y los controles `Anterior`, `Siguiente` y
-`Cerrar` MUST quedar enteros dentro de la ventana, y el texto de la página MUST quedar dentro del recuadro de la guía,
-visible entero o alcanzable desplazándolo dentro del recuadro. Al redimensionar, se reubican desde el primer frame
-pintado tras el cambio y cada botón MUST responder al clic en su posición nueva, sin cambiar el estado: el menú sigue
-en modo menú, el diálogo sigue abierto, la guía sigue abierta en la misma página y la partida sigue en pausa (ver
+La vista SHALL centrar en la ventana el menú de inicio (título, sus seis opciones y sus mensajes), el diálogo de
+`Borrar datos`, la guía, el panel `Sonido` y el overlay de pausa: el centro horizontal de cada uno MUST coincidir con el
+de la ventana (error ≤ 1 px) y su contenido MUST quedar centrado en vertical dentro de la ventana (la distancia de su
+borde superior al de la ventana y la de su borde inferior al de la ventana difieren ≤ 1 px). Con una ventana
+≥ 960 × 540 en ambos ejes, con cualquier escala de UI, todos sus botones y textos (y los deslizadores y la casilla del
+panel `Sonido`) MUST quedar enteros dentro de la ventana y sin solaparse; en la guía, el recuadro, su título de página,
+el indicador y los controles `Anterior`, `Siguiente` y `Cerrar` MUST quedar enteros dentro de la ventana, y el texto de
+la página MUST quedar dentro del recuadro de la guía, visible entero o alcanzable desplazándolo dentro del recuadro. Al
+redimensionar, se reubican desde el primer frame pintado tras el cambio y cada botón MUST responder al clic en su
+posición nueva, sin cambiar el estado: el menú sigue en modo menú, el diálogo sigue abierto, la guía sigue abierta en
+la misma página, el panel `Sonido` sigue abierto con los mismos ajustes y la partida sigue en pausa (ver
 "Redimensionado de la ventana" en `world-camera`). El fondo del menú, si lo hay, MUST cubrir la ventana entera.
 
 #### Scenario: Menú centrado en dos ventanas
 - **GIVEN** el menú de inicio con una ventana de 1.280 × 720, y en otra carga con una de 2.560 × 1.440
 - **WHEN** se pinta 1 frame
-- **THEN** el título y los botones `Jugar`, `Cómo jugar`, `Exportar`, `Importar` y `Borrar datos` tienen su centro
-  horizontal en x = 640 y x = 1.280 respectivamente (error ≤ 1 px), en ese orden de arriba abajo y enteros dentro de
-  la ventana
+- **THEN** el título y los botones `Jugar`, `Cómo jugar`, `Sonido`, `Exportar`, `Importar` y `Borrar datos` tienen su
+  centro horizontal en x = 640 y x = 1.280 respectivamente (error ≤ 1 px), en ese orden de arriba abajo y enteros
+  dentro de la ventana
 
 #### Scenario: Jugar tras redimensionar el menú
 - **GIVEN** el menú de inicio con una ventana de 1.280 × 720
@@ -379,8 +408,8 @@ en modo menú, el diálogo sigue abierto, la guía sigue abierta en la misma pá
 #### Scenario: Pausa centrada y operativa tras redimensionar
 - **GIVEN** una partida en pausa en el tick 500 con una ventana de 1.280 × 720
 - **WHEN** la ventana pasa a 1.000 × 600, se pinta 1 frame y se pulsa `Reanudar` en su posición nueva
-- **THEN** antes del clic el overlay de pausa, con `Pausa`, `Reanudar` y `Volver al menú`, tiene su centro horizontal
-  en x = 500 (error ≤ 1 px) y el snapshot sigue en el tick 500
+- **THEN** antes del clic el overlay de pausa, con `Pausa`, `Reanudar`, `Sonido` y `Volver al menú`, tiene su centro
+  horizontal en x = 500 (error ≤ 1 px) y el snapshot sigue en el tick 500
 - **AND** tras el clic y 1 frame de 16,667 ms el overlay de pausa no es visible y el snapshot tiene tick 501
 
 #### Scenario: Ventana menor que 960 × 540
@@ -403,17 +432,23 @@ en modo menú, el diálogo sigue abierto, la guía sigue abierta en la misma pá
 - **THEN** antes del clic la guía sigue visible con el indicador `4 de 7` y centrada en x = 480 (error ≤ 1 px)
 - **AND** tras el clic el indicador es `5 de 7` y no existe ninguna partida
 
+#### Scenario: Panel Sonido abierto al redimensionar
+- **GIVEN** el panel `Sonido` abierto desde la pausa con música 30, con una ventana de 1.280 × 720
+- **WHEN** la ventana pasa a 960 × 540, se pinta 1 frame y se pulsa `Cerrar` en su posición nueva
+- **THEN** antes del clic el panel está centrado en x = 480 (error ≤ 1 px) y muestra `30 %`
+- **AND** tras el clic el panel no es visible y el overlay de pausa sí, con la partida en el mismo tick
+
 ### Requirement: Aspecto del menú, la pausa y el diálogo con piezas de UI
 La vista SHALL pintar el menú de inicio (`.menu-panel`), el overlay de pausa (`.pause-panel`) y el diálogo de
 `Borrar datos` (`.confirm-dialog`) con las piezas de "Piezas de UI en los paneles DOM" (`sprite-rendering`): marco de
-`panel`; `Jugar`, `Cómo jugar`, `Exportar`, `Importar`, `Borrar datos`, `Reanudar`, `Volver al menú` y `Cancelar` con
-las piezas de botón según su estado; `Confirmar` con `buttonDanger` (`buttonDangerPressed` al pulsarlo); el título
-`Greentide Vanguard` (`h1`) y `Pausa` (`h2`) con la cabecera `header`; y todos los textos con la fuente pixel. Los
-mensajes `importado`, `no válido`, `64 KiB` y `borrado` usan la tinta `accent` de `panel`. Con una ventana ≥ 960 × 540 y
-cualquier k, los cinco botones del menú, su título y sus mensajes MUST quedar dentro del área útil del marco, además de
-enteros en la ventana y sin solaparse ("Menú y pausa centrados en la ventana"). Si una pieza o la fuente no carga, cada
-superficie se pinta con su reserva y el flujo menú → `Jugar` → pausa → `Volver al menú` → `Borrar datos` sigue
-funcionando igual (ver "Reserva de las piezas de UI y de la fuente" en `sprite-rendering`).
+`panel`; `Jugar`, `Cómo jugar`, `Sonido`, `Exportar`, `Importar`, `Borrar datos`, `Reanudar`, `Volver al menú` y
+`Cancelar` con las piezas de botón según su estado; `Confirmar` con `buttonDanger` (`buttonDangerPressed` al pulsarlo);
+el título `Greentide Vanguard` (`h1`) y `Pausa` (`h2`) con la cabecera `header`; y todos los textos con la fuente pixel.
+Los mensajes `importado`, `no válido`, `64 KiB` y `borrado` usan la tinta `accent` de `panel`. Con una ventana
+≥ 960 × 540 y cualquier k, los seis botones del menú, su título y sus mensajes MUST quedar dentro del área útil del
+marco, además de enteros en la ventana y sin solaparse ("Menú y pausa centrados en la ventana"). Si una pieza o la
+fuente no carga, cada superficie se pinta con su reserva y el flujo menú → `Jugar` → pausa → `Volver al menú` →
+`Borrar datos` sigue funcionando igual (ver "Reserva de las piezas de UI y de la fuente" en `sprite-rendering`).
 
 #### Scenario: Menú con piezas en el navegador [E2E]
 - **GIVEN** la build de producción servida sin `?e2e` con una ventana de 1.280 × 720 (k = 1), en el test de humo que ya
@@ -423,7 +458,7 @@ funcionando igual (ver "Reserva de las piezas de UI y de la fuente" en `sprite-r
   borde de imagen son los márgenes de `panel` × 1 px (12 px con los datos del repositorio)
 - **AND** `document.fonts.check('16px "Departure Mono"')` es verdadero
 - **AND** se registran 0 eventos `securitypolicyviolation` y 0 errores no capturados, y los roles y textos de los
-  botones son los de siempre
+  botones son los de siempre más `Sonido`
 
 #### Scenario: Botón deshabilitado, botón con foco y botón de borrado
 - **GIVEN** el menú de inicio con un botón con el atributo `disabled`, el foco de teclado en `Jugar` y el diálogo de
@@ -450,3 +485,4 @@ funcionando igual (ver "Reserva de las piezas de UI y de la fuente" en `sprite-r
 <!-- historial: 0026-build-sites (2026-11-25) -->
 <!-- historial: 0028-menu-guide (2026-11-25) -->
 <!-- historial: 0032-ui-kit (2026-11-26) -->
+<!-- historial: 0035-audio (2026-11-27) -->
