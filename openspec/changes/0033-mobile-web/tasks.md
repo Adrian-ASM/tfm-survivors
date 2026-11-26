@@ -29,14 +29,14 @@
   - Test: `tests/infrastructure/resolve-mobile.test.ts`.
 
 ## 4. Infraestructura: escala y vista (grupo B, un commit)
-- [ ] 4.1 `src/infrastructure/phaser/ui/mobileFrame.ts`: `displayScale`, `fitsAt`, `maxUiScale` (bisección),
+- [x] 4.1 `src/infrastructure/phaser/ui/mobileFrame.ts`: `displayScale`, `fitsAt`, `maxUiScale` (bisección),
   `mobileUiScale` = min(k_max, max(1, k_min)) sin redondeo, k = 1 si s ≤ 0, y `mobileFrameRule`. Incluye la prueba
   de cartas con k fraccionario en `UpgradeOverlay`.
   - Escenarios MD: "Texto mínimo en un móvil horizontal", "Pantalla grande con factor 1", "Texto mínimo
     inalcanzable", "HUD entero en móvil" y "Toque en una carta escalada" (clic en la tercera carta → índice 2).
   - Escenarios HUD: "Factor fraccionario en modo móvil" y "El mismo tamaño de ventana con y sin modo móvil".
   - Tests: `tests/infrastructure/mobile-frame.test.ts` y `tests/infrastructure/upgrade-overlay.test.ts` (ampliado).
-- [ ] 4.2 `watchScreen` con `FrameRule` y `displaySize` (`apply(frame, cssPerUnit)`); `scaleConfig(maxView, mobile?)`
+- [x] 4.2 `watchScreen` con `FrameRule` y `displaySize` (`apply(frame, cssPerUnit)`); `scaleConfig(maxView, mobile?)`
   con la rama EXPAND (modo 6, base `minWidth × baseHeight`, tope) y la de escritorio idéntica; `viewportProbe` con
   `mobile`, `domScale`, `displayScale` y `hint`; `followView` con la vista lógica.
   - Escenarios MD: "Cámara con el tamaño lógico", "Factor al redimensionar", "Redimensionado en móvil" (parte de

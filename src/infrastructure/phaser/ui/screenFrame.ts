@@ -22,3 +22,18 @@ export function screenFrame(width: number, height: number): ScreenFrame {
   const steps = Math.floor(Math.min(w / UI_REFERENCE.width, h / UI_REFERENCE.height));
   return { width: w, height: h, uiScale: Math.max(1, steps) };
 }
+
+/** Tamaño en unidades del lienzo (`gameSize`) o en px CSS (`displaySize`). */
+export interface FrameSize {
+  readonly width: number;
+  readonly height: number;
+}
+
+/**
+ * Regla del frame (0033): del tamaño lógico del lienzo y del mostrado en px CSS al `ScreenFrame`.
+ * En escritorio es `screenFrame` (escalones enteros); en móvil, `mobileFrameRule` (k fraccionario).
+ */
+export type FrameRule = (game: FrameSize, display: FrameSize) => ScreenFrame;
+
+/** Regla de escritorio: la de siempre, que ignora el tamaño mostrado (zoom 1). */
+export const desktopFrameRule: FrameRule = (game) => screenFrame(game.width, game.height);
