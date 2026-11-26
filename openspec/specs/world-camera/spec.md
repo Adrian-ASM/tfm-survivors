@@ -119,10 +119,12 @@ este requisito usan una ventana de 1.280 × 720 (vista de 1.280 × 720).
 - **THEN** el rectángulo visible de ese primer frame es (1.280, 720)–(2.560, 1.440)
 
 ### Requirement: Elementos de la partida en coordenadas de mundo
-La vista SHALL pintar jugador, enemigos, cadáveres, proyectiles, pulsos, gemas, mapa y fondo en su posición de mundo:
-un elemento en (x, y) se ve en la ventana en (o_x + x − izquierda, o_y + y − arriba), siendo (izquierda, arriba) la
-esquina del rectángulo visible y (o_x, o_y) la posición en la ventana de la esquina superior izquierda de la vista
-((0, 0) si la ventana no supera el tope; si lo supera, la que fije el design), con un error ≤ 1 px. Un elemento fuera
+La vista SHALL pintar jugador, enemigos, cadáveres, proyectiles, pulsos, recogibles (gemas incluidas), mapa y fondo en
+su posición de mundo: un elemento en (x, y) se ve en la ventana en (o_x + x − izquierda, o_y + y − arriba), siendo
+(izquierda, arriba) la esquina del rectángulo visible y (o_x, o_y) la posición en la ventana de la esquina superior
+izquierda de la vista ((0, 0) si la ventana no supera el tope; si lo supera, la que fije el design), con un error
+≤ 1 px. En un recogible, (x, y) es su posición pintada: la del snapshot más su desplazamiento de flote (ver "Flote de los
+recogibles" en `sprite-rendering`), o la del snapshot durante su aparición y con aspecto de reserva. Un elemento fuera
 del rectángulo visible no se ve en pantalla, pero sigue en el snapshot.
 
 #### Scenario: Enemigo a la derecha del jugador
@@ -142,6 +144,12 @@ del rectángulo visible no se ve en pantalla, pero sigue en el snapshot.
 - **WHEN** se pinta el snapshot
 - **THEN** el jugador se ve en (o_x + 1.280, o_y + 720) y el enemigo, fuera del rectángulo visible
   (640, 360)–(3.200, 1.800), no se ve en pantalla
+
+#### Scenario: Gema que flota
+- **GIVEN** el mundo por defecto, una ventana de 1.280 × 720, el jugador en (1.920, 1.080), unos datos de aspecto con
+  A 4, T 1.600 y s 200, y una gema de id 0 en (2.160, 1.140)
+- **WHEN** se pinta el snapshot con el reloj de render R = 400
+- **THEN** la gema se ve en la posición de pantalla (880, 424) (error ≤ 1 px)
 
 ### Requirement: HUD y overlays fijos en pantalla
 La vista SHALL pintar el HUD (ver `hud`), el overlay de elección (ver `upgrades`), el de pausa, el de resultados y el
@@ -326,3 +334,4 @@ Un cambio a un tamaño igual al actual MUST NOT cambiar nada de lo pintado.
 <!-- historial: 0015-procedural-map (2026-11-23) -->
 <!-- historial: 0017-fullscreen-view (2026-11-24) -->
 <!-- historial: 0028-menu-guide (2026-11-25) -->
+<!-- historial: 0030-pickup-visibility (2026-11-26) -->
