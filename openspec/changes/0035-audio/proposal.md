@@ -1,6 +1,6 @@
 # Proposal · 0035-audio
 
-- **Estado**: pendiente de aprobación
+- **Estado**: aprobada por el autor (2026-11-26)
 - **Issue**: (sin issue)
 - **Rama / worktree**: `change/0035-audio`
 
