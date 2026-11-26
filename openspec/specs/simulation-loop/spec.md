@@ -1424,7 +1424,9 @@ conocer el modo manual ni `step`, y la semilla, el contenido y las reglas del ti
 En modo manual, el sistema SHALL no ejecutar ticks por el paso del tiempo real: los frames que informe el motor
 MUST ejecutar 0 ticks y no acumular tiempo, sea cual sea su duración (incluidos frames de 5.000 ms), y la partida
 solo avanza con `step(n)`. El resto del adaptador MUST seguir atendiendo cada frame igual que en tiempo real:
-teclado (dirección, Esc, R), clics de pausa y de elección de mejora, menú, pantalla de resultados y guardado.
+teclado (dirección, Esc, R, M), clics de pausa y de elección de mejora, menú, panel `Sonido`, pantalla de resultados,
+guardado y audio (ver `audio`). El reloj de render de modo manual (0014) avanza `n × TICK_MS` con cada `step(n)` y no
+avanza con los frames del motor; el audio lo usa para su limitación por tipo.
 
 #### Scenario: Sin step no avanza
 - **GIVEN** la URL `?e2e&manual&seed=7` y la partida recién arrancada al cargar
@@ -1452,6 +1454,11 @@ teclado (dirección, Esc, R), clics de pausa y de elección de mejora, menú, pa
 - **GIVEN** modo manual y una partida terminada con la pantalla de resultados visible
 - **WHEN** se pulsa R sin llamar a `step`
 - **THEN** empieza una partida nueva en el tick 0 y sigue en el tick 0 tras 2 s reales sin `step`
+
+#### Scenario: Silencio sin step
+- **GIVEN** modo manual y una partida en curso en el tick n sin silencio
+- **WHEN** se pulsa M sin llamar a `step`
+- **THEN** la sonda de audio informa del silencio activado y el snapshot sigue en el tick n
 
 ### Requirement: Avance manual con step
 Con `?e2e`, la sonda SHALL ofrecer `step(n)`, que avanza la partida un número exacto de ticks y devuelve
@@ -2125,3 +2132,4 @@ MUST NOT cambiar.
 <!-- historial: 0027-site-contact (2026-11-25) -->
 <!-- historial: 0031-combat-feedback (2026-11-26) -->
 <!-- historial: 0033-mobile-web (2026-11-26) -->
+<!-- historial: 0035-audio (2026-11-27) -->
