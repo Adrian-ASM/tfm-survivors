@@ -116,7 +116,7 @@
   registrar" y "Mayúsculas en la extensión" con un `.flac`/`.FLAC`.
 
   Tests: `audio-cues`, `effect-mixer`, `audio-content`, `audio-files`, `assets` y `gameplay.spec` (filtro).
-- [ ] 6.0b Licencias y créditos en el guardarraíl, sin ficheros reales (design D13.3 y D13.7). Test-after.
+- [x] 6.0b Licencias y créditos en el guardarraíl, sin ficheros reales (design D13.3 y D13.7). Test-after.
   - `guard-assets.mjs`: `AUDIO_LICENSES` (`CC0`, `CC-BY-3.0`, `CC-BY-4.0`) en lugar de `CC0` exacto.
     `checkAssets({ ..., credits })` con `CREDITS_PATH`: una línea de `CREDITS.md` con título, autor, URL y
     licencia literales por cada entrada CC-BY; si falta `CREDITS.md` y hay entradas CC-BY, falla.

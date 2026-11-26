@@ -257,7 +257,8 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   `sprint-survivors/audio` (`AudioSettingsStore`, 50/80/no, fuera de Exportar/Importar/Borrar). Panel DOM
   `SoundPanel` (3.er botón del menú, estado `sound`; en la pausa entre Reanudar y Volver, con `SoundPanelGate` en
   `GameScene`), tecla M y botón de silencio de la `TouchBar` vía `MuteRequests` (una vez por frame, `PRE_STEP`).
-  Guardarraíl: lista `sounds[]` (CC0, `kenney.nl`/`opengameart.org`/`freesound.org`, `public/assets/audio/`) y
+  Guardarraíl: lista `sounds[]` (CC0, CC-BY-3.0 o CC-BY-4.0 con su línea en `CREDITS.md`, enlazado desde el
+  README; `kenney.nl`/`opengameart.org`/`freesound.org`, `public/assets/audio/`) y
   `tests/guardrails/audio-files.test.ts` (uso y ≤ 6 MiB; `.ogg/.mp3/.wav/.flac`). Sonda `__sprint.audio`; E2E de
   escritorio y de arranque ampliados. Núcleo, balance y firmas intactos.
   Fuente de verdad del comportamiento: `openspec/specs/`.

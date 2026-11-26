@@ -200,3 +200,53 @@ describe('guard-staged --all · CI', () => {
     expect(out).not.toContain('ENOENT');
   });
 });
+
+// Spec asset-provenance (0035 rev. 4, design D13.7): `CREDITS.md` y el audio salen del índice.
+describe('guard-staged · audio con atribución y CREDITS.md', () => {
+  const AUDIO_PATH = 'public/assets/audio/receive-hit.flac';
+  const FLAC = Buffer.from([0x66, 0x4c, 0x61, 0x43, 0x00, 0x0d, 0x0a, 0x7f]);
+  const sound = {
+    path: AUDIO_PATH,
+    title: 'Hurt Sound',
+    author: 'Some Author',
+    url: 'https://opengameart.org/content/hurt-sound',
+    license: 'CC-BY-4.0',
+    downloadedOn: '2026-11-25',
+    sha256: sha256Of(FLAC),
+    bytes: FLAC.length,
+  };
+  const CREDIT_LINE = `- "${sound.title}" de ${sound.author} (${sound.url}), licencia ${sound.license}.`;
+
+  function stageAudioNote(): void {
+    stageBinary(PNG_PATH, PNG);
+    stageBinary(AUDIO_PATH, FLAC);
+    const note = JSON.parse(noteFor(sha256Of(PNG), PNG.length)) as Record<string, unknown>;
+    stage(NOTE_PATH, `${JSON.stringify({ ...note, sounds: [sound] }, null, 2)}\n`);
+  }
+
+  it('Scenario: Créditos ausentes (pre-commit: CC-BY sin CREDITS.md en el índice)', () => {
+    stageAudioNote();
+    const { code, out } = guard();
+    expect(code).not.toBe(0);
+    expect(out).toContain('CREDITS.md');
+    expect(out).toContain(AUDIO_PATH);
+  });
+
+  it('Scenario: Licencias admitidas (CC-BY con su línea en CREDITS.md: pasa en los dos modos)', () => {
+    stageAudioNote();
+    stage('CREDITS.md', `# Créditos\n\n${CREDIT_LINE}\n`);
+    const staged = guard();
+    expect(staged.code, staged.out).toBe(0);
+    git('-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '--no-verify', '-m', 'x');
+    const all = guard('--all');
+    expect(all.code, all.out).toBe(0);
+  });
+
+  it('Scenario: Entrada CC-BY sin línea en los créditos (lee el CREDITS.md preparado)', () => {
+    stageAudioNote();
+    stage('CREDITS.md', '# Créditos\n');
+    const { code, out } = guard();
+    expect(code).not.toBe(0);
+    expect(out).toContain(AUDIO_PATH);
+  });
+});

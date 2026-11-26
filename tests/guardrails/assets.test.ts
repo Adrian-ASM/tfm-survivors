@@ -23,6 +23,8 @@ interface AssetsInput {
   files: string[];
   provenance: Provenance | undefined;
   digest: (path: string) => Digest;
+  /** Texto de `CREDITS.md` (0035 rev. 4); ausente si no está versionado. */
+  credits?: string;
 }
 type CheckAssets = (input: AssetsInput) => string[];
 
@@ -756,7 +758,7 @@ describe('guard-assets · audio (spec asset-provenance 0035)', () => {
   });
 
   it.each([
-    ['licencia CC-BY-4.0', (e: SoundEntry) => (e['license'] = 'CC-BY-4.0'), '"license"'],
+    ['licencia CC-BY-NC-4.0', (e: SoundEntry) => (e['license'] = 'CC-BY-NC-4.0'), '"license"'],
     ['sin licencia', (e: SoundEntry) => delete e['license'], '"license"'],
     ['URL http', (e: SoundEntry) => (e['url'] = 'http://kenney.nl/assets/x'), '"url"'],
     ['URL de otro host', (e: SoundEntry) => (e['url'] = 'https://example.com/x.ogg'), '"url"'],

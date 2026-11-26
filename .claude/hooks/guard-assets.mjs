@@ -5,7 +5,8 @@
 // `digest(path) → { sha256, bytes }` inyectado. La ejecuta scripts/guard-staged.mjs (pre-commit y CI).
 // 0034 (ADR-0030): lista aparte `generated[]` de imágenes con IA, solo en `public/assets/icons/`,
 // con `generatedPolicy` apuntando al ADR; la cabecera del pack y el Free Pack solo afectan a `files[]`.
-// 0035 (ADR-0031): lista aparte `sounds[]` de audio CC0 (kenney.nl, opengameart.org, freesound.org),
+// 0035 (ADR-0031): lista aparte `sounds[]` de audio CC0/CC-BY (kenney.nl, opengameart.org, freesound.org),
+// con la atribución de cada CC-BY en una línea de CREDITS.md;
 // solo en `public/assets/audio/`; un audio no vale en ninguna otra lista.
 import { relativePath, runAsHook } from './lib.mjs';
 
@@ -255,7 +256,11 @@ function iconDirProblems(files, provenance) {
   return problems;
 }
 
-const SOUND_LICENSE = 'CC0';
+/** Licencias de audio admitidas (0035 rev. 4, design D13.3): exactas, sin NC, SA, ND ni otras. */
+export const AUDIO_LICENSES = ['CC0', 'CC-BY-3.0', 'CC-BY-4.0'];
+/** Créditos de las entradas con atribución (design D13.7), en la raíz del repositorio. */
+export const CREDITS_PATH = 'CREDITS.md';
+const CC_BY = /^CC-BY-/;
 const SOUND_HOSTS = new Set(['kenney.nl', 'opengameart.org', 'freesound.org']);
 const SOUND_TEXT_FIELDS = ['path', 'title', 'author'];
 const SOUND_FIELDS = new Set([
@@ -289,8 +294,10 @@ function soundFieldProblems(entry, at) {
   }
   if (!isSoundUrl(entry?.url))
     problems.push(`${at}: "url" debe ser https de ${[...SOUND_HOSTS].join(', ')}.`);
-  if (entry?.license !== SOUND_LICENSE)
-    problems.push(`${at}: "license" debe ser "${SOUND_LICENSE}".`);
+  if (!AUDIO_LICENSES.includes(entry?.license))
+    problems.push(
+      `${at}: "license" vale "${String(entry?.license ?? '')}"; debe ser ${AUDIO_LICENSES.join(', ')}.`,
+    );
   if (!isCalendarDate(entry?.downloadedOn))
     problems.push(`${at}: "downloadedOn" debe ser una fecha de calendario AAAA-MM-DD.`);
   if (!SHA256.test(String(entry?.sha256 ?? '')))
@@ -362,8 +369,35 @@ export function soundPaths(provenance) {
     .filter(isText);
 }
 
-/** Reglas de procedencia. Devuelve las líneas de error ([] si cumple). */
-export function checkAssets({ files, provenance, digest }) {
+/**
+ * Créditos (design D13.7): por cada entrada `CC-BY-*` admitida, una misma línea de `CREDITS.md` con
+ * su título, autor, URL y licencia literales. Sin `CREDITS.md` versionado y con entradas CC-BY, falla.
+ */
+function creditProblems(files, provenance, credits) {
+  const attributed = soundListOf(provenance).filter(
+    (e) => isText(e?.path) && AUDIO_LICENSES.includes(e?.license) && CC_BY.test(e.license),
+  );
+  if (attributed.length === 0) return [];
+  if (!files.includes(CREDITS_PATH) || typeof credits !== 'string') {
+    const paths = attributed.map((e) => e.path).join(', ');
+    return [`${CREDITS_PATH}: falta y hay audio con atribución (CC-BY): ${paths}.`];
+  }
+  const lines = credits.split(/\r?\n/);
+  const fields = ['title', 'author', 'url', 'license'];
+  return attributed
+    .filter((e) => !lines.some((l) => fields.every((f) => isText(e[f]) && l.includes(e[f]))))
+    .map(
+      (e) =>
+        `${e.path}: ${CREDITS_PATH} no tiene una línea con su título, autor, URL y licencia ` +
+        `(${e.license}).`,
+    );
+}
+
+/**
+ * Reglas de procedencia. Devuelve las líneas de error ([] si cumple). `credits` es el texto de
+ * `CREDITS.md` (0035 rev. 4), si está versionado.
+ */
+export function checkAssets({ files, provenance, digest, credits }) {
   const problems = files.flatMap(pathProblems);
   const entries = Array.isArray(provenance?.files) ? provenance.files : [];
   const registered = new Set(
@@ -379,6 +413,7 @@ export function checkAssets({ files, provenance, digest }) {
   problems.push(...iconDirProblems(files, provenance));
   problems.push(...generatedProblems(files, provenance, digest));
   problems.push(...soundProblems(files, provenance, digest));
+  problems.push(...creditProblems(files, provenance, credits));
   problems.push(...noteProblems(provenance));
   for (const entry of entries) {
     if (!isText(entry?.path)) continue;
