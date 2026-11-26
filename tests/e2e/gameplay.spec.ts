@@ -14,6 +14,7 @@ import {
   focusGame,
   gameUrl,
   holdKey,
+  playToEnd,
   probe,
   snapshotOf,
   startSpriteSampler,
@@ -879,6 +880,33 @@ const PHONE = { width: 844, height: 390 };
 const mobileUrl = (): string => `${gameUrl({ seed: 42, manual: true })}&mobile=1`;
 const near = (a: number, b: number, tol = 1): boolean => Math.abs(a - b) <= tol;
 
+/**
+ * "Sin estilos inline" (spec mobile-display 0033) en la pantalla `screen`: ningún elemento tiene
+ * atributo `style` salvo el lienzo del motor y `#game`, y este solo con variables CSS (`--*`).
+ */
+async function expectNoInlineStyles(page: Page, screen: string): Promise<void> {
+  const styled = await page.evaluate(() =>
+    [...document.querySelectorAll('[style]')]
+      .filter((e) => e.tagName !== 'CANVAS')
+      .map((e) => ({
+        id: e.id,
+        vars: [...(e as HTMLElement).style].every((prop) => prop.startsWith('--')),
+      })),
+  );
+  expect(styled, screen).toEqual([{ id: 'game', vars: true }]);
+}
+
+/** Juega hasta el fin, con los resultados a la vista, y vuelve al menú con R y Volver al menú. */
+async function resultsThenMenu(page: Page, check: (screen: string) => Promise<void>) {
+  expect((await playToEnd(page))?.status).toBe('over');
+  await expect(page.locator('.results-panel')).toBeVisible();
+  await check('resultados');
+  await page.keyboard.press('r');
+  await expect(page.locator('.results-panel')).toBeHidden();
+  await backToMenu(page);
+  await check('menú');
+}
+
 test.describe('Modo móvil (0033)', () => {
   test.use({ hasTouch: true, viewport: PHONE });
 
@@ -893,6 +921,7 @@ test.describe('Modo móvil (0033)', () => {
 
     // "Sonda en móvil", "Móvil en horizontal" e "Indicación al empezar".
     await expect.poll(async () => (await probe(page))?.viewport?.hint ?? null).toBe(true);
+    await expectNoInlineStyles(page, 'partida con la barra táctil');
     const start = await probe(page);
     const v = start?.viewport;
     const cam = start?.camera;
@@ -935,6 +964,7 @@ test.describe('Modo móvil (0033)', () => {
     // ⏸ con un toque: pausa visible, zonas pulsables de ≥ 44 × 44 px CSS y Reanudar operativo.
     await page.locator('.touch-bar [aria-label="Pausa"]').tap();
     await expect(pauseOverlay(page)).toBeVisible();
+    await expectNoInlineStyles(page, 'pausa');
     const buttons = page.locator('.pause-panel button:visible, .touch-bar button:visible');
     expect(await buttons.count()).toBeGreaterThanOrEqual(3);
     for (const box of await buttons.evaluateAll((els) =>
@@ -951,6 +981,7 @@ test.describe('Modo móvil (0033)', () => {
     await page.setViewportSize({ width: PHONE.height, height: PHONE.width });
     await expect(page.locator('.rotate-notice')).toBeVisible();
     await expect(page.locator('.rotate-notice')).toHaveText('Gira el móvil');
+    await expectNoInlineStyles(page, 'aviso de orientación');
     expect(await step(page, 60)).toBe(0);
     expect((await snapshotOf(page))?.tick).toBe(n);
     await page.setViewportSize(PHONE);
@@ -990,16 +1021,9 @@ test.describe('Modo móvil (0033)', () => {
     expect(near(c.x, clamp(pl.x - c.width / 2, 0, WORLD.width - c.width))).toBe(true);
     expect(near(c.y, clamp(pl.y - c.height / 2, 0, WORLD.height - c.height))).toBe(true);
 
-    // "Sin estilos inline": solo el lienzo del motor (y las variables CSS de #game, por CSSOM).
-    const styled = await page.evaluate(() =>
-      [...document.querySelectorAll('[style]')]
-        .filter((e) => e.tagName !== 'CANVAS')
-        .map((e) => ({
-          id: e.id,
-          vars: [...(e as HTMLElement).style].every((prop) => prop.startsWith('--')),
-        })),
-    );
-    expect(styled).toEqual([{ id: 'game', vars: true }]);
+    // "Sin estilos inline" tras redimensionar, en los resultados y en el menú.
+    await expectNoInlineStyles(page, 'partida redimensionada');
+    await resultsThenMenu(page, (screen) => expectNoInlineStyles(page, screen));
     expect(await cspState(page)).toEqual({ violations: [], metas: 1 });
     expect(problems).toEqual([]);
   });
@@ -1011,8 +1035,10 @@ test('Escritorio sin controles táctiles: 600 × 900 sin barra, aviso ni indicac
   page,
 }) => {
   const problems = collect(page, ['error', 'warning']);
+  await watchCsp(page);
   await page.setViewportSize({ width: 600, height: 900 });
   await openGame(page, gameUrl({ seed: 42, manual: true }));
+  await expectNoInlineStyles(page, 'partida');
 
   const p = await probe(page);
   expect([p?.viewport?.mobile, p?.viewport?.hint]).toEqual([false, false]);
@@ -1021,5 +1047,14 @@ test('Escritorio sin controles táctiles: 600 × 900 sin barra, aviso ni indicac
     false,
   );
   expect(await step(page, 60)).toBe(60);
+  // "Sin estilos inline" en escritorio: pausa, resultados y menú.
+  await page.keyboard.press('Escape');
+  await expect(pauseOverlay(page)).toBeVisible();
+  await expectNoInlineStyles(page, 'pausa');
+  await page.keyboard.press('Escape');
+  await expect(pauseOverlay(page)).toBeHidden();
+  await resultsThenMenu(page, (screen) => expectNoInlineStyles(page, screen));
+  expect(await page.locator('.touch-bar, .rotate-notice').count()).toBe(0);
+  expect(await cspState(page)).toEqual({ violations: [], metas: 1 });
   expect(problems).toEqual([]);
 });
