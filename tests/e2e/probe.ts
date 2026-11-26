@@ -190,6 +190,8 @@ export interface SpritesView {
   gems: SpriteCountView;
   /** Recogibles por tipo (0022, `meat` desde 0023); `gems` es el mismo objeto que `pickups.xp`. */
   pickups: Record<'xp' | 'gold' | 'wood' | 'meat' | 'stone', SpriteCountView>;
+  /** Recogibles en su aparición o su retardo, por tipo (0030; `xp` y `stone` siempre 0). */
+  pickupSpawns: Record<'xp' | 'gold' | 'wood' | 'meat' | 'stone', number>;
   /** Ovejas pintadas, con reserva y por estado (0023). */
   sheep: SpriteCountView & { byState: Record<'graze' | 'wander' | 'flee', number> };
   /** Vetas pintadas (0022): activas, agotadas y con reserva. */

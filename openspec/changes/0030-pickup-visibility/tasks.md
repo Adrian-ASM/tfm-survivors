@@ -114,7 +114,7 @@
 ## 4. E2E y documentación
 
 ### Grupo E · E2E y cierre (commit 5)
-- [ ] 4.1 **E2E ampliado** (D7, e2e-lite: 0 nuevos y 1 ampliado, en modo manual).
+- [x] 4.1 **E2E ampliado** (D7, e2e-lite: 0 nuevos y 1 ampliado, en modo manual).
   - Tipo `pickupSpawns` en `tests/e2e/probe.ts`.
   - En el test «Mapa real…» de `gameplay.spec.ts`: en la primera lectura, `pickupSpawns.wood` = montones y los
     demás tipos a 0; en la segunda (tras `step(everyTicks + 1)`), 0 y sin reserva.

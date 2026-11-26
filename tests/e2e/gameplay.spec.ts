@@ -380,6 +380,15 @@ test('Mapa real: sonda igual a la firma de la semilla 42, castillo y salida, y s
   expect(first.sprites?.pickups.wood.visible).toBe(m.woodPiles.length);
   expect(first.sprites?.veins.active).toBe(m.veins.length);
   expect(resourceMisses(first)).toEqual([]);
+  // 0030: al arrancar (primer pintado, sin step) los montones están en su retardo o su aparición, con
+  // las hojas *_Spawn cargadas de verdad; ningún otro tipo aparece.
+  expect(first.sprites?.pickupSpawns).toEqual({
+    xp: 0,
+    gold: 0,
+    wood: m.woodPiles.length,
+    meat: 0,
+    stone: 0,
+  });
   // 0023: ovejas pintadas = las del snapshot (al arrancar, el tope del contenido) y carne, sin reserva.
   expect(first.snapshot?.sheep).toHaveLength(sheepContent.maxAlive);
   expect(sheepMisses(first)).toEqual([]);
@@ -388,6 +397,8 @@ test('Mapa real: sonda igual a la firma de la semilla 42, castillo y salida, y s
   expect(later?.snapshot?.status).toBe('running');
   expect(structureMisses(later)).toEqual([]);
   expect(resourceMisses(later)).toEqual([]);
+  // 0030: tras `everyTicks + 1` ticks (≫ 1.540 ms de reloj), los montones ya están en idle.
+  expect(later?.sprites?.pickupSpawns.wood).toBe(0);
   expect(sheepMisses(later)).toEqual([]);
   expect(later?.sprites?.enemyStates.patrol ?? 0).toBeGreaterThanOrEqual(1);
   expect(later?.sprites?.enemies.placeholder).toBe(0);
