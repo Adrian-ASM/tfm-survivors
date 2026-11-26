@@ -60,11 +60,12 @@ recogibles flotan (ADR-0002). Las funciones de tiempo y fase van en `art/` junto
 ```
 
 - **Cuadrícula de las hojas `*_Spawn`**: las tres hojas del pack, vistas como imagen, tienen 7 celdas de 128 px. La
-  **celda 0 está vacía** (transparente, sin sombra). En la 1 sale el objeto con un anillo de su color, en la 2 el
-  anillo se abre, en la 3 cae, en la 4 rebota y en la 5 y la 6 se asienta. La 6 coincide a simple vista con
-  `*_Idle`, sombra incluida. Se usan los 7 frames a 10 fps (700 ms): la celda vacía sirve de transición de 100 ms y
-  también de frame de espera durante el desfase (D4). Al aplicar hay que confirmar `frameTotal − 1 = 7` y que el
-  frame 6 sea igual a `idle` (riesgo R1).
+  **celda 0 no está vacía**: en apply se vio un disco blanco de unos 44 px, el destello inicial (la vista previa a
+  escala lo ocultaba). En la 1 sale el objeto con un anillo de su color, en la 2 el anillo se abre, en la 3 cae, en
+  la 4 rebota y en la 5 y la 6 se asienta. La 6 coincide a simple vista con `*_Idle`, sombra incluida. El autor
+  decide la **aparición completa 0–6** a 10 fps (700 ms), con el destello incluido. Como la celda 0 no vale de
+  espera, durante el retardo el recogible está **oculto** (D4). Al aplicar hay que confirmar `frameTotal − 1 = 7` y
+  que el frame 6 sea igual a `idle` (riesgo R1).
 - **`SpawnSchema`** = `strictObject({ sheet: SheetSchema, frames: Frames, fps: Fps, loop: literal(false) })`, con el
   error nuevo `SPAWN_MUST_NOT_LOOP`. Sigue el patrón de `SheetAnimSchema` de la oveja: la animación trae su hoja.
 - **`ResourcePickupSchema`** = `strictObject({ ...BaseShape, idle: AnimSchema, spawn: SpawnSchema.optional() })`
@@ -104,7 +105,8 @@ export function spawnDelay(staggerMs: number, id: number, initial: boolean): num
 export function spawnFrame(spawn: AnimSpec, elapsed: number): number | null;
 ```
 
-- `spawnFrame`: con `k = ⌊elapsed · fps / 1.000⌋`, si `k < 0` devuelve `frames[0]` (retardo, con la celda vacía),
+- `spawnFrame`: con `k = ⌊elapsed · fps / 1.000⌋`, si `k < 0` devuelve la constante `SPAWN_HIDDEN` (−1; retardo,
+  sprite oculto),
   si `k ≥ n` devuelve `null` y en otro caso `frames[k]`. Es la regla de la spec, y para `elapsed ≥ 0` coincide con
   `frameAt` / `animDone` de `animation.ts`, que se reutilizan.
 - El resultado depende solo de los argumentos, así que dos llamadas iguales dan lo mismo (sin `Math.random` ni reloj
@@ -163,10 +165,12 @@ show(slot, p, appearing):
   dy = slot.spawning || (look.placeholder && !look.shape) ? 0
      : slot.floatFrom !== null ? floatOffsetFrom(float, slot.floatFrom, this.ms)
      : floatOffset(float, p.id, this.ms)
+  hidden = slot.spawning && frame === SPAWN_HIDDEN          // retardo: oculto
   painted.look(view, look.shapeRadius ?? p.radius)
-         .setFrame(view, slot.spawning ? frame : look.idle.frames[0] ?? 0)
+         .setFrame(view, slot.spawning && !hidden ? frame : (slot.spawning ? look.spawn.idle.frames[0]
+                                                                          : look.idle.frames[0] ?? 0))
          .paint(view, false)
-         .at(p.x, p.y + dy).show(true)
+         .at(p.x, p.y + dy).show(!hidden)
 
 hide(slot):  … como hoy; if slot.spawning: spawns[kind] −= 1; slot.spawning = false
 
@@ -185,8 +189,15 @@ clear():  pool.clear(); this.initial = true
   valor del contenido; los mapas declarados de escenario traen menos o ninguno), el retardo `id × 120` los reparte
   en [0, 840] ms, y el último termina con R0 + 840 + 700 = **R0 + 1.540 ≤ R0 + 3.000** (escenario «Montones del
   repositorio»). El margen deja subir `count` hasta 20 sin romperlo (19 × 120 + 700 = 2.980). Con `map=empty` el primer
-  `sync` está vacío y no hay desfase para nadie. Durante el desfase el sprite está visible (cuenta en
-  `pickups.wood.visible`, que debe ser igual al snapshot) pero muestra la celda 0 vacía.
+  `sync` está vacío y no hay desfase para nadie. **Durante el retardo el sprite está oculto** (`setVisible(false)`
+  a través de `PaintedSprite.show`, sin objetos nuevos). Ya tiene preparados la hoja `spawn` y el frame 0, así que en
+  el primer frame con k ≥ 0 se muestra el destello sin parpadeos.
+  - **Recuentos (decisión del design, a alinear con el spec-writer)**: el recogible en retardo **sigue contando** en
+    `sprites.pickups.<tipo>.visible` y en `sprites.pickupSpawns`, porque esos recuentos son de recogibles pintados por
+    la capa, iguales al snapshot y sin depender del reloj (spec «Recuentos de recogibles sin depender de la
+    aparición ni del flote»). Así el E2E de D7 (`wood.visible` = montones y `pickupSpawns.wood` = montones en la
+    primera lectura) no cambia. Si la spec prefiriera contarlo como no visible, habría que cambiar el recuento y esa
+    aserción del E2E.
 - **`PaintedSprite` ya evita llamadas repetidas**: `setTexture` solo se llama al cambiar de hoja (dos veces por
   recogible con aparición) y `setFrame` solo al cambiar de frame. Lo único nuevo por frame es un `Math.sin`, porque
   `setPosition` ya se llamaba en cada frame. No se crean objetos por frame.

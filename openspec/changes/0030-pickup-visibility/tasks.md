@@ -111,6 +111,21 @@
   - Escenario (sprite-rendering): «Reserva de árbol y torre».
   - Tests: `map-looks.test.ts` y `plan-map-animation.test.ts` (sin cambios).
 
+### Grupo F · Recogible oculto durante su retardo (commit 6; hallazgo de apply)
+- [ ] 3.11 **Ocultación en el retardo** (design D1 y D4, decisión del autor: la celda 0 de `*_Spawn` es un destello
+  y la aparición es completa, 0–6).
+  - `spawnFrame` devuelve `SPAWN_HIDDEN` si k < 0. `PickupLayer` llama a `show(false)` durante el retardo con la
+    hoja `spawn` y su frame 0 ya preparados, y a `show(true)` en el primer frame con k ≥ 0.
+  - Los recuentos `pickups.<tipo>.visible` y `pickupSpawns` siguen contando al recogible en retardo (D4). Si la spec
+    del spec-writer dice otra cosa, hay que seguir la spec y ajustar esto.
+  - Escenarios (sprite-rendering, según los ajuste el spec-writer): «Montones escalonados», «R con apariciones en
+    curso» y el texto de «Aparición escalonada de los recogibles del inicio» sobre el retardo.
+  - Tests: `pickup-motion.test.ts` (`SPAWN_HIDDEN` con elapsed < 0) y `pickup-layer.test.ts` (el doble de
+    `SpriteKit` registra `setVisible(false)` hasta R0 + id × e y después `true` con el frame 0 de `spawn`).
+  - Revisar el E2E de 4.1: si alguna aserción usa la visibilidad real de los sprites en la primera lectura, ajustarla
+    (los recuentos de la sonda no cambian).
+  - `npm run verify` y `npm run test:e2e -- gameplay.spec`, y commit del grupo.
+
 ## 4. E2E y documentación
 
 ### Grupo E · E2E y cierre (commit 5)

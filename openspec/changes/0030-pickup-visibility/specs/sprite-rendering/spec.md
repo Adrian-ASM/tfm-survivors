@@ -115,8 +115,9 @@ aparecer y después pasar a su `idle` y flotar (ver "Flote de los recogibles"). 
 R_a = R_1 + retardo, con R_1 el reloj de render del primer frame pintado de la partida en cuyo snapshot figura su id, y
 el retardo 0 salvo en los recogibles del primer snapshot pintado (ver "Aparición escalonada de los recogibles del
 inicio"). En un frame de reloj R, con n el número de frames de `spawn` y k = ⌊(R − R_a) × fps / 1.000⌋:
-- si k < 0 (retardo en curso), muestra el primer frame de `spawn`;
-- si 0 ≤ k < n, muestra el frame de posición k de `spawn`;
+- si k < 0 (retardo en curso), no se ve: su sprite no es visible;
+- si 0 ≤ k < n, muestra el frame de posición k de `spawn` (la aparición completa, del frame 0, el destello inicial, al
+  último);
 - si k ≥ n, reproduce `idle` y flota.
 
 La aparición se pinta en la posición del snapshot (sin flote), con la escala y el origen del aspecto de su tipo, en la
@@ -223,8 +224,9 @@ El sistema SHALL dar a cada recogible `gold`, `wood` o `meat` que figura en el *
 partida** un retardo de aparición de id × e ms, con e el desfase de aparición de los datos de aspecto (ver "Aspectos de
 los recogibles y de las vetas"), contado en el reloj de render desde ese primer frame. Con el contenido por defecto y el
 mapa generado son los montones de madera del tick 0 (ids 0 a N − 1, N = `woodPiles.count`, 8; ver `resources`). Los
-recogibles que figuran por primera vez en un snapshot posterior tienen retardo 0. Durante su retardo el recogible se ve
-con el primer frame de su `spawn`, sin flote, y cuenta como visible en la sonda. El retardo es solo de render: no cambia
+recogibles que figuran por primera vez en un snapshot posterior tienen retardo 0. Durante su retardo el recogible **no
+se ve** (sigue en el snapshot y se puede recoger) y no cuenta como visible en la sonda (ver "Sonda de render para
+E2E"); al acabar el retardo empieza su aparición por el frame 0 de `spawn`. El retardo es solo de render: no cambia
 el tick 0, los ids, las posiciones ni ninguna firma dorada (`RESOURCE_GOLDEN` incluida). Con e 0 todos empiezan a la
 vez.
 
@@ -232,10 +234,19 @@ vez.
 - **GIVEN** unos datos de aspecto de prueba con e 100 y `spawn` de `wood` de 7 frames a 10 fps sin bucle, y una partida
   cuyo primer snapshot pintado tiene 8 recogibles `wood` de ids 0 a 7, pintado con el reloj en R0
 - **WHEN** se pinta con R = R0 + 50, R0 + 350, R0 + 1.350 y R0 + 1.400
-- **THEN** con R0 + 50 el id 0 muestra el frame 0 de `spawn` y los ids 1 a 7, el primer frame de `spawn` (retardo)
-- **AND** con R0 + 350 el id 0 muestra el frame 3, el id 3 el frame 0 y el id 7 el primer frame (retardo)
+- **THEN** con R0 + 50 el id 0 muestra el frame 0 de `spawn` y los ids 1 a 7 no se ven (retardo): 1 sprite `wood`
+  visible
+- **AND** con R0 + 350 el id 0 muestra el frame 3, el id 3 el frame 0 y los ids 4 a 7 no se ven: 4 sprites `wood`
+  visibles
 - **AND** con R0 + 1.350 el id 7 muestra el frame 6 de `spawn` y los ids 0 a 6 reproducen `idle`
-- **AND** con R0 + 1.400 los 8 reproducen `idle` y flotan, y en los cuatro frames hay 8 sprites `wood` visibles
+- **AND** con R0 + 1.400 los 8 reproducen `idle` y flotan; con R0 + 1.350 y R0 + 1.400 hay 8 sprites `wood` visibles
+- **AND** en ningún frame se ve un montón con su aparición sin empezar ni un frame de `spawn` antes de su inicio
+
+#### Scenario: Recoger un montón en su retardo
+- **GIVEN** la partida de "Montones escalonados" y el jugador que recoge el montón de id 7 en un tick cuyo snapshot se
+  pinta con R = R0 + 300 (en su retardo)
+- **WHEN** se pintan ese frame y los siguientes hasta R0 + 1.400
+- **THEN** el id 7 no se ve en ninguno de ellos y la madera recogida es la misma que con cualquier otro montón
 
 #### Scenario: Recogible posterior sin retardo
 - **GIVEN** la partida de "Montones escalonados" y un barril abatido que suelta un recogible `wood` de id 20, que figura
@@ -472,8 +483,8 @@ escena de la partida a mitad de una animación MUST NOT dejar animaciones en cur
 - **GIVEN** una partida con el mapa real de la semilla 42 cuyos 8 montones ya están en `idle` y 1 recogible `gold`
   mostrando el frame 3 de `spawn`, que termina
 - **WHEN** se pulsa R con la misma semilla y se pinta el primer frame de la partida nueva con el reloj en R0
-- **THEN** el montón de id 0 muestra el frame 0 de `spawn` y los de ids 1 a 7 el primer frame de `spawn` (su retardo),
-  ninguno en `idle`, y no hay ningún sprite `gold` visible
+- **THEN** el montón de id 0 muestra el frame 0 de `spawn` y los de ids 1 a 7 no se ven (su retardo), ninguno en
+  `idle`, y no hay ningún sprite `gold` visible
 
 #### Scenario: Volver al menú con cadáveres en curso
 - **GIVEN** `?e2e&seed=7` y una partida que se pausa en el primer frame en que la sonda informa de ≥ 1 cadáver
@@ -485,8 +496,9 @@ escena de la partida a mitad de una animación MUST NOT dejar animaciones en cur
 ### Requirement: Proyectiles, gemas, pulso y fondo
 El sistema SHALL pintar un sprite de flecha por cada proyectil del snapshot, en su posición (error ≤ 0,001) y en
 `idle`, y un sprite de recogible por cada recogible, de los cinco tipos (`xp`, `gold`, `wood`, `meat` y `stone`), con el
-aspecto de su tipo del repositorio (ver "Aspectos de los recogibles y de las vetas"): durante su aparición o su retardo,
-en su posición del snapshot y con su `spawn` (ver "Aparición de oro, madera y carne"); fuera de ella, en `idle` (la gema
+aspecto de su tipo del repositorio (ver "Aspectos de los recogibles y de las vetas"), visible salvo durante su retardo
+de aparición (ver "Aparición escalonada de los recogibles del inicio"): durante su aparición, en su posición del
+snapshot y con su `spawn` (ver "Aparición de oro, madera y carne"); fuera de ella, en `idle` (la gema
 sin hoja, como su forma de color) y en su posición del snapshot más su desplazamiento de flote (ver "Flote de los
 recogibles"), en ambos casos con error ≤ 0,001; con aspecto de reserva, centrado en su posición del snapshot. Los
 recogibles de los cinco tipos van en la capa (6) de "Capas del mapa y de las entidades", donde iban las gemas. El pulso
@@ -568,10 +580,13 @@ recorte ni del reloj de render. Con el contenido por defecto, los objetos del ma
 carne y piedras incluidos) y las ovejas no forman parte del plan del mapa ni de sus objetos.
 
 Los recuentos `sprites.pickups.<tipo>` (`visible` y `placeholder`) conservan su significado: un recogible en su
-aparición, en su retardo o flotando cuenta como visible, y solo cuenta como reserva el que se pinta con su aspecto de
-reserva (el fallo de una hoja de aparición no cuenta). Para un mismo snapshot MUST NOT depender del reloj de render, de
-la aparición ni del flote. Si el design añade a la sonda un recuento de recogibles en aparición, cuenta por tipo los
-recogibles que muestran un frame de `spawn` (retardo incluido) y no cambia ningún otro recuento.
+aparición o flotando cuenta como visible; uno en su **retardo** de aparición (ver "Aparición escalonada de los
+recogibles del inicio") no se ve y no cuenta como visible. Solo cuenta como reserva el que se pinta con su aspecto de
+reserva (el fallo de una hoja de aparición no cuenta). Así, por tipo, `visible` = recogibles del snapshot − recogibles
+en retardo; fuera del retardo de los recogibles del inicio (con R ≥ R0 + id máximo × e), `visible` es igual a los
+recogibles del snapshot y, para un mismo snapshot, no depende del reloj de render, de la aparición ni del flote. Si la
+sonda tiene el recuento de recogibles en aparición (`pickupSpawns`, según el design), cuenta por tipo los recogibles en
+aparición **o en su retardo** y no cambia ningún otro recuento.
 
 Un sprite oculto por el parpadeo cuenta como no visible. En modo menú los recuentos de jugador, enemigo, cadáver, oveja,
 proyectil, pulso, recogibles de cada tipo, dinamita, aviso, explosión, celdas del mapa, elementos del mapa,
@@ -583,8 +598,9 @@ cambiar la simulación ni lo que se pinta.
 - **WHEN** se pintan 600 frames y en cada uno se leen la sonda de render y el snapshot pintado
 - **THEN** en cada frame los sprites visibles de enemigo, oveja, proyectil, pulso, dinamita, aviso y explosión son
   iguales en número a los enemigos, ovejas, proyectiles, pulsos, dinamitas, avisos y explosiones del snapshot, los de
-  gema, `gold`, `wood`, `meat` y `stone` a los recogibles de cada tipo del snapshot, y el de jugador vale 1 salvo en los
-  frames en que el parpadeo lo oculta, que vale 0
+  gema, `gold`, `wood`, `meat` y `stone` a los recogibles de cada tipo del snapshot menos los que están en su retardo
+  de aparición (iguales a los del snapshot desde el primer frame sin recogibles en retardo), y el de jugador vale 1
+  salvo en los frames en que el parpadeo lo oculta, que vale 0
 - **AND** los sprites de enemigo por clase de estado coinciden con los enemigos del snapshot en cada clase, y los de
   oveja por estado con las ovejas del snapshot en cada estado
 - **AND** las vetas pintadas activas y agotadas coinciden con las del snapshot en cada estado
@@ -593,18 +609,21 @@ cambiar la simulación ni lo que se pinta.
   celdas, iguales a los recuentos del mapa de la sonda
 
 #### Scenario: Recuentos de recogibles sin depender de la aparición ni del flote
-- **GIVEN** un mismo snapshot con 3 gemas, 2 recogibles `gold` (uno en su aparición), 8 `wood` (todos en su retardo o
-  en su aparición), 1 `meat` y 2 `stone`, con todas las hojas cargadas
-- **WHEN** se pinta y se lee la sonda con el reloj de render en R0 y, sin cambiar el snapshot, en R0 + 10.000 (todos en
-  `idle` y flotando)
-- **THEN** en ambas lecturas `sprites.pickups` informa de 3, 2, 8, 1 y 2 visibles para `xp`, `gold`, `wood`, `meat` y
-  `stone`, y de 0 con reserva en cada tipo
+- **GIVEN** los datos de "Montones escalonados" (e 100, `spawn` de 7 frames a 10 fps) y un mismo snapshot con 3 gemas,
+  2 recogibles `gold` (uno en su aparición), 8 `wood` (los montones del inicio, ids 0 a 7), 1 `meat` y 2 `stone`, con
+  todas las hojas cargadas
+- **WHEN** se pinta y se lee la sonda con el reloj de render en R0 + 350, en R0 + 1.000 y, sin cambiar el snapshot, en
+  R0 + 10.000 (todos en `idle` y flotando)
+- **THEN** con R0 + 350 `sprites.pickups` informa de 3, 2, 4, 1 y 2 visibles para `xp`, `gold`, `wood`, `meat` y
+  `stone` (los `wood` de ids 4 a 7 en su retardo), y con R0 + 1.000 y R0 + 10.000 de 3, 2, 8, 1 y 2
+- **AND** en las tres lecturas hay 0 con reserva en cada tipo
 
 #### Scenario: Recuento en aparición [opcional, según design]
 - **GIVEN** el escenario "Montones escalonados" y una sonda con el recuento de recogibles en aparición
+  (`pickupSpawns`)
 - **WHEN** se lee la sonda con R = R0 + 350 y con R = R0 + 1.400
-- **THEN** el recuento en aparición de `wood` vale 8 y 0 respectivamente, y el resto de recuentos de la sonda son
-  iguales en las dos lecturas
+- **THEN** el recuento en aparición de `wood` vale 8 (4 en aparición y 4 en retardo) y 0 respectivamente, los visibles
+  de `wood` valen 4 y 8, y el resto de recuentos de la sonda son iguales en las dos lecturas
 
 #### Scenario: Barril en mecha y su explosión en el navegador [E2E]
 - **GIVEN** la build de producción servida con `?e2e&manual&map=empty&seed=s`, con s una semilla de 1..50, sin input
@@ -625,9 +644,10 @@ cambiar la simulación ni lo que se pinta.
   destruidas y destruidas del snapshot, y ninguna usa reserva
 - **AND** en la segunda lectura hay ≥ 1 sprite de enemigo en patrulla, sin aspecto de reserva, y no hay errores no
   capturados
-- **AND** en ambas lecturas los sprites `wood` y las vetas pintadas activas son iguales a los montones y las vetas
-  activas del snapshot, sin reserva (en la primera, con los montones en su retardo o en su aparición; en la segunda,
-  ya en `idle`)
+- **AND** en ambas lecturas las vetas pintadas activas son iguales a las vetas activas del snapshot, sin reserva
+- **AND** en la primera lectura los sprites `wood` visibles son los montones del snapshot menos los que están en su
+  retardo (≥ 1: el de id 0 ya está en su aparición), y en la segunda, iguales a los montones del snapshot, ya en
+  `idle`; ninguno con reserva
 - **AND** en ambas lecturas los sprites de oveja son iguales en número y por estado a las ovejas del snapshot (en la
   primera, tantas como el tope de ovejas vivas del contenido), y los de `meat` a los recogibles `meat` del snapshot,
   ninguno con reserva

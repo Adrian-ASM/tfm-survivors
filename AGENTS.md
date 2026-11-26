@@ -179,11 +179,19 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   margen del castillo 1; altas 16–18 partidas en base y parte alta) colocada en `map/decorChoices.ts` por hash de
   `decorSeed` y de la celda (sales `DECOR_PLACE_KEY`/`DECOR_KIND_KEY`, sin PRNG): hierba fuera de inicio, castillo
   ampliado, solares, campamentos, orilla y recursos; huella de base 1 celda (3 × 1 el espantapájaros). Árbol con
-  `idle` 0–5 a 6 fps y fase `h mod n` por celda; torre goblin intacta `idle` 0–3 a 5 fps con fase por estructura
+  `idle` 0–3 a 4 fps y fase `h mod n` por celda; torre goblin intacta `idle` 0–3 a 5 fps con fase por estructura
   (`TOWER_PHASE_KEY`). `MapArtPlan.animations` + `MapAnimator` (`setFrame` solo a lo dibujado, cebado al
   reaparecer) con el `AnimClock` de la espuma. Sonda `sprites.mapArt.decor` (`planned`/`painted`/`unpainted`).
   Objetos del mapa **820/904** en 42/123 (737/820 con tope 0), `drawn` 119/90 a 1.280 × 720 al empezar. Firmas y
   balance intactos.
+  Recogibles visibles (change 0030, solo render y datos de aspecto): oro, madera y carne a escala 0,5 (64 px),
+  rocas 0,75 y gema `shape` de 20 px (`diameter`; `gemRadius` y `pickupRadius` intactos). Flote
+  d = A·sen(2π(R + id·s)/T) con el reloj de render (`pickupMotion`: A 4, T 1.600, s 989); la reserva no flota.
+  Oro, madera y carne reproducen una vez por id su `spawn` opcional (`G_Spawn`/`W_Spawn`/`M_Spawn` de Update 010,
+  7 frames a 10 fps, el 0 es un destello blanco) y después flotan desde R_f sin salto; los del primer pintado
+  (montones) esperan invisibles id × e (`spawnStaggerMs` 120), también tras R. Si falla una hoja de aparición se
+  pinta `idle` sin reserva. Funciones puras en `art/pickupMotion.ts`; sonda `sprites.pickupSpawns`. Firmas,
+  `BALANCE_BASELINE` y 820/904 objetos del mapa intactos. Zoom de cámara por ventana: fuera (candidato propio).
   Fuente de verdad del comportamiento: `openspec/specs/`.
 
 ## 2. Comandos

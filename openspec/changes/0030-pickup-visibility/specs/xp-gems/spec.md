@@ -11,7 +11,8 @@
 
 ### Requirement: Pintado de las gemas
 El adaptador de render SHALL mostrar en cada frame exactamente un sprite visible por cada recogible del último
-snapshot, en su posición pintada y con el aspecto de su tipo (en la piedra, el de la roca de su origen; ver "Aspectos de
+snapshot, salvo los que están en su retardo de aparición, que no se ven (ver "Aparición escalonada de los recogibles
+del inicio" en `sprite-rendering`), en su posición pintada y con el aspecto de su tipo (en la piedra, el de la roca de su origen; ver "Aspectos de
 los recogibles y de las vetas" en `sprite-rendering`), asociado por identificador, sin crear sprites durante la partida
 más allá de una reserva igual a la suma de los topes de los cinco tipos. La **posición pintada** es la del snapshot
 durante la aparición de un recogible `gold`, `wood` o `meat` (y su retardo) y con aspecto de reserva, y la del snapshot
