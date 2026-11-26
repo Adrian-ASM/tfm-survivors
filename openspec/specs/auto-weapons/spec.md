@@ -502,15 +502,18 @@ El sistema SHALL exponer lo necesario para que el jugador vea que las armas act�
 - un pulso disparado en el tick T aparece en los snapshots de T a T + `visualTicks` − 1, con el arma que lo
   disparó, el tick T, el centro (posición del jugador en T, fija aunque el jugador se mueva) y el radio efectivo del
   criterio en T (fijo aunque después se elija una mejora de radio);
-- cada arma equipada indica si está cargada.
+- cada arma equipada indica si está cargada;
+- cada impacto que quita vida queda en los golpes de combate del snapshot (ver "Registro de golpes de combate" en
+  `simulation-loop`).
 
 El adaptador de render MUST pintar, en cada frame, una indicación visual de daño en cada enemigo que lo indique y
 solo en ellos (por ejemplo, un tinte o destello sobre su sprite animado, sin detener su animación ni cambiar su
 tamaño o posición), un anillo por cada pulso del snapshot y un sprite de flecha por cada proyectil del snapshot en
 su posición (ver `sprite-rendering`), sin dejar visible ningún sprite de un proyectil desaparecido. En el frame en
 que un enemigo deja de indicar daño, su sprite vuelve a su aspecto normal. La indicación de daño se aplica igual a
-un enemigo pintado con aspecto de reserva. Sobre los enemigos no hay barras de vida ni números de daño; el contador
-de bajas se muestra en el HUD (ver `hud`).
+un enemigo pintado con aspecto de reserva. Sobre los enemigos no hay barras de vida; el daño que reciben se muestra con
+los números de "Números de daño" (`sprite-rendering`), además del destello, y el contador de bajas se muestra en el HUD
+(ver `hud`).
 
 #### Scenario: Duración del destello
 - **GIVEN** un enemigo que recibe daño en el tick T y no vuelve a recibirlo
@@ -552,6 +555,13 @@ de bajas se muestra en el HUD (ver `hud`).
 - **THEN** hay exactamente 3 sprites de flecha visibles, cada uno en la posición de un proyectil distinto del
   snapshot (error ≤ 0,001)
 
+#### Scenario: Destello y número del mismo impacto
+- **GIVEN** un `goblin-torch` con vida 10 que recibe un impacto del Linter en el tick T y ningún otro
+- **WHEN** se pintan los snapshots de T a T + 4
+- **THEN** el destello se ve de T a T + 3 y no en T + 4, como sin números, y desde el frame de T hay exactamente 1
+  número de daño de clase `enemy` con el texto `6`, creado una sola vez
+- **AND** el enemigo no tiene ninguna barra de vida en ningún frame
+
 ### Requirement: Armas observables en el juego
 El sistema SHALL hacer que, con el contenido por defecto, las armas maten enemigos en una partida real sin que el
 jugador pulse nada más que las elecciones de mejora.
@@ -580,3 +590,4 @@ jugador pulse nada más que las elecciones de mejora.
 <!-- historial: 0021-goblin-camps (2026-11-24) -->
 <!-- historial: 0023-sheep-meat (2026-11-24) -->
 <!-- historial: 0026-build-sites (2026-11-25) -->
+<!-- historial: 0031-combat-feedback (2026-11-26) -->

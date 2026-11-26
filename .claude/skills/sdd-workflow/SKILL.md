@@ -64,6 +64,9 @@ Tras cada fase, resume al usuario en ≤ 5 líneas: qué se produjo, decisiones 
   Mídelo con el test real, con sus invariantes por tick: en 0027 el design citó 43,9 s de un lote sin ellos y el
   real daba 62–65 s. El factor local → CI no es fijo (0026: ≈ 2,8; 0027: ≈ 1,4 con el mismo bot): antes de subir
   un timeout, mira el tiempo en el CI de la PR.
+- **Coste por tick con tope**: si el núcleo gana una estructura con tope (registro, pool), pide al `sdd-architect`
+  que estime el **peor caso con el tope lleno** y al `sdd-implementer` que lo mida con `npm run bench` al cerrar el
+  grupo de dominio (0031: la búsqueda lineal estimada en < 0,01 ms subía el tick +12–16 % con el tope saturado).
 - **Reglas transversales en las specs**: si el change cambia una regla que otras capacidades dan por supuesta
   ("solo se ofrece lo asequible", "un solar libre no bloquea"), pide al `sdd-spec-writer` que la busque en **todas**
   las specs vivas, no solo en las de la propuesta (0027: `resources` decía "con madera 14 la casa no se ofrece" y
