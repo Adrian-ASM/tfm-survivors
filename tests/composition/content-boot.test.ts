@@ -234,3 +234,25 @@ describe('bootContent', () => {
     expect(two.appearance.map.decor.maxObjects).toBe(0);
   });
 });
+
+// Spec mobile-display (0033), "Contenido del modo móvil validado": llega a la presentación y un
+// valor inválido impide el menú y la partida.
+describe('bootContent · modo móvil (0033)', () => {
+  it('Scenario: Contenido por defecto (la presentación recibe las constantes móviles)', () => {
+    const { booted, errors } = boot(raw());
+    expect(errors).toEqual([]);
+    expect(booted?.mobile).toEqual(arenaJson.mobile);
+    expect(booted && 'mobile' in booted.config.arena).toBe(false);
+  });
+
+  it.each([539, 1441, 640.5])(
+    'Scenario: Alto base fuera de rango (%s: no hay arranque y el error nombra el campo)',
+    (baseHeight) => {
+      const r = raw();
+      r.content.arena.mobile.baseHeight = baseHeight;
+      const { booted, errors } = boot(r);
+      expect(booted).toBeNull();
+      expect(errors.map((e) => e.field)).toEqual(['arena.mobile.baseHeight']);
+    },
+  );
+});

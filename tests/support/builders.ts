@@ -391,6 +391,9 @@ export const DEFAULT_MAP: RunConfig['map'] = structuredClone(mapJson);
 /** Tope de vista del contenido por defecto (presentación, no llega al núcleo; 0017). */
 export const DEFAULT_MAX_VIEW = { ...arenaJson.maxView } as const;
 
+/** Constantes del modo móvil del contenido por defecto (presentación, no llegan al núcleo; 0033). */
+export const DEFAULT_MOBILE: RawContent['arena']['mobile'] = structuredClone(arenaJson.mobile);
+
 /** Mundo del contenido por defecto, leído de content/arena.json (una sola fuente). */
 const CONTENT_ARENA: RunConfig['arena'] = { width: arenaJson.width, height: arenaJson.height };
 
@@ -546,7 +549,17 @@ export interface RawContent {
     pickupRadius: number;
     regenIntervalTicks: number;
   };
-  arena: { width: number; height: number; maxView: { width: number; height: number } };
+  arena: {
+    width: number;
+    height: number;
+    maxView: { width: number; height: number };
+    mobile: {
+      baseHeight: number;
+      minWidth: number;
+      minTextPx: number;
+      joystick: { radiusPx: number; deadZone: number; zoneFraction: number; hint: string };
+    };
+  };
   enemies: {
     hazards: { maxDynamites: number; dynamiteRadius: number; blastTicks: number };
     types: [MutableType, MutableType, MutableType, MutableType];

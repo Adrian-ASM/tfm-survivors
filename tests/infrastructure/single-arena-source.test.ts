@@ -2,7 +2,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { parseContent, repositoryContent } from '../../src/infrastructure/content/loadRunConfig';
-import { DEFAULT_MAX_VIEW, aDefaultConfig } from '../support/builders';
+import { DEFAULT_MAX_VIEW, DEFAULT_MOBILE, aDefaultConfig } from '../support/builders';
 
 // Spec run-outcome (0013), "Una sola fuente del tamaño del mundo en los tests" (design D6): el mundo
 // y la vista salen de content/arena.json. `builders.ts` queda fuera por `SCENARIO_ARENA` (geometría
@@ -64,12 +64,13 @@ describe('Una sola fuente del tamaño del mundo en los tests (0013)', () => {
     expect(hits).toEqual([]);
   });
 
-  it('Scenario: Contenido de los tests igual al del juego (mundo, tope de vista y ringRadius)', () => {
+  it('Scenario: Contenido de los tests igual al del juego (mundo, tope, móvil y ringRadius)', () => {
     const loaded = parseContent(repositoryContent());
 
     expect(loaded.ok && loaded.value).toEqual({
       config: aDefaultConfig(),
       maxView: DEFAULT_MAX_VIEW,
+      mobile: DEFAULT_MOBILE,
     });
   });
 });

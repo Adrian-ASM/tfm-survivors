@@ -13,7 +13,7 @@
 - (sin tareas: el change no toca `src/application`)
 
 ## 3. Infraestructura: contenido y detección (grupo A, un commit)
-- [ ] 3.1 `arena.mobile` en `content/arena.json`, `MobileSchema` dentro de `ArenaSchema` (reglas cruzadas con
+- [x] 3.1 `arena.mobile` en `content/arena.json`, `MobileSchema` dentro de `ArenaSchema` (reglas cruzadas con
   `maxView`, mensajes exportados), `parseContent` → `ParsedContent.mobile` y `BootedContent.mobile`. Además, el bloque
   en `tests/support/builders.ts` y en los fixtures de arena.
   - Escenarios MD: "Contenido por defecto", "Alto base fuera de rango", "Alto base en los límites", "Joystick
@@ -21,7 +21,7 @@
     modo móvil" (igualdad de `RunConfig` y 3.600 ticks con semilla 7 e inputs de módulo 0, 0,375 y 1).
   - Tests: `tests/infrastructure/content.test.ts`, `tests/composition/content-boot.test.ts` y
     `tests/composition/mobile-determinism.test.ts`.
-- [ ] 3.2 `src/infrastructure/url/resolveMobile.ts`: `?mobile=1|0` gana; cualquier otro valor (también vacío) da
+- [x] 3.2 `src/infrastructure/url/resolveMobile.ts`: `?mobile=1|0` gana; cualquier otro valor (también vacío) da
   1 aviso; `?e2e` apaga la autodetección; si no, `pointer: coarse`, leído **una vez** de un `{ matches }`.
   - Escenarios MD: "Puntero grueso sin parámetros", "Puntero fino sin parámetros", "Forzado por URL", "E2E desactiva
     solo la autodetección", "Valor de mobile inválido" y "Cambio del puntero tras la carga" (el doble cambia `matches`

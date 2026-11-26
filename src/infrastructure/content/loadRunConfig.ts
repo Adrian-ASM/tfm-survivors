@@ -18,6 +18,7 @@ import { buildRunRules, type RunConfig } from '../../domain/run/RunConfig';
 import { err, invalidConfig, ok, type DomainError, type Result } from '../../domain/shared/Result';
 import {
   ArenaSchema,
+  type MobileDisplay,
   BuildingsSchema,
   CombatSchema,
   SPAWN_RING_INSIDE_MAX_VIEW,
@@ -104,18 +105,20 @@ export interface ViewSize {
 
 /**
  * Contenido validado, separado por destino (ADR-0015): `config` es lo único que recibe el núcleo
- * (el mundo, sin ningún tamaño de vista); `maxView` es solo para la presentación.
+ * (el mundo, sin ningún tamaño de vista); `maxView` y `mobile` son solo para la presentación.
  */
 export interface ParsedContent {
   readonly config: RunConfig;
   readonly maxView: ViewSize;
+  /** Constantes del modo móvil (0033, ADR-0029): solo presentación, nunca en `config`. */
+  readonly mobile: MobileDisplay;
 }
 
 export function parseContent(raw: RawContentFiles): Result<ParsedContent, DomainError> {
   const parsed = RunConfigSchema.safeParse(raw);
   if (parsed.success) {
-    const { maxView, ...world } = parsed.data.arena;
-    return ok({ config: { ...parsed.data, arena: world }, maxView });
+    const { maxView, mobile, ...world } = parsed.data.arena;
+    return ok({ config: { ...parsed.data, arena: world }, maxView, mobile });
   }
   const issue = parsed.error.issues[0];
   const path = (issue?.path ?? []).map(String);

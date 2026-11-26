@@ -20,8 +20,18 @@ import {
 } from '../../src/domain/wave/SpawnRules';
 import { RUN_DURATION_MUST_BE_INTEGER } from '../../src/domain/run/RunDuration';
 import { CELL_SIZE_BELOW_PLAYER } from '../../src/domain/map/MapRules';
-import { loadRunConfig, parseRunConfig } from '../../src/infrastructure/content/loadRunConfig';
 import {
+  loadRunConfig,
+  parseContent,
+  parseRunConfig,
+} from '../../src/infrastructure/content/loadRunConfig';
+import {
+  JOYSTICK_DEAD_ZONE_OUT_OF_RANGE,
+  JOYSTICK_HINT_REQUIRED,
+  JOYSTICK_RADIUS_MUST_BE_POSITIVE,
+  JOYSTICK_ZONE_FRACTION_OUT_OF_RANGE,
+  MOBILE_BASE_HEIGHT_OUT_OF_RANGE,
+  MOBILE_MIN_WIDTH_OUT_OF_RANGE,
   SPAWN_RING_INSIDE_MAX_VIEW,
   WORLD_LOWER_THAN_VIEW,
   WORLD_NARROWER_THAN_VIEW,
@@ -40,7 +50,7 @@ function failure(raw: RawContent): { field: string; message: string } {
 /** Contenido crudo con un mundo explícito, tope 2.560 × 1.440 y anillo 1.500 explícitos (0017). */
 function withArena(width: number, height: number): RawContent {
   const raw = rawContent();
-  raw.arena = { width, height, maxView: { width: 2560, height: 1440 } };
+  raw.arena = { ...raw.arena, width, height, maxView: { width: 2560, height: 1440 } };
   raw.waves.spawn.ringRadius = 1500;
   return raw;
 }
@@ -752,5 +762,81 @@ describe('Contenido del mapa validado', () => {
     const extra = rawContent();
     Object.assign(extra.map.tuning, { lakes: 1 });
     expect(failure(extra).field).toBe('map.tuning.lakes');
+  });
+});
+
+// Spec mobile-display (0033), "Contenido del modo móvil validado": constantes de presentación.
+describe('Contenido del modo móvil validado (0033)', () => {
+  type Mobile = RawContent['arena']['mobile'];
+  const withMobile = (mutate: (m: Mobile) => void): RawContent => {
+    const raw = rawContent();
+    mutate(raw.arena.mobile);
+    return raw;
+  };
+
+  it('Scenario: Contenido por defecto (640, 960, fracción 0,5 y texto en reposo)', () => {
+    const r = parseContent(rawContent());
+    if (!r.ok) throw new Error(r.error.message);
+    const { mobile, config } = r.value;
+
+    expect([mobile.baseHeight, mobile.minWidth, mobile.joystick.zoneFraction]).toEqual([
+      640, 960, 0.5,
+    ]);
+    expect(mobile.joystick.hint).toBe('Arrastra aquí para moverte');
+    expect('mobile' in config.arena).toBe(false);
+  });
+
+  it('Scenario: Contenido por defecto (la RunConfig no depende de las constantes móviles)', () => {
+    const other = withMobile((m) => {
+      Object.assign(m, { baseHeight: 900, minWidth: 1, minTextPx: 30 });
+      Object.assign(m.joystick, { radiusPx: 9, deadZone: 0, zoneFraction: 1, hint: 'x' });
+    });
+    const a = parseContent(rawContent());
+    const b = parseContent(other);
+
+    expect(a.ok && b.ok).toBe(true);
+    expect(b.ok && b.value.config).toEqual(a.ok && a.value.config);
+    expect(a.ok && a.value.config).toEqual(aDefaultConfig());
+  });
+
+  it.each([539, 1441, 640.5])('Scenario: Alto base fuera de rango (%s)', (baseHeight) => {
+    expect(failure(withMobile((m) => (m.baseHeight = baseHeight)))).toMatchObject({
+      field: 'arena.mobile.baseHeight',
+      message: MOBILE_BASE_HEIGHT_OUT_OF_RANGE,
+    });
+  });
+
+  it.each([540, 1440])('Scenario: Alto base en los límites (%s)', (baseHeight) => {
+    expect(parseRunConfig(withMobile((m) => (m.baseHeight = baseHeight))).ok).toBe(true);
+  });
+
+  it.each([
+    ['radiusPx', 0, JOYSTICK_RADIUS_MUST_BE_POSITIVE],
+    ['deadZone', 1, JOYSTICK_DEAD_ZONE_OUT_OF_RANGE],
+    ['deadZone', -0.1, JOYSTICK_DEAD_ZONE_OUT_OF_RANGE],
+    ['zoneFraction', 0, JOYSTICK_ZONE_FRACTION_OUT_OF_RANGE],
+    ['zoneFraction', 1.5, JOYSTICK_ZONE_FRACTION_OUT_OF_RANGE],
+    ['hint', '', JOYSTICK_HINT_REQUIRED],
+  ] as const)('Scenario: Joystick inválido (%s = %s)', (field, value, message) => {
+    const raw = withMobile((m) => Object.assign(m.joystick, { [field]: value }));
+    expect(failure(raw)).toMatchObject({ field: `arena.mobile.joystick.${field}`, message });
+  });
+
+  it('Scenario: Zona muerta y fracción en sus límites válidos (0 y 1)', () => {
+    const raw = withMobile((m) => Object.assign(m.joystick, { deadZone: 0, zoneFraction: 1 }));
+    expect(parseRunConfig(raw).ok).toBe(true);
+  });
+
+  it.each([0, 2561])('Scenario: Ancho mínimo inválido (%s, tope 2.560)', (minWidth) => {
+    expect(failure(withMobile((m) => (m.minWidth = minWidth)))).toMatchObject({
+      field: 'arena.mobile.minWidth',
+      message: MOBILE_MIN_WIDTH_OUT_OF_RANGE,
+    });
+  });
+
+  it('tamaño mínimo del texto no positivo y campos desconocidos', () => {
+    expect(failure(withMobile((m) => (m.minTextPx = 0))).field).toBe('arena.mobile.minTextPx');
+    const extra = withMobile((m) => Object.assign(m, { zoom: 2 }));
+    expect(failure(extra).field).toBe('arena.mobile.zoom');
   });
 });

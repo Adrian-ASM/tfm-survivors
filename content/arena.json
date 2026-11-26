@@ -4,5 +4,16 @@
   "maxView": {
     "width": 2560,
     "height": 1440
+  },
+  "mobile": {
+    "baseHeight": 640,
+    "minWidth": 960,
+    "minTextPx": 12,
+    "joystick": {
+      "radiusPx": 44,
+      "deadZone": 0.15,
+      "zoneFraction": 0.5,
+      "hint": "Arrastra aquí para moverte"
+    }
   }
 }

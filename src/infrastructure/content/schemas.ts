@@ -165,23 +165,86 @@ const MaxViewSide = z
   .int({ error: MAX_VIEW_MUST_BE_POSITIVE_INTEGER })
   .positive({ error: MAX_VIEW_MUST_BE_POSITIVE_INTEGER });
 
+// Modo móvil (0033, ADR-0029): constantes de presentación; nunca llegan a la `RunConfig`.
+export const MOBILE_BASE_HEIGHT_OUT_OF_RANGE =
+  'El alto base del modo móvil debe ser un entero entre 540 y el alto del tope de vista.';
+export const MOBILE_MIN_WIDTH_OUT_OF_RANGE =
+  'El ancho mínimo del modo móvil debe ser un entero entre 1 y el ancho del tope de vista.';
+export const MOBILE_MIN_TEXT_MUST_BE_POSITIVE =
+  'El tamaño mínimo del texto del modo móvil debe ser mayor que 0.';
+export const JOYSTICK_RADIUS_MUST_BE_POSITIVE = 'El radio del joystick debe ser mayor que 0.';
+export const JOYSTICK_DEAD_ZONE_OUT_OF_RANGE = 'La zona muerta del joystick debe estar en [0, 1).';
+export const JOYSTICK_ZONE_FRACTION_OUT_OF_RANGE =
+  'La fracción de la zona de arrastre debe estar en (0, 1].';
+export const JOYSTICK_HINT_REQUIRED = 'El texto en reposo del joystick no puede estar vacío.';
+
+/** Alto base mínimo: el de la referencia de la UI (`UI_REFERENCE.height`, 0017). */
+export const MOBILE_MIN_BASE_HEIGHT = 540;
+
+const MobileSchema = z.strictObject({
+  baseHeight: z
+    .number({ error: MOBILE_BASE_HEIGHT_OUT_OF_RANGE })
+    .int({ error: MOBILE_BASE_HEIGHT_OUT_OF_RANGE })
+    .min(MOBILE_MIN_BASE_HEIGHT, { error: MOBILE_BASE_HEIGHT_OUT_OF_RANGE }),
+  minWidth: z
+    .number({ error: MOBILE_MIN_WIDTH_OUT_OF_RANGE })
+    .int({ error: MOBILE_MIN_WIDTH_OUT_OF_RANGE })
+    .min(1, { error: MOBILE_MIN_WIDTH_OUT_OF_RANGE }),
+  minTextPx: z
+    .number({ error: MOBILE_MIN_TEXT_MUST_BE_POSITIVE })
+    .positive({ error: MOBILE_MIN_TEXT_MUST_BE_POSITIVE }),
+  joystick: z.strictObject({
+    radiusPx: z
+      .number({ error: JOYSTICK_RADIUS_MUST_BE_POSITIVE })
+      .positive({ error: JOYSTICK_RADIUS_MUST_BE_POSITIVE }),
+    deadZone: z
+      .number({ error: JOYSTICK_DEAD_ZONE_OUT_OF_RANGE })
+      .min(0, { error: JOYSTICK_DEAD_ZONE_OUT_OF_RANGE })
+      .lt(1, { error: JOYSTICK_DEAD_ZONE_OUT_OF_RANGE }),
+    zoneFraction: z
+      .number({ error: JOYSTICK_ZONE_FRACTION_OUT_OF_RANGE })
+      .gt(0, { error: JOYSTICK_ZONE_FRACTION_OUT_OF_RANGE })
+      .max(1, { error: JOYSTICK_ZONE_FRACTION_OUT_OF_RANGE }),
+    hint: z.string({ error: JOYSTICK_HINT_REQUIRED }).min(1, { error: JOYSTICK_HINT_REQUIRED }),
+  }),
+});
+
+/** Constantes del modo móvil ya validadas (presentación, 0033). */
+export type MobileDisplay = z.infer<typeof MobileSchema>;
+
 /**
  * Mundo (`width` × `height`) y tope de vista del lienzo (`maxView`, 0017, ADR-0014). El mundo es al
  * menos tan grande como el tope: con unos límites menores que la vista, la cámara mostraría zonas
- * fuera del mundo. Sin `view`: la vista sale de la ventana, no del contenido.
+ * fuera del mundo. Sin `view`: la vista sale de la ventana, no del contenido. `mobile` (0033): la
+ * base del lienzo en modo móvil, acotada por el tope.
  */
 export const ArenaSchema = z
   .strictObject({
     width: z.number().int().positive(),
     height: z.number().int().positive(),
     maxView: z.strictObject({ width: MaxViewSide, height: MaxViewSide }),
+    mobile: MobileSchema,
   })
-  .superRefine(({ width, height, maxView }, ctx) => {
+  .superRefine(({ width, height, maxView, mobile }, ctx) => {
     if (width < maxView.width) {
       ctx.addIssue({ code: 'custom', path: ['width'], message: WORLD_NARROWER_THAN_VIEW });
     }
     if (height < maxView.height) {
       ctx.addIssue({ code: 'custom', path: ['height'], message: WORLD_LOWER_THAN_VIEW });
+    }
+    if (mobile.baseHeight > maxView.height) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['mobile', 'baseHeight'],
+        message: MOBILE_BASE_HEIGHT_OUT_OF_RANGE,
+      });
+    }
+    if (mobile.minWidth > maxView.width) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['mobile', 'minWidth'],
+        message: MOBILE_MIN_WIDTH_OUT_OF_RANGE,
+      });
     }
   });
 
