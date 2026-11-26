@@ -64,6 +64,8 @@ describe('Run', () => {
       // 0026: el mapa vacío no tiene solares ni oferta de obra.
       sites: [],
       build: { open: false, siteId: null, options: [] },
+      // 0031: ningún golpe antes del primer tick.
+      hits: [],
     });
   });
 

@@ -10,6 +10,7 @@ import resourcesJson from '../../content/resources.json';
 import sheepJson from '../../content/sheep.json';
 import shopJson from '../../content/shop.json';
 import buildingsJson from '../../content/buildings.json';
+import combatJson from '../../content/combat.json';
 import type { EnemyTypeConfig } from '../../src/domain/enemy/EnemyType';
 import type { BehaviorConfig } from '../../src/domain/enemy/behavior/BehaviorConfig';
 import type { HazardRulesConfig } from '../../src/domain/hazard/HazardRules';
@@ -22,6 +23,7 @@ import type { ResourcesConfig } from '../../src/domain/resource/ResourceRules';
 import type { SheepConfig } from '../../src/domain/sheep/SheepRules';
 import type { ShopConfig } from '../../src/domain/shop/ShopRules';
 import type { BuildingsConfig } from '../../src/domain/site/BuildingRules';
+import type { CombatConfig } from '../../src/domain/combat/CombatRules';
 
 /** Copia profunda congelada de un valor de content/ (los tests no pueden alterar el JSON). */
 function frozen<T>(value: T): T {
@@ -314,6 +316,15 @@ export const withoutSites = (config: RunConfig): RunConfig =>
 export const withoutResourceSources = (config: RunConfig): RunConfig =>
   withResources(config, NO_RESOURCES);
 
+/** Ventana y tope de golpes por defecto, leídos de content/combat.json (0031, una sola fuente). */
+export const CONTENT_COMBAT: CombatConfig = frozen(combatJson);
+
+/** El mismo contenido con la ventana o el tope de golpes cambiados (0031). */
+export const withCombat = (config: RunConfig, combat: Partial<CombatConfig>): RunConfig => ({
+  ...config,
+  combat: { ...config.combat, ...combat },
+});
+
 /** Globales de los peligros por defecto (content/enemies.json, `hazards`; 0020). */
 export const DEFAULT_HAZARDS: HazardRulesConfig = frozen(enemiesJson.hazards);
 
@@ -411,6 +422,7 @@ export const aRunConfig = (overrides: Partial<PlayerConfig> = {}): RunConfig => 
   sheep: NO_SHEEP,
   shop: CONTENT_SHOP,
   buildings: CONTENT_BUILDINGS,
+  combat: CONTENT_COMBAT,
 });
 
 /** El mismo contenido con otra duración objetivo en segundos (p. ej. 2 ⇒ 120 ticks). */
@@ -639,6 +651,7 @@ export interface RawContent {
     };
     [extra: string]: unknown;
   };
+  combat: { hitWindowTicks: number; maxHitsPerTick: number; [extra: string]: unknown };
 }
 interface MutableStructureType {
   count: number;

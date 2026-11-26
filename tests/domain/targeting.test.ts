@@ -4,9 +4,11 @@ import { firstInRadius, nearestInRange, selectTarget } from '../../src/domain/we
 
 /** Doble de objetivo: círculo de radio 10 con vida; `takeDamage` no se usa al elegir. */
 const at = (x: number, y: number, alive = true): WeaponTarget => ({
+  id: 0,
   x,
   y,
   radius: 10,
+  hp: alive ? 1 : 0,
   alive,
   takeDamage: () => false,
 });

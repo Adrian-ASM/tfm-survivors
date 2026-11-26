@@ -1,3 +1,4 @@
+import { HitLog } from '../combat/HitLog';
 import type { BuildingRules } from '../site/BuildingRules';
 import type { BuildSite } from '../site/BuildSite';
 import { firstOverlapping } from './hits';
@@ -32,6 +33,8 @@ export class TowerBattery {
   constructor(
     private readonly rules: BuildingRules,
     sites: readonly BuildSite[],
+    /** Registro de golpes (0031): sus flechas solo dañan enemigos; por defecto, desactivado. */
+    private readonly log: HitLog = HitLog.disabled(),
   ) {
     this.towers = sites.map(() => null);
     for (let i = 0; i < rules.maxTowerProjectiles; i++) this.free.push(new Projectile());
@@ -68,7 +71,7 @@ export class TowerBattery {
       p.advance();
       const hit = firstOverlapping(p.x, p.y, p.radius, enemies);
       if (hit) {
-        if (hit.takeDamage(p.damage, n)) kills++;
+        if (this.log.strike('enemy', hit, p.damage, n)) kills++;
         p.spent = true;
       } else if (p.expiredAt(n)) {
         p.spent = true;

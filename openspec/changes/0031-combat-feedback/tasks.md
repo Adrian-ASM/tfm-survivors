@@ -6,7 +6,7 @@
      Design: openspec/changes/0031-combat-feedback/design.md (D1–D9). ADR-0027. -->
 
 ## 1. Dominio: registro de golpes (TDD estricto) · commit `feat(domain): registro de golpes de combate`
-- [ ] 1.1 Crear `combat/HitKind`, `combat/CombatRules` (enteros ≥ 1) y `combat/HitLog`, con
+- [x] 1.1 Crear `combat/HitKind`, `combat/CombatRules` (enteros ≥ 1) y `combat/HitLog`, con
   `strike`/`begin`/anillo (D1). `RunConfig.combat` y `RunRules.combat`, `CONTENT_COMBAT`/`withCombat` en
   `tests/support/builders.ts` y `combat` en las configuraciones literales (R2). `WeaponTarget` gana `id`/`hp`. Inyectar
   el `HitLog` en `Arsenal`, `TowerBattery` y `HazardField` (D3) y llamar a `begin(n)` en `Run.tick` (D2).
@@ -18,11 +18,11 @@
   - Tests: `tests/domain/combat/hit-log.test.ts` (unitario del anillo, de la suma por referencia y del recorte) y
     `tests/domain/run-hits.test.ts` (escenarios con `Run`, usando `hits` desde 1.4 o un acceso de test al registro
     mientras tanto). Rojo: no existe `HitLog`.
-- [ ] 1.2 Golpe al jugador en `Run.applyHit` con `recordPlayer` (vida antes − después, posición del tick).
+- [x] 1.2 Golpe al jugador en `Run.applyHit` con `recordPlayer` (vida antes − después, posición del tick).
   - Escenarios SL: «Golpe al jugador con armadura», «Un solo golpe al jugador con contacto y explosión», «Jugador
     invulnerable sin golpe», «Golpe letal al jugador» y «Las curaciones no son golpes».
   - Test: `tests/domain/run-hits-player.test.ts`. Rojo: sin golpes `player`.
-- [ ] 1.3 Ids y tope: secuencia propia desde 0 por partida, orden de registro del tick, tope de no jugador sin consumir
+- [x] 1.3 Ids y tope: secuencia propia desde 0 por partida, orden de registro del tick, tope de no jugador sin consumir
   id, suma a los golpes conservados y jugador fuera del tope (plaza reservada, R4).
   - Escenarios SL: «Identificadores en orden de registro», «Secuencia sin huecos entre ticks», «Identificadores desde
     0 en cada partida», «Pulso con más objetivos que el tope», «Suma a un golpe conservado con el tope lleno», «El
@@ -30,7 +30,7 @@
     tope 2).
   - Test: `tests/domain/run-hits-order.test.ts`. Rojo: con el tope de 1.1 sin aplicar, o con los ids sin la regla de
     descarte.
-- [ ] 1.4 Snapshot: `HitSnapshot` con `targetId` (ausente en `player`) y `RunSnapshotBody.hits` con la ventana
+- [x] 1.4 Snapshot: `HitSnapshot` con `targetId` (ausente en `player`) y `RunSnapshotBody.hits` con la ventana
   `tick > k − N`, la caché por `(k, nextId)` y las vistas congeladas (D4). `StructureSnapshot.maxHealth` sale de
   `site.type.health`. Ajustar las igualdades estrictas existentes (R1) sin regenerar firmas.
   - Escenarios SL: «Golpe visible durante la ventana», «Partida recién creada sin golpes», «Golpes congelados en la
