@@ -214,9 +214,11 @@ ticks por frame a velocidad 1. Con `speed` > 1, o con `step(n)` y n > 15, se pie
 | — | — | Ninguna: `Text`, `Graphics` y el tinte de Phaser 4.2.1 ya instalado. | Fuente bitmap o arte del pack (procedencia, fuera de alcance). |
 
 ## Rendimiento y seguridad
-- **Tick**: por golpe, una lectura de `hp` y una búsqueda lineal de ≤ 49 registros del tick. Peor caso realista
-  (un pulso sobre ~40 enemigos), ~2.000 comparaciones de referencia, unos µs. Estimación: **< 0,01 ms/tick** sobre
-  los 0,27 ms del bench M1. Cero asignaciones.
+- **Tick**: por golpe, una lectura de `hp` y una consulta a un `Map` del tick (objetivo → registro), vaciado al
+  empezar cada tick. *Desviación en apply (D1)*: el design preveía una búsqueda lineal de ≤ 49 registros, pero
+  medida subía el tick +12–16 % (cada golpe descartado con el tope lleno recorría los 48 registros); con el `Map`
+  queda en el ruido (0,047 frente a 0,048 ms y 0,235 frente a 0,233 ms). `HitRecord` ya no guarda el objetivo. El
+  `Map` solo se consulta por clave, nunca se itera, así que el orden y el determinismo no cambian.
 - **Snapshot** (por frame, y por tick en el lote del bot con invariantes): ≤ 735 referencias, decenas en lo típico,
   y una vista congelada por registro una sola vez. Estimación: **≤ +3 %** en el lote. Se **mide** en la tarea 6.1
   (bench antes/después y tiempo real del test de balance). Si supera +5 %, la mitigación es la caché perezosa por
