@@ -724,20 +724,26 @@ export interface HitFrame {
 }
 
 /**
- * `step(1)` hasta el primer frame cuyo snapshot tiene un golpe de clase `kind` (0031), dentro de la
- * página (una sola llamada, sin reloj). Devuelve ese frame o null si no llega en `maxTicks`.
+ * `step(chunk)` hasta el primer frame cuyo snapshot tiene un golpe de clase `kind` (0031), dentro
+ * de la página (una sola llamada, sin reloj). Devuelve ese frame o null si no llega en `maxTicks`.
+ * `chunk` no debe superar la ventana de golpes (`content/combat.json`): así ningún golpe sale de
+ * la ventana sin haberse visto en un frame. Un `step(1)` por frame tardaba > 60 s en CI sin GPU.
  */
 export const stepUntilHit = (
   page: Page,
   kind: HitKindView,
   maxTicks: number,
+  chunk: number,
 ): Promise<HitFrame | null> =>
   page.evaluate(
-    async ({ kind, maxTicks }) => {
+    async ({ kind, maxTicks, chunk }) => {
       const p = (window as unknown as Probe).__sprint;
       if (!p?.step) throw new Error('La sonda no tiene step');
-      for (let i = 0; i < maxTicks; i += 1) {
-        if ((await p.step(1)) !== 1) return null;
+      for (let left = maxTicks; left > 0;) {
+        const want = Math.min(chunk, left);
+        const ticks = await p.step(want);
+        if (ticks !== want) return null;
+        left -= ticks;
         const s = p.snapshot;
         if (s?.hits.some((h) => h.kind === kind) && p.sprites) {
           const { damageNumbers, healthBars } = p.sprites;
@@ -746,7 +752,7 @@ export const stepUntilHit = (
       }
       return null;
     },
-    { kind, maxTicks },
+    { kind, maxTicks, chunk },
   );
 
 /** Números de daño de la sonda en cada uno de los próximos `n` frames del navegador (0031). */

@@ -3,6 +3,7 @@ import arena from '../../content/arena.json' with { type: 'json' };
 import player from '../../content/player.json' with { type: 'json' };
 import structures from '../../content/structures.json' with { type: 'json' };
 import sheepContent from '../../content/sheep.json' with { type: 'json' };
+import combat from '../../content/combat.json' with { type: 'json' };
 import { MAP_GOLDEN, signatureOf } from '../support/mapGolden';
 import { expect, test } from './fixtures';
 import {
@@ -50,7 +51,7 @@ test('Subida de nivel y Números de daño en el navegador: con ?seed=7 golpes, p
   const problems = collect(page, ['error', 'warning']);
   await openGame(page, gameUrl({ seed: 7, manual: true }));
 
-  const first = await stepUntilHit(page, 'enemy', FIRST_OFFER_LIMIT);
+  const first = await stepUntilHit(page, 'enemy', FIRST_OFFER_LIMIT, combat.hitWindowTicks);
   if (!first) throw new Error('sin golpes a enemigos antes de la oferta');
   const enemyHits = first.hits.filter((h) => h.kind === 'enemy').length;
   expect(first.hits.every((h) => h.kind === 'enemy')).toBe(true);
