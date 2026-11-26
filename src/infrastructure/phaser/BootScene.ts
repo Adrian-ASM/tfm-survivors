@@ -2,11 +2,14 @@ import Phaser from 'phaser';
 import type { Appearance } from '../content/appearanceSchema';
 import {
   addBridgeFrames,
+  applyNearest,
   finishBoot,
+  iconImagesOf,
   imagesToLoad,
   uiImagesOf,
   nextSceneKey,
   sheetsToLoad,
+  type FilterBook,
   type TextureBook,
 } from './bootPlan';
 import { ensurePlaceholderTexture } from './phaserArt';
@@ -24,6 +27,13 @@ export interface BootSceneDeps {
   readonly fontReady?: Promise<boolean>;
   /** Avisa de las piezas de UI cuya textura existe (la composición publica las variables CSS). */
   readonly onUiLoaded?: (loaded: ReadonlySet<string>) => void;
+  /**
+   * URL de un icono de mejora (0034: BASE_URL + assets/icons/ + file). Sin ella no se piden iconos
+   * (todos quedan en none).
+   */
+  readonly iconUrl?: (file: string) => string;
+  /** Avisa de las claves de icono cuya textura existe (rellena el IconBook de la composición). */
+  readonly onIconsLoaded?: (loaded: ReadonlySet<string>) => void;
 }
 
 /**
@@ -52,18 +62,26 @@ export class BootScene extends Phaser.Scene {
     for (const image of imagesToLoad(this.deps.appearance)) {
       this.load.image(image.key, this.deps.assetUrl(image.file));
     }
+    // Iconos de mejora (0034): un fallo solo se anota en failed; no es reserva de ningún sprite.
+    const iconUrl = this.deps.iconUrl;
+    if (iconUrl) {
+      for (const icon of iconImagesOf(this.deps.appearance)) {
+        this.load.image(icon.key, iconUrl(icon.file));
+      }
+    }
   }
 
   create(): void {
     ensurePlaceholderTexture(this);
     // Marcos con nombre del puente (0016): una vez, en la textura global, si caben en la imagen.
     addBridgeFrames(textureBook(this), this.deps.appearance);
-    // Piezas de UI (0032): pixel art sin suavizar a ×2.
+    // Piezas de UI (0032) e iconos (0034): pixel art sin suavizar a cualquier escala.
+    const filters = filterBook(this);
     const uiKeys = uiImagesOf(this.deps.appearance).map((i) => i.key);
-    for (const key of uiKeys) {
-      if (this.textures.exists(key)) {
-        this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
-      }
+    applyNearest(filters, uiKeys);
+    if (this.deps.iconUrl) {
+      const iconKeys = iconImagesOf(this.deps.appearance).map((i) => i.key);
+      this.deps.onIconsLoaded?.(applyNearest(filters, iconKeys));
     }
     // El menú (o la partida) nace tras la fuente o su plazo: los Text de cartas y HUD ya la usan.
     void finishBoot({
@@ -82,6 +100,17 @@ export class BootScene extends Phaser.Scene {
       },
     });
   }
+}
+
+/** Las texturas del motor como `FilterBook` (filtro NEAREST de toda la textura). */
+function filterBook(scene: Phaser.Scene): FilterBook {
+  const textures = scene.textures;
+  return {
+    exists: (key) => textures.exists(key),
+    setNearest: (key) => {
+      textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
+    },
+  };
 }
 
 /** Las texturas del motor como `TextureBook` (`Texture.add` devuelve null si el nombre existe). */

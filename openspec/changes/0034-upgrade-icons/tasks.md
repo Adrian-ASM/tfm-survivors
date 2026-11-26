@@ -28,17 +28,17 @@
   de otra categoría sin efecto" — test: `tests/infrastructure/upgrade-icons.test.ts`
 
 ## 3. Infraestructura · carta de mejora y carga
-- [ ] 3.1 `cardLayout.ts`: `CARD_HEIGHT` 240, `CARD_ICON_SIZE` 64, `CARD_TEXT_GAP`, `cardContentLayout` (D4), con los
+- [x] 3.1 `cardLayout.ts`: `CARD_HEIGHT` 240, `CARD_ICON_SIZE` 64, `CARD_TEXT_GAP`, `cardContentLayout` (D4), con los
   textos reales de las 9 mejoras de personaje a k ∈ {1, 2, 1,4066} — escenarios: "Hueco escalado con k entero y
   fraccionario", "Descripción más larga con icono"; regresión de "Ventana mínima con cartas enteras" y "Texto mínimo
   en un móvil horizontal" — test: `tests/infrastructure/card-layout.test.ts` (+ `mobile-frame.test.ts` sin cambios
   de cifras)
-- [ ] 3.2 `UpgradeOverlay` + `sceneWidgets`: `CardIcon` (3 `Image` preasignados, sin `setInteractive`), `iconFor`,
+- [x] 3.2 `UpgradeOverlay` + `sceneWidgets`: `CardIcon` (3 `Image` preasignados, sin `setInteractive`), `iconFor`,
   `setTexture` solo al cambiar la oferta, `setVisible(false)` en `none`, recolocado en RESIZE e `iconStates` —
   escenarios `upgrades`: "Un icono por carta", "Mejora sin icono propio", "Icono y reserva que no cargan", "Icono en la
   carta de reserva", "Clic sobre el icono y RESIZE sin crear iconos", "Tres cartas", "Menos cartas", "Sin oferta";
   regresión de "Elegir con tecla" y "Elegir con clic" — test: `tests/infrastructure/upgrade-overlay.test.ts`
-- [ ] 3.3 `bootPlan.iconImagesOf` y `BootScene` (petición con `deps.iconUrl`, `NEAREST` por clave cargada,
+- [x] 3.3 `bootPlan.iconImagesOf` y `BootScene` (petición con `deps.iconUrl`, `NEAREST` por clave cargada,
   `onIconsLoaded`, fallos sin lanzar ni contar como reserva) — escenarios: "Filtro sin suavizado", "Icono que falla
   sin reserva de sprites" — test: `tests/infrastructure/boot-plan.test.ts`
 

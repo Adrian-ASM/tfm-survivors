@@ -89,6 +89,8 @@ export function fakeUiScene(options: FakeUiSceneOptions): {
             return set((w: number, h: number) => ((target.width = w), (target.height = h)));
           case 'setScale':
             return set((s: number) => (target.scale = s));
+          case 'setTexture':
+            return set((key: string) => (target.texture = key));
           case 'setVisible':
             return set((v: boolean) => (target.visible = v));
           case 'setDepth':
