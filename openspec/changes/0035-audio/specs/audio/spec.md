@@ -15,14 +15,21 @@
          salida muda: "reproducida" = aceptada y entregada a la salida, aunque no suene. Voces activas = 0 en `?e2e`.
      D9. Un `audio.json` inválido es error de contenido (como el resto); los fallos en tiempo de ejecución (sin Web
          Audio, fichero que no carga o no decodifica, desbloqueo rechazado) solo dejan el juego mudo.
+     D10 (tras los ficheros del autor, 2026-11-26): la recogida se parte en 3 tipos de efecto (`pickupGold` para oro,
+         gema de XP y carne; `pickupStone`; `pickupWood`) en lugar de un `pickup` con fichero por tipo: así la
+         limitación de 1 por tipo y snapshot, el intervalo y la prioridad se aplican por recurso con el mezclador de
+         siempre. Varios tipos pueden compartir fichero. Tope de peso 6 MB. `.flac` es extensión de audio.
      Sin cambios en `src/domain` ni `src/application`: todo se observa con la sonda `window.__sprint.audio` y con
      dobles de la salida de audio, del almacenamiento y del reloj de render. -->
 
 > Convenciones de esta spec:
 > - **Tipos de efecto** (lista cerrada, en este orden): `playerHurt` (golpe recibido por el jugador), `impactWeapon`
 >   (impacto de un arma del jugador: flecha o pulso), `impactTower` (impacto de una flecha de torre propia),
->   `impactBlast` (impacto de una explosión), `enemyDeath` (baja de enemigo), `pickup` (recogida), `levelUp` (subida
->   de nivel), `explosion` (explosión), `purchase` (compra en la tienda) y `build` (obra en un solar).
+>   `impactBlast` (impacto de una explosión), `enemyDeath` (baja de enemigo), `pickupGold` (recogida de oro, de gema
+>   de XP o de carne), `pickupStone` (recogida de piedra), `pickupWood` (recogida de madera), `levelUp` (subida de
+>   nivel), `explosion` (explosión), `purchase` (compra en la tienda) y `build` (obra en un solar). Son 12.
+> - **Tipo de recogida** de un recogible según su clase: `xp`, `gold` y `meat` → `pickupGold`; `stone` →
+>   `pickupStone`; `wood` → `pickupWood`.
 > - **Petición**: un suceso detectado de un tipo de efecto. Cada petición acaba **reproducida** (aceptada y entregada a
 >   la salida de audio, que en `?e2e` es muda) o **descartada**; siempre reproducidas + descartadas = pedidas.
 > - **Snapshot procesado**: cada snapshot nuevo que recibe el adaptador de render con partida: uno por frame en
@@ -46,8 +53,10 @@ El sistema SHALL leer la configuración de audio de un fichero de contenido prop
 misma vía que el resto del contenido de presentación y antes de mostrar el menú. Contiene, sin números mágicos en el
 código:
 - la música: un fichero;
-- por cada uno de los 10 tipos de efecto, exactamente una entrada con su fichero, su prioridad (entero), su intervalo
-  mínimo entre reproducciones en ms (≥ 0) y su ganancia (0..1);
+- por cada uno de los 12 tipos de efecto, exactamente una entrada con su fichero, su prioridad (entero), su intervalo
+  mínimo entre reproducciones en ms (≥ 0) y su ganancia (0..1). Varios tipos MAY citar el mismo fichero (p. ej.
+  `explosion` e `impactBlast`, o `impactWeapon` e `impactTower`); cada tipo conserva su
+  prioridad, intervalo y ganancia propios, y un fichero compartido se pide a la red como mucho 1 vez por carga;
 - el tope de voces simultáneas de efectos (entero ≥ 1);
 - la tolerancia de cruce de las flechas de torre en px de mundo (> 0; ver "Origen del impacto");
 - los ajustes por defecto: música (entero 0..100), efectos (entero 0..100) y silencio (booleano).
@@ -60,8 +69,16 @@ sección o el tipo y el campo; no se crea el menú. Validarlo MUST NOT cambiar e
 #### Scenario: Contenido por defecto válido
 - **GIVEN** el contenido de audio del repositorio
 - **WHEN** se valida al arrancar
-- **THEN** la validación es correcta, hay exactamente 10 entradas de efecto (una por tipo), un fichero de música, tope
+- **THEN** la validación es correcta, hay exactamente 12 entradas de efecto (una por tipo), un fichero de música, tope
   de voces ≥ 1 y ajustes por defecto música 50, efectos 80 y silencio desactivado
+- **AND** `explosion` e `impactBlast` citan el mismo fichero, `impactWeapon` e `impactTower` citan el mismo fichero, y
+  hay exactamente 11 ficheros distintos entre música (1) y efectos (10)
+
+#### Scenario: Fichero compartido
+- **GIVEN** el contenido de audio por defecto, en el que `explosion` e `impactBlast` comparten fichero con ganancias
+  distintas
+- **WHEN** se valida y se cargan los ficheros con una salida de audio de prueba
+- **THEN** la validación es correcta, ese fichero se pide 1 sola vez y cada tipo se reproduce con su propia ganancia
 
 #### Scenario: Tipo de efecto ausente o desconocido
 - **GIVEN** el contenido de audio por defecto sin la entrada de `build` y, en otra carga, con una entrada más `jump`
@@ -71,7 +88,7 @@ sección o el tipo y el campo; no se crea el menú. Validarlo MUST NOT cambiar e
 
 #### Scenario: Valores fuera de rango
 - **GIVEN** el contenido de audio por defecto con, en un caso cada vez: tope de voces 0; música por defecto 101;
-  efectos por defecto 12,5; ganancia de `pickup` 1,2; intervalo de `enemyDeath` −1; tolerancia de torre 0
+  efectos por defecto 12,5; ganancia de `pickupWood` 1,2; intervalo de `enemyDeath` −1; tolerancia de torre 0
 - **WHEN** se valida al arrancar
 - **THEN** en cada caso el arranque muestra el error de contenido, que nombra el campo, y no se crea el menú
 
@@ -93,10 +110,10 @@ partida, sin consultar el núcleo más allá del snapshot y sin usar el reloj de
 - `impactWeapon` / `impactTower` / `impactBlast`: 1 petición por cada golpe de clase `enemy`, `structure` o `sheep`
   cuyo id no se haya visto antes en la partida, del tipo que fije "Origen del impacto";
 - `enemyDeath`: max(0, bajas − bajas anteriores) peticiones (una detonación por mecha no es baja y no pide nada);
-- `pickup`: 1 petición por cada recogible cuyo id estaba en el snapshot anterior y no está en el actual, salvo en un
-  snapshot en el que algún solar ha pasado de `free` a construido (sus recogibles los quita el despeje de la huella:
-  0 peticiones `pickup` en ese snapshot); un recogible que sigue con el mismo id (relleno al tope o recolocado) no pide
-  nada;
+- `pickupGold` / `pickupStone` / `pickupWood`: 1 petición, de su tipo de recogida, por cada recogible cuyo id estaba
+  en el snapshot anterior y no está en el actual, salvo en un snapshot en el que algún solar ha pasado de `free` a
+  construido (sus recogibles los quita el despeje de la huella: 0 peticiones de recogida de ningún tipo en ese
+  snapshot); un recogible que sigue con el mismo id (relleno al tope o recolocado) no pide nada;
 - `levelUp`: max(0, nivel − nivel anterior) peticiones;
 - `explosion`: 1 petición por cada explosión cuyo id no se haya visto antes en la partida;
 - `purchase`: 1 petición si la tienda estaba abierta en el snapshot anterior o en el actual y el oro ha bajado;
@@ -126,16 +143,26 @@ piden nada; se acepta. Detectar sucesos MUST NOT cambiar el snapshot ni la simul
 - **THEN** hay exactamente 3 peticiones `enemyDeath`
 
 #### Scenario: Recogidas y despeje
-- **GIVEN** un snapshot anterior con los recogibles de ids 4, 5 y 6 y uno actual con solo el 6, sin solares
-  construidos entre ambos; y en otro caso el mismo par en el que el solar 0 pasa de `free` a `house`
+- **GIVEN** un snapshot anterior con los recogibles de ids 4 (`gold`), 5 (`xp`) y 6 (`wood`) y uno actual con solo el
+  6, sin solares construidos entre ambos; y en otro caso el mismo par en el que el solar 0 pasa de `free` a `house`
 - **WHEN** se procesa el actual
-- **THEN** en el primer caso hay 2 peticiones `pickup`; en el segundo hay 0 `pickup` y 1 `build`
+- **THEN** en el primer caso hay 2 peticiones `pickupGold` y 0 de `pickupStone` y `pickupWood`; en el segundo hay 0
+  peticiones de recogida de ningún tipo y 1 `build`
+
+#### Scenario: Una recogida por tipo de recurso
+- **GIVEN** un snapshot anterior con los recogibles de ids 10 (`xp`), 11 (`meat`), 12 (`gold`), 13 (`stone`),
+  14 (`stone`), 15 (`wood`) y 16 (`wood`) y uno actual sin ninguno, sin solares construidos entre ambos, sin efectos
+  sonando y todos los tipos fuera de su intervalo
+- **WHEN** se procesa el actual
+- **THEN** hay 3 peticiones `pickupGold`, 2 `pickupStone` y 2 `pickupWood`
+- **AND** se reproduce exactamente 1 de cada uno de los tres tipos y se descartan 2 `pickupGold`, 1 `pickupStone` y
+  1 `pickupWood`
 
 #### Scenario: Relleno al tope no es recogida
-- **GIVEN** un snapshot anterior con 300 recogibles `xp` y uno actual con los mismos 300 ids, el más antiguo con más
-  valor
+- **GIVEN** un snapshot anterior con 300 recogibles `xp` y 64 `wood` y uno actual con los mismos 364 ids, el más
+  antiguo de cada tipo con más valor
 - **WHEN** se procesa el actual
-- **THEN** hay 0 peticiones `pickup`
+- **THEN** hay 0 peticiones `pickupGold`, `pickupStone` y `pickupWood`
 
 #### Scenario: Varias subidas en un step
 - **GIVEN** modo manual y una partida en nivel 3 cuyo `step(600)` la deja en nivel 5
@@ -235,9 +262,16 @@ Lo descartado MUST NOT reproducirse más tarde. MUST NOT sonar más de T efectos
 
 #### Scenario: Tope con voces ocupadas
 - **GIVEN** tope de voces 8, 7 efectos sonando y un snapshot con 1 petición de cada uno de `levelUp`, `enemyDeath` y
-  `pickup`, con prioridades 9, 5 y 3, todas fuera de su intervalo
+  `pickupStone`, con prioridades 9, 5 y 3, todas fuera de su intervalo
 - **WHEN** se procesa
-- **THEN** se reproduce solo `levelUp` y se descartan `enemyDeath` y `pickup`
+- **THEN** se reproduce solo `levelUp` y se descartan `enemyDeath` y `pickupStone`
+
+#### Scenario: Recogidas a igual prioridad con una voz libre
+- **GIVEN** tope de voces 8, 7 efectos sonando y un snapshot con 1 petición de cada uno de `pickupWood`,
+  `pickupStone` y `pickupGold`, las tres con prioridad 3 y fuera de su intervalo
+- **WHEN** se procesa
+- **THEN** se reproduce solo `pickupGold` (primero en el orden de los tipos) y se descartan `pickupStone` y
+  `pickupWood`
 
 #### Scenario: Tope lleno
 - **GIVEN** tope de voces 8 y 8 efectos sonando
@@ -351,9 +385,15 @@ el menú.
 - **THEN** no hay errores no capturados, la partida avanza igual y la petición `playerHurt` se descarta
 
 #### Scenario: Fichero que no carga
-- **GIVEN** una salida de audio de prueba en la que el fichero de `pickup` falla al cargar y el resto carga
-- **WHEN** se procesa un snapshot con 1 petición `pickup` y 1 `levelUp`
-- **THEN** se descarta `pickup`, se reproduce `levelUp` y no hay errores no capturados
+- **GIVEN** una salida de audio de prueba en la que el fichero de `pickupStone` falla al cargar y el resto carga
+- **WHEN** se procesa un snapshot con 1 petición `pickupStone`, 1 `pickupGold` y 1 `levelUp`
+- **THEN** se descarta `pickupStone`, se reproducen `pickupGold` y `levelUp` y no hay errores no capturados
+
+#### Scenario: Fichero compartido que no carga
+- **GIVEN** una salida de audio de prueba en la que falla al cargar el fichero que comparten `explosion` e
+  `impactBlast` y el resto carga
+- **WHEN** se procesa un snapshot con 1 petición `explosion`, 1 `impactBlast` y 1 `impactWeapon`
+- **THEN** se descartan `explosion` e `impactBlast`, se reproduce `impactWeapon` y no hay errores no capturados
 
 #### Scenario: Desbloqueo rechazado
 - **GIVEN** un navegador de prueba que rechaza reanudar el audio tras el gesto
@@ -557,14 +597,18 @@ doradas MUST quedar idénticas sin regenerarlas.
   `src/application` respecto de `main`
 
 ### Requirement: Ficheros de audio usados y peso
-Cada fichero de audio versionado (`.ogg`, `.mp3`, `.wav`, sin distinguir mayúsculas) SHALL ser el de la música o el de
-≥ 1 tipo de efecto del contenido de audio, y cada fichero citado por el contenido MUST estar versionado. La suma de
-bytes de todos los ficheros de audio versionados MUST ser ≤ 2.097.152. Se comprueba con un test sobre el repositorio.
+Cada fichero de audio versionado (`.ogg`, `.mp3`, `.wav`, `.flac`, sin distinguir mayúsculas) SHALL ser el de la
+música o el de ≥ 1 tipo de efecto del contenido de audio, y cada fichero citado por el contenido MUST estar versionado.
+La comprobación es por fichero (conjunto de ficheros distintos citados), no por tipo: un fichero citado por varios
+tipos cuenta una vez. La suma de bytes de todos los ficheros de audio versionados (cada fichero una vez) MUST ser
+≤ 6.291.456 (6 MB). Se comprueba con un test sobre el repositorio.
 
 #### Scenario: Todos usados
 - **GIVEN** la lista de ficheros versionados y el contenido de audio del repositorio
-- **WHEN** se cruzan
-- **THEN** cada fichero de audio versionado está citado y cada fichero citado está versionado
+- **WHEN** se cruzan, por fichero
+- **THEN** cada fichero de audio versionado está citado por la música o por ≥ 1 tipo, y cada fichero citado está
+  versionado
+- **AND** el número de ficheros de audio versionados es igual al de ficheros distintos citados (11)
 
 #### Scenario: Fichero de audio de más
 - **GIVEN** una lista simulada igual a la real más `extra.ogg` en la carpeta de audio, registrado en la nota y sin
@@ -574,9 +618,11 @@ bytes de todos los ficheros de audio versionados MUST ser ≤ 2.097.152. Se comp
 
 #### Scenario: Tope de peso
 - **GIVEN** los ficheros de audio versionados, y en otro caso una lista simulada con un fichero más que lleva el total a
-  2.097.153 bytes
+  6.291.457 bytes
 - **WHEN** se suman sus bytes
-- **THEN** en el primer caso el total es ≤ 2.097.152; en el segundo el test falla y da el total
+- **THEN** en el primer caso el total es ≤ 6.291.456 (con los ficheros del autor, 5.093.480); en el segundo el test
+  falla y da el total
+- **AND** con una lista simulada cuyo total es exactamente 6.291.456 bytes el test pasa
 
 ### Requirement: Audio observable en el navegador
 El sistema SHALL funcionar en la build de producción con la CSP actual (ver "Política de seguridad de contenido" en
@@ -584,7 +630,7 @@ El sistema SHALL funcionar en la build de producción con la CSP actual (ver "Po
 
 #### Scenario: Audio en la partida E2E [E2E]
 - **GIVEN** la build de producción con `?e2e&manual&seed=42` (mapa vacío de los E2E), en el test de humo de partida
-  (ampliado, sin test nuevo), contando las peticiones de red a ficheros `.ogg`, `.mp3` y `.wav`
+  (ampliado, sin test nuevo), contando las peticiones de red a ficheros `.ogg`, `.mp3`, `.wav` y `.flac`
 - **WHEN** se lee la sonda, se llama a `step(600)`, se pulsa Esc, se lee la sonda, se pulsa M, se pulsa Esc y se lee la
   sonda
 - **THEN** la música está en `playing`, después en `paused` y al final en `playing`; tras M el silencio está activado y

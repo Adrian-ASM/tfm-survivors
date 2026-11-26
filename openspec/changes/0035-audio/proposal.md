@@ -50,9 +50,22 @@ registrada y vigilada por el guardarraíl. El núcleo de simulación no cambia: 
    avanza `n × TICK_MS` con cada `step(n)`, y un `step(n)` puede cruzar muchos ticks en un frame. Por eso los eventos
    se sacan del diff del snapshot con deduplicación por id (ventana de `hits` de 15 ticks) y no del reloj de pared.
 6. **Núcleo intacto**: el change solo toca infraestructura, composición y contenido. `BALANCE_BASELINE` y todas las
-   firmas doradas quedan idénticas. El peso total de audio tiene un tope propuesto de **2 MB** (criterio de verify).
+   firmas doradas quedan idénticas. El peso total de audio tiene un tope propuesto de **2 MB** (criterio de verify; subido a 6 MB tras el gate, ver abajo).
    La CSP no debería necesitar cambios (`media-src` cae en `default-src 'self'` y `connect-src 'self'` cubre la
    carga); se confirma con un build real.
+
+## Cambios aprobados tras el gate (autor, 2026-11-26, al entregar los ficheros reales)
+1. **Tope de peso**: de 2 MB a **6 MB** (6.291.456 bytes). Los ficheros reales suman 5.093.480 bytes.
+2. **Recogida por recurso**: el efecto único de recogida se sustituye por tres tipos de efecto: `pickupGold` (oro,
+   gema de XP y carne), `pickupStone` (piedra) y `pickupWood` (madera). Pasan a ser **12 tipos**. Siguen valiendo
+   como mucho 1 reproducida por tipo y snapshot, y ni el relleno al tope ni el despeje de obra suenan.
+3. **FLAC**: `.flac` se suma a las extensiones de audio vigiladas (`.ogg`, `.mp3`, `.wav`, `.flac`).
+4. **Ficheros compartidos**: varios tipos pueden usar el mismo fichero (explosión con impacto de explosión; flecha
+   con flecha de torre). Hay un registro de procedencia por fichero, y "Todos usados" se comprueba por fichero
+   (11 ficheros: 1 de música y 10 de efectos).
+5. **Asignación**: música; golpe recibido; flecha y torre (compartido); explosión e impacto de explosión
+   (compartido); baja; recogida de oro, de piedra y de madera; subida; compra; obra. Los nombres de fichero en el
+   repositorio los fija el design.
 
 La elección técnica (Phaser Sound o un módulo propio sobre Web Audio) queda para el design.
 
@@ -60,7 +73,7 @@ La elección técnica (Phaser Sound o un módulo propio sobre Web Audio) queda p
 - **Dentro**:
   - Ficheros de audio CC0 entregados por el autor en una carpeta propia bajo `public/assets/` (la ruta exacta se fija
     en el design), con su lista de procedencia de audio en `content/asset-provenance.json`.
-  - Ampliación de `guard-assets` y de sus tests: reconoce `.ogg`, `.mp3` y `.wav`, rechaza audio versionado sin
+  - Ampliación de `guard-assets` y de sus tests: reconoce `.ogg`, `.mp3`, `.wav` y `.flac`, rechaza audio versionado sin
     entrada o con licencia distinta de CC0, y no admite audio en `generated[]`.
   - Contenido de audio validado con zod: qué fichero va con cada evento, volúmenes por defecto, tope de voces y
     limitación por tipo. Sin números mágicos.
@@ -98,7 +111,7 @@ La elección técnica (Phaser Sound o un módulo propio sobre Web Audio) queda p
   y fecha de descarga. Si faltan efectos o no hay una música CC0 que encaje con el tema medieval, el change espera o
   se recorta con aprobación del autor. Mientras tanto, la lógica pura, el guardarraíl, los ajustes y el panel se
   pueden avanzar.
-- **Peso**: la fuente decide el formato. Una música larga en WAV se come el tope de 2 MB, así que conviene elegir
+- **Peso**: la fuente decide el formato. Una música larga en WAV se come el tope (6 MB tras el gate), así que conviene elegir
   OGG/MP3 o un bucle corto.
 - **Compatibilidad de formato**: Safari antiguo no reproduce OGG. Se acepta como limitación y no se recodifica. Hay
   que comprobar que el juego no falla si un fichero no se decodifica.
@@ -116,9 +129,9 @@ La elección técnica (Phaser Sound o un módulo propio sobre Web Audio) queda p
 ## Criterio de éxito
 - Todos los escenarios de `specs/audio` y de los deltas están en verde, con test unitario, de aplicación o E2E
   según `e2e-lite`, y como mucho 1–2 E2E nuevos.
-- `npm run guard:all` falla con un `.ogg`, `.mp3` o `.wav` versionado sin entrada o con licencia ≠ CC0, y pasa con
-  todo el audio del change registrado.
-- Bytes totales de los ficheros de audio versionados ≤ 2.097.152 (2 MB).
+- `npm run guard:all` falla con un `.ogg`, `.mp3`, `.wav` o `.flac` versionado sin entrada o con licencia ≠ CC0, y
+  pasa con todo el audio del change registrado.
+- Bytes totales de los ficheros de audio versionados ≤ 6.291.456 (6 MB; cambio tras el gate, antes 2 MB).
 - `BALANCE_BASELINE` y las firmas doradas son idénticas, sin regenerarlas; no hay ningún cambio en `src/domain` ni
   en `src/application`.
 - Con `?e2e` no se pide ningún fichero de audio a la red, y `window.__sprint.audio` muestra contadores coherentes

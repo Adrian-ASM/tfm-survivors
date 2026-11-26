@@ -13,7 +13,7 @@
 El repositorio SHALL registrar cada fichero de audio versionado en una **lista de audio** propia de
 `content/asset-provenance.json`, aparte de la lista de arte de Tiny Swords (cuya cabecera `CC0` / `Update 010` /
 `2026-11-22` no cambia), de la lista `fonts` y de la de imágenes generadas con IA. Son ficheros de audio los `.ogg`,
-`.mp3` y `.wav` (sin distinguir mayúsculas). Cada registro tiene, todos obligatorios:
+`.mp3`, `.wav` y `.flac` (sin distinguir mayúsculas). Cada registro tiene, todos obligatorios:
 - la ruta en el repositorio, dentro de la carpeta de audio de `public/assets/` (ruta exacta: decisión de design);
 - el título o nombre del recurso en su fuente y su autor (textos no vacíos);
 - la URL de la página de la fuente, `https`, cuyo host es `kenney.nl`, `opengameart.org` o `freesound.org` (con o sin
@@ -40,7 +40,7 @@ las tres capas de siempre (hook, commit y `npm run verify` / CI) y MUST NOT nece
 
 #### Scenario: Audio sin registrar
 - **GIVEN** una lista simulada igual a la real más, en un caso cada vez, `public/assets/extra/hit.ogg`,
-  `public/assets/extra/hit.MP3` y `docs/demo.wav`, sin registro
+  `public/assets/extra/hit.MP3`, `docs/demo.wav` y `public/assets/extra/hit.FLAC`, sin registro
 - **WHEN** se ejecuta el guardarraíl
 - **THEN** falla con un mensaje que nombra ese fichero
 
@@ -116,7 +116,7 @@ el conjunto de las cuatro listas.
 ### Requirement: Solo assets registrados
 El sistema SHALL garantizar que cada asset gráfico de la lista de ficheros versionados tiene entrada en la nota de
 procedencia, en la lista de arte o en la de imágenes generadas con IA (en una sola), que cada fichero de audio
-versionado (`.ogg`, `.mp3`, `.wav`, sin distinguir mayúsculas) tiene entrada en la lista de audio y en ninguna otra, y
+versionado (`.ogg`, `.mp3`, `.wav`, `.flac`, sin distinguir mayúsculas) tiene entrada en la lista de audio y en ninguna otra, y
 que cada entrada de esas listas corresponde a un fichero de la lista de ficheros versionados. La lista MUST NOT
 contener ficheros de sistema (`.DS_Store`, `Thumbs.db`, `desktop.ini`), fuentes de edición (`.aseprite`) ni comprimidos
 (`.zip`, `.rar`, `.7z`, `.tar`, `.gz`) en ninguna carpeta (tampoco el comprimido en que se descargue un pack de audio).
@@ -162,7 +162,8 @@ contener ficheros de sistema (`.DS_Store`, `Thumbs.db`, `desktop.ini`), fuentes 
 #### Scenario: Audio registrado solo como audio
 - **GIVEN** la lista real de ficheros versionados tras este change
 - **WHEN** se ejecuta el guardarraíl
-- **THEN** pasa, y cada fichero de audio tiene exactamente 1 entrada, en la lista de audio
+- **THEN** pasa, y cada fichero de audio tiene exactamente 1 entrada, en la lista de audio, aunque varios tipos de
+  efecto del contenido de audio lo usen (un registro por fichero, no por tipo)
 
 ### Requirement: Nada del Free Pack
 El sistema SHALL rechazar cualquier asset del Tiny Swords Free Pack, que no es CC0. El guardarraíl MUST fallar si un
