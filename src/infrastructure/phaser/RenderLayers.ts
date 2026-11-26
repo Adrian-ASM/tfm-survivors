@@ -101,7 +101,13 @@ export class RenderLayers {
     const { kit, looks, capacity } = parts;
     this.parts = parts;
     this.pulses = new PulseLayer(capacity.pulses, capacity.visualTicks, parts.ring);
-    this.pickups = new PickupLayer(capacity.pickups, kit, looks.pickups, looks.stones);
+    this.pickups = new PickupLayer(
+      capacity.pickups,
+      kit,
+      looks.pickups,
+      looks.stones,
+      looks.pickupMotion,
+    );
     this.sheep = new SheepLayer(capacity.sheep ?? 0, kit, looks.sheep);
     this.corpses = new CorpseLayer(capacity.corpses, kit, looks.corpse);
     this.enemies = new EnemyLayer(capacity.enemies, kit, looks.enemies, this.corpses);
@@ -166,7 +172,7 @@ export class RenderLayers {
     const ms = this.clock.ms;
     this.status = snapshot.status;
     this.pulses.sync(snapshot.pulses, snapshot.tick);
-    this.pickups.sync(snapshot.pickups);
+    this.pickups.sync(snapshot.pickups, ms);
     this.sheep.sync(snapshot.sheep, snapshot.tick, ms);
     this.enemies.sync(snapshot.enemies, snapshot.tick, ms);
     this.corpses.sync(ms);

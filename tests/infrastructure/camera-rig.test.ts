@@ -10,7 +10,11 @@ import {
   type WorldSize,
 } from '../../src/infrastructure/phaser/CameraRig';
 import { screenFrame, type ScreenFrame } from '../../src/infrastructure/phaser/ui/screenFrame';
+import { PickupLayer } from '../../src/infrastructure/phaser/PickupLayer';
+import { withPickupMotion } from '../support/appearance';
 import { DEFAULT_MAX_VIEW, aDefaultConfig } from '../support/builders';
+import { fakeKit } from '../support/FakeSprite';
+import { someLooks } from '../support/looks';
 import { randomInputs } from '../support/inputs';
 import { chooseFirstWhileOpen, startSeededRun } from '../support/runs';
 
@@ -194,6 +198,23 @@ describe('CameraRig (spec world-camera 0017)', () => {
     paint(rig, camera, 16, 16);
 
     expect(view).toEqual({ x: 1280, y: 720, width: 1280, height: 720 });
+  });
+
+  it('Scenario: Gema que flota (id 0 en (2.160, 1.140) con R = 400: pantalla (880, 424))', () => {
+    const { camera, rig } = rigOn();
+    const [left = 0, top = 0] = paint(rig, camera, 1920, 1080);
+    const kit = fakeKit();
+    const looks = someLooks((r) => {
+      withPickupMotion(r);
+    });
+    const layer = new PickupLayer(1, kit, looks.pickups, looks.stones, looks.pickupMotion);
+    const gem = { id: 0, kind: 'xp', value: 1, x: 2160, y: 1140, radius: 5 } as const;
+
+    layer.sync([gem], 400);
+    const [sprite] = kit.created;
+
+    expect(Math.abs((sprite?.x ?? Infinity) - left - 880)).toBeLessThanOrEqual(1);
+    expect(Math.abs((sprite?.y ?? Infinity) - top - 424)).toBeLessThanOrEqual(1);
   });
 });
 

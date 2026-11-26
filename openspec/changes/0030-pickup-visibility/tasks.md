@@ -44,7 +44,7 @@
     `boot-plan` si existe.
 
 ### Grupo B · Flote y tamaño (commit 2)
-- [ ] 3.3 **Funciones puras y aspectos resueltos** (D2, D3).
+- [x] 3.3 **Funciones puras y aspectos resueltos** (D2, D3).
   - `art/pickupMotion.ts` con `floatOffset` (fase por id), `floatOffsetFrom` (desde R_f, sin fase), `spawnDelay` y
     `spawnFrame`.
   - En `looks.ts`, `PickupLook` gana `spawn: StillLook | null` y `shapeRadius`, y `Looks` gana `pickupMotion`.
@@ -52,7 +52,7 @@
   - Escenarios: «Desplazamiento según el reloj», «Fases distintas con el mismo reloj» (funciones), «Frame de
     aparición fuera de la hoja» y «Hoja idle que no carga con la aparición cargada» (resolución).
   - Tests: `pickup-motion.test.ts` (nuevo) y `looks` / `appearance-stone.test.ts`.
-- [ ] 3.4 **Flote y escala en `PickupLayer`** (D4, solo la parte del flote).
+- [x] 3.4 **Flote y escala en `PickupLayer`** (D4, solo la parte del flote).
   - `sync(pickups, ms)` con el desplazamiento en `at()`, `shapeRadius` en la gema y la reserva sin flote.
   - Escenarios (sprite-rendering): «Desplazamiento según el reloj», «Fases distintas con el mismo reloj»,
     «Recogible atraído», «Hueco reutilizado», «La reserva no flota», «Tamaños de los recogibles del repositorio»,

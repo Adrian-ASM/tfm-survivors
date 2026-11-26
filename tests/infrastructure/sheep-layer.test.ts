@@ -158,14 +158,14 @@ describe('SheepLayer', () => {
       const kit = fakeKit();
       const looks = someLooks(undefined, missing);
       const sheep = new SheepLayer(5, kit, looks.sheep);
-      const pickups = new PickupLayer(436, kit, looks.pickups, looks.stones);
+      const pickups = new PickupLayer(436, kit, looks.pickups, looks.stones, looks.pickupMotion);
       const snaps: RunSnapshot[] = [];
       for (const [i, input] of inputs.entries()) {
         chooseFirstWhileOpen(run);
         run.tick(input);
         const s = run.snapshot();
         sheep.sync(s.sheep, s.tick, i * 17);
-        pickups.sync(s.pickups);
+        pickups.sync(s.pickups, 0);
         snaps.push(s);
       }
       return { snaps, placeholder: sheep.counts.placeholder };
