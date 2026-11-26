@@ -24,3 +24,11 @@ export const ICON_URL_DIR = 'assets/icons/';
 export function iconUrl(base: string, file: string): string {
   return base + ICON_URL_DIR + encodeURIComponent(file);
 }
+
+/** Carpeta del audio versionado dentro de `public/` (0035, design D8). */
+export const AUDIO_URL_DIR = 'assets/audio/';
+
+/** URL de un fichero de audio: base + carpeta de audio + `file` (plano, ya validado por regex). */
+export function audioUrl(base: string, file: string): string {
+  return base + AUDIO_URL_DIR + encodeURIComponent(file);
+}

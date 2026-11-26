@@ -74,12 +74,12 @@
   centrado y el arrastre se comprueban a mano en verify (regla `e2e-lite`: sin E2E nuevo).
 
 ## 4. Motor y composición (test-after, dobles del motor)
-- [ ] 4.1 `PhaserSoundOut` (pools perezosos, bucle, volúmenes, `canPlay` con `locked`/caché, `stopEffects`), salidas
+- [x] 4.1 `PhaserSoundOut` (pools perezosos, bucle, volúmenes, `canPlay` con `locked`/caché, `stopEffects`), salidas
   muda y no disponible, `audioMode(e2e, hasWebAudio)` → `noAudio`, `AudioLoadScene` lanzada en paralelo desde
   `BootScene` y `audioUrl` (D1, D7, D8) — escenarios: "Fichero que no carga", "Navegador sin Web Audio",
   "Desbloqueo rechazado", "Menú sin esperar al audio" y "Bucle" (`loop: true`). Tests:
   `tests/infrastructure/audio/phaser-sound-out.test.ts` (`sound` falso) y `tests/infrastructure/boot-audio.test.ts`.
-- [ ] 4.2 `audioWiring` + `main.ts` (cuarto argumento `renderMs` de `onRender`, `started` → `newRun`, `onScreen`,
+- [x] 4.2 `audioWiring` + `main.ts` (cuarto argumento `renderMs` de `onRender`, `started` → `newRun`, `onScreen`,
   `hold`, `HIDDEN`/`VISIBLE`, `PRE_STEP` → `MuteRequests`, `pauseOnBlur = false`) y sonda `__sprint.audio` (D12) —
   escenarios: "Sonda en el menú"; de `main-menu`: "Sin sonda fuera de E2E" (también sin `audio`), "Menú tras Volver
   al menú en modo E2E" (panel cerrado) y "Carga en modo E2E" (sin cambios). Test:

@@ -12,6 +12,7 @@ import {
   type FilterBook,
   type TextureBook,
 } from './bootPlan';
+import { launchAudioLoad } from './AudioLoadScene';
 import { ensurePlaceholderTexture } from './phaserArt';
 import { BOOT_SCENE_KEY } from './sceneKeys';
 
@@ -34,6 +35,11 @@ export interface BootSceneDeps {
   readonly iconUrl?: (file: string) => string;
   /** Avisa de las claves de icono cuya textura existe (rellena el IconBook de la composición). */
   readonly onIconsLoaded?: (loaded: ReadonlySet<string>) => void;
+  /**
+   * Lanza `AudioLoadScene` en paralelo antes del menú (0035, design D8): solo sin `?e2e` y con Web
+   * Audio. El menú no la espera.
+   */
+  readonly launchAudio?: boolean;
 }
 
 /**
@@ -83,6 +89,8 @@ export class BootScene extends Phaser.Scene {
       const iconKeys = iconImagesOf(this.deps.appearance).map((i) => i.key);
       this.deps.onIconsLoaded?.(applyNearest(filters, iconKeys));
     }
+    // Audio (0035): carga aparte y en paralelo; no retrasa el menú ni Jugar.
+    launchAudioLoad(this.scene, this.deps.launchAudio ?? false);
     // El menú (o la partida) nace tras la fuente o su plazo: los Text de cartas y HUD ya la usan.
     void finishBoot({
       fontReady: this.deps.fontReady ?? Promise.resolve(true),

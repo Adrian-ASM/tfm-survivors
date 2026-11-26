@@ -125,11 +125,15 @@ export interface BuildView {
 /** Pantalla visible (para la sonda de E2E). */
 export type Screen = 'menu' | 'playing' | 'paused' | 'shop' | 'build';
 
-/** Lo que la escena ha pintado en un frame (para el probe de E2E). */
+/**
+ * Lo que la escena ha pintado en un frame (para el probe de E2E) y el reloj de render de ese frame
+ * (0035: la limitación por tipo del audio; en modo manual avanza `n × TICK_MS` por `step(n)`).
+ */
 export type OnRender = (
   snapshot: RunSnapshot,
   results: ResultsView | null,
   sprites: SpriteCounts,
+  renderMs: number,
 ) => void;
 
 export interface GameSceneDeps {
@@ -564,6 +568,6 @@ export class GameScene extends Phaser.Scene {
     w.results.sync(snapshot);
     // En el frame en que termina la partida: se guarda antes de que R pueda leerse (spec).
     this.deps.progress.sync(snapshot, started.tickRun);
-    this.deps.onRender?.(snapshot, w.results.view, w.layers.counts);
+    this.deps.onRender?.(snapshot, w.results.view, w.layers.counts, w.layers.renderMs);
   }
 }

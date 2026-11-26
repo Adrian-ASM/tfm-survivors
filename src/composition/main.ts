@@ -34,7 +34,7 @@ import { applyUiScale } from '../infrastructure/dom/applyUiScale';
 import type { FullscreenLike } from '../infrastructure/dom/FullscreenControl';
 import { applyUiKit, uiKitVariables } from '../infrastructure/dom/uiKit';
 import { FONT_WAIT_MS, loadUiFont, withDeadline } from '../infrastructure/dom/uiFont';
-import { assetUrl, fontUrl, iconUrl } from './assetUrl';
+import { assetUrl, audioUrl, fontUrl, iconUrl } from './assetUrl';
 import { scaleConfig } from './scaleConfig';
 import { bootContent } from './contentBoot';
 import { resolveSeed } from '../infrastructure/url/resolveSeed';
@@ -42,7 +42,21 @@ import { resolveAdvance } from '../infrastructure/url/resolveAdvance';
 import { resolveMapMode } from '../infrastructure/url/resolveMapMode';
 import { resolveMobile } from '../infrastructure/url/resolveMobile';
 import { wireMobile } from './mobileWiring';
-import { wireAudioControls } from './audioWiring';
+import {
+  exposeProbe,
+  wireAudioControls,
+  wireAudioPlayback,
+  type AudioPlayback,
+} from './audioWiring';
+import type { AudioView } from '../infrastructure/audio/AudioDirector';
+import {
+  AudioLoadStatus,
+  audioFilesToLoad,
+  audioMode,
+  hasWebAudio,
+  noAudio,
+} from '../infrastructure/audio/audioPlan';
+import { AudioLoadScene } from '../infrastructure/phaser/AudioLoadScene';
 import { wireProgress, type ProgressProbe } from './progressWiring';
 import { createRunLauncher } from './runLauncher';
 import { decorSeedOf, mapModeOf, restartRandoms } from './seedSource';
@@ -96,6 +110,12 @@ interface E2EProbe {
    * el menú.
    */
   readonly sites: SitesProbe | null;
+  /**
+   * Audio (0035, design D12): ficheros cargados y pedidos (falso y 0 con `?e2e`), estado de la
+   * música, ajustes y volúmenes efectivos, contadores de la carga y efectos sonando. También en el
+   * menú.
+   */
+  readonly audio: AudioView | null;
 }
 
 /** Sonda de los solares (0026). */
@@ -272,6 +292,11 @@ function bootstrap(): void {
   });
   const screens: Screen[] = [];
   const e2e = new URLSearchParams(window.location.search).has('e2e');
+  // Audio (0035, D1): muda con ?e2e, no disponible sin Web Audio y Phaser Sound en otro caso.
+  const soundMode = audioMode(e2e, hasWebAudio(window));
+  const audioStatus = new AudioLoadStatus();
+  // Se conecta tras crear el juego (necesita su gestor de sonido); antes no hay partida ni menú.
+  let playback: AudioPlayback | null = null;
   // El mundo es la arena del contenido; el lienzo, la vista (0013).
   const world: WorldSize = { width: config.value.arena.width, height: config.value.arena.height };
   // Se conecta a la escena al crearla; leerlo antes da null (sin partida).
@@ -337,10 +362,15 @@ function bootstrap(): void {
         panel: buildPanel.view,
       };
     },
+    get audio() {
+      return playback?.view() ?? null;
+    },
   };
   const started = (s: number): void => {
     probe.seed = s;
     probe.runs += 1;
+    // Partida nueva (Jugar, R, ↻ o ?e2e): música a 0 y nueva referencia de peticiones (D6).
+    playback?.newRun();
   };
   // Cada reinicio usa una semilla nueva (también con ?seed=), sin releer la URL ni avisar.
   const nextSeeding = restartRandoms(randomSeed, started, mapMode);
@@ -357,19 +387,21 @@ function bootstrap(): void {
   });
   const onScreen = (screen: Screen): void => {
     probe.screen = screen;
+    playback?.screen(screen);
     if (screens.at(-1) !== screen) screens.push(screen);
     if (screen !== 'menu') return;
     probe.snapshot = null;
     probe.results = null;
     probe.sprites = menuSprites;
   };
-  // Sin ?e2e no hay sonda (spec main-menu, "Sin sonda fuera de E2E").
-  if (e2e) Object.defineProperty(window, '__sprint', { value: probe });
+  // Sin ?e2e no hay sonda (spec main-menu, "Sin sonda fuera de E2E"), tampoco la de audio.
+  exposeProbe(window, e2e, probe);
 
+  const capacity = sceneCapacity(config.value, appearance.maxCorpses, appearance.maxBlastSprites);
   const game = new GameScene({
     launcher,
     restartRun: new RestartRun(config.value, nextSeeding),
-    capacity: sceneCapacity(config.value, appearance.maxCorpses, appearance.maxBlastSprites),
+    capacity,
     world,
     appearance,
     // Variedad de árboles de la partida en curso (0016): `probe.seed` ya es la de esa partida.
@@ -380,10 +412,11 @@ function bootstrap(): void {
     shop: shopPanel,
     build: buildPanel,
     // Snapshot y sprites en la misma llamada: cualquier lectura ve un par coherente (design D7).
-    onRender: (snapshot, results, sprites) => {
+    onRender: (snapshot, results, sprites, renderMs) => {
       probe.snapshot = snapshot;
       probe.results = results;
       probe.sprites = sprites;
+      playback?.render(snapshot, renderMs);
     },
     onScreen,
     simSpeed: advance.speed,
@@ -424,6 +457,12 @@ function bootstrap(): void {
     onIconsLoaded: (loaded) => {
       iconBook.setLoaded(loaded);
     },
+    // Audio en paralelo (0035, D8): solo con Phaser Sound; el menú no la espera.
+    launchAudio: soundMode === 'web',
+  });
+  const audioLoad = new AudioLoadScene({
+    files: audioFilesToLoad(booted.audio, (file) => audioUrl(import.meta.env.BASE_URL, file)),
+    status: audioStatus,
   });
 
   // Lienzo a ventana completa con tope (0017, ADR-0014): RESIZE recortado a `maxView`, que no
@@ -437,9 +476,23 @@ function bootstrap(): void {
     backgroundColor: BACKGROUND,
     // Imágenes con <img> (sin XHR ni blob:): la CSP de index.html no cambia (design D2).
     loader: { imageLoadType: 'HTMLImageElement' },
+    // Sin HTML5 Audio (0035, D1): con ?e2e o sin Web Audio, el motor no crea sistema de sonido.
+    audio: { noAudio: noAudio(soundMode) },
     // Phaser arranca la primera escena: BootScene carga las hojas y arranca el menú o, con ?e2e,
     // la partida (arranque de antes, ADR-0011).
-    scene: [boot, menu, game],
+    scene: soundMode === 'web' ? [boot, menu, game, audioLoad] : [boot, menu, game],
+  });
+  playback = wireAudioPlayback(booted.audio, audio, {
+    mode: soundMode,
+    game: phaserGame,
+    events: {
+      hidden: Phaser.Core.Events.HIDDEN,
+      visible: Phaser.Core.Events.VISIBLE,
+      preStep: Phaser.Core.Events.PRE_STEP,
+    },
+    status: audioStatus,
+    maxTowerProjectiles: capacity.towerProjectiles,
+    ...(mobile.sceneDeps.hold ? { hold: mobile.sceneDeps.hold } : {}),
   });
   // Una sola escucha, que vive lo que el juego: escala de UI de los paneles DOM (design D6; en
   // móvil, 1 siempre) y aviso de orientación con el tamaño del padre (0033, solo en móvil).
@@ -457,10 +510,6 @@ function bootstrap(): void {
       game.hintView(),
     );
   phaserGame.scale.on(Phaser.Scale.Events.RESIZE, onCanvas);
-  // M y el botón táctil de silencio (0035, D11): una vez por frame del juego, en cualquier escena.
-  phaserGame.events.on(Phaser.Core.Events.PRE_STEP, () => {
-    audio.frame();
-  });
   // `step(n)` resuelve con el frame ya pintado: POST_RENDER llega tras pintar todas las escenas,
   // una vez por frame, haya o no partida (Phaser 4.2.1, Game.step; design 0014 §3.6).
   if (stepper) {
