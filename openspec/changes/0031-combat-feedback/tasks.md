@@ -44,13 +44,13 @@
     existen `hits` ni `maxHealth`.
 
 ## 2. Infraestructura: contenido (test-after) · commit `feat(content): contenido y aspecto del combate`
-- [ ] 2.1 Crear `content/combat.json` (15 / 48) y `CombatSchema` estricto con `hitWindowTicks ≥ MAX_TICKS_PER_FRAME`
+- [x] 2.1 Crear `content/combat.json` (15 / 48) y `CombatSchema` estricto con `hitWindowTicks ≥ MAX_TICKS_PER_FRAME`
   (constante nueva exportada de `application/FixedStepLoop`), y añadir `combat` a `RunConfigSchema`,
   `RawContentFiles` y `repositoryContent` (D5).
   - Escenarios SL: «Contenido de combate por defecto» (`weapons.json` sin campos nuevos), «Valores de combate fuera de
     rango», «Límites válidos del combate» y «Campos de combate ausentes o desconocidos».
   - Test: `tests/infrastructure/combat-content.test.ts`.
-- [ ] 2.2 Bloque `combat` de `appearanceSchema.ts` y `content/appearance.json` (D6): `colors` con `superRefine`
+- [x] 2.2 Bloque `combat` de `appearanceSchema.ts` y `content/appearance.json` (D6): `colors` con `superRefine`
   (distintos y `player` rojo), `numbers` y `bar` (relleno ≠ fondo), con constantes de error que nombran el campo.
   - Escenarios SR: «Datos de combate del repositorio», «Datos de combate inválidos» y «Sin assets nuevos»
     (`npm run guard:all` y la nota de procedencia con las mismas entradas).

@@ -519,6 +519,73 @@ function checkResourceColors(a: z.output<typeof AppearanceShape>, ctx: z.Refinem
   }
 }
 
+export const HIT_COLORS_MUST_DIFFER =
+  'Los colores de los números de daño (enemy, structure, sheep, player) son distintos dos a dos.';
+export const PLAYER_HIT_MUST_BE_RED =
+  'El color de los golpes al jugador es rojo (R ≥ 192, G ≤ 80 y B ≤ 80).';
+export const NUMBER_DURATION_MUST_BE_INTEGER =
+  'La duración del número de daño es un entero ≥ 1 (ms).';
+export const NUMBER_DISTANCE_OUT_OF_RANGE = 'El ascenso y la elevación del número son números ≥ 0.';
+export const NUMBER_FONT_MUST_BE_INTEGER = 'El tamaño de letra del número es un entero ≥ 8 (px).';
+export const NUMBER_POOL_MUST_BE_INTEGER = 'El pool de números de daño es un entero ≥ 1.';
+export const BAR_SIZE_MUST_BE_INTEGER = 'El ancho y el alto de la barra de vida son enteros ≥ 1.';
+export const BAR_GAP_OUT_OF_RANGE = 'La separación de la barra sobre la huella es un número ≥ 0.';
+export const BAR_FILL_MUST_DIFFER = 'El relleno de la barra de vida es distinto de su fondo.';
+
+/** Clases de golpe en el orden del fichero (el error de un color repetido nombra la última). */
+export const HIT_KINDS = ['enemy', 'structure', 'sheep', 'player'] as const;
+
+const IntAtLeast = (min: number, error: string) =>
+  z.number({ error }).int({ error }).min(min, { error });
+const NonNegative = (error: string) => z.number({ error }).min(0, { error });
+
+/** Rojo de los golpes al jugador (spec sprite-rendering 0031): R ≥ 192, G ≤ 80 y B ≤ 80. */
+const isRed = (rgb: number): boolean =>
+  rgb >> 16 >= 192 && ((rgb >> 8) & 0xff) <= 80 && (rgb & 0xff) <= 80;
+
+/**
+ * Aspecto del combate (0031): un color por clase de golpe (distintos dos a dos, `player` rojo), el
+ * número de daño (duración, ascenso, elevación, letra y pool) y la barra de vida de las estructuras
+ * (medidas y colores, relleno ≠ fondo). Sin hojas: no pasa por la nota de procedencia.
+ */
+export const CombatLooksSchema = z.strictObject({
+  colors: z
+    .strictObject({ enemy: Hex, structure: Hex, sheep: Hex, player: Hex })
+    .superRefine((colors, ctx) => {
+      const seen = new Set<number>();
+      for (const key of HIT_KINDS) {
+        if (seen.has(colors[key])) {
+          ctx.addIssue({ code: 'custom', path: [key], message: HIT_COLORS_MUST_DIFFER });
+          return;
+        }
+        seen.add(colors[key]);
+      }
+      if (!isRed(colors.player)) {
+        ctx.addIssue({ code: 'custom', path: ['player'], message: PLAYER_HIT_MUST_BE_RED });
+      }
+    }),
+  numbers: z.strictObject({
+    durationMs: IntAtLeast(1, NUMBER_DURATION_MUST_BE_INTEGER),
+    risePx: NonNegative(NUMBER_DISTANCE_OUT_OF_RANGE),
+    liftPx: NonNegative(NUMBER_DISTANCE_OUT_OF_RANGE),
+    fontPx: IntAtLeast(8, NUMBER_FONT_MUST_BE_INTEGER),
+    pool: IntAtLeast(1, NUMBER_POOL_MUST_BE_INTEGER),
+  }),
+  bar: z
+    .strictObject({
+      width: IntAtLeast(1, BAR_SIZE_MUST_BE_INTEGER),
+      height: IntAtLeast(1, BAR_SIZE_MUST_BE_INTEGER),
+      gap: NonNegative(BAR_GAP_OUT_OF_RANGE),
+      fill: Hex,
+      back: Hex,
+    })
+    .superRefine((bar, ctx) => {
+      if (bar.fill === bar.back) {
+        ctx.addIssue({ code: 'custom', path: ['fill'], message: BAR_FILL_MUST_DIFFER });
+      }
+    }),
+});
+
 const AppearanceShape = z.strictObject({
   maxCorpses: z
     .number()
@@ -554,6 +621,8 @@ const AppearanceShape = z.strictObject({
   /** Solares (0026): obra común, casa y torre, en el plan del mapa. */
   sites: SiteLooksSchema,
   siteColors: SiteColorsSchema,
+  /** Números de daño y barras de vida de las estructuras (0031). */
+  combat: CombatLooksSchema,
 });
 
 /**
@@ -587,6 +656,8 @@ export type StructureAspect = z.output<typeof StructureAspectSchema>;
 export type StructureLooksAppearance = z.output<typeof StructureLooksSchema>;
 export type SiteLooksAppearance = z.output<typeof SiteLooksSchema>;
 export type SiteColors = z.output<typeof SiteColorsSchema>;
+/** Aspecto del combate (0031): colores por clase de golpe, número de daño y barra de vida. */
+export type CombatLooks = z.output<typeof CombatLooksSchema>;
 export type MapAppearance = z.output<typeof MapAppearanceSchema>;
 /** Decoración del mapa generado (0029). */
 export type DecorAppearance = z.output<typeof DecorSchema>;

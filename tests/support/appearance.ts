@@ -164,6 +164,7 @@ export interface RawAppearance {
   structureColors: Record<string, unknown>;
   sites: Record<string, Json>;
   siteColors: Record<string, unknown>;
+  combat: { colors: Record<string, unknown>; numbers: Json; bar: Json } & Json;
   pickupMotion: { float: Record<string, unknown>; spawnStaggerMs: unknown } & Json;
   [extra: string]: unknown;
 }
@@ -356,5 +357,10 @@ export function rawAppearance(): RawAppearance {
       tower: structureLook(SITE_TOWER_FILE, 128, 256),
     },
     siteColors: { construction: '#b8a27a', house: '#3f6fb5', tower: '#2c4a7d' },
+    combat: {
+      colors: { enemy: '#ffffff', structure: '#ffd166', sheep: '#9be7ff', player: '#ff3b30' },
+      numbers: { durationMs: 800, risePx: 32, liftPx: 20, fontPx: 16, pool: 48 },
+      bar: { width: 48, height: 6, gap: 8, fill: '#e63946', back: '#1d1d1d' },
+    },
   };
 }
