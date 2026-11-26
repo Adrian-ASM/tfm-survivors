@@ -1,3 +1,4 @@
+import type { HitRecord } from '../combat/HitLog';
 import type { Enemy } from '../enemy/Enemy';
 import type { Blast } from '../hazard/Blast';
 import type { Dynamite } from '../hazard/Dynamite';
@@ -16,6 +17,7 @@ import type {
   BlastSnapshot,
   DynamiteSnapshot,
   EnemySnapshot,
+  HitSnapshot,
   GemSnapshot,
   PickupSnapshot,
   OfferSnapshot,
@@ -116,6 +118,7 @@ export function toStructureSnapshot(s: Structure): StructureSnapshot {
     cols,
     rows,
     health: s.hp,
+    maxHealth: s.site.type.health,
     destroyed: s.destroyed,
   });
 }
@@ -250,4 +253,14 @@ export function toShopSnapshot(p: ShopParts): ShopSnapshot {
     gold,
     products: Object.freeze(products),
   });
+}
+
+/** Vista congelada de un golpe: sin `targetId` en los de clase `player` (0031). */
+export function toHitSnapshot(r: HitRecord): HitSnapshot {
+  const { id, tick, kind, targetId, x, y, amount } = r;
+  return Object.freeze(
+    kind === 'player'
+      ? { id, tick, kind, x, y, amount }
+      : { id, tick, kind, targetId, x, y, amount },
+  );
 }

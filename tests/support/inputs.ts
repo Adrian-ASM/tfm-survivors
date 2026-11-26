@@ -8,3 +8,12 @@ export function randomInputs(count: number, seed: number): PlayerInput[] {
     PlayerInput.of(Math.round(rnd.next() * 2 - 1), Math.round(rnd.next() * 2 - 1)),
   );
 }
+
+/**
+ * Como `randomInputs`, pero cada input se mantiene `hold` ticks seguidos: el jugador recorre el mapa
+ * en vez de quedarse cerca de la salida (escenarios que necesitan golpes pronto, 0031).
+ */
+export function heldInputs(count: number, seed: number, hold: number): PlayerInput[] {
+  const keys = randomInputs(Math.ceil(count / hold), seed);
+  return Array.from({ length: count }, (_, i) => keys[Math.floor(i / hold)] ?? PlayerInput.NONE);
+}

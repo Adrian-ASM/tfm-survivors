@@ -1,4 +1,5 @@
 import type { StateCounts } from './EnemyLayer';
+import { zeroDamageNumbers, type DamageNumberCounts } from './DamageNumberLayer';
 import type { SpriteCount } from './PlayerView';
 import type { PickupCounts, PickupSpawnCounts } from './PickupLayer';
 import { zeroSheepCounts, type SheepCounts } from './SheepLayer';
@@ -44,6 +45,10 @@ export interface SpriteCounts {
   readonly sites: SiteCount;
   /** Flechas de torre pintadas (0026), aparte de los proyectiles del jugador. */
   readonly towerArrows: SpriteCount;
+  /** Números de daño visibles por clase y creados en la partida (0031). */
+  readonly damageNumbers: DamageNumberCounts;
+  /** Barras de vida de estructura dibujadas (0031). */
+  readonly healthBars: number;
 }
 
 /** Clave de las vetas en su `StructureArt` (un solo "tipo"). */
@@ -107,5 +112,7 @@ export function emptyCounts(
     veins: { active: 0, depleted: 0, fallback: 0 },
     sites: zeroSiteCounts(),
     towerArrows: zero(),
+    damageNumbers: zeroDamageNumbers(),
+    healthBars: 0,
   };
 }

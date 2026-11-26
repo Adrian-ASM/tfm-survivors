@@ -3,6 +3,9 @@ import { TICK_SECONDS } from '../domain/run/Run';
 /** Tope de tiempo acumulable por frame: evita la "espiral de la muerte" (máx. 15 ticks a 60 Hz). */
 export const MAX_FRAME_MS = 250;
 
+/** Máximo de ticks que ejecuta un frame a velocidad 1 (= 15; cota de la ventana de golpes, 0031). */
+export const MAX_TICKS_PER_FRAME = Math.round(MAX_FRAME_MS / (TICK_SECONDS * 1000));
+
 /** Tolerancia para errores de coma flotante al comparar con la duración del tick. */
 const EPSILON_MS = 1e-6;
 

@@ -4,6 +4,7 @@ import type { Enemy } from '../enemy/Enemy';
 import type { GuardPost } from '../enemy/GuardPost';
 import { Horde } from '../enemy/Horde';
 import { HazardField } from '../hazard/HazardField';
+import { HitLog } from '../combat/HitLog';
 import { FlowField } from '../map/FlowField';
 import type { GameMap } from '../map/GameMap';
 import { toMapSnapshot, type MapSnapshot } from '../map/MapSnapshot';
@@ -46,7 +47,13 @@ import {
 import { Arsenal } from '../weapon/Arsenal';
 import { TowerBattery } from '../weapon/TowerBattery';
 import type { UpgradeBoard } from '../upgrade/UpgradeBoard';
-import type { BuildSnapshot, RunSnapshot, ShopSnapshot, SiteSnapshot } from './RunSnapshot';
+import type {
+  BuildSnapshot,
+  HitSnapshot,
+  RunSnapshot,
+  ShopSnapshot,
+  SiteSnapshot,
+} from './RunSnapshot';
 import { Settlement } from '../site/Settlement';
 import type { BuildError } from '../site/BuildError';
 import { isBuildingKind } from '../site/BuildingRules';
@@ -55,6 +62,7 @@ import {
   toBlastSnapshot,
   toDynamiteSnapshot,
   toEnemySnapshot,
+  toHitSnapshot,
   toPickupSnapshots,
   toVeinSnapshot,
   toOfferSnapshot,
@@ -166,6 +174,12 @@ export class Run {
   private sitesKey = '';
   /** Oferta de obra del snapshot: la cerrada o la de la obra abierta (fija mientras dura). */
   private buildView: BuildSnapshot = CLOSED_BUILD;
+  /** Registro de golpes de combate (0031, ADR-0027): por él pasa todo el daño de armas y peligros. */
+  private readonly log: HitLog;
+  /** Última lista de golpes del snapshot y su clave (tick, siguiente id). */
+  private hitsView: readonly HitSnapshot[] = Object.freeze([]);
+  private hitsTick = -1;
+  private hitsNext = -1;
 
   private constructor(
     private readonly rules: RunRules,
@@ -193,14 +207,15 @@ export class Run {
     this.experience = initial.experience;
     this.board = initial.board;
     this.director = new WaveDirector(rules.table, rules.spawn, random);
-    this.arsenal = new Arsenal(rules.loadout, rules.pulseCapacity);
-    this.hazards = new HazardField(rules.hazards, initial.dynamites);
+    this.log = new HitLog(rules.combat);
+    this.arsenal = new Arsenal(rules.loadout, rules.pulseCapacity, this.log);
+    this.hazards = new HazardField(rules.hazards, initial.dynamites, this.log);
     this.structures = new StructureField(initial.structures);
     this.veins = initial.veins;
     this.flock = initial.flock;
     this.gate = new CastleGate(terrain.door, rules.shop, initial.shopArmed);
     this.settlement = new Settlement(buildSites, rules.buildings);
-    this.towers = new TowerBattery(rules.buildings, buildSites);
+    this.towers = new TowerBattery(rules.buildings, buildSites, this.log);
     for (const w of rules.loadout.weapons) this.retune(w.id);
     const bonus = maxHealthBonus(rules.upgrades, this.board.levels);
     this.player = this.player.withRules(this.effectivePlayer(), bonus);
@@ -418,6 +433,7 @@ export class Run {
   tick(input: PlayerInput): void {
     if (this.phase.status !== 'running') return;
     const n = this.tickCount + 1;
+    this.log.begin(n);
     this.player = this.player.move(input, TICK_SECONDS, this.arena, this.terrain);
     const { x, y } = this.player.position;
     this.flock.step(n, x, y, this.terrain, this.arena);
@@ -590,14 +606,17 @@ export class Run {
   /**
    * Un solo golpe por tick con el mayor daño entre los contactos (tipos con daño por contacto) y
    * las explosiones del paso 4 que alcanzan al jugador, si no es invulnerable (spec player-health).
-   * Devuelve true si el golpe deja la vida en 0 (la partida termina en este tick).
+   * Devuelve true si el golpe deja la vida en 0 (la partida termina en este tick). El golpe queda
+   * en el registro con lo que de verdad baja la vida (armadura, mínimo 1 y recorte; 0031).
    */
   private applyHit(n: number): boolean {
     const { x, y } = this.player.position;
     const contact = contactDamage(x, y, this.player.radius, this.horde.alive);
     const damage = Math.max(contact, this.hazards.playerHit);
     if (damage === 0 || !this.player.canBeHitAt(n)) return false;
+    const before = this.player.health.current;
     this.player = this.player.hit(damage, n);
+    this.log.recordPlayer(x, y, before - this.player.health.current, n);
     if (!this.player.health.isDepleted) return false;
     this.phase = LOST;
     return true;
@@ -723,7 +742,28 @@ export class Run {
       shop: this.shopSnapshot(),
       sites: this.siteSnapshots(),
       build: this.buildView,
+      hits: this.hitSnapshots(),
     });
+  }
+
+  /**
+   * Golpes de la ventana del tick en curso, en orden de id (0031, design D4). La lista congelada se
+   * rehace solo si cambia (tick, siguiente id): con la partida parada es siempre la misma. Cada
+   * registro guarda su vista, creada una sola vez (el snapshot nunca se pide a mitad de tick).
+   */
+  private hitSnapshots(): readonly HitSnapshot[] {
+    const k = this.tickCount;
+    const next = this.log.nextId;
+    if (k === this.hitsTick && next === this.hitsNext) return this.hitsView;
+    const out: HitSnapshot[] = [];
+    this.log.forWindow(k, (r) => {
+      r.view ??= toHitSnapshot(r);
+      out.push(r.view);
+    });
+    this.hitsTick = k;
+    this.hitsNext = next;
+    this.hitsView = Object.freeze(out);
+    return this.hitsView;
   }
 
   /** Solares del snapshot, rehechos solo al cambiar el estado o el armado de alguno. */

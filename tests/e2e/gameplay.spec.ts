@@ -16,6 +16,9 @@ import {
   startSpriteSampler,
   step,
   stepUntil,
+  stepUntilHit,
+  sampleNumbers,
+  backToMenu,
   stopSpriteSampler,
   waitForRun,
   type MapView,
@@ -38,11 +41,37 @@ async function openGame(page: Page, url: string): Promise<void> {
 // con el mundo de 0017 (plazo de 80 s de juego).
 const FIRST_OFFER_LIMIT = 80 * 60;
 
-test('Subida de nivel: con ?seed=7 aparece la oferta de 3, se pulsa 1 y la partida sigue', async ({
+// Spec sprite-rendering (0031), "Números de daño en el navegador [E2E]": antes de la oferta, el
+// primer golpe a un enemigo crea sus números; en pausa no cambian; tras `step(60)` (1.000 ms > L)
+// solo se ven los de los golpes nuevos; en el menú, 0 números y 0 barras.
+test('Subida de nivel y Números de daño en el navegador: con ?seed=7 golpes, pausa, oferta de 3 y menú', async ({
   page,
 }) => {
   const problems = collect(page, ['error', 'warning']);
   await openGame(page, gameUrl({ seed: 7, manual: true }));
+
+  const first = await stepUntilHit(page, 'enemy', FIRST_OFFER_LIMIT);
+  if (!first) throw new Error('sin golpes a enemigos antes de la oferta');
+  const enemyHits = first.hits.filter((h) => h.kind === 'enemy').length;
+  expect(first.hits.every((h) => h.kind === 'enemy')).toBe(true);
+  expect([first.numbers.enemy, first.numbers.created]).toEqual([enemyHits, first.hits.length]);
+  await page.keyboard.press('Escape');
+  await expect.poll(async () => (await probe(page))?.screen).toBe('paused');
+  const paused = await sampleNumbers(page, 30);
+  expect(paused).toHaveLength(30);
+  expect(paused.every((d) => d.created === first.numbers.created)).toBe(true);
+  expect(paused.every((d) => d.enemy === first.numbers.enemy)).toBe(true);
+  await page.keyboard.press('Escape');
+  await expect.poll(async () => (await probe(page))?.screen).toBe('playing');
+  expect(await step(page, 60)).toBe(60);
+  const later = await probe(page);
+  const lastId = Math.max(...first.hits.map((h) => h.id));
+  const fresh = (later?.snapshot?.hits ?? []).filter((h) => h.id > lastId).length;
+  const numbers = later?.sprites?.damageNumbers;
+  if (!numbers) throw new Error('sin sonda de números');
+  expect(numbers.created - first.numbers.created).toBe(fresh);
+  // Los del primer frame ya no se ven: todos los visibles son de los golpes nuevos.
+  expect(numbers.enemy + numbers.structure + numbers.sheep + numbers.player).toBe(fresh);
 
   const offered = await stepUntil(page, (s) => s.offer.length > 0, FIRST_OFFER_LIMIT);
 
@@ -56,6 +85,12 @@ test('Subida de nivel: con ?seed=7 aparece la oferta de 3, se pulsa 1 y la parti
   expect(after?.offer).toHaveLength(0);
   expect(after?.progression.level).toBe(2);
   expect(after?.upgrades).toEqual([{ id: offered?.offer[0]?.id, level: 1 }]);
+  await backToMenu(page);
+  const menu = (await probe(page))?.sprites;
+  expect([menu?.damageNumbers, menu?.healthBars]).toEqual([
+    { enemy: 0, structure: 0, sheep: 0, player: 0, created: 0 },
+    0,
+  ]);
   expect(problems).toEqual([]);
 });
 

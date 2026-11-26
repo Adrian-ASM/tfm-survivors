@@ -10,6 +10,7 @@ import resourcesJson from '../../../content/resources.json';
 import sheepJson from '../../../content/sheep.json';
 import shopJson from '../../../content/shop.json';
 import buildingsJson from '../../../content/buildings.json';
+import combatJson from '../../../content/combat.json';
 import upgradesJson from '../../../content/upgrades.json';
 import wavesJson from '../../../content/waves.json';
 import weaponsJson from '../../../content/weapons.json';
@@ -18,6 +19,7 @@ import { err, invalidConfig, ok, type DomainError, type Result } from '../../dom
 import {
   ArenaSchema,
   BuildingsSchema,
+  CombatSchema,
   SPAWN_RING_INSIDE_MAX_VIEW,
   EnemiesSchema,
   MapSchema,
@@ -52,6 +54,7 @@ const RunConfigSchema = z
     sheep: SheepSchema,
     shop: ShopSchema,
     buildings: BuildingsSchema,
+    combat: CombatSchema,
   })
   .superRefine((config, ctx) => {
     // Estricto: un punto del anillo sin recorte nunca cae en una vista centrada en el jugador.
@@ -90,6 +93,7 @@ export interface RawContentFiles {
   sheep: unknown;
   shop: unknown;
   buildings: unknown;
+  combat: unknown;
 }
 
 /** Tamaño en píxeles CSS (presentación): nunca llega al núcleo. */
@@ -172,5 +176,6 @@ export function repositoryContent(): RawContentFiles {
     sheep: sheepJson,
     shop: shopJson,
     buildings: buildingsJson,
+    combat: combatJson,
   };
 }

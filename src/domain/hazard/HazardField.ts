@@ -1,4 +1,5 @@
 import { circlesOverlap } from '../collision/contact';
+import { HitLog } from '../combat/HitLog';
 import type { Enemy } from '../enemy/Enemy';
 import { Blast } from './Blast';
 import { Dynamite } from './Dynamite';
@@ -39,6 +40,8 @@ export class HazardField {
   constructor(
     readonly rules: HazardRules,
     initial: readonly DynamiteSeed[] = [],
+    /** Registro de golpes (0031): enemigos y ovejas; por defecto, desactivado. */
+    private readonly log: HitLog = HitLog.disabled(),
   ) {
     for (let i = 0; i < rules.maxDynamites; i++) this.spare.push(new Dynamite());
     for (const d of initial) {
@@ -178,12 +181,17 @@ export class HazardField {
     let died = false;
     for (const e of enemies) {
       if (e === self || !e.alive) continue;
-      if (circlesOverlap(cx, cy, radius, e.x, e.y, e.radius) && e.takeDamage(damage, n)) {
+      if (
+        circlesOverlap(cx, cy, radius, e.x, e.y, e.radius) &&
+        this.log.strike('enemy', e, damage, n)
+      ) {
         died = true;
       }
     }
     for (const s of this.sheep) {
-      if (s.alive && circlesOverlap(cx, cy, radius, s.x, s.y, s.radius)) s.takeDamage(damage, n);
+      if (s.alive && circlesOverlap(cx, cy, radius, s.x, s.y, s.radius)) {
+        this.log.strike('sheep', s, damage, n);
+      }
     }
     return died;
   }

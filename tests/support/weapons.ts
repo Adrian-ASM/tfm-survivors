@@ -44,6 +44,7 @@ export class FakeTarget implements WeaponTarget {
     public y: number,
     public hp = 10,
     readonly radius = 10,
+    readonly id = 0,
   ) {}
 
   get alive(): boolean {

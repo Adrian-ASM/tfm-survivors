@@ -1,9 +1,10 @@
+import type { HitKind } from '../combat/HitKind';
 import type { StateKind } from '../enemy/behavior/BehaviorConfig';
 import type { PickupKind } from '../pickup/PickupKind';
 import type { SheepState } from '../sheep/Sheep';
 import type { RunPhase } from './RunPhase';
 
-export type { StateKind, SheepState };
+export type { StateKind, SheepState, HitKind };
 
 /** Oveja viva (spec sheep 0023): copia de escalares, con su punto de origen. */
 export interface SheepSnapshot {
@@ -71,7 +72,8 @@ export interface BlastSnapshot {
 
 /**
  * Casa o torre de la partida (spec goblin-structures): id, tipo, posición, radio de impacto, huella
- * (primera columna y fila, columnas y filas), vida actual (0 en las ruinas) y si está destruida.
+ * (primera columna y fila, columnas y filas), vida actual (0 en las ruinas), vida máxima y si está
+ * destruida.
  */
 export interface StructureSnapshot {
   readonly id: number;
@@ -84,7 +86,25 @@ export interface StructureSnapshot {
   readonly cols: number;
   readonly rows: number;
   readonly health: number;
+  /** Vida con la que se crea (la de su tipo; 0031): > 0 y fija toda la partida, también en ruina. */
+  readonly maxHealth: number;
   readonly destroyed: boolean;
+}
+
+/**
+ * Golpe de combate (0031, ADR-0027): daño aplicado a un objetivo en un tick, sumado por objetivo,
+ * con id de su propia secuencia, la posición del objetivo en ese tick y su clase. `targetId` es el
+ * del enemigo, la estructura o la oveja; no existe en los de clase `player`.
+ */
+export interface HitSnapshot {
+  readonly id: number;
+  readonly tick: number;
+  readonly kind: HitKind;
+  readonly targetId?: number;
+  readonly x: number;
+  readonly y: number;
+  /** Entero ≥ 1: la suma de lo aplicado al objetivo en el tick. */
+  readonly amount: number;
 }
 
 /** Arma equipada, en el orden de content/weapons.json, y si está cargada en este tick. */
@@ -315,6 +335,8 @@ export interface RunSnapshotBody {
   readonly sites: readonly SiteSnapshot[];
   /** Oferta de obra (0026): abierta solo en obra. */
   readonly build: BuildSnapshot;
+  /** Golpes de los ticks k − N + 1 … k en orden de id (0031; N = ventana de golpes). */
+  readonly hits: readonly HitSnapshot[];
 }
 
 /**

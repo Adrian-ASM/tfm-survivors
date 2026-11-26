@@ -28,6 +28,7 @@ import type { StructuresConfig } from '../structure/StructureType';
 import { SheepRules, type SheepConfig } from '../sheep/SheepRules';
 import { SHOP_HEAL_ID_TAKEN, ShopRules, type ShopConfig } from '../shop/ShopRules';
 import { BuildingRules, type BuildingsConfig } from '../site/BuildingRules';
+import { CombatRules, type CombatConfig } from '../combat/CombatRules';
 
 export type { WeaponsConfig, PlayerRules };
 export {
@@ -94,6 +95,8 @@ export interface RunConfig {
   readonly shop: ShopConfig;
   /** Solares y edificios (content/buildings.json, spec build-sites, 0026). */
   readonly buildings: BuildingsConfig;
+  /** Ventana y tope del registro de golpes (content/combat.json, 0031). */
+  readonly combat: CombatConfig;
 }
 
 /** Forma del contenido de mejoras (content/upgrades.json): personaje y arma (ADR-0023). */
@@ -133,6 +136,8 @@ export interface RunRules {
   readonly shop: ShopRules;
   /** Solares (colocación y acceso), costes, ingreso de la casa y arma de la torre (0026). */
   readonly buildings: BuildingRules;
+  /** Ventana de golpes del snapshot y tope de golpes por tick (0031, ADR-0027). */
+  readonly combat: CombatRules;
 }
 
 function checkBudgetCoversCatalog(spawn: SpawnRules, catalog: EnemyCatalog): DomainError | null {
@@ -200,6 +205,8 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
   }
   const buildings = BuildingRules.create(config.buildings);
   if (!buildings.ok) return buildings;
+  const combat = CombatRules.create(config.combat);
+  if (!combat.ok) return combat;
   return ok({
     arena: arena.value,
     player: config.player,
@@ -220,5 +227,6 @@ export function buildRunRules(config: RunConfig): Result<RunRules, DomainError> 
     sheep: sheep.value,
     shop: shop.value,
     buildings: buildings.value,
+    combat: combat.value,
   });
 }

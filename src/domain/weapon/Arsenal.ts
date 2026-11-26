@@ -1,4 +1,6 @@
 import { circlesOverlap } from '../collision/contact';
+import { HitLog } from '../combat/HitLog';
+import type { TargetHitKind } from '../combat/HitKind';
 import { assertNever } from '../shared/assertNever';
 import { Projectile, type ProjectileAttack } from './Projectile';
 import { PulseEcho } from './PulseEcho';
@@ -13,6 +15,9 @@ type PulseAttack = Extract<Weapon['type']['attack'], { type: 'pulse' }>;
 
 /** Sin objetivos de reserva (partidas sin estructuras o sin ovejas). */
 const NO_TARGETS: readonly WeaponTarget[] = Object.freeze([]);
+
+/** Clase de golpe de cada nivel de reserva (1 estructuras, 2 ovejas; ADR-0022 y 0031). */
+const RESERVE_KINDS: readonly TargetHitKind[] = ['structure', 'sheep'];
 
 /**
  * Paso de armas del tick (servicio de dominio con estado; lo posee `Run`, como el `WaveDirector`).
@@ -40,6 +45,8 @@ export class Arsenal {
   constructor(
     private readonly loadout: WeaponLoadout,
     pulseCapacity: number = loadout.pulseCapacity,
+    /** Registro de golpes (0031): por él pasa todo el daño; por defecto, desactivado. */
+    private readonly log: HitLog = HitLog.disabled(),
   ) {
     this.weapons = Object.freeze(loadout.weapons.map((type) => new Weapon(type)));
     for (let i = 0; i < loadout.maxProjectiles; i++) this.free.push(new Projectile());
@@ -146,10 +153,10 @@ export class Arsenal {
       const level = p.tier > 0 ? reserves[p.tier - 1] : undefined;
       const wall = hit || !level ? undefined : firstOverlapping(p.x, p.y, p.radius, level);
       if (hit) {
-        if (hit.takeDamage(p.damage, n)) kills++;
+        if (this.log.strike('enemy', hit, p.damage, n)) kills++;
         p.spent = true;
       } else if (wall) {
-        wall.takeDamage(p.damage, n);
+        this.log.strike(RESERVE_KINDS[p.tier - 1] ?? 'structure', wall, p.damage, n);
         p.spent = true;
       } else if (p.expiredAt(n)) {
         p.spent = true;
@@ -251,13 +258,17 @@ export class Arsenal {
     for (let i = 0; i < targets.length; i++) {
       const t = targets[i];
       if (t?.alive && circlesOverlap(px, py, radius, t.x, t.y, t.radius)) {
-        if (t.takeDamage(damage, n)) kills++;
+        if (this.log.strike('enemy', t, damage, n)) kills++;
       }
     }
-    for (const level of reserves) {
+    for (let l = 0; l < reserves.length; l++) {
+      const level = reserves[l] ?? NO_TARGETS;
+      const kind = RESERVE_KINDS[l] ?? 'structure';
       for (let i = 0; i < level.length; i++) {
         const s = level[i];
-        if (s?.alive && circlesOverlap(px, py, radius, s.x, s.y, s.radius)) s.takeDamage(damage, n);
+        if (s?.alive && circlesOverlap(px, py, radius, s.x, s.y, s.radius)) {
+          this.log.strike(kind, s, damage, n);
+        }
       }
     }
     const echo = this.freeEchoes.pop();

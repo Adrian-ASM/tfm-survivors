@@ -347,6 +347,8 @@ saber cuánto falta para destruir algo y cuánto daño hago y recibo.**
 - Given las semillas 1..50 con el bot, When se mide, Then el balance es idéntico a `BALANCE_BASELINE`.
 - Preguntas abiertas: color por tipo de objetivo (propuesta: jugador en rojo); agrupar los golpes del mismo tick por
   objetivo; tope de números simultáneos.
+- Resuelto en 0031: un color por clase (jugador en rojo), un golpe por objetivo y tick con la suma de lo aplicado y
+  un pool de 48 números; tope de 48 golpes por tick (el del jugador aparte). Estado: hecho (apply 2026-11-26).
 - Prioridad: Should.
 
 **0032 · goblin-tower-archers · Como jugador quiero que las torres goblin me disparen, para que atacar un campamento
@@ -428,7 +430,7 @@ Pendientes:
 | 0028 menu-guide | Botón «Cómo jugar» en el menú con páginas (anterior/siguiente/cerrar) que explican las mecánicas; textos en `content/` con zod; solo DOM, balance idéntico | Should | |
 | 0029 living-map | Más decoración (Deco 01–18) no bloqueante, árboles animados con fase por árbol y torre goblin animada; ≤ 1.000 objetos del mapa; castillo, casas y mina quedan estáticos | Should | Densidad, zonas permitidas y fotogramas de los árboles (explore) |
 | 0030 pickup-visibility | Recogibles más grandes, hoja de aparición para oro, madera y carne (`*_Spawn`) y flote leve en los cinco; radio de recogida y balance intactos | Should | ¿Zoom de cámara por tamaño de ventana? (decisión del autor) |
-| 0031 combat-feedback | Barras de vida en casas y torres goblin (desaparecen en ruina) y números de daño deterministas en cada golpe (snapshot sin azar, pool en el render); balance idéntico | Should | |
+| 0031 combat-feedback | **Hecho (apply 2026-11-26)**: registro de golpes en el núcleo (daño aplicado sumado por objetivo y tick, ventana 15 y tope 48 en `content/combat.json`, ADR-0027); números de daño con color por clase (jugador en rojo) en un pool de 48 y barras de vida en casas y torres goblin (desaparecen en ruina). Balance y firmas idénticos | Should | |
 | 0032 goblin-tower-archers | Un arquero goblin en cada torre que dispara al jugador dentro de su radio (decisión D4 de 0021 superada); las barras de vida pasaron a 0031 | Should | ¿Hay goblin arquero en Update 010? (procedencia) |
 | 0033 characters | Elección de personaje y Guerrero. Aplazado desde 0022 hasta tener el formato de mejoras de 0024 (hecho) | Should | ¿Es divertido el Guerrero? |
 | balance-pass-2 (número al empezar) | Pasada de equilibrio como diseño, no como red de seguridad: stats por tipo de enemigo y de personaje, métricas más allá de la tasa de victoria, revisión del bot de referencia y playtest humano con notas | Should | |

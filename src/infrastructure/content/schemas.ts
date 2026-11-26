@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import { RUN_DURATION_MUST_BE_INTEGER } from '../../domain/run/RunDuration';
+import { MAX_TICKS_PER_FRAME } from '../../application/FixedStepLoop';
+import { MAX_HITS_MUST_BE_INTEGER } from '../../domain/combat/CombatRules';
 import {
   BRIDGES_OUT_OF_RANGE,
   CASTLE_SIZE_MUST_BE_INTEGER,
@@ -659,4 +661,19 @@ export const BuildingsSchema = z.strictObject({
     maxProjectiles: RequiredCount(TOWER_PROJECTILES_MUST_BE_INTEGER),
     weapon: WeaponSchema,
   }),
+});
+
+/** La ventana de golpes debe cubrir un frame entero a velocidad 1 (spec simulation-loop 0031). */
+export const HIT_WINDOW_BELOW_FRAME = `La ventana de golpes debe ser un entero ≥ ${String(
+  MAX_TICKS_PER_FRAME,
+)} (el máximo de ticks por frame).`;
+
+// Combate (content/combat.json, spec simulation-loop 0031): solo acota lo que se registra y se
+// expone. Estricto: un campo extra (`crit`) falla nombrándolo.
+export const CombatSchema = z.strictObject({
+  hitWindowTicks: z
+    .number({ error: HIT_WINDOW_BELOW_FRAME })
+    .int({ error: HIT_WINDOW_BELOW_FRAME })
+    .min(MAX_TICKS_PER_FRAME, { error: HIT_WINDOW_BELOW_FRAME }),
+  maxHitsPerTick: RequiredCount(MAX_HITS_MUST_BE_INTEGER),
 });

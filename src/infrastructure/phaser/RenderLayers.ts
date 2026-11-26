@@ -17,6 +17,13 @@ import type { Box, MapArtPlan } from './map/planMapArt';
 import { paintMapArt, zeroCells, zeroMapArt, type MapArtCanvas } from './TerrainView';
 import { StructureArt } from './StructureArt';
 import { SiteArt } from './SiteArt';
+import {
+  DamageNumberLayer,
+  zeroDamageNumbers,
+  type DamageNumberLooks,
+  type TextLike,
+} from './DamageNumberLayer';
+import { HealthBarLayer, type BarCanvas, type BarLooks } from './HealthBarLayer';
 
 /** Tamaño de los pools: el de la escena más el tope de cadáveres de los datos de aspecto. */
 export interface LayerCapacity {
@@ -44,6 +51,18 @@ export interface RenderParts {
   readonly capacity: LayerCapacity;
   /** Tipos de estructura del contenido (0021): claves de `sprites.structures`, también a 0. */
   readonly structureTypes?: readonly string[];
+  /**
+   * Capa de combate (0031): fábricas de los `Text` de los números y del `Graphics` de las barras, y
+   * su aspecto (`appearance.combat`). Sin ella (tests de otras capas), no hay capa de combate.
+   */
+  readonly feedback?: FeedbackParts;
+}
+
+/** Lo que necesita la capa de combate (capa 9): fábricas del motor y aspecto validado. */
+export interface FeedbackParts {
+  readonly text: () => TextLike;
+  readonly bars: () => BarCanvas;
+  readonly looks: DamageNumberLooks & { readonly bar: BarLooks };
 }
 
 /**
@@ -68,6 +87,9 @@ export class RenderLayers {
   private readonly player: PlayerView;
   /** Capa de peligros (0020): se crea después de la capa alta del mapa con `createHazards`. */
   private hazards: HazardLayer | null = null;
+  /** Capa de combate (0031): barras y, encima, números; tras los peligros con `createFeedback`. */
+  private bars: HealthBarLayer | null = null;
+  private numbers: DamageNumberLayer | null = null;
   private readonly parts: RenderParts;
   private status: RunSnapshot['status'] = 'running';
   /** Lienzo del mapa pintado, animación de la espuma (0016) y último frame aplicado. */
@@ -137,7 +159,27 @@ export class RenderLayers {
       veins: veinCounts(this.veinArt.counts[VEIN_KEY]),
       sites: this.siteArt.counts,
       towerArrows: this.towerArrows.counts,
+      damageNumbers: zeroDamageNumbers(),
+      healthBars: 0,
     };
+    // Vista viva de las barras dibujadas (0031): la sonda lee siempre el último frame pintado.
+    Object.defineProperty(this.counts, 'healthBars', {
+      enumerable: true,
+      get: () => this.bars?.drawn ?? 0,
+    });
+  }
+
+  /**
+   * Crea la capa de combate (capa 9 de sprite-rendering, 0031): las barras de vida y, encima, los
+   * números de daño, sobre los peligros y bajo el HUD porque se crea entre ambos. Una vez; sin
+   * `feedback` en las piezas, no hace nada.
+   */
+  createFeedback(): void {
+    const feedback = this.parts.feedback;
+    if (this.numbers || !feedback) return;
+    this.bars = new HealthBarLayer(feedback.bars(), feedback.looks.bar);
+    this.numbers = new DamageNumberLayer(feedback.text, feedback.looks);
+    Object.assign(this.counts, { damageNumbers: this.numbers.counts });
   }
 
   /**
@@ -181,6 +223,9 @@ export class RenderLayers {
     this.towerArrows.sync(snapshot.towerProjectiles);
     this.player.render(snapshot, ms);
     this.hazards?.sync(snapshot.warnings, snapshot.dynamites, snapshot.blasts, ms);
+    // 0031: barras con la vida del snapshot y números de los golpes nuevos, con el reloj del frame.
+    this.bars?.sync(snapshot.structures);
+    this.numbers?.sync(snapshot.hits, ms);
     // Antes del recorte del frame (`cullMap`): la ruina se ve desde el frame en que figura destruida.
     this.structureArt.sync(snapshot.structures);
     this.veinArt.sync(snapshot.veins);
@@ -213,6 +258,7 @@ export class RenderLayers {
     mapArt.decor = { ...painted.mapArt.decor };
     mapArt.objects = painted.mapArt.objects;
     this.mapCanvas = canvas;
+    this.bars?.setCellSize(plan.cellSize);
     this.culler.reset(plan);
     this.structureArt.reset(plan.structures, this.culler);
     this.veinArt.reset(plan.veins, this.culler);
@@ -244,6 +290,8 @@ export class RenderLayers {
     this.pickups.clear();
     this.sheep.clear();
     this.hazards?.clear();
+    this.bars?.clear();
+    this.numbers?.clear();
     this.player.reset();
     this.status = 'running';
   }

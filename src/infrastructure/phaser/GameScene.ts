@@ -50,6 +50,8 @@ import { CameraRig, type CameraView, type WorldSize } from './CameraRig';
 
 const PULSE_COLOR = 0x7ce2fe;
 const PULSE_LINE_WIDTH = 2;
+/** Relleno de los números de daño: blanco, para que el tinte de su clase dé el color (0031). */
+const NUMBER_BASE_COLOR = '#ffffff';
 
 /**
  * Tamaño de los pools de sprites, calculado en la composición desde el contenido validado:
@@ -210,7 +212,7 @@ export class GameScene extends Phaser.Scene {
       this.leave();
     });
     // Orden de creación = orden de pintado: suelo, mapa (0015), anillos, gemas, cadáveres, enemigos,
-    // proyectiles, jugador, capa alta del mapa, peligros (0020), HUD y overlays encima de todo.
+    // proyectiles, jugador, capa alta del mapa, peligros (0020), combate (0031), HUD y overlays.
     ensurePlaceholderTexture(this);
     const ring = (): RingSprite =>
       this.add.circle(0, 0, 1).setStrokeStyle(PULSE_LINE_WIDTH, PULSE_COLOR).setVisible(false);
@@ -244,6 +246,16 @@ export class GameScene extends Phaser.Scene {
         looks,
         capacity: this.deps.capacity,
         structureTypes: Object.keys(appearance.structures),
+        // Capa de combate (0031): números con relleno blanco y tinte por clase; barras en un Graphics.
+        feedback: {
+          text: () =>
+            this.add.text(0, 0, '', {
+              fontSize: `${String(appearance.combat.numbers.fontPx)}px`,
+              color: NUMBER_BASE_COLOR,
+            }),
+          bars: () => this.add.graphics(),
+          looks: appearance.combat,
+        },
       },
       ground,
       this.deps.world,
