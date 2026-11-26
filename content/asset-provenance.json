@@ -575,5 +575,116 @@
       "bytes": 428
     }
   ],
-  "sounds": []
+  "sounds": [
+    {
+      "path": "public/assets/audio/song.mp3",
+      "title": "Battle Theme A",
+      "author": "cynicmusic",
+      "url": "https://opengameart.org/content/battle-theme-a",
+      "license": "CC0",
+      "downloadedOn": "2026-11-26",
+      "sha256": "6042399782e581d753d616bc703e66483d5eccb5fb687a20c9a552d68c49e620",
+      "bytes": 3289143
+    },
+    {
+      "path": "public/assets/audio/receive-hit.flac",
+      "title": "37 hits/punches",
+      "author": "Independent.nu (submitted by qubodup)",
+      "url": "https://opengameart.org/content/37-hitspunches",
+      "license": "CC0",
+      "downloadedOn": "2026-11-26",
+      "sha256": "31fe92be9bf7dccf2428ade7b680ee09e2f70c2aa2a3cbec502f4a9ff932249f",
+      "bytes": 77634
+    },
+    {
+      "path": "public/assets/audio/arrow-impact.mp3",
+      "title": "Arrow Impact",
+      "author": "omerbhatti34",
+      "url": "https://freesound.org/people/omerbhatti34/sounds/521552/",
+      "license": "CC0",
+      "downloadedOn": "2026-11-26",
+      "sha256": "ffd9c1168ce9f0cb97b1ae0d0854b9fc9d326e1f75e53b849acf7f3a773e6106",
+      "bytes": 5999
+    },
+    {
+      "path": "public/assets/audio/explosion.wav",
+      "title": "Long Decay Explosion (2).wav",
+      "author": "JohanDeecke",
+      "url": "https://freesound.org/people/JohanDeecke/sounds/369530/",
+      "license": "CC-BY-3.0",
+      "downloadedOn": "2026-11-26",
+      "sha256": "983e3db2f26a45f6223fee23c048c3b1d20cb9e34562f913ada76a9580fc4bb5",
+      "bytes": 987454
+    },
+    {
+      "path": "public/assets/audio/enemy-death.wav",
+      "title": "Monster Sound Pack, Volume 1",
+      "author": "Ogrebane",
+      "url": "https://opengameart.org/content/monster-sound-pack-volume-1",
+      "license": "CC0",
+      "downloadedOn": "2026-11-26",
+      "sha256": "9f8967357f20dc564bbe3fd5d80e81e80bbe7c9b7dc9645a49678d2bdeaa50df",
+      "bytes": 83540
+    },
+    {
+      "path": "public/assets/audio/get-gold.mp3",
+      "title": "coin-010",
+      "author": "ilyaShevelev",
+      "url": "https://freesound.org/people/ilyaShevelev/sounds/847340/",
+      "license": "CC0",
+      "downloadedOn": "2026-11-26",
+      "sha256": "5dde7c76e31333337c49b8c0e99427956dfecd91297482374d71292aeb244091",
+      "bytes": 7200
+    },
+    {
+      "path": "public/assets/audio/get-stone.wav",
+      "title": "golpe cabeza",
+      "author": "Pipe98x",
+      "url": "https://freesound.org/people/Pipe98x/sounds/409855/",
+      "license": "CC0",
+      "downloadedOn": "2026-11-26",
+      "sha256": "e367c0207b8e3f8d4647815bb632b92817147c73cf7d45efd410d1f76f06bad5",
+      "bytes": 32024
+    },
+    {
+      "path": "public/assets/audio/get-wood.wav",
+      "title": "Dropping, Wood, L.wav",
+      "author": "InspectorJ",
+      "url": "https://freesound.org/people/InspectorJ/sounds/352175/",
+      "license": "CC-BY-4.0",
+      "downloadedOn": "2026-11-26",
+      "sha256": "634a11dc9eedb71f15a5c44684c076c23eaba7218d06f2049505c3f5a4848e26",
+      "bytes": 240558
+    },
+    {
+      "path": "public/assets/audio/level-up.wav",
+      "title": "Cozy UI Level Up 01",
+      "author": "yetiancai_audio",
+      "url": "https://freesound.org/people/yetiancai_audio/sounds/875915/",
+      "license": "CC-BY-4.0",
+      "downloadedOn": "2026-11-26",
+      "sha256": "790aab666a38c2b0fe05bf90263d7e6c125ccfe2d04a10d90dc65969a5f8ead2",
+      "bytes": 119114
+    },
+    {
+      "path": "public/assets/audio/buy-item.wav",
+      "title": "Money (PSX UI SFX Free)",
+      "author": "heyheytheree",
+      "url": "https://freesound.org/people/heyheytheree/sounds/873100/",
+      "license": "CC-BY-4.0",
+      "downloadedOn": "2026-11-26",
+      "sha256": "a8ec56ecf5cb18d7bf75f006c9cf93b7deafb770837b2221ce813f6910cd19cc",
+      "bytes": 88926
+    },
+    {
+      "path": "public/assets/audio/build.mp3",
+      "title": "house building",
+      "author": "faseer",
+      "url": "https://freesound.org/people/faseer/sounds/171955/",
+      "license": "CC0",
+      "downloadedOn": "2026-11-26",
+      "sha256": "3524d2de3d8543a01123397a79abdfa5698278edad4974d9d4b28a9942cb63d9",
+      "bytes": 16008
+    }
+  ]
 }

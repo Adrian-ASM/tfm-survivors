@@ -9,6 +9,7 @@ import { ASSET_DIR } from '../../src/infrastructure/content/appearanceSchema';
 import { parseAppearance } from '../../src/infrastructure/content/loadAppearance';
 import { REGISTERED, rawAppearance } from '../support/appearance';
 import { GENERATED_PATHS } from '../support/generated';
+import { REPO_CREDITS } from '../support/credits';
 
 // Spec asset-provenance (0023), "Procedencia de las hojas de ovejas y carne", y sprite-rendering
 // (0023), "Datos de la oveja inválidos".
@@ -25,6 +26,7 @@ type CheckAssets = (input: {
   files: string[];
   provenance: unknown;
   digest: (path: string) => { sha256: string; bytes: number };
+  credits?: string;
 }) => string[];
 
 const files = provenanceJson.files;
@@ -45,7 +47,14 @@ describe('Procedencia de las hojas de ovejas y carne (asset-provenance)', () => 
   it('Scenario: Hojas de ovejas y carne registradas (3 entradas más, al final; las de antes iguales)', async () => {
     const { checkAssets } = await guard();
     const list = [...new Set([...versioned(), ...files.map((f) => f.path)])].filter(Boolean);
-    expect(checkAssets({ files: list, provenance: provenanceJson, digest: digestOf })).toEqual([]);
+    expect(
+      checkAssets({
+        credits: REPO_CREDITS,
+        files: list,
+        provenance: provenanceJson,
+        digest: digestOf,
+      }),
+    ).toEqual([]);
     // 0025 añade al final las rocas de la piedra: estas 3 siguen en su sitio.
     expect(files.length).toBeGreaterThanOrEqual(ENTRIES_BEFORE + 3);
     const added = files.slice(ENTRIES_BEFORE, ENTRIES_BEFORE + 3);
@@ -66,6 +75,7 @@ describe('Procedencia de las hojas de ovejas y carne (asset-provenance)', () => 
       return { sha256: e?.sha256 ?? '', bytes: e?.bytes ?? 0 };
     };
     const problems = checkAssets({
+      credits: REPO_CREDITS,
       files: [...files.map((f) => f.path), PROVENANCE_PATH],
       provenance: note,
       digest,

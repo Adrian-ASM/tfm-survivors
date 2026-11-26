@@ -87,9 +87,7 @@ function setup(failing: readonly string[] = []) {
   const audio = withFiles();
   const keys: AudioKeys = audioKeys(audio);
   const status = new AudioLoadStatus();
-  const cache = new Set<string>(
-    [keys.music, ...Object.values(keys.effects)].filter((k): k is string => k !== null),
-  );
+  const cache = new Set<string>([keys.music, ...Object.values(keys.effects)]);
   for (const f of failing) {
     cache.delete(f);
     status.failed.add(f);
@@ -164,7 +162,7 @@ describe('PhaserSoundOut (spec audio 0035, D7)', () => {
     const keys = audioKeys(shared);
     const status = new AudioLoadStatus();
     status.failed.add('audio:explosion.wav');
-    const cache = new Set([keys.effects.impactWeapon ?? '']);
+    const cache = new Set([keys.effects.impactWeapon]);
     const out = new PhaserSoundOut(
       new FakeManager(cache),
       { exists: (k) => cache.has(k) },
@@ -220,7 +218,7 @@ describe('PhaserSoundOut (spec audio 0035, D7)', () => {
 
   it('Scenario: Bucle (la música va con loop: true y arranca en cuanto carga)', () => {
     const { out, manager, cache, keys } = setup();
-    const music = keys.music ?? '';
+    const music = keys.music;
     cache.delete(music);
 
     out.music('playing', 0.5);

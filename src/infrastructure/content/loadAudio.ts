@@ -16,12 +16,8 @@ export function soundPaths(note: SoundLists): string[] {
 
 /** Ficheros citados por el contenido de audio con su ruta de campo, música primero. */
 export function audioFilesOf(audio: AudioContent): [string[], string][] {
-  const out: [string[], string][] = [];
-  if (audio.music.file !== null) out.push([['music', 'file'], audio.music.file]);
-  for (const t of EFFECT_TYPES) {
-    const file = audio.effects[t].file;
-    if (file !== null) out.push([['effects', t, 'file'], file]);
-  }
+  const out: [string[], string][] = [[['music', 'file'], audio.music.file]];
+  for (const t of EFFECT_TYPES) out.push([['effects', t, 'file'], audio.effects[t].file]);
   return out;
 }
 

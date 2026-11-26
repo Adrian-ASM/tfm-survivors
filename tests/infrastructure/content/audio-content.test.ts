@@ -30,6 +30,13 @@ function boot(audio: unknown, sounds: readonly string[] = soundPaths(provenanceJ
   return { booted, errors };
 }
 
+/** Arranque correcto con el contenido del repositorio. */
+function booted() {
+  const { booted: b } = boot(audioJson);
+  if (!b) throw new Error('el contenido del repositorio no arranca');
+  return b;
+}
+
 /** El primer error del arranque con el audio modificado por `change` (y el menú sin crear). */
 function failure(change: (a: Json) => void, sounds?: readonly string[]): DomainError {
   const a = fresh();
@@ -42,13 +49,40 @@ function failure(change: (a: Json) => void, sounds?: readonly string[]): DomainE
 }
 
 describe('Contenido de audio validado (spec audio, 0035)', () => {
-  it('contenido del repositorio: arranca sin errores, 12 efectos, tope ≥ 1 y defaults 50/80/no', () => {
+  it('Scenario: Contenido por defecto válido', () => {
     const { booted, errors } = boot(audioJson);
+    const audio = booted?.audio;
+    const files = new Set([audio?.music.file, ...EFFECT_TYPES.map((t) => audio?.effects[t].file)]);
 
     expect(errors).toEqual([]);
-    expect(Object.keys(booted?.audio.effects ?? {})).toEqual([...EFFECT_TYPES]);
-    expect(booted?.audio.maxVoices).toBeGreaterThanOrEqual(1);
-    expect(booted?.audio.defaults).toEqual({ music: 50, effects: 80, muted: false });
+    expect(Object.keys(audio?.effects ?? {})).toEqual([...EFFECT_TYPES]);
+    expect([audio?.music.file, files.size]).toEqual(['song.mp3', 11]);
+    expect(audio?.maxVoices).toBeGreaterThanOrEqual(1);
+    expect(audio?.defaults).toEqual({ music: 50, effects: 80, muted: false });
+  });
+
+  it('Scenario: Contenido por defecto válido (file null ya no es válido)', () => {
+    const e = failure((a) => {
+      (effects(a)['build'] as Json)['file'] = null;
+    });
+
+    expect(e.field).toBe('audio.effects.build.file');
+  });
+
+  it('Scenario: Contenido por defecto válido (música sin fichero tampoco)', () => {
+    const e = failure((a) => {
+      (a['music'] as Json)['file'] = null;
+    });
+
+    expect(e.field).toBe('audio.music.file');
+  });
+
+  it('Scenario: Fichero compartido (dos tipos citan el mismo fichero, cada uno con su ganancia)', () => {
+    const audio = booted().audio;
+
+    expect(audio.effects.impactWeapon.file).toBe(audio.effects.impactTower.file);
+    expect(audio.effects.explosion.file).toBe(audio.effects.impactBlast.file);
+    expect(audio.effects.explosion.gain).not.toBe(audio.effects.impactBlast.gain);
   });
 
   it('Scenario: Tipo de efecto ausente o desconocido (sin build)', () => {
@@ -104,7 +138,10 @@ describe('Contenido de audio validado (spec audio, 0035)', () => {
     const a = fresh();
     (effects(a)['levelUp'] as Json)['file'] = 'level-up.ogg';
 
-    const parsed = parseAudio(a, ['public/assets/audio/level-up.ogg']);
+    const parsed = parseAudio(a, [
+      ...soundPaths(provenanceJson),
+      'public/assets/audio/level-up.ogg',
+    ]);
 
     expect(parsed.ok).toBe(true);
   });

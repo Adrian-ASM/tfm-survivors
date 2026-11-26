@@ -24,19 +24,16 @@ export function hasWebAudio(win: object): boolean {
 /** Clave del audio en la caché del motor: una por fichero (dos tipos pueden compartirlo). */
 export const audioKey = (file: string): string => `audio:${file}`;
 
-/** Claves de la música y de cada tipo de efecto (`null` sin fichero: ese sonido no existe). */
+/** Claves de caché de la música y de cada tipo de efecto (dos tipos pueden compartir una). */
 export interface AudioKeys {
-  readonly music: string | null;
-  readonly effects: Readonly<Record<EffectType, string | null>>;
+  readonly music: string;
+  readonly effects: Readonly<Record<EffectType, string>>;
 }
 
 export function audioKeys(audio: AudioContent): AudioKeys {
-  const effects = {} as Record<EffectType, string | null>;
-  for (const t of EFFECT_TYPES) {
-    const file = audio.effects[t].file;
-    effects[t] = file === null ? null : audioKey(file);
-  }
-  return { music: audio.music.file === null ? null : audioKey(audio.music.file), effects };
+  const effects = {} as Record<EffectType, string>;
+  for (const t of EFFECT_TYPES) effects[t] = audioKey(audio.effects[t].file);
+  return { music: audioKey(audio.music.file), effects };
 }
 
 /** Ficheros que pide `AudioLoadScene`: uno por fichero distinto, música primero, con su URL. */
@@ -48,7 +45,7 @@ export function audioFilesToLoad(
   const seen = new Set<string>();
   const out: { key: string; url: string }[] = [];
   for (const file of files) {
-    if (file === null || seen.has(file)) continue;
+    if (seen.has(file)) continue;
     seen.add(file);
     out.push({ key: audioKey(file), url: url(file) });
   }

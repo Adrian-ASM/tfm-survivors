@@ -15,11 +15,8 @@ export const AUDIO_FILE_FORMAT =
 export const AUDIO_NOT_REGISTERED =
   'Fichero de audio sin registro en la lista de audio de la nota de procedencia.';
 
-/**
- * Fichero de audio. **Transitorio** (design D5, conflicto 1): `null` hasta que lleguen los ficheros
- * CC0 del autor; ese tipo queda sin sonido. La tarea 6.1 endurece el esquema a `string`.
- */
-const AudioFile = z.string().regex(AUDIO_FILE, AUDIO_FILE_FORMAT).nullable();
+/** Fichero de audio obligatorio en cada entrada (tarea 6.1: ya no admite `null`). */
+const AudioFile = z.string().regex(AUDIO_FILE, AUDIO_FILE_FORMAT);
 
 const Volume = z.number().int().min(0).max(100);
 

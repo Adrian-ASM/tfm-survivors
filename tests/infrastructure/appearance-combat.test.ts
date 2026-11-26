@@ -17,7 +17,7 @@ import {
 import { parseAppearance, registeredPaths } from '../../src/infrastructure/content/loadAppearance';
 import { REGISTERED, rawAppearance, type RawAppearance } from '../support/appearance';
 import { rawContent } from '../support/builders';
-import { GENERATED_PATHS } from '../support/generated';
+import { GENERATED_PATHS, SOUND_PATHS } from '../support/generated';
 
 // Spec sprite-rendering (0031), "Datos de aspecto del combate".
 const root = join(import.meta.dirname, '..', '..');
@@ -124,6 +124,7 @@ describe('Datos de aspecto del combate (sprite-rendering 0031)', () => {
       (e) => errors.push(e.field),
       REGISTERED,
       GENERATED_PATHS,
+      SOUND_PATHS,
     );
     expect(booted).toBeNull();
     expect(errors).toEqual(['combat.colors.player']);

@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import provenanceJson from '../../content/asset-provenance.json';
 import { ASSET_DIR } from '../../src/infrastructure/content/appearanceSchema';
+import { REPO_CREDITS } from '../support/credits';
 
 // Spec asset-provenance (0025), "Procedencia de las hojas de la piedra": las tres rocas de Deco de
 // Update 010, al final de la nota, idénticas al pack y vigiladas por el guardarraíl.
@@ -20,6 +21,7 @@ type CheckAssets = (input: {
   files: string[];
   provenance: unknown;
   digest: (path: string) => { sha256: string; bytes: number };
+  credits?: string;
 }) => string[];
 type Entry = (typeof provenanceJson.files)[number];
 
@@ -51,7 +53,14 @@ describe('Procedencia de las hojas de la piedra (asset-provenance)', () => {
     const { checkAssets } = await guard();
     const list = [...new Set([...versioned(), ...files.map((f) => f.path)])];
 
-    expect(checkAssets({ files: list, provenance: provenanceJson, digest: digestOf })).toEqual([]);
+    expect(
+      checkAssets({
+        credits: REPO_CREDITS,
+        files: list,
+        provenance: provenanceJson,
+        digest: digestOf,
+      }),
+    ).toEqual([]);
     // 0026 añade 3 entradas de caballeros al final: estas 3 siguen en su sitio, sin cambios.
     expect(files.length).toBeGreaterThanOrEqual(ENTRIES_BEFORE + 3);
     expect(files.slice(ENTRIES_BEFORE, ENTRIES_BEFORE + 3).map((f) => f.source)).toEqual(SOURCES);
@@ -71,6 +80,7 @@ describe('Procedencia de las hojas de la piedra (asset-provenance)', () => {
     );
 
     const problems = checkAssets({
+      credits: REPO_CREDITS,
       files: [...files.map((f) => f.path), PROVENANCE_PATH],
       provenance: note,
       digest: digestOf,
@@ -84,6 +94,7 @@ describe('Procedencia de las hojas de la piedra (asset-provenance)', () => {
     const target = pathOf('06.png');
 
     const problems = checkAssets({
+      credits: REPO_CREDITS,
       files: [...files.map((f) => f.path), PROVENANCE_PATH],
       provenance: withEntries((f) => (f.path === target ? null : f)),
       digest: noted,
@@ -98,6 +109,7 @@ describe('Procedencia de las hojas de la piedra (asset-provenance)', () => {
     const free = 'Tiny Swords (Free Pack)/Deco/04.png';
 
     const problems = checkAssets({
+      credits: REPO_CREDITS,
       files: [...files.map((f) => f.path), PROVENANCE_PATH],
       provenance: withEntries((f) => (f.path === target ? { ...f, source: free } : f)),
       digest: noted,

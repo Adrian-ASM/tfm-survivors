@@ -27,7 +27,7 @@ import {
 import { REGISTERED, rawAppearance, type RawAppearance } from '../support/appearance';
 import { rawContent } from '../support/builders';
 import { meanColor, readPng } from '../support/png';
-import { GENERATED_PATHS } from '../support/generated';
+import { GENERATED_PATHS, SOUND_PATHS } from '../support/generated';
 
 // Spec sprite-rendering (0032), "Datos de aspecto de la interfaz".
 const root = join(import.meta.dirname, '..', '..');
@@ -249,6 +249,7 @@ describe('Datos de aspecto de la interfaz (sprite-rendering 0032)', () => {
       (e) => errors.push(e.field),
       REGISTERED,
       GENERATED_PATHS,
+      SOUND_PATHS,
     );
     expect(booted).toBeNull();
     expect(errors).toEqual(['ui.pieces.button.slice.top']);

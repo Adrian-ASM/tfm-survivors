@@ -60,7 +60,7 @@ describe('Ficheros de audio usados y peso (spec audio 0035, D14)', () => {
   });
 
   it('Scenario: Fichero de audio de más (un fichero citado sin versionar también falla)', () => {
-    const audio = structuredClone(audioJson) as unknown as AudioContent;
+    const audio = structuredClone(audioJson);
     const cited = { ...audio, music: { file: 'music-loop.ogg' } };
 
     const out = audioFileProblems(versioned, diskBytes, cited);
@@ -74,29 +74,27 @@ describe('Ficheros de audio usados y peso (spec audio 0035, D14)', () => {
     expect(total).toBeLessThanOrEqual(AUDIO_MAX_BYTES);
   });
 
+  /** Lista real más un fichero que lleva el total a `total` bytes; solo los problemas de peso. */
+  const weightWith = (total: number): string[] => {
+    const extra = `${AUDIO_DIR}extra.ogg`;
+    const real = versioned.filter((f) => AUDIO.test(f)).reduce((n, f) => n + diskBytes(f), 0);
+    const sizes = (p: string): number => (p === extra ? total - real : diskBytes(p));
+    return audioFileProblems([...versioned, extra], sizes, repositoryAudio()).filter((l) =>
+      l.startsWith('Audio versionado'),
+    );
+  };
+
   it('Scenario: Tope de peso (lista simulada con 6.291.457 bytes: falla y da el total)', () => {
-    const big = `${AUDIO_DIR}music-loop.ogg`;
-    const hit = `${AUDIO_DIR}hit.flac`;
-    const audio = structuredClone(audioJson) as unknown as AudioContent;
-    const cited: AudioContent = {
-      ...audio,
-      music: { file: 'music-loop.ogg' },
-      effects: { ...audio.effects, pickupGold: { ...audio.effects.pickupGold, file: 'hit.flac' } },
-    };
-    const sizes = (p: string): number => (p === big ? 6_291_456 : 1);
-
-    const out = audioFileProblems([...versioned, big, hit], sizes, cited);
-
-    expect(out).toEqual(['Audio versionado: 6291457 bytes > 6291456.']);
+    expect(weightWith(6_291_457)).toEqual(['Audio versionado: 6291457 bytes > 6291456.']);
   });
 
   it('Scenario: Tope de peso (lista simulada con exactamente 6.291.456 bytes: pasa)', () => {
-    const big = `${AUDIO_DIR}music-loop.ogg`;
-    const audio = structuredClone(audioJson) as unknown as AudioContent;
-    const cited: AudioContent = { ...audio, music: { file: 'music-loop.ogg' } };
+    expect(weightWith(6_291_456)).toEqual([]);
+  });
 
-    const out = audioFileProblems([...versioned, big], () => 6_291_456, cited);
+  it('Scenario: Tope de peso (repositorio: los 11 ficheros del autor, 4.947.600 bytes)', () => {
+    const audio = versioned.filter((f) => AUDIO.test(f));
 
-    expect(out).toEqual([]);
+    expect([audio.length, audio.reduce((n, f) => n + diskBytes(f), 0)]).toEqual([11, 4_947_600]);
   });
 });

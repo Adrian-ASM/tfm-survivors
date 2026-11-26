@@ -20,7 +20,8 @@ import {
 } from '../../src/infrastructure/content/appearanceSchema';
 import { registeredPaths, parseAppearance } from '../../src/infrastructure/content/loadAppearance';
 import { rawContent } from '../support/builders';
-import { GENERATED_PATHS } from '../support/generated';
+import { GENERATED_PATHS, SOUND_PATHS } from '../support/generated';
+import { REPO_CREDITS } from '../support/credits';
 
 // Datos de aspecto de los peligros y de los comportamientos (change 0020, spec sprite-rendering y
 // asset-provenance), con los datos del repositorio.
@@ -43,6 +44,7 @@ function boot(a: Json): { ok: boolean; errors: DomainError[] } {
     (e) => errors.push(e),
     REGISTERED,
     GENERATED_PATHS,
+    SOUND_PATHS,
   );
   return { ok: booted !== null, errors };
 }
@@ -169,6 +171,7 @@ type CheckAssets = (input: {
   files: string[];
   provenance: unknown;
   digest: (path: string) => { sha256: string; bytes: number };
+  credits?: string;
 }) => string[];
 
 describe('Procedencia de las hojas de los peligros (asset-provenance)', () => {
@@ -204,6 +207,7 @@ describe('Procedencia de las hojas de los peligros (asset-provenance)', () => {
       return { sha256: e?.sha256 ?? '', bytes: e?.bytes ?? 0 };
     };
     const problems = guard.checkAssets({
+      credits: REPO_CREDITS,
       files: [...versioned, guard.PROVENANCE_PATH],
       provenance: note,
       digest,

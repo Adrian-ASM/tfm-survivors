@@ -61,7 +61,7 @@ export class PhaserSoundOut implements SoundOut {
 
   get loaded(): boolean {
     const all = [this.keys.music, ...EFFECT_TYPES.map((t) => this.keys.effects[t])];
-    return all.some((k) => k !== null && this.cache.exists(k));
+    return all.some((k) => this.cache.exists(k));
   }
 
   get filesRequested(): number {
@@ -70,12 +70,12 @@ export class PhaserSoundOut implements SoundOut {
 
   canPlay(type: EffectType): boolean {
     const key = this.keys.effects[type];
-    return key !== null && !this.manager.locked && this.cached(key);
+    return !this.manager.locked && this.cached(key);
   }
 
   play(type: EffectType, volume: number): void {
     const key = this.keys.effects[type];
-    if (key === null || !this.canPlay(type)) return;
+    if (!this.canPlay(type)) return;
     this.safely(() => {
       const voice = this.voiceFor(type, key);
       if (voice.sound.isPlaying || voice.sound.isPaused) voice.sound.stop();
@@ -131,7 +131,7 @@ export class PhaserSoundOut implements SoundOut {
   /** La instancia de la música, solo cuando hay que sonar y la clave ya está en caché. */
   private createMusic(): EngineSound | null {
     const key = this.keys.music;
-    if (key === null || this.wanted !== 'playing' || !this.cached(key)) return null;
+    if (this.wanted !== 'playing' || !this.cached(key)) return null;
     this.musicSound = this.manager.add(key, { loop: true });
     return this.musicSound;
   }

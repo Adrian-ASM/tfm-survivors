@@ -8,7 +8,7 @@ import type { DomainError } from '../../src/domain/shared/Result';
 import { GUIDE_PAGE_IDS } from '../../src/infrastructure/content/guideSchema';
 import { rawContent } from '../support/builders';
 import { registeredPaths } from '../../src/infrastructure/content/loadAppearance';
-import { GENERATED_PATHS } from '../support/generated';
+import { GENERATED_PATHS, SOUND_PATHS } from '../support/generated';
 
 // Spec menu-guide, "Contenido de la guía validado": un guide.json inválido pasa por `report` (la
 // vía de showContentError) y bootContent devuelve null, así que no se crea el menú (design 0028
@@ -33,6 +33,7 @@ function boot(guide: unknown, content = rawContent()) {
     (e) => errors.push(e),
     REGISTERED,
     GENERATED_PATHS,
+    SOUND_PATHS,
   );
   return { booted, errors };
 }

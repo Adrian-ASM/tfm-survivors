@@ -48,8 +48,15 @@ describe('Modo de audio de la carga (D1)', () => {
 });
 
 describe('Ficheros de audio que se piden (D8)', () => {
-  it('con file null (repositorio hasta la tarea 6.1) no se pide nada', () => {
-    expect(audioFilesToLoad(repositoryAudio(), (f) => f)).toEqual([]);
+  it('Scenario: Fichero compartido (repositorio: 11 ficheros distintos, cada uno pedido 1 vez)', () => {
+    const files = audioFilesToLoad(repositoryAudio(), (f) => f);
+    const keys = files.map((f) => f.key);
+
+    expect(files).toHaveLength(11);
+    expect(new Set(keys).size).toBe(11);
+    expect(keys[0]).toBe('audio:song.mp3');
+    expect(keys.filter((k) => k === 'audio:explosion.wav')).toHaveLength(1);
+    expect(keys.filter((k) => k === 'audio:arrow-impact.mp3')).toHaveLength(1);
   });
 
   it('uno por fichero distinto, música primero, con la URL bajo la base', () => {
@@ -65,8 +72,11 @@ describe('Ficheros de audio que se piden (D8)', () => {
 
     const files = audioFilesToLoad(audio, (f) => audioUrl('/tfm-survivors/', f));
 
-    expect(files).toEqual([
+    expect(files.slice(0, 2)).toEqual([
       { key: 'audio:loop.ogg', url: '/tfm-survivors/assets/audio/loop.ogg' },
+      { key: 'audio:receive-hit.flac', url: '/tfm-survivors/assets/audio/receive-hit.flac' },
+    ]);
+    expect(files.filter((f) => f.key === 'audio:coin.ogg')).toEqual([
       { key: 'audio:coin.ogg', url: '/tfm-survivors/assets/audio/coin.ogg' },
     ]);
   });
@@ -77,7 +87,7 @@ describe('Carga del audio en paralelo (D8)', () => {
     const appearance = repoAppearance();
     const booted = [...sheetsToLoad(appearance), ...imagesToLoad(appearance)];
 
-    expect(booted.filter((f) => /\.(ogg|mp3|wav)$/i.test(f.file))).toEqual([]);
+    expect(booted.filter((f) => /\.(ogg|mp3|wav|flac)$/i.test(f.file))).toEqual([]);
   });
 
   it('Scenario: Menú sin esperar al audio (launch, no start: la escena del audio no bloquea)', () => {

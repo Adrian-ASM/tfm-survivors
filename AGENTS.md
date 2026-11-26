@@ -243,8 +243,8 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   `__sprint.offerIcons` y `shop.products[i].icon` (`products` vacío con la tienda cerrada). Tests con iconos: el
   tercer argumento `GENERATED_PATHS` (`tests/support/generated.ts`); forma de los PNG en `tests/support/pngProbe.ts`.
   Sin núcleo; balance, firmas y 820/904 intactos; E2E de la Tienda ampliado (7 filas y 3 cartas `painted`, 0 CSP).
-  Audio (change 0035, ADR-0031; grupos 1–5, **sin ficheros**: `file: null` transitorio hasta que el autor entregue
-  el audio CC0, tarea 6.1): todo en el adaptador. `AudioCues` saca las peticiones de los 12 tipos
+  Audio (change 0035, ADR-0031): 11 ficheros del autor en `public/assets/audio/` (4.947.600 B, sin recodificar;
+  7 CC0 y 4 CC-BY con su línea en `CREDITS.md`), `file` obligatorio en `audio.json`: todo en el adaptador. `AudioCues` saca las peticiones de los 12 tipos
   (`effectTypes.ts`) comparando cada snapshot pintado con el anterior (ids de golpes y explosiones, bajas,
   recogibles salvo en obra, por recurso con `PICKUP_EFFECT`: `pickupGold` oro/XP/carne, `pickupStone`,
   `pickupWood`; nivel, compra con la tienda abierta, solares; impacto de explosión > torre por `towerMatchPx` > arma);

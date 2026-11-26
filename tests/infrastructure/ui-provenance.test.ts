@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import provenanceJson from '../../content/asset-provenance.json';
 import { ASSET_DIR } from '../../src/infrastructure/content/appearanceSchema';
+import { REPO_CREDITS } from '../support/credits';
 
 // Spec asset-provenance (0032), "Procedencia de las piezas de UI": las 8 hojas de `UI/Banners`,
 // `UI/Buttons` y `UI/Ribbons` de Update 010, al final de la nota, idénticas al pack.
@@ -38,6 +39,7 @@ type CheckAssets = (input: {
   files: string[];
   provenance: unknown;
   digest: (path: string) => { sha256: string; bytes: number };
+  credits?: string;
 }) => string[];
 type Entry = (typeof provenanceJson.files)[number];
 
@@ -76,7 +78,12 @@ describe('Procedencia de las piezas de UI (asset-provenance)', () => {
     const { checkAssets } = await guard();
 
     expect(
-      checkAssets({ files: simulated(), provenance: provenanceJson, digest: digestOf }),
+      checkAssets({
+        credits: REPO_CREDITS,
+        files: simulated(),
+        provenance: provenanceJson,
+        digest: digestOf,
+      }),
     ).toEqual([]);
     expect(files).toHaveLength(ENTRIES_BEFORE + PIECES.length);
     const added = files.slice(ENTRIES_BEFORE);
@@ -108,6 +115,7 @@ describe('Procedencia de las piezas de UI (asset-provenance)', () => {
     );
 
     const problems = checkAssets({
+      credits: REPO_CREDITS,
       files: [...files.map((f) => f.path), PROVENANCE_PATH],
       provenance: note,
       digest: digestOf,
@@ -120,6 +128,7 @@ describe('Procedencia de las piezas de UI (asset-provenance)', () => {
     const { checkAssets, PROVENANCE_PATH } = await guard();
 
     const problems = checkAssets({
+      credits: REPO_CREDITS,
       files: [...files.map((f) => f.path), PROVENANCE_PATH],
       provenance: withEntries((f) => (f.path === BUTTON ? null : f)),
       digest: noted,
@@ -133,6 +142,7 @@ describe('Procedencia de las piezas de UI (asset-provenance)', () => {
     const free = 'Tiny Swords (Free Pack)/UI Elements/UI Elements/Banners/Banner.png';
 
     const problems = checkAssets({
+      credits: REPO_CREDITS,
       files: [...files.map((f) => f.path), PROVENANCE_PATH],
       provenance: withEntries((f) => (f.path === BUTTON ? { ...f, source: free } : f)),
       digest: noted,

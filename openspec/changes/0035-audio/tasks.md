@@ -132,7 +132,7 @@
 
   Tests: `tests/guardrails/assets.test.ts` (nota, lista y `credits` simulados), `guard-staged` (ampliado: `credits`
   del índice) y `credits-link`.
-- [ ] 6.1 Ficheros reales y `CREDITS.md` (design D16).
+- [x] 6.1 Ficheros reales y `CREDITS.md` (design D16).
   - Copiar los 11 ficheros de `C:\Users\Adri\TFM\` a `public/assets/audio/` con los nombres kebab-case de D16, sin
     recodificar. La obra es el `build.mp3` nuevo de faseer (CC0, 16.008 B) y la subida es el `level_up.wav`
     sustituido (119.114 B).

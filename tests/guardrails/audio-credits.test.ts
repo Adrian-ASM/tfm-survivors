@@ -30,7 +30,8 @@ const { checkAssets, PROVENANCE_PATH, CREDITS_PATH } = guard;
 const versioned = execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8' })
   .split('\0')
   .filter(Boolean)
-  .filter((f) => f !== 'CREDITS.md');
+  // La lista de audio y CREDITS.md son simulados: fuera los reales.
+  .filter((f) => f !== 'CREDITS.md' && !/\.(ogg|mp3|wav|flac)$/i.test(f));
 const real = JSON.parse(readFileSync(join(root, PROVENANCE_PATH), 'utf8')) as Provenance;
 const diskDigest = (path: string): Digest => {
   const blob = readFileSync(join(root, path));

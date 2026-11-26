@@ -14,7 +14,7 @@ import { randomInputs } from '../support/inputs';
 import { planFor } from '../support/mapArt';
 import { fakeUiScene } from '../support/phaserUi';
 import { chooseFirstWhileOpen, startSeededRun } from '../support/runs';
-import { GENERATED_PATHS } from '../support/generated';
+import { GENERATED_PATHS, SOUND_PATHS } from '../support/generated';
 
 // Spec sprite-rendering (0032), "La interfaz no cambia la simulación ni el mapa": la sección `ui`
 // es presentación pura (no la lee ningún flujo de azar ni ninguna colocación).
@@ -51,6 +51,7 @@ function boot(ui: unknown) {
     },
     REGISTERED,
     GENERATED_PATHS,
+    SOUND_PATHS,
   );
   if (!booted) throw new Error('arranque fallido');
   return booted;
