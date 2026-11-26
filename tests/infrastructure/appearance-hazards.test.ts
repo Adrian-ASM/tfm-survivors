@@ -19,6 +19,7 @@ import {
 } from '../../src/infrastructure/content/appearanceSchema';
 import { registeredPaths, parseAppearance } from '../../src/infrastructure/content/loadAppearance';
 import { rawContent } from '../support/builders';
+import { GENERATED_PATHS } from '../support/generated';
 
 // Datos de aspecto de los peligros y de los comportamientos (change 0020, spec sprite-rendering y
 // asset-provenance), con los datos del repositorio.
@@ -29,7 +30,7 @@ const appearance = (): Json => structuredClone(appearanceJson);
 const enemies = (a: Json) => a['enemies'] as Record<string, Json>;
 
 function parsed(a: Json) {
-  const r = parseAppearance(a, REGISTERED);
+  const r = parseAppearance(a, REGISTERED, GENERATED_PATHS);
   if (r.ok) throw new Error('se esperaba un error de aspecto');
   return r.error;
 }
@@ -40,13 +41,14 @@ function boot(a: Json): { ok: boolean; errors: DomainError[] } {
     { content: rawContent(), appearance: a, guide: guideJson },
     (e) => errors.push(e),
     REGISTERED,
+    GENERATED_PATHS,
   );
   return { ok: booted !== null, errors };
 }
 
 describe('Datos de aspecto validados (peligros y comportamiento)', () => {
   it('Scenario: Datos del repositorio (mecha, lanzamiento, dinamita, explosión y avisos)', () => {
-    const r = parseAppearance(appearanceJson, REGISTERED);
+    const r = parseAppearance(appearanceJson, REGISTERED, GENERATED_PATHS);
     if (!r.ok) throw new Error(r.error.message);
     const a = r.value;
     expect(a.enemies['goblin-barrel']?.fuse).toMatchObject({ frames: [30, 31, 32], loop: true });

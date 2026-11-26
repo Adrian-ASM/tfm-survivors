@@ -279,13 +279,16 @@ describe('guard-assets · estado real del repositorio', () => {
 
   it('la nota del repositorio no enlaza capturas ni pruebas de la confirmación', () => {
     expect(JSON.stringify(real ?? {})).not.toMatch(/\.(png|jpe?g|pdf)"?\s*[,}]\s*$/m);
-    // 0032: `fonts` es la lista aparte de las fuentes (OFL), fuera de la cabecera CC0.
+    // 0032: `fonts` es la lista aparte de las fuentes (OFL), fuera de la cabecera CC0; 0034:
+    // `generated` (imágenes con IA) y `generatedPolicy` (su ADR).
     expect(Object.keys(real ?? {}).sort()).toEqual(
       [
         'author',
         'confirmedOn',
         'files',
         'fonts',
+        'generated',
+        'generatedPolicy',
         'homepage',
         'license',
         'note',
@@ -303,6 +306,146 @@ describe('guard-assets · estado real del repositorio', () => {
       digest: (p) => (p === extra ? { sha256: '', bytes: 0 } : diskDigest(p)),
     });
     expect(out.join('\n')).toContain(extra);
+  });
+});
+
+// Spec asset-provenance (0034, design D8): lista `generated[]` de imágenes con IA. La nota real aún no
+// tiene entradas IA (llegan en la tarea 6.1): se simula con una entrada de prueba para `armor`.
+describe('guard-assets · imágenes con IA (spec asset-provenance 0034)', () => {
+  const ICON = 'public/assets/icons/armor.png';
+  const ADR = 'docs/adr/0030-imagenes-generadas-con-ia-solo-para-iconos.md';
+  const SCRIPT = 'scripts/icons/remove-white-bg.ps1';
+  const SHA_I = 'c'.repeat(64);
+  const aiFiles = [...FILES, ADR, SCRIPT, ICON];
+  const aiDigest = (path: string): Digest =>
+    path === ICON ? { sha256: SHA_I, bytes: 300 } : digest(path);
+  const anAiEntry = (): Record<string, unknown> => ({
+    path: ICON,
+    tool: 'Herramienta de prueba (modelo X)',
+    createdOn: '2026-11-26',
+    terms: 'https://ejemplo.com/terminos (leídos 2026-11-26)',
+    prompt: 'Icono pixel art de un escudo de roble, fondo blanco.',
+    postProcess: SCRIPT,
+    sha256: SHA_I,
+    bytes: 300,
+  });
+  const anAiNote = (generated: Record<string, unknown>[] = [anAiEntry()]): Provenance => ({
+    ...aNote(),
+    generatedPolicy: ADR,
+    generated,
+  });
+  const aiRun = (
+    note: Provenance = anAiNote(),
+    files: string[] = aiFiles,
+    digestOf: (path: string) => Digest = aiDigest,
+  ): string => checkAssets({ files, provenance: note, digest: digestOf }).join('\n');
+
+  it('Scenario: Imagen con IA sin versión del pack (nota con una entrada IA completa pasa)', () => {
+    expect(aiRun()).toBe('');
+  });
+
+  it.each([
+    ['tool', { tool: undefined }],
+    ['createdOn', { createdOn: '26/11/2026' }],
+    ['createdOn', { createdOn: '2026-02-30' }],
+    ['terms', { terms: '' }],
+    ['prompt', { prompt: '' }],
+    ['sha256', { sha256: `d${SHA_I.slice(1)}` }],
+    ['bytes', { bytes: 301 }],
+    ['version', { version: 'Update 010' }],
+    ['postProcess', { postProcess: 'scripts/no-existe.ps1' }],
+  ])('Scenario: Registro de imagen con IA incompleto o incorrecto (%s: %j)', (field, change) => {
+    const out = aiRun(anAiNote([{ ...anAiEntry(), ...change }]));
+    expect(out).toContain(ICON);
+    expect(out).toContain(field);
+  });
+
+  it('el sha distinto incluye el sha medido', () => {
+    const out = aiRun(anAiNote([{ ...anAiEntry(), sha256: 'e'.repeat(64) }]));
+    expect(out).toContain(SHA_I);
+  });
+
+  it('Scenario: Imagen con IA sin registro', () => {
+    const extra = 'public/assets/icons/extra.png';
+    expect(aiRun(anAiNote(), [...aiFiles, extra])).toContain(extra);
+  });
+
+  it('Scenario: Registro de imagen con IA sin fichero', () => {
+    expect(
+      aiRun(
+        anAiNote(),
+        aiFiles.filter((f) => f !== ICON),
+      ),
+    ).toContain(ICON);
+  });
+
+  it('Scenario: Imagen con IA fuera de los iconos', () => {
+    const torch = `${BASE}/Factions/Goblins/Troops/Torch/Torch_IA.png`;
+    const note = anAiNote([anAiEntry(), { ...anAiEntry(), path: torch }]);
+    const out = aiRun(note, [...aiFiles, torch]);
+    expect(out).toContain(torch);
+    expect(out).toContain('public/assets/icons/');
+  });
+
+  it('Scenario: Política sin ADR', () => {
+    const missing = 'docs/adr/0099-no-existe.md';
+    expect(aiRun({ ...anAiNote(), generatedPolicy: missing })).toContain(missing);
+  });
+
+  it('la política es obligatoria con imágenes con IA', () => {
+    const note = anAiNote();
+    Reflect.deleteProperty(note, 'generatedPolicy');
+    expect(aiRun(note)).toContain('generatedPolicy');
+  });
+
+  it('la política debe estar bajo docs/adr/', () => {
+    expect(aiRun({ ...anAiNote(), generatedPolicy: 'README.md' })).toContain('README.md');
+  });
+
+  it('Scenario: Ruta en dos listas', () => {
+    const note = anAiNote();
+    note.files = [
+      ...(note.files ?? []),
+      {
+        path: ICON,
+        source: 'Tiny Swords (Update 010)/armor.png',
+        version: 'Update 010',
+        sha256: SHA_I,
+        bytes: 300,
+      },
+    ];
+    const out = aiRun(note);
+    expect(out).toContain(ICON);
+    expect(out).toMatch(/dos listas/);
+  });
+
+  it('un icono de la carpeta IA registrado solo en la lista de arte falla', () => {
+    const artIcon: Entry = {
+      path: ICON,
+      source: 'Tiny Swords (Update 010)/x.png',
+      version: 'Update 010',
+      sha256: SHA_I,
+      bytes: 300,
+    };
+    const note: Provenance = { ...aNote(), files: [...(aNote().files ?? []), artIcon] };
+    expect(aiRun(note)).toContain('lista de arte');
+  });
+
+  it('entrada IA repetida', () => {
+    const out = aiRun(anAiNote([anAiEntry(), anAiEntry()]));
+    expect(out).toContain(ICON);
+    expect(out).toMatch(/repetid/i);
+  });
+
+  it('en la carpeta de iconos solo .png', () => {
+    const gif = 'public/assets/icons/armor.gif';
+    expect(aiRun(anAiNote(), [...aiFiles, gif])).toContain(gif);
+  });
+
+  it('Scenario: Imágenes con IA sin red (checkAssets es síncrona y pura)', () => {
+    const out = checkAssets({ files: aiFiles, provenance: anAiNote(), digest: aiDigest });
+    expect(Array.isArray(out)).toBe(true);
+    expect(out).toEqual([]);
   });
 });
 
@@ -390,5 +533,146 @@ describe('guard-assets · fuentes (spec asset-provenance 0032)', () => {
 
   it('Scenario: Registro sin fichero', () => {
     expect(fontRun(list.filter((f) => f !== FONT_PATH))).toContain(FONT_PATH);
+  });
+});
+
+// Spec asset-provenance (0034) con la nota real: `generated[]` de los 18 iconos (design D8).
+describe('guard-assets · imágenes con IA del repositorio (asset-provenance 0034)', () => {
+  type AiEntry = Record<string, unknown> & { path: string };
+  const versioned = execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8' })
+    .split('\0')
+    .filter(Boolean);
+  const real = JSON.parse(readFileSync(join(root, PROVENANCE_PATH), 'utf8')) as Provenance & {
+    generated: AiEntry[];
+    generatedPolicy: string;
+    fonts: unknown[];
+  };
+  const appearance = JSON.parse(readFileSync(join(root, 'content/appearance.json'), 'utf8')) as {
+    icons: { fallback: Record<string, string>; byId: Record<string, string> };
+  };
+  const diskDigest = (path: string): Digest => {
+    const blob = readFileSync(join(root, path));
+    return { sha256: createHash('sha256').update(blob).digest('hex'), bytes: blob.length };
+  };
+  const ICON_DIR = 'public/assets/icons/';
+  const ARMOR = `${ICON_DIR}armor.png`;
+  const runReal = (generated: AiEntry[] = real.generated, files = versioned): string =>
+    checkAssets({ files, provenance: { ...real, generated }, digest: diskDigest }).join('\n');
+  const withArmor = (change: Record<string, unknown>): AiEntry[] =>
+    real.generated.map((e) => (e.path === ARMOR ? { ...e, ...change } : e));
+
+  it('Scenario: Lista del repositorio (una entrada por imagen de los datos de iconos)', () => {
+    expect(runReal()).toBe('');
+    const used = [
+      ...Object.values(appearance.icons.byId),
+      ...Object.values(appearance.icons.fallback),
+    ].map((f) => ICON_DIR + f);
+    expect(real.generated.map((e) => e.path).sort()).toEqual([...new Set(used)].sort());
+    for (const e of real.generated) {
+      for (const field of ['tool', 'terms', 'prompt']) {
+        expect(String(e[field]).trim().length, `${e.path} ${field}`).toBeGreaterThan(0);
+      }
+      expect(e.createdOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect([e.sha256, e.bytes]).toEqual(Object.values(diskDigest(e.path)));
+    }
+    expect(versioned).toContain(real.generatedPolicy);
+    expect(real.generatedPolicy.startsWith('docs/adr/')).toBe(true);
+    // Cabecera y listas de arte y fuentes iguales campo a campo a las de antes del change: huella
+    // sha256 de su JSON en la nota de 630ce53 (0032; el CI clona sin historia, no vale `git show`).
+    const fingerprint = (v: unknown) =>
+      createHash('sha256').update(JSON.stringify(v)).digest('hex');
+    expect(real).toMatchObject({
+      license: 'CC0',
+      version: 'Update 010',
+      confirmedOn: '2026-11-22',
+    });
+    expect([real.files?.length, fingerprint(real.files)]).toEqual([
+      53,
+      'c9a6a7ad8ff2e3dbd97a4cc27827ad5eef9accf0ed10c15193116433fec3c07b',
+    ]);
+    expect(fingerprint(real.fonts)).toBe(
+      'bcc7bdcc17f0cc4e18cb2b7b1936b7a7a9b037d0bac1bc06e9a368b3d3aef019',
+    );
+  });
+
+  it('Scenario: Icono registrado solo como imagen con IA', () => {
+    const art = new Set((real.files ?? []).map((f) => f.path));
+    const ai = real.generated.map((e) => e.path);
+    const icons = versioned.filter((f) => f.startsWith(ICON_DIR) && f.endsWith('.png'));
+    expect(icons.length).toBe(18);
+    for (const icon of icons) {
+      expect(
+        ai.filter((p) => p === icon),
+        icon,
+      ).toHaveLength(1);
+      expect(art.has(icon), icon).toBe(false);
+    }
+  });
+
+  it('Scenario: Imagen con IA sin versión del pack (nota real: sin version ni source)', () => {
+    for (const e of real.generated) {
+      expect('version' in e || 'source' in e, e.path).toBe(false);
+    }
+    expect(runReal()).not.toMatch(/version|Free Pack/);
+  });
+
+  it.each([
+    ['tool', { tool: undefined }],
+    ['createdOn', { createdOn: '26/11/2026' }],
+    ['createdOn', { createdOn: '2026-02-30' }],
+    ['terms', { terms: '' }],
+    ['prompt', { prompt: '' }],
+    ['sha256', { sha256: 'x' }],
+    ['bytes', { bytes: -1 }],
+    ['version', { version: 'Update 010' }],
+    ['postProcess', { postProcess: 'scripts/no-existe.ps1' }],
+  ])(
+    'Scenario: Registro de imagen con IA incompleto o incorrecto (nota real, %s)',
+    (field, change) => {
+      const armor = real.generated.find((e) => e.path === ARMOR) as AiEntry;
+      const value =
+        field === 'sha256'
+          ? `${String(armor.sha256).startsWith('0') ? '1' : '0'}${String(armor.sha256).slice(1)}`
+          : field === 'bytes'
+            ? Number(armor.bytes) + 1
+            : undefined;
+      const patch = value === undefined ? change : { [field]: value };
+      const out = runReal(withArmor(patch));
+      expect(out).toContain(ARMOR);
+      expect(out).toContain(field);
+    },
+  );
+
+  it('Scenario: Imagen con IA sin registro (lista real + extra.png)', () => {
+    const extra = `${ICON_DIR}extra.png`;
+    const out = checkAssets({
+      files: [...versioned, extra],
+      provenance: real,
+      digest: (p) => (p === extra ? { sha256: '', bytes: 0 } : diskDigest(p)),
+    });
+    expect(out.join('\n')).toContain(extra);
+  });
+
+  it('Scenario: Registro de imagen con IA sin fichero (nota real)', () => {
+    expect(
+      runReal(
+        real.generated,
+        versioned.filter((f) => f !== ARMOR),
+      ),
+    ).toContain(ARMOR);
+  });
+
+  it('Scenario: Política sin ADR (nota real)', () => {
+    const missing = 'docs/adr/0099-no-existe.md';
+    const out = checkAssets({
+      files: versioned,
+      provenance: { ...real, generatedPolicy: missing },
+      digest: diskDigest,
+    });
+    expect(out.join('\n')).toContain(missing);
+  });
+
+  it('Scenario: Imágenes con IA sin red (nota real: síncrono, sin red ni herramienta)', () => {
+    expect(runReal()).toBe('');
   });
 });

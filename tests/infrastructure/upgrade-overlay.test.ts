@@ -5,6 +5,7 @@ import { screenFrame } from '../../src/infrastructure/phaser/ui/screenFrame';
 import {
   UpgradeOverlay,
   type CardBox,
+  type CardIcon,
   type CardText,
   type OverlayPart,
 } from '../../src/infrastructure/phaser/UpgradeOverlay';
@@ -64,6 +65,20 @@ class FakeBox extends FakePart implements CardBox {
   }
 }
 
+/** Icono doble (0034): textura y tamaño en pantalla. */
+class FakeIcon extends FakePart implements CardIcon {
+  texture = '';
+  textures = 0;
+  setTexture(key: string): this {
+    this.texture = key;
+    this.textures += 1;
+    return this;
+  }
+  setDisplaySize(w: number, h: number): this {
+    return this.setSize(w, h);
+  }
+}
+
 const VIEW = screenFrame(960, 540);
 
 function overlay() {
@@ -74,6 +89,7 @@ function overlay() {
     name: new FakeText(),
     description: new FakeText(),
     level: new FakeText(),
+    icon: new FakeIcon(),
   }));
   return { veil, cards, o: new UpgradeOverlay(veil, cards, VIEW) };
 }
@@ -248,9 +264,10 @@ describe('UpgradeOverlay.relayout (0017)', () => {
 
     const [first] = cardLayout(screenFrame(1920, 1080), 3);
     expect(cards[0]?.name.fontSize).toBe(28);
-    // 0032: área útil de 16 px por lado sin pieza (el overlay de prueba no la tiene).
+    // 0032: área útil de 16 px por lado sin pieza (el overlay de prueba no la tiene); 0034: el
+    // nombre empieza bajo el hueco del icono, (64 + 6)·k.
     expect(cards[0]?.name.wrap).toBe(2 * 208);
-    expect(cards[0]?.name.y).toBe((first?.y ?? 0) - (first?.height ?? 0) / 2 + 2 * 16);
+    expect(cards[0]?.name.y).toBe((first?.y ?? 0) - (first?.height ?? 0) / 2 + 2 * (16 + 64 + 6));
   });
 });
 

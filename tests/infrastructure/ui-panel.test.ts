@@ -3,6 +3,7 @@ import upgradesJson from '../../content/upgrades.json';
 import type { OfferSnapshot } from '../../src/domain/run/RunSnapshot';
 import {
   CARD_FONT_SIZE,
+  CARD_ICON_SIZE,
   CARD_LINE_HEIGHT,
   CARD_TEXT_GAP,
   cardLayout,
@@ -154,9 +155,13 @@ describe('Cartas de mejora con piezas de UI (upgrades 0032)', () => {
         expect(t.nameTop - (r.y - r.height / 2)).toBeGreaterThanOrEqual(12 * k);
         expect(r.y + r.height / 2 - t.levelBottom).toBeGreaterThanOrEqual(28 * k);
         expect(t.wrapWidth).toBeLessThanOrEqual(r.width - 40 * k);
-        // El nombre (origen arriba) y el nivel (origen abajo) se colocan en esos bordes.
+        // El nombre (origen arriba) y el nivel (origen abajo) se colocan en esos bordes; 0034: el
+        // nombre, bajo el hueco del icono ((64 + 6)·k).
         const [name, , level] = texts.slice(i * 3, i * 3 + 3);
-        expect([name?.y, name?.originY]).toEqual([t.nameTop, 0]);
+        expect([name?.y, name?.originY]).toEqual([
+          t.nameTop + (CARD_ICON_SIZE + CARD_TEXT_GAP) * k,
+          0,
+        ]);
         expect([level?.y, level?.originY]).toEqual([t.levelBottom, 1]);
       });
       // Esquinas en pantalla de la pieza: márgenes de la hoja × la escala del NineSlice.

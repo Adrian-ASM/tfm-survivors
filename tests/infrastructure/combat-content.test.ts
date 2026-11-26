@@ -8,6 +8,7 @@ import { HIT_WINDOW_BELOW_FRAME } from '../../src/infrastructure/content/schemas
 import { loadRunConfig, parseRunConfig } from '../../src/infrastructure/content/loadRunConfig';
 import { rawContent, type RawContent } from '../support/builders';
 import { REGISTERED, rawAppearance } from '../support/appearance';
+import { GENERATED_PATHS } from '../support/generated';
 
 // Spec simulation-loop (0031), "Contenido de combate validado": content/combat.json con zod estricto.
 type Combat = RawContent['combat'];
@@ -63,6 +64,7 @@ describe('Contenido de combate validado (spec simulation-loop 0031, con zod)', (
       { content: raw, appearance: rawAppearance(), guide: guideJson },
       (e) => errors.push(e.field),
       REGISTERED,
+      GENERATED_PATHS,
     );
     expect(booted).toBeNull();
     expect(errors).toEqual(['combat.hitWindowTicks']);

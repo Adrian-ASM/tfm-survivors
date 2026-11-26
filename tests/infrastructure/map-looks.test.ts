@@ -20,9 +20,10 @@ import {
   WATER_FILE,
   rawAppearance,
 } from '../support/appearance';
+import { GENERATED_PATHS } from '../support/generated';
 
 // Spec sprite-rendering (0016), "Pintado del mapa": reserva por elemento (design §12.2 B6).
-const parsed = parseAppearance(rawAppearance(), REGISTERED);
+const parsed = parseAppearance(rawAppearance(), REGISTERED, GENERATED_PATHS);
 if (!parsed.ok) throw new Error(parsed.error.message);
 const { map, terrain } = parsed.value;
 const STRUCTURES = resolveStructureLooks(parsed.value, () => 1);

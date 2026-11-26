@@ -11,6 +11,7 @@ import {
 import { sheetsToLoad } from '../../src/infrastructure/phaser/bootPlan';
 import { REGISTERED, rawAppearance, type RawAppearance } from './appearance';
 import { repoAppearance } from './mapArt';
+import { GENERATED_PATHS } from './generated';
 
 /**
  * Aspectos resueltos del fixture de `appearance.ts` (todas las hojas cargadas con 100 frames salvo
@@ -22,7 +23,7 @@ export function someLooks(
 ): Looks {
   const raw = rawAppearance();
   edit(raw);
-  const r = parseAppearance(raw, REGISTERED);
+  const r = parseAppearance(raw, REGISTERED, GENERATED_PATHS);
   if (!r.ok) throw new Error(`${r.error.field}: ${r.error.message}`);
   return resolveLooks(r.value, (key) => (missing.includes(key) ? null : 100));
 }

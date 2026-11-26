@@ -1,4 +1,5 @@
 import type { ShopProductSnapshot, ShopSnapshot } from '../../domain/run/RunSnapshot';
+import type { IconChoice, IconState } from '../icons/upgradeIcons';
 import type { ShopAction } from '../phaser/ShopGate';
 import { button, setPanelHidden } from './button';
 import { MENU_LABELS } from './menuText';
@@ -9,7 +10,25 @@ export interface ShopProductView {
   readonly level: number | null;
   readonly price: number | null;
   readonly buyable: boolean;
+  /** Estado del icono de la fila (0034, design D7). */
+  readonly icon: IconState;
 }
+
+/**
+ * Iconos de las filas (0034, design D6): la resolución del `IconBook` de la composición y la URL
+ * de un fichero de icono bajo la base (`iconUrl`, mismo origen).
+ */
+export interface ShopIcons {
+  resolve(id: string): IconChoice;
+  url(file: string): string;
+}
+
+const NO_ICON: IconChoice = Object.freeze({ state: 'none', key: null, file: null });
+/** Sin iconos: cada fila lleva su `<img>` oculto, sin `src`. */
+export const NO_SHOP_ICONS: ShopIcons = { resolve: () => NO_ICON, url: () => '' };
+
+/** Lado del icono en los atributos del `<img>` (su tamaño nativo; el CSS fija el de pantalla). */
+const ICON_ATTR_SIZE = '64';
 
 /** Estado visible del panel para la sonda `window.__sprint.shop`. */
 export interface ShopPanelView {
@@ -53,6 +72,8 @@ export class ShopPanel {
   constructor(
     private readonly doc: Document,
     parent: HTMLElement,
+    /** Iconos de las filas (0034); sin ellos, ocultos. */
+    private readonly icons: ShopIcons = NO_SHOP_ICONS,
   ) {
     this.root = doc.createElement('section');
     this.root.className = 'shop-panel';
@@ -80,20 +101,37 @@ export class ShopPanel {
     this.key = key;
     this.gold.textContent = `${MENU_LABELS.shopGoldLabel}: ${String(shop.gold)}`;
     const full = health.current >= health.max;
-    this.list.replaceChildren(...shop.products.map((p) => this.row(p, full)));
+    const choices = shop.products.map((p) => this.icons.resolve(p.id));
+    this.list.replaceChildren(...shop.products.map((p, i) => this.row(p, full, choices[i])));
     this.shown = {
       visible: this.shown.visible,
       gold: shop.gold,
-      products: shop.products.map((p) => ({
+      products: shop.products.map((p, i) => ({
         id: p.id,
         level: p.kind === 'upgrade' ? p.level : null,
         price: p.price,
         buyable: p.affordable,
+        icon: choices[i]?.state ?? 'none',
       })),
     };
   }
 
-  private row(p: ShopProductSnapshot, fullHealth: boolean): HTMLElement {
+  /**
+   * Icono decorativo de la fila (0034, D6): `alt` vacío, sin `style`, URL del mismo origen. Con
+   * `none` sigue en la fila (1 imagen por fila) con `hidden` y sin `src`, nunca `data:` ni `blob:`.
+   */
+  private icon(choice: IconChoice | undefined): HTMLImageElement {
+    const img = this.doc.createElement('img');
+    img.className = 'shop-panel__icon';
+    img.alt = '';
+    img.setAttribute('width', ICON_ATTR_SIZE);
+    img.setAttribute('height', ICON_ATTR_SIZE);
+    if (choice?.file) img.src = this.icons.url(choice.file);
+    else img.hidden = true;
+    return img;
+  }
+
+  private row(p: ShopProductSnapshot, fullHealth: boolean, choice?: IconChoice): HTMLElement {
     const { doc } = this;
     const item = doc.createElement('li');
     const b = button(doc, '', () => {
@@ -102,6 +140,7 @@ export class ShopPanel {
     b.className = p.affordable ? 'shop-panel__product' : 'shop-panel__product is-unavailable';
     b.dataset.product = p.id;
     if (!p.affordable) b.setAttribute('aria-disabled', 'true');
+    b.append(this.icon(choice));
     const texts = productTexts(p, fullHealth);
     const parts: [string, string][] = [
       ['name', p.name],
@@ -133,8 +172,8 @@ export class ShopPanel {
     setPanelHidden(this.root, !visible);
   }
 
-  /** Lo que el panel muestra (sonda E2E). */
+  /** Lo que el panel muestra (sonda E2E); 0034: con la tienda cerrada, sin filas. */
   get view(): ShopPanelView {
-    return this.shown;
+    return this.shown.visible ? this.shown : { ...this.shown, products: [] };
   }
 }

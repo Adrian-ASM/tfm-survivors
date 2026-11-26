@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { parseAppearance } from '../../src/infrastructure/content/loadAppearance';
 import { REGISTERED, rawAppearance, type RawAppearance } from '../support/appearance';
+import { GENERATED_PATHS } from '../support/generated';
 
 // Spec sprite-rendering, "Datos de aspecto validados" (change 0012, design D9).
 function failure(raw: RawAppearance): string {
-  const r = parseAppearance(raw, REGISTERED);
+  const r = parseAppearance(raw, REGISTERED, GENERATED_PATHS);
   if (r.ok) throw new Error('se esperaba un error de datos de aspecto');
   return r.error.field;
 }
@@ -14,7 +15,7 @@ const torch = (raw: RawAppearance): Torch => raw.enemies['goblin-torch'] as Torc
 
 describe('Datos de aspecto validados · forma y rangos', () => {
   it('el fixture mínimo es válido y convierte el color de reserva a número', () => {
-    const r = parseAppearance(rawAppearance(), REGISTERED);
+    const r = parseAppearance(rawAppearance(), REGISTERED, GENERATED_PATHS);
     if (!r.ok) throw new Error(`${r.error.field}: ${r.error.message}`);
     expect(r.value.maxCorpses).toBe(64);
     expect(r.value.enemies['goblin-torch']?.placeholderColor).toBe(0xe5484d);
@@ -81,11 +82,11 @@ describe('Datos de aspecto validados · rutas de hoja (design D2)', () => {
   });
 
   it('una hoja registrada en la nota de procedencia es válida', () => {
-    expect(parseAppearance(rawAppearance(), REGISTERED).ok).toBe(true);
+    expect(parseAppearance(rawAppearance(), REGISTERED, GENERATED_PATHS).ok).toBe(true);
   });
 
   it('sin nota de procedencia ninguna hoja es válida (nombra la primera)', () => {
-    const r = parseAppearance(rawAppearance(), []);
+    const r = parseAppearance(rawAppearance(), [], GENERATED_PATHS);
     expect(r.ok ? '' : r.error.field).toBe('player.sheet.file');
   });
 });

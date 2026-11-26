@@ -19,6 +19,7 @@ import {
   structureAspectsOf,
   veinAspectsOf,
 } from '../../src/infrastructure/content/loadAppearance';
+import { GENERATED_PATHS } from '../support/generated';
 
 // Spec asset-provenance (0030), "Procedencia de las hojas de aparición de los recogibles": G_Spawn,
 // W_Spawn y M_Spawn de Update 010, al final de la nota, idénticas al pack (con sombra) y vigiladas
@@ -69,7 +70,11 @@ const withEntries = (change: (f: Entry) => Entry | null) => ({
 
 /** Hojas que usan los datos de aspecto, aparición incluida ("Solo las hojas usadas"). */
 function usedSheets(): Set<string> {
-  const r = parseAppearance(structuredClone(appearanceJson), registeredPaths(provenanceJson));
+  const r = parseAppearance(
+    structuredClone(appearanceJson),
+    registeredPaths(provenanceJson),
+    GENERATED_PATHS,
+  );
   if (!r.ok) throw new Error(`${r.error.field}: ${r.error.message}`);
   const a = r.value;
   return new Set([

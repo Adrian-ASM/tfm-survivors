@@ -8,12 +8,13 @@ import {
   resolveLooks,
 } from '../../src/infrastructure/phaser/art/looks';
 import { REGISTERED, TNT_FILE, TORCH_FILE, rawAppearance } from '../support/appearance';
+import { GENERATED_PATHS } from '../support/generated';
 
 // Spec sprite-rendering, "Aspecto de reserva ante un fallo de carga" (change 0012, design "Fallback").
 function appearance(edit: (raw: ReturnType<typeof rawAppearance>) => void = () => undefined) {
   const raw = rawAppearance();
   edit(raw);
-  const r = parseAppearance(raw, REGISTERED);
+  const r = parseAppearance(raw, REGISTERED, GENERATED_PATHS);
   if (!r.ok) throw new Error(`${r.error.field}: ${r.error.message}`);
   return r.value;
 }

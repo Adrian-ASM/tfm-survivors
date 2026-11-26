@@ -212,8 +212,12 @@ interface AspectSheet {
 }
 const appearanceJson = JSON.parse(
   readFileSync(new URL('../../content/appearance.json', import.meta.url), 'utf8'),
-) as Record<'player' | 'projectile' | 'gem' | 'ground' | 'corpse', AspectSheet> & {
+) as Record<'player' | 'projectile' | 'ground' | 'corpse', AspectSheet> & {
+  /** Desde 0022 la gema vive en `pickups.xp` y puede no tener hoja: ausente aquí. */
+  gem?: AspectSheet;
   enemies: Record<string, AspectSheet>;
+  /** Iconos de mejora (0034): ficheros bajo `assets/icons/`. */
+  icons: { fallback: Record<string, string>; byId: Record<string, string> };
 };
 const SHEETS = [
   ...new Set(
@@ -224,8 +228,15 @@ const SHEETS = [
       appearanceJson.gem,
       appearanceJson.ground,
       appearanceJson.corpse,
-    ].map((a) => a.sheet.file),
+    ].flatMap((a) => (a ? [a.sheet.file] : [])),
   ),
+];
+// 0034 (spec sprite-rendering, "Arte en la URL pública"): cada icono de mejora y reserva.
+const ICONS = [
+  ...new Set([
+    ...Object.values(appearanceJson.icons.byId),
+    ...Object.values(appearanceJson.icons.fallback),
+  ]),
 ];
 
 test('Scenario: Arte en la URL pública (cada hoja 200 image/png bajo la base)', async ({
@@ -233,10 +244,14 @@ test('Scenario: Arte en la URL pública (cada hoja 200 image/png bajo la base)',
   watch,
 }) => {
   const sheets = new Map<string, { status: number; type: string }>();
+  const icons = new Map<string, { status: number; type: string }>();
   page.on('response', (r) => {
     const path = decodeURIComponent(new URL(r.url()).pathname);
+    const seen = { status: r.status(), type: r.headers()['content-type'] ?? '' };
     const file = SHEETS.find((f) => path === `${TARGET.pathname}assets/tiny-swords/${f}`);
-    if (file) sheets.set(file, { status: r.status(), type: r.headers()['content-type'] ?? '' });
+    if (file) sheets.set(file, seen);
+    const icon = ICONS.find((f) => path === `${TARGET.pathname}assets/icons/${f}`);
+    if (icon) icons.set(icon, seen);
   });
   await page.goto('./');
   await menuPanel(page).getByRole('button', { name: 'Jugar', exact: true }).click();
@@ -245,6 +260,10 @@ test('Scenario: Arte en la URL pública (cada hoja 200 image/png bajo la base)',
 
   for (const file of SHEETS) {
     expect(sheets.get(file), file).toEqual({ status: 200, type: 'image/png' });
+  }
+  await expect.poll(() => icons.size).toBe(ICONS.length);
+  for (const file of ICONS) {
+    expect(icons.get(file), file).toEqual({ status: 200, type: 'image/png' });
   }
   expect(await cspState(page)).toEqual({ violations: [], metas: 1 });
   expect(pageErrors(watch.messages)).toEqual([]);

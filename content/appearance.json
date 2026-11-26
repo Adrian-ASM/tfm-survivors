@@ -887,5 +887,26 @@
       }
     },
     "font": { "family": "Departure Mono", "file": "DepartureMono-Regular.woff2", "format": "woff2" }
+  },
+  "icons": {
+    "fallback": { "character": "fallback-character.png", "weapon": "fallback-weapon.png" },
+    "byId": {
+      "guardrail": "guardrail.png",
+      "shortcuts": "shortcuts.png",
+      "context-window": "context-window.png",
+      "regeneration": "regeneration.png",
+      "armor": "armor.png",
+      "steady-nerves": "steady-nerves.png",
+      "scholar": "scholar.png",
+      "prospector": "prospector.png",
+      "hunter": "hunter.png",
+      "strict-rules": "strict-rules.png",
+      "fast-ci": "fast-ci.png",
+      "wide-analysis": "wide-analysis.png",
+      "hard-asserts": "hard-asserts.png",
+      "watch-mode": "watch-mode.png",
+      "coverage": "coverage.png",
+      "heal": "heal.png"
+    }
   }
 }

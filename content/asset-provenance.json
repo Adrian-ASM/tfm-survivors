@@ -391,5 +391,188 @@
       "sha256": "5b4fed1daa90708aa9c6ee1190abca9dc22164a1c1def0020386e46b61038cfb",
       "bytes": 22496
     }
+  ],
+  "generatedPolicy": "docs/adr/0030-imagenes-generadas-con-ia-solo-para-iconos.md",
+  "generated": [
+    {
+      "path": "public/assets/icons/guardrail.png",
+      "tool": "Claude Code (Claude Opus 5.5) · pixel art dibujado por script determinista",
+      "createdOn": "2026-11-26",
+      "terms": "https://www.anthropic.com/legal/consumer-terms §4 (Effective 2025-10-08: Anthropic cede al usuario sus derechos sobre los Outputs; uso no comercial, TFM) (leídos 2026-11-26)",
+      "prompt": "Icono de mejora de 64×64 con fondo transparente para un survivors-like medieval de estilo Tiny Swords: objeto único, contorno oscuro grueso, sombreado plano en tres tonos, pocos colores. Objeto: cota de malla (Cota de malla, más vida máxima (y la misma cantidad de vida actual)). Dibujado con scripts/icons/draw-icons.mjs, función guardrail.",
+      "postProcess": "scripts/icons/draw-icons.mjs",
+      "sha256": "97a12eb056a70890c73fa59fb5c4127e9d7562a4d41db3793681414ae542ddda",
+      "bytes": 374
+    },
+    {
+      "path": "public/assets/icons/shortcuts.png",
+      "tool": "Claude Code (Claude Opus 5.5) · pixel art dibujado por script determinista",
+      "createdOn": "2026-11-26",
+      "terms": "https://www.anthropic.com/legal/consumer-terms §4 (Effective 2025-10-08: Anthropic cede al usuario sus derechos sobre los Outputs; uso no comercial, TFM) (leídos 2026-11-26)",
+      "prompt": "Icono de mejora de 64×64 con fondo transparente para un survivors-like medieval de estilo Tiny Swords: objeto único, contorno oscuro grueso, sombreado plano en tres tonos, pocos colores. Objeto: botas de cuero (Botas de viajero, te mueves más rápido). Dibujado con scripts/icons/draw-icons.mjs, función shortcuts.",
+      "postProcess": "scripts/icons/draw-icons.mjs",
+      "sha256": "dda78aa2d86f83cecbcfaf7b185bc5a1b0a91afc6562cf63569d8a23b7bfa4e1",
+      "bytes": 309
+    },
+    {
+      "path": "public/assets/icons/context-window.png",
+      "tool": "Claude Code (Claude Opus 5.5) · pixel art dibujado por script determinista",
+      "createdOn": "2026-11-26",
+      "terms": "https://www.anthropic.com/legal/consumer-terms §4 (Effective 2025-10-08: Anthropic cede al usuario sus derechos sobre los Outputs; uso no comercial, TFM) (leídos 2026-11-26)",
+      "prompt": "Icono de mejora de 64×64 con fondo transparente para un survivors-like medieval de estilo Tiny Swords: objeto único, contorno oscuro grueso, sombreado plano en tres tonos, pocos colores. Objeto: amuleto de oro con gema azul (Amuleto del saqueador, atraes las gemas desde más lejos). Dibujado con scripts/icons/draw-icons.mjs, función contextWindow.",
+      "postProcess": "scripts/icons/draw-icons.mjs",
+      "sha256": "82d69cbbda8fa782769496ce39e39e36058a409e22705ee71e3c7f303bbe67eb",
+      "bytes": 381
+    },
+    {
+      "path": "public/assets/icons/regeneration.png",
+      "tool": "Claude Code (Claude Opus 5.5) · pixel art dibujado por script determinista",
+      "createdOn": "2026-11-26",
+      "terms": "https://www.anthropic.com/legal/consumer-terms §4 (Effective 2025-10-08: Anthropic cede al usuario sus derechos sobre los Outputs; uso no comercial, TFM) (leídos 2026-11-26)",
+      "prompt": "Icono de mejora de 64×64 con fondo transparente para un survivors-like medieval de estilo Tiny Swords: objeto único, contorno oscuro grueso, sombreado plano en tres tonos, pocos colores. Objeto: tarro de bálsamo con hojas y cruz verde (Bálsamo de hierbas, recuperas vida poco a poco). Dibujado con scripts/icons/draw-icons.mjs, función regeneration.",
+      "postProcess": "scripts/icons/draw-icons.mjs",
+      "sha256": "24c3f8d4f9d79776e920e6380be4f03992ecb9a9f6f5659b6c0f3a20e4b231b2",
+      "bytes": 427
+    },
+    {
+      "path": "public/assets/icons/armor.png",
+      "tool": "Claude Code (Claude Opus 5.5) · pixel art dibujado por script determinista",
+      "createdOn": "2026-11-26",
+      "terms": "https://www.anthropic.com/legal/consumer-terms §4 (Effective 2025-10-08: Anthropic cede al usuario sus derechos sobre los Outputs; uso no comercial, TFM) (leídos 2026-11-26)",
+      "prompt": "Icono de mejora de 64×64 con fondo transparente para un survivors-like medieval de estilo Tiny Swords: objeto único, contorno oscuro grueso, sombreado plano en tres tonos, pocos colores. Objeto: escudo redondo de roble con borde de acero (Escudo de roble, cada golpe te quita menos vida, pero siempre al menos 1). Dibujado con scripts/icons/draw-icons.mjs, función armor.",
+      "postProcess": "scripts/icons/draw-icons.mjs",
+      "sha256": "95ce71ae0b4f2e35ed9dc4ebe24ca79385df3bf42ee7d0e326d9e701817f3c09",
+      "bytes": 451
+    },
+    {
+      "path": "public/assets/icons/steady-nerves.png",
+      "tool": "Claude Code (Claude Opus 5.5) · pixel art dibujado por script determinista",
+      "createdOn": "2026-11-26",
+      "terms": "https://www.anthropic.com/legal/consumer-terms §4 (Effective 2025-10-08: Anthropic cede al usuario sus derechos sobre los Outputs; uso no comercial, TFM) (leídos 2026-11-26)",
+      "prompt": "Icono de mejora de 64×64 con fondo transparente para un survivors-like medieval de estilo Tiny Swords: objeto único, contorno oscuro grueso, sombreado plano en tres tonos, pocos colores. Objeto: yelmo cerrado con penacho rojo (Temple de veterano, tras un golpe, tardas más en volver a ser vulnerable). Dibujado con scripts/icons/draw-icons.mjs, función steadyNerves.",
+      "postProcess": "scripts/icons/draw-icons.mjs",
+      "sha256": "322950cb66dd3d4b177197808ef97ee20f1977e108636fbba77bd1e7f140ce86",
+      "bytes": 326
+    },
+    {
+      "path": "public/assets/icons/scholar.png",
+      "tool": "Claude Code (Claude Opus 5.5) · pixel art dibujado por script determinista",
+      "createdOn": "2026-11-26",
+      "terms": "https://www.anthropic.com/legal/consumer-terms §4 (Effective 2025-10-08: Anthropic cede al usuario sus derechos sobre los Outputs; uso no comercial, TFM) (leídos 2026-11-26)",
+      "prompt": "Icono de mejora de 64×64 con fondo transparente para un survivors-like medieval de estilo Tiny Swords: objeto único, contorno oscuro grueso, sombreado plano en tres tonos, pocos colores. Objeto: tomo azul con broche de oro (Tomo del erudito, las gemas te dan más experiencia). Dibujado con scripts/icons/draw-icons.mjs, función scholar.",
+      "postProcess": "scripts/icons/draw-icons.mjs",
+      "sha256": "2f05b4d413bd5d9593cffd3e61b661fdca3179e7714d3135b074337b116a682e",
+      "bytes": 381
+    },
+    {
+      "path": "public/assets/icons/prospector.png",
+      "tool": "Claude Code (Claude Opus 5.5) · pixel art dibujado por script determinista",
+      "createdOn": "2026-11-26",
+      "terms": "https://www.anthropic.com/legal/consumer-terms §4 (Effective 2025-10-08: Anthropic cede al usuario sus derechos sobre los Outputs; uso no comercial, TFM) (leídos 2026-11-26)",
+      "prompt": "Icono de mejora de 64×64 con fondo transparente para un survivors-like medieval de estilo Tiny Swords: objeto único, contorno oscuro grueso, sombreado plano en tres tonos, pocos colores. Objeto: bolsa de cuero con monedas (Bolsa del mercader, ganas más oro cada vez que lo recoges). Dibujado con scripts/icons/draw-icons.mjs, función prospector.",
+      "postProcess": "scripts/icons/draw-icons.mjs",
+      "sha256": "f88c390c74bbd6f383b0ed69d45952ad51fccfd8f64956c3c99ca4ddcf0bedee",
+      "bytes": 386
+    },
+    {
+      "path": "public/assets/icons/hunter.png",
+      "tool": "Claude Code (Claude Opus 5.5) · pixel art dibujado por script determinista",
+      "createdOn": "2026-11-26",
+      "terms": "https://www.anthropic.com/legal/consumer-terms §4 (Effective 2025-10-08: Anthropic cede al usuario sus derechos sobre los Outputs; uso no comercial, TFM) (leídos 2026-11-26)",
+      "prompt": "Icono de mejora de 64×64 con fondo transparente para un survivors-like medieval de estilo Tiny Swords: objeto único, contorno oscuro grueso, sombreado plano en tres tonos, pocos colores. Objeto: muslo de carne con hueso (Festín del cazador, la carne te cura más). Dibujado con scripts/icons/draw-icons.mjs, función hunter.",
+      "postProcess": "scripts/icons/draw-icons.mjs",
+      "sha256": "f40502b24a4207a721837a60594b3932e5b647fbd37917f69ceeef652c421e64",
+      "bytes": 389
+    },
+    {
+      "path": "public/assets/icons/strict-rules.png",
+      "tool": "Claude Code (Claude Opus 5.5) · pixel art dibujado por script determinista",
+      "createdOn": "2026-11-26",
+      "terms": "https://www.anthropic.com/legal/consumer-terms §4 (Effective 2025-10-08: Anthropic cede al usuario sus derechos sobre los Outputs; uso no comercial, TFM) (leídos 2026-11-26)",
+      "prompt": "Icono de mejora de 64×64 con fondo transparente para un survivors-like medieval de estilo Tiny Swords: objeto único, contorno oscuro grueso, sombreado plano en tres tonos, pocos colores. Objeto: flecha con punta de acero (Puntas de acero, las flechas del arco hacen más daño). Dibujado con scripts/icons/draw-icons.mjs, función strictRules.",
+      "postProcess": "scripts/icons/draw-icons.mjs",
+      "sha256": "991a2dff00dcda0efb884800d6cb1ffd2da28fcb0d54a30fb08b7cfc770b1972",
+      "bytes": 377
+    },
+    {
+      "path": "public/assets/icons/fast-ci.png",
+      "tool": "Claude Code (Claude Opus 5.5) · pixel art dibujado por script determinista",
+      "createdOn": "2026-11-26",
+      "terms": "https://www.anthropic.com/legal/consumer-terms §4 (Effective 2025-10-08: Anthropic cede al usuario sus derechos sobre los Outputs; uso no comercial, TFM) (leídos 2026-11-26)",
+      "prompt": "Icono de mejora de 64×64 con fondo transparente para un survivors-like medieval de estilo Tiny Swords: objeto único, contorno oscuro grueso, sombreado plano en tres tonos, pocos colores. Objeto: arco tensado (Tensado rápido, el arco dispara más a menudo). Dibujado con scripts/icons/draw-icons.mjs, función fastCi.",
+      "postProcess": "scripts/icons/draw-icons.mjs",
+      "sha256": "b84e92bf39272384bf24e21eafec16e01e2789dcc09b522bac36d5d455a4d235",
+      "bytes": 351
+    },
+    {
+      "path": "public/assets/icons/wide-analysis.png",
+      "tool": "Claude Code (Claude Opus 5.5) · pixel art dibujado por script determinista",
+      "createdOn": "2026-11-26",
+      "terms": "https://www.anthropic.com/legal/consumer-terms §4 (Effective 2025-10-08: Anthropic cede al usuario sus derechos sobre los Outputs; uso no comercial, TFM) (leídos 2026-11-26)",
+      "prompt": "Icono de mejora de 64×64 con fondo transparente para un survivors-like medieval de estilo Tiny Swords: objeto único, contorno oscuro grueso, sombreado plano en tres tonos, pocos colores. Objeto: ojo de halcón ámbar (Ojo de halcón, el arco alcanza objetivos más lejanos). Dibujado con scripts/icons/draw-icons.mjs, función wideAnalysis.",
+      "postProcess": "scripts/icons/draw-icons.mjs",
+      "sha256": "e1afeddcee6202e44f102ce0752ff5a0090dab9c7904836c85ba61878ca187f5",
+      "bytes": 286
+    },
+    {
+      "path": "public/assets/icons/hard-asserts.png",
+      "tool": "Claude Code (Claude Opus 5.5) · pixel art dibujado por script determinista",
+      "createdOn": "2026-11-26",
+      "terms": "https://www.anthropic.com/legal/consumer-terms §4 (Effective 2025-10-08: Anthropic cede al usuario sus derechos sobre los Outputs; uso no comercial, TFM) (leídos 2026-11-26)",
+      "prompt": "Icono de mejora de 64×64 con fondo transparente para un survivors-like medieval de estilo Tiny Swords: objeto único, contorno oscuro grueso, sombreado plano en tres tonos, pocos colores. Objeto: espada de filo templado (Filo templado, el tajo hace más daño). Dibujado con scripts/icons/draw-icons.mjs, función hardAsserts.",
+      "postProcess": "scripts/icons/draw-icons.mjs",
+      "sha256": "4e95ab070377678c57342cab46d3f689662dabd588cef5199bfa5a2237c2842d",
+      "bytes": 351
+    },
+    {
+      "path": "public/assets/icons/watch-mode.png",
+      "tool": "Claude Code (Claude Opus 5.5) · pixel art dibujado por script determinista",
+      "createdOn": "2026-11-26",
+      "terms": "https://www.anthropic.com/legal/consumer-terms §4 (Effective 2025-10-08: Anthropic cede al usuario sus derechos sobre los Outputs; uso no comercial, TFM) (leídos 2026-11-26)",
+      "prompt": "Icono de mejora de 64×64 con fondo transparente para un survivors-like medieval de estilo Tiny Swords: objeto único, contorno oscuro grueso, sombreado plano en tres tonos, pocos colores. Objeto: dos espadas cruzadas (Brazo incansable, el tajo se lanza más a menudo). Dibujado con scripts/icons/draw-icons.mjs, función watchMode.",
+      "postProcess": "scripts/icons/draw-icons.mjs",
+      "sha256": "257337ab5849935b0bb9fb4d400a00592009b7afb380570b6f80827b12bced5e",
+      "bytes": 457
+    },
+    {
+      "path": "public/assets/icons/coverage.png",
+      "tool": "Claude Code (Claude Opus 5.5) · pixel art dibujado por script determinista",
+      "createdOn": "2026-11-26",
+      "terms": "https://www.anthropic.com/legal/consumer-terms §4 (Effective 2025-10-08: Anthropic cede al usuario sus derechos sobre los Outputs; uso no comercial, TFM) (leídos 2026-11-26)",
+      "prompt": "Icono de mejora de 64×64 con fondo transparente para un survivors-like medieval de estilo Tiny Swords: objeto único, contorno oscuro grueso, sombreado plano en tres tonos, pocos colores. Objeto: tajo en media luna (Barrido amplio, el tajo llega más lejos a tu alrededor). Dibujado con scripts/icons/draw-icons.mjs, función coverage.",
+      "postProcess": "scripts/icons/draw-icons.mjs",
+      "sha256": "492e45020281cf94a443266d9e84fe78423b2fd42a366157af886b89af2036ca",
+      "bytes": 317
+    },
+    {
+      "path": "public/assets/icons/heal.png",
+      "tool": "Claude Code (Claude Opus 5.5) · pixel art dibujado por script determinista",
+      "createdOn": "2026-11-26",
+      "terms": "https://www.anthropic.com/legal/consumer-terms §4 (Effective 2025-10-08: Anthropic cede al usuario sus derechos sobre los Outputs; uso no comercial, TFM) (leídos 2026-11-26)",
+      "prompt": "Icono de mejora de 64×64 con fondo transparente para un survivors-like medieval de estilo Tiny Swords: objeto único, contorno oscuro grueso, sombreado plano en tres tonos, pocos colores. Objeto: poción roja (Poción de curación, recuperas vida). Dibujado con scripts/icons/draw-icons.mjs, función heal.",
+      "postProcess": "scripts/icons/draw-icons.mjs",
+      "sha256": "bc9f59c6041be8a88d163a04ec34e48d4e8d30d2e6fbe643df0e19c18273982a",
+      "bytes": 370
+    },
+    {
+      "path": "public/assets/icons/fallback-character.png",
+      "tool": "Claude Code (Claude Opus 5.5) · pixel art dibujado por script determinista",
+      "createdOn": "2026-11-26",
+      "terms": "https://www.anthropic.com/legal/consumer-terms §4 (Effective 2025-10-08: Anthropic cede al usuario sus derechos sobre los Outputs; uso no comercial, TFM) (leídos 2026-11-26)",
+      "prompt": "Icono de mejora de 64×64 con fondo transparente para un survivors-like medieval de estilo Tiny Swords: objeto único, contorno oscuro grueso, sombreado plano en tres tonos, pocos colores. Objeto: medallón azul con estrella (reserva de las mejoras de personaje). Dibujado con scripts/icons/draw-icons.mjs, función fallbackCharacter.",
+      "postProcess": "scripts/icons/draw-icons.mjs",
+      "sha256": "ce08a4d83abd6fe61240c5867ee178b5bcc776505609bd6e360006a5dbf5fe3a",
+      "bytes": 447
+    },
+    {
+      "path": "public/assets/icons/fallback-weapon.png",
+      "tool": "Claude Code (Claude Opus 5.5) · pixel art dibujado por script determinista",
+      "createdOn": "2026-11-26",
+      "terms": "https://www.anthropic.com/legal/consumer-terms §4 (Effective 2025-10-08: Anthropic cede al usuario sus derechos sobre los Outputs; uso no comercial, TFM) (leídos 2026-11-26)",
+      "prompt": "Icono de mejora de 64×64 con fondo transparente para un survivors-like medieval de estilo Tiny Swords: objeto único, contorno oscuro grueso, sombreado plano en tres tonos, pocos colores. Objeto: medallón rojo con espada (reserva de las mejoras de arma y de la curación). Dibujado con scripts/icons/draw-icons.mjs, función fallbackWeapon.",
+      "postProcess": "scripts/icons/draw-icons.mjs",
+      "sha256": "ca527f8ee871583f817f546e0d3925701f47cdabcaf6d4dd76ebcef3396f68a7",
+      "bytes": 428
+    }
   ]
 }

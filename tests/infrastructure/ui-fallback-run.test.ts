@@ -15,6 +15,13 @@ import { MENU_LABELS } from '../../src/infrastructure/dom/menuText';
 import { applyUiKit, uiKitVariables } from '../../src/infrastructure/dom/uiKit';
 import { MenuController } from '../../src/infrastructure/menu/MenuController';
 import { finishBoot } from '../../src/infrastructure/phaser/bootPlan';
+import { iconIdsOf } from '../../src/composition/contentBoot';
+import {
+  ICON_KEY_PREFIX,
+  IconBook,
+  iconCatalog,
+  iconKey,
+} from '../../src/infrastructure/icons/upgradeIcons';
 import type { RingSprite } from '../../src/infrastructure/phaser/PulseLayer';
 import { RenderLayers } from '../../src/infrastructure/phaser/RenderLayers';
 import type { SpriteCounts } from '../../src/infrastructure/phaser/renderCounts';
@@ -61,6 +68,17 @@ const ICONS = {
 };
 const UI_KEYS = new Set(UI_FILES);
 
+/** Iconos de prueba (0034) para las 16 claves y las 2 reservas, todos cargados o ninguno. */
+function testIconBook(loaded: boolean): IconBook {
+  const ids = iconIdsOf(CONFIG);
+  const fallback = { character: 'fallback-character.png', weapon: 'fallback-weapon.png' };
+  const byId = Object.fromEntries([...ids.character, ...ids.weapon].map((id) => [id, `${id}.png`]));
+  const book = new IconBook(iconCatalog({ fallback, byId }, ids));
+  const files = [...Object.values(byId), fallback.character, fallback.weapon];
+  book.setLoaded(loaded ? files.map(iconKey) : []);
+  return book;
+}
+
 class Ring implements RingSprite {
   setPosition(): this {
     return this;
@@ -105,17 +123,23 @@ function placeholders(counts: SpriteCounts): number {
  * Partida de la 42 con el bot de referencia (opción 0 en cada oferta) pintando cada snapshot con
  * las capas, el HUD, las cartas y los paneles DOM. `uiLoaded` decide si existen las texturas de UI.
  */
-function playPainted(ticks: number, uiLoaded: boolean) {
+function playPainted(ticks: number, uiLoaded: boolean, iconsLoaded = true) {
   const run = startSeededRun(CONFIG, 42);
   const bot = referenceBot(CONFIG, run.map);
-  const textures = (key: string) => uiLoaded || !UI_KEYS.has(key);
+  const book = testIconBook(iconsLoaded);
+  const textures = (key: string) =>
+    key.startsWith(ICON_KEY_PREFIX) ? iconsLoaded : uiLoaded || !UI_KEYS.has(key);
   const view = { width: 1280, height: 720 };
   const { scene, made } = fakeUiScene({ view, textures });
   const frame = screenFrame(view.width, view.height);
   const hud = createHud(scene, frame, ICONS, ui);
-  const offer = createUpgradeOverlay(scene, frame, ui);
+  const offer = createUpgradeOverlay(scene, frame, ui, (id) => book.resolve(id));
   const { doc, root } = fakeDom();
-  const shop = new ShopPanel(doc, root);
+  const shop = new ShopPanel(doc, root, {
+    resolve: (id) => book.resolve(id),
+    url: (f) => `/tfm-survivors/assets/icons/${f}`,
+  });
+  const iconStates = new Set<string>();
   const build = new BuildPanel(doc, root, { wood: '/w.png', stone: '/s.png' });
   const layers = new RenderLayers(
     {
@@ -151,11 +175,35 @@ function playPainted(ticks: number, uiLoaded: boolean) {
     offer.sync(s.status === 'choosing' ? s.offer : []);
     shop.sync(s.shop, { current: s.player.health, max: s.player.maxHealth });
     build.sync(s);
+    for (const v of [...offer.iconStates, ...shop.view.products]) iconStates.add(v.icon);
     maxPlaceholders = Math.max(maxPlaceholders, placeholders(layers.counts));
     out.push(JSON.stringify(s));
   }
-  return { out, maxPlaceholders, slices: made.filter((m) => m.kind === 'nineslice').length };
+  return {
+    out,
+    maxPlaceholders,
+    slices: made.filter((m) => m.kind === 'nineslice').length,
+    images: made.filter((m) => m.kind === 'image').length,
+    iconStates: [...iconStates].sort(),
+  };
 }
+
+// Spec sprite-rendering (0034), "Partida entera con todos los iconos sin cargar" (design D5).
+describe('Iconos de mejora sin cargar (0034)', () => {
+  it('Scenario: Partida entera con todos los iconos sin cargar (3.600 ticks de la 42)', () => {
+    const loaded = playPainted(3600, true, true);
+    const none = playPainted(3600, true, false);
+    expect(none.out).toEqual(loaded.out);
+    expect(loaded.out.length).toBeGreaterThan(0);
+    expect([loaded.maxPlaceholders, none.maxPlaceholders]).toEqual([0, 0]);
+    // Las cartas y las filas se han pintado: con iconos, painted; sin ellos, none.
+    expect(loaded.iconStates).toEqual(['painted']);
+    expect(none.iconStates).toEqual(['none']);
+    // 3 imágenes del HUD + 3 iconos de carta, creados una vez en ambos casos; piezas intactas.
+    expect([loaded.images, none.images]).toEqual([6, 6]);
+    expect([loaded.slices, none.slices]).toEqual([6, 6]);
+  }, 60_000);
+});
 
 describe('Reserva de las piezas de UI y de la fuente (0032)', () => {
   it('Scenario: Partida entera con todas las piezas en reserva (3.600 ticks de la 42)', () => {

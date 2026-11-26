@@ -12,6 +12,7 @@ import {
 } from '../../src/infrastructure/content/appearanceSchema';
 import { rawContent } from '../support/builders';
 import { registeredPaths } from '../../src/infrastructure/content/loadAppearance';
+import { GENERATED_PATHS } from '../support/generated';
 
 // Spec sprite-rendering (0021), "Datos de aspecto validados" y "Pintado de las estructuras": aspectos
 // de casas, torres y ruinas, colores de reserva y aspecto del guardia, en el arranque.
@@ -29,7 +30,7 @@ function failure(change: (a: Json) => void): DomainError {
   const r = raw();
   change(r.appearance);
   const errors: DomainError[] = [];
-  const booted = bootContent(r, (e) => errors.push(e), REGISTERED);
+  const booted = bootContent(r, (e) => errors.push(e), REGISTERED, GENERATED_PATHS);
   expect(booted).toBeNull();
   const [first] = errors;
   if (!first) throw new Error('se esperaba un error de arranque');
@@ -47,7 +48,7 @@ const look = (a: Json, id: string, which: 'intact' | 'ruin'): Json => {
 describe('Aspectos de las estructuras en el arranque', () => {
   it('Scenario: Datos del repositorio (estructuras alineadas con el contenido)', () => {
     const errors: DomainError[] = [];
-    const booted = bootContent(raw(), (e) => errors.push(e), REGISTERED);
+    const booted = bootContent(raw(), (e) => errors.push(e), REGISTERED, GENERATED_PATHS);
     expect(errors).toEqual([]);
     expect(Object.keys(booted?.appearance.structures ?? {})).toEqual(
       Object.keys(booted?.config.structures.types ?? {}),

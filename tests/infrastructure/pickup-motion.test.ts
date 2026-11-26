@@ -20,6 +20,7 @@ import {
   withPickupMotion,
 } from '../support/appearance';
 import { someLooks } from '../support/looks';
+import { GENERATED_PATHS } from '../support/generated';
 
 // Spec sprite-rendering (0030), "Flote de los recogibles" y "Aparición de oro, madera y carne": las
 // funciones puras del reloj de render y la resolución de las vistas de aparición.
@@ -107,7 +108,7 @@ describe('Vistas de la aparición resueltas (looks)', () => {
     const raw = rawAppearance();
     withPickupMotion(raw);
     (raw.pickups.meat as { spawn: { frames: number[] } }).spawn.frames = [0, 1, 2, 3, 4, 5, 6, 7];
-    const parsed = parseAppearance(raw, REGISTERED);
+    const parsed = parseAppearance(raw, REGISTERED, GENERATED_PATHS);
     if (!parsed.ok) throw new Error(parsed.error.message);
     const looks = resolveLooks(parsed.value, (key) => (key === MEAT_SPAWN_FILE ? 7 : 100));
 

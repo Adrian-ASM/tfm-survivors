@@ -8,6 +8,7 @@ import provenanceJson from '../../content/asset-provenance.json';
 import { ASSET_DIR } from '../../src/infrastructure/content/appearanceSchema';
 import { parseAppearance } from '../../src/infrastructure/content/loadAppearance';
 import { REGISTERED, rawAppearance } from '../support/appearance';
+import { GENERATED_PATHS } from '../support/generated';
 
 // Spec asset-provenance (0023), "Procedencia de las hojas de ovejas y carne", y sprite-rendering
 // (0023), "Datos de la oveja inválidos".
@@ -102,7 +103,7 @@ describe('Datos de la oveja inválidos (sprite-rendering)', () => {
   const failure = (change: (r: ReturnType<typeof rawAppearance>) => void): string => {
     const raw = rawAppearance();
     change(raw);
-    const r = parseAppearance(raw, REGISTERED);
+    const r = parseAppearance(raw, REGISTERED, GENERATED_PATHS);
     if (r.ok) throw new Error('se esperaba un error');
     return r.error.field;
   };
@@ -129,7 +130,7 @@ describe('Datos de la oveja inválidos (sprite-rendering)', () => {
 
   it('una hoja de la oveja sin entrada en la nota: nombra su fichero', () => {
     const registered = REGISTERED.filter((p) => !p.endsWith('HappySheep_Idle.png'));
-    const r = parseAppearance(rawAppearance(), registered);
+    const r = parseAppearance(rawAppearance(), registered, GENERATED_PATHS);
     expect(r.ok ? null : r.error.field).toBe('sheep.idle.sheet.file');
   });
 });

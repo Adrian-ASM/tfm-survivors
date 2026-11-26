@@ -1,8 +1,8 @@
 import type { OfferSnapshot } from '../../domain/run/RunSnapshot';
+import type { IconChoice, IconState } from '../icons/upgradeIcons';
 import {
   CARD_FONT_SIZE,
-  CARD_LINE_HEIGHT,
-  CARD_TEXT_GAP,
+  cardContentLayout,
   cardLayout,
   cardTextLayout,
   wrapLines,
@@ -39,6 +39,14 @@ export interface CardBox extends OverlayPart {
   setSize(width: number, height: number): unknown;
   onPointerDown(handler: () => void): void;
 }
+/**
+ * Icono de una carta (0034, design D4): un `Image` preasignado con origen (0,5, 0) y sin zona de
+ * clic propia (el clic llega a la zona de la carta). Solo cambia de textura cuando cambia la oferta.
+ */
+export interface CardIcon extends OverlayPart {
+  setTexture(key: string): unknown;
+  setDisplaySize(width: number, height: number): unknown;
+}
 export interface CardParts {
   /** Marco de la carta (0032): `NineSlice` de `button` o `NO_PANEL` en reserva. */
   readonly frame: UiPanelPart;
@@ -47,7 +55,19 @@ export interface CardParts {
   readonly name: CardText;
   readonly description: CardText;
   readonly level: CardText;
+  /** Icono de la mejora en el hueco del layout (0034). */
+  readonly icon: CardIcon;
 }
+
+/** Icono de cada carta visible con el id de su opción (sonda `offerIcons`, 0034 D7). */
+export interface OfferIconView {
+  readonly id: string;
+  readonly icon: IconState;
+}
+
+const NO_ICON: IconChoice = Object.freeze({ state: 'none', key: null, file: null });
+/** Sin catálogo de iconos: ningún icono (hueco vacío). */
+export const noIcons = (): IconChoice => NO_ICON;
 
 /** Márgenes de texto sin pieza: los 16 px de siempre por lado. */
 export const PLAIN_CARD_MARGINS: CardMargins = { left: 16, top: 16, right: 16, bottom: 16 };
@@ -74,6 +94,7 @@ export class UpgradeOverlay {
   private clicked = -1;
   private frame: ScreenFrame;
   private names: string[] = [];
+  private icons: OfferIconView[] = [];
 
   constructor(
     private readonly veil: VeilPart,
@@ -81,6 +102,8 @@ export class UpgradeOverlay {
     frame: ScreenFrame,
     /** Márgenes de la pieza `button` (0032): fijan el área útil del texto, con o sin pieza. */
     private readonly margins: CardMargins = PLAIN_CARD_MARGINS,
+    /** Resolución del icono de un id (0034, `IconBook.resolve`); sin catálogo, ninguno. */
+    private readonly iconFor: (id: string) => IconChoice = noIcons,
   ) {
     this.frame = frame;
     veil.setVisible(false);
@@ -98,6 +121,11 @@ export class UpgradeOverlay {
     return this.shown > 0;
   }
 
+  /** Estado del icono de cada carta visible, en el orden de la oferta (vacío sin oferta). */
+  get iconStates(): readonly OfferIconView[] {
+    return this.icons;
+  }
+
   sync(offer: readonly OfferSnapshot[]): void {
     const key = keyOf(offer);
     if (key === this.key) return;
@@ -105,7 +133,10 @@ export class UpgradeOverlay {
     this.shown = Math.min(offer.length, this.cards.length);
     this.clicked = -1;
     this.veil.setVisible(this.shown > 0);
-    this.names = offer.slice(0, this.shown).map((o, i) => cardName(i, o));
+    const shownOffer = offer.slice(0, this.shown);
+    this.names = shownOffer.map((o, i) => cardName(i, o));
+    const choices = shownOffer.map((o) => this.iconFor(o.id));
+    this.icons = shownOffer.map((o, i) => ({ id: o.id, icon: choices[i]?.state ?? 'none' }));
     const rects = cardLayout(this.frame, this.shown);
     this.cards.forEach((card, i) => {
       const option = offer[i];
@@ -114,11 +145,15 @@ export class UpgradeOverlay {
         this.setCardVisible(card, false);
         return;
       }
+      // La textura solo cambia aquí, con la oferta (0034): RESIZE solo recoloca.
+      const key = choices[i]?.key ?? null;
+      if (key !== null) card.icon.setTexture(key);
       this.placeCard(card, rect, i);
       card.name.setText(cardName(i, option));
       card.description.setText(option.description);
       card.level.setText(cardLevel(option));
       this.setCardVisible(card, true);
+      card.icon.setVisible(key !== null);
     });
   }
 
@@ -157,20 +192,20 @@ export class UpgradeOverlay {
 
   private placeCard(card: CardParts, rect: CardRect, i: number): void {
     const k = this.frame.uiScale;
-    const t = cardTextLayout(rect, this.margins, k);
     const font = CARD_FONT_SIZE * k;
-    const nameLines = wrapLines(this.names[i] ?? '', t.wrapWidth / (font * MONO_CHAR_RATIO));
+    const { wrapWidth } = cardTextLayout(rect, this.margins, k);
+    const nameLines = wrapLines(this.names[i] ?? '', wrapWidth / (font * MONO_CHAR_RATIO));
+    const t = cardContentLayout(rect, this.margins, k, nameLines);
     card.frame.place(rect, k);
     card.box.setPosition(rect.x, rect.y);
     card.box.setSize(rect.width, rect.height);
     for (const text of [card.name, card.description, card.level]) {
       text.setWordWrapWidth(t.wrapWidth);
     }
+    card.icon.setPosition(t.icon.x, t.icon.top);
+    card.icon.setDisplaySize(t.icon.size, t.icon.size);
     card.name.setPosition(t.x, t.nameTop);
-    card.description.setPosition(
-      t.x,
-      t.nameTop + nameLines * font * CARD_LINE_HEIGHT + CARD_TEXT_GAP * k,
-    );
+    card.description.setPosition(t.x, t.descriptionTop);
     card.level.setPosition(t.x, t.levelBottom);
   }
 
@@ -180,5 +215,7 @@ export class UpgradeOverlay {
     card.name.setVisible(visible);
     card.description.setVisible(visible);
     card.level.setVisible(visible);
+    // El icono lo enciende `sync` solo si hay textura; ocultar la carta siempre lo apaga.
+    if (!visible) card.icon.setVisible(false);
   }
 }

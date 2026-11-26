@@ -3,7 +3,17 @@ import guideJson from '../../content/guide.json';
 import appearanceJson from '../../content/appearance.json';
 import arenaJson from '../../content/arena.json';
 import provenanceJson from '../../content/asset-provenance.json';
-import { bootContent, checkAppearanceRefs } from '../../src/composition/contentBoot';
+import shopJson from '../../content/shop.json';
+import upgradesJson from '../../content/upgrades.json';
+import {
+  ICON_UNKNOWN_ID,
+  bootContent,
+  checkAppearanceRefs,
+  checkIconRefs,
+  iconIdsOf,
+} from '../../src/composition/contentBoot';
+import { ICON_DIR } from '../../src/infrastructure/content/appearanceSchema';
+import { iconKey, resolveIcon } from '../../src/infrastructure/icons/upgradeIcons';
 import type { DomainError } from '../../src/domain/shared/Result';
 import {
   registeredPaths,
@@ -14,6 +24,7 @@ import { Mulberry32RandomGenerator } from '../../src/infrastructure/random/Mulbe
 import { rawContent } from '../support/builders';
 import { randomInputs } from '../support/inputs';
 import { chooseFirstWhileOpen, startRun, startSeededRun } from '../support/runs';
+import { GENERATED_PATHS } from '../support/generated';
 
 // Spec sprite-rendering, "Datos de aspecto validados" en el arranque (change 0012, design D9).
 const REGISTERED = registeredPaths(provenanceJson);
@@ -26,7 +37,7 @@ function raw(): Raw {
 
 function boot(r: Raw) {
   const errors: DomainError[] = [];
-  const booted = bootContent(r, (e) => errors.push(e), REGISTERED);
+  const booted = bootContent(r, (e) => errors.push(e), REGISTERED, GENERATED_PATHS);
   return { booted, errors };
 }
 
@@ -255,4 +266,118 @@ describe('bootContent · modo móvil (0033)', () => {
       expect(errors.map((e) => e.field)).toEqual(['arena.mobile.baseHeight']);
     },
   );
+});
+
+// Spec sprite-rendering (0034), "Datos de los iconos de mejora": cruce de ids en el arranque (design
+// D2). La sección real llega en la tarea 6.1: aquí se añade una de prueba con las 16 claves.
+describe('bootContent · iconos de mejora (0034)', () => {
+  const ICON_IDS = [
+    ...upgradesJson.character.map((u) => u.id),
+    ...upgradesJson.weapons.map((u) => u.id),
+    shopJson.heal.id,
+  ];
+  const FALLBACK = { character: 'fallback-character.png', weapon: 'fallback-weapon.png' };
+  const FILES = [...ICON_IDS.map((id) => `${id}.png`), FALLBACK.character, FALLBACK.weapon];
+  const GENERATED = FILES.map((f) => ICON_DIR + f);
+  const LOADED = new Set(FILES.map(iconKey));
+
+  function withIcons(edit: (byId: Record<string, string>) => void = () => undefined): Raw {
+    const r = raw();
+    const byId = Object.fromEntries(ICON_IDS.map((id) => [id, `${id}.png`]));
+    edit(byId);
+    r.appearance.icons = { fallback: { ...FALLBACK }, byId };
+    return r;
+  }
+  function bootIcons(r: Raw) {
+    const errors: DomainError[] = [];
+    const booted = bootContent(r, (e) => errors.push(e), REGISTERED, GENERATED);
+    return { booted, errors };
+  }
+
+  it('con las 16 claves y las 2 reservas arranca y el catálogo tiene todos los ids', () => {
+    const { booted, errors } = bootIcons(withIcons());
+    expect(errors).toEqual([]);
+    expect([...(booted?.icons.entries.keys() ?? [])]).toEqual(ICON_IDS);
+    expect(booted?.icons.entries.get('heal')?.category).toBe('weapon');
+    expect(booted?.icons.entries.get('armor')?.category).toBe('character');
+  });
+
+  it.each(['con ?e2e', 'sin ?e2e'])('Scenario: Id desconocido (dragon-slayer, %s)', () => {
+    const { booted, errors } = bootIcons(
+      withIcons((byId) => {
+        byId['dragon-slayer'] = 'armor.png';
+      }),
+    );
+    expect(booted).toBeNull();
+    expect(errors).toHaveLength(1);
+    expect(errors[0]?.field).toBe('icons.byId.dragon-slayer');
+    expect(errors[0]?.message).toContain(ICON_UNKNOWN_ID);
+    expect(errors[0]?.message).toContain('dragon-slayer');
+  });
+
+  it.each([
+    ['sin armor', ['armor'], 'armor', FALLBACK.character],
+    ['sin coverage ni heal (coverage)', ['coverage', 'heal'], 'coverage', FALLBACK.weapon],
+    ['sin coverage ni heal (heal)', ['coverage', 'heal'], 'heal', FALLBACK.weapon],
+  ])('Scenario: Mejora sin entrada (%s)', (_label, drop, id, fallback) => {
+    const { booted, errors } = bootIcons(
+      withIcons((byId) => {
+        for (const d of drop) Reflect.deleteProperty(byId, d);
+      }),
+    );
+    expect(errors).toEqual([]);
+    if (!booted) throw new Error('sin contenido');
+    expect(resolveIcon(booted.icons, id, LOADED)).toEqual({
+      state: 'fallback',
+      key: iconKey(fallback),
+      file: fallback,
+    });
+  });
+
+  it('checkIconRefs: los ids válidos son los dos catálogos y la curación', () => {
+    const { booted } = boot(raw());
+    if (!booted) throw new Error('sin contenido');
+    const ids = iconIdsOf(booted.config);
+    expect([...ids.character, ...ids.weapon]).toEqual(ICON_IDS);
+    expect(checkIconRefs(booted.appearance, booted.config).ok).toBe(true);
+  });
+
+  it('Scenario: Los iconos no cambian la simulación ni el mapa (42, 1.200 ticks, con y sin)', () => {
+    const full = bootIcons(withIcons()).booted;
+    const empty = bootIcons(
+      withIcons((byId) => {
+        for (const id of Object.keys(byId)) Reflect.deleteProperty(byId, id);
+      }),
+    ).booted;
+    if (!full || !empty) throw new Error('arranque inválido');
+    expect(Object.keys(empty.appearance.icons.byId)).toEqual([]);
+    // Los iconos no llegan a la RunConfig: la del núcleo es la misma con cualquier sección.
+    expect(empty.config).toEqual(full.config);
+    const inputs = randomInputs(1200, 7);
+    const play = (config: typeof full.config) => {
+      const run = startSeededRun(config, 42);
+      return inputs.map((input) => {
+        chooseFirstWhileOpen(run);
+        run.tick(input);
+        return run.snapshot();
+      });
+    };
+    expect(play(empty.config)).toEqual(play(full.config));
+    // 820/904 objetos del mapa, BALANCE_BASELINE, BUILDER_REFERENCE y las seis firmas: los gates
+    // de `verify` (el plan del mapa no lee `appearance.icons`).
+  });
+
+  it('con el contenido del repositorio: los 16 ids con su fichero y las 2 reservas', () => {
+    const { booted, errors } = boot(raw());
+    expect(errors).toEqual([]);
+    expect([...(booted?.icons.entries.values() ?? [])].every((e) => e.file !== null)).toBe(true);
+    expect(booted?.icons.fallback).toEqual(FALLBACK);
+  });
+
+  it('sin sección de iconos el arranque falla (obligatoria desde 6.1, design D9)', () => {
+    const r = raw();
+    Reflect.deleteProperty(r.appearance, 'icons');
+    const { booted, errors } = boot(r);
+    expect([booted, errors.map((e) => e.field)]).toEqual([null, ['icons']]);
+  });
 });

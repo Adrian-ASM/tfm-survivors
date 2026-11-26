@@ -706,6 +706,25 @@ export const UiSchema = z.strictObject({
   }),
 });
 
+export const ICON_FILE_FORMAT =
+  'El icono es un nombre .png en minúsculas, cifras y guiones, sin carpetas ni esquema.';
+export const ICON_NOT_REGISTERED =
+  'El icono no figura en "generated" de la nota de procedencia (content/asset-provenance.json).';
+/** Carpeta versionada de los iconos generados con IA (0034, ADR-0030): la ruta es esta + `file`. */
+export const ICON_DIR = 'public/assets/icons/';
+
+/** Fichero de icono (design 0034 D1): plano, sin `..`, sin `/` inicial, sin esquema ni carpetas. */
+const IconFile = z.string().regex(/^[a-z0-9-]+\.png$/, { error: ICON_FILE_FORMAT });
+
+/**
+ * Iconos de las mejoras y de la curación (0034, D1): fichero por id y reserva obligatoria por
+ * categoría. El cruce de los ids con el contenido lo hace el arranque (`checkIconRefs`).
+ */
+export const IconsSchema = z.strictObject({
+  fallback: z.strictObject({ character: IconFile, weapon: IconFile }),
+  byId: z.record(z.string().min(1), IconFile),
+});
+
 const AppearanceShape = z.strictObject({
   maxCorpses: z
     .number()
@@ -745,6 +764,11 @@ const AppearanceShape = z.strictObject({
   combat: CombatLooksSchema,
   /** Piezas de UI y fuente de la interfaz (0032). */
   ui: UiSchema,
+  /**
+   * Iconos de mejora (0034): obligatoria desde la tarea 6.1 (design D9), con las 2 reservas; la
+   * cobertura de los 16 ids la exige el test de contenido, no el esquema.
+   */
+  icons: IconsSchema,
 });
 
 /**
@@ -783,6 +807,8 @@ export type CombatLooks = z.output<typeof CombatLooksSchema>;
 /** Interfaz (0032): piezas por rol y fuente. */
 export type UiAppearance = z.output<typeof UiSchema>;
 export type UiPiece = UiAppearance['pieces'][UiPieceRole];
+/** Iconos de mejora (0034): reservas por categoría y fichero por id. */
+export type IconsAppearance = z.output<typeof IconsSchema>;
 export type UiInk = UiPiece['ink'];
 export type MapAppearance = z.output<typeof MapAppearanceSchema>;
 /** Decoración del mapa generado (0029). */

@@ -68,6 +68,16 @@ export class FakeElement {
     for (const fn of this.listeners.get('click') ?? []) fn();
   }
 
+  /**
+   * Clic sobre un hijo que sube por los ancestros (0034: el `<img>` de una fila de la tienda): como
+   * en el DOM, un botón `disabled` en el camino no lo recibe ni lo deja pasar.
+   */
+  clickBubbling(): void {
+    if (this.disabled) return;
+    for (const fn of this.listeners.get('click') ?? []) fn();
+    this.parent?.clickBubbling();
+  }
+
   focus(): void {
     this.ownerDocument.activeElement = this;
   }

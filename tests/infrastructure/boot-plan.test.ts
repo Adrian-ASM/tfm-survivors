@@ -2,13 +2,18 @@ import { describe, expect, it } from 'vitest';
 import { parseAppearance } from '../../src/infrastructure/content/loadAppearance';
 import {
   addBridgeFrames,
+  applyNearest,
   finishBoot,
+  iconImagesOf,
   imagesToLoad,
   nextSceneKey,
   sheetsToLoad,
   uiImagesOf,
+  type FilterBook,
   type TextureBook,
 } from '../../src/infrastructure/phaser/bootPlan';
+import { ICON_DIR } from '../../src/infrastructure/content/appearanceSchema';
+import { iconKey } from '../../src/infrastructure/icons/upgradeIcons';
 import { FONT_WAIT_MS, withDeadline } from '../../src/infrastructure/dom/uiFont';
 import { TestTimer, flush } from '../support/testTimer';
 import { BRIDGE_FRAME_NAMES } from '../../src/infrastructure/phaser/map/mapLooks';
@@ -28,12 +33,13 @@ import {
   rawAppearance,
   withPickupMotion,
 } from '../support/appearance';
+import { GENERATED_PATHS } from '../support/generated';
 
 // Spec sprite-rendering "Carga del arte compatible con la CSP" (parte unitaria, design D3).
 function appearance(edit: (raw: ReturnType<typeof rawAppearance>) => void = () => undefined) {
   const raw = rawAppearance();
   edit(raw);
-  const r = parseAppearance(raw, REGISTERED);
+  const r = parseAppearance(raw, REGISTERED, GENERATED_PATHS);
   if (!r.ok) throw new Error(r.error.message);
   return r.value;
 }
@@ -229,5 +235,70 @@ describe('BootScene · marcos del puente', () => {
       addBridgeFrames(textures, appearance());
     }).not.toThrow();
     expect(added).toEqual([]);
+  });
+});
+
+// Spec sprite-rendering (0034), "Carga y escalado de los iconos" (design D5). Iconos de prueba (la
+// sección real llega en la tarea 6.1).
+describe('BootScene · iconos de mejora (0034)', () => {
+  const ICONS = {
+    fallback: { character: 'fallback-character.png', weapon: 'fallback-weapon.png' },
+    byId: { armor: 'armor.png', guardrail: 'guardrail.png', hunter: 'armor.png' },
+  };
+  const FILES = ['fallback-character.png', 'fallback-weapon.png', 'armor.png', 'guardrail.png'];
+  const withIcons = () => {
+    const raw = rawAppearance();
+    raw.icons = structuredClone(ICONS);
+    const r = parseAppearance(
+      raw,
+      REGISTERED,
+      FILES.map((f) => ICON_DIR + f),
+    );
+    if (!r.ok) throw new Error(r.error.message);
+    return r.value;
+  };
+  /** Texturas dobles: existen las de `present`; anota a cuáles se aplica NEAREST. */
+  function filters(present: readonly string[]): FilterBook & { nearest: string[] } {
+    const nearest: string[] = [];
+    return {
+      nearest,
+      exists: (key) => present.includes(key),
+      setNearest: (key) => {
+        nearest.push(key);
+      },
+    };
+  }
+
+  it('una imagen por fichero distinto de byId y de las reservas, con clave icon:<file>', () => {
+    const icons = iconImagesOf(withIcons());
+    expect(icons.map((i) => i.file).sort()).toEqual([...FILES].sort());
+    expect(icons.every((i) => i.key === iconKey(i.file))).toBe(true);
+  });
+
+  it('con los datos del repositorio se piden las 16 + 2 imágenes', () => {
+    expect(iconImagesOf(appearance())).toHaveLength(18);
+  });
+
+  it('Scenario: Filtro sin suavizado (cada textura de icono y de reserva con NEAREST)', () => {
+    const keys = iconImagesOf(withIcons()).map((i) => i.key);
+    const book = filters(keys);
+    const loaded = applyNearest(book, keys);
+    expect(book.nearest.sort()).toEqual([...keys].sort());
+    expect([...loaded].sort()).toEqual([...keys].sort());
+  });
+
+  it('Scenario: Icono que falla sin reserva de sprites (claves aparte; el fallo no lanza)', () => {
+    const a = withIcons();
+    const keys = iconImagesOf(a).map((i) => i.key);
+    // Ninguna clave de icono es la de una hoja, una imagen del mapa o una pieza de UI.
+    const art = new Set([...sheetsToLoad(a), ...imagesToLoad(a)].map((s) => s.key));
+    expect(keys.some((k) => art.has(k))).toBe(false);
+    // Con los iconos sin cargar no se filtra nada y no se informa de ninguno como cargado.
+    const failed = [iconKey('armor.png'), iconKey('fallback-character.png')];
+    const book = filters(keys.filter((k) => !failed.includes(k)));
+    let loaded = new Set<string>();
+    expect(() => (loaded = applyNearest(book, keys))).not.toThrow();
+    expect(failed.some((k) => loaded.has(k) || book.nearest.includes(k))).toBe(false);
+    expect(loaded.size).toBe(keys.length - failed.length);
   });
 });

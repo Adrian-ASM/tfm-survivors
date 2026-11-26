@@ -5,6 +5,8 @@ import {
   AppearanceSchema,
   FONT_DIR,
   FONT_NOT_REGISTERED,
+  ICON_DIR,
+  ICON_NOT_REGISTERED,
   ROCK_SIZES,
   SHEET_NOT_REGISTERED,
   UI_PIECES,
@@ -183,26 +185,50 @@ export function uiSheetsOf(appearance: Appearance): [string[], string][] {
 export interface ProvenanceLists {
   readonly files: readonly { readonly path: string }[];
   readonly fonts?: readonly { readonly path: string }[];
+  /** Imágenes generadas con IA (0034, ADR-0030): solo iconos. */
+  readonly generated?: readonly { readonly path: string }[];
 }
 
 /**
  * Rutas registradas en la nota (0032): las del arte (`files[]`) y las de las fuentes (`fonts[]`), en
- * una sola lista; no chocan porque viven en carpetas distintas (`ASSET_DIR` y `FONT_DIR`).
+ * una sola lista; no chocan porque viven en carpetas distintas (`ASSET_DIR` y `FONT_DIR`). Las
+ * imágenes con IA van aparte (`generatedPaths`): no valen como hoja ni como pieza.
  */
 export function registeredPaths(note: ProvenanceLists): string[] {
   return [...note.files.map((f) => f.path), ...(note.fonts ?? []).map((f) => f.path)];
 }
 
+/** Rutas de la lista de imágenes con IA (`generated[]`, 0034): las únicas que valen como icono. */
+export function generatedPaths(note: ProvenanceLists): string[] {
+  return (note.generated ?? []).map((f) => f.path);
+}
+
+/** Ficheros de icono con su ruta de campo (`icons.fallback.<cat>`, `icons.byId.<id>`), 0034. */
+export function iconFilesOf(appearance: Appearance): [string[], string][] {
+  const icons = appearance.icons;
+  return [
+    [['icons', 'fallback', 'character'], icons.fallback.character],
+    [['icons', 'fallback', 'weapon'], icons.fallback.weapon],
+    ...Object.entries(icons.byId).map(([id, file]): [string[], string] => [
+      ['icons', 'byId', id],
+      file,
+    ]),
+  ];
+}
+
 /**
  * Valida los datos de aspecto (design D9). `registered` son las rutas registradas en la nota de
- * procedencia (`registeredPaths`): una hoja o la fuente solo valen si figuran ahí. El error nombra
- * el campo con su ruta unida por `.`.
+ * procedencia (`registeredPaths`): una hoja o la fuente solo valen si figuran ahí. `generated`
+ * (0034, `generatedPaths`) son las imágenes con IA: un icono solo vale si figura ahí. El error
+ * nombra el campo con su ruta unida por `.`.
  */
 export function parseAppearance(
   raw: unknown,
   registered: readonly string[],
+  generated: readonly string[] = [],
 ): Result<Appearance, DomainError> {
   const known = new Set(registered);
+  const ai = new Set(generated);
   const schema = AppearanceSchema.superRefine((appearance, ctx) => {
     const sheets: [string[], string][] = [
       ...aspectsOf(appearance).map(([path, a]): [string[], string] => [
@@ -246,6 +272,11 @@ export function parseAppearance(
         path: ['ui', 'font', 'file'],
         message: `${FONT_NOT_REGISTERED} ${appearance.ui.font.file}`,
       });
+    }
+    // 0034 (D1/D8): cada icono figura en la lista de imágenes con IA, nunca en la de arte.
+    for (const [path, file] of iconFilesOf(appearance)) {
+      if (ai.has(ICON_DIR + file)) continue;
+      ctx.addIssue({ code: 'custom', path, message: `${ICON_NOT_REGISTERED} ${file}` });
     }
   });
   const parsed = schema.safeParse(raw);

@@ -16,3 +16,11 @@ export const FONT_URL_DIR = 'assets/fonts/';
 export function fontUrl(base: string, file: string): string {
   return base + FONT_URL_DIR + encodeURIComponent(file);
 }
+
+/** Carpeta de los iconos de mejora generados con IA dentro de `public/` (0034, ADR-0030). */
+export const ICON_URL_DIR = 'assets/icons/';
+
+/** URL de un icono de mejora: base + carpeta de iconos + `file` (plano, ya validado por regex). */
+export function iconUrl(base: string, file: string): string {
+  return base + ICON_URL_DIR + encodeURIComponent(file);
+}

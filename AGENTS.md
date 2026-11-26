@@ -228,6 +228,21 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   **retención** de `PauseGate` (`hold`/`halted`: 0 ticks, `step(n)` devuelve 0, el teclado conserva Esc/R/1–3).
   Sin modo móvil, la escena y la página son las de siempre. Sondas `viewport.mobile`/`domScale`/`displayScale`/
   `hint`; 2 E2E nuevos en `gameplay.spec` (móvil táctil por CDP y escritorio 600 × 900). Balance y firmas intactos.
+  Iconos de mejora (change 0034, ADR-0030): un PNG de 64 × 64 por mejora (15) y por la curación, más las reservas
+  `fallback-character` y `fallback-weapon` (la curación usa la de arma), en `public/assets/icons/` y ligados por id en
+  `appearance.json` `icons` (`fallback` obligatorio, `byId`; obligatoria; el arranque cruza los ids con
+  `upgrades.json` y `heal`: `ICON_UNKNOWN_ID`). Son la **única imagen IA** del juego: pixel art de Claude Code
+  dibujado por un script determinista sin dependencias (`scripts/icons/draw-icons.mjs`, rejilla 32 × 32, reproduce
+  los PNG byte a byte), con lista aparte `generated[]` en la nota (herramienta, fecha, términos, prompt,
+  `postProcess` = el script, sha256/bytes) y `generatedPolicy` al ADR; `guard-assets` limita esa lista a la carpeta de
+  iconos y la prohíbe en `files[]`, y `parseAppearance` recibe dos listas (`registeredPaths` y `generatedPaths`: una
+  hoja nunca vale como icono ni al revés). `resolveIcon` puro (`painted | fallback | none`) e `IconBook` compartido por
+  la carta (Phaser: carta de **240 × 240** con hueco de 64·k arriba, `cardContentLayout`, 3 `Image` preasignados que
+  solo cambian de textura con la oferta) y la fila DOM de la tienda (`<img class="shop-panel__icon" alt="">`, 32 px ×
+  `--ui-scale`, `pixelated`, `hidden` sin `src` en `none`); `NEAREST` con `applyNearest` en `BootScene`. Sondas
+  `__sprint.offerIcons` y `shop.products[i].icon` (`products` vacío con la tienda cerrada). Tests con iconos: el
+  tercer argumento `GENERATED_PATHS` (`tests/support/generated.ts`); forma de los PNG en `tests/support/pngProbe.ts`.
+  Sin núcleo; balance, firmas y 820/904 intactos; E2E de la Tienda ampliado (7 filas y 3 cartas `painted`, 0 CSP).
   Fuente de verdad del comportamiento: `openspec/specs/`.
 
 ## 2. Comandos

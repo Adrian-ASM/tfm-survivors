@@ -126,7 +126,7 @@ Should.
 | **Should** | Comportamientos de enemigos (0020, parte A hecha) · casas y torres goblin con TNT de guardia (0021) · recursos (0022, hecho) · ovejas, carne y curación (0023, hecho) · progresión separada y castillo-tienda (0024, hecho) · piedra como recurso (0025, hecho) · solares de obra: casa y torre (0026, hecho) · oferta de obra al tocar el solar (0027, hecho) · guía «Cómo jugar» en el menú (0028) · mapa vivo: decoración y árboles animados (0029) · recogibles visibles y animados (0030) · barras de vida y números de daño (0031) · UI del pack aplicada a la apariencia general (0032) · juego en el navegador móvil con controles táctiles (0033, sin núcleo, en paralelo a los de contenido) · iconos de las mejoras (0034) · audio: música, efectos y opciones de volumen (0035) · arqueros en las torres goblin (0036) · elección de personaje y Guerrero (0037, aplazado hasta tener cerrados 0024 y 0026) · pasada de equilibrio como diseño (balance-pass-2, número al empezar) · campamentos de guardianes en zonas ricas (sin número, tras 0023) ·
 modo Objetivos · meta-progresión guardada · un jefe final · accesibilidad (las opciones de audio las absorbe 0035) |
 | **Could** | ciclo día/noche · minimapa/niebla de guerra · modo Infinito · victoria "defender el castillo" · talar árboles · colocación libre de edificios · jefes por escala · login con Google + Supabase · reto diario con semilla compartida · i18n ES/EN · PWA |
-| **Won't** | Multijugador · desniveles/terreno multinivel · monetización · leaderboard con re-simulación · enemigos dibujados con IA |
+| **Won't** | Multijugador · desniveles/terreno multinivel · monetización · leaderboard con re-simulación · enemigos dibujados con IA (la IA solo en los iconos de mejora, ADR-0030) |
 
 Nota: v1 tenía "mapas procedurales complejos" en Won't. Se acota a un mapa de rejilla sin desniveles y entra como
 Must (0015); lo que baja a Should es todo el bloque de contenido 0020–0037.
@@ -384,7 +384,8 @@ para que el juego tenga una apariencia medieval coherente y no cajas de color pl
   doradas no cambian.
 - Alcance: solo render, DOM y contenido de aspecto; el núcleo no cambia.
 - Riesgo de procedencia: comprobar en explore qué piezas de UI trae Update 010 (CC0) y que no vengan del Free Pack;
-  si falta alguna pieza (p. ej. un botón), se queda con el aspecto actual y no se dibuja con IA.
+  si falta alguna pieza (p. ej. un botón), se queda con el aspecto actual y no se dibuja con IA (la IA solo se admite
+  en los iconos de mejora y de la curación, ADR-0030; ver 0034).
 - Preguntas abiertas: si los overlays DOM usan las piezas como CSS (`border-image` / 9-slice) y el HUD de Phaser como
   `NineSlice` (propuesta: sí, un solo juego de piezas con dos adaptadores); fuente pixel local (CSP estricta);
   qué overlays entran en el primer corte si el alcance aprieta (propuesta: menú, cartas y HUD primero).
@@ -449,10 +450,13 @@ un vistazo y que cartas y tienda no sean solo texto.**
 - Alcance: render, DOM y contenido; el núcleo no cambia.
 - Riesgo de procedencia: hoy el Won't dice "enemigos dibujados con IA"; los iconos no son enemigos, pero hace falta
   una regla y un registro de las imágenes generadas con IA. Probable ADR (política de procedencia para imágenes IA,
-  decisión del autor). Cualquier icono sin entrada de procedencia lo bloquea el guardarraíl.
+  decisión del autor). Cualquier icono sin entrada de procedencia lo bloquea el guardarraíl. Resuelto en 0034 con
+  ADR-0030: lista `generated[]` aparte, limitada a `public/assets/icons/`.
 - Preguntas abiertas: qué herramienta genera las 15 que faltan (otra herramienta, lotes en varios días o iconos de
   reserva por stat); coherencia de estilo con Tiny Swords (propuesta: revisar las 4 existentes antes de generar más);
-  alternativa sin IA con piezas de Update 010 recoloreadas.
+  alternativa sin IA con piezas de Update 010 recoloreadas. Resuelto en 0034: los 16 iconos y las 2 reservas los
+  dibuja Claude Code (Claude Opus 5.5) como pixel art con un script determinista versionado
+  (`scripts/icons/draw-icons.mjs`); las 4 de prueba no entran.
 - Prioridad: Should.
 
 **0035 · audio · Como jugador quiero música de fondo y efectos de sonido con opciones de volumen y silencio, para que
@@ -562,7 +566,7 @@ Pendientes:
 | 0031 combat-feedback | **Hecho (apply 2026-11-26)**: registro de golpes en el núcleo (daño aplicado sumado por objetivo y tick, ventana 15 y tope 48 en `content/combat.json`, ADR-0027); números de daño con color por clase (jugador en rojo) en un pool de 48 y barras de vida en casas y torres goblin (desaparecen en ruina). Balance y firmas idénticos | Should | |
 | 0032 ui-kit | Banners, botones, cintas y paneles de Tiny Swords Update 010 en menú, guía, pausa, resultados, cartas, tienda, obra y HUD (nine-slice: CSS en DOM, `NineSlice` en Phaser); solo render, DOM y contenido de aspecto; balance y firmas intactos | Should | Inventario de piezas de UI de Update 010 (CC0, no Free Pack) |
 | 0033 mobile-web | Juego en el navegador del móvil con controles táctiles: joystick flotante en la mitad izquierda con indicación en reposo, botones de pausa/salir, reiniciar y pantalla completa, aviso «Gira el móvil», resolución virtual EXPAND (alto base 640 en `content/`) y escala del HUD; solo infraestructura, composición y CSS, núcleo y balance intactos | Should | Hecho: `spike/mobile` 2026-11-26 ([ai-log](ai-log/2026-11-26-spike-mobile.md)); iOS Safari sin probar |
-| 0034 upgrade-icons | Iconos para las 9 mejoras de personaje y las 6 de arma de la tienda, encajados en el marco de carta de 0032; con reserva por categoría y procedencia registrada (probable ADR para imágenes generadas con IA) | Should | Política de imágenes IA y herramienta para las 15 que faltan |
+| 0034 upgrade-icons | **Hecho (apply 2026-11-26)**: icono de 64 × 64 para las 15 mejoras y la curación (cartas de 240 × 240 y filas de la tienda) con reserva de personaje y de arma; pixel art de Claude Code dibujado por script determinista (`scripts/icons/draw-icons.mjs`), lista `generated[]` aparte en la nota (ADR-0030); sin núcleo, balance idéntico | Should | |
 | 0035 audio | Música de fondo (arranca al pulsar Jugar) y efectos (golpe recibido, impacto de flecha, muerte, recogida, subida de nivel, explosión, compra y obra) con opciones de volumen y silencio guardadas en local; adaptador de infraestructura sobre el snapshot con tope de voces; el guardarraíl de procedencia cubre audio | Should | Fuentes CC0 (Kenney, OpenGameArt, Freesound, jsfxr) y si la música encaja |
 | 0036 goblin-tower-archers | Un arquero goblin en cada torre que dispara al jugador dentro de su radio (decisión D4 de 0021 superada); las barras de vida pasaron a 0031 | Should | ¿Hay goblin arquero en Update 010? (procedencia) |
 | 0037 characters | Elección de personaje y Guerrero. Aplazado desde 0022 hasta tener el formato de mejoras de 0024 (hecho) | Should | ¿Es divertido el Guerrero? |

@@ -334,7 +334,14 @@ export interface MapView {
 export interface ShopProbeView {
   visible: boolean;
   gold: number;
-  products: { id: string; level: number | null; price: number | null; buyable: boolean }[];
+  products: {
+    id: string;
+    level: number | null;
+    price: number | null;
+    buyable: boolean;
+    /** Estado del icono de la fila (0034). */
+    icon: IconStateView;
+  }[];
 }
 
 interface Probe {
@@ -368,8 +375,13 @@ interface Probe {
     step?: (n: unknown) => Promise<number>;
     /** Oro y madera que muestra el HUD (0022); null en el menú. */
     hud?: { gold: string; wood: string; stone: string } | null;
+    /** Icono de cada carta de la oferta abierta (0034): vacío sin oferta. */
+    offerIcons?: { id: string; icon: IconStateView }[];
   };
 }
+
+/** Estado del icono de una carta o fila (0034, design D3). */
+export type IconStateView = 'painted' | 'fallback' | 'none';
 
 /** Lee el probe `window.__sprint` (solo existe con ?e2e). */
 export const probe = (page: Page) =>
@@ -394,6 +406,7 @@ export const probe = (page: Page) =>
           shop: p.shop ?? null,
           sites: p.sites ?? null,
           screens: p.screens ?? [],
+          offerIcons: p.offerIcons ?? [],
         }
       : null;
   });

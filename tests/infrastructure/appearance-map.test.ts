@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { parseAppearance } from '../../src/infrastructure/content/loadAppearance';
 import { REGISTERED, rawAppearance, type RawAppearance } from '../support/appearance';
+import { GENERATED_PATHS } from '../support/generated';
 
 // Spec sprite-rendering (0016), "Datos de aspecto validados": aspectos del mapa (design §12.2 B2).
 function failure(raw: RawAppearance): string {
-  const r = parseAppearance(raw, REGISTERED);
+  const r = parseAppearance(raw, REGISTERED, GENERATED_PATHS);
   if (r.ok) throw new Error('se esperaba un error de datos de aspecto');
   return r.error.field;
 }
@@ -15,7 +16,7 @@ const sub = (o: Json, key: string): Json => o[key] as Json;
 
 describe('Datos de aspecto del mapa validados', () => {
   it('el fixture con la sección map es válido', () => {
-    const r = parseAppearance(rawAppearance(), REGISTERED);
+    const r = parseAppearance(rawAppearance(), REGISTERED, GENERATED_PATHS);
     if (!r.ok) throw new Error(`${r.error.field}: ${r.error.message}`);
     expect(Object.keys(r.value.map.shore.cases)).toHaveLength(15);
     expect(r.value.map.bridges.frames.northSouth.height).toBe(160);

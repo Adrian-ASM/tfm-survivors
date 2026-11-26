@@ -1,6 +1,8 @@
 import type { Appearance, SheetRect } from '../content/appearanceSchema';
+import { iconKey } from '../icons/upgradeIcons';
 import {
   aspectsOf,
+  iconFilesOf,
   pickupSpawnSheetsOf,
   uiSheetsOf,
   sheepSheetsOf,
@@ -69,6 +71,32 @@ export function uiImagesOf(appearance: Appearance): ImageLoad[] {
 export function imagesToLoad(appearance: Appearance): ImageLoad[] {
   const { image } = appearance.map.bridges;
   return [{ key: image, file: image }, ...uiImagesOf(appearance)];
+}
+
+/**
+ * Iconos de mejora y sus reservas (0034, design D5): una imagen entera por fichero distinto, con
+ * clave `icon:<file>` (no choca con las claves de hoja). Sin sección `icons`, ninguno.
+ */
+export function iconImagesOf(appearance: Appearance): ImageLoad[] {
+  const files = new Set(iconFilesOf(appearance).map(([, file]) => file));
+  return [...files].map((file) => ({ key: iconKey(file), file }));
+}
+
+/** Lo que `applyNearest` necesita de las texturas del motor (costura sin motor). */
+export interface FilterBook {
+  exists(key: string): boolean;
+  /** Filtro de vecino más cercano en toda la textura (`Texture.setFilter(NEAREST)`). */
+  setNearest(key: string): void;
+}
+
+/**
+ * Pixel art sin suavizar (0032 piezas de UI, 0034 iconos): `NEAREST` en cada clave cuya textura
+ * existe; devuelve esas claves (las que fallaron no existen y no se tocan).
+ */
+export function applyNearest(textures: FilterBook, keys: readonly string[]): Set<string> {
+  const loaded = new Set(keys.filter((key) => textures.exists(key)));
+  for (const key of loaded) textures.setNearest(key);
+  return loaded;
 }
 
 /** Lo que `finishBoot` necesita de la escena y de la composición (costura sin motor). */

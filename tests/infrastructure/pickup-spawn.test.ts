@@ -16,6 +16,7 @@ import {
   withPickupMotion,
 } from '../support/appearance';
 import { fakeKit, type FakeSprite } from '../support/FakeSprite';
+import { GENERATED_PATHS } from '../support/generated';
 
 // Spec sprite-rendering (0030), "Aparición de oro, madera y carne", "Aparición escalonada de los
 // recogibles del inicio" y "Flote de los recogibles" (flote sin salto tras la aparición), y xp-gems
@@ -37,7 +38,7 @@ const pick = (id: number, kind: PickupKind, x: number, y: number, value = 1): Pi
 function layer(capacity: number, staggerMs = 0, missing: readonly string[] = []) {
   const raw = rawAppearance();
   withPickupMotion(raw, staggerMs);
-  const r = parseAppearance(raw, REGISTERED);
+  const r = parseAppearance(raw, REGISTERED, GENERATED_PATHS);
   if (!r.ok) throw new Error(r.error.message);
   const looks = resolveLooks(r.value, (key) => (missing.includes(key) ? null : 64));
   const kit = fakeKit();

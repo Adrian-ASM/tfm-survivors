@@ -22,10 +22,15 @@ import {
   type SpriteDraw,
 } from '../../src/infrastructure/phaser/map/planMapArt';
 import { DECOR_STREAM, deriveSeed } from '../../src/infrastructure/random/deriveSeed';
+import { GENERATED_PATHS } from './generated';
 
 /** Datos de aspecto del repositorio, ya validados. */
 export function repoAppearance(): Appearance {
-  const r = parseAppearance(structuredClone(appearanceJson), registeredPaths(provenanceJson));
+  const r = parseAppearance(
+    structuredClone(appearanceJson),
+    registeredPaths(provenanceJson),
+    GENERATED_PATHS,
+  );
   if (!r.ok) throw new Error(`${r.error.field}: ${r.error.message}`);
   return r.value;
 }

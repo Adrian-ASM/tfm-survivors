@@ -1,11 +1,13 @@
 import type Phaser from 'phaser';
 import type { UiAppearance, UiPieceRole } from '../content/appearanceSchema';
 import { cssHex, fontStack } from '../dom/uiKit';
+import type { IconChoice } from '../icons/upgradeIcons';
 import { Hud, type HudPlacement } from './Hud';
 import { ResultsOverlay, type ResultsTexts } from './ResultsOverlay';
 import {
   PLAIN_CARD_MARGINS,
   UpgradeOverlay,
+  noIcons,
   type CardBox,
   type CardParts,
   type CardText,
@@ -42,6 +44,8 @@ interface TextStyle {
 /** HUD y overlays: por encima del mundo y fijos a la cámara. */
 const HUD_DEPTH = 100;
 const OVERLAY_DEPTH = 200;
+/** Textura vacía que Phaser crea siempre (`TextureManager`): la de los iconos antes de la oferta. */
+const DEFAULT_TEXTURE = '__DEFAULT';
 const RESULTS_DEPTH = 300;
 const BAR_BACK = 0x2a2a3a;
 const HEALTH_FILL = 0xe05561;
@@ -247,6 +251,8 @@ export function createUpgradeOverlay(
   scene: Scene,
   frame: ScreenFrame,
   ui?: UiAppearance,
+  /** Icono de cada opción (0034): un `Image` preasignado por carta, sin `setInteractive`. */
+  iconFor: (id: string) => IconChoice = noIcons,
 ): UpgradeOverlay {
   const { width, height } = frame;
   const veil = scene.add
@@ -288,10 +294,17 @@ export function createUpgradeOverlay(
       name: text(0),
       description: text(0),
       level: text(1),
+      // 0034: textura transparente por defecto hasta la primera oferta; oculto hasta entonces.
+      icon: scene.add
+        .image(0, 0, DEFAULT_TEXTURE)
+        .setOrigin(0.5, 0)
+        .setScrollFactor(0)
+        .setDepth(OVERLAY_DEPTH + 2)
+        .setVisible(false),
     };
   });
   const margins = ui ? uiMargins(ui.pieces.button) : PLAIN_CARD_MARGINS;
-  return new UpgradeOverlay(veil, cards, frame, margins);
+  return new UpgradeOverlay(veil, cards, frame, margins, iconFor);
 }
 
 /**

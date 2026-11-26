@@ -2,14 +2,17 @@ import type { ScreenFrame } from './ui/screenFrame';
 
 /** Medidas de una carta de mejora a ×1 (presentación); se multiplican por el escalón de UI. */
 export const CARD_WIDTH = 240;
-export const CARD_HEIGHT = 170;
+/** 0034 (design D4): 170 → 240 para el hueco del icono sobre el nombre (carta cuadrada). */
+export const CARD_HEIGHT = 240;
+/** Lado del hueco del icono a ×1 (0034): el PNG de 64 × 64 a escala entera en ×1 y ×2. */
+export const CARD_ICON_SIZE = 64;
 export const CARD_GAP = 24;
 /** Margen interior mínimo del texto de la carta (también horizontal con pieza) y su fuente a ×1. */
 export const CARD_TEXT_PADDING = 16;
 export const CARD_FONT_SIZE = 14;
 /** Alto de línea estimado de los textos de la carta, en múltiplos del tamaño de fuente. */
 export const CARD_LINE_HEIGHT = 1.25;
-/** Separación vertical entre nombre, descripción y nivel a ×1. */
+/** Separación vertical entre icono, nombre, descripción y nivel a ×1. */
 export const CARD_TEXT_GAP = 6;
 
 /** Márgenes de la pieza de la carta (l, t, r, b) en px de la hoja. */
@@ -45,6 +48,45 @@ export function cardTextLayout(rect: CardRect, m: CardMargins, k: number): CardT
     left,
     nameTop: rect.y - rect.height / 2 + m.top * k,
     levelBottom: rect.y + rect.height / 2 - m.bottom * k,
+  };
+}
+
+/** Hueco del icono (0034): centro horizontal `x`, borde superior `top` y lado `size`. */
+export interface CardIconSlot {
+  readonly x: number;
+  readonly top: number;
+  readonly size: number;
+}
+
+/**
+ * Contenido de una carta (0034, design D4): hueco del icono arriba y centrado, en el borde superior
+ * del área útil; el nombre debajo, a (64 + 6)·k; la descripción bajo sus `nameLines` líneas y el
+ * nivel anclado abajo. Lineal en k. El hueco existe siempre: los textos no dependen del icono.
+ */
+export interface CardContentLayout {
+  readonly x: number;
+  readonly wrapWidth: number;
+  readonly icon: CardIconSlot;
+  readonly nameTop: number;
+  readonly descriptionTop: number;
+  readonly levelBottom: number;
+}
+
+export function cardContentLayout(
+  rect: CardRect,
+  m: CardMargins,
+  k: number,
+  nameLines: number,
+): CardContentLayout {
+  const t = cardTextLayout(rect, m, k);
+  const nameTop = t.nameTop + (CARD_ICON_SIZE + CARD_TEXT_GAP) * k;
+  return {
+    x: t.x,
+    wrapWidth: t.wrapWidth,
+    icon: { x: t.x, top: t.nameTop, size: CARD_ICON_SIZE * k },
+    nameTop,
+    descriptionTop: nameTop + nameLines * CARD_FONT_SIZE * k * CARD_LINE_HEIGHT + CARD_TEXT_GAP * k,
+    levelBottom: t.levelBottom,
   };
 }
 

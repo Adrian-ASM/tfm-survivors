@@ -6,6 +6,7 @@ import { EnemyLayer, type CorpseSink } from '../../src/infrastructure/phaser/Ene
 import { BARREL_FILE, REGISTERED, rawAppearance } from '../support/appearance';
 import { fakeKit } from '../support/FakeSprite';
 import { someLooks } from '../support/looks';
+import { GENERATED_PATHS } from '../support/generated';
 
 // Spec sprite-rendering (0020): animación por clase de estado (mecha y carga), reserva del tipo
 // entero si falta un frame de mecha y recuento por clase de estado.
@@ -164,7 +165,7 @@ describe('EnemyLayer · mecha y lanzamiento', () => {
 
 describe('EnemyLayer · reserva por frames de comportamiento', () => {
   it('Scenario: Frame de mecha fuera de la hoja (frames 0 a 29: el tipo entero con reserva)', () => {
-    const r = parseAppearance(rawAppearance(), REGISTERED);
+    const r = parseAppearance(rawAppearance(), REGISTERED, GENERATED_PATHS);
     if (!r.ok) throw new Error(r.error.message);
     const looks = resolveLooks(r.value, (key) => (key === BARREL_FILE ? 30 : 100));
     const { l, sprites } = layer(looks);
