@@ -16,15 +16,16 @@ licencias justo en el change que mete los primeros ficheros de audio.
 ## Objetivo
 Al pulsar Jugar suena una música de fondo en bucle, y los sucesos de la partida tienen su efecto de sonido, que se
 dispara desde el snapshot. El jugador puede ajustar por separado el volumen de la música y el de los efectos, y
-silenciarlo todo. El ajuste se aplica al instante y se guarda en local. Todo el audio es CC0 con su procedencia
-registrada y vigilada por el guardarraíl. El núcleo de simulación no cambia: balance y firmas quedan idénticos.
+silenciarlo todo. El ajuste se aplica al instante y se guarda en local. Todo el audio es CC0, CC-BY 3.0 o CC-BY 4.0
+(cambio tras el gate), con su procedencia registrada y vigilada por el guardarraíl y la atribución CC-BY en
+`CREDITS.md`. El núcleo de simulación no cambia: balance y firmas quedan idénticos.
 
 ## Decisiones del autor (cerradas)
 1. **Origen de los assets**: el autor descarga **todo** el audio (efectos y música) **solo de fuentes CC0**
    (Kenney.nl, OpenGameArt filtrado por CC0, Freesound filtrado por CC0). En este change no hay audio generado por IA
    ni por script, y no se acepta CC-BY. Cada fichero lleva su entrada en `content/asset-provenance.json` con fuente,
    URL, licencia CC0 y fecha. El formato es el que entregue la fuente: no hay encoder en la máquina y Kenney entrega
-   OGG. No se recodifica nada.
+   OGG. No se recodifica nada. (Licencias ampliadas a CC-BY 3.0/4.0 tras el gate: ver punto 6 de abajo.)
 2. **Música**: un bucle que arranca al pulsar Jugar. Ese gesto desbloquea el audio del navegador, así que antes no
    suena nada. Se pausa con la pausa (Esc / ⏸), con la retención móvil de 0033 (aviso «Gira el móvil») y con la
    pestaña oculta. Al salir de esas situaciones se reanuda.
@@ -66,15 +67,44 @@ registrada y vigilada por el guardarraíl. El núcleo de simulación no cambia: 
 5. **Asignación**: música; golpe recibido; flecha y torre (compartido); explosión e impacto de explosión
    (compartido); baja; recogida de oro, de piedra y de madera; subida; compra; obra. Los nombres de fichero en el
    repositorio los fija el design.
+6. **Licencias de audio** (2026-11-26): se admiten **CC0, CC-BY 3.0 y CC-BY 4.0** (en la nota, `CC0`, `CC-BY-3.0`,
+   `CC-BY-4.0`). Cualquier otra (NC, ND, SA, otra versión o desconocida) se rechaza. Las entradas CC-BY llevan
+   atribución obligatoria: título, autor, URL y licencia exacta.
+7. **Atribución en `CREDITS.md`** (2026-11-26): fichero en la raíz del repo, enlazado desde el `README.md`; nada en
+   el juego. Cada entrada de audio CC-BY de la nota aparece en una línea de `CREDITS.md` con su título, autor, URL y
+   licencia; los CC0 se listan por cortesía, sin exigirlo. Lo vigila `guard-assets` (bloquea también el commit, no
+   solo el CI); el enlace del README lo comprueba un test del repositorio. Efecto práctico en el hook del agente:
+   la línea de `CREDITS.md` se escribe antes que la entrada CC-BY de la nota.
+8. **Procedencia por fichero** (datos del autor; los nombres de fichero son los entregados, el design fija las rutas):
+
+   | Fichero | Fuente | Título | Autor | Licencia | URL |
+   |---|---|---|---|---|---|
+   | `song.mp3` | OpenGameArt | Battle Theme A | cynicmusic | CC0 | https://opengameart.org/content/battle-theme-a |
+   | `receive-hit.flac` | OpenGameArt | 37 hits/punches | (en la página) | CC0 | https://opengameart.org/content/37-hitspunches |
+   | `arrow-impact.mp3` | Freesound | Arrow Impact | omerbhatti34 | CC0 | https://freesound.org/people/omerbhatti34/sounds/521552/ |
+   | `explosion.wav` | Freesound | Long Decay Explosion (2).wav | JohanDeecke | CC-BY 3.0 | https://freesound.org/people/JohanDeecke/sounds/369530/ |
+   | `get-wood.wav` | Freesound | Dropping, Wood, L.wav | InspectorJ | CC-BY 4.0 | https://freesound.org/people/InspectorJ/sounds/352175/ |
+   | `get-gold.mp3` | Freesound | coin-010 | ilyaShevelev | CC0 | https://freesound.org/people/ilyaShevelev/sounds/847340/ |
+   | `get-stone.wav` | Freesound | golpe cabeza | Pipe98x | CC0 | https://freesound.org/people/Pipe98x/sounds/409855/ |
+   | `level-up.wav` | Freesound | Cozy UI Level Up 01 | yetiancai_audio | CC-BY 4.0 | https://freesound.org/people/yetiancai_audio/sounds/875915/ |
+   | `buy-item.wav` | Freesound | Money (PSX UI SFX Free) | heyheytheree | CC-BY 4.0 | https://freesound.org/people/heyheytheree/sounds/873100/ |
+   | `enemy-death.wav` | OpenGameArt | Monster Sound Pack Volume 1 | por confirmar | CC0 | https://opengameart.org/content/monster-sound-pack-volume-1 |
+   | obra | pendiente | (el autor lo sustituirá: el original era CC-BY-NC, rechazado) | | | |
+
+   Pendientes antes de cerrar apply: el autor de `enemy-death.wav` y de `receive-hit.flac` (OpenGameArt bloquea la
+   lectura automática; el campo autor es obligatorio y no vacío) y el fichero de obra con licencia admitida. Las
+   fechas de descarga, sha256 y bytes se miden al registrar.
 
 La elección técnica (Phaser Sound o un módulo propio sobre Web Audio) queda para el design.
 
 ## Alcance
 - **Dentro**:
-  - Ficheros de audio CC0 entregados por el autor en una carpeta propia bajo `public/assets/` (la ruta exacta se fija
-    en el design), con su lista de procedencia de audio en `content/asset-provenance.json`.
+  - Ficheros de audio CC0, CC-BY 3.0 o CC-BY 4.0 entregados por el autor en una carpeta propia bajo `public/assets/`
+    (la ruta exacta se fija en el design), con su lista de procedencia de audio en `content/asset-provenance.json`.
   - Ampliación de `guard-assets` y de sus tests: reconoce `.ogg`, `.mp3`, `.wav` y `.flac`, rechaza audio versionado sin
-    entrada o con licencia distinta de CC0, y no admite audio en `generated[]`.
+    entrada o con licencia distinta de `CC0`, `CC-BY-3.0` y `CC-BY-4.0`, exige la línea de `CREDITS.md` de cada
+    entrada CC-BY, y no admite audio en `generated[]`.
+  - `CREDITS.md` en la raíz con la atribución del audio, enlazado desde el `README.md`.
   - Contenido de audio validado con zod: qué fichero va con cada evento, volúmenes por defecto, tope de voces y
     limitación por tipo. Sin números mágicos.
   - Traducción pura de snapshot a eventos de audio: diff entre snapshots, deduplicación por id, origen del impacto,
@@ -88,7 +118,8 @@ La elección técnica (Phaser Sound o un módulo propio sobre Web Audio) queda p
   - El juego funciona igual si el audio no está disponible o un fichero no carga: no lanza errores ni bloquea el
     arranque.
 - **Fuera**:
-  - Audio generado por IA o por script, síntesis en tiempo real y licencias CC-BY (ni créditos con atribución).
+  - Audio generado por IA o por script y síntesis en tiempo real.
+  - Licencias NC, ND, SA, CC-BY de otras versiones o desconocidas, y créditos mostrados dentro del juego.
   - Recodificar o convertir formatos.
   - Varias pistas de música, música adaptativa por fase u oleada, y audio posicional o estéreo por posición en el
     mundo.
@@ -108,7 +139,7 @@ La elección técnica (Phaser Sound o un módulo propio sobre Web Audio) queda p
 
 ## Riesgos y dudas
 - **Dependencia externa (bloquea apply)**: el apply no puede cerrar sin los ficheros del autor, con su URL, licencia
-  y fecha de descarga. Si faltan efectos o no hay una música CC0 que encaje con el tema medieval, el change espera o
+  y fecha de descarga. Si faltan efectos o no hay una música con licencia admitida que encaje con el tema medieval, el change espera o
   se recorta con aprobación del autor. Mientras tanto, la lógica pura, el guardarraíl, los ajustes y el panel se
   pueden avanzar.
 - **Peso**: la fuente decide el formato. Una música larga en WAV se come el tope (6 MB tras el gate), así que conviene elegir
@@ -129,8 +160,9 @@ La elección técnica (Phaser Sound o un módulo propio sobre Web Audio) queda p
 ## Criterio de éxito
 - Todos los escenarios de `specs/audio` y de los deltas están en verde, con test unitario, de aplicación o E2E
   según `e2e-lite`, y como mucho 1–2 E2E nuevos.
-- `npm run guard:all` falla con un `.ogg`, `.mp3`, `.wav` o `.flac` versionado sin entrada o con licencia ≠ CC0, y
-  pasa con todo el audio del change registrado.
+- `npm run guard:all` falla con un `.ogg`, `.mp3`, `.wav` o `.flac` versionado sin entrada, con licencia fuera de
+  `CC0` / `CC-BY-3.0` / `CC-BY-4.0`, o CC-BY sin su línea en `CREDITS.md`, y pasa con todo el audio del change
+  registrado y atribuido.
 - Bytes totales de los ficheros de audio versionados ≤ 6.291.456 (6 MB; cambio tras el gate, antes 2 MB).
 - `BALANCE_BASELINE` y las firmas doradas son idénticas, sin regenerarlas; no hay ningún cambio en `src/domain` ni
   en `src/application`.

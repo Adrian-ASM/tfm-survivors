@@ -18,25 +18,42 @@ El repositorio SHALL registrar cada fichero de audio versionado en una **lista d
 - el título o nombre del recurso en su fuente y su autor (textos no vacíos);
 - la URL de la página de la fuente, `https`, cuyo host es `kenney.nl`, `opengameart.org` o `freesound.org` (con o sin
   `www.`);
-- la licencia, exactamente `CC0`;
+- la licencia, exactamente uno de `CC0`, `CC-BY-3.0` o `CC-BY-4.0`;
 - la fecha de descarga (`AAAA-MM-DD`, fecha de calendario válida);
 - el sha256 (64 caracteres hexadecimales) y los bytes reales del fichero.
 
-El audio de este change procede solo de esas fuentes CC0, sin generar por IA ni por script y sin recodificar: cada
-fichero MUST ser idéntico byte a byte al descargado (comprobarlo frente a la fuente es revisión humana del gate de
-verify). El guardarraíl de procedencia (`guard-assets`) MUST fallar, con un mensaje que nombra la ruta y, si aplica,
-el campo, si: un fichero de audio versionado no tiene registro en la lista de audio; un registro no tiene fichero
-versionado; un campo falta, está vacío, tiene otro formato o es desconocido; la licencia no es `CC0` (p. ej.
-`CC-BY-4.0`); el host de la URL no es uno de los tres; el sha256 o los bytes no coinciden; la ruta está fuera de la
-carpeta de audio; o un fichero de audio figura en la lista de arte, en `fonts` o en la de imágenes con IA. Se aplica en
-las tres capas de siempre (hook, commit y `npm run verify` / CI) y MUST NOT necesitar red.
+El audio de este change procede solo de esas fuentes, con una de esas tres licencias, sin generar por IA ni por script
+y sin recodificar: cada fichero MUST ser idéntico byte a byte al descargado, y su licencia MUST ser la que muestra la
+página de la fuente (comprobar ambas cosas frente a la fuente es revisión humana del gate de verify). Cualquier otra
+licencia (variantes NC, ND o SA, otra versión de CC-BY como `CC-BY-2.0`, o una licencia desconocida) se rechaza. El
+guardarraíl de procedencia (`guard-assets`) MUST fallar, con un mensaje que nombra la ruta y, si aplica, el campo, si:
+un fichero de audio versionado no tiene registro en la lista de audio; un registro no tiene fichero versionado; un
+campo falta, está vacío, tiene otro formato o es desconocido; la licencia no es una de las tres admitidas; el host de
+la URL no es uno de los tres; el sha256 o los bytes no coinciden; la ruta está fuera de la carpeta de audio; o un
+fichero de audio figura en la lista de arte, en `fonts` o en la de imágenes con IA. Se aplica en las tres capas de
+siempre (hook, commit y `npm run verify` / CI) y MUST NOT necesitar red.
 
 #### Scenario: Audio del repositorio registrado
 - **GIVEN** el repositorio tras este change
 - **WHEN** se ejecuta `npm run guard:all`
 - **THEN** pasa; la lista de audio tiene exactamente una entrada por cada fichero de audio versionado, cada una con
-  licencia `CC0`, URL `https` de uno de los tres hosts, fecha `AAAA-MM-DD` y sha256 y bytes iguales a los del fichero
+  licencia `CC0`, `CC-BY-3.0` o `CC-BY-4.0`, URL `https` de uno de los tres hosts, fecha `AAAA-MM-DD` y sha256 y
+  bytes iguales a los del fichero
 - **AND** la lista de arte, la de `fonts` y la de imágenes con IA son iguales campo a campo a las de antes del change
+
+#### Scenario: Licencias admitidas
+- **GIVEN** la nota real tras el change con la licencia de la entrada de un efecto puesta, en un caso cada vez, a
+  `CC0`, `CC-BY-3.0` y `CC-BY-4.0`, y en los dos casos CC-BY con su línea en `CREDITS.md` (ver "Créditos del audio
+  con atribución")
+- **WHEN** se ejecuta el guardarraíl
+- **THEN** pasa en los tres casos
+
+#### Scenario: Licencia de audio rechazada
+- **GIVEN** la nota real tras el change con la licencia de la entrada de un efecto puesta, en un caso cada vez, a
+  `CC-BY-NC-4.0`, `CC-BY-NC-3.0`, `CC-BY-SA-4.0`, `CC-BY-ND-4.0`, `CC-BY-2.0`, `cc0` (minúsculas), `Unknown` y
+  `CC-BY-NC-4.0` con su línea completa en `CREDITS.md`
+- **WHEN** se ejecuta el guardarraíl
+- **THEN** falla en los ocho casos con un mensaje que nombra la ruta del fichero y la licencia
 
 #### Scenario: Audio sin registrar
 - **GIVEN** una lista simulada igual a la real más, en un caso cada vez, `public/assets/extra/hit.ogg`,
@@ -45,8 +62,8 @@ las tres capas de siempre (hook, commit y `npm run verify` / CI) y MUST NOT nece
 - **THEN** falla con un mensaje que nombra ese fichero
 
 #### Scenario: Registro de audio incompleto o incorrecto
-- **GIVEN** la nota real tras el change con, en la entrada de un efecto y en un caso cada vez: licencia `CC-BY-4.0`;
-  sin licencia; URL `http://kenney.nl/assets/x`; URL `https://example.com/x.ogg`; sin autor; fecha `2026-13-01`; sha256
+- **GIVEN** la nota real tras el change con, en la entrada de un efecto y en un caso cada vez: licencia
+  `CC-BY-NC-4.0`; sin licencia; URL `http://kenney.nl/assets/x`; URL `https://example.com/x.ogg`; sin autor; fecha `2026-13-01`; sha256
   cambiado en un carácter; bytes + 1; un campo extra `attribution`
 - **WHEN** se ejecuta el guardarraíl
 - **THEN** falla con un mensaje que nombra la ruta del fichero y el campo (licencia, licencia, URL, URL, autor, fecha,
@@ -73,6 +90,57 @@ las tres capas de siempre (hook, commit y `npm run verify` / CI) y MUST NOT nece
 - **GIVEN** el repositorio tras este change, sin red
 - **WHEN** se ejecuta el guardarraíl
 - **THEN** pasa
+
+### Requirement: Créditos del audio con atribución
+El repositorio SHALL contener en su raíz un fichero `CREDITS.md` con la atribución del audio, y el `README.md` MUST
+enlazarlo (un enlace Markdown cuyo destino es `CREDITS.md` o `./CREDITS.md`). El juego MUST NOT mostrar créditos de
+audio (ni menú, ni Guía, ni resultados). Por cada entrada de la lista de audio con licencia `CC-BY-3.0` o `CC-BY-4.0`,
+`CREDITS.md` MUST tener **una misma línea** que contiene, literalmente y como subcadenas, el título, el autor, la URL y
+la licencia de esa entrada, tal como figuran en la nota. Listar también las entradas `CC0` es cortesía: se admite y no
+se exige; las líneas de `CREDITS.md` sin entrada en la nota no son error.
+
+Lo vigila `guard-assets`, junto al resto de reglas de la lista de audio y en sus tres capas, porque una atribución
+CC-BY ausente incumple la licencia igual que un fichero sin registrar y debe bloquear el commit, no solo el CI. El
+guardarraíl lee `CREDITS.md` sin red y MUST fallar, con un mensaje que nombra la ruta del fichero de audio y
+`CREDITS.md`, si una entrada CC-BY no tiene su línea, o si hay alguna entrada CC-BY y `CREDITS.md` no existe. Si la nota
+no tiene entradas CC-BY, la ausencia de `CREDITS.md` no hace fallar al guardarraíl. El enlace del `README.md` se
+comprueba con un test del repositorio (no es una regla de procedencia).
+
+#### Scenario: Créditos del repositorio completos
+- **GIVEN** el repositorio tras este change
+- **WHEN** se ejecuta `npm run guard:all`
+- **THEN** pasa, y cada entrada de audio con licencia `CC-BY-3.0` o `CC-BY-4.0` tiene en `CREDITS.md` una línea con su
+  título, autor, URL y licencia
+
+#### Scenario: Entrada CC-BY sin línea en los créditos
+- **GIVEN** la nota real tras el change y un `CREDITS.md` simulado igual al real salvo, en un caso cada vez: sin la
+  línea de una entrada `CC-BY-4.0`; con esa línea sin el autor; con esa línea con la URL cambiada en un carácter; con
+  esa línea con la licencia escrita `CC-BY 3.0` en vez de `CC-BY-4.0`; con el título en una línea y el autor, la URL y
+  la licencia en la siguiente
+- **WHEN** se ejecuta el guardarraíl
+- **THEN** falla en los cinco casos con un mensaje que nombra la ruta de ese fichero de audio y `CREDITS.md`
+
+#### Scenario: Créditos ausentes
+- **GIVEN** la nota real tras el change (con ≥ 1 entrada CC-BY) y una lista simulada de ficheros versionados sin
+  `CREDITS.md`
+- **WHEN** se ejecuta el guardarraíl
+- **THEN** falla con un mensaje que nombra `CREDITS.md` y la ruta de al menos una entrada CC-BY
+
+#### Scenario: Solo CC0 sin créditos
+- **GIVEN** una nota simulada cuya lista de audio solo tiene entradas `CC0`, sin `CREDITS.md`
+- **WHEN** se ejecuta el guardarraíl
+- **THEN** pasa, sin ningún mensaje sobre `CREDITS.md`
+
+#### Scenario: CC0 sin línea en los créditos
+- **GIVEN** la nota real tras el change y un `CREDITS.md` simulado igual al real sin la línea de una entrada `CC0`
+- **WHEN** se ejecuta el guardarraíl
+- **THEN** pasa
+
+#### Scenario: Enlace desde el README
+- **GIVEN** el repositorio tras este change
+- **WHEN** se ejecuta el test del repositorio sobre `README.md`
+- **THEN** `README.md` contiene un enlace Markdown con destino `CREDITS.md` o `./CREDITS.md`, y `CREDITS.md` existe en
+  la raíz
 
 ## MODIFIED Requirements
 
