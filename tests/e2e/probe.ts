@@ -265,7 +265,20 @@ export interface ViewportViewData {
   width: number;
   height: number;
   uiScale: number;
+  /** 0033: modo móvil, escala DOM, px CSS por unidad del lienzo e indicación en reposo. */
+  mobile: boolean;
+  domScale: number;
+  displayScale: number;
+  hint: boolean;
 }
+
+/** Campos de la sonda `viewport` añadidos en 0033, con su valor de escritorio. */
+export const DESKTOP_VIEWPORT_EXTRA = {
+  mobile: false,
+  domScale: 1,
+  displayScale: 1,
+  hint: false,
+} as const;
 
 export interface WorldView {
   width: number;

@@ -10,6 +10,7 @@ import {
   type WorldSize,
 } from '../../src/infrastructure/phaser/CameraRig';
 import { screenFrame, type ScreenFrame } from '../../src/infrastructure/phaser/ui/screenFrame';
+import { mobileFrameRule } from '../../src/infrastructure/phaser/ui/mobileFrame';
 import { PickupLayer } from '../../src/infrastructure/phaser/PickupLayer';
 import { withPickupMotion } from '../support/appearance';
 import { DEFAULT_MAX_VIEW, aDefaultConfig } from '../support/builders';
@@ -358,5 +359,37 @@ describe('La cámara no cambia la simulación (0017)', () => {
 
     expect(births(b)).toEqual(births(a));
     expect(b).toStrictEqual(a);
+  });
+});
+
+// Spec mobile-display (0033): la cámara usa el tamaño lógico del lienzo (EXPAND), no la ventana.
+describe('Cámara en modo móvil (0033)', () => {
+  /** Frame móvil del tamaño lógico que da Phaser (EXPAND) para esa ventana. */
+  const mobileFrame = (game: { width: number; height: number }, pw: number, ph: number) =>
+    mobileFrameRule(12)(game, { width: pw, height: ph });
+  const PHONE = mobileFrame({ width: 1385.03, height: 640 }, 844, 390);
+
+  it('Scenario: Cámara con el tamaño lógico (844 × 390, jugador en (1.950, 1.170) → (1.257,5, 850))', () => {
+    const view = followView({ x: 1950, y: 1170 }, PHONE, WORLD);
+    const { camera, rig } = rigOn(PHONE);
+
+    expect(Math.abs(view.x - 1257.5)).toBeLessThanOrEqual(1);
+    expect(Math.abs(view.y - 850)).toBeLessThanOrEqual(1);
+    expect(paint(rig, camera, 1950, 1170)).toEqual([view.x, view.y, view.x + 1385, 850 + 640]);
+  });
+
+  it('Scenario: Redimensionado en móvil (844 × 390 → 915 × 412: vista 1.421 × 640 y misma partida)', () => {
+    const LANDSCAPE = mobileFrame({ width: 1421.36, height: 640 }, 915, 412);
+    const { camera, rig } = rigOn(PHONE);
+    paint(rig, camera, 1950, 1170);
+
+    rig.resize(LANDSCAPE);
+    const [x1 = 0, y1 = 0, x2 = 0, y2 = 0] = paint(rig, camera, 1950, 1170);
+
+    expect([x2 - x1, y2 - y1]).toEqual([1421, 640]);
+    expect([x1, y1]).toEqual([1950 - 1421 / 2, 1170 - 320]);
+    const still = playPainted(7, 600, () => PHONE);
+    const resized = playPainted(7, 600, (t) => (t < 300 ? PHONE : LANDSCAPE));
+    expect(resized).toStrictEqual(still);
   });
 });

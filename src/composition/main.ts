@@ -27,7 +27,7 @@ import { ManualStepper } from '../infrastructure/e2e/ManualStepper';
 import { requestStep } from '../infrastructure/e2e/stepRequest';
 import { viewportProbe, type ViewportView } from '../infrastructure/e2e/viewportProbe';
 import { applyUiScale } from '../infrastructure/dom/applyUiScale';
-import { screenFrame } from '../infrastructure/phaser/ui/screenFrame';
+import type { FullscreenLike } from '../infrastructure/dom/FullscreenControl';
 import { applyUiKit, uiKitVariables } from '../infrastructure/dom/uiKit';
 import { FONT_WAIT_MS, loadUiFont, withDeadline } from '../infrastructure/dom/uiFont';
 import { assetUrl, fontUrl } from './assetUrl';
@@ -36,6 +36,8 @@ import { bootContent } from './contentBoot';
 import { resolveSeed } from '../infrastructure/url/resolveSeed';
 import { resolveAdvance } from '../infrastructure/url/resolveAdvance';
 import { resolveMapMode } from '../infrastructure/url/resolveMapMode';
+import { resolveMobile } from '../infrastructure/url/resolveMobile';
+import { wireMobile } from './mobileWiring';
 import { wireProgress, type ProgressProbe } from './progressWiring';
 import { createRunLauncher } from './runLauncher';
 import { decorSeedOf, mapModeOf, restartRandoms } from './seedSource';
@@ -103,6 +105,32 @@ function showContentError(root: HTMLElement, error: DomainError): void {
   box.setAttribute('role', 'alert');
   box.textContent = `Contenido inválido en ${error.field}: ${error.message}`;
   root.replaceChildren(box);
+}
+
+/**
+ * Fullscreen API y bloqueo de orientación del navegador (0033, design §4.3). `lock` no está en
+ * todos los navegadores (ni en los tipos de `lib.dom`), así que se detecta con `in`.
+ */
+function browserFullscreen(doc: Document): FullscreenLike {
+  const el = doc.documentElement;
+  const orientation = screen.orientation as
+    { readonly lock?: (orientation: string) => Promise<void> } | undefined;
+  const lockLandscape = async (): Promise<void> => {
+    await orientation?.lock?.('landscape');
+  };
+  return {
+    get enabled() {
+      return doc.fullscreenEnabled;
+    },
+    get element() {
+      return doc.fullscreenElement;
+    },
+    ...(typeof el.requestFullscreen === 'function'
+      ? { request: () => el.requestFullscreen() }
+      : {}),
+    ...(typeof doc.exitFullscreen === 'function' ? { exit: () => doc.exitFullscreen() } : {}),
+    ...(typeof orientation?.lock === 'function' ? { lockLandscape } : {}),
+  };
 }
 
 /** Semilla aleatoria de 32 bits sin signo; fuera del núcleo, así que puede usar la API del navegador. */
@@ -177,6 +205,13 @@ function bootstrap(): void {
   const mapResolved = resolveMapMode(window.location.search);
   if (mapResolved.warning) console.warn(mapResolved.warning);
   const mapMode = mapModeOf(mapResolved);
+  // Modo móvil (0033, ADR-0029): una sola vez por carga, antes de crear el juego. La consulta del
+  // puntero se lee una vez y no se escucha su cambio: la ruta de escala no cambia hasta recargar.
+  const mobileMode = resolveMobile(
+    window.location.search,
+    () => window.matchMedia('(pointer: coarse)').matches,
+  );
+  if (mobileMode.warning) console.warn(mobileMode.warning);
   // Solo con el modo manual: cola de `step(n)` que GameScene atiende frame a frame.
   const stepper = advance.manual ? new ManualStepper() : undefined;
   // Iconos del panel de obra y de la guía: las hojas del HUD con la URL que carga BootScene (0027).
@@ -188,6 +223,13 @@ function bootstrap(): void {
   const pause = new PausePanel(document, root);
   const shopPanel = new ShopPanel(document, root);
   const buildPanel = new BuildPanel(document, root, icons);
+  // Barra táctil, aviso de orientación y dependencias de la escena: solo en modo móvil.
+  const mobile = wireMobile(mobileMode.on, booted.mobile, {
+    doc: document,
+    root,
+    classes: document.documentElement.classList,
+    fullscreen: browserFullscreen(document),
+  });
   const screens: Screen[] = [];
   const e2e = new URLSearchParams(window.location.search).has('e2e');
   // El mundo es la arena del contenido; el lienzo, la vista (0013).
@@ -303,6 +345,8 @@ function bootstrap(): void {
     simSpeed: advance.speed,
     // Sin modo manual la escena recibe exactamente las deps de antes (tiempo real).
     ...(stepper ? { manual: stepper } : {}),
+    // Regla de frame, joystick, barra y retención: solo con el modo móvil (vacío en escritorio).
+    ...mobile.sceneDeps,
   });
   cameraView = () => game.cameraView();
   mapView = () => game.mapView();
@@ -330,11 +374,13 @@ function bootstrap(): void {
   });
 
   // Lienzo a ventana completa con tope (0017, ADR-0014): RESIZE recortado a `maxView`, que no
-  // llega al núcleo. La vista mide lo que mide el lienzo (zoom 1).
+  // llega al núcleo. La vista mide lo que mide el lienzo (zoom 1). En modo móvil (0033, ADR-0029),
+  // EXPAND sobre `minWidth × baseHeight` con el mismo tope y dos punteros táctiles.
   const phaserGame = new Phaser.Game({
     type: Phaser.AUTO,
     parent: root,
-    scale: { ...scaleConfig(booted.maxView), parent: root },
+    scale: { ...scaleConfig(booted.maxView, mobile.on ? booted.mobile : undefined), parent: root },
+    ...(mobile.input ? { input: mobile.input } : {}),
     backgroundColor: BACKGROUND,
     // Imágenes con <img> (sin XHR ni blob:): la CSP de index.html no cambia (design D2).
     loader: { imageLoadType: 'HTMLImageElement' },
@@ -342,12 +388,21 @@ function bootstrap(): void {
     // la partida (arranque de antes, ADR-0011).
     scene: [boot, menu, game],
   });
-  // Una sola escucha, que vive lo que el juego: escala de UI de los paneles DOM (design D6).
+  // Una sola escucha, que vive lo que el juego: escala de UI de los paneles DOM (design D6; en
+  // móvil, 1 siempre) y aviso de orientación con el tamaño del padre (0033, solo en móvil).
   const onCanvas = (size: { width: number; height: number }): void => {
-    applyUiScale(root.style, screenFrame(size.width, size.height));
+    applyUiScale(root.style, mobile.domFrame(size));
+    mobile.orient(phaserGame.scale.parentSize);
   };
   onCanvas(phaserGame.scale.gameSize);
-  viewportView = () => viewportProbe(phaserGame.scale.parentSize, phaserGame.scale.gameSize);
+  viewportView = () =>
+    viewportProbe(
+      phaserGame.scale.parentSize,
+      phaserGame.scale.gameSize,
+      phaserGame.scale.displaySize,
+      mobile.viewport,
+      game.hintView(),
+    );
   phaserGame.scale.on(Phaser.Scale.Events.RESIZE, onCanvas);
   // `step(n)` resuelve con el frame ya pintado: POST_RENDER llega tras pintar todas las escenas,
   // una vez por frame, haya o no partida (Phaser 4.2.1, Game.step; design 0014 §3.6).

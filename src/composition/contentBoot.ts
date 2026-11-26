@@ -4,6 +4,7 @@ import { RUIN_COLOR_KEY, type Appearance } from '../infrastructure/content/appea
 import type { Guide } from '../infrastructure/content/guideSchema';
 import { checkTileScales, parseAppearance } from '../infrastructure/content/loadAppearance';
 import { parseGuide } from '../infrastructure/content/loadGuide';
+import type { MobileDisplay } from '../infrastructure/content/schemas';
 import {
   parseContent,
   type RawContentFiles,
@@ -35,6 +36,8 @@ export interface BootedContent {
   readonly config: RunConfig;
   /** Tope de vista del lienzo (presentación): no llega al núcleo. */
   readonly maxView: ViewSize;
+  /** Constantes del modo móvil (0033): presentación, no llegan al núcleo. */
+  readonly mobile: MobileDisplay;
   readonly appearance: Appearance;
   /** Guía «Cómo jugar» ya validada e interpolada con la config (0028). */
   readonly guide: Guide;
@@ -110,7 +113,7 @@ export function bootContent(
     report(content.error);
     return null;
   }
-  const { config, maxView } = content.value;
+  const { config, maxView, mobile } = content.value;
   const appearance = parseAppearance(raw.appearance, registered);
   if (!appearance.ok) {
     report(appearance.error);
@@ -132,5 +135,5 @@ export function bootContent(
     report(guide.error);
     return null;
   }
-  return { config, maxView, appearance: appearance.value, guide: guide.value };
+  return { config, maxView, mobile, appearance: appearance.value, guide: guide.value };
 }

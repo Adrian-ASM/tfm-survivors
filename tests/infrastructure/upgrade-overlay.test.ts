@@ -9,6 +9,7 @@ import {
   type OverlayPart,
 } from '../../src/infrastructure/phaser/UpgradeOverlay';
 import { NO_PANEL } from '../../src/infrastructure/phaser/ui/uiPanel';
+import { mobileFrameRule } from '../../src/infrastructure/phaser/ui/mobileFrame';
 import { DEFAULT_UPGRADE_LIST } from '../support/builders';
 
 class FakePart implements OverlayPart {
@@ -250,5 +251,38 @@ describe('UpgradeOverlay.relayout (0017)', () => {
     // 0032: área útil de 16 px por lado sin pieza (el overlay de prueba no la tiene).
     expect(cards[0]?.name.wrap).toBe(2 * 208);
     expect(cards[0]?.name.y).toBe((first?.y ?? 0) - (first?.height ?? 0) / 2 + 2 * 16);
+  });
+});
+
+// Spec mobile-display (0033), "Toque en una carta escalada": k fraccionario (844 × 390).
+describe('UpgradeOverlay con k fraccionario (0033)', () => {
+  it('Scenario: Toque en una carta escalada (centro de la tercera carta → índice 2)', () => {
+    const { cards, o } = overlay();
+    o.sync(THREE);
+    const frame = mobileFrameRule(12)({ width: 1385.03, height: 640 }, { width: 844, height: 390 });
+    o.relayout(frame);
+    const s = 390 / 640;
+    const rects = cardLayout(frame, 3);
+    const third = rects[2];
+    if (!third) throw new Error('sin tercera carta');
+    // Toque en px CSS en el centro de la tercera carta; el motor lo pasa a unidades del lienzo.
+    const css = { x: third.x * s, y: third.y * s };
+    const touch = { x: css.x / s, y: css.y / s };
+
+    const hit = cards.findIndex(
+      (c) =>
+        c.box.visible &&
+        Math.abs(touch.x - c.box.x) <= c.box.width / 2 &&
+        Math.abs(touch.y - c.box.y) <= c.box.height / 2,
+    );
+    cards[hit]?.box.click();
+
+    expect(frame.uiScale).toBeCloseTo(1.4066, 3);
+    expect(cards.map((c) => [c.box.width, c.box.height])).toEqual(
+      rects.map((r) => [r.width, r.height]),
+    );
+    expect(hit).toBe(2);
+    expect(o.takeClicked()).toBe(2);
+    expect(cards[0]?.name.fontSize).toBeCloseTo(14 * frame.uiScale, 6);
   });
 });

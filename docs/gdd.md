@@ -412,7 +412,7 @@ echar una partida sin PC ni app que instalar.**
 - Given un dispositivo con teclado y pantalla táctil a la vez, When hay teclas pulsadas, Then manda el teclado y el
   joystick se ignora; en escritorio sin pantalla táctil no aparece ningún control táctil.
 - Given las semillas 1..50 con el bot, When se mide, Then el balance, `BALANCE_BASELINE` y las firmas son idénticos
-  (sin cambios en el determinismo) y `?e2e` nunca activa el modo móvil.
+  (sin cambios en el determinismo); `?e2e` solo desactiva la autodetección y `?e2e&mobile=1` lo activa.
 - Alcance, dentro: `TouchJoystick`, barra de botones DOM, resolución virtual (EXPAND), aviso de orientación,
   `viewport`/CSS táctil, constantes en `content/` y tests de los adaptadores con dobles (como mucho 1 E2E con
   `hasTouch` en el proyecto `logic`). Fuera: app nativa; PWA (sigue en *Could*); gamepad (*Could*); diseño para

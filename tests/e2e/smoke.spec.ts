@@ -3,6 +3,7 @@ import { expect, test } from './fixtures';
 import {
   backToMenu,
   collect,
+  DESKTOP_VIEWPORT_EXTRA,
   cspState,
   expectManual,
   focusGame,
@@ -158,7 +159,7 @@ test('Jugar desde el menú tras cerrar la guía: partida nueva en el tick 0 y Es
   // Spec world-camera (0017), "Sonda en el menú": ventana y escala sin partida; cámara null.
   const inMenu = await probe(page);
   expect([inMenu?.viewport, inMenu?.camera]).toEqual([
-    { width: 1280, height: 720, uiScale: 1 },
+    { width: 1280, height: 720, uiScale: 1, ...DESKTOP_VIEWPORT_EXTRA },
     null,
   ]);
   // Spec hud (0022), "Sin HUD en el menú": la sonda del HUD (oro y madera incluidos) vale null en
