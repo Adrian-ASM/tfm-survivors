@@ -6,7 +6,7 @@
      `openspec/changes/0032-ui-kit/specs/**` (prefijo = capacidad). Diseño: `design.md` (§ = sección). -->
 
 ## 1. Contenido, procedencia y guardarraíl
-- [ ] 1.1 Copiar las 8 piezas de `C:\Users\Adri\TFM\Tiny Swords (Update 010)\UI\` (design §1: `Carved_9Slides`,
+- [x] 1.1 Copiar las 8 piezas de `C:\Users\Adri\TFM\Tiny Swords (Update 010)\UI\` (design §1: `Carved_9Slides`,
   `Button_{Blue,Blue_Pressed,Hover,Disable,Red,Red_Pressed}_9Slides`, `Ribbon_Yellow_3Slides`; nada del Free Pack ni
   de `Icons`/`Pointers`) a `public/assets/tiny-swords/UI/<Banners|Buttons|Ribbons>/` con sus 8 entradas en `files[]`
   de `content/asset-provenance.json` (sha256 y bytes reales). Decodificador PNG de test en `tests/support/png.ts`
@@ -16,7 +16,12 @@
   — escenarios: asset-provenance "Piezas registradas", "Integridad de las piezas", "Pieza sin entrada", "Pieza del
   Free Pack", "Iconos y punteros fuera"; sprite-rendering "Hoja de cada elemento", "Solo las hojas usadas", "Pieza de
   UI de más" (ampliar el test existente de hojas usadas con las piezas de `ui`).
-- [ ] 1.2 Descargar Departure Mono (descarga aprobada por el autor) desde la release oficial: extraer solo
+  Medido (apply, `tests/support/png.ts`; relleno = media de la mitad central del área entre márgenes):
+  `panel` 192 × 192, T/R/B/L 16/16/16/16 (ornamento de esquina hasta 16 px, sin sombra), `#cbb18d`;
+  botones 192 × 192, 20/20/28/20, `button` `#8cc2c3`, `buttonPressed` `#83a1ab`, `buttonHover` `#c2c0a6`,
+  `buttonDisabled` `#bda187`, `buttonDanger` `#c78176`, `buttonDangerPressed` `#996878`; `header` 192 × 64,
+  L/R 48/48, `#b0a64c`. Desviación aceptada: `panel` 16 (no 12) y `.gitattributes` con `*.woff2 binary`.
+- [x] 1.2 Descargar Departure Mono (descarga aprobada por el autor) desde la release oficial: extraer solo
   `DepartureMono-Regular.woff2` sin modificar ni renombrar y el texto completo de la licencia como
   `public/assets/fonts/OFL.txt` (ningún `.zip` en el repo). Comprobar glifos `á é í ó ú ñ ü ¿ ¡ « » · × →` y el avance
   en em (si > 0,6, anotarlo para subir `MONO_CHAR_RATIO` en 4.2); si no hay `woff2` o faltan glifos clave, parar y
@@ -25,13 +30,18 @@
   distinguir mayúsculas. Test: `tests/guardrails/assets.test.ts`.
   — escenarios: asset-provenance "Fuente registrada", "Fuente sin registro", "Registro de fuente incompleto",
   "Licencia de la fuente sin versionar", "Registro sin fichero"; sprite-rendering "Bloque de combate sin hojas".
-- [ ] 1.3 `UiSchema` en `appearanceSchema.ts` (8 roles cerrados, márgenes, `header.height`, `fill`, tintas, contraste
+  Medido (apply): release v1.500 (`DepartureMono-1.500.zip`, solo `.woff2` 22.496 B y `LICENSE` → `OFL.txt`, sin
+  Reserved Font Name); los 14 glifos presentes (cmap del `.otf` del mismo paquete); avance 350/550 = 0,636 em
+  (> 0,6: `MONO_CHAR_RATIO` sube en 4.2).
+- [x] 1.3 `UiSchema` en `appearanceSchema.ts` (8 roles cerrados, márgenes, `header.height`, `fill`, tintas, contraste
   ≥ 4,5, `danger` roja R ≥ 96 y ≥ 2·G y 2·B, fuente `family`/`file`/`format`), registro de imágenes y fuente en
   `parseAppearance`/`bootContent` (`FONT_NOT_REGISTERED`) y sección `ui` en `content/appearance.json` con los valores
   medidos en 1.1 (tintas de §2, ajustadas hasta pasar contraste). Test: `tests/infrastructure/appearance-ui.test.ts`
   (con `tests/support/png.ts`).
-  — escenarios: sprite-rendering "Datos de interfaz del repositorio", "Hojas de las piezas medidas", "Datos de
-  interfaz inválidos".
+  — escenarios: sprite-rendering "Datos de interfaz del repositorio", "Tinta de peligro no exigida en los botones
+  rojos", "Hojas de las piezas medidas", "Datos de interfaz inválidos".
+  Desviaciones aceptadas: `parseAppearance` recibe una sola lista de rutas registradas (`registeredPaths`: `files[]` +
+  `fonts[]`), no dos; la regla de `danger` solo en `panel` y `buttonDisabled` (decisión del autor).
 
 ## 2. Infraestructura DOM (adaptador CSS)
 - [ ] 2.1 `src/infrastructure/dom/uiKit.ts`: `uiKitVariables` (siempre relleno, tintas y `--ui-font`; imagen,

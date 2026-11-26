@@ -6,6 +6,7 @@ import { bootContent } from '../../src/composition/contentBoot';
 import type { DomainError } from '../../src/domain/shared/Result';
 import { GUIDE_PAGE_IDS } from '../../src/infrastructure/content/guideSchema';
 import { rawContent } from '../support/builders';
+import { registeredPaths } from '../../src/infrastructure/content/loadAppearance';
 
 // Spec menu-guide, "Contenido de la guía validado": un guide.json inválido pasa por `report` (la
 // vía de showContentError) y bootContent devuelve null, así que no se crea el menú (design 0028
@@ -15,7 +16,7 @@ import { rawContent } from '../support/builders';
 // porque el schema de structures.json (StructuresSchema, objeto estricto) exige `goblin-tower` y un
 // fichero sin ella falla antes, en parseContent. Se cubre con parseGuide y una RunConfig sin ese
 // tipo en guide-markers.test.ts; aquí se comprueba que ese fichero tampoco crea el menú.
-const REGISTERED = provenanceJson.files.map((f) => f.path);
+const REGISTERED = registeredPaths(provenanceJson);
 
 type Page = { id: string; title: string; paragraphs: string[]; icons?: string[] } & Record<
   string,

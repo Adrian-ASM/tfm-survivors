@@ -5,14 +5,17 @@ import appearanceJson from '../../../content/appearance.json';
 import provenanceJson from '../../../content/asset-provenance.json';
 import { assetUrl } from '../../../src/composition/assetUrl';
 import { ASSET_DIR } from '../../../src/infrastructure/content/appearanceSchema';
-import { parseAppearance } from '../../../src/infrastructure/content/loadAppearance';
+import {
+  registeredPaths,
+  parseAppearance,
+} from '../../../src/infrastructure/content/loadAppearance';
 import { gemShapeUrl, resourceIcons } from '../../../src/infrastructure/dom/resourceIcons';
 import { MENU_LABELS, buildMissing } from '../../../src/infrastructure/dom/menuText';
 
 // Design 0027 §3 y 0028 §6: iconos de recurso con las hojas del contador del HUD (G_Idle, W_Idle,
 // M_Idle y la roca `medium`, Deco/05) y la URL de `BootScene` (mismo origen); la gema como forma de
 // su color en un SVG `data:`; textos `madera`, `piedra` y «faltan N».
-const REGISTERED = provenanceJson.files.map((f) => f.path);
+const REGISTERED = registeredPaths(provenanceJson);
 
 const parsed = (raw: unknown) => {
   const r = parseAppearance(raw, REGISTERED);

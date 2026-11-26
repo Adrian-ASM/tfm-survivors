@@ -5,7 +5,10 @@ import { CONTACT_EPS } from '../../../src/domain/site/BuildingRules';
 import { loadRunConfig, parseRunConfig } from '../../../src/infrastructure/content/loadRunConfig';
 import appearanceJson from '../../../content/appearance.json';
 import provenanceJson from '../../../content/asset-provenance.json';
-import { parseAppearance } from '../../../src/infrastructure/content/loadAppearance';
+import {
+  registeredPaths,
+  parseAppearance,
+} from '../../../src/infrastructure/content/loadAppearance';
 import { REGISTERED, rawAppearance, type RawAppearance } from '../../support/appearance';
 import { rawContent, type RawContent } from '../../support/builders';
 
@@ -178,7 +181,7 @@ describe('Contenido de los edificios validado (spec build-sites 0026, con zod)',
 
 describe('Colores de los solares (spec sprite-rendering 0026)', () => {
   it('el aspecto del repositorio carga, con tres colores de solar distintos', () => {
-    const registered = provenanceJson.files.map((f) => f.path);
+    const registered = registeredPaths(provenanceJson);
     const r = parseAppearance(appearanceJson, registered);
     if (!r.ok) throw new Error(`${r.error.field}: ${r.error.message}`);
     expect(new Set(Object.values(r.value.siteColors)).size).toBe(3);

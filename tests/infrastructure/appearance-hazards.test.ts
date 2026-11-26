@@ -17,12 +17,12 @@ import {
   EXPLODE_MUST_NOT_LOOP,
   SHEET_NOT_REGISTERED,
 } from '../../src/infrastructure/content/appearanceSchema';
-import { parseAppearance } from '../../src/infrastructure/content/loadAppearance';
+import { registeredPaths, parseAppearance } from '../../src/infrastructure/content/loadAppearance';
 import { rawContent } from '../support/builders';
 
 // Datos de aspecto de los peligros y de los comportamientos (change 0020, spec sprite-rendering y
 // asset-provenance), con los datos del repositorio.
-const REGISTERED = provenanceJson.files.map((f) => f.path);
+const REGISTERED = registeredPaths(provenanceJson);
 type Json = Record<string, unknown>;
 
 const appearance = (): Json => structuredClone(appearanceJson);
@@ -176,8 +176,9 @@ describe('Procedencia de las hojas de los peligros (asset-provenance)', () => {
     // 0021: 15 de antes más las 4 hojas de casas, torres y ruinas; 0022: más las 3 de recursos;
     // 0023: más la de la carne y las dos de la oveja; 0025: más las tres rocas de la piedra;
     // 0026: más las tres de los solares de caballeros.
-    // 0029: más las 11 de la decoración del mapa; 0030: más las 3 hojas de aparición.
-    expect(files).toHaveLength(45);
+    // 0029: más las 11 de la decoración del mapa; 0030: más las 3 hojas de aparición;
+    // 0032: más las 8 piezas de UI.
+    expect(files).toHaveLength(53);
 
     expect(bySource(DYNAMITE_SOURCE)?.path).toBe(
       `${ASSET_DIR}Factions/Goblins/Troops/TNT/Dynamite/Dynamite.png`,

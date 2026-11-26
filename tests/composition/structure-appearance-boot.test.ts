@@ -11,10 +11,11 @@ import {
   STRUCTURE_COLORS_MUST_DIFFER,
 } from '../../src/infrastructure/content/appearanceSchema';
 import { rawContent } from '../support/builders';
+import { registeredPaths } from '../../src/infrastructure/content/loadAppearance';
 
 // Spec sprite-rendering (0021), "Datos de aspecto validados" y "Pintado de las estructuras": aspectos
 // de casas, torres y ruinas, colores de reserva y aspecto del guardia, en el arranque.
-const REGISTERED = provenanceJson.files.map((f) => f.path);
+const REGISTERED = registeredPaths(provenanceJson);
 
 type Json = Record<string, unknown>;
 type Raw = { content: ReturnType<typeof rawContent>; appearance: Json; guide: unknown };

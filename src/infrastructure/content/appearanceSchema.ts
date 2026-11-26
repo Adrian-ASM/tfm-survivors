@@ -586,6 +586,126 @@ export const CombatLooksSchema = z.strictObject({
     }),
 });
 
+export const UI_SLICE_MUST_BE_INTEGER = 'Un margen nine-slice es un entero ≥ 0.';
+export const UI_HEADER_HEIGHT_MUST_BE_INTEGER = 'El alto de la cabecera es un entero ≥ 1.';
+export const UI_INK_CONTRAST = 'El contraste de la tinta con el relleno de su pieza es < 4,5';
+export const UI_DANGER_MUST_BE_RED =
+  'La tinta danger es roja (R ≥ 96, R ≥ 2·G y R ≥ 2·B) en las piezas con texto de peligro';
+export const UI_FONT_FAMILY_FORMAT =
+  'La familia de la fuente solo tiene letras, cifras y espacios (sin comas ni comillas).';
+export const UI_FONT_FILE_FORMAT = 'El fichero de la fuente es un nombre .woff2 sin carpetas.';
+export const FONT_NOT_REGISTERED =
+  'La fuente no figura en "fonts" de la nota de procedencia (content/asset-provenance.json).';
+/** Carpeta versionada de las fuentes (0032): la ruta en `fonts[]` es esta carpeta + `file`. */
+export const FONT_DIR = 'public/assets/fonts/';
+
+/** Los 8 roles de pieza de la interfaz (0032), catálogo cerrado. */
+export const UI_PIECES = [
+  'panel',
+  'button',
+  'buttonHover',
+  'buttonPressed',
+  'buttonDisabled',
+  'buttonDanger',
+  'buttonDangerPressed',
+  'header',
+] as const;
+export type UiPieceRole = (typeof UI_PIECES)[number];
+/** Tintas de texto de una pieza, en orden. */
+export const UI_INKS = ['text', 'muted', 'accent', 'danger'] as const;
+/**
+ * Piezas donde se pinta texto de peligro (avisos del panel, «faltan N» y `Oro insuficiente` sobre
+ * `buttonDisabled`): solo en ellas `danger` es roja y con contraste ≥ 4,5 (decisión del autor, 0032).
+ */
+export const UI_DANGER_PIECES: readonly UiPieceRole[] = ['panel', 'buttonDisabled'];
+/** Contraste mínimo WCAG 2.x de una tinta con el relleno de su pieza. */
+export const UI_MIN_CONTRAST = 4.5;
+
+const SliceInt = z
+  .number({ error: UI_SLICE_MUST_BE_INTEGER })
+  .int({ error: UI_SLICE_MUST_BE_INTEGER })
+  .min(0, { error: UI_SLICE_MUST_BE_INTEGER });
+const InkSchema = z.strictObject({ text: Hex, muted: Hex, accent: Hex, danger: Hex });
+const NineSliceSchema = z.strictObject({
+  image: SheetFile,
+  slice: z.strictObject({ top: SliceInt, right: SliceInt, bottom: SliceInt, left: SliceInt }),
+  fill: Hex,
+  ink: InkSchema,
+});
+const ThreeSliceSchema = z.strictObject({
+  image: SheetFile,
+  slice: z.strictObject({ left: SliceInt, right: SliceInt }),
+  height: z
+    .number({ error: UI_HEADER_HEIGHT_MUST_BE_INTEGER })
+    .int({ error: UI_HEADER_HEIGHT_MUST_BE_INTEGER })
+    .min(1, { error: UI_HEADER_HEIGHT_MUST_BE_INTEGER }),
+  fill: Hex,
+  ink: InkSchema,
+});
+
+const channel = (c: number): number => {
+  const s = c / 255;
+  return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+};
+/** Luminancia relativa WCAG 2.x de un color `0xRRGGBB`. */
+export function relativeLuminance(rgb: number): number {
+  return (
+    0.2126 * channel(rgb >> 16) + 0.7152 * channel((rgb >> 8) & 0xff) + 0.0722 * channel(rgb & 0xff)
+  );
+}
+/** Contraste WCAG 2.x: (L1 + 0,05) / (L2 + 0,05) con L1 ≥ L2. */
+export function contrastRatio(a: number, b: number): number {
+  const [hi, lo] = [relativeLuminance(a), relativeLuminance(b)].sort((x, y) => y - x);
+  return ((hi ?? 0) + 0.05) / ((lo ?? 0) + 0.05);
+}
+/** Rojo de la tinta de peligro: R ≥ 96, R ≥ 2·G y R ≥ 2·B. */
+const isDangerRed = (rgb: number): boolean => {
+  const r = rgb >> 16;
+  return r >= 96 && r >= 2 * ((rgb >> 8) & 0xff) && r >= 2 * (rgb & 0xff);
+};
+
+const UiPiecesSchema = z
+  .strictObject({
+    panel: NineSliceSchema,
+    button: NineSliceSchema,
+    buttonHover: NineSliceSchema,
+    buttonPressed: NineSliceSchema,
+    buttonDisabled: NineSliceSchema,
+    buttonDanger: NineSliceSchema,
+    buttonDangerPressed: NineSliceSchema,
+    header: ThreeSliceSchema,
+  })
+  .superRefine((pieces, ctx) => {
+    for (const role of UI_PIECES) {
+      const { fill, ink } = pieces[role];
+      const danger = UI_DANGER_PIECES.includes(role);
+      for (const key of UI_INKS) {
+        if (key === 'danger' && !danger) continue;
+        const path = [role, 'ink', key];
+        if (contrastRatio(ink[key], fill) < UI_MIN_CONTRAST) {
+          ctx.addIssue({ code: 'custom', path, message: `${UI_INK_CONTRAST} (${role}.${key}).` });
+        } else if (key === 'danger' && !isDangerRed(ink.danger)) {
+          ctx.addIssue({ code: 'custom', path, message: `${UI_DANGER_MUST_BE_RED} (${role}).` });
+        }
+      }
+    }
+  });
+
+/**
+ * Interfaz de pantalla (0032, ADR-0028): las 8 piezas de UI (hoja, márgenes, relleno y tintas) y la
+ * fuente pixel. Presentación pura: no la lee ningún flujo de azar ni ninguna colocación.
+ */
+export const UiSchema = z.strictObject({
+  pieces: UiPiecesSchema,
+  font: z.strictObject({
+    family: z.string().regex(/^[A-Za-z0-9 ]*[A-Za-z0-9][A-Za-z0-9 ]*$/, {
+      error: UI_FONT_FAMILY_FORMAT,
+    }),
+    file: z.string().regex(/^[A-Za-z0-9_-]+\.woff2$/, { error: UI_FONT_FILE_FORMAT }),
+    format: z.literal('woff2'),
+  }),
+});
+
 const AppearanceShape = z.strictObject({
   maxCorpses: z
     .number()
@@ -623,6 +743,8 @@ const AppearanceShape = z.strictObject({
   siteColors: SiteColorsSchema,
   /** Números de daño y barras de vida de las estructuras (0031). */
   combat: CombatLooksSchema,
+  /** Piezas de UI y fuente de la interfaz (0032). */
+  ui: UiSchema,
 });
 
 /**
@@ -658,6 +780,10 @@ export type SiteLooksAppearance = z.output<typeof SiteLooksSchema>;
 export type SiteColors = z.output<typeof SiteColorsSchema>;
 /** Aspecto del combate (0031): colores por clase de golpe, número de daño y barra de vida. */
 export type CombatLooks = z.output<typeof CombatLooksSchema>;
+/** Interfaz (0032): piezas por rol y fuente. */
+export type UiAppearance = z.output<typeof UiSchema>;
+export type UiPiece = UiAppearance['pieces'][UiPieceRole];
+export type UiInk = UiPiece['ink'];
 export type MapAppearance = z.output<typeof MapAppearanceSchema>;
 /** Decoración del mapa generado (0029). */
 export type DecorAppearance = z.output<typeof DecorSchema>;

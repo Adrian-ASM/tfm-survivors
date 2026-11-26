@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import appearanceJson from '../../content/appearance.json';
 import provenanceJson from '../../content/asset-provenance.json';
-import { parseAppearance } from '../../src/infrastructure/content/loadAppearance';
+import { registeredPaths, parseAppearance } from '../../src/infrastructure/content/loadAppearance';
 import { REGISTERED, rawAppearance, type RawAppearance } from '../support/appearance';
 
 // Spec sprite-rendering (0029), "Decoración del mapa generado": datos de la decoración validados con
@@ -18,7 +18,7 @@ function failure(raw: unknown, registered: readonly string[] = REGISTERED) {
 
 /** Datos del repositorio crudos (para los casos del escenario sobre ellos). */
 const repoRaw = (): RawAppearance => structuredClone(appearanceJson);
-const repoFiles = provenanceJson.files.map((f) => f.path);
+const repoFiles = registeredPaths(provenanceJson);
 
 describe('Datos de la decoración', () => {
   it('el fixture y el repositorio, con su decoración, son válidos', () => {

@@ -2,7 +2,11 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { TERRAIN_COLORS_MUST_DIFFER } from '../../src/infrastructure/content/appearanceSchema';
-import { parseAppearance } from '../../src/infrastructure/content/loadAppearance';
+import {
+  registeredPaths,
+  type ProvenanceLists,
+  parseAppearance,
+} from '../../src/infrastructure/content/loadAppearance';
 import { REGISTERED, rawAppearance, type RawAppearance } from '../support/appearance';
 
 // Spec sprite-rendering (0015), "Pintado del mapa": colores de las celdas en los datos de aspecto.
@@ -18,9 +22,9 @@ function failure(raw: RawAppearance): { field: string; message: string } {
 describe('Colores del mapa en los datos de aspecto', () => {
   it('Scenario: Colores del repositorio (trunk, water, bridge y castle #RRGGBB y distintos)', () => {
     const raw = readJson('content/appearance.json') as { terrain: Record<string, string> };
-    const registered = (
-      readJson('content/asset-provenance.json') as { files: { path: string }[] }
-    ).files.map((f) => f.path);
+    const registered = registeredPaths(
+      readJson('content/asset-provenance.json') as ProvenanceLists,
+    );
     const r = parseAppearance(raw, registered);
     if (!r.ok) throw new Error(`${r.error.field}: ${r.error.message}`);
     expect(Object.keys(raw.terrain)).toEqual(['trunk', 'water', 'bridge', 'castle']);

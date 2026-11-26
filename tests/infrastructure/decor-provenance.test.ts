@@ -8,10 +8,12 @@ import appearanceJson from '../../content/appearance.json';
 import provenanceJson from '../../content/asset-provenance.json';
 import { ASSET_DIR } from '../../src/infrastructure/content/appearanceSchema';
 import {
+  registeredPaths,
   aspectsOf,
   mapSheetsOf,
   parseAppearance,
   pickupSpawnSheetsOf,
+  uiSheetsOf,
   sheepSheetsOf,
   siteAspectsOf,
   structureAspectsOf,
@@ -58,10 +60,7 @@ const withEntries = (change: (f: Entry) => Entry | null) => ({
 
 /** Hojas que usan los datos de aspecto (la comprobación de "Solo las hojas usadas"). */
 function usedSheets(): Set<string> {
-  const r = parseAppearance(
-    structuredClone(appearanceJson),
-    files.map((f) => f.path),
-  );
+  const r = parseAppearance(structuredClone(appearanceJson), registeredPaths(provenanceJson));
   if (!r.ok) throw new Error(`${r.error.field}: ${r.error.message}`);
   const a = r.value;
   return new Set([
@@ -72,6 +71,7 @@ function usedSheets(): Set<string> {
     ...sheepSheetsOf(a).map(([, sheet]) => ASSET_DIR + sheet.file),
     ...siteAspectsOf(a).map(([, x]) => ASSET_DIR + x.sheet.file),
     ...pickupSpawnSheetsOf(a).map(([, sheet]) => ASSET_DIR + sheet.file),
+    ...uiSheetsOf(a).map(([, file]) => ASSET_DIR + file),
   ]);
 }
 

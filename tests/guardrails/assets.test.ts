@@ -279,8 +279,19 @@ describe('guard-assets · estado real del repositorio', () => {
 
   it('la nota del repositorio no enlaza capturas ni pruebas de la confirmación', () => {
     expect(JSON.stringify(real ?? {})).not.toMatch(/\.(png|jpe?g|pdf)"?\s*[,}]\s*$/m);
+    // 0032: `fonts` es la lista aparte de las fuentes (OFL), fuera de la cabecera CC0.
     expect(Object.keys(real ?? {}).sort()).toEqual(
-      ['author', 'confirmedOn', 'files', 'homepage', 'license', 'note', 'pack', 'version'].sort(),
+      [
+        'author',
+        'confirmedOn',
+        'files',
+        'fonts',
+        'homepage',
+        'license',
+        'note',
+        'pack',
+        'version',
+      ].sort(),
     );
   });
 
@@ -292,5 +303,92 @@ describe('guard-assets · estado real del repositorio', () => {
       digest: (p) => (p === extra ? { sha256: '', bytes: 0 } : diskDigest(p)),
     });
     expect(out.join('\n')).toContain(extra);
+  });
+});
+
+// Spec asset-provenance (0032), "Procedencia y licencia de la fuente": lista `fonts` aparte.
+describe('guard-assets · fuentes (spec asset-provenance 0032)', () => {
+  const FONT_PATH = 'public/assets/fonts/DepartureMono-Regular.woff2';
+  const LICENSE_PATH = 'public/assets/fonts/OFL.txt';
+  const versioned = execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8' })
+    .split('\0')
+    .filter(Boolean);
+  const real = JSON.parse(readFileSync(join(root, PROVENANCE_PATH), 'utf8')) as Provenance & {
+    fonts: Record<string, unknown>[];
+  };
+  const diskDigest = (path: string): Digest => {
+    const blob = readFileSync(join(root, path));
+    return { sha256: createHash('sha256').update(blob).digest('hex'), bytes: blob.length };
+  };
+  /** Lista real más lo que la nota registra (antes del primer `git add`). */
+  const list = [
+    ...new Set([
+      ...versioned,
+      ...(real.files ?? []).flatMap((f) => (f.path ? [f.path] : [])),
+      FONT_PATH,
+      LICENSE_PATH,
+    ]),
+  ];
+  const fontRun = (
+    files: string[],
+    fonts: Record<string, unknown>[] = real.fonts,
+    digestOf: (path: string) => Digest = diskDigest,
+  ): string => checkAssets({ files, provenance: { ...real, fonts }, digest: digestOf }).join('\n');
+  const withFont = (change: Record<string, unknown>): Record<string, unknown>[] => [
+    { ...real.fonts[0], ...change },
+  ];
+
+  it('Scenario: Fuente registrada', () => {
+    expect(fontRun(list)).toBe('');
+    expect(real.fonts).toHaveLength(1);
+    expect(real.fonts[0]).toMatchObject({
+      path: FONT_PATH,
+      family: 'Departure Mono',
+      license: 'OFL-1.1',
+      licenseFile: LICENSE_PATH,
+    });
+    expect(list).toContain(LICENSE_PATH);
+    expect(readFileSync(join(root, LICENSE_PATH), 'utf8')).toContain(
+      'SIL OPEN FONT LICENSE Version 1.1',
+    );
+    expect(real).toMatchObject({
+      license: 'CC0',
+      version: 'Update 010',
+      confirmedOn: '2026-11-22',
+    });
+    expect((real.files ?? []).some((f) => f.path === FONT_PATH)).toBe(false);
+  });
+
+  it.each(['public/assets/fonts/Otra.woff2', 'public/assets/fonts/Otra.TTF', 'x/y.otf', 'a.woff'])(
+    'Scenario: Fuente sin registro (%s)',
+    (extra) => {
+      const out = fontRun([...list, extra], real.fonts, (p) =>
+        p === extra ? { sha256: '', bytes: 0 } : diskDigest(p),
+      );
+      expect(out).toContain(extra);
+    },
+  );
+
+  it.each([
+    ['license', { license: 'CC0' }],
+    ['author', { author: undefined }],
+    ['licenseFile', { licenseFile: undefined }],
+    ['sha256', { sha256: `0${String(real.fonts[0]?.sha256).slice(1)}` }],
+  ])('Scenario: Registro de fuente incompleto (%s)', (field, change) => {
+    const fonts = withFont(change);
+    if (field === 'sha256' && fonts[0]?.sha256 === real.fonts[0]?.sha256) {
+      fonts[0] = { ...fonts[0], sha256: `1${String(real.fonts[0]?.sha256).slice(1)}` };
+    }
+    const out = fontRun(list, fonts);
+    expect(out).toContain(FONT_PATH);
+    expect(out).toContain(field);
+  });
+
+  it('Scenario: Licencia de la fuente sin versionar', () => {
+    expect(fontRun(list.filter((f) => f !== LICENSE_PATH))).toContain(LICENSE_PATH);
+  });
+
+  it('Scenario: Registro sin fichero', () => {
+    expect(fontRun(list.filter((f) => f !== FONT_PATH))).toContain(FONT_PATH);
   });
 });

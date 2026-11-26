@@ -20,6 +20,9 @@ const SHA256 = /^[0-9a-f]{64}$/;
 const FREE_PACK = /free[ _]?pack/i;
 const GRAPHIC = /\.(png|jpe?g|gif|webp|svg|ico|bmp|aseprite)$/i;
 const FORBIDDEN_EXT = /\.(aseprite|zip|rar|7z|tar|gz)$/i;
+/** Ficheros de fuente (0032): cada uno con registro en `fonts[]`, licencia OFL 1.1. */
+export const FONT = /\.(woff2?|ttf|otf)$/i;
+const FONT_LICENSE = 'OFL-1.1';
 const FORBIDDEN_NAMES = new Set(['.ds_store', 'thumbs.db', 'desktop.ini']);
 const NOTE = `Nota de procedencia (${PROVENANCE_PATH})`;
 
@@ -91,6 +94,50 @@ function digestProblems(entry, digest) {
   return problems;
 }
 
+/** Campos de texto obligatorios de un registro de fuente (0032, ADR-0028). */
+const FONT_TEXT_FIELDS = ['path', 'family', 'author', 'source', 'version', 'licenseFile'];
+
+/** Un registro de `fonts[]`: campos, licencia OFL 1.1, fichero y licencia versionados, digest. */
+function fontEntryProblems(entry, i, versioned, digest) {
+  const path = isText(entry?.path) ? entry.path : `fonts[${i}]`;
+  const at = `${NOTE}: fuente ${path}`;
+  const problems = [];
+  for (const field of FONT_TEXT_FIELDS) {
+    if (!isText(entry?.[field])) problems.push(`${at}: "${field}" ausente o vacío.`);
+  }
+  if (entry?.license !== FONT_LICENSE)
+    problems.push(`${at}: "license" debe ser "${FONT_LICENSE}".`);
+  if (!SHA256.test(String(entry?.sha256 ?? '')))
+    problems.push(`${at}: "sha256" ausente o no es un SHA-256 en hexadecimal.`);
+  if (!Number.isInteger(entry?.bytes) || entry.bytes < 0)
+    problems.push(`${at}: "bytes" ausente o no es un entero ≥ 0.`);
+  if (isText(entry?.licenseFile) && !versioned.has(entry.licenseFile))
+    problems.push(`${entry.licenseFile}: fichero de licencia de ${path} no versionado.`);
+  if (!isText(entry?.path)) return problems;
+  if (!versioned.has(entry.path)) {
+    problems.push(`${entry.path}: la nota la registra como fuente pero no está versionada.`);
+    return problems;
+  }
+  const actual = digest(entry.path);
+  if (SHA256.test(String(entry.sha256 ?? '')) && actual.sha256 !== entry.sha256)
+    problems.push(`${at}: el "sha256" del fichero no coincide con la nota.`);
+  if (Number.isInteger(entry.bytes) && actual.bytes !== entry.bytes)
+    problems.push(`${at}: "bytes" = ${actual.bytes}, la nota dice ${entry.bytes}.`);
+  return problems;
+}
+
+/** Fuentes versionadas sin registro y registros de `fonts[]` (lista aparte del arte CC0). */
+function fontProblems(files, provenance, digest) {
+  const fonts = Array.isArray(provenance?.fonts) ? provenance.fonts : [];
+  const registered = new Set(fonts.map((f) => f?.path).filter(isText));
+  const versioned = new Set(files);
+  const problems = files
+    .filter((path) => FONT.test(path) && !registered.has(path))
+    .map((path) => `${path}: fichero de fuente sin registro en "fonts" de ${PROVENANCE_PATH}.`);
+  fonts.forEach((entry, i) => problems.push(...fontEntryProblems(entry, i, versioned, digest)));
+  return problems;
+}
+
 /** Reglas de procedencia. Devuelve las líneas de error ([] si cumple). */
 export function checkAssets({ files, provenance, digest }) {
   const problems = files.flatMap(pathProblems);
@@ -101,6 +148,7 @@ export function checkAssets({ files, provenance, digest }) {
     if (GRAPHIC.test(path) && !FORBIDDEN_EXT.test(path) && !registered.has(path))
       problems.push(`${path}: asset gráfico sin entrada en ${PROVENANCE_PATH}.`);
   }
+  problems.push(...fontProblems(files, provenance, digest));
   if (provenance === undefined) return problems;
   problems.push(...noteProblems(provenance));
   for (const entry of entries) {

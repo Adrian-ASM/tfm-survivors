@@ -1,5 +1,7 @@
 // Datos de aspecto de prueba (change 0012, design D9): JSON crudo, mínimo y válido, que cada test
 // modifica antes de validarlo con `parseAppearance`.
+import appearanceJson from '../../content/appearance.json';
+
 export const TORCH_FILE = 'Factions/Goblins/Troops/Torch/Red/Torch_Red.png';
 export const TNT_FILE = 'Factions/Goblins/Troops/TNT/Red/TNT_Red.png';
 export const BARREL_FILE = 'Factions/Goblins/Troops/Barrel/Red/Barrel_Red.png';
@@ -104,8 +106,25 @@ export const SHORE_CASE_KEYS = [
   'NESW',
 ] as const;
 
-/** Rutas registradas en la nota de procedencia (`files[].path`). */
-export const REGISTERED: readonly string[] = FILES.map((f) => `public/assets/tiny-swords/${f}`);
+/** Hojas de las 8 piezas de UI (0032), en el orden de los roles. */
+export const UI_FILES = [
+  'UI/Banners/Carved_9Slides.png',
+  'UI/Buttons/Button_Blue_9Slides.png',
+  'UI/Buttons/Button_Hover_9Slides.png',
+  'UI/Buttons/Button_Blue_9Slides_Pressed.png',
+  'UI/Buttons/Button_Disable_9Slides.png',
+  'UI/Buttons/Button_Red_9Slides.png',
+  'UI/Buttons/Button_Red_9Slides_Pressed.png',
+  'UI/Ribbons/Ribbon_Yellow_3Slides.png',
+];
+/** Fuente de la interfaz registrada en `fonts[]` (0032). */
+export const FONT_PATH = 'public/assets/fonts/DepartureMono-Regular.woff2';
+
+/** Rutas registradas en la nota de procedencia (`files[].path` y, desde 0032, `fonts[].path`). */
+export const REGISTERED: readonly string[] = [
+  ...[...FILES, ...UI_FILES].map((f) => `public/assets/tiny-swords/${f}`),
+  FONT_PATH,
+];
 
 type Json = Record<string, unknown>;
 
@@ -166,6 +185,14 @@ export interface RawAppearance {
   siteColors: Record<string, unknown>;
   combat: { colors: Record<string, unknown>; numbers: Json; bar: Json } & Json;
   pickupMotion: { float: Record<string, unknown>; spawnStaggerMs: unknown } & Json;
+  ui: RawUi;
+  [extra: string]: unknown;
+}
+
+/** Piezas por rol (cada una con `image`, `slice`, `fill` e `ink`) y fuente (0032). */
+export interface RawUi {
+  pieces: Record<string, Json & { slice: Json; ink: Json }>;
+  font: Json;
   [extra: string]: unknown;
 }
 
@@ -362,5 +389,11 @@ export function rawAppearance(): RawAppearance {
       numbers: { durationMs: 800, risePx: 32, liftPx: 20, fontPx: 16, pool: 48 },
       bar: { width: 48, height: 6, gap: 8, fill: '#e63946', back: '#1d1d1d' },
     },
+    ui: rawUi(),
   };
+}
+
+/** Interfaz cruda (0032): copia de la del repositorio, que cada test puede modificar. */
+export function rawUi(): RawUi {
+  return structuredClone(appearanceJson.ui);
 }

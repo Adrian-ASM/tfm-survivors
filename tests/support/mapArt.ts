@@ -3,7 +3,7 @@ import arenaJson from '../../content/arena.json';
 import provenanceJson from '../../content/asset-provenance.json';
 import type { MapSnapshot } from '../../src/domain/map/MapSnapshot';
 import type { Appearance } from '../../src/infrastructure/content/appearanceSchema';
-import { parseAppearance } from '../../src/infrastructure/content/loadAppearance';
+import { registeredPaths, parseAppearance } from '../../src/infrastructure/content/loadAppearance';
 import type { FrameCount } from '../../src/infrastructure/phaser/art/looks';
 import {
   BRIDGE_FRAME_NAMES,
@@ -25,10 +25,7 @@ import { DECOR_STREAM, deriveSeed } from '../../src/infrastructure/random/derive
 
 /** Datos de aspecto del repositorio, ya validados. */
 export function repoAppearance(): Appearance {
-  const r = parseAppearance(
-    structuredClone(appearanceJson),
-    provenanceJson.files.map((f) => f.path),
-  );
+  const r = parseAppearance(structuredClone(appearanceJson), registeredPaths(provenanceJson));
   if (!r.ok) throw new Error(`${r.error.field}: ${r.error.message}`);
   return r.value;
 }

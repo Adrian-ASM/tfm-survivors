@@ -3,7 +3,11 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ASSET_DIR } from '../../src/infrastructure/content/appearanceSchema';
-import { parseAppearance, veinAspectsOf } from '../../src/infrastructure/content/loadAppearance';
+import {
+  registeredPaths,
+  parseAppearance,
+  veinAspectsOf,
+} from '../../src/infrastructure/content/loadAppearance';
 import { REGISTERED, rawAppearance, type RawAppearance } from '../support/appearance';
 
 // Spec sprite-rendering (0022), "Aspectos de los recogibles y de las vetas" y "Arte de Tiny Swords
@@ -12,8 +16,9 @@ const root = join(import.meta.dirname, '..', '..');
 const readJson = (path: string): unknown => JSON.parse(readFileSync(join(root, path), 'utf8'));
 const provenance = readJson('content/asset-provenance.json') as {
   files: { path: string; source: string }[];
+  fonts: { path: string }[];
 };
-const registered = provenance.files.map((f) => f.path);
+const registered = registeredPaths(provenance);
 const sourceOfFile = (file: string): string =>
   provenance.files.find((f) => f.path === ASSET_DIR + file)?.source ?? '';
 

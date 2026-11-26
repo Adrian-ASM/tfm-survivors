@@ -11,6 +11,7 @@ import type { MapSnapshot } from '../domain/map/MapSnapshot';
 import type { RunSnapshot } from '../domain/run/RunSnapshot';
 import type { DomainError } from '../domain/shared/Result';
 import { repositoryContent } from '../infrastructure/content/loadRunConfig';
+import { registeredPaths } from '../infrastructure/content/loadAppearance';
 import { PausePanel } from '../infrastructure/dom/PausePanel';
 import { ShopPanel, type ShopPanelView } from '../infrastructure/dom/ShopPanel';
 import { BuildPanel, type BuildPanelView } from '../infrastructure/dom/BuildPanel';
@@ -141,7 +142,7 @@ function bootstrap(): void {
       console.error(`Contenido inválido en ${error.field}: ${error.message}`);
       showContentError(root, error);
     },
-    provenanceJson.files.map((f) => f.path),
+    registeredPaths(provenanceJson),
   );
   if (!booted) return;
   const config = { value: booted.config };

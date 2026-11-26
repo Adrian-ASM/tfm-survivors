@@ -10,7 +10,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { check as checkArchitecture } from '../.claude/hooks/guard-architecture.mjs';
-import { PROVENANCE_PATH, checkAssets } from '../.claude/hooks/guard-assets.mjs';
+import { FONT, PROVENANCE_PATH, checkAssets } from '../.claude/hooks/guard-assets.mjs';
 import { check as checkSecrets } from '../.claude/hooks/guard-secrets.mjs';
 
 const CHECKS = [checkSecrets, checkArchitecture];
@@ -92,7 +92,8 @@ failures.push(...provenanceFailures());
  */
 function provenanceFailures() {
   const versioned = git(['ls-files', '-z']).toString('utf8').split('\0').filter(Boolean);
-  const wanted = versioned.filter((f) => f === PROVENANCE_PATH || ASSET.test(f));
+  // 0032: también las fuentes, cuyo sha256 comprueba `fonts[]` de la nota.
+  const wanted = versioned.filter((f) => f === PROVENANCE_PATH || ASSET.test(f) || FONT.test(f));
   const blobs = readIndexBlobs(wanted);
   const note = blobs.get(PROVENANCE_PATH);
   let provenance;
