@@ -57,7 +57,7 @@
   - Test: `tests/infrastructure/appearance-combat.test.ts`.
 
 ## 3. Infraestructura (render) y composición (test-after) · commit `feat(render): números de daño y barras de vida`
-- [ ] 3.1 `art/combatFeedback.ts` (`numberPose`, `newHits`, `damageText`) y `DamageNumberLayer` sobre `TextLike`:
+- [x] 3.1 `art/combatFeedback.ts` (`numberPose`, `newHits`, `damageText`) y `DamageNumberLayer` sobre `TextLike`:
   pool en anillo, deduplicación por `lastId`, tinte por clase, `R_b` del frame, recuentos y `clear()` (D7).
   - Escenarios SR: «Número de un golpe a un enemigo», «Color por clase», «Golpe letal visible», «Sin número con el
     jugador invulnerable», «Mismo snapshot pintado varias veces», «Un golpe en varios snapshots», «Pool lleno», «Más
@@ -65,13 +65,13 @@
     manual con dobles).
   - Escenario AW: «Destello y número del mismo impacto».
   - Tests: `tests/infrastructure/combat-feedback.test.ts` y `tests/infrastructure/damage-number-layer.test.ts`.
-- [ ] 3.2 `barRects` y `HealthBarLayer` sobre `BarCanvas`: redibujo por clave, relleno sin redondeo y ruina sin barra
+- [x] 3.2 `barRects` y `HealthBarLayer` sobre `BarCanvas`: redibujo por clave, relleno sin redondeo y ruina sin barra
   (D8).
   - Escenarios SR: «Barra al 50 %», «Barra llena al empezar», «Golpe que deja la estructura en ruina», «Torre dañada y
     sin barras en otros objetivos» y «Barras con reserva y fuera del plan del mapa» (820/904 con el test sin navegador
     existente).
   - Test: `tests/infrastructure/health-bar-layer.test.ts`.
-- [ ] 3.3 Integración: `RenderLayers.createFeedback()` tras `createHazards()` en `GroundView.createPlayfield`, `render`
+- [x] 3.3 Integración: `RenderLayers.createFeedback()` tras `createHazards()` en `GroundView.createPlayfield`, `render`
   y `clear`, fábricas `this.add.text`/`this.add.graphics` en `GameScene`, `cellSize` en `paintMap`, sondas
   `damageNumbers`/`healthBars` en `renderCounts` (a 0 en el menú) y cableado de `appearance.combat` en composición
   (D9).
