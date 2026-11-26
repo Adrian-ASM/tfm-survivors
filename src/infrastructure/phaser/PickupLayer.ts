@@ -6,6 +6,7 @@ import {
   floatOffsetFrom,
   spawnDelay,
   spawnFrame,
+  SPAWN_HIDDEN,
   type PickupMotion,
 } from './art/pickupMotion';
 import type { SpriteCount } from './PlayerView';
@@ -38,6 +39,8 @@ interface PickupSlot {
   spawning: boolean;
   /** R_f: reloj del primer frame tras la aparición; `null` si no tuvo aparición. */
   floatFrom: number | null;
+  /** Cuenta en `counts` (visible): no durante su retardo de aparición (0030, spec de la sonda). */
+  counted: boolean;
 }
 
 /**
@@ -47,7 +50,8 @@ interface PickupSlot {
  * reutilizado cambia de aspecto); el tamaño lo fija el aspecto (en la gema sin hoja, su diámetro,
  * 0030), no `gemRadius`, salvo en reserva. La gema sin hoja es una forma de color: nunca cuenta como
  * reserva. Desde 0030 (design D4), con el reloj de render: oro, madera y carne con `spawn` la
- * reproducen una vez por id (con un retardo id · e en el primer pintado de la partida) y después
+ * reproducen una vez por id (con un retardo id · e en el primer pintado de la partida, en el que no se
+ * ven ni cuentan como visibles) y después
  * flotan desde R_f, sin salto; el resto flota con fase por id; la reserva ni aparece ni flota. Ningún
  * sprite de un recogible recogido queda visible; no crea objetos por frame.
  */
@@ -83,6 +87,7 @@ export class PickupLayer {
       spawnDelay: 0,
       spawning: false,
       floatFrom: null,
+      counted: false,
     });
     this.pool = new SlotPool(capacity, newSlot, {
       show: (slot, p, appearing) => {
@@ -92,7 +97,8 @@ export class PickupLayer {
       },
       hide: (slot) => {
         slot.painted.show(false);
-        if (slot.look) this.count(slot.kind, slot.look, -1);
+        if (slot.look && slot.counted) this.count(slot.kind, slot.look, -1);
+        slot.counted = false;
         this.stopSpawning(slot);
       },
     });
@@ -120,7 +126,7 @@ export class PickupLayer {
     slot.look = look;
     slot.view = null;
     slot.floatFrom = null;
-    this.count(p.kind, look, 1);
+    slot.counted = false;
     slot.spawning = look.spawn !== null;
     if (!slot.spawning) return;
     slot.spawnStart = this.ms;
@@ -134,6 +140,7 @@ export class PickupLayer {
     if (!look) return;
     let view: StillLook = look;
     let frame = look.idle.frames[0] ?? 0;
+    let hidden = false;
     if (slot.spawning && look.spawn) {
       const k = spawnFrame(look.spawn.idle, this.ms - slot.spawnStart - slot.spawnDelay);
       if (k === null) {
@@ -141,7 +148,9 @@ export class PickupLayer {
         slot.floatFrom = this.ms;
       } else {
         view = look.spawn;
-        frame = k;
+        // Retardo: oculto, con la hoja `spawn` y su primer frame ya preparados.
+        hidden = k === SPAWN_HIDDEN;
+        frame = hidden ? (look.spawn.idle.frames[0] ?? 0) : k;
       }
     }
     if (view !== slot.view) {
@@ -151,7 +160,11 @@ export class PickupLayer {
     slot.painted
       .setFrame(view, frame)
       .at(p.x, p.y + this.offset(slot, look, p.id))
-      .show(true);
+      .show(!hidden);
+    if (!hidden && !slot.counted) {
+      slot.counted = true;
+      this.count(slot.kind, look, 1);
+    }
   }
 
   /**

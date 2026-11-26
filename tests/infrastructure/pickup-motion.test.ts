@@ -6,6 +6,7 @@ import {
   floatOffsetFrom,
   spawnDelay,
   spawnFrame,
+  SPAWN_HIDDEN,
 } from '../../src/infrastructure/phaser/art/pickupMotion';
 import {
   GOLD_FILE,
@@ -65,15 +66,17 @@ describe('Flote de los recogibles (funciones)', () => {
 });
 
 describe('Aparición de oro, madera y carne (funciones)', () => {
-  it('frame de la aparición: primero en el retardo, k-ésimo mientras dura y null al terminar', () => {
-    expect(spawnFrame(SPAWN, -50)).toBe(0);
+  it('frame de la aparición: SPAWN_HIDDEN en el retardo, k-ésimo mientras dura y null al terminar', () => {
+    expect(spawnFrame(SPAWN, -50)).toBe(SPAWN_HIDDEN);
+    expect(SPAWN_HIDDEN).toBe(-1);
     expect(spawnFrame(SPAWN, 0)).toBe(0);
     expect(spawnFrame(SPAWN, 150)).toBe(1);
     expect(spawnFrame(SPAWN, 350)).toBe(3);
     expect(spawnFrame(SPAWN, 650)).toBe(6);
     expect(spawnFrame(SPAWN, 699.999)).toBe(6);
     expect(spawnFrame(SPAWN, 700)).toBeNull();
-    expect(spawnFrame({ ...SPAWN, frames: [4, 5] }, -1)).toBe(4);
+    expect(spawnFrame({ ...SPAWN, frames: [4, 5] }, -1)).toBe(SPAWN_HIDDEN);
+    expect(spawnFrame({ ...SPAWN, frames: [4, 5] }, 0)).toBe(4);
   });
 
   it('retardo id · e solo en el primer pintado', () => {

@@ -283,15 +283,16 @@ function structureMisses(p: ProbeRead): string[] {
 
 /**
  * Recursos en los que la sonda de render no casa con el snapshot (0022): sprites `wood` y `gold`
- * visibles = recogibles de su tipo, vetas activas y agotadas = las del snapshot, y sin reserva.
+ * visibles = recogibles de su tipo menos los que están en su retardo de aparición (0030, `delayed`),
+ * vetas activas y agotadas = las del snapshot, y sin reserva.
  */
-function resourceMisses(p: ProbeRead): string[] {
+function resourceMisses(p: ProbeRead, delayed: { wood?: number } = {}): string[] {
   const s = p?.sprites;
   const snap = p?.snapshot;
   if (!s || !snap) return ['sin sonda'];
   const of = (kind: 'gold' | 'wood') => snap.pickups.filter((x) => x.kind === kind).length;
   const pairs: [string, number, number][] = [
-    ['wood', s.pickups.wood.visible, of('wood')],
+    ['wood', s.pickups.wood.visible, of('wood') - (delayed.wood ?? 0)],
     ['gold', s.pickups.gold.visible, of('gold')],
     ['vetas activas', s.veins.active, snap.veins.filter((v) => !v.depleted).length],
     ['vetas agotadas', s.veins.depleted, snap.veins.filter((v) => v.depleted).length],
@@ -377,11 +378,14 @@ test('Mapa real: sonda igual a la firma de la semilla 42, castillo y salida, y s
   // 0022: montones (`wood`) y vetas activas pintados = los del snapshot, sin reserva.
   expect(m.woodPiles.length).toBeGreaterThan(0);
   expect(m.veins.length).toBeGreaterThan(0);
-  expect(first.sprites?.pickups.wood.visible).toBe(m.woodPiles.length);
   expect(first.sprites?.veins.active).toBe(m.veins.length);
-  expect(resourceMisses(first)).toEqual([]);
-  // 0030: al arrancar (primer pintado, sin step) los montones están en su retardo o su aparición, con
-  // las hojas *_Spawn cargadas de verdad; ningún otro tipo aparece.
+  // 0030: al arrancar (primer pintado, sin step) los montones están en su retardo (ocultos) o en su
+  // aparición, con las hojas *_Spawn cargadas de verdad; ningún otro tipo aparece. Visibles: los
+  // montones menos los que siguen en su retardo, ≥ 1 (el de id 0 ya ha empezado).
+  const woodShown = first.sprites?.pickups.wood.visible ?? 0;
+  expect(woodShown).toBeGreaterThanOrEqual(1);
+  expect(woodShown).toBeLessThanOrEqual(m.woodPiles.length);
+  expect(resourceMisses(first, { wood: m.woodPiles.length - woodShown })).toEqual([]);
   expect(first.sprites?.pickupSpawns).toEqual({
     xp: 0,
     gold: 0,

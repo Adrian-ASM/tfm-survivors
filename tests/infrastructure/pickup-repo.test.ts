@@ -146,40 +146,6 @@ describe('Recogibles con los datos de aspecto del repositorio (sprite-rendering 
     expect(piles.every((p) => idleAt.has(p.id))).toBe(true);
     expect(Math.max(...idleAt.values())).toBeLessThanOrEqual(R0 + 3000);
   });
-
-  it('Scenario: Recuentos de recogibles sin depender de la aparición ni del flote (R0 y R0 + 10.000)', () => {
-    const { l } = repoLayer();
-    // Montones de ids 10..17 (retardo 1.200..2.040 ms), oro 0 sin retardo y oro 1 con 120 ms: en
-    // R0 + 760 el oro 0 ya está en idle, el 1 en su aparición y los 8 montones en su retardo.
-    const snap = [
-      pick(0, 'gold', 200, 0),
-      pick(1, 'gold', 210, 0),
-      ...Array.from({ length: 8 }, (_, i) => pick(10 + i, 'wood', 10 * (i + 1), 0)),
-      pick(20, 'xp', 100, 0),
-      pick(21, 'xp', 110, 0),
-      pick(22, 'xp', 120, 0),
-      pick(30, 'meat', 300, 0),
-      pick(31, 'stone', 400, 0, 'goblin-torch'),
-      pick(32, 'stone', 410, 0, 'goblin-tnt'),
-    ];
-    const R0 = 1000;
-    l.sync(snap, R0);
-    const atR0 = structuredClone(l.counts);
-    l.sync(snap, R0 + 760);
-    expect([l.spawns.gold, l.spawns.wood]).toEqual([1, 8]);
-    const expected = {
-      xp: { visible: 3, placeholder: 0 },
-      gold: { visible: 2, placeholder: 0 },
-      wood: { visible: 8, placeholder: 0 },
-      meat: { visible: 1, placeholder: 0 },
-      stone: { visible: 2, placeholder: 0 },
-    };
-    expect(atR0).toEqual(expected);
-    expect(l.counts).toEqual(expected);
-    l.sync(snap, R0 + 10_000);
-    expect(l.counts).toEqual(expected);
-    expect(Object.values(l.spawns)).toEqual([0, 0, 0, 0, 0]);
-  });
 });
 
 const visible = (sprites: FakeSprite[]) => sprites.filter((s) => s.visible);

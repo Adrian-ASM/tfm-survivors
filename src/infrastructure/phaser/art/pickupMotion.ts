@@ -35,14 +35,17 @@ export function spawnDelay(staggerMs: number, id: number, initial: boolean): num
   return initial ? id * staggerMs : 0;
 }
 
+/** Valor de `spawnFrame` durante el retardo (k < 0): el recogible no se ve (0030, decisión del autor). */
+export const SPAWN_HIDDEN = -1;
+
 /**
- * Frame de hoja de la aparición a `elapsed` = R − R_a ms de su inicio: el primero durante el retardo
- * (k < 0), el de posición k mientras dura (0 ≤ k < n) y `null` cuando ha terminado (k ≥ n), con
+ * Frame de hoja de la aparición a `elapsed` = R − R_a ms de su inicio: `SPAWN_HIDDEN` durante el retardo
+ * (k < 0, oculto), el de posición k mientras dura (0 ≤ k < n) y `null` cuando ha terminado (k ≥ n), con
  * k = ⌊elapsed · fps / 1.000⌋.
  */
 export function spawnFrame(spawn: AnimSpec, elapsed: number): number | null {
   const k = Math.floor((elapsed * spawn.fps) / 1000);
-  if (k < 0) return spawn.frames[0] ?? 0;
+  if (k < 0) return SPAWN_HIDDEN;
   if (k >= spawn.frames.length) return null;
   return spawn.frames[k] ?? 0;
 }

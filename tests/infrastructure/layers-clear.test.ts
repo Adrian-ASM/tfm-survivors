@@ -199,13 +199,15 @@ describe('Vista limpia tras reiniciar (spec run-results y sprite-rendering)', ()
     v.paint(fresh());
 
     expect(piles.map((p) => [sprite(p)?.texture, sprite(p)?.frame])).toEqual(
-      piles.map(() => [W_SPAWN, 0]),
+      piles.map((p) => (p.id === 0 ? [W_SPAWN, 0] : [undefined, undefined])),
     );
+    // Los de ids 1 a 7, en su retardo: no se ven ni cuentan como visibles (sí en pickupSpawns).
+    expect(v.layers.counts.pickups.wood.visible).toBe(1);
     expect(v.kit.created.some((s) => s.visible && s.texture.includes('G_'))).toBe(false);
     expect(v.layers.counts.pickupSpawns).toEqual({ xp: 0, gold: 0, wood: 8, meat: 0, stone: 0 });
-    // El id 0 ya ha empezado (deja el frame 0 a los 100 ms); el 1, en su retardo de 120 ms, aún no.
+    // El id 0 ya ha empezado (deja el frame 0 a los 100 ms); el 1, en su retardo de 120 ms, sigue oculto.
     for (let f = 0; f < 7; f++) v.paint(fresh());
-    expect([sprite(piles[0] ?? gold)?.frame, sprite(piles[1] ?? gold)?.frame]).toEqual([1, 0]);
+    expect([sprite(piles[0] ?? gold)?.frame, sprite(piles[1] ?? gold)]).toEqual([1, undefined]);
   });
 
   it('Scenario: Cinco reinicios seguidos (en la sexta, sprites visibles = elementos del snapshot)', () => {

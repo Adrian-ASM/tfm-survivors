@@ -112,7 +112,7 @@
   - Tests: `map-looks.test.ts` y `plan-map-animation.test.ts` (sin cambios).
 
 ### Grupo F · Recogible oculto durante su retardo (commit 6; hallazgo de apply)
-- [ ] 3.11 **Ocultación en el retardo** (design D1 y D4, decisión del autor: la celda 0 de `*_Spawn` es un destello
+- [x] 3.11 **Ocultación en el retardo** (design D1 y D4, decisión del autor: la celda 0 de `*_Spawn` es un destello
   y la aparición es completa, 0–6).
   - `spawnFrame` devuelve `SPAWN_HIDDEN` si k < 0. `PickupLayer` llama a `show(false)` durante el retardo con la
     hoja `spawn` y su frame 0 ya preparados, y a `show(true)` en el primer frame con k ≥ 0.
@@ -135,7 +135,7 @@
     demás tipos a 0; en la segunda (tras `step(everyTicks + 1)`), 0 y sin reserva.
   - Escenario (sprite-rendering): «Estructuras y guardias en el navegador» [E2E]. Lo ejecuta
     `npm run test:e2e -- gameplay.spec`.
-- [ ] 4.2 **Documentación y cierre** (D9). Lo hace el **orquestador**, porque el implementer no escribe en
+- [x] 4.2 **Documentación y cierre** (D9). Lo hace el **orquestador**, porque el implementer no escribe en
   `AGENTS.md`.
   - En `AGENTS.md`, bloque de 0029: «Árbol con `idle` 0–5 a 6 fps» → «0–3 a 4 fps».
   - Añadir la entrada de 0030 en la sección 1: escalas, `diameter`, flote A/T/s, `spawn` 7 frames a 10 fps con

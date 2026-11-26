@@ -263,32 +263,101 @@ describe('Aparición de oro, madera y carne (sprite-rendering 0030)', () => {
 describe('Aparición escalonada de los recogibles del inicio (sprite-rendering 0030)', () => {
   const R0 = 1000;
   const piles = Array.from({ length: 8 }, (_, id) => pick(id, 'wood', 100 * (id + 1), 500));
-  /** Frame de hoja de cada montón (o `idle`) con el reloj `ms`. */
+  const H = 'oculto';
+  /** Frame de hoja de cada montón visible, `idle` u `oculto` (en su retardo). */
   const frames = (created: FakeSprite[]) =>
     piles.map((p) => {
       const s = atX(created, p.x);
-      return s?.texture === WOOD_SPAWN_FILE ? s.frame : 'idle';
+      if (!s) return H;
+      return s.texture === WOOD_SPAWN_FILE ? s.frame : 'idle';
     });
+  /** Sprite del montón, visible o no. */
+  const anyAt = (created: FakeSprite[], x: number) =>
+    created.find((s) => Math.abs(s.x - x) <= 0.001);
 
-  it('Scenario: Montones escalonados (e 100: R0 + 50, 350, 1.350 y 1.400)', () => {
+  it('Scenario: Montones escalonados (e 100: 1, 4 y 8 visibles con R0 + 50, 350 y 1.350/1.400)', () => {
     const { l, created } = layer(8, 100);
-    const at = (dt: number) => {
+    const at = (dt: number, shown: number) => {
       l.sync(piles, R0 + dt);
-      expect(visible(created)).toHaveLength(8);
+      expect(visible(created), `R0 + ${String(dt)}`).toHaveLength(shown);
+      expect(l.counts.wood.visible).toBe(shown);
       return frames(created);
     };
 
-    expect(at(0)).toEqual([0, 0, 0, 0, 0, 0, 0, 0]);
-    expect(at(50)).toEqual([0, 0, 0, 0, 0, 0, 0, 0]);
-    const r350 = at(350);
-    expect([r350[0], r350[3], r350[7]]).toEqual([3, 0, 0]);
-    expect(at(1350)).toEqual(['idle', 'idle', 'idle', 'idle', 'idle', 'idle', 'idle', 6]);
-    expect(at(1400)).toEqual(Array.from({ length: 8 }, () => 'idle'));
+    expect(at(0, 1)).toEqual([0, H, H, H, H, H, H, H]);
+    expect(at(50, 1)).toEqual([0, H, H, H, H, H, H, H]);
+    // En su retardo el sprite ya tiene la hoja `spawn` y su frame 0, pero oculto.
+    const waiting = anyAt(created, 800);
+    expect([waiting?.visible, waiting?.texture, waiting?.frame]).toEqual([
+      false,
+      WOOD_SPAWN_FILE,
+      0,
+    ]);
+    expect(at(350, 4)).toEqual([3, 2, 1, 0, H, H, H, H]);
+    expect(at(1350, 8)).toEqual(['idle', 'idle', 'idle', 'idle', 'idle', 'idle', 'idle', 6]);
+    expect(at(1400, 8)).toEqual(Array.from({ length: 8 }, () => 'idle'));
     // Ya en idle flotan sin salto desde su R_f (en R0 + 1.400 el id 7 está en d = 0).
     expect(atX(created, 800)?.y).toBeCloseTo(500, 3);
   });
 
-  it('Scenario: Recuento en aparición (wood 8 en R0 + 350 y 0 en R0 + 1.400; el resto igual)', () => {
+  it('Scenario: Montones escalonados (ningún montón se ve antes del inicio de su aparición)', () => {
+    const { l, created } = layer(8, 100);
+    for (let f = 0; f <= 84; f++) {
+      const dt = (f * 1000) / 60;
+      l.sync(piles, R0 + dt);
+      for (const p of piles) {
+        const shown = atX(created, p.x) !== undefined;
+        expect(shown, `id ${String(p.id)}, frame ${String(f)}`).toBe(dt >= p.id * 100);
+      }
+    }
+  });
+
+  it('Scenario: Recoger un montón en su retardo (id 7 recogido en R0 + 300: nunca visible)', () => {
+    const { l, created } = layer(8, 100);
+    l.sync(piles, R0);
+    const rest = piles.filter((p) => p.id !== 7);
+    for (let f = 0; f <= 66; f++) {
+      l.sync(rest, R0 + 300 + (f * 1000) / 60);
+      expect(anyAt(created, 800)?.visible ?? false).toBe(false);
+      expect(l.counts.wood.visible).toBe(visible(created).length);
+    }
+    expect([l.counts.wood.visible, l.spawns.wood]).toEqual([7, 0]);
+  });
+
+  it('Scenario: Recuentos de recogibles sin depender de la aparición ni del flote (R0 + 350: 4 wood; luego 8)', () => {
+    const { l } = layer(16, 100);
+    const stone = (id: number, x: number) => ({ ...pick(id, 'stone', x, 0), source: 'goblin-tnt' });
+    const start = [
+      ...piles,
+      pick(20, 'xp', 1000, 0),
+      pick(21, 'xp', 1010, 0),
+      pick(22, 'xp', 1020, 0),
+      stone(23, 1100),
+      stone(24, 1110),
+    ];
+    l.sync(start, R0);
+    // Oro y carne llegan después (sin retardo): en R0 + 350, en su aparición.
+    const snap = [
+      ...start,
+      pick(30, 'gold', 1200, 0),
+      pick(31, 'gold', 1210, 0),
+      pick(32, 'meat', 1300, 0),
+    ];
+    l.sync(snap, R0 + 50);
+    const visibleAt = (ms: number) => {
+      l.sync(snap, ms);
+      const c = l.counts;
+      expect(Object.values(c).map((k) => k.placeholder)).toEqual([0, 0, 0, 0, 0]);
+      return [c.xp.visible, c.gold.visible, c.wood.visible, c.meat.visible, c.stone.visible];
+    };
+
+    expect(visibleAt(R0 + 350)).toEqual([3, 2, 4, 1, 2]);
+    expect(l.spawns.gold).toBe(2);
+    expect(visibleAt(R0 + 1000)).toEqual([3, 2, 8, 1, 2]);
+    expect(visibleAt(R0 + 10_000)).toEqual([3, 2, 8, 1, 2]);
+  });
+
+  it('Scenario: Recuento en aparición (wood 8 en R0 + 350: 4 visibles y 4 en retardo; 0 y 8 en R0 + 1.400)', () => {
     const { l } = layer(8, 100);
     l.sync(piles, R0);
     l.sync(piles, R0 + 350);
@@ -297,7 +366,8 @@ describe('Aparición escalonada de los recogibles del inicio (sprite-rendering 0
 
     expect(during.spawns).toEqual({ xp: 0, gold: 0, wood: 8, meat: 0, stone: 0 });
     expect(l.spawns).toEqual({ xp: 0, gold: 0, wood: 0, meat: 0, stone: 0 });
-    expect(l.counts).toEqual(during.counts);
+    expect([during.counts.wood.visible, l.counts.wood.visible]).toEqual([4, 8]);
+    expect({ ...l.counts, wood: null }).toEqual({ ...during.counts, wood: null });
   });
 
   it('Scenario: Recogible posterior sin retardo (wood de id 20 en R1: frame 0 y frame 1 en R1 + 150)', () => {
@@ -330,11 +400,11 @@ describe('Aparición escalonada de los recogibles del inicio (sprite-rendering 0
     expect([l.spawns.gold, l.spawns.wood]).toEqual([0, 0]);
     l.sync(piles, R0 + 1900);
 
-    expect(frames(created)).toEqual([0, 0, 0, 0, 0, 0, 0, 0]);
+    expect(frames(created)).toEqual([0, H, H, H, H, H, H, H]);
     expect(atX(created, 5000)).toBeUndefined();
     expect(l.spawns.wood).toBe(8);
     l.sync(piles, R0 + 1900 + 150);
-    expect(frames(created)).toEqual([1, 0, 0, 0, 0, 0, 0, 0]);
+    expect(frames(created)).toEqual([1, 0, H, H, H, H, H, H]);
   });
 
   it('las hojas de aparición solo las usan oro, madera y carne', () => {
