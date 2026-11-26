@@ -48,8 +48,16 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 0.43em;
+  /* 0032: marco de panel detrás de todo el contenido (antes, sin fondo propio). */
+  padding: max(1em, calc(var(--ui-panel-t, 0) * var(--ui-scale, 1) * 1px))
+    max(1.5em, calc(var(--ui-panel-r, 0) * var(--ui-scale, 1) * 1px))
+    max(1em, calc(var(--ui-panel-b, 0) * var(--ui-scale, 1) * 1px))
+    max(1.5em, calc(var(--ui-panel-l, 0) * var(--ui-scale, 1) * 1px));
   font: calc(14px * var(--ui-scale, 1)) monospace;
   color: #fff;
+  background: var(--ui-panel-on-bg, var(--ui-panel-fill, transparent));
+  border: 1px solid #7ce2fe;
+  border-radius: 8px;
 }
 
 .results-panel__header {
@@ -90,12 +98,12 @@ body {
 }
 
 .results-panel__notices {
-  color: #f5c46b;
+  color: var(--ui-panel-danger, #f5c46b);
   text-align: center;
 }
 
 .results-panel__message {
-  color: #7ce2fe;
+  color: var(--ui-panel-accent, #7ce2fe);
 }
 
 .results-panel__actions {
@@ -104,18 +112,12 @@ body {
 }
 
 .results-panel button {
-  padding: 0.29em 1em;
+  padding: max(0.29em, calc(var(--ui-b-t) * var(--ui-scale, 1) * 1px))
+    max(1em, calc(var(--ui-b-r) * var(--ui-scale, 1) * 1px))
+    max(0.29em, calc(var(--ui-b-b) * var(--ui-scale, 1) * 1px))
+    max(1em, calc(var(--ui-b-l) * var(--ui-scale, 1) * 1px));
   font: inherit;
-  color: #fff;
-  background: #23233a;
-  border: 1px solid #7ce2fe;
-  border-radius: 4px;
   cursor: pointer;
-}
-
-.results-panel button:hover,
-.results-panel button:focus-visible {
-  background: #34345a;
 }
 
 /* Paneles DOM de pantalla (change 0009): menú de inicio, pausa y diálogo de borrado. */
@@ -128,10 +130,13 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 0.75em;
-  padding: 1.25em 1.75em;
+  padding: max(1.25em, calc(var(--ui-panel-t, 0) * var(--ui-scale, 1) * 1px))
+    max(1.75em, calc(var(--ui-panel-r, 0) * var(--ui-scale, 1) * 1px))
+    max(1.25em, calc(var(--ui-panel-b, 0) * var(--ui-scale, 1) * 1px))
+    max(1.75em, calc(var(--ui-panel-l, 0) * var(--ui-scale, 1) * 1px));
   font: calc(16px * var(--ui-scale, 1)) monospace;
   color: #fff;
-  background: rgb(20 20 30 / 92%);
+  background: var(--ui-panel-on-bg, var(--ui-panel-fill, rgb(20 20 30 / 92%)));
   border: 1px solid #7ce2fe;
   border-radius: 8px;
 }
@@ -169,33 +174,23 @@ body {
 
 .menu-panel__message {
   margin: 0;
-  color: #7ce2fe;
+  color: var(--ui-panel-accent, #7ce2fe);
 }
 
 .menu-panel button,
 .pause-panel button,
 .confirm-dialog button {
-  padding: 0.375em 1em;
+  padding: max(0.375em, calc(var(--ui-b-t) * var(--ui-scale, 1) * 1px))
+    max(1em, calc(var(--ui-b-r) * var(--ui-scale, 1) * 1px))
+    max(0.375em, calc(var(--ui-b-b) * var(--ui-scale, 1) * 1px))
+    max(1em, calc(var(--ui-b-l) * var(--ui-scale, 1) * 1px));
   font: inherit;
-  color: #fff;
-  background: #23233a;
-  border: 1px solid #7ce2fe;
-  border-radius: 4px;
   cursor: pointer;
 }
 
 .menu-panel button:disabled {
   cursor: not-allowed;
-  opacity: 0.5;
-}
-
-.menu-panel button:hover:enabled,
-.menu-panel button:focus-visible,
-.pause-panel button:hover,
-.pause-panel button:focus-visible,
-.confirm-dialog button:hover,
-.confirm-dialog button:focus-visible {
-  background: #34345a;
+  opacity: var(--ui-disabled-opacity, 0.5);
 }
 
 /* Tienda del castillo (change 0024): overlay DOM centrado y escalado como la pausa. */
@@ -206,11 +201,18 @@ body {
   flex-direction: column;
   align-items: stretch;
   gap: 0.5em;
+  box-sizing: border-box;
   max-width: 32em;
-  padding: 1em 1.5em;
+  /* 0032 (riesgo R1): 7 filas con marco de botón pueden pasar del alto de la ventana a ×1; la lista
+     se desplaza dentro y el título, el oro y Salir quedan siempre enteros. */
+  max-height: calc(100vh - 2em);
+  padding: max(1em, calc(var(--ui-panel-t, 0) * var(--ui-scale, 1) * 1px))
+    max(1.5em, calc(var(--ui-panel-r, 0) * var(--ui-scale, 1) * 1px))
+    max(1em, calc(var(--ui-panel-b, 0) * var(--ui-scale, 1) * 1px))
+    max(1.5em, calc(var(--ui-panel-l, 0) * var(--ui-scale, 1) * 1px));
   font: calc(14px * var(--ui-scale, 1)) monospace;
   color: #fff;
-  background: rgb(20 20 30 / 94%);
+  background: var(--ui-panel-on-bg, var(--ui-panel-fill, rgb(20 20 30 / 94%)));
   border: 1px solid #f5c542;
   border-radius: 8px;
 }
@@ -221,32 +223,35 @@ body {
 
 .shop-panel h2,
 .shop-panel__gold {
+  flex: none;
   margin: 0;
   text-align: center;
 }
 
 .shop-panel__gold {
-  color: #f5c542;
+  color: var(--ui-panel-text, #f5c542);
 }
 
 .shop-panel__products {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: 0.35em;
+  min-height: 0;
   margin: 0;
   padding: 0;
+  overflow-y: auto;
   list-style: none;
 }
 
 .shop-panel button {
   width: 100%;
-  padding: 0.35em 0.75em;
+  padding: max(0.35em, calc(var(--ui-b-t) * var(--ui-scale, 1) * 1px))
+    max(0.75em, calc(var(--ui-b-r) * var(--ui-scale, 1) * 1px))
+    max(0.35em, calc(var(--ui-b-b) * var(--ui-scale, 1) * 1px))
+    max(0.75em, calc(var(--ui-b-l) * var(--ui-scale, 1) * 1px));
   font: inherit;
-  color: #fff;
   text-align: left;
-  background: #23233a;
-  border: 1px solid #7ce2fe;
-  border-radius: 4px;
   cursor: pointer;
 }
 
@@ -260,25 +265,21 @@ body {
 .shop-panel__notice {
   grid-column: 1 / -1;
   font-size: 0.85em;
-  color: #c8c8d8;
+  color: var(--ui-b-muted, #c8c8d8);
 }
 
 .shop-panel__notice {
-  color: #ff8a80;
+  color: var(--ui-b-danger, #ff8a80);
 }
 
 .shop-panel__product.is-unavailable {
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: var(--ui-disabled-opacity, 0.6);
 }
 
 .shop-panel__leave {
+  flex: none;
   text-align: center;
-}
-
-.shop-panel button:hover,
-.shop-panel button:focus-visible {
-  background: #34345a;
 }
 
 .shop-panel__description {
@@ -299,10 +300,13 @@ body {
   gap: 0.5em;
   min-width: 18em;
   max-width: 28em;
-  padding: 1em 1.5em;
+  padding: max(1em, calc(var(--ui-panel-t, 0) * var(--ui-scale, 1) * 1px))
+    max(1.5em, calc(var(--ui-panel-r, 0) * var(--ui-scale, 1) * 1px))
+    max(1em, calc(var(--ui-panel-b, 0) * var(--ui-scale, 1) * 1px))
+    max(1.5em, calc(var(--ui-panel-l, 0) * var(--ui-scale, 1) * 1px));
   font: calc(14px * var(--ui-scale, 1)) monospace;
   color: #fff;
-  background: rgb(20 20 30 / 94%);
+  background: var(--ui-panel-on-bg, var(--ui-panel-fill, rgb(20 20 30 / 94%)));
   border: 1px solid #7ce2fe;
   border-radius: 8px;
 }
@@ -330,18 +334,12 @@ body {
   display: flex;
   justify-content: space-between;
   width: 100%;
-  padding: 0.35em 0.75em;
+  padding: max(0.35em, calc(var(--ui-b-t) * var(--ui-scale, 1) * 1px))
+    max(0.75em, calc(var(--ui-b-r) * var(--ui-scale, 1) * 1px))
+    max(0.35em, calc(var(--ui-b-b) * var(--ui-scale, 1) * 1px))
+    max(0.75em, calc(var(--ui-b-l) * var(--ui-scale, 1) * 1px));
   font: inherit;
-  color: #fff;
-  background: #23233a;
-  border: 1px solid #7ce2fe;
-  border-radius: 4px;
   cursor: pointer;
-}
-
-.build-panel button:hover,
-.build-panel button:focus-visible {
-  background: #34345a;
 }
 
 /* Panel de obra con iconos (change 0027): nombre y coste en columnas, sin texto pegado. */
@@ -375,7 +373,7 @@ body {
 }
 
 .build-panel__amount.is-short {
-  color: #ff8a80;
+  color: var(--ui-b-danger, #ff8a80);
 }
 
 .build-panel__missing {
@@ -385,11 +383,7 @@ body {
 
 .build-panel__option.is-unavailable {
   cursor: not-allowed;
-  opacity: 0.55;
-}
-
-.build-panel .build-panel__option.is-unavailable:hover {
-  background: #23233a;
+  opacity: var(--ui-disabled-opacity, 0.55);
 }
 
 /* Icono del recurso: frame 0 de una hoja de una fila (W_Idle 128 × 128, Deco/05 64 × 64). */
@@ -413,10 +407,14 @@ body {
   box-sizing: border-box;
   width: min(36em, calc(100vw - 2em));
   max-height: calc(100vh - 2em);
-  padding: 1em 1.5em;
+  /* 0032: ≥ margen de la pieza × k y ≥ 12 px por lado. */
+  padding: max(1em, 12px, calc(var(--ui-panel-t, 0) * var(--ui-scale, 1) * 1px))
+    max(1.5em, 12px, calc(var(--ui-panel-r, 0) * var(--ui-scale, 1) * 1px))
+    max(1em, 12px, calc(var(--ui-panel-b, 0) * var(--ui-scale, 1) * 1px))
+    max(1.5em, 12px, calc(var(--ui-panel-l, 0) * var(--ui-scale, 1) * 1px));
   font: calc(16px * var(--ui-scale, 1)) monospace;
   color: #fff;
-  background: rgb(20 20 30 / 96%);
+  background: var(--ui-panel-on-bg, var(--ui-panel-fill, rgb(20 20 30 / 96%)));
   border: 1px solid #7ce2fe;
   border-radius: 8px;
   outline: none;
@@ -443,7 +441,7 @@ body {
 .guide-modal__page {
   flex: none;
   margin: 0;
-  color: #7ce2fe;
+  color: var(--ui-panel-accent, #7ce2fe);
 }
 
 .guide-modal__body {
@@ -470,16 +468,211 @@ body {
 }
 
 .guide-modal button {
-  padding: 0.375em 1em;
+  padding: max(0.375em, calc(var(--ui-b-t) * var(--ui-scale, 1) * 1px))
+    max(1em, calc(var(--ui-b-r) * var(--ui-scale, 1) * 1px))
+    max(0.375em, calc(var(--ui-b-b) * var(--ui-scale, 1) * 1px))
+    max(1em, calc(var(--ui-b-l) * var(--ui-scale, 1) * 1px));
   font: inherit;
-  color: #fff;
-  background: #23233a;
-  border: 1px solid #7ce2fe;
-  border-radius: 4px;
   cursor: pointer;
 }
 
-.guide-modal button:hover,
-.guide-modal button:focus-visible {
-  background: #34345a;
+/* ─── Kit de UI (change 0032, ADR-0028, design §4) ───────────────────────────────────────────────
+   Piezas de Tiny Swords Update 010 por variables CSS que la composición publica en #game al
+   terminar la carga (uiKitVariables): imagen y márgenes solo de las piezas que cargaron; relleno,
+   tintas y familia siempre. Aquí no hay ninguna URL. Sin la variable de una pieza, border-image-source
+   es none y queda la reserva: borde de 1 px de siempre, fondo = relleno de panel (o el de antes si
+   aún no hay variables) y, en los botones, #23233a con texto blanco. Esquina = margen × --ui-scale
+   px (escalón entero). */
+.menu-panel,
+.pause-panel,
+.confirm-dialog,
+.guide-modal,
+.results-panel,
+.shop-panel,
+.build-panel {
+  font-family: var(--ui-font, monospace);
+  color: var(--ui-panel-text, #fff);
+  border-image-source: var(--ui-panel-src, none);
+  border-image-slice: var(--ui-panel-slice, 0) fill;
+  border-image-width: calc(var(--ui-panel-t, 1) * var(--ui-scale, 1) * 1px)
+    calc(var(--ui-panel-r, 1) * var(--ui-scale, 1) * 1px)
+    calc(var(--ui-panel-b, 1) * var(--ui-scale, 1) * 1px)
+    calc(var(--ui-panel-l, 1) * var(--ui-scale, 1) * 1px);
+  border-image-repeat: stretch;
+  image-rendering: pixelated;
+}
+
+/* Botón normal (pieza button). El estado reasigna las --ui-b-*; la pintura se declara una vez. Los
+   textos de dentro heredan --ui-b-muted (descripciones) y --ui-b-danger (avisos, cifras que faltan). */
+:is(
+    .menu-panel,
+    .pause-panel,
+    .confirm-dialog,
+    .guide-modal,
+    .results-panel,
+    .shop-panel,
+    .build-panel
+  )
+  button {
+  --ui-b-src: var(--ui-button-src, none);
+  --ui-b-slice: var(--ui-button-slice, 0);
+  --ui-b-t: var(--ui-button-t, 0);
+  --ui-b-r: var(--ui-button-r, 0);
+  --ui-b-b: var(--ui-button-b, 0);
+  --ui-b-l: var(--ui-button-l, 0);
+  --ui-b-bg: var(--ui-button-on-bg, #23233a);
+  --ui-b-text: var(--ui-button-on-text, #fff);
+  --ui-b-muted: var(--ui-button-on-muted, #c8c8d8);
+  --ui-b-danger: var(--ui-button-on-danger, #ff8a80);
+
+  box-sizing: border-box;
+  min-height: calc((var(--ui-b-t) + var(--ui-b-b)) * var(--ui-scale, 1) * 1px);
+  color: var(--ui-b-text);
+  background: var(--ui-b-bg);
+  border: 1px solid #7ce2fe;
+  border-radius: 4px;
+  border-image-source: var(--ui-b-src);
+  border-image-slice: var(--ui-b-slice) fill;
+  border-image-width: calc(var(--ui-b-t) * var(--ui-scale, 1) * 1px)
+    calc(var(--ui-b-r) * var(--ui-scale, 1) * 1px) calc(var(--ui-b-b) * var(--ui-scale, 1) * 1px)
+    calc(var(--ui-b-l) * var(--ui-scale, 1) * 1px);
+  border-image-repeat: stretch;
+  image-rendering: pixelated;
+}
+
+/* Puntero encima o foco visible (pieza buttonHover); el foco de teclado conserva un contorno. */
+:is(
+    .menu-panel,
+    .pause-panel,
+    .confirm-dialog,
+    .guide-modal,
+    .results-panel,
+    .shop-panel,
+    .build-panel
+  )
+  button:is(:hover, :focus-visible) {
+  --ui-b-src: var(--ui-button-hover-src, var(--ui-button-src, none));
+  --ui-b-slice: var(--ui-button-hover-slice, var(--ui-button-slice, 0));
+  --ui-b-t: var(--ui-button-hover-t, var(--ui-button-t, 0));
+  --ui-b-r: var(--ui-button-hover-r, var(--ui-button-r, 0));
+  --ui-b-b: var(--ui-button-hover-b, var(--ui-button-b, 0));
+  --ui-b-l: var(--ui-button-hover-l, var(--ui-button-l, 0));
+  --ui-b-bg: var(--ui-button-hover-on-bg, var(--ui-button-on-bg, #34345a));
+  --ui-b-text: var(--ui-button-hover-on-text, var(--ui-button-on-text, #fff));
+  --ui-b-muted: var(--ui-button-hover-on-muted, var(--ui-button-on-muted, #c8c8d8));
+  --ui-b-danger: var(--ui-button-hover-on-danger, var(--ui-button-on-danger, #ff8a80));
+}
+
+:is(
+    .menu-panel,
+    .pause-panel,
+    .confirm-dialog,
+    .guide-modal,
+    .results-panel,
+    .shop-panel,
+    .build-panel
+  )
+  button:focus-visible {
+  outline: 2px solid var(--ui-panel-accent, #7ce2fe);
+  outline-offset: 2px;
+}
+
+/* Pulsado (pieza buttonPressed): mismos márgenes, el dibujo ya se desplaza. */
+:is(
+    .menu-panel,
+    .pause-panel,
+    .confirm-dialog,
+    .guide-modal,
+    .results-panel,
+    .shop-panel,
+    .build-panel
+  )
+  button:active {
+  --ui-b-src: var(--ui-button-pressed-src, var(--ui-button-src, none));
+  --ui-b-slice: var(--ui-button-pressed-slice, var(--ui-button-slice, 0));
+  --ui-b-t: var(--ui-button-pressed-t, var(--ui-button-t, 0));
+  --ui-b-r: var(--ui-button-pressed-r, var(--ui-button-r, 0));
+  --ui-b-b: var(--ui-button-pressed-b, var(--ui-button-b, 0));
+  --ui-b-l: var(--ui-button-pressed-l, var(--ui-button-l, 0));
+  --ui-b-bg: var(--ui-button-pressed-on-bg, var(--ui-button-on-bg, #34345a));
+  --ui-b-text: var(--ui-button-pressed-on-text, var(--ui-button-on-text, #fff));
+  --ui-b-muted: var(--ui-button-pressed-on-muted, var(--ui-button-on-muted, #c8c8d8));
+  --ui-b-danger: var(--ui-button-pressed-on-danger, var(--ui-button-on-danger, #ff8a80));
+}
+
+/* Desactivado o no disponible (pieza buttonDisabled), también con el puntero encima o pulsado. */
+:is(
+    .menu-panel,
+    .pause-panel,
+    .confirm-dialog,
+    .guide-modal,
+    .results-panel,
+    .shop-panel,
+    .build-panel
+  )
+  button:is(:disabled, .is-unavailable) {
+  --ui-b-src: var(--ui-button-disabled-src, none);
+  --ui-b-slice: var(--ui-button-disabled-slice, 0);
+  --ui-b-t: var(--ui-button-disabled-t, 0);
+  --ui-b-r: var(--ui-button-disabled-r, 0);
+  --ui-b-b: var(--ui-button-disabled-b, 0);
+  --ui-b-l: var(--ui-button-disabled-l, 0);
+  --ui-b-bg: var(--ui-button-disabled-on-bg, #23233a);
+  --ui-b-text: var(--ui-button-disabled-on-text, #fff);
+  --ui-b-muted: var(--ui-button-disabled-on-muted, #c8c8d8);
+  --ui-b-danger: var(--ui-button-disabled-on-danger, #ff8a80);
+}
+
+/* Confirmar del diálogo de borrado (primer botón de la fila): pieza buttonDanger y, al pulsarlo,
+   buttonDangerPressed. El DOM no cambia: se elige por posición. */
+.confirm-dialog__actions button:first-child {
+  --ui-b-src: var(--ui-button-danger-src, none);
+  --ui-b-slice: var(--ui-button-danger-slice, 0);
+  --ui-b-t: var(--ui-button-danger-t, 0);
+  --ui-b-r: var(--ui-button-danger-r, 0);
+  --ui-b-b: var(--ui-button-danger-b, 0);
+  --ui-b-l: var(--ui-button-danger-l, 0);
+  --ui-b-bg: var(--ui-button-danger-on-bg, #23233a);
+  --ui-b-text: var(--ui-button-danger-on-text, #fff);
+}
+
+.confirm-dialog__actions button:first-child:hover,
+.confirm-dialog__actions button:first-child:focus-visible {
+  --ui-b-bg: var(--ui-button-danger-on-bg, #34345a);
+}
+
+.confirm-dialog__actions button:first-child:active {
+  --ui-b-src: var(--ui-button-danger-pressed-src, var(--ui-button-danger-src, none));
+  --ui-b-slice: var(--ui-button-danger-pressed-slice, var(--ui-button-danger-slice, 0));
+  --ui-b-t: var(--ui-button-danger-pressed-t, var(--ui-button-danger-t, 0));
+  --ui-b-r: var(--ui-button-danger-pressed-r, var(--ui-button-danger-r, 0));
+  --ui-b-b: var(--ui-button-danger-pressed-b, var(--ui-button-danger-b, 0));
+  --ui-b-l: var(--ui-button-danger-pressed-l, var(--ui-button-danger-l, 0));
+  --ui-b-bg: var(--ui-button-danger-pressed-on-bg, var(--ui-button-danger-on-bg, #34345a));
+  --ui-b-text: var(--ui-button-danger-pressed-on-text, var(--ui-button-danger-on-text, #fff));
+}
+
+/* Títulos de panel con la cabecera 3-slice (pieza header): alto = alto declarado × k y colas sin
+   deformar. Sin la pieza, --ui-header-h no existe, height y line-height son inválidos en tiempo de
+   cálculo y quedan como antes (auto / heredado). La línea ocupa el 70 % superior: la cinta del
+   Ribbon_Yellow está arriba y abajo asoma su pliegue. */
+.menu-panel h1,
+.pause-panel h2,
+.guide-modal__header h2,
+.results-panel__title,
+.shop-panel h2,
+.build-panel h2 {
+  box-sizing: border-box;
+  height: calc(var(--ui-header-h) * var(--ui-scale, 1) * 1px);
+  padding-inline: calc(var(--ui-header-l, 0) * var(--ui-scale, 1) * 1px)
+    calc(var(--ui-header-r, 0) * var(--ui-scale, 1) * 1px);
+  line-height: calc(var(--ui-header-h) * var(--ui-scale, 1) * 0.7px);
+  color: var(--ui-header-on-text, inherit);
+  white-space: nowrap;
+  border-image-source: var(--ui-header-src, none);
+  border-image-slice: var(--ui-header-slice, 0) fill;
+  border-image-width: 0 calc(var(--ui-header-r, 0) * var(--ui-scale, 1) * 1px) 0
+    calc(var(--ui-header-l, 0) * var(--ui-scale, 1) * 1px);
+  border-image-repeat: stretch;
+  image-rendering: pixelated;
 }

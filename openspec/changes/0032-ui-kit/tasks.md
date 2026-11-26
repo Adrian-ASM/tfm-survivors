@@ -44,13 +44,13 @@
   `fonts[]`), no dos; la regla de `danger` solo en `panel` y `buttonDisabled` (decisión del autor).
 
 ## 2. Infraestructura DOM (adaptador CSS)
-- [ ] 2.1 `src/infrastructure/dom/uiKit.ts`: `uiKitVariables` (siempre relleno, tintas y `--ui-font`; imagen,
+- [x] 2.1 `src/infrastructure/dom/uiKit.ts`: `uiKitVariables` (siempre relleno, tintas y `--ui-font`; imagen,
   márgenes, alto de cabecera y tintas activas de botón solo de piezas cargadas; `--ui-disabled-opacity`) y
   `applyUiKit` (CSSOM); `fontUrl` en `src/composition/assetUrl.ts`. Test: `tests/infrastructure/dom/ui-kit.test.ts`.
   — escenarios: sprite-rendering "Variables solo de las piezas cargadas", "URLs de las piezas y de la fuente bajo la
   base" (parte de URL; la comprobación de "existe en `dist/`" se hace sobre `public/`, que Vite copia entero),
   "Reserva del panel con el relleno de la pieza".
-- [ ] 2.2 `src/styles.css`, bloque compartido de los 7 paneles y sus botones (§4: `border-image` con variables y
+- [x] 2.2 `src/styles.css`, bloque compartido de los 7 paneles y sus botones (§4: `border-image` con variables y
   reserva, `padding` ≥ margen × k, `min-height` de botón, `buttonHover`/`:focus-visible` con contorno de 2 px,
   `buttonPressed`, `buttonDisabled`, `Confirmar` con `buttonDanger`, cabecera 3-slice, `font-family` con caída), sin
   ningún `url(` ni cambio de DOM. Test de lectura del CSS: `tests/infrastructure/dom/styles-ui.test.ts`; ampliar los
@@ -60,13 +60,17 @@
   con foco y botón de borrado", "Diálogo con texto legible"; menu-guide "Guía dentro del marco a ×1 y a ×2",
   "Controles de la guía con piezas de botón", "Iconos sin hojas propias" (y los demás de "Iconos de recurso en la
   guía", que siguen en verde).
-- [ ] 2.3 Tintas y layout de tienda, obra y resultados en `styles.css`: lista de la tienda con desplazamiento interno
+- [x] 2.3 Tintas y layout de tienda, obra y resultados en `styles.css`: lista de la tienda con desplazamiento interno
   (`max-height`, `overflow-y: auto`, `min-height: 0`; título, oro y `Salir` fuera), filas no comprables/asequibles con
   `buttonDisabled` sin opacidad extra si carga, `danger` en avisos y cifras que faltan, `accent` en mensajes y panel
   de resultados con marco. Tests: `styles-ui.test.ts` y ampliar los de `ShopPanel`, `BuildPanel` y `ResultsPanel`.
   — escenarios: castle-shop "Filas comprables y no comprables", "Tienda con desplazamiento interno a ×1 en
   1.280 × 720", "Tienda entera a ×2"; build-sites "Torre no asequible con piezas", "Panel sin atributo style",
   "Panel entero dentro del marco"; run-results "Colores de mensajes y avisos", "Contenido máximo dentro del marco".
+  Apply: variables con el rol en kebab-case (`--ui-button-hover-src`); el panel cargado publica también
+  `--ui-panel-on-bg: transparent` (sin él, el relleno taparía el borde tallado); los estados reasignan
+  `--ui-b-*` en el propio botón; `Confirmar` (primer botón de la fila) conserva `buttonDanger` también con
+  el puntero encima. "DOM sin cambios" con instantánea en `tests/infrastructure/dom/dom-unchanged.test.ts`.
 
 ## 3. Arranque: fuente y piezas (infraestructura Phaser + composición)
 - [ ] 3.1 `src/infrastructure/dom/uiFont.ts`: `loadUiFont` (`FontFace` + `document.fonts.add` + `check`; rechazo →

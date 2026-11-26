@@ -105,10 +105,15 @@ describe('resourceIcons (panel de obra 0027 y guía 0028)', () => {
     }
   });
 
-  it('Scenario: Sin assets nuevos (cada hoja de icono figura en la nota de procedencia)', () => {
+  it('Scenario: Iconos sin hojas propias (hojas de recogibles de antes de 0032, ninguna de UI)', () => {
     const icons = resourceIcons(appearance, (file) => ASSET_DIR + file);
     const files = [icons.gold, icons.wood, icons.meat, icons.stone];
     expect(files.filter((f) => !REGISTERED.includes(f))).toEqual([]);
+    // Las 45 entradas de la nota de antes de 0032: ninguna pieza de la interfaz.
+    const before = provenanceJson.files.slice(0, 45).map((f) => f.path);
+    expect(files.filter((f) => !before.includes(f))).toEqual([]);
+    expect(files.some((f) => f.includes('/UI/'))).toBe(false);
+    expect(icons.xp.startsWith('data:image/svg+xml,')).toBe(true);
   });
 
   it('textos del panel: alternativas en minúscula y «faltan N»', () => {
