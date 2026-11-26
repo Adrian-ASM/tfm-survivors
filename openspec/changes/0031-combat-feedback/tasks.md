@@ -83,17 +83,17 @@
     falta.
 
 ## 4. E2E, medición y documentación · commit `test(e2e)+docs: números de daño, medición y docs 0031`
-- [ ] 4.1 E2E único (e2e-lite): ampliar un test de humo de `tests/e2e/gameplay.spec.ts` con
+- [x] 4.1 E2E único (e2e-lite): ampliar un test de humo de `tests/e2e/gameplay.spec.ts` con
   `?e2e&manual&map=empty&seed=7` (`step(1)` hasta el primer golpe `enemy`, 30 frames en pausa, `step(60)` y Volver al
   menú) y añadir los tipos de la sonda en `tests/e2e/probe.ts`.
   - Escenario SR: «Números de daño en el navegador [E2E]». Sin esperas de reloj.
   - Test: `npm run test:e2e -- gameplay.spec`, en verde.
-- [ ] 4.2 Medición con el test real. Ejecutar `npm run bench` antes del change (en `main`) y después, y comparar el caso
+- [x] 4.2 Medición con el test real. Ejecutar `npm run bench` antes del change (en `main`) y después, y comparar el caso
   del tick de `run.bench.ts`. Tomar el tiempo del test de balance (lote del bot v4 y del v5 con invariantes) en
   `verify` y comparar con los ~35 s de v4 en local. Confirmar `BALANCE_BASELINE`/`BUILDER_REFERENCE` idénticas y las
   seis firmas intactas.
   - Escenario SL: «Balance y firmas intactos».
   - Se anotan las cifras en el diario de IA y en el informe de verify. Umbral: ≤ +5 %; si no se cumple, aplicar la
     mitigación de design §Rendimiento.
-- [ ] 4.3 Documentación: entrada 0031 en `AGENTS.md` §1 (registro de golpes, `combat.json`, capa 9, sonda), estado de
+- [x] 4.3 Documentación: entrada 0031 en `AGENTS.md` §1 (registro de golpes, `combat.json`, capa 9, sonda), estado de
   la historia 0031 en `docs/gdd.md`, ADR-0027 enlazado y diario de IA (`docs/ai-log/`).

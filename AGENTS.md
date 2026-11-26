@@ -192,6 +192,19 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   (montones) esperan invisibles id × e (`spawnStaggerMs` 120), también tras R. Si falla una hoja de aparición se
   pinta `idle` sin reserva. Funciones puras en `art/pickupMotion.ts`; sonda `sprites.pickupSpawns`. Firmas,
   `BALANCE_BASELINE` y 820/904 objetos del mapa intactos. Zoom de cámara por ventana: fuera (candidato propio).
+  Números de daño y barras de vida (change 0031, ADR-0027): `HitLog` (dominio, propiedad de `Run`) por el que
+  pasa todo el daño de `Arsenal`, `TowerBattery` y `HazardField` (`strike`) y el golpe del paso 5
+  (`recordPlayer`); anota el **daño aplicado** (vida antes − después) sumado por objetivo y tick (búsqueda por
+  referencia en un `Map` del tick), con ids propios desde 0 y tope `maxHitsPerTick` de no jugador (el del jugador
+  aparte). `content/combat.json` (ventana 15 ≥ `MAX_TICKS_PER_FRAME`, tope 48); `WeaponTarget` gana `id`/`hp`.
+  Snapshot `hits` (ticks k − N + 1 … k, vistas congeladas y lista cacheada por (tick, siguiente id)) y
+  `StructureSnapshot.maxHealth` (= vida del tipo). Render en la capa 9, tras los peligros y bajo el HUD:
+  `HealthBarLayer` (un `Graphics`, redibujo solo si cambia la vida o la ruina, relleno sin redondeo) y
+  `DamageNumberLayer` (pool en anillo de 48 `Text` con tinte por clase, deduplicación por id, pose lineal con el
+  reloj del frame); aspecto en `appearance.json` `combat` (colores distintos, `player` rojo). Sondas
+  `sprites.damageNumbers` (por clase y `created`) y `sprites.healthBars`, a 0 en el menú. Escenarios:
+  `tests/support/combat.ts` (enemigos quietos, salto del jugador) y `feedback.ts` (dobles de `Text`/`Graphics`).
+  Balance y seis firmas idénticos; 820/904 objetos del mapa.
   Fuente de verdad del comportamiento: `openspec/specs/`.
 
 ## 2. Comandos

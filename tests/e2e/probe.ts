@@ -62,6 +62,20 @@ export interface EnemyView {
   stateKind: 'chase' | 'fuse' | 'charge' | 'wait' | 'patrol' | 'alert' | 'return';
 }
 
+/** Clase de un golpe de combate (0031). */
+export type HitKindView = 'enemy' | 'structure' | 'sheep' | 'player';
+
+/** Golpe de combate del snapshot (0031). */
+export interface HitView {
+  id: number;
+  tick: number;
+  kind: HitKindView;
+  targetId?: number;
+  x: number;
+  y: number;
+  amount: number;
+}
+
 export interface SnapshotView {
   tick: number;
   status: 'running' | 'choosing' | 'shopping' | 'building' | 'over';
@@ -102,6 +116,8 @@ export interface SnapshotView {
   sites: SiteView[];
   build: { open: boolean; siteId: number | null; options: BuildOptionView[] };
   towerProjectiles: { id: number; x: number; y: number }[];
+  /** Golpes de combate de la ventana (0031), en orden de id; sin `targetId` los de `player`. */
+  hits: HitView[];
 }
 
 /** Huella de un edificio en un solar (0026). */
@@ -211,6 +227,9 @@ export interface SpritesView {
   mapArt: MapArtView;
   /** Solares pintados (0026): en obra, casas, torres y con reserva. */
   sites: { empty: number; house: number; tower: number; fallback: number };
+  /** Números de daño visibles por clase y creados en la partida, y barras de vida (0031). */
+  damageNumbers: Record<HitKindView, number> & { created: number };
+  healthBars: number;
   /** Flechas de torre pintadas (0026). */
   towerArrows: SpriteCountView;
 }
@@ -695,3 +714,49 @@ export async function backToMenu(page: Page): Promise<void> {
   await pauseOverlay(page).getByRole('button', { name: 'Volver al menú' }).click();
   await expect(menuPanel(page)).toBeVisible();
 }
+
+/** Golpes y números de daño de un frame pintado (0031), copiados en el mismo instante. */
+export interface HitFrame {
+  tick: number;
+  hits: HitView[];
+  numbers: SpritesView['damageNumbers'];
+  healthBars: number;
+}
+
+/**
+ * `step(1)` hasta el primer frame cuyo snapshot tiene un golpe de clase `kind` (0031), dentro de la
+ * página (una sola llamada, sin reloj). Devuelve ese frame o null si no llega en `maxTicks`.
+ */
+export const stepUntilHit = (
+  page: Page,
+  kind: HitKindView,
+  maxTicks: number,
+): Promise<HitFrame | null> =>
+  page.evaluate(
+    async ({ kind, maxTicks }) => {
+      const p = (window as unknown as Probe).__sprint;
+      if (!p?.step) throw new Error('La sonda no tiene step');
+      for (let i = 0; i < maxTicks; i += 1) {
+        if ((await p.step(1)) !== 1) return null;
+        const s = p.snapshot;
+        if (s?.hits.some((h) => h.kind === kind) && p.sprites) {
+          const { damageNumbers, healthBars } = p.sprites;
+          return { tick: s.tick, hits: s.hits, numbers: { ...damageNumbers }, healthBars };
+        }
+      }
+      return null;
+    },
+    { kind, maxTicks },
+  );
+
+/** Números de daño de la sonda en cada uno de los próximos `n` frames del navegador (0031). */
+export const sampleNumbers = (page: Page, n: number): Promise<SpritesView['damageNumbers'][]> =>
+  page.evaluate(async (count) => {
+    const out: SpritesView['damageNumbers'][] = [];
+    for (let i = 0; i < count; i += 1) {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      const d = (window as unknown as Probe).__sprint?.sprites?.damageNumbers;
+      if (d) out.push({ ...d });
+    }
+    return out;
+  }, n);

@@ -11,7 +11,7 @@ function rules(hitWindowTicks = 15, maxHitsPerTick = 48): CombatRules {
 
 /** Copia de los registros de la ventana del tick k (los registros se reutilizan). */
 function window(log: HitLog, k: number) {
-  const out: Omit<HitRecord, 'target' | 'view'>[] = [];
+  const out: Omit<HitRecord, 'view'>[] = [];
   log.forWindow(k, (r) => {
     const { id, tick, kind, targetId, x, y, amount } = r;
     out.push({ id, tick, kind, targetId, x, y, amount });

@@ -4,8 +4,8 @@ import type { CombatRules } from './CombatRules';
 import type { HitKind, TargetHitKind } from './HitKind';
 
 /**
- * Registro de un golpe (mutable y reutilizable dentro del anillo de `HitLog`, ADR-0003): escalares,
- * el objetivo del tick (solo para sumar por referencia) y su vista congelada, creada una vez.
+ * Registro de un golpe (mutable y reutilizable dentro del anillo de `HitLog`, ADR-0003): escalares
+ * y su vista congelada, creada una vez.
  */
 export class HitRecord {
   id = -1;
@@ -16,7 +16,6 @@ export class HitRecord {
   x = 0;
   y = 0;
   amount = 0;
-  target: WeaponTarget | null = null;
   view: HitSnapshot | null = null;
 }
 
@@ -31,12 +30,12 @@ export class HitLog {
   private readonly ring: HitRecord[] = [];
   /** Registros escritos en la partida (el siguiente va a `written % capacidad`). */
   private written = 0;
-  /** Primer registro del tick abierto (índice absoluto). */
-  private tickStart = 0;
   private current = -1;
   private ids = 0;
   /** Golpes de no jugador del tick abierto (tope `maxHitsPerTick`; el del jugador va aparte). */
   private targets = 0;
+  /** Registro de cada objetivo con golpe en el tick abierto (suma por referencia en O(1)). */
+  private readonly inTick = new Map<WeaponTarget, HitRecord>();
 
   constructor(private readonly rules: CombatRules | null) {
     const capacity = rules ? rules.hitWindowTicks * (rules.maxHitsPerTick + 1) : 0;
@@ -56,8 +55,8 @@ export class HitLog {
   /** Abre el tick n: los golpes siguientes son de ese tick. */
   begin(n: number): void {
     this.current = n;
-    this.tickStart = this.written;
     this.targets = 0;
+    if (this.inTick.size > 0) this.inTick.clear();
   }
 
   /**
@@ -70,7 +69,7 @@ export class HitLog {
     const applied = before - t.hp;
     if (applied <= 0 || this.ring.length === 0) return killed;
     if (n !== this.current) this.begin(n);
-    const own = this.find(t);
+    const own = this.inTick.get(t);
     if (own) {
       own.amount += applied;
       return killed;
@@ -84,7 +83,7 @@ export class HitLog {
     r.x = t.x;
     r.y = t.y;
     r.amount = applied;
-    r.target = t;
+    this.inTick.set(t, r);
     r.tick = n;
     return killed;
   }
@@ -113,23 +112,13 @@ export class HitLog {
     }
   }
 
-  private find(t: WeaponTarget): HitRecord | undefined {
-    const size = this.ring.length;
-    for (let i = this.tickStart; i < this.written; i++) {
-      const r = this.ring[i % size];
-      if (r?.target === t) return r;
-    }
-    return undefined;
-  }
-
-  /** Ocupa el siguiente registro del anillo con un id nuevo (borra su objetivo y su vista). */
+  /** Ocupa el siguiente registro del anillo con un id nuevo (borra su vista). */
   private next(): HitRecord {
     const r = this.ring[this.written % this.ring.length];
     if (!r) throw new Error('Invariante rota: registro de golpes vacío');
     this.written += 1;
     r.id = this.ids;
     this.ids += 1;
-    r.target = null;
     r.view = null;
     return r;
   }
