@@ -17,7 +17,7 @@ bloquea el audio hasta un gesto. La CSP es estricta. Y el guardarraíl de proced
    la limitación por tipo en lógica pura.
 3. **Diff en el adaptador + un módulo propio sobre Web Audio**: da control total, pero repite el desbloqueo, la
    carga, la reserva HTML5, el mute y la reanudación en iOS que ya trae Phaser.
-4. **Síntesis en tiempo real sin ficheros**: sin assets, pero no cumple «ficheros CC0 con procedencia» y la música
+4. **Síntesis en tiempo real sin ficheros**: sin assets, pero no cumple «ficheros con licencia abierta y procedencia» y la música
    medieval no resulta creíble.
 
 ## Decisión
@@ -33,7 +33,10 @@ Opción 2.
   sin cargar), la muda de `?e2e` y la no disponible para navegadores sin Web Audio.
 - Con `?e2e` o sin Web Audio va `audio.noAudio`, sin camino HTML5 Audio. La carga va en una escena técnica en
   paralelo y no retrasa el menú. `pauseOnBlur` se apaga y la pestaña oculta se trata con `HIDDEN`/`VISIBLE`.
-- El audio es **solo CC0**. Cada fichero tiene su entrada en la lista `sounds[]` de `content/asset-provenance.json`,
+- El audio es **CC0, CC-BY-3.0 o CC-BY-4.0**; otras licencias (NC, SA, ND, otras versiones) se rechazan. Cada
+  entrada CC-BY tiene su atribución (título, autor, URL y licencia literales) en una línea de `CREDITS.md`, que
+  `guard-assets` también vigila (commit y CI) y que el `README.md` enlaza. El juego no muestra créditos. Cada
+  fichero tiene su entrada en la lista `sounds[]` de `content/asset-provenance.json`,
   con URL `https` de `kenney.nl`, `opengameart.org` o `freesound.org`, y `guard-assets` lo vigila en
   `public/assets/audio/`. El audio no cabe en `files[]`, `fonts[]` ni `generated[]`. El tope de peso (6 MB, 6.291.456 bytes; `.ogg`, `.mp3`, `.wav` y `.flac`) lo comprueba un
   test del repositorio dentro de `verify`.

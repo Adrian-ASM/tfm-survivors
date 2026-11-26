@@ -96,8 +96,9 @@
   regenerarlas, y `git diff --stat main -- src/domain src/application` sale vacío. Actualizar AGENTS.md §1 (estado
   0035) y la entrada del diario de IA.
 
-## 6. Assets CC0 del autor (ficheros entregados; spec rev. e45b9dd, design rev. 3)
-<!-- Un commit y `verify` completo por tarea. 6.0 va antes que 6.1: los ficheros reales usan los 12 tipos y FLAC. -->
+## 6. Assets del autor (ficheros entregados; design rev. 3 y 4)
+<!-- Un commit y `verify` completo por tarea. Orden 6.0 → 6.0b → 6.1 → 6.2: los ficheros reales usan los 12 tipos y
+     FLAC, y las entradas CC-BY necesitan la regla de CREDITS.md antes de registrarse. -->
 - [x] 6.0 Retoque por los cambios tras el gate (design D2, D5, D13, D14). TDD en `AudioCues` y `EffectMixer`;
   test-after en el resto.
   - `effectTypes.ts`: `pickup` se sustituye por `pickupGold`, `pickupStone` y `pickupWood`, en el orden de la spec
@@ -115,20 +116,41 @@
   registrar" y "Mayúsculas en la extensión" con un `.flac`/`.FLAC`.
 
   Tests: `audio-cues`, `effect-mixer`, `audio-content`, `audio-files`, `assets` y `gameplay.spec` (filtro).
-- [ ] 6.1 Ficheros reales (design D16).
+- [ ] 6.0b Licencias y créditos en el guardarraíl, sin ficheros reales (design D13.3 y D13.7). Test-after.
+  - `guard-assets.mjs`: `AUDIO_LICENSES` (`CC0`, `CC-BY-3.0`, `CC-BY-4.0`) en lugar de `CC0` exacto.
+    `checkAssets({ ..., credits })` con `CREDITS_PATH`: una línea de `CREDITS.md` con título, autor, URL y
+    licencia literales por cada entrada CC-BY; si falta `CREDITS.md` y hay entradas CC-BY, falla.
+  - `scripts/guard-staged.mjs`: lee `CREDITS.md` del índice (en `wanted`) y lo pasa como `credits`. `guard:all`
+    también.
+  - `tests/guardrails/credits-link.test.ts` (nuevo, sobre el repositorio): enlace del `README.md` a `CREDITS.md` y
+    `CREDITS.md` en la raíz. Si aún no existen, crear `CREDITS.md` mínimo (cabecera, sin entradas) y añadir el enlace
+    en el `README.md`.
+
+  Escenarios de `asset-provenance`: "Licencias admitidas", "Licencia de audio rechazada" (8 casos), "Registro de
+  audio incompleto o incorrecto" (rev.: `CC-BY-NC-4.0`), "Entrada CC-BY sin línea en los créditos" (5 casos),
+  "Créditos ausentes", "Solo CC0 sin créditos", "CC0 sin línea en los créditos" y "Enlace desde el README".
+
+  Tests: `tests/guardrails/assets.test.ts` (nota, lista y `credits` simulados), `guard-staged` (ampliado: `credits`
+  del índice) y `credits-link`.
+- [ ] 6.1 Ficheros reales y `CREDITS.md` (design D16).
   - Copiar los 11 ficheros de `C:\Users\Adri\TFM\` a `public/assets/audio/` con los nombres kebab-case de D16, sin
-    recodificar.
-  - Añadir 11 entradas `sounds[]` con título, autor, URL `https` de `kenney.nl`, `opengameart.org` o `freesound.org`,
-    `CC0`, fecha de descarga, sha256 y bytes medidos. Los datos de procedencia los da el autor; si falta alguno,
-    preguntar y no inventarlo.
+    recodificar. La obra es el `build.mp3` nuevo de faseer (CC0, 16.008 B) y la subida es el `level_up.wav`
+    sustituido (119.114 B).
+  - Escribir primero en `CREDITS.md` la línea de cada entrada CC-BY (título, autor, URL y licencia, iguales que en la
+    nota) y después añadir 11 entradas `sounds[]`. Cada entrada lleva título, autor, URL `https` de `kenney.nl`,
+    `opengameart.org` o `freesound.org`, licencia (`CC0`/`CC-BY-3.0`/`CC-BY-4.0`, según la tabla 8 del proposal y la
+    obra nueva), fecha de descarga, sha256 y bytes medidos.
+  - Los datos de procedencia los da el autor: autor de `enemy-death.wav` y de `receive-hit.flac`, y datos del
+    `level-up.wav` nuevo. Si falta alguno, preguntar y no inventarlo.
   - Rellenar los `file` de `audio.json`: compartidos `arrow-impact.mp3` (`impactWeapon` e `impactTower`) y
     `explosion.wav` (`explosion` e `impactBlast`).
   - **Endurecer el esquema** (`file` obligatorio; test «null inválido»).
 
   Escenarios: de `audio`: "Contenido por defecto válido" (12 entradas y 11 ficheros distintos), "Fichero compartido"
   (se pide 1 vez, ganancia propia), "Fichero compartido que no carga", "Todos usados" y "Tope de peso" (real:
-  5.093.480 ≤ 6.291.456). De `asset-provenance`: "Audio del repositorio registrado", "Nota del repositorio" (lista de
-  audio ≥ 1), "Estado real del repositorio" y "Audio registrado solo como audio".
+  ≈ 4,93 MB ≤ 6.291.456). De `asset-provenance`: "Audio del repositorio registrado", "Nota del repositorio" (lista de
+  audio ≥ 1), "Estado real del repositorio", "Audio registrado solo como audio" y "Créditos del repositorio
+  completos".
 
   Tests: `audio-content`, `audio-plan` (`audioFilesToLoad`), `phaser-sound-out` (compartido que falla), `assets` y
   `audio-files` sobre el repositorio, y `npm run guard:all`. Comprobar de nuevo que `BALANCE_BASELINE` y las firmas
@@ -138,6 +160,7 @@
   - cada efecto suena en su suceso, con FLAC para `playerHurt`, WAV de 24 bits para `enemyDeath` y WAV con chunks
     extra para `explosion`;
   - el panel `Sonido` y M actúan;
+  - el juego no muestra créditos y el enlace del `README.md` a `CREDITS.md` funciona en GitHub;
   - la consola sale sin violaciones de CSP ni errores (requisito "Audio observable en el navegador", criterio de éxito
     del proposal).
 

@@ -6,6 +6,8 @@
 > Revisión 3 (tras los ficheros del autor, proposal «Cambios aprobados tras el gate»): 12 tipos (la recogida pasa a
 > `pickupGold`/`pickupStone`/`pickupWood`), ficheros compartidos, `.flac`, tope de 6.291.456 bytes y nombres de
 > fichero (D16).
+> Revisión 4 (proposal, decisiones 6–8): licencias `CC0`/`CC-BY-3.0`/`CC-BY-4.0`, `CREDITS.md` vigilado por
+> `guard-assets` (D13.7) con el enlace del README en un test, obra sustituida (faseer, CC0) y `level-up.wav` nuevo.
 
 ## Resumen
 El audio va entero en el adaptador. Una pieza pura (`AudioCues`) compara cada snapshot procesado con el anterior de
@@ -15,7 +17,8 @@ adaptador y con el tope de voces según los efectos que suenan. La música la de
 reproducción va tras una interfaz `SoundOut` con tres implementaciones: **Phaser Sound** (Web Audio del motor), una
 salida muda para `?e2e` y una salida no disponible para navegadores sin Web Audio. Los ajustes se guardan en
 `localStorage` con zod. Un panel modal DOM `Sonido` se abre desde el menú y desde la pausa, con la tecla M y un
-botón de silencio en la `TouchBar`. El guardarraíl gana una lista de audio solo CC0. El núcleo no se toca.
+botón de silencio en la `TouchBar`. El guardarraíl gana una lista de audio con licencias `CC0`, `CC-BY-3.0` o `CC-BY-4.0`. La atribución de cada
+entrada CC-BY va en una línea de `CREDITS.md`, que también vigila el guardarraíl (rev. 4). El núcleo no se toca.
 
 Vía de consulta de Phaser: MCP `phaser-docs` (la API publicada es la v4.1.0) y, como manda la 4.2.1 instalada, el
 fuente y los tipos de `node_modules/phaser`:
@@ -240,12 +243,26 @@ admitir ninguno más (`attribution` falla). Reglas, con mensajes que nombran la 
 1. Todo audio versionado (`AUDIO = /\.(ogg|mp3|wav|flac)$/i`, con `.flac` desde la rev. 3) tiene entrada en
    `sounds[]`.
 2. Cada entrada tiene su fichero versionado, con sha256 y bytes iguales, y no se repite.
-3. `license === 'CC0'`. `url` con esquema `https:` y host `kenney.nl`, `opengameart.org` o `freesound.org`, con o
+3. `license` es exactamente uno de `AUDIO_LICENSES = ['CC0', 'CC-BY-3.0', 'CC-BY-4.0']` (rev. 4; falla con NC, SA,
+   ND, `CC-BY-2.0`, `cc0` y licencias desconocidas). `url` con esquema `https:` y host `kenney.nl`, `opengameart.org` o `freesound.org`, con o
    sin `www.` (se analiza con `new URL`). `downloadedOn` es una fecha de calendario (`isCalendarDate`).
 4. La ruta está bajo `public/assets/audio/`. Esto también va en `pathProblems`, así que el modo hook lo ve.
 5. Una ruta figura una sola vez en el conjunto `files`/`fonts`/`generated`/`sounds`, y un audio en `files[]` o
    `generated[]` falla.
 6. Los comprimidos ya estaban prohibidos.
+
+7. **Créditos** (rev. 4, spec «Créditos del audio con atribución»). Por cada entrada `CC-BY-*`, `CREDITS.md` tiene
+   una **misma línea** (separando por `\r?\n`) que contiene, como subcadenas literales, `title`, `author`, `url` y
+   `license` de la nota. Si no la hay, falla con un mensaje que nombra la ruta del audio y `CREDITS.md`. Si hay alguna
+   entrada CC-BY y `CREDITS.md` no está versionado, falla con un mensaje que nombra `CREDITS.md` y las rutas CC-BY.
+   Las entradas `CC0` y las líneas sin entrada no se exigen. `checkAssets` sigue siendo pura: recibe un campo nuevo
+   `credits: string | undefined` (`CREDITS_PATH = 'CREDITS.md'`). En pre-commit, `scripts/guard-staged.mjs` lo lee
+   del índice, junto con la nota y los binarios (añadir `CREDITS.md` a `wanted`), y en `guard:all` del árbol
+   versionado. Así bloquea el commit, no solo el CI. Si un hook de escritura llega a validar la nota, el orden
+   práctico es escribir primero la línea de `CREDITS.md` y después la entrada CC-BY.
+
+El enlace del `README.md` no es una regla de procedencia. Lo comprueba `tests/guardrails/credits-link.test.ts`: un
+enlace Markdown `](CREDITS.md)` o `](./CREDITS.md)` y `CREDITS.md` en la raíz. El juego no muestra créditos.
 
 `registeredPaths` no incluye `sounds[]` (un audio no vale como hoja). `soundPaths(note)` es una función aparte.
 Tests en `tests/guardrails/assets.test.ts`, con listas y digests falsos. La regla «lista de audio ≥ 1 entrada» de la
@@ -255,7 +272,7 @@ spec («Nota del repositorio») se comprueba sobre el repositorio y queda bloque
 usados y peso»). Una función pura `audioFileProblems(files, sizes, audioContent)` comprueba dos cosas:
 - que cada audio versionado está citado y cada fichero citado está versionado;
 - que la suma de bytes es ≤ `AUDIO_MAX_BYTES` = **6.291.456** (6 MB, rev. 3; el mensaje da el total). Con los
-  ficheros del autor suman 5.093.480. «Todos usados» se comprueba por fichero: 11 ficheros distintos, 1 de música y
+  ficheros del autor suman unos 4,93 MB (rev. 4, con la obra y la subida sustituidas). «Todos usados» se comprueba por fichero: 11 ficheros distintos, 1 de música y
   10 de efectos.
 
 El test usa la misma extensión de audio que el hook (con `.flac`).
@@ -280,9 +297,14 @@ fichero descargado.
 | `get_gold.mp3` | `public/assets/audio/get-gold.mp3` | `pickupGold` |
 | `get_stone.wav` | `public/assets/audio/get-stone.wav` | `pickupStone` |
 | `get_wood.wav` | `public/assets/audio/get-wood.wav` | `pickupWood` |
-| `level_up.wav` | `public/assets/audio/level-up.wav` | `levelUp` |
+| `level_up.wav` (sustituido, 119.114 B) | `public/assets/audio/level-up.wav` | `levelUp` |
 | `buy_item.wav` | `public/assets/audio/buy-item.wav` | `purchase` |
-| `build.mp3` | `public/assets/audio/build.mp3` | `build` |
+| `build.mp3` (sustituido, 16.008 B: Freesound «house building», faseer, CC0, `https://freesound.org/people/faseer/sounds/171955/`) | `public/assets/audio/build.mp3` | `build` |
+
+Las licencias y la atribución por fichero son las de la tabla 8 del proposal más la obra sustituida. Las entradas
+CC-BY (`explosion.wav` CC-BY-3.0; `get-wood.wav`, `buy-item.wav` y, si sigue siéndolo tras sustituirse,
+`level-up.wav` CC-BY-4.0) llevan su línea en `CREDITS.md`. Los autores pendientes (`enemy-death.wav` y
+`receive-hit.flac`) y los datos del `level-up.wav` nuevo los confirma el autor antes de 6.1. No se inventan.
 
 Compatibilidad, a comprobar a mano en 6.2:
 - `decodeAudioData` admite WAV PCM de 24 bits en estéreo e ignora los chunks extra de la cabecera (`explosion.wav`)
