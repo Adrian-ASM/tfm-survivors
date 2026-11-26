@@ -35,7 +35,7 @@ Opción 2.
   paralelo y no retrasa el menú. `pauseOnBlur` se apaga y la pestaña oculta se trata con `HIDDEN`/`VISIBLE`.
 - El audio es **solo CC0**. Cada fichero tiene su entrada en la lista `sounds[]` de `content/asset-provenance.json`,
   con URL `https` de `kenney.nl`, `opengameart.org` o `freesound.org`, y `guard-assets` lo vigila en
-  `public/assets/audio/`. El audio no cabe en `files[]`, `fonts[]` ni `generated[]`. El tope de 2 MB lo comprueba un
+  `public/assets/audio/`. El audio no cabe en `files[]`, `fonts[]` ni `generated[]`. El tope de peso (6 MB, 6.291.456 bytes; `.ogg`, `.mp3`, `.wav` y `.flac`) lo comprueba un
   test del repositorio dentro de `verify`.
 
 ## Consecuencias

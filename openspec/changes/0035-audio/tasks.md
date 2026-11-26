@@ -96,13 +96,49 @@
   regenerarlas, y `git diff --stat main -- src/domain src/application` sale vacío. Actualizar AGENTS.md §1 (estado
   0035) y la entrada del diario de IA.
 
-## 6. Assets CC0 del autor (BLOQUEADO hasta la entrega)
-- [ ] 6.1 **[bloqueada por los assets]** Copiar los ficheros a `public/assets/audio/` sin recodificar, añadir sus
-  entradas `sounds[]` (título, autor, URL, `CC0`, fecha, sha256 y bytes), rellenar los `file` de `audio.json` y
-  **endurecer el esquema** (`file` obligatorio; test «null inválido») — escenarios: "Contenido por defecto válido"; de
-  `asset-provenance`: "Audio del repositorio registrado", "Nota del repositorio" (lista de audio ≥ 1), "Estado real
-  del repositorio" y "Audio registrado solo como audio"; de `audio`: "Todos usados" y "Tope de peso" (≤ 2.097.152 bytes
-  reales). Tests: `audio-content`, `assets` y `audio-files` sobre el repositorio, y `npm run guard:all`.
-- [ ] 6.2 **[bloqueada por los assets]** Comprobación a mano en `npm run build` + `vite preview` sin `?e2e`: la música
-  suena al pulsar Jugar, los efectos al jugar, el panel y M actúan, y la consola sale sin violaciones de CSP ni errores
-  (requisito "Audio observable en el navegador", criterio de éxito del proposal). Se anota en el verify-report.
+## 6. Assets CC0 del autor (ficheros entregados; spec rev. e45b9dd, design rev. 3)
+<!-- Un commit y `verify` completo por tarea. 6.0 va antes que 6.1: los ficheros reales usan los 12 tipos y FLAC. -->
+- [ ] 6.0 Retoque por los cambios tras el gate (design D2, D5, D13, D14). TDD en `AudioCues` y `EffectMixer`;
+  test-after en el resto.
+  - `effectTypes.ts`: `pickup` se sustituye por `pickupGold`, `pickupStone` y `pickupWood`, en el orden de la spec
+    (12 tipos), con la constante `PICKUP_EFFECT` (clase → tipo).
+  - `AudioCues`: el anterior guarda `Map<id, PickupKind>` y cuenta por tipo de recogida.
+  - `content/audio.json`: 12 entradas (`file: null` hasta 6.1). Revisar sonda y `byType`.
+  - `audio-files.test.ts`: `AUDIO_MAX_BYTES` = 6.291.456 y `.flac`.
+  - `guard-assets.mjs`: `AUDIO` con `.flac`. `audioSchema`: `AUDIO_FILE` con `flac`.
+  - Filtro de peticiones de red del E2E de 5.1 con `.flac`.
+
+  Escenarios de `audio`: "Recogidas y despeje" (rev.), "Una recogida por tipo de recurso", "Relleno al tope no es
+  recogida" (rev.), "Recogidas a igual prioridad con una voz libre", "Tope con voces ocupadas" (rev.), "Fichero que no
+  carga" (rev., `pickupStone`), "Valores fuera de rango" (`pickupWood`), "Tipo de efecto ausente o desconocido" (12
+  tipos) y "Tope de peso" (simulado: 6.291.457 falla y exactamente 6.291.456 pasa). De `asset-provenance`: "Audio sin
+  registrar" y "Mayúsculas en la extensión" con un `.flac`/`.FLAC`.
+
+  Tests: `audio-cues`, `effect-mixer`, `audio-content`, `audio-files`, `assets` y `gameplay.spec` (filtro).
+- [ ] 6.1 Ficheros reales (design D16).
+  - Copiar los 11 ficheros de `C:\Users\Adri\TFM\` a `public/assets/audio/` con los nombres kebab-case de D16, sin
+    recodificar.
+  - Añadir 11 entradas `sounds[]` con título, autor, URL `https` de `kenney.nl`, `opengameart.org` o `freesound.org`,
+    `CC0`, fecha de descarga, sha256 y bytes medidos. Los datos de procedencia los da el autor; si falta alguno,
+    preguntar y no inventarlo.
+  - Rellenar los `file` de `audio.json`: compartidos `arrow-impact.mp3` (`impactWeapon` e `impactTower`) y
+    `explosion.wav` (`explosion` e `impactBlast`).
+  - **Endurecer el esquema** (`file` obligatorio; test «null inválido»).
+
+  Escenarios: de `audio`: "Contenido por defecto válido" (12 entradas y 11 ficheros distintos), "Fichero compartido"
+  (se pide 1 vez, ganancia propia), "Fichero compartido que no carga", "Todos usados" y "Tope de peso" (real:
+  5.093.480 ≤ 6.291.456). De `asset-provenance`: "Audio del repositorio registrado", "Nota del repositorio" (lista de
+  audio ≥ 1), "Estado real del repositorio" y "Audio registrado solo como audio".
+
+  Tests: `audio-content`, `audio-plan` (`audioFilesToLoad`), `phaser-sound-out` (compartido que falla), `assets` y
+  `audio-files` sobre el repositorio, y `npm run guard:all`. Comprobar de nuevo que `BALANCE_BASELINE` y las firmas
+  quedan idénticas y que `src/domain` y `src/application` no cambian.
+- [ ] 6.2 Comprobación a mano en `npm run build` + `vite preview` sin `?e2e` (Chromium y, si se puede, Firefox):
+  - la música (`song.mp3`) suena al pulsar Jugar y en bucle;
+  - cada efecto suena en su suceso, con FLAC para `playerHurt`, WAV de 24 bits para `enemyDeath` y WAV con chunks
+    extra para `explosion`;
+  - el panel `Sonido` y M actúan;
+  - la consola sale sin violaciones de CSP ni errores (requisito "Audio observable en el navegador", criterio de éxito
+    del proposal).
+
+  Se anota en el verify-report con navegador y versión. Actualizar AGENTS.md §1 (ficheros, 12 tipos y tope de 6 MB).

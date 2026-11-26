@@ -3,10 +3,13 @@
 > Revisión 2: contrastado con las 8 specs delta del change (`audio`, `asset-provenance`, `main-menu`, `menu-guide`,
 > `touch-controls`, `mobile-display`, `world-camera` y `simulation-loop`). Al final van las diferencias con la
 > versión 1 y los conflictos con la spec.
+> Revisión 3 (tras los ficheros del autor, proposal «Cambios aprobados tras el gate»): 12 tipos (la recogida pasa a
+> `pickupGold`/`pickupStone`/`pickupWood`), ficheros compartidos, `.flac`, tope de 6.291.456 bytes y nombres de
+> fichero (D16).
 
 ## Resumen
 El audio va entero en el adaptador. Una pieza pura (`AudioCues`) compara cada snapshot procesado con el anterior de
-la misma partida y saca las **peticiones** de los 10 tipos de efecto. Otra pieza pura (`EffectMixer`) decide cuáles
+la misma partida y saca las **peticiones** de los 12 tipos de efecto. Otra pieza pura (`EffectMixer`) decide cuáles
 se reproducen: como mucho 1 por tipo y snapshot, con un intervalo mínimo medido con el **reloj de render** del
 adaptador y con el tope de voces según los efectos que suenan. La música la decide la función pura `musicState`. La
 reproducción va tras una interfaz `SoundOut` con tres implementaciones: **Phaser Sound** (Web Audio del motor), una
@@ -56,7 +59,7 @@ spec, «Sucesos de audio desde el snapshot»:
 | `playerHurt` | golpes con `id > lastHitId` y `kind === 'player'` |
 | `impactWeapon` / `impactTower` / `impactBlast` | golpes nuevos de clase `enemy`/`structure`/`sheep`, con el tipo que da D3 |
 | `enemyDeath` | `max(0, kills − killsPrev)` |
-| `pickup` | ids del `pickups` anterior que faltan en el actual; **0** si en ese snapshot algún solar pasó de `free` a construido |
+| `pickupGold` / `pickupStone` / `pickupWood` | ids del `pickups` anterior que faltan en el actual, cada uno con el tipo de recogida de su clase (`xp`, `gold` y `meat` → `pickupGold`; `stone` → `pickupStone`; `wood` → `pickupWood`). Ninguno si en ese snapshot algún solar pasó de `free` a construido |
 | `levelUp` | `max(0, level − levelPrev)` |
 | `explosion` | blasts con `id > lastBlastId` |
 | `purchase` | 1 si `shop.open` (anterior o actual) y `shop.gold < goldPrev` |
@@ -64,7 +67,9 @@ spec, «Sucesos de audio desde el snapshot»:
 
 Los ids de golpes y explosiones crecen y no se reutilizan (ADR-0027, `BlastSnapshot`), así que basta con guardar el
 último id visto. Para los ids de recogibles y de proyectiles hay dos `Set` que se alternan y se vacían, sin reservar
-memoria por frame. **Referencia**: `newRun()` (D6) hace que el siguiente snapshot solo siembre el estado y dé 0
+memoria por frame. Como el tipo de recogida depende de la clase de un recogible que ya no está en el snapshot
+actual, el `Set` del anterior pasa a ser un `Map<id, PickupKind>` reutilizado. La tabla de clase a tipo es la
+constante `PICKUP_EFFECT` de `effectTypes.ts`, sin números ni ramas sueltas (rev. 3). **Referencia**: `newRun()` (D6) hace que el siguiente snapshot solo siembre el estado y dé 0
 peticiones. Un snapshot igual al anterior da 0 por construcción.
 
 **D3. Origen del impacto** (pura, en `AudioCues`). Por golpe nuevo de clase no jugador, en este orden:
@@ -110,21 +115,29 @@ de `onRender`**, que es el único cambio de firma en la escena.
   "maxVoices": 8,
   "towerMatchPx": 24,
   "defaults": { "music": 50, "effects": 80, "muted": false },
-  "music": { "file": null },
+  "music": { "file": "song.mp3" },
   "effects": {
-    "playerHurt":   { "file": null, "priority": 10, "minIntervalMs": 120, "gain": 0.9 },
-    "impactWeapon": { "file": null, "priority": 2,  "minIntervalMs": 40,  "gain": 0.5 },
-    "impactTower":  { "...": "..." }, "impactBlast": {}, "enemyDeath": {}, "pickup": {},
-    "levelUp": {}, "explosion": {}, "purchase": { "minIntervalMs": 0 }, "build": {}
+    "playerHurt":   { "file": "receive-hit.flac", "priority": 10, "minIntervalMs": 120, "gain": 0.9 },
+    "impactWeapon": { "file": "arrow-impact.mp3", "priority": 2,  "minIntervalMs": 40,  "gain": 0.5 },
+    "impactTower":  { "file": "arrow-impact.mp3", "...": "..." },
+    "impactBlast":  { "file": "explosion.wav" }, "enemyDeath": { "file": "enemy-death.wav" },
+    "pickupGold": { "file": "get-gold.mp3" }, "pickupStone": { "file": "get-stone.wav" },
+    "pickupWood": { "file": "get-wood.wav" }, "levelUp": { "file": "level-up.wav" },
+    "explosion": { "file": "explosion.wav" }, "purchase": { "file": "buy-item.wav", "minIntervalMs": 0 },
+    "build": { "file": "build.mp3" }
   }
 }
 ```
 Los valores de arriba son orientativos y el implementer los fija en el JSON. Reglas:
-- `effects` es un objeto estricto con exactamente las 10 claves. Si falta una, el error tiene ruta `effects.build`;
-  si sobra `jump`, zod la nombra como clave desconocida.
+- `effects` es un objeto estricto con exactamente las **12** claves (rev. 3: `pickup` se parte en `pickupGold`,
+  `pickupStone` y `pickupWood`). Si falta una, el error tiene ruta `effects.build`; si sobra `jump`, zod la nombra
+  como clave desconocida.
+- Varios tipos pueden citar el mismo `file` (`impactWeapon`/`impactTower` y `explosion`/`impactBlast`). Cada uno
+  usa su propia `gain`, y el fichero se pide una sola vez (`audioFilesToLoad`, una clave de caché por fichero:
+  `audioKey(file)`). Si ese fichero falla, `canPlay` es falso para todos los tipos que lo usan.
 - `priority` es un entero; `minIntervalMs` es un entero ≥ 0; `gain` ∈ [0, 1]; `maxVoices` es un entero ≥ 1;
   `towerMatchPx` > 0; `defaults.music` y `defaults.effects` son enteros en [0, 100].
-- `file` es un nombre plano `^[a-z0-9-]+\.(ogg|mp3|wav)$`, relativo a `public/assets/audio/`.
+- `file` es un nombre plano `^[a-z0-9-]+\.(ogg|mp3|wav|flac)$`, relativo a `public/assets/audio/`.
 - Cruce al arrancar (en `bootContent`, antes de la guía, con el `report` de siempre): cada `file` está en la lista
   de audio de la nota (`soundPaths(note)`). Si no, `AUDIO_NOT_REGISTERED` en `effects.<tipo>.file` con la ruta.
 
@@ -224,7 +237,8 @@ Sin `?e2e` no existe.
 **D13. Procedencia** (`.claude/hooks/guard-assets.mjs`, `checkAssets` sigue pura). La nota gana la lista
 **`sounds[]`**, con los campos `path`, `title`, `author`, `url`, `license`, `downloadedOn`, `sha256` y `bytes`, sin
 admitir ninguno más (`attribution` falla). Reglas, con mensajes que nombran la ruta y el campo:
-1. Todo audio versionado (`AUDIO = /\.(ogg|mp3|wav)$/i`) tiene entrada en `sounds[]`.
+1. Todo audio versionado (`AUDIO = /\.(ogg|mp3|wav|flac)$/i`, con `.flac` desde la rev. 3) tiene entrada en
+   `sounds[]`.
 2. Cada entrada tiene su fichero versionado, con sha256 y bytes iguales, y no se repite.
 3. `license === 'CC0'`. `url` con esquema `https:` y host `kenney.nl`, `opengameart.org` o `freesound.org`, con o
    sin `www.` (se analiza con `new URL`). `downloadedOn` es una fecha de calendario (`isCalendarDate`).
@@ -240,13 +254,44 @@ spec («Nota del repositorio») se comprueba sobre el repositorio y queda bloque
 **D14. Peso y uso** (`tests/guardrails/audio-files.test.ts`, en `verify`, como pide la spec «Ficheros de audio
 usados y peso»). Una función pura `audioFileProblems(files, sizes, audioContent)` comprueba dos cosas:
 - que cada audio versionado está citado y cada fichero citado está versionado;
-- que la suma de bytes es ≤ `AUDIO_MAX_BYTES` = 2.097.152 (el mensaje da el total).
+- que la suma de bytes es ≤ `AUDIO_MAX_BYTES` = **6.291.456** (6 MB, rev. 3; el mensaje da el total). Con los
+  ficheros del autor suman 5.093.480. «Todos usados» se comprueba por fichero: 11 ficheros distintos, 1 de música y
+  10 de efectos.
+
+El test usa la misma extensión de audio que el hook (con `.flac`).
 
 Se ejecuta sobre `git ls-files` y sobre listas simuladas.
 
 **D15. CSP sin cambios.** El audio carga por XHR (`connect-src 'self'`) y decodifica un `ArrayBuffer`, sin `blob:`
 ni `data:`. No hay `<audio>`, porque HTML5 Audio queda fuera (D1). `tests/guardrails/csp.test.ts` no cambia. Queda
 pendiente la comprobación con `build` + `preview` sin `?e2e` y con los ficheros reales (bloqueada por los assets).
+
+**D16. Ficheros del autor en `public/assets/audio/`** (rev. 3). Se renombran en kebab-case: la errata `recevie`
+pasa a `receive` y los `_` a `-`. No se recodifica ninguno, así que el sha256 y los bytes de la nota son los del
+fichero descargado.
+
+| Fichero del autor | Ruta en el repositorio | Tipos |
+|---|---|---|
+| `song.mp3` (3.289.143 B) | `public/assets/audio/song.mp3` | música |
+| `recevie_hit.flac` | `public/assets/audio/receive-hit.flac` | `playerHurt` |
+| `arrow-impact.mp3` | `public/assets/audio/arrow-impact.mp3` | `impactWeapon`, `impactTower` |
+| `explosion.wav` | `public/assets/audio/explosion.wav` | `explosion`, `impactBlast` |
+| `enemy_death.wav` | `public/assets/audio/enemy-death.wav` | `enemyDeath` |
+| `get_gold.mp3` | `public/assets/audio/get-gold.mp3` | `pickupGold` |
+| `get_stone.wav` | `public/assets/audio/get-stone.wav` | `pickupStone` |
+| `get_wood.wav` | `public/assets/audio/get-wood.wav` | `pickupWood` |
+| `level_up.wav` | `public/assets/audio/level-up.wav` | `levelUp` |
+| `buy_item.wav` | `public/assets/audio/buy-item.wav` | `purchase` |
+| `build.mp3` | `public/assets/audio/build.mp3` | `build` |
+
+Compatibilidad, a comprobar a mano en 6.2:
+- `decodeAudioData` admite WAV PCM de 24 bits en estéreo e ignora los chunks extra de la cabecera (`explosion.wav`)
+  en Chromium y Firefox.
+- FLAC lo decodifican Chromium, Firefox y Safari ≥ 11. Phaser comprueba `device.audio.flac` con `canPlayType`. Si
+  el navegador no lo admite, `load.audio` no lo encola (`console.warn`) y `playerHurt` se queda sin sonido, sin
+  errores.
+- La música es el 65 % del peso. Su PCM decodificado ocupa mucha memoria (≈ 10 MB por minuto en float32 estéreo);
+  se acepta.
 
 ## Piezas por capa
 | Capa | Pieza | Nueva/Mod. | Notas |
@@ -293,8 +338,9 @@ sequenceDiagram
 - **Por render**: O(golpes nuevos + recogibles + proyectiles), con ≤ 49 golpes por tick, ≤ 436 recogibles y
   ≤ 15 ticks por frame. Sin reservar memoria por frame. Objetivo < 0,1 ms.
 - **Motor**: ≤ `maxVoices` efectos a la vez y pools perezosos y acotados.
-- **Memoria**: el PCM decodificado ocupa mucho más que el OGG (60 s estéreo ≈ 21 MB en float32). Se recomienda una
-  música ≤ 90 s.
+- **Memoria**: el PCM decodificado ocupa mucho más que el fichero comprimido (60 s estéreo ≈ 21 MB en float32).
+  Ver D16 para la música real.
+- **Peso**: ≤ 6.291.456 bytes de audio en `public/` (5.093.480 con los ficheros del autor).
 - **Entradas externas**: los ajustes de `localStorage`, `audio.json` y la nota pasan por zod y por el
   guardarraíl. No hay red de terceros y la CSP no cambia.
 
@@ -316,7 +362,7 @@ sequenceDiagram
    snapshot, no porque el tick avance (D2). `purchase` exige la tienda abierta.
 5. Los ajustes por defecto pasan a 50/80. Exportar, Importar y Borrar datos no los tocan (D9).
 6. La carga del audio sale de `BootScene.preload` a `AudioLoadScene` en paralelo, para no retrasar el menú (D8).
-   HTML5 Audio queda descartado (D1). El tope de 2 MB pasa del hook a un test (D14).
+   HTML5 Audio queda descartado (D1). El tope de peso pasa del hook a un test (D14): 2 MB en la rev. 2 y 6 MB en la rev. 3.
 7. **Conflicto 1**: la spec exige fichero en cada entrada y ≥ 1 audio en la nota. Se resuelve con `file: null`
    transitorio y una tarea final, bloqueada por los assets, que endurece el esquema.
 8. **Conflicto 2**: el E2E «Panel Sonido sin sonda» dice «se esperan 2 s», pero `logicGuard` prohíbe
