@@ -242,9 +242,14 @@ En modo móvil, la página SHALL comportarse como una aplicación a pantalla ent
 - la página declara `viewport-fit=cover` y los controles táctiles quedan fuera de las zonas seguras del dispositivo
   (ver "Barra táctil" en `touch-controls`).
 
-Todo ello MUST respetar la CSP actual: ningún elemento propio del documento (barra táctil, aviso de orientación,
-paneles y sus contenedores) tiene atributo `style` y no se registra ninguna violación de CSP. Se exceptúa el lienzo del
-motor, cuyos estilos escribe el motor por CSSOM, como ya hace en escritorio, sin violar la CSP. Sin modo móvil, lo que se ve y cómo responde la página al ratón y al teclado no cambia.
+Todo ello MUST respetar la CSP actual y no se registra ninguna violación de CSP. Ningún elemento propio del documento
+(barra táctil, aviso de orientación, paneles y sus contenedores) MUST tener atributo `style`, con dos excepciones que
+ya existen en escritorio:
+- el lienzo del motor, cuyos estilos escribe el motor por CSSOM;
+- el contenedor `#game`, siempre que su atributo `style` contenga solo propiedades personalizadas `--*` (las variables
+  de escala de UI y del kit de UI publicadas por CSSOM desde 0017 y 0032).
+
+Sin modo móvil, lo que se ve y cómo responde la página al ratón y al teclado no cambia.
 
 #### Scenario: Arrastre sin desplazar la página
 - **GIVEN** el modo móvil, una ventana de 844 × 390 y una partida en curso
@@ -253,9 +258,12 @@ motor, cuyos estilos escribe el motor por CSSOM, como ya hace en escritorio, sin
 
 #### Scenario: Sin estilos inline
 - **GIVEN** el modo móvil y, en otra carga, el modo de escritorio
-- **WHEN** se recorren el menú, una partida con la barra táctil, la pausa, el aviso de orientación y los resultados
-- **THEN** ningún elemento del documento salvo el lienzo del motor tiene atributo `style` (barra, aviso y paneles
-  incluidos) y no se registra ninguna violación de CSP
+- **WHEN** se recorren el menú, una partida (con la barra táctil en móvil), la pausa, el aviso de orientación (solo
+  en móvil) y los resultados
+- **THEN** en cada pantalla ningún elemento del documento tiene atributo `style` salvo el lienzo del motor y `#game`
+- **AND** el atributo `style` de `#game`, si existe, solo contiene propiedades cuyo nombre empieza por `--`
+- **AND** la barra, el aviso, los paneles y sus contenedores no tienen atributo `style` y no se registra ninguna
+  violación de CSP
 
 #### Scenario: Meta viewport
 - **GIVEN** la build de producción

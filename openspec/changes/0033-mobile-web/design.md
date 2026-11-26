@@ -291,8 +291,9 @@ las mismas llamadas que hoy.
   `setProperty` en `#game`, como hoy.
 
 ## 7. E2E (cierra el riesgo del arrastre) y dobles
-**Dos E2E nuevos** en `tests/e2e/gameplay.spec.ts` (proyecto `logic`, modo manual, sin umbrales de fps). Ningún test
-actual cambia, como pide el criterio de éxito de la propuesta.
+**Dos E2E nuevos** en `tests/e2e/gameplay.spec.ts` (proyecto `logic`, modo manual, sin umbrales de fps). Los tests
+actuales no cambian de intención; solo se amplían las aserciones de la sonda `viewport` con sus campos nuevos
+(`DESKTOP_VIEWPORT_EXTRA`, corregido tras verify S1).
 
 **E2E 1 · «Móvil táctil»**: `test.describe` con `test.use({ hasTouch: true, viewport: { width: 844, height: 390 } })`
 y la URL `gameUrl` + `manual&mobile=1&seed=42` (`map=empty` por defecto). Pasos:
@@ -397,8 +398,8 @@ Corregido en este design para alinearlo con las specs:
 - ⏸ y Esc se leen los dos antes de combinarlos (una sola pulsación).
 - «Primer movimiento»: el primer input no nulo de la partida, de joystick o de teclado.
 - Sonda: nuevos campos `domScale` y `hint`.
-- Dos E2E nuevos (móvil y escritorio a 600 × 900) en lugar de ampliar un test de humo, porque la propuesta dice que
-  ningún test actual cambia.
+- Dos E2E nuevos (móvil y escritorio a 600 × 900) en lugar de ampliar un test de humo, para no cambiar la intención
+  de los tests actuales (solo se amplían las aserciones de la sonda `viewport`; verify S1).
 
 Choques que este design **no** puede cumplir tal como están escritos; se piden al spec-writer:
 1. `mobile-display`, «Aspecto muy alargado con tope»: dice que el lienzo mide 3.200 × 640. Phaser 4.2.1 EXPAND

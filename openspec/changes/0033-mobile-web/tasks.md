@@ -108,7 +108,8 @@
 
 ## 7. E2E y documentación (grupo E, un commit)
 - [x] 7.1 Dos E2E nuevos en `tests/e2e/gameplay.spec.ts` (proyecto `logic`, `?e2e&manual`, sin fps ni reloj;
-  `logicGuard` en verde). Ningún test actual cambia.
+  `logicGuard` en verde). Los tests actuales solo amplían las aserciones de la sonda `viewport`
+  (`DESKTOP_VIEWPORT_EXTRA`; verify S1).
   - **Móvil táctil** (`hasTouch`, 844 × 390, `mobile=1&seed=42`):
     - sonda;
     - arrastre CDP `Input.dispatchTouchEvent` mantenido durante `step(60)`;
