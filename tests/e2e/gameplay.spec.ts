@@ -23,6 +23,7 @@ import {
   stopSpriteSampler,
   waitForRun,
   type MapView,
+  type SnapshotView,
 } from './probe';
 
 // Suite de humo (chore e2e-lite): lo que solo se ve en el navegador durante la partida (overlay de
@@ -722,12 +723,29 @@ function routeFrom(m: MapView, from: Waypoint, to: Waypoint): Waypoint[] | null 
   return routeTo({ ...m, start: { x: from.x, y: from.y, radius: 0 } }, to);
 }
 
+/** Lo justo del snapshot para recorrer el mapa: una lectura ligera (sin sprites, mapa ni HUD). */
+interface WalkView {
+  readonly status: string;
+  readonly player: Waypoint;
+  readonly wood: number;
+}
+
+const walkViewOf = (page: Page): Promise<WalkView | null> =>
+  page.evaluate(() => {
+    const s = (window as unknown as { __sprint?: { snapshot?: SnapshotView | null } }).__sprint
+      ?.snapshot;
+    return s
+      ? { status: s.status, player: { x: s.player.x, y: s.player.y }, wood: s.resources.wood }
+      : null;
+  });
+
 // Spec build-sites (0027), "Construir una casa en el juego real [E2E]" y parte E2E de
 // sprite-rendering "Solar en obra y casa construida": ?seed=42 con el mapa real en modo manual. El
 // test recoge montones de madera (3 cada uno) por recorridos BFS (las huellas de los solares no son
 // caminables) hasta tener ≥ 15, va a la celda bajo la huella del solar más cercano y empuja hacia
-// arriba hasta tocarla; con la obra abierta comprueba la torre desactivada, iconos y separación,
-// hace clic en la casa y llama a step(1).
+// arriba hasta tocarla (un holdKey por tramo recto y una lectura ligera por tramo: ~20 lecturas);
+// con la obra abierta comprueba la torre desactivada, iconos y separación, hace clic en la casa y
+// llama a step(1).
 test('Solares: recoger madera, tocar el solar más cercano y construir una casa', async ({
   page,
 }) => {
@@ -741,34 +759,42 @@ test('Solares: recoger madera, tocar el solar más cercano y construir una casa'
   expect(first?.sites?.empty).toBe(6);
   expect(first?.sprites?.sites).toEqual({ empty: 6, house: 0, tower: 0, fallback: 0 });
 
-  let snap = await snapshotOf(page);
-  /** Recorre la ruta tramo a tramo; atiende ofertas y tienda; para si `done` o en obra. */
-  const walk = async (to: Waypoint, done: (s: NonNullable<typeof snap>) => boolean) => {
-    const at = snap?.player;
+  let walker = await walkViewOf(page);
+  let reads = 0;
+  /**
+   * Recorre la ruta con un `holdKey` por tramo recto entero (el input se congela para todo el step
+   * y el step se corta solo si se abre una oferta, la tienda o la obra) y una lectura ligera tras
+   * cada tramo; atiende ofertas y tienda y repite el tramo desde la posición real. Para si `done`
+   * o en obra.
+   */
+  const walk = async (to: Waypoint, done: (s: WalkView) => boolean) => {
+    const at = walker?.player;
     const route = at ? routeFrom(m, at, to) : null;
     for (const w of route ?? []) {
-      for (let guard = 0; guard < 40; guard++) {
-        if (!snap || done(snap) || snap.status === 'building' || snap.status === 'over') return;
-        if (snap.status === 'choosing') await page.keyboard.press('1');
-        if (snap.status === 'shopping') await page.keyboard.press('Escape');
-        const leg = legTo(snap.player, w);
+      for (let guard = 0; guard < 10; guard++) {
+        if (!walker || done(walker) || ['building', 'over'].includes(walker.status)) return;
+        if (walker.status === 'choosing') await page.keyboard.press('1');
+        if (walker.status === 'shopping') await page.keyboard.press('Escape');
+        const leg = legTo(walker.player, w);
         if (!leg) break;
-        await holdKey(page, leg.key, Math.min(20, leg.ticks));
-        snap = await snapshotOf(page);
+        await holdKey(page, leg.key, leg.ticks);
+        walker = await walkViewOf(page);
+        reads++;
       }
     }
   };
   const piles = [...m.woodPiles];
-  while ((snap?.resources.wood ?? 0) < 15 && piles.length > 0 && snap?.status !== 'over') {
-    const here = snap?.player ?? m.start;
+  while ((walker?.wood ?? 0) < 15 && piles.length > 0 && walker?.status !== 'over') {
+    const here = walker?.player ?? m.start;
     piles.sort(
       (a, b) => Math.hypot(a.x - here.x, a.y - here.y) - Math.hypot(b.x - here.x, b.y - here.y),
     );
     const pile = piles.shift();
     if (!pile) break;
-    const before = snap?.resources.wood ?? 0;
-    await walk(pile, (s) => s.resources.wood > before);
+    const before = walker?.wood ?? 0;
+    await walk(pile, (v) => v.wood > before);
   }
+  let snap = await snapshotOf(page);
   expect(snap?.resources.wood ?? 0).toBeGreaterThanOrEqual(15);
   const here = snap?.player ?? m.start;
   expect(snap?.resources.stone ?? 0).toBeLessThan(15);
@@ -785,14 +811,19 @@ test('Solares: recoger madera, tocar el solar más cercano y construir una casa'
       return Math.hypot(pa.x - here.x, pa.y - here.y) - Math.hypot(pb.x - here.x, pb.y - here.y);
     });
   for (const site of sites) {
-    if (snap?.status === 'building') break;
+    if (walker?.status === 'building') break;
     await walk(below(site.house), () => false);
-    // Empuja hacia arriba contra la cara inferior hasta tocarla (g ≤ ε) y abrir la obra.
-    for (let guard = 0; guard < 10 && snap?.status === 'running'; guard++) {
-      await holdKey(page, 'ArrowUp', 5);
-      snap = await snapshotOf(page);
+    // Empuja hacia arriba contra la cara inferior hasta tocarla (g ≤ ε): el step se corta al abrir
+    // la obra. Media celda de sobra (el centro de la celda está a 32 px de la cara).
+    for (let guard = 0; guard < 3 && walker?.status === 'running'; guard++) {
+      await holdKey(page, 'ArrowUp', 20);
+      walker = await walkViewOf(page);
+      reads++;
     }
   }
+  // Pocas idas y vueltas al navegador: un tramo recto por lectura, no trozos de 20 ticks.
+  expect(reads).toBeLessThan(60);
+  snap = await snapshotOf(page);
   expect(snap?.status).toBe('building');
   const open = (await probe(page))?.sites;
   expect(open?.panel.visible).toBe(true);
