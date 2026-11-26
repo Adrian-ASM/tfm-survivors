@@ -155,7 +155,9 @@
   Tests: `audio-content`, `audio-plan` (`audioFilesToLoad`), `phaser-sound-out` (compartido que falla), `assets` y
   `audio-files` sobre el repositorio, y `npm run guard:all`. Comprobar de nuevo que `BALANCE_BASELINE` y las firmas
   quedan idénticas y que `src/domain` y `src/application` no cambian.
-- [ ] 6.2 Comprobación a mano en `npm run build` + `vite preview` sin `?e2e` (Chromium y, si se puede, Firefox):
+- [x] 6.2 (2026-11-27: build + `vite preview` en el navegador integrado de Claude Desktop, Chromium, Phaser
+  WebGL | Web Audio: 11 ficheros 200 OK, consola sin CSP ni errores; escucha confirmada por el autor. Sin Firefox; el
+  enlace del README en GitHub queda para la PR.) Comprobación a mano en `npm run build` + `vite preview` sin `?e2e` (Chromium y, si se puede, Firefox):
   - la música (`song.mp3`) suena al pulsar Jugar y en bucle;
   - cada efecto suena en su suceso, con FLAC para `playerHurt`, WAV de 24 bits para `enemyDeath` y WAV con chunks
     extra para `explosion`;
