@@ -79,14 +79,14 @@
             <div class="card card--gold fragment">
               <div class="card-art"><div data-sprite="gold" data-scale="1.4"></div></div>
               <h3>Resultado</h3>
-              <p>21 changes, cada uno con spec, diseño, tests, verificación y retro</p>
+              <p>36 changes, cada uno con spec, diseño, tests, verificación y retro</p>
             </div>
           </div>
           <aside class="notes">
             El riesgo de desarrollar con IA es el vibe coding: pides algo, funciona, y al tercer cambio nadie sabe por
             qué está así. Mi respuesta ha sido tratar a la IA como a un equipo: con especificaciones que viven con el
             código, roles separados, reglas que se comprueban solas y puntos donde yo apruebo. El resultado son
-            veintiún cambios, todos trazables.
+            treinta y seis cambios, todos trazables.
           </aside>
         </section>
 
@@ -95,27 +95,32 @@
           <h2>El juego en 30 segundos</h2>
           <div class="two-col">
             <ul class="checks small-text">
-              <li>Solo te mueves (WASD); las armas disparan solas</li>
-              <li>Oleadas crecientes de goblins, cada tipo con su comportamiento</li>
-              <li>Al subir de nivel eliges 1 de 3 mejoras</li>
-              <li>Mapa procedural por semilla: río, puentes, bosque, castillo, campamentos goblin</li>
-              <li>Récords e historial en local, con exportar / importar JSON</li>
+              <li>Solo te mueves (teclado o joystick en el móvil); las armas disparan solas</li>
+              <li>Oleadas de goblins con comportamiento propio, y sus casas y torres</li>
+              <li>Al subir de nivel eliges 1 de 3 mejoras de personaje</li>
+              <li>Recoges oro, madera y piedra: compras armas en el castillo y construyes casas y torres</li>
+              <li>Ovejas que huyen y sueltan carne que cura</li>
+              <li>Mapa procedural por semilla, con música, efectos y récords en local</li>
             </ul>
             <div class="cast">
-              <figure class="hero"><div data-sprite="archer" data-scale="1.35"></div><figcaption>Arquero · tú</figcaption></figure>
-              <figure class="foe"><div data-sprite="torch" data-scale="1.35" class="flip"></div><figcaption>Antorcha · persigue</figcaption></figure>
-              <figure class="foe"><div data-sprite="barrel-fuse" data-scale="1.6"></div><figcaption>Barril · mecha y ¡bum!</figcaption></figure>
-              <figure class="foe"><div data-sprite="tnt-throw" data-scale="1.35" class="flip"></div><figcaption>TNT · lanza dinamita</figcaption></figure>
-              <figure class="foe"><div data-sprite="house" data-scale="0.75"></div><figcaption>Casa · genera guardias</figcaption></figure>
-              <figure class="foe"><div data-sprite="tower" data-scale="0.62"></div><figcaption>Torre goblin</figcaption></figure>
+              <figure class="hero"><div data-sprite="archer" data-scale="1.2"></div><figcaption>Arquero · tú</figcaption></figure>
+              <figure class="foe"><div data-sprite="torch" data-scale="1.2" class="flip"></div><figcaption>Antorcha · persigue</figcaption></figure>
+              <figure class="foe"><div data-sprite="barrel-fuse" data-scale="1.4"></div><figcaption>Barril · ¡bum!</figcaption></figure>
+              <figure class="foe"><div data-sprite="tnt-throw" data-scale="1.2" class="flip"></div><figcaption>TNT · dinamita</figcaption></figure>
+              <figure class="foe"><div data-sprite="house" data-scale="0.7"></div><figcaption>Casa goblin</figcaption></figure>
+              <figure class="foe"><div data-sprite="tower" data-scale="0.55"></div><figcaption>Torre goblin</figcaption></figure>
+              <figure class="neutral"><div data-sprite="sheep" data-scale="1.2"></div><figcaption>Oveja · carne</figcaption></figure>
+              <figure class="hero"><div data-sprite="tower-blue" data-scale="0.5" data-trim="0.1"></div><figcaption>Tu torre</figcaption></figure>
             </div>
           </div>
-          <p class="note">Arte CC0 (Tiny Swords) con procedencia controlada por un guardarraíl.</p>
           <aside class="notes">
             Rápido, para situarnos: es un survivors-like. Tú solo te mueves y las armas disparan solas. Las oleadas van
             creciendo y cada tipo de goblin se comporta distinto: el de la antorcha te persigue, el del barril se
-            acerca y explota, el de la dinamita te lanza TNT. Al subir de nivel eliges una mejora entre tres. El mapa se
-            genera con una semilla, así que cada partida es distinta pero reproducible. Luego lo veréis en vivo.
+            acerca y explota, el de la dinamita te lanza TNT. Al subir de nivel eliges una mejora entre tres.
+            Además hay economía: los goblins y sus campamentos sueltan oro, madera y piedra; con el oro compras armas
+            en el castillo y con la madera y la piedra construyes casas que dan oro y torres que disparan por ti. Las
+            ovejas huyen de ti y sueltan carne que cura. El mapa se genera con una semilla, así que cada partida es
+            distinta pero reproducible, y se juega también en el móvil. Luego lo veréis en vivo.
           </aside>
         </section>
 
@@ -192,7 +197,7 @@
           </ol>
           <p class="note">
             Nivel <strong>Spec-Anchored</strong>: las specs de <code>openspec/specs/</code> evolucionan con el código ·
-            20 ADRs para las decisiones caras de revertir
+            31 ADRs para las decisiones caras de revertir
           </p>
           <aside class="notes">
             Para cada funcionalidad sigo Spec-Driven Development. Primero se explora el código, luego se hace una
@@ -233,8 +238,8 @@
           <div class="two-col">
             <pre class="tree">tfm-survivors/            main, siempre limpio
 tfm-survivors.worktrees/
-  0021-goblin-camps/      change/0021-…
-  0022-resources-sheep/   change/0022-…</pre>
+  0035-audio/             change/0035-…
+  0036-ui-polish/         change/0036-…</pre>
             <ul>
               <li>Un worktree y una rama por change</li>
               <li>Varias sesiones de Claude a la vez sin pisarse</li>
@@ -251,20 +256,89 @@ tfm-survivors.worktrees/
         <!-- 9 · Guardarraíles -->
         <section>
           <h2>Guardarraíles en 3 capas</h2>
-          <div class="flow small">
-            <span class="step">1 · Hook del agente</span>
-            <span class="step">2 · pre-commit</span>
-            <span class="step">3 · CI</span>
+          <div class="cards guard-layers">
+            <div class="card card--blue">
+              <div class="card-art"><div data-sprite="archer-shoot" data-scale="1.1"></div></div>
+              <h3>1 · Hook del agente</h3>
+              <p>El agente comprueba las reglas antes de escribir cada fichero. Si una falla, se bloquea y explica cómo corregirlo.</p>
+              <code>.claude/hooks/</code>
+            </div>
+            <div class="card card--gold">
+              <div class="card-art"><div data-sprite="castle" data-scale="0.38"></div></div>
+              <h3>2 · Pre-commit</h3>
+              <p>Para cualquier autor, persona u otro agente: ESLint y los mismos hooks sobre lo que se va a commitear.</p>
+              <code>.husky/pre-commit</code>
+            </div>
+            <div class="card card--red">
+              <div class="card-art"><div data-sprite="tower" data-scale="0.6"></div></div>
+              <h3>3 · CI</h3>
+              <p>Las reglas sobre todo el repo en cada PR. Sin el check <code>quality</code> en verde no entra en main.</p>
+              <code>npm run verify</code>
+            </div>
           </div>
-          <p class="note">Una sola fuente de reglas (<code>.claude/hooks/</code>) para cualquier autor: persona o IA.</p>
-          <div class="widget" data-widget="guard"></div>
+          <ul class="guard-rules">
+            <li><b>Capas</b> El dominio no importa el motor ni usa <code>Math.random</code>: el azar llega por un puerto.</li>
+            <li><b>Secretos</b> Nada de claves ni ficheros <code>.env</code> en el código.</li>
+            <li><b>Procedencia</b> Ninguna imagen, audio o fuente sin su licencia registrada.</li>
+          </ul>
           <aside class="notes">
-            Las reglas de arquitectura no dependen de que la IA se porte bien. Hay tres capas: un hook que bloquea al
-            agente antes de escribir, un pre-commit para cualquier autor y el CI. Las tres usan las mismas reglas.
-            Probemos: [Elegir src/domain y pulsar Math.random] si un agente intenta usar Math.random en el dominio, se
-            bloquea y le dice qué hacer: usar el puerto RandomGenerator. [Pulsar el import de Phaser] Lo mismo con el
-            motor. En infraestructura, en cambio, está permitido. Cuando el hook salta, se anota en el diario de IA
-            como evidencia.
+            Las reglas de arquitectura no dependen de que la IA se porte bien. Hay tres capas. La primera es un hook
+            del agente: antes de escribir un fichero comprueba las reglas y, si el agente intenta, por ejemplo,
+            usar Math.random en el dominio, lo bloquea y le dice qué hacer, usar el puerto RandomGenerator. La segunda
+            es el pre-commit, que vale para cualquier autor, yo incluido u otro agente distinto. Y la tercera es el CI,
+            que pasa todo sobre el repo entero en cada PR; sin ese check en verde no se puede fusionar. Las tres
+            usan exactamente las mismas reglas: capas de la arquitectura, nada de secretos y procedencia de los
+            assets. Cuando un hook salta, se anota en el diario de IA como evidencia.
+          </aside>
+        </section>
+
+        <!-- 10 · Procedencia de assets -->
+        <section>
+          <h2>Assets con procedencia</h2>
+          <div class="cards provenance">
+            <div class="card card--blue">
+              <div class="card-art"><div data-sprite="castle" data-scale="0.32"></div></div>
+              <h3>Arte</h3>
+              <p>Tiny Swords, CC0. Sprites, mapa, edificios y kit de UI.</p>
+            </div>
+            <div class="card card--gold">
+              <div class="card-art"><div data-sprite="sheep" data-scale="1.1"></div></div>
+              <h3>Sonido</h3>
+              <p>11 pistas CC0 y CC-BY, con su crédito en <code>CREDITS.md</code>.</p>
+            </div>
+            <div class="card card--blue">
+              <div class="card-art"><div data-sprite="wood" data-scale="1.1"></div></div>
+              <h3>Fuente</h3>
+              <p>Departure Mono, licencia OFL, con su <code>OFL.txt</code>.</p>
+            </div>
+            <div class="card card--red">
+              <div class="card-art"><div data-sprite="meat" data-scale="1.1"></div></div>
+              <h3>Iconos con IA</h3>
+              <p>Lo único generado con IA: un script determinista que los dibuja byte a byte.</p>
+            </div>
+          </div>
+          <div class="icon-strip">
+            <span data-icon="armor"></span>
+            <span data-icon="regeneration"></span>
+            <span data-icon="hunter"></span>
+            <span data-icon="prospector"></span>
+            <span data-icon="scholar"></span>
+            <span data-icon="guardrail"></span>
+            <span data-icon="strict-rules"></span>
+            <span data-icon="fast-ci"></span>
+            <span data-icon="heal"></span>
+          </div>
+          <p class="note">
+            Un guardarraíl (<code>guard-assets</code>) rechaza cualquier imagen, audio o fuente sin su entrada de
+            procedencia.
+          </p>
+          <aside class="notes">
+            Otro guardarraíl que me parece importante: la procedencia de los assets. El arte es un pack CC0, Tiny
+            Swords; la música y los efectos son pistas CC0 o CC-BY con su crédito; la fuente tiene licencia OFL. Y
+            hay un sitio donde sí he usado IA para el arte: estos iconos de las mejoras. Los dibuja Claude Code con un
+            script determinista, sin dependencias, que reproduce los PNG byte a byte, y queda registrado en un ADR y en
+            una lista aparte. Si alguien, persona o agente, intenta añadir una imagen o un sonido sin su entrada de
+            procedencia, el commit se bloquea.
           </aside>
         </section>
 
@@ -276,6 +350,7 @@ tfm-survivors.worktrees/
               <li><strong>TDD por capa</strong>: rojo comprobado en el núcleo; test-after en infraestructura</li>
               <li><strong>E2E ligeros</strong>: avance manual por ticks (<code>?e2e&amp;manual</code> + <code>step(n)</code>)</li>
               <li><strong>Balance</strong>: un bot de referencia juega 50 semillas; el test exige 25–35 victorias</li>
+              <li><strong>El bot evoluciona</strong>: esquiva (v3), compra en la tienda (v4) y construye (v5)</li>
             </ul>
             <div class="widget" data-widget="balance"></div>
           </div>
@@ -284,7 +359,8 @@ tfm-survivors.worktrees/
             navegador son pocos y deterministas: no esperan al reloj, avanzan la simulación tick a tick. Y lo que más me
             gusta: el balance es un test. Un bot juega las semillas del 1 al 50 y la tasa de victorias tiene que quedar
             entre 25 y 35. Aquí veis cómo cada change que tocó la dificultad se recalibró para seguir dentro de la
-            banda.
+            banda. Y el bot ha tenido que aprender con el juego: cuando llegó la tienda, aprendió a comprar; cuando
+            llegaron los solares, a construir.
           </aside>
         </section>
 
@@ -349,9 +425,10 @@ tfm-survivors.worktrees/
           <h2>Juguemos</h2>
           <p class="links"><a data-link="game"></a></p>
           <ul class="demo-list">
-            <li>Menú, partida y elección de mejoras</li>
-            <li>Goblins: antorcha, barril, TNT y casas</li>
-            <li>Pausa, resultados, récords y exportar JSON</li>
+            <li>Menú, guía «Cómo jugar» y sonido</li>
+            <li>Partida: mejoras, goblins, ovejas y recursos</li>
+            <li>Tienda del castillo y construir casa o torre</li>
+            <li>Pausa, resultados y récords · bonus: el móvil</li>
           </ul>
           <div class="deco" style="left: 200px; top: 430px" data-sprite="house" data-scale="0.75"></div>
           <div class="deco" style="left: 300px; top: 440px" data-sprite="tower" data-scale="0.7"></div>
@@ -359,10 +436,14 @@ tfm-survivors.worktrees/
           <div class="deco" style="left: 700px; top: 380px" data-sprite="explosion" data-scale="1"></div>
           <div class="deco flip" style="left: 780px; top: 420px" data-sprite="torch-walk" data-scale="1"></div>
           <div class="deco" style="left: 470px; top: 520px" data-sprite="barrel-peek" data-scale="1"></div>
+          <div class="deco" style="left: 900px; top: 500px" data-sprite="sheep" data-scale="0.9"></div>
           <aside class="notes">
-            Pasamos a la demo. [Cambiar a la pestaña del juego] Guion: menú → Jugar → moverse por el mapa, ver río y
-            castillo → subir de nivel y elegir mejora → enseñar barril con aviso y explosión → atacar una casa goblin →
-            pausa con Esc → terminar partida → resultados → menú → exportar. Si da tiempo, enseñar en el repo una spec
+            Pasamos a la demo. [Cambiar a la pestaña del juego] Guion: menú → abrir «Cómo jugar» y Sonido → Jugar →
+            moverse por el mapa, ver río y castillo → subir de nivel y elegir mejora → recoger madera, oro y piedra →
+            enseñar barril con aviso y explosión y los números de daño → atacar una casa goblin → cazar una oveja y
+            curarse con la carne → entrar por la puerta del castillo y comprar un arma → tocar un solar y construir
+            una casa o una torre → pausa con Esc → terminar partida → resultados → menú. Bonus: abrir la URL en el
+            móvil y jugar con el joystick. Si da tiempo, enseñar en el repo una spec
             viva de openspec/specs/ en vista previa (el pie lleva fechas en un comentario; evitar las carpetas de archive).
           </aside>
         </section>
@@ -372,8 +453,11 @@ tfm-survivors.worktrees/
           <h2>En cifras</h2>
           <div class="widget" data-widget="figures"></div>
           <aside class="notes">
-            Algunas cifras: veintiún changes archivados, veinte decisiones de arquitectura documentadas, más de
-            doscientos ficheros de tests. Y así ha crecido el juego, por etapas: primero el bucle de partida, luego la calidad y el despliegue, después el arte y el mundo, y por último unos enemigos con comportamiento propio.
+            Algunas cifras: treinta y seis changes archivados, treinta y una decisiones de arquitectura documentadas,
+            más de trescientos setenta ficheros de tests. Y así ha crecido el juego, por etapas: primero el bucle de
+            partida, luego la calidad y el despliegue, después el arte y el mundo, unos enemigos con comportamiento
+            propio, la economía con la tienda y la construcción, y por último el pulido: interfaz, móvil, iconos y
+            sonido.
           </aside>
         </section>
 
@@ -393,8 +477,8 @@ tfm-survivors.worktrees/
             <div class="concept concept--gold">
               <div class="concept-icon"><div data-sprite="archer-walk" data-scale="1"></div></div>
               <div>
-                <h3>Sprites y animación</h3>
-                <p>Hojas de sprites, marcos, fps por animación, capas de dibujo y arte CC0 con procedencia.</p>
+                <h3>Sprites y game feel</h3>
+                <p>Hojas de sprites, fps por animación, números de daño, música y efectos con tope de voces.</p>
                 <p class="vs">Backend: no hay assets, solo JSON</p>
               </div>
             </div>
@@ -426,7 +510,7 @@ tfm-survivors.worktrees/
               <div class="concept-icon"><div data-sprite="dead" data-scale="1.1"></div></div>
               <div>
                 <h3>Tipos de jugador</h3>
-                <p>Bot que esquiva troncos, agua y avisos; jugador quieto que debe perder antes de 180 s.</p>
+                <p>Bots que esquivan, compran y construyen; jugador quieto que debe perder antes de 180 s.</p>
                 <p class="vs">Backend: el cliente sigue el contrato</p>
               </div>
             </div>
@@ -434,14 +518,15 @@ tfm-survivors.worktrees/
           <aside class="notes">
             Viniendo de backend, lo más interesante ha sido todo lo que un juego tiene y una API no. Empecé por un GDD,
             el documento de diseño, que fija qué juego quiero antes de escribir ninguna spec. Aprendí cómo funcionan
-            los sprites: hojas con marcos, animaciones a distintos fps, capas de dibujo. Aprendí a usar semillas:
+            los sprites: hojas con marcos, animaciones a distintos fps, capas de dibujo. Y lo que se llama game
+            feel: que cada golpe se vea con su número de daño y se oiga, sin saturar, con un tope de voces a la vez. Aprendí a usar semillas:
             con la misma semilla sale el mismo mapa y las mismas oleadas, y separo el azar en flujos para que añadir
             algo nuevo no cambie las partidas existentes. Y el bucle de juego: la simulación avanza a 60 ticks por
             segundo, no espera a que alguien pregunte.
             Pero lo que más me cambió el chip es el balance. En backend un GET con los mismos parámetros devuelve lo
             mismo y el test es verde o rojo. En un juego la pregunta es otra: ¿es justo?, ¿es divertido?, ¿se puede
             ganar haciendo trampas? Por eso pruebo con distintos tipos de jugador: un bot que juega razonablemente
-            bien tiene que ganar entre 25 y 35 de 50 partidas, y un jugador que se queda quieto tiene que perder
+            bien, y que ha ido aprendiendo a comprar y a construir, tiene que ganar entre 25 y 35 de 50 partidas, y un jugador que se queda quieto tiene que perder
             siempre antes de los tres minutos. Si un cambio rompe eso, el test falla aunque el código esté perfecto.
           </aside>
         </section>
@@ -450,18 +535,18 @@ tfm-survivors.worktrees/
         <section>
           <h2>Próximos pasos</h2>
           <div class="roadmap">
-            <div class="step-card"><div class="step-icon"><div data-sprite="gold" data-scale="1.2"></div></div><span><b>0022</b> Recursos y ovejas</span></div>
-            <div class="step-card"><div class="step-icon"><div data-sprite="castle" data-scale="0.28"></div></div><span><b>0023</b> Progresión separada y castillo-tienda</span></div>
-            <div class="step-card"><div class="step-icon"><div data-sprite="house" data-scale="0.6"></div></div><span><b>0024</b> Solares de obra: casa y torre</span></div>
-            <div class="step-card"><div class="step-icon"><div data-sprite="tower" data-scale="0.4"></div></div><span><b>0025</b> Arqueros en las torres goblin y barras de vida</span></div>
-            <div class="step-card"><div class="step-icon"><div data-sprite="archer" data-scale="1.1"></div></div><span><b>0026</b> Elegir personaje: el Guerrero</span></div>
-            <div class="step-card"><div class="step-icon"><div data-sprite="torch" data-scale="1.1" class="flip"></div></div><span><b>balance</b> Pasada de equilibrio con playtest humano</span></div>
+            <div class="step-card"><div class="step-icon"><div data-sprite="tower" data-scale="0.4"></div></div><span><b>0037</b> Arqueros goblin en las torres que disparan al jugador</span></div>
+            <div class="step-card"><div class="step-icon"><div data-sprite="archer" data-scale="1.1"></div></div><span><b>0038</b> Elegir personaje: el Guerrero</span></div>
+            <div class="step-card"><div class="step-icon"><div data-sprite="torch" data-scale="1.1" class="flip"></div></div><span><b>balance</b> Pasada de equilibrio como diseño, con playtest humano</span></div>
+            <div class="step-card"><div class="step-icon"><div data-sprite="house" data-scale="0.6"></div></div><span><b>campamentos</b> Guardianes en las zonas ricas en recursos</span></div>
           </div>
-          <p class="note">Después (Could): audio, minimapa, día/noche, reto diario con semilla compartida, login con Supabase.</p>
+          <p class="note">Después (Could): minimapa, día/noche, modo Infinito, reto diario con semilla compartida, PWA, login con Supabase.</p>
           <aside class="notes">
             El proyecto sigue vivo después de la entrega. El backlog tiene ya los siguientes changes priorizados:
-            recursos, una progresión separada con el castillo como tienda, construir edificios propios, arqueros en las
-            torres y un segundo personaje. Y una pasada de equilibrio con gente real jugando, no solo el bot.
+            arqueros goblin en las torres que te disparan, un segundo personaje, el Guerrero, campamentos de
+            guardianes donde hay más recursos y, sobre todo, una pasada de equilibrio pensada como diseño, con gente
+            real jugando y no solo el bot. Más adelante, cosas como un minimapa, ciclo de día y noche o un reto diario
+            con semilla compartida.
           </aside>
         </section>
 
@@ -473,16 +558,17 @@ tfm-survivors.worktrees/
           <div class="deco" style="left: 650px; top: 420px" data-sprite="dead" data-scale="1.5"></div>
           <div class="deco flip" style="left: 790px; top: 450px" data-sprite="barrel-peek" data-scale="1"></div>
           <h2>Gracias</h2>
-          <p class="lead">La IA me ha permitido salir de mi zona; la disciplina, que lo construido aguante.</p>
+          <p class="lead">Si os apetece, echad una partida y contadme qué tal.</p>
           <p class="links">
             <span>Juego <a data-link="game"></a></span>
             <span>Código <a data-link="repo"></a></span>
             <span>Slides <a data-link="slides"></a></span>
           </p>
           <aside class="notes">
-            Y eso es todo. Para mí la conclusión es doble: la IA me ha permitido lanzarme a algo que no habría hecho
-            solo, y la disciplina de specs, roles y guardarraíles ha hecho que lo construido aguante cambio tras cambio.
-            Tenéis los enlaces al juego, al código y a estas slides. Gracias.
+            Y eso es todo. Me quedo con que la IA me ha animado a hacer algo que solo no habría empezado, y con que
+            las specs y los tests han hecho que pudiera seguir añadiendo cosas sin romper lo anterior. Tenéis los
+            enlaces al juego, al código y a estas slides; si echáis una partida, me encantará saber qué os parece.
+            Gracias.
           </aside>
         </section>
       </div>

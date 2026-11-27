@@ -67,6 +67,15 @@ export const SPRITES = {
   castle: def('Factions/Knights/Buildings/Castle/Castle_Blue.png', [320, 256], [320, 256]),
   tree: def('Resources/Trees/Tree.png', [768, 576], [192, 192], { frames: 4, fps: 6 }),
   gold: def('Resources/Resources/G_Idle.png', [128, 128], [128, 128]),
+  wood: def('Resources/Resources/W_Idle.png', [128, 128], [128, 128]),
+  meat: def('Resources/Resources/M_Idle.png', [128, 128], [128, 128]),
+  sheep: def('Resources/Sheep/HappySheep_Idle.png', [1024, 128], [128, 128], { frames: 8, fps: 8 }),
+  'sheep-bounce': def('Resources/Sheep/HappySheep_Bouncing.png', [768, 128], [128, 128], {
+    frames: 6,
+    fps: 10,
+  }),
+  'house-blue': def('Factions/Knights/Buildings/House/House_Blue.png', [128, 192], [128, 192]),
+  'tower-blue': def('Factions/Knights/Buildings/Tower/Tower_Blue.png', [128, 256], [128, 256]),
   arrow: def('Factions/Knights/Troops/Archer/Arrow/Arrow.png', [64, 128], [64, 64]),
 } as const satisfies Record<string, SpriteDef>;
 
@@ -108,6 +117,16 @@ export function mountSprites(root: ParentNode = document): void {
       const loops = node.dataset['once'] !== undefined ? '1 forwards' : 'infinite';
       style.animation = `sprite-play ${String(seconds)}s steps(${String(sprite.frames)}) ${loops}`;
     }
+  }
+}
+
+/** Iconos de mejora (los únicos PNG generados con IA, ADR-0030): `[data-icon="armor"]` → <img>. */
+export function mountIcons(root: ParentNode = document): void {
+  for (const node of root.querySelectorAll<HTMLElement>('[data-icon]')) {
+    const image = new Image();
+    image.src = `${import.meta.env.BASE_URL}assets/icons/${node.dataset['icon'] ?? ''}.png`;
+    image.alt = '';
+    node.append(image);
   }
 }
 
