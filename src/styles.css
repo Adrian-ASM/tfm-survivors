@@ -204,7 +204,7 @@ body {
   box-sizing: border-box;
   max-width: 32em;
   /* 0032 (riesgo R1): 7 filas con marco de botón pueden pasar del alto de la ventana a ×1; la lista
-     se desplaza dentro y el título, el oro y Salir quedan siempre enteros. */
+     se desplaza dentro y el título, el oro y la × quedan siempre enteros. */
   max-height: calc(100vh - 2em);
   padding: max(1em, calc(var(--ui-panel-t, 0) * var(--ui-scale, 1) * 1px))
     max(1.5em, calc(var(--ui-panel-r, 0) * var(--ui-scale, 1) * 1px))
@@ -245,21 +245,22 @@ body {
 }
 
 .shop-panel button {
-  width: 100%;
   padding: max(0.35em, calc(var(--ui-b-t) * var(--ui-scale, 1) * 1px))
     max(0.75em, calc(var(--ui-b-r) * var(--ui-scale, 1) * 1px))
     max(0.35em, calc(var(--ui-b-b) * var(--ui-scale, 1) * 1px))
     max(0.75em, calc(var(--ui-b-l) * var(--ui-scale, 1) * 1px));
   font: inherit;
-  text-align: left;
   cursor: pointer;
 }
 
-/* 0034: icono | nombre | nivel | precio; descripción y aviso bajo el nombre. */
-.shop-panel__product {
+/* 0034: icono | nombre | nivel | precio; descripción y aviso bajo el nombre. 0036 (design D2): la
+   alineación a la izquierda es solo de la fila, no de los demás botones del panel. */
+.shop-panel .shop-panel__product {
   display: grid;
   grid-template-columns: auto 1fr auto auto;
   gap: 0 0.75em;
+  width: 100%;
+  text-align: left;
 }
 
 /* Icono de fila (0034): 32 px a ×1 y 64 (su tamaño nativo) a ×2, sin suavizado. En móvil
@@ -298,11 +299,6 @@ body {
   opacity: var(--ui-disabled-opacity, 0.6);
 }
 
-.shop-panel__leave {
-  flex: none;
-  text-align: center;
-}
-
 .shop-panel__description {
   order: 1;
 }
@@ -320,7 +316,9 @@ body {
   align-items: stretch;
   gap: 0.5em;
   min-width: 18em;
-  max-width: 28em;
+  /* 0036: ancho para la explicación de la torre en una línea con la imagen del edificio al lado
+     (a 28em cabía justa en local y se partía en el CI con otra métrica de fuente). */
+  max-width: 34em;
   padding: max(1em, calc(var(--ui-panel-t, 0) * var(--ui-scale, 1) * 1px))
     max(1.5em, calc(var(--ui-panel-r, 0) * var(--ui-scale, 1) * 1px))
     max(1em, calc(var(--ui-panel-b, 0) * var(--ui-scale, 1) * 1px))
@@ -352,9 +350,6 @@ body {
 }
 
 .build-panel button {
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
   padding: max(0.35em, calc(var(--ui-b-t) * var(--ui-scale, 1) * 1px))
     max(0.75em, calc(var(--ui-b-r) * var(--ui-scale, 1) * 1px))
     max(0.35em, calc(var(--ui-b-b) * var(--ui-scale, 1) * 1px))
@@ -370,16 +365,51 @@ body {
   gap: 1.25em;
 }
 
-.build-panel__option {
+/* 0036 (design D2 y D6): imagen | nombre, explicación y coste en tres líneas, solo en las filas de
+   edificio. El coste va bajo la explicación para que una fila con dos recursos no estreche el
+   texto hasta partirlo sílaba a sílaba. */
+.build-panel .build-panel__option {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: auto 1fr;
   column-gap: 1.25em;
+  row-gap: 0.2em;
   align-items: center;
+  width: 100%;
   text-align: left;
 }
 
-.build-panel .build-panel__option {
-  display: grid;
+/* Imagen del edificio (0036): alto ≥ el del icono de recurso (3em) y proporción del frame por sus
+   atributos width/height (casa 128 × 192, torre 128 × 256), sin suavizado. */
+.build-panel__icon {
+  grid-row: 1 / span 3;
+  grid-column: 1;
+  width: auto;
+  height: 3.5em;
+  image-rendering: pixelated;
+}
+
+.build-panel__icon[hidden] {
+  display: none;
+}
+
+.build-panel__name {
+  grid-row: 1;
+  grid-column: 2;
+}
+
+/* Explicación del edificio (0036): segunda línea, tinta muted de la pieza de su fila. */
+.build-panel__about {
+  grid-row: 2;
+  grid-column: 2;
+  font-size: 0.85em;
+  color: var(--ui-b-muted, #c8c8d8);
+  text-align: left;
+}
+
+.build-panel__cost {
+  grid-row: 3;
+  grid-column: 2;
+  flex-wrap: wrap;
 }
 
 .build-panel__cost {
@@ -399,6 +429,7 @@ body {
 
 .build-panel__missing {
   margin-left: 0.25em;
+  white-space: nowrap;
   font-size: 0.85em;
 }
 
@@ -407,10 +438,11 @@ body {
   opacity: var(--ui-disabled-opacity, 0.55);
 }
 
-/* Icono del recurso: frame 0 de una hoja de una fila (W_Idle 128 × 128, Deco/05 64 × 64). */
+/* Icono del recurso: frame 0 de una hoja de una fila (W_Idle 128 × 128, Deco/05 64 × 64). 0036:
+   3em (48 px en la guía y 42 en la obra a ×1), antes 2em. */
 .resource-icon {
-  width: 2em;
-  height: 2em;
+  width: 3em;
+  height: 3em;
   object-fit: cover;
   object-position: 0 50%;
   image-rendering: pixelated;
@@ -452,6 +484,8 @@ body {
   align-items: baseline;
   justify-content: space-between;
   gap: 1em;
+  /* 0036: el indicador queda a la izquierda de la ×. */
+  padding-right: var(--ui-close-room);
 }
 
 .guide-modal__header h2 {
@@ -499,7 +533,7 @@ body {
 
 /* Panel Sonido (change 0035, design D10): recuadro modal centrado por la rejilla de #game, sobre el
    menú y la pausa, a la escala de UI; deslizadores Música y Efectos con su valor, la casilla y
-   Cerrar. Sin estilos en el DOM: todo aquí. */
+   la × (Cerrar, 0036). Sin estilos en el DOM: todo aquí. */
 .sound-panel {
   position: relative;
   z-index: 3;
@@ -529,6 +563,8 @@ body {
   display: flex;
   flex: none;
   justify-content: center;
+  /* 0036: el título sigue centrado con la × a su derecha. */
+  padding-inline: var(--ui-close-room);
 }
 
 .sound-panel__header h2 {
@@ -571,12 +607,6 @@ body {
   height: 1.1em;
   margin: 0;
   accent-color: var(--ui-panel-accent, #7ce2fe);
-}
-
-.sound-panel__actions {
-  display: flex;
-  flex: none;
-  justify-content: center;
 }
 
 .sound-panel button {
@@ -641,6 +671,8 @@ body {
 
   box-sizing: border-box;
   min-height: calc((var(--ui-b-t) + var(--ui-b-b)) * var(--ui-scale, 1) * 1px);
+  /* 0036 (design D2): texto centrado en los botones de una sola etiqueta; las filas lo cambian. */
+  text-align: center;
   color: var(--ui-b-text);
   background: var(--ui-b-bg);
   border: 1px solid #7ce2fe;
@@ -768,6 +800,55 @@ body {
   --ui-b-l: var(--ui-button-danger-pressed-l, var(--ui-button-danger-l, 0));
   --ui-b-bg: var(--ui-button-danger-pressed-on-bg, var(--ui-button-danger-on-bg, #34345a));
   --ui-b-text: var(--ui-button-danger-pressed-on-text, var(--ui-button-danger-on-text, #fff));
+}
+
+/* ─── × de cierre de los modales (change 0036, design D1) ──────────────────────────────────────
+   Último hijo del recuadro de la tienda, la obra, la guía y Sonido, en su esquina superior derecha
+   a margen de panel × k del borde (el -1px descuenta el borde de 1 px del recuadro), con la pieza
+   de botón y su relleno de margen × k. Lado 48 × k más los 2 px de su propio borde, para que el
+   glifo quede centrado en la cara visible (caja menos 20/20/28/20 × k). El título deja sitio a la ×
+   con --ui-close-room (48 + 8 de aire). */
+.shop-panel,
+.build-panel,
+.guide-modal,
+.sound-panel {
+  --ui-close-room: calc(56px * var(--ui-scale, 1));
+}
+
+:is(.shop-panel, .build-panel, .guide-modal, .sound-panel) > .ui-close {
+  position: absolute;
+  top: calc(16px * var(--ui-scale, 1) - 1px);
+  right: calc(16px * var(--ui-scale, 1) - 1px);
+  display: grid;
+  /* La pista de la rejilla (ancho del glifo > caja de contenido) también se centra, no solo el
+     glifo dentro de ella: sin esto la pista desborda solo por la derecha. */
+  place-content: unsafe center;
+  place-items: unsafe center;
+  width: calc(48px * var(--ui-scale, 1) + 2px);
+  height: calc(48px * var(--ui-scale, 1) + 2px);
+  /* Las esquinas del 9-slice a media escala (10/10/14/10 × k): a escala 1 ocupan las 48 × k de la
+     caja, no queda cara visible y el glifo se pierde entre los bordes. Relleno igual, así el glifo
+     sigue centrado en la cara. */
+  border-image-width: calc(var(--ui-b-t) * var(--ui-scale, 1) * 0.5px)
+    calc(var(--ui-b-r) * var(--ui-scale, 1) * 0.5px)
+    calc(var(--ui-b-b) * var(--ui-scale, 1) * 0.5px)
+    calc(var(--ui-b-l) * var(--ui-scale, 1) * 0.5px);
+  padding: calc(var(--ui-b-t) * var(--ui-scale, 1) * 0.5px)
+    calc(var(--ui-b-r) * var(--ui-scale, 1) * 0.5px)
+    calc(var(--ui-b-b) * var(--ui-scale, 1) * 0.5px)
+    calc(var(--ui-b-l) * var(--ui-scale, 1) * 0.5px);
+  font-family: inherit;
+  font-size: calc(28px * var(--ui-scale, 1));
+  font-weight: bold;
+  line-height: 1;
+  text-align: center;
+  cursor: pointer;
+}
+
+/* 0036 (design D1): la cinta del título deja sitio a la × a los dos lados y sigue centrada. */
+.shop-panel h2,
+.build-panel h2 {
+  margin-inline: var(--ui-close-room);
 }
 
 /* Títulos de panel con la cabecera 3-slice (pieza header): alto = alto declarado × k y colas sin

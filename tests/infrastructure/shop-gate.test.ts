@@ -20,6 +20,8 @@ import {
 } from '../support/builders';
 import { aBehaviorConfig, aProbeType } from '../support/runs';
 import { startAtDoor } from '../support/shop';
+import { ShopPanel } from '../../src/infrastructure/dom/ShopPanel';
+import { fakeDom, type FakeElement } from '../support/fakeDom';
 
 // Spec castle-shop (0024) "Overlay de la tienda" y main-menu "Pausa con Esc": la escena pasa Esc y
 // la acción del panel a `ShopGate` antes que a `PauseGate`, y luego un frame a `TickRun`. Aquí se
@@ -127,5 +129,68 @@ describe('ShopGate con ⏸ (0033)', () => {
 
     expect([left.status, screensAfterLeave.includes('paused')]).toEqual(['running', false]);
     expect(pause.paused).toBe(true);
+  });
+});
+
+// Spec castle-shop (0036), "Overlay de la tienda": la × del panel real deja `leave`, que la escena
+// pasa a `ShopGate` como Esc. En Node no hay hoja de estilos: es el caso de las piezas en reserva.
+describe('La × de la tienda (castle-shop 0036)', () => {
+  /** La escena con el `ShopPanel` real pintado con cada snapshot (como `GameScene.update`). */
+  function withPanel() {
+    const s = scene();
+    const { doc, root, fake, fakeDoc } = fakeDom();
+    const panel = new ShopPanel(doc, root);
+    const paint = (snap: RunSnapshot) => {
+      panel.sync(snap.shop, { current: snap.player.health, max: snap.player.maxHealth });
+      panel.setVisible(shopVisible(snap.status, s.pause.paused));
+    };
+    paint(s.first);
+    const section = fake.byClass('shop-panel')[0] as FakeElement;
+    const x = () => section.byClass('ui-close')[0] as FakeElement;
+    /** Un frame con la acción que haya dejado el panel. */
+    const frame = (esc = false) => {
+      const snap = s.frame(esc, panel.takeAction());
+      paint(snap);
+      return snap;
+    };
+    return { ...s, panel, section, x, frame, fakeDoc };
+  }
+
+  it('Scenario: Salir con Esc o con la × (mismo snapshot campo a campo)', () => {
+    const esc = withPanel();
+    const byEsc = esc.frame(true);
+    const click = withPanel();
+    click.x().click();
+    const byX = click.frame();
+
+    expect(byX).toEqual(byEsc);
+    expect([byX.status, byX.tick]).toEqual(['running', click.first.tick + 1]);
+    expect(click.section.hidden).toBe(true);
+    expect(click.screens).not.toContain('paused');
+    expect(click.section.contains(click.fakeDoc.activeElement)).toBe(false);
+  });
+
+  it('Scenario: La × con el teclado (Intro sobre la × con el foco)', () => {
+    const s = withPanel();
+    s.x().focus();
+    // Intro sobre un `button` con el foco lanza su `click` (comportamiento del navegador).
+    s.x().click();
+    const snap = s.frame();
+
+    expect([s.section.hidden, snap.tick, s.pause.paused]).toEqual([true, s.first.tick + 1, false]);
+    expect(s.screens).not.toContain('paused');
+  });
+
+  it('Scenario: Compra con las piezas en reserva (compra, frame, × y otro frame)', () => {
+    const s = withPanel();
+    (s.section.findAll((e) => e.dataset.product === 'strict-rules')[0] as FakeElement).click();
+    s.frame();
+    expect(s.panel.view.gold).toBe(2);
+    expect(s.panel.view.products.find((p) => p.id === 'strict-rules')?.level).toBe(1);
+
+    s.x().click();
+    s.frame();
+    expect(s.section.hidden).toBe(true);
+    expect(s.screens).not.toContain('paused');
   });
 });

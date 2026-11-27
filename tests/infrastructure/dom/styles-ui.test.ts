@@ -4,7 +4,7 @@ import {
   type UiPieceRole,
 } from '../../../src/infrastructure/content/appearanceSchema';
 import { screenCorners, uiMargins } from '../../../src/infrastructure/phaser/ui/nineSlice';
-import { boxSides, declOf, parseCss, stylesText, type CssEnv } from '../../support/css';
+import { boxSides, declOf, evalLength, parseCss, stylesText, type CssEnv } from '../../support/css';
 import { repoAppearance } from '../../support/mapArt';
 
 // Hoja de estilos del kit de UI (0032, design §4), leída como texto: specs sprite-rendering ("Piezas
@@ -265,7 +265,8 @@ describe('Kit de UI en la hoja de estilos (0032)', () => {
     expect(ge(pad, [m.top, m.right, m.bottom, m.left])).toBe(true);
     expect(declOf(rules, '.shop-panel__products', 'overflow-y')).toBe('auto');
     expect(declOf(rules, '.shop-panel__products', 'min-height')).toBe('0');
-    for (const fixed of ['.shop-panel h2', '.shop-panel__gold', '.shop-panel__leave']) {
+    // 0036: la × ya no está en el flujo (posición absoluta), ver «La × y el centrado».
+    for (const fixed of ['.shop-panel h2', '.shop-panel__gold']) {
       expect(declOf(rules, fixed, 'flex'), fixed).toBe('none');
     }
   });
@@ -318,5 +319,188 @@ describe('Kit de UI en la hoja de estilos (0032)', () => {
     for (const role of ['buttonHover', 'buttonPressed', 'buttonDisabled', 'buttonDanger']) {
       expect(stylesText()).toContain(`--ui-${css(role)}-src`);
     }
+  });
+});
+
+// Change 0036 (design D1, D2, D4 y D6): la × de los cuatro modales, el centrado de los botones de
+// una sola etiqueta, los iconos de recurso mayores y la imagen del edificio de la obra.
+const MODALS = ['.shop-panel', '.build-panel', '.guide-modal', '.sound-panel'] as const;
+const CLOSE = ':is(.shop-panel, .build-panel, .guide-modal, .sound-panel) > .ui-close';
+/** Reglas de fila, que no son botones de una sola etiqueta y conservan su disposición. */
+const ROW = /__product|__option/;
+/** ¿Alguno de sus selectores alcanza a un `button` de un panel (o a la ×)? */
+const targetsButton = (sel: string) =>
+  / button(:|$|\s)/.test(sel) || sel.endsWith(' button') || sel.includes('.ui-close');
+const singleLabelRules = rules.filter((r) =>
+  r.selectors.some(
+    (s) => targetsButton(s) && !ROW.test(s) && !s.startsWith('.is-mobile .touch-bar'),
+  ),
+);
+
+describe('La × y el centrado en la hoja de estilos (0036)', () => {
+  it('Scenario: Reglas de centrado (ni izquierda ni extremos en los botones de una sola etiqueta)', () => {
+    expect(singleLabelRules.length).toBeGreaterThan(5);
+    for (const r of singleLabelRules) {
+      const sel = r.selectors.join(', ');
+      expect(r.decls.get('text-align'), sel).not.toBe('left');
+      expect(r.decls.get('justify-content') ?? '', sel).not.toMatch(/space-between|flex-start/);
+    }
+    expect(declOf(rules, BUTTON, 'text-align')).toBe('center');
+    // Las reglas de las filas quedan acotadas a ellas y ganan a la común por especificidad.
+    expect(declOf(rules, '.shop-panel .shop-panel__product', 'text-align')).toBe('left');
+    expect(declOf(rules, '.build-panel .build-panel__option', 'display')).toBe('grid');
+    for (const sel of ['.shop-panel button', '.build-panel button']) {
+      const r = rules.filter((x) => x.selectors.includes(sel));
+      expect(r.some((x) => x.decls.has('text-align') || x.decls.has('justify-content'))).toBe(
+        false,
+      );
+    }
+    expect(stylesText()).not.toContain('.shop-panel__leave');
+    expect(stylesText()).not.toContain('.build-panel__leave');
+    expect(stylesText()).not.toContain('.sound-panel__actions');
+  });
+
+  it('Scenario: Reglas de centrado (relleno = margen de la pieza × k en cada lado)', () => {
+    const m = buttonMargins;
+    for (const k of [1, 2]) {
+      const want = [m.top * k, m.right * k, m.bottom * k, m.left * k];
+      // La × pinta las esquinas a media escala: relleno = ancho pintado = margen × k / 2.
+      const half = want.map((v) => v / 2);
+      expect(boxSides(declOf(rules, CLOSE, 'padding'), buttonEnv(k, 16))).toEqual(half);
+      expect(boxSides(declOf(rules, CLOSE, 'border-image-width'), buttonEnv(k, 16))).toEqual(half);
+      for (const p of PANELS) {
+        const pad = boxSides(declOf(rules, `${p} button`, 'padding'), buttonEnv(k, FONT_PX[p]));
+        expect(pad, `${p} ×${String(k)}`).toEqual(want);
+      }
+    }
+  });
+
+  it('Scenario: Los siete paneles con la pieza de panel (la × con las piezas de botón)', () => {
+    // La × es un `button` de uno de los paneles: hereda la pieza de cada estado sin reasignarla.
+    const close = rules.filter((r) => r.selectors.includes(CLOSE));
+    expect(close).toHaveLength(1);
+    const decls = close[0]?.decls ?? new Map<string, string>();
+    for (const prop of ['border-image-source', '--ui-b-src', 'border', 'background', 'outline']) {
+      expect(decls.has(prop), prop).toBe(false);
+    }
+    for (const sel of [BUTTON, HOVER, ACTIVE, FOCUS]) {
+      for (const m of MODALS) expect(sel).toContain(m);
+    }
+  });
+
+  it('× en la esquina: a margen de panel × k del borde, 48 × k más su borde, en los 4 modales', () => {
+    const m = panelMargins;
+    for (const k of [1, 2]) {
+      const env = buttonEnv(k, 16);
+      // El −1 descuenta el borde de 1 px del recuadro: la distancia al borde exterior es t·k y r·k.
+      expect(evalLength(declOf(rules, CLOSE, 'top'), env) + 1).toBe(m.top * k);
+      expect(evalLength(declOf(rules, CLOSE, 'right'), env) + 1).toBe(m.right * k);
+      const side = evalLength(declOf(rules, CLOSE, 'width'), env);
+      expect(side).toBe(48 * k + 2);
+      expect(evalLength(declOf(rules, CLOSE, 'height'), env)).toBe(side);
+      // Cara visible = caja − esquinas pintadas (márgenes de la pieza × k / 2 en la ×): el centro
+      // de la caja de contenido es el suyo.
+      const pad = boxSides(declOf(rules, CLOSE, 'padding'), env);
+      const content = { w: side - 2 - pad[1] - pad[3], h: side - 2 - pad[0] - pad[2] };
+      const contentCenter = { x: 1 + pad[3] + content.w / 2, y: 1 + pad[0] + content.h / 2 };
+      const h = k / 2;
+      const face = {
+        x: buttonMargins.left * h + (side - (buttonMargins.left + buttonMargins.right) * h) / 2,
+        y: buttonMargins.top * h + (side - (buttonMargins.top + buttonMargins.bottom) * h) / 2,
+      };
+      expect(contentCenter).toEqual(face);
+    }
+    expect(declOf(rules, CLOSE, 'position')).toBe('absolute');
+    expect(declOf(rules, CLOSE, 'place-items')).toBe('unsafe center');
+    expect(declOf(rules, CLOSE, 'place-content')).toBe('unsafe center');
+    for (const p of MODALS) expect(declOf(rules, p, 'position')).toBe('relative');
+  });
+
+  it('el título y la cabecera dejan sitio a la × (56 × k): tienda, obra, guía y Sonido', () => {
+    const env = { emPx: 16, vars: { '--ui-scale': 2 } };
+    for (const p of MODALS) expect(evalLength(declOf(rules, p, '--ui-close-room'), env)).toBe(112);
+    expect(declOf(rules, '.shop-panel h2', 'margin-inline')).toBe('var(--ui-close-room)');
+    expect(declOf(rules, '.build-panel h2', 'margin-inline')).toBe('var(--ui-close-room)');
+    expect(declOf(rules, '.guide-modal__header', 'padding-right')).toBe('var(--ui-close-room)');
+    expect(declOf(rules, '.sound-panel__header', 'padding-inline')).toBe('var(--ui-close-room)');
+    // La regla del margen va detrás de la de `margin: 0` de los títulos (si no, la anularía).
+    const last = (sel: string, prop: string) =>
+      rules
+        .map((r, i) => (r.selectors.includes(sel) && r.decls.has(prop) ? i : -1))
+        .sort((a, b) => b - a)[0] ?? -1;
+    expect(last('.build-panel h2', 'margin-inline')).toBeGreaterThan(
+      last('.build-panel h2', 'margin'),
+    );
+    expect(last('.shop-panel h2', 'margin-inline')).toBeGreaterThan(
+      last('.shop-panel h2', 'margin'),
+    );
+  });
+
+  it('× en móvil: la regla táctil de 44 × 44 px alcanza a los botones de los cuatro modales', () => {
+    for (const p of MODALS) {
+      expect(declOf(rules, `.is-mobile ${p} button`, 'min-width')).toBe('44px');
+      expect(declOf(rules, `.is-mobile ${p} button`, 'min-height')).toBe('44px');
+    }
+    // A escala 1 (la de móvil) la × ya mide 50 × 50 px CSS.
+    expect(evalLength(declOf(rules, CLOSE, 'width'), buttonEnv(1, 16))).toBeGreaterThanOrEqual(44);
+  });
+
+  it('castle-shop · Scenario: Tienda con desplazamiento interno a ×1 en 1.280 × 720 (la × fuera de la lista)', () => {
+    // Posición absoluta respecto al recuadro: no se desplaza con la lista ni entra en su flujo.
+    expect(declOf(rules, CLOSE, 'position')).toBe('absolute');
+    expect(declOf(rules, '.shop-panel', 'position')).toBe('relative');
+    expect(
+      rules.some((r) => r.selectors.some((s) => s.includes('.shop-panel__products .ui-close'))),
+    ).toBe(false);
+  });
+
+  it('menu-guide · Scenario: Iconos de la guía mayores (cuadrado de más de 2em)', () => {
+    for (const k of [1, 2]) {
+      const env = { emPx: 16 * k, vars: { '--ui-scale': k } };
+      const w = evalLength(declOf(rules, '.resource-icon', 'width'), env);
+      expect(evalLength(declOf(rules, '.resource-icon', 'height'), env)).toBe(w);
+      expect(w).toBeGreaterThan(2 * 16 * k);
+      expect(w).toBeGreaterThan(32 * k);
+    }
+  });
+
+  it('build-sites · Scenario: Iconos de recurso mayores (saldo y filas: cuadrado de más de 2em)', () => {
+    const env = { emPx: 14, vars: { '--ui-scale': 1 } };
+    const w = evalLength(declOf(rules, '.resource-icon', 'width'), env);
+    expect(evalLength(declOf(rules, '.resource-icon', 'height'), env)).toBe(w);
+    expect(w).toBeGreaterThan(2 * 14);
+    // Ninguna regla de la obra cambia su tamaño: el mismo en el saldo y en las filas.
+    const resized = rules.filter(
+      (r) =>
+        r.selectors.some((s) => s.includes('resource-icon') && s !== '.resource-icon') &&
+        (r.decls.has('width') || r.decls.has('height')),
+    );
+    expect(resized).toEqual([]);
+  });
+
+  it('build-sites · Scenario: Proporción del icono del edificio (alto 3,5em ≥ 3em, ancho auto)', () => {
+    const env = { emPx: 14, vars: { '--ui-scale': 1 } };
+    const h = evalLength(declOf(rules, '.build-panel__icon', 'height'), env);
+    expect(h).toBeGreaterThanOrEqual(evalLength(declOf(rules, '.resource-icon', 'height'), env));
+    expect(declOf(rules, '.build-panel__icon', 'width')).toBe('auto');
+    expect(declOf(rules, '.build-panel__icon', 'image-rendering')).toBe('pixelated');
+    // Con los atributos del frame, el ancho en pantalla es alto × w / h: 128 : 192 y 128 : 256.
+    expect((h * 128) / 192).toBeCloseTo(32.67, 1);
+    expect((h * 128) / 256).toBeCloseTo(24.5, 1);
+    expect(declOf(rules, '.build-panel__icon[hidden]', 'display')).toBe('none');
+  });
+
+  it('build-sites · Scenario: Explicación en una fila no asequible (tinta muted de su pieza)', () => {
+    expect(declOf(rules, '.build-panel__about', 'color')).toBe('var(--ui-b-muted, #c8c8d8)');
+    expect(declOf(rules, DISABLED, '--ui-b-muted')).toBe(
+      'var(--ui-button-disabled-on-muted, #c8c8d8)',
+    );
+    // La explicación va en su propia celda de la rejilla, distinta del nombre y del coste: nombre,
+    // explicación y coste en tres líneas de la misma columna (el coste no estrecha el texto).
+    expect(declOf(rules, '.build-panel__name', 'grid-row')).toBe('1');
+    expect(declOf(rules, '.build-panel__about', 'grid-row')).toBe('2');
+    expect(declOf(rules, '.build-panel__cost', 'grid-row')).toBe('3');
+    expect(declOf(rules, '.build-panel__cost', 'grid-column')).toBe('2');
+    expect(() => declOf(rules, '.build-panel__about', 'overflow-wrap')).toThrow();
   });
 });

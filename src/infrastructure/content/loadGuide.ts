@@ -2,7 +2,9 @@ import type { RunConfig } from '../../domain/run/RunConfig';
 import { err, invalidConfig, ok, type DomainError, type Result } from '../../domain/shared/Result';
 import { interpolate, markerValues, type InterpolationIssue } from './guideMarkers';
 import {
+  BUILD_TEXT_MAX,
   GUIDE_BRACE_UNMATCHED,
+  GUIDE_BUILD_TOO_LONG,
   GUIDE_MARKER_UNKNOWN,
   GUIDE_MARKER_UNRESOLVED,
   GuideSchema,
@@ -11,6 +13,8 @@ import {
 } from './guideSchema';
 
 const FIELD_ROOT = 'guide';
+const BUILDING_KINDS = ['house', 'tower'] as const;
+type BuildingKind = (typeof BUILDING_KINDS)[number];
 
 /** `(página n)` con n de 1 a 7 si la ruta empieza en `pages.<índice>`; si no, nada. */
 function pageSuffix(path: readonly (string | number)[]): string {
@@ -68,5 +72,15 @@ export function parseGuide(raw: unknown, config: RunConfig): Result<Guide, Domai
       }),
     );
   }
-  return ok(Object.freeze({ pages: Object.freeze(pages) }));
+  // 0036 (design D7): las explicaciones de la obra, con los mismos marcadores; campo sin página.
+  const build: Record<BuildingKind, string> = { house: '', tower: '' };
+  for (const kind of BUILDING_KINDS) {
+    const shown = interpolate(parsed.data.build[kind], values);
+    if (!shown.ok) return err(guideError(['build', kind], issueMessage(shown.error)));
+    if (shown.value.length > BUILD_TEXT_MAX) {
+      return err(guideError(['build', kind], GUIDE_BUILD_TOO_LONG));
+    }
+    build[kind] = shown.value;
+  }
+  return ok(Object.freeze({ pages: Object.freeze(pages), build: Object.freeze(build) }));
 }

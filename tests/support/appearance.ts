@@ -187,6 +187,7 @@ export interface RawAppearance {
   pickupMotion: { float: Record<string, unknown>; spawnStaggerMs: unknown } & Json;
   ui: RawUi;
   icons: { fallback: Record<string, unknown>; byId: Record<string, unknown> } & Json;
+  hud: { icons: Record<string, Json & { crop: Json }> } & Json;
   [extra: string]: unknown;
 }
 
@@ -393,6 +394,8 @@ export function rawAppearance(): RawAppearance {
     ui: rawUi(),
     // 0034: los iconos del repositorio (sus rutas, en la lista IA: `GENERATED_PATHS`).
     icons: structuredClone(appearanceJson.icons),
+    // 0036: contadores del HUD del repositorio (lado, paso, recortes y frame de la calavera).
+    hud: structuredClone(appearanceJson.hud),
   };
 }
 

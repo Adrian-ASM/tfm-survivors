@@ -1,6 +1,13 @@
 import { cardLayout } from '../cardLayout';
 import { screenFrame, type FrameRule, type FrameSize, type ScreenFrame } from './screenFrame';
-import { HUD_BASE, HUD_RESERVE_TEXTS, hudBoxes, hudLayout, type Box } from './uiLayout';
+import {
+  HUD_BASE,
+  HUD_RESERVE_TEXTS,
+  hudBoxes,
+  hudLayout,
+  type Box,
+  type HudMetrics,
+} from './uiLayout';
 
 // Escala de la UI del lienzo en modo móvil (spec mobile-display 0033, design §3): funciones puras,
 // sin motor. k = min(k_max, max(1, k_min)), sin redondeo.
@@ -37,7 +44,13 @@ function laidOut(boxes: readonly Box[], w: number, h: number): boolean {
  * reserva), enteros dentro del lienzo W × H y sin solaparse? (spec: k_max). Las cartas y el HUD
  * se comprueban por separado: el velo de la oferta tapa el HUD y no cuenta como solape.
  */
-export function fitsAt(width: number, height: number, k: number): boolean {
+export function fitsAt(
+  width: number,
+  height: number,
+  k: number,
+  /** Lado y paso de los contadores del HUD (0036, datos de aspecto). */
+  metrics: HudMetrics,
+): boolean {
   const frame: ScreenFrame = { width, height, uiScale: k };
   const cards = cardLayout(frame, OFFER_CARDS).map((c) => ({
     x: c.x - c.width / 2,
@@ -45,7 +58,7 @@ export function fitsAt(width: number, height: number, k: number): boolean {
     width: c.width,
     height: c.height,
   }));
-  const hud = Object.values(hudBoxes(hudLayout(frame), HUD_RESERVE_TEXTS));
+  const hud = Object.values(hudBoxes(hudLayout(frame, metrics), HUD_RESERVE_TEXTS));
   return laidOut(cards, width, height) && laidOut(hud, width, height);
 }
 
@@ -54,14 +67,14 @@ export function fitsAt(width: number, height: number, k: number): boolean {
  * es lineal en k con anclajes a los bordes, así que el predicado es monótono. Si ni a ×1 cabe
  * (ventana a 0), 1.
  */
-export function maxUiScale(width: number, height: number): number {
-  if (!fitsAt(width, height, K_LOW)) return K_LOW;
-  if (fitsAt(width, height, K_HIGH)) return K_HIGH;
+export function maxUiScale(width: number, height: number, metrics: HudMetrics): number {
+  if (!fitsAt(width, height, K_LOW, metrics)) return K_LOW;
+  if (fitsAt(width, height, K_HIGH, metrics)) return K_HIGH;
   let lo = K_LOW;
   let hi = K_HIGH;
   while (hi - lo > K_TOLERANCE) {
     const mid = (lo + hi) / 2;
-    if (fitsAt(width, height, mid)) lo = mid;
+    if (fitsAt(width, height, mid, metrics)) lo = mid;
     else hi = mid;
   }
   return lo;
@@ -77,20 +90,21 @@ export function mobileUiScale(
   height: number,
   cssPerUnit: number,
   minTextPx: number,
+  metrics: HudMetrics,
 ): number {
   if (!(Number.isFinite(cssPerUnit) && cssPerUnit > 0)) return 1;
   const kMin = minTextPx / (HUD_BASE.fontSize * cssPerUnit);
-  return Math.min(maxUiScale(width, height), Math.max(1, kMin));
+  return Math.min(maxUiScale(width, height, metrics), Math.max(1, kMin));
 }
 
 /**
  * Regla del frame en modo móvil: el mismo `ScreenFrame` (tamaño lógico hacia abajo) con el k
  * fraccionario de `mobileUiScale`.
  */
-export function mobileFrameRule(minTextPx: number): FrameRule {
+export function mobileFrameRule(minTextPx: number, metrics: HudMetrics): FrameRule {
   return (game, display) => {
     const { width, height } = screenFrame(game.width, game.height);
-    const uiScale = mobileUiScale(width, height, displayScale(game, display), minTextPx);
+    const uiScale = mobileUiScale(width, height, displayScale(game, display), minTextPx, metrics);
     return { width, height, uiScale };
   };
 }

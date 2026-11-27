@@ -1,7 +1,7 @@
 import type { ShopProductSnapshot, ShopSnapshot } from '../../domain/run/RunSnapshot';
 import type { IconChoice, IconState } from '../icons/upgradeIcons';
 import type { ShopAction } from '../phaser/ShopGate';
-import { button, setPanelHidden } from './button';
+import { button, closeButton, setPanelHidden } from './button';
 import { MENU_LABELS } from './menuText';
 
 /** Lo que muestra el panel de un producto (sonda E2E, spec castle-shop "Tienda observable"). */
@@ -57,7 +57,7 @@ export function productTexts(
 
 /**
  * Overlay DOM de la tienda (ADR-0011, spec castle-shop 0024): oro, una fila por producto en el orden
- * de la tienda y `Salir`. Los clics dejan una acción que la escena consume con `takeAction`; las
+ * de la tienda y la × (`Salir`). Los clics dejan una acción que la escena consume con `takeAction`; las
  * reglas (Esc, compra, salida) están en `ShopGate` y en los casos de uso. Se reconstruye solo cuando
  * cambia la clave del `ShopSnapshot`, no por frame. Solo `textContent` y clases (CSP estricta).
  */
@@ -86,10 +86,10 @@ export class ShopPanel {
     this.gold.className = 'shop-panel__gold';
     this.list = doc.createElement('ul');
     this.list.className = 'shop-panel__products';
-    const leave = button(doc, MENU_LABELS.shopLeave, () => {
+    // 0036: la × de la esquina (nombre accesible `Salir`), último hijo del recuadro.
+    const leave = closeButton(doc, MENU_LABELS.shopLeave, () => {
       this.action = { kind: 'leave' };
     });
-    leave.className = 'shop-panel__leave';
     this.root.append(title, this.gold, this.list, leave);
     parent.append(this.root);
   }

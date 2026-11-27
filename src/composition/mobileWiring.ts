@@ -7,6 +7,7 @@ import { TouchBar } from '../infrastructure/dom/TouchBar';
 import { DESKTOP_VIEWPORT, type ViewportMode } from '../infrastructure/e2e/viewportProbe';
 import type { SceneTouch } from '../infrastructure/phaser/GameScene';
 import { mobileFrameRule } from '../infrastructure/phaser/ui/mobileFrame';
+import type { HudMetrics } from '../infrastructure/phaser/ui/uiLayout';
 import {
   screenFrame,
   type FrameRule,
@@ -27,6 +28,8 @@ export interface MobileEnv {
   /** `classList` de `<html>` (CSSOM: lo permite la CSP). */
   readonly classes: { toggle(token: string, force: boolean): unknown };
   readonly fullscreen: FullscreenLike;
+  /** Lado y paso de los contadores del HUD (0036, `appearance.json` `hud`): entran en k_max. */
+  readonly hud: HudMetrics;
   /**
    * Silencio (0035): el botón de la barra marca en `requests` (como M) y su icono sigue a `store`.
    * Sin él, la barra no lleva botón de silencio.
@@ -92,7 +95,7 @@ export function wireMobile(on: boolean, mobile: MobileDisplay, env: MobileEnv): 
     });
   }
   const notice = new RotateNotice(env.doc, env.root);
-  const frameRule = mobileFrameRule(mobile.minTextPx);
+  const frameRule = mobileFrameRule(mobile.minTextPx, env.hud);
   let portrait = false;
   return {
     on: true,

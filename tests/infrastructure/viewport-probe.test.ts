@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { viewportProbe } from '../../src/infrastructure/e2e/viewportProbe';
 import { mobileFrameRule } from '../../src/infrastructure/phaser/ui/mobileFrame';
+import { HUD_METRICS } from '../support/hud';
 
 // Spec world-camera (0017), "Sonda de cámara para E2E" (design D10): tamaño de ventana y escala.
 describe('viewportProbe (0017)', () => {
@@ -25,7 +26,7 @@ describe('viewportProbe (0017)', () => {
 
 // Spec mobile-display (0033), "Sonda de pantalla con modo móvil".
 describe('viewportProbe con modo móvil (0033)', () => {
-  const MOBILE = { mobile: true, rule: mobileFrameRule(12) };
+  const MOBILE = { mobile: true, rule: mobileFrameRule(12, HUD_METRICS) };
 
   it('Scenario: Sonda en móvil (844 × 390: móvil, DOM 1, factor ≥ 1 y px CSS por unidad)', () => {
     const v = viewportProbe(

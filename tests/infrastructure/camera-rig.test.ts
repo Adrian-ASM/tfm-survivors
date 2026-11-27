@@ -18,6 +18,7 @@ import { fakeKit } from '../support/FakeSprite';
 import { someLooks } from '../support/looks';
 import { randomInputs } from '../support/inputs';
 import { chooseFirstWhileOpen, startSeededRun } from '../support/runs';
+import { HUD_METRICS } from '../support/hud';
 
 // Spec world-camera (0017): vista del tamaño del lienzo (ventana recortada al tope), mundo de
 // content/arena.json. Salvo que se diga otra cosa, ventana de 1.280 × 720.
@@ -366,7 +367,7 @@ describe('La cámara no cambia la simulación (0017)', () => {
 describe('Cámara en modo móvil (0033)', () => {
   /** Frame móvil del tamaño lógico que da Phaser (EXPAND) para esa ventana. */
   const mobileFrame = (game: { width: number; height: number }, pw: number, ph: number) =>
-    mobileFrameRule(12)(game, { width: pw, height: ph });
+    mobileFrameRule(12, HUD_METRICS)(game, { width: pw, height: ph });
   const PHONE = mobileFrame({ width: 1385.03, height: 640 }, 844, 390);
 
   it('Scenario: Cámara con el tamaño lógico (844 × 390, jugador en (1.950, 1.170) → (1.257,5, 850))', () => {

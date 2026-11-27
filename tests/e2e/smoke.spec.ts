@@ -4,8 +4,10 @@ import {
   backToMenu,
   collect,
   DESKTOP_VIEWPORT_EXTRA,
+  closeCorner,
   cspState,
   expectManual,
+  faceCenterOffset,
   focusGame,
   gameUrl,
   menuButton,
@@ -90,6 +92,14 @@ test('Arranque y menú: botones, guía, título, sin errores de consola ni de CS
   // 0017 (D11): el título es el h1 del panel del menú (un único bloque centrado).
   await expect(menuPanel(page).getByRole('heading', { level: 1 })).toHaveText('Greentide Vanguard');
 
+  // Spec sprite-rendering (0036), "Centrado medido en el navegador": los 6 botones del menú a
+  // 1.280 × 720 (k = 1), con el texto centrado en la cara visible (≤ 1 px en x y en y).
+  for (const name of MENU_BUTTONS) {
+    const off = await faceCenterOffset(menuButton(page, name));
+    expect(off.dx, name).toBeLessThanOrEqual(1);
+    expect(off.dy, name).toBeLessThanOrEqual(1);
+  }
+
   // Spec menu-guide (0028), "Recorrido de la guía en el smoke": solo DOM, sin sonda ni reloj.
   const guide = page.locator('.guide-modal');
   const indicator = guide.locator('.guide-modal__page');
@@ -100,6 +110,13 @@ test('Arranque y menú: botones, guía, título, sin errores de consola ni de CS
   await expect(indicator).toHaveText('1 de 7');
   await expect(control('Anterior')).toBeHidden();
   await expect(guide.locator('img.resource-icon')).toHaveCount(0);
+  // 0036: la × (nombre accesible `Cerrar`, texto `×`) y `Siguiente`, centrados en su cara.
+  await expect(control('Cerrar')).toHaveText('×');
+  for (const name of ['Siguiente', 'Cerrar']) {
+    const off = await faceCenterOffset(control(name));
+    expect(off.dx, name).toBeLessThanOrEqual(1);
+    expect(off.dy, name).toBeLessThanOrEqual(1);
+  }
   for (let k = 2; k <= 3; k += 1) {
     await page.keyboard.press('ArrowRight');
     await expect(indicator).toHaveText(`${String(k)} de 7`);
@@ -115,6 +132,27 @@ test('Arranque y menú: botones, guía, título, sin errores de consola ni de CS
     'carne',
     'piedra',
   ]);
+  // Spec menu-guide (0036), "Iconos mayores en el navegador": > 32 × 32 px a ×1 y sin solaparse
+  // entre sí, con el texto ni con el título.
+  const layout = await guide.evaluate((root) => {
+    const rect = (e: Element) => e.getBoundingClientRect().toJSON() as DOMRect;
+    return {
+      icons: [...root.querySelectorAll('img.resource-icon')].map(rect),
+      texts: [...root.querySelectorAll('.guide-modal__body > p:not(.guide-modal__icons)')].map(
+        rect,
+      ),
+      title: [...root.querySelectorAll('.guide-modal__header h2')].map(rect),
+    };
+  });
+  const hit = (a: DOMRect, b: DOMRect) =>
+    a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+  expect(layout.icons).toHaveLength(5);
+  for (const [i, icon] of layout.icons.entries()) {
+    expect(icon.width).toBeGreaterThan(32);
+    expect(icon.height).toBeGreaterThan(32);
+    const others = layout.icons.filter((_, j) => j !== i);
+    expect([...others, ...layout.texts, ...layout.title].some((o) => hit(icon, o))).toBe(false);
+  }
   for (let k = 4; k <= 7; k += 1) {
     await page.keyboard.press('ArrowRight');
     await expect(indicator).toHaveText(`${String(k)} de 7`);
@@ -134,6 +172,14 @@ test('Arranque y menú: botones, guía, título, sin errores de consola ni de CS
     await expect(indicator).toHaveText('7 de 7');
     await expectInside(guide, size);
     for (const name of ['Anterior', 'Cerrar']) await expectInside(control(name), size);
+    // 0036, "Recorrido de la guía en el smoke": la × en la esquina superior derecha del recuadro, a
+    // margen de panel × k (16 · k), entera dentro y sin pisar el título ni el indicador.
+    const k = size.width >= 1920 ? 2 : 1;
+    const corner = await closeCorner(guide, ['.guide-modal__header h2', '.guide-modal__page']);
+    expect(corner.inside).toBe(true);
+    expect(Math.abs(corner.top - 16 * k)).toBeLessThanOrEqual(1);
+    expect(Math.abs(corner.right - 16 * k)).toBeLessThanOrEqual(1);
+    expect(corner.overlaps).toEqual([]);
     const box = await guide.boundingBox();
     if (!box) throw new Error('guía sin caja');
     expect(Math.abs(box.x + box.width / 2 - size.width / 2)).toBeLessThanOrEqual(1);
@@ -157,6 +203,8 @@ test('Arranque y menú: botones, guía, título, sin errores de consola ni de CS
   await page.keyboard.press('ArrowLeft');
   await page.keyboard.press('ArrowLeft');
   await expect(values).toHaveText(['40 %', '80 %']);
+  // 0036: la × de la esquina, por su nombre accesible `Cerrar`.
+  await expect(sound.getByRole('button', { name: 'Cerrar', exact: true })).toHaveText('×');
   await sound.getByRole('button', { name: 'Cerrar', exact: true }).click();
   await expect(sound).toBeHidden();
   await expect(menuButton(page, 'Sonido')).toBeFocused();

@@ -60,3 +60,12 @@ describe('DomResultsLines (0017)', () => {
     expect(Object.values(els).every((e) => e.hidden)).toBe(true);
   });
 });
+
+// Spec hud (0036), "Bajas en el HUD": el HUD muestra solo el número; los resultados no cambian.
+describe('Resultados con las bajas de siempre (hud 0036)', () => {
+  it('Scenario: Resultados sin cambios (41 bajas: «Bajas: 41»)', () => {
+    const { els, dom } = lines();
+    new ResultsOverlay(new FakeVisible(), dom.texts).sync(lostAt(1259));
+    expect(els.kills.textContent).toBe('Bajas: 41');
+  });
+});

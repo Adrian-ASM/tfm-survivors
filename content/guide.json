@@ -33,7 +33,7 @@
       "title": "El castillo y su tienda",
       "paragraphs": [
         "Acércate a la puerta del castillo para abrir la tienda. Mientras compras, la partida se detiene.",
-        "Con oro mejoras tus armas ({upgrades.weaponCount} mejoras en total) o compras una cura por {shop.heal.price} de oro. Sal de la tienda con Salir o con Esc."
+        "Con oro mejoras tus armas ({upgrades.weaponCount} mejoras en total) o compras una cura por {shop.heal.price} de oro. Sal de la tienda con la × de su esquina o con Esc."
       ],
       "icons": ["gold"]
     },
@@ -63,5 +63,9 @@
         "Pulsa Esc durante la partida para pausarla. Tus récords y tu historial se guardan en este navegador."
       ]
     }
-  ]
+  ],
+  "build": {
+    "house": "+{buildings.house.incomeGold} oro cada {buildings.house.incomeSeconds} s",
+    "tower": "Dispara flechas a los enemigos cercanos"
+  }
 }

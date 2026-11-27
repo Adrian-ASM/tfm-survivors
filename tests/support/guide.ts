@@ -67,13 +67,24 @@ export class GuideReader {
     return this.root.findAll((e) => e.tagName === 'img' && isShown(e));
   }
 
-  /** Etiquetas de los botones visibles del modal, en orden. */
+  /**
+   * Nombres accesibles de los botones visibles del modal, en orden del DOM (0036: la × se nombra
+   * `Cerrar` por su `aria-label` y va la última).
+   */
   get controls(): string[] {
+    return this.root
+      .findAll((e) => e.tagName === 'button' && isShown(e))
+      .map((b) => b.accessibleName);
+  }
+
+  /** Texto visible de los botones visibles del modal, en orden (0036: la × es `×`). */
+  get labels(): string[] {
     return this.root.findAll((e) => e.tagName === 'button' && isShown(e)).map((b) => b.textContent);
   }
 
+  /** Botón por nombre accesible (`Cerrar` es la ×). */
   control(label: string): FakeElement {
-    const b = this.root.findAll((e) => e.tagName === 'button' && e.textContent === label)[0];
+    const b = this.root.findAll((e) => e.tagName === 'button' && e.accessibleName === label)[0];
     if (!b) throw new Error(`sin botón ${label}`);
     return b;
   }

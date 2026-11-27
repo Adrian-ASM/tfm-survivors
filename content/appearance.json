@@ -908,5 +908,15 @@
       "coverage": "coverage.png",
       "heal": "heal.png"
     }
+  },
+  "hud": {
+    "iconSize": 24,
+    "pitch": 30,
+    "icons": {
+      "kills": { "frame": 5, "crop": { "x": 44, "y": 54, "width": 47, "height": 47 } },
+      "gold": { "crop": { "x": 44, "y": 49, "width": 52, "height": 52 } },
+      "wood": { "crop": { "x": 37, "y": 61, "width": 53, "height": 53 } },
+      "stone": { "crop": { "x": 16, "y": 13, "width": 33, "height": 33 } }
+    }
   }
 }

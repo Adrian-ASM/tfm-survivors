@@ -56,6 +56,7 @@ import {
 } from '../support/runs';
 import { startAtDoor, untilShopping } from '../support/shop';
 import { aSiteConfig, startWithSites, untilBuilding, withStock } from '../support/sites';
+import { HUD_METRICS, testHudIcons } from '../support/hud';
 
 // Specs de 0032 sobre la reserva de las piezas de UI y de la fuente: sprite-rendering ("Partida
 // entera con todas las piezas en reserva", "Fuente que no carga"), main-menu, castle-shop,
@@ -63,11 +64,7 @@ import { aSiteConfig, startWithSites, untilBuilding, withStock } from '../suppor
 const CONFIG = aDefaultConfig();
 const FRAME_MS = 16.667;
 const ui: UiAppearance = repoUi();
-const ICONS = {
-  gold: { texture: 'Resources/Resources/G_Idle.png', frame: 0, color: 0xe8c547 },
-  wood: { texture: 'Resources/Resources/W_Idle.png', frame: 0, color: 0x9c6b3c },
-  stone: { texture: 'Deco/05.png', frame: 0, color: 0x9aa0a6 },
-};
+const ICONS = testHudIcons();
 const UI_KEYS = new Set(UI_FILES);
 
 /** Iconos de prueba (0034) para las 16 claves y las 2 reservas, todos cargados o ninguno. */
@@ -134,7 +131,7 @@ function playPainted(ticks: number, uiLoaded: boolean, iconsLoaded = true) {
   const view = { width: 1280, height: 720 };
   const { scene, made } = fakeUiScene({ view, textures });
   const frame = screenFrame(view.width, view.height);
-  const hud = createHud(scene, frame, ICONS, ui);
+  const hud = createHud(scene, frame, ICONS, HUD_METRICS, ui);
   const offer = createUpgradeOverlay(scene, frame, ui, (id) => book.resolve(id));
   const { doc, root } = fakeDom();
   const shop = new ShopPanel(doc, root, {
@@ -201,8 +198,9 @@ describe('Iconos de mejora sin cargar (0034)', () => {
     // Las cartas y las filas se han pintado: con iconos, painted; sin ellos, none.
     expect(loaded.iconStates).toEqual(['painted']);
     expect(none.iconStates).toEqual(['none']);
-    // 3 imágenes del HUD + 3 iconos de carta, creados una vez en ambos casos; piezas intactas.
-    expect([loaded.images, none.images]).toEqual([6, 6]);
+    // 4 imágenes del HUD (0036: también la calavera) + 3 iconos de carta, creados una vez en ambos
+    // casos; piezas intactas.
+    expect([loaded.images, none.images]).toEqual([7, 7]);
     expect([loaded.slices, none.slices]).toEqual([6, 6]);
   }, 60_000);
 });

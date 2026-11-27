@@ -27,6 +27,14 @@ import { aSiteConfig, startWithSites, untilBuilding, withStock } from '../../sup
 // instantánea se tomó con el DOM de antes del change, que no se toca) y ningún elemento tiene
 // atributo `style`. Más los escenarios de DOM de castle-shop y build-sites.
 const ICONS = { wood: '/assets/W_Idle.png', stone: '/assets/Deco/05.png' } as const;
+/** Imagen y explicación de los edificios (0036), como las cablea la composición. */
+const ABOUT = {
+  icons: {
+    house: { url: '/tfm-survivors/assets/House_Blue.png', width: 128, height: 192 },
+    tower: { url: '/tfm-survivors/assets/Tower_Blue.png', width: 128, height: 256 },
+  },
+  texts: { house: '+1 oro cada 30 s', tower: 'Dispara flechas a los enemigos cercanos' },
+};
 
 /** Estructura comparable de un árbol: etiqueta, clases, rol, texto propio y hijos. */
 interface Shape {
@@ -103,7 +111,7 @@ function mountAll(shopIcons: ShopIcons = SHOP_ICONS) {
   const pause = new PausePanel(doc, root, sound);
   const results = new ResultsPanel(doc, root, { onExport: vi.fn(), onImport: vi.fn() });
   const shop = new ShopPanel(doc, root, shopIcons);
-  const build = new BuildPanel(doc, root, ICONS);
+  const build = new BuildPanel(doc, root, ICONS, ABOUT);
   menu.show();
   guide.open(vi.fn());
   guide.close();
@@ -120,7 +128,52 @@ function mountAll(shopIcons: ShopIcons = SHOP_ICONS) {
   const b = siteSnapshot(10, 0);
   build.sync(b);
   build.setVisible(true);
-  return { fake, fakeDoc };
+  return { fake, fakeDoc, sound: soundParent as unknown as FakeElement };
+}
+
+/**
+ * Deshace las diferencias del DOM que permite 0036 (spec sprite-rendering, "DOM sin cambios"): la ×
+ * vuelve a ser `Salir` abajo en la tienda y la obra y `Cerrar` en las acciones de la guía, y las
+ * filas de la obra pierden su imagen de edificio y su explicación.
+ */
+function undo0036(panels: readonly Shape[]): Shape[] {
+  const old = (cls: string, text: string): Shape => ({
+    tag: 'button',
+    cls,
+    role: null,
+    hidden: false,
+    text,
+  });
+  const map = (sh: Shape, f: (c: Shape) => Shape[]): Shape => ({
+    ...sh,
+    ...(sh.children ? { children: sh.children.flatMap(f).map((c) => map(c, f)) } : {}),
+  });
+  const isX = (c: Shape) =>
+    c.tag === 'button' && c.cls === 'ui-close' && c.text === MENU_LABELS.close;
+  return panels.map((panel) => {
+    if (panel.cls === 'shop-panel') {
+      return map(panel, (c) => (isX(c) ? [old('shop-panel__leave', MENU_LABELS.shopLeave)] : [c]));
+    }
+    if (panel.cls === 'build-panel') {
+      const extra = (c: Shape) => c.cls === 'build-panel__icon' || c.cls === 'build-panel__about';
+      return map(panel, (c) => {
+        if (isX(c)) return [old('build-panel__leave', MENU_LABELS.buildLeave)];
+        return extra(c) ? [] : [c];
+      });
+    }
+    if (panel.cls === 'guide-modal') {
+      const kids = (panel.children ?? []).filter((c) => !isX(c));
+      return {
+        ...panel,
+        children: kids.map((c) =>
+          c.cls === 'guide-modal__actions'
+            ? { ...c, children: [...(c.children ?? []), old('', MENU_LABELS.guideClose)] }
+            : c,
+        ),
+      };
+    }
+    return panel;
+  });
 }
 
 describe('Paneles DOM sin cambios (sprite-rendering 0032)', () => {
@@ -195,7 +248,7 @@ describe('Panel de la tienda con piezas (castle-shop 0032)', () => {
     const list = fake.byClass('shop-panel__products')[0];
     expect(rows.every((r) => list?.contains(r))).toBe(true);
     expect(list?.contains(fake.byClass('shop-panel__gold')[0] ?? null)).toBe(false);
-    expect(list?.contains(fake.byClass('shop-panel__leave')[0] ?? null)).toBe(false);
+    expect(list?.contains(fake.byClass('ui-close')[0] ?? null)).toBe(false);
     rows.at(-1)?.click();
     expect(shop.takeAction()).toEqual({ kind: 'buy', id: rows.at(-1)?.dataset.product });
   });
@@ -235,5 +288,78 @@ describe('Panel de obra con piezas (build-sites 0032)', () => {
     const alts = fake.byClass('resource-icon').map((i) => i.getAttribute('alt'));
     expect(alts.length).toBeGreaterThan(0);
     expect(alts.every((a) => a === 'madera' || a === 'piedra')).toBe(true);
+  });
+});
+
+// Spec sprite-rendering (0036), "DOM sin cambios": las únicas diferencias desde 0032 (más la imagen
+// de fila de 0034) son la × de la tienda, la obra y la guía y la imagen y la explicación de las
+// filas de la obra. La instantánea `antes de 0036` es la de 0034/0035 sin regenerar.
+describe('Paneles DOM sin cambios salvo la × y la obra (sprite-rendering 0036)', () => {
+  it('Scenario: DOM sin cambios (antes de 0036: deshechas solo las diferencias permitidas)', () => {
+    const { fake } = mountAll();
+    expect(undo0036(fake.children.map(shape))).toMatchSnapshot('antes de 0036');
+  });
+
+  it('Scenario: DOM sin cambios (la × de cada modal, con aria-label y sin style)', () => {
+    const { fake, sound } = mountAll();
+    const panels = [...fake.children, ...sound.children];
+    const xs = (cls: string) => {
+      const panel = panels.find((p) => p.className === cls) as FakeElement;
+      return panel.findAll((e) => e.tagName === 'button' && e.textContent === MENU_LABELS.close);
+    };
+    const names = ['shop-panel', 'build-panel', 'guide-modal', 'sound-panel'].map((cls) =>
+      xs(cls).map((b) => [b.accessibleName, b.getAttribute('style')]),
+    );
+    expect(names).toEqual([
+      [[MENU_LABELS.shopLeave, null]],
+      [[MENU_LABELS.buildLeave, null]],
+      [[MENU_LABELS.guideClose, null]],
+      [[MENU_LABELS.soundClose, null]],
+    ]);
+    // Ninguno de los demás paneles tiene ×.
+    for (const cls of ['menu-panel', 'pause-panel', 'confirm-dialog', 'results-panel']) {
+      expect(xs(cls), cls).toEqual([]);
+    }
+    expect(panels.flatMap(styled)).toEqual([]);
+    // En la tienda y la obra no queda texto visible `Salir`; en la guía, `Cerrar`.
+    const texts = (cls: string) =>
+      all(panels.find((p) => p.className === cls) as FakeElement).map((e) => e.textContent);
+    expect(texts('shop-panel')).not.toContain(MENU_LABELS.shopLeave);
+    expect(texts('build-panel')).not.toContain(MENU_LABELS.buildLeave);
+    expect(texts('guide-modal')).not.toContain(MENU_LABELS.guideClose);
+  });
+
+  it('Scenario: Cuatro modales con una × (por nombre accesible, sin style)', () => {
+    const { fake, sound } = mountAll();
+    const panels = [...fake.children, ...sound.children];
+    const count = panels.map((p) => [
+      p.className,
+      p.findAll((e) => e.tagName === 'button' && e.textContent === MENU_LABELS.close).length,
+    ]);
+    expect(count).toEqual([
+      ['guide-modal', 1],
+      ['menu-panel', 0],
+      ['confirm-dialog', 0],
+      ['pause-panel', 0],
+      ['results-panel', 0],
+      ['shop-panel', 1],
+      ['build-panel', 1],
+      ['sound-panel', 1],
+    ]);
+  });
+
+  it('Scenario: DOM sin cambios (obra: 1 imagen y 1 explicación más por cada una de sus 2 filas)', () => {
+    const { fake } = mountAll();
+    const build = fake.children.find((p) => p.className === 'build-panel') as FakeElement;
+    const rows = build.findAll((e) => e.dataset.building !== undefined);
+    expect(
+      rows.map((r) => [
+        r.byClass('build-panel__icon').length,
+        r.byClass('build-panel__about').length,
+      ]),
+    ).toEqual([
+      [1, 1],
+      [1, 1],
+    ]);
   });
 });

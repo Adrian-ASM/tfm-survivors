@@ -19,7 +19,7 @@ import type { OfferIconView } from '../infrastructure/phaser/UpgradeOverlay';
 import { PausePanel } from '../infrastructure/dom/PausePanel';
 import { ShopPanel, type ShopPanelView } from '../infrastructure/dom/ShopPanel';
 import { BuildPanel, type BuildPanelView } from '../infrastructure/dom/BuildPanel';
-import { resourceIcons } from '../infrastructure/dom/resourceIcons';
+import { buildingIcons, resourceIcons } from '../infrastructure/dom/resourceIcons';
 import type { SiteSnapshot } from '../domain/run/RunSnapshot';
 import { GameScene, type SceneCapacity, type Screen } from '../infrastructure/phaser/GameScene';
 import { MenuScene } from '../infrastructure/phaser/MenuScene';
@@ -281,13 +281,18 @@ function bootstrap(): void {
     resolve: (id) => iconBook.resolve(id),
     url: iconFileUrl,
   });
-  const buildPanel = new BuildPanel(document, root, icons);
+  // 0036: cada fila con la imagen de su edificio y la explicación de guide.json (`build`).
+  const buildPanel = new BuildPanel(document, root, icons, {
+    icons: buildingIcons(appearance, sheetUrl),
+    texts: booted.guide.build,
+  });
   // Barra táctil, aviso de orientación y dependencias de la escena: solo en modo móvil.
   const mobile = wireMobile(mobileMode.on, booted.mobile, {
     doc: document,
     root,
     classes: document.documentElement.classList,
     fullscreen: browserFullscreen(document),
+    hud: appearance.hud,
     mute: { requests: audio.requests, store: audio.store },
   });
   const screens: Screen[] = [];

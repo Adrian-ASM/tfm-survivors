@@ -29,5 +29,8 @@ export function healthFill(health: number, maxHealth: number): number {
 export const healthLabel = (health: number, maxHealth: number): string =>
   `${String(Math.ceil(health))}/${String(Math.ceil(maxHealth))}`;
 
-/** Bajas como entero completo, sin abreviar. */
-export const killsLabel = (kills: number): string => `Bajas: ${String(kills)}`;
+/**
+ * Bajas como entero completo, sin abreviar ni separador de miles. 0036: solo el número, junto a la
+ * calavera (sin «Bajas: »); los resultados conservan su texto propio.
+ */
+export const killsLabel = (kills: number): string => String(kills);

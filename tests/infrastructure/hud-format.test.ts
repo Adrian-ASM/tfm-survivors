@@ -67,12 +67,14 @@ describe('Vida en el HUD (spec hud)', () => {
   });
 });
 
+// 0036: solo el número, junto a la calavera (sin «Bajas: »); los resultados conservan el suyo.
 describe('Bajas en el HUD (spec hud)', () => {
-  it('Scenario: Muchas bajas (12.345 completo, sin abreviar)', () => {
-    expect(killsLabel(12_345)).toBe('Bajas: 12345');
+  it('Scenario: Muchas bajas (12.345: exactamente 12345)', () => {
+    expect(killsLabel(12_345)).toBe('12345');
   });
 
   it('Scenario: Sin bajas', () => {
-    expect(killsLabel(0)).toBe('Bajas: 0');
+    expect(killsLabel(0)).toBe('0');
+    expect(killsLabel(0)).not.toContain('Bajas');
   });
 });

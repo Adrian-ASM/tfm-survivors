@@ -25,6 +25,7 @@ import {
 } from '../../src/infrastructure/phaser/UpgradeOverlay';
 import { DEFAULT_MOBILE } from '../support/builders';
 import { repoUi } from '../support/phaserUi';
+import { HUD_METRICS } from '../support/hud';
 
 // Spec upgrades (0017): cartas centradas en la ventana y enteras (design D5).
 const left = (c: CardRect) => c.x - c.width / 2;
@@ -118,7 +119,7 @@ function mobileFrame(pw: number, ph: number): ScreenFrame {
     sx < sy
       ? { width: MOBILE_BASE.width, height: ph / sx }
       : { width: pw / sy, height: MOBILE_BASE.height };
-  return mobileFrameRule(DEFAULT_MOBILE.minTextPx)(logical, { width: pw, height: ph });
+  return mobileFrameRule(DEFAULT_MOBILE.minTextPx, HUD_METRICS)(logical, { width: pw, height: ph });
 }
 
 const BUTTON: CardMargins = uiMargins(repoUi().pieces.button);

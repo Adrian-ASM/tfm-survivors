@@ -86,6 +86,20 @@ describe('SoundPanelGate (spec main-menu 0035)', () => {
     expect([pause.paused, tick]).toEqual([true, 500]);
   });
 
+  it('Scenario: Cerrar con la × desde el menú y desde la pausa (desde la pausa, tick 500)', () => {
+    // 0036: la × llama a `close()` del panel (como Esc desde el menú); la escena no ve ningún Esc.
+    const { pause, panel, frame } = pausedAt500();
+
+    panel.close();
+    let tick = 0;
+    for (let i = 0; i < 60; i++) tick = frame().tick;
+    const stillPaused = pause.paused;
+    frame(keys({ esc: true }));
+
+    expect([panel.open, stillPaused, tick]).toEqual([false, true, 500]);
+    expect(pause.paused).toBe(false);
+  });
+
   it('Scenario: Volver al menú bloqueado con el panel Sonido', () => {
     const { pause, panel, frame } = pausedAt500();
 

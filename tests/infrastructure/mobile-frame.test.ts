@@ -16,6 +16,7 @@ import {
   type Box,
 } from '../../src/infrastructure/phaser/ui/uiLayout';
 import { DEFAULT_MOBILE } from '../support/builders';
+import { HUD_METRICS } from '../support/hud';
 
 // Spec mobile-display y hud (0033), "Escala de la UI del lienzo en modo móvil" (design §3).
 const BASE = { width: DEFAULT_MOBILE.minWidth, height: DEFAULT_MOBILE.baseHeight };
@@ -32,7 +33,7 @@ function expand(pw: number, ph: number): { width: number; height: number } {
 
 /** Frame móvil de una ventana P_w × P_h con texto mínimo m. */
 const frameAt = (pw: number, ph: number, m = DEFAULT_MOBILE.minTextPx) =>
-  mobileFrameRule(m)(expand(pw, ph), { width: pw, height: ph });
+  mobileFrameRule(m, HUD_METRICS)(expand(pw, ph), { width: pw, height: ph });
 
 const inside = (b: Box, w: number, h: number): boolean =>
   b.x >= 0 && b.y >= 0 && b.x + b.width <= w && b.y + b.height <= h;
@@ -71,7 +72,7 @@ describe('mobileFrame (0033)', () => {
     const f = frameAt(1024, 768);
 
     expect([f.width, f.height, f.uiScale]).toEqual([960, 720, 1]);
-    expect(fitsAt(960, 720, 1)).toBe(true);
+    expect(fitsAt(960, 720, 1, HUD_METRICS)).toBe(true);
   });
 
   it('Scenario: Texto mínimo inalcanzable (texto 20: k < 2,344 y k + 0,01 ya no cabe)', () => {
@@ -79,8 +80,8 @@ describe('mobileFrame (0033)', () => {
 
     expect(f.uiScale).toBeLessThan(2.344);
     expect(f.uiScale).toBeGreaterThan(1);
-    expect(fitsAt(f.width, f.height, f.uiScale)).toBe(true);
-    expect(fitsAt(f.width, f.height, f.uiScale + 0.01)).toBe(false);
+    expect(fitsAt(f.width, f.height, f.uiScale, HUD_METRICS)).toBe(true);
+    expect(fitsAt(f.width, f.height, f.uiScale + 0.01, HUD_METRICS)).toBe(false);
   });
 
   it.each([
@@ -90,7 +91,7 @@ describe('mobileFrame (0033)', () => {
     [1366, 1024],
   ])('Scenario: HUD entero en móvil (%i × %i)', (pw, ph) => {
     const f = frameAt(pw, ph);
-    const all = Object.values(hudBoxes(hudLayout(f), HUD_RESERVE_TEXTS));
+    const all = Object.values(hudBoxes(hudLayout(f, HUD_METRICS), HUD_RESERVE_TEXTS));
 
     expect(all.every((b) => inside(b, f.width, f.height))).toBe(true);
     const pairs = all.flatMap((a, i) => all.slice(i + 1).map((b) => overlap(a, b)));
@@ -98,9 +99,10 @@ describe('mobileFrame (0033)', () => {
   });
 
   it('Scenario: Factor fraccionario en modo móvil (medidas 1,4066 × las de factor 1)', () => {
-    const mobile = hudLayout(frameAt(844, 390));
+    const mobile = hudLayout(frameAt(844, 390), HUD_METRICS);
     const desktop = hudLayout(
       desktopFrameRule({ width: 1280, height: 720 }, { width: 0, height: 0 }),
+      HUD_METRICS,
     );
     const k = mobile.uiScale;
     const s = 390 / 640;
@@ -120,7 +122,7 @@ describe('mobileFrame (0033)', () => {
   it('Scenario: El mismo tamaño de ventana con y sin modo móvil (1.280 × 720: k 1 en ambos)', () => {
     const desktop = desktopFrameRule({ width: 1280, height: 720 }, { width: 1280, height: 720 });
     const game = expand(1280, 720);
-    const mobile = mobileFrameRule(12)(game, { width: 1280, height: 720 });
+    const mobile = mobileFrameRule(12, HUD_METRICS)(game, { width: 1280, height: 720 });
     const s = displayScale(game, { width: 1280, height: 720 });
 
     expect(game.width).toBeCloseTo(1137.78, 2);
@@ -130,16 +132,37 @@ describe('mobileFrame (0033)', () => {
   });
 
   it('Scenario: Ventana a cero en móvil (k = 1, sin errores)', () => {
-    const f = mobileFrameRule(12)({ width: 0, height: 0 }, { width: 0, height: 0 });
+    const f = mobileFrameRule(12, HUD_METRICS)({ width: 0, height: 0 }, { width: 0, height: 0 });
 
     expect(f.uiScale).toBe(1);
-    expect(mobileUiScale(1385, 640, 0, 12)).toBe(1);
-    expect(mobileUiScale(1385, 640, Number.NaN, 12)).toBe(1);
+    expect(mobileUiScale(1385, 640, 0, 12, HUD_METRICS)).toBe(1);
+    expect(mobileUiScale(1385, 640, Number.NaN, 12, HUD_METRICS)).toBe(1);
   });
 
   it('maxUiScale: ≥ 1 con el lienzo mínimo y limitado por la fila de cartas a 844 × 390', () => {
-    expect(maxUiScale(960, 540)).toBeGreaterThanOrEqual(1);
-    expect(maxUiScale(1385, 640)).toBeCloseTo(1385 / 768, 2);
-    expect(maxUiScale(1, 1)).toBe(1);
+    expect(maxUiScale(960, 540, HUD_METRICS)).toBeGreaterThanOrEqual(1);
+    expect(maxUiScale(1385, 640, HUD_METRICS)).toBeCloseTo(1385 / 768, 2);
+    expect(maxUiScale(1, 1, HUD_METRICS)).toBe(1);
+  });
+});
+
+// Spec hud (0036), "Iconos del HUD en modo móvil": lado s·k con el k fraccionario, que siguen fijando
+// las 3 cartas (k_max = 1.385 / 768 y 1,4066 a 844 × 390, como antes del change).
+describe('Contadores con icono en modo móvil (0036)', () => {
+  it('Scenario: Iconos del HUD en modo móvil (844 × 390, texto 12 px: s·k y HUD entero)', () => {
+    const f = frameAt(844, 390);
+    const s = displayScale(expand(844, 390), { width: 844, height: 390 });
+    const l = hudLayout(f, HUD_METRICS);
+    for (const c of [l.kills, l.gold, l.wood, l.stone]) {
+      expect(Math.abs(c.icon.size - HUD_METRICS.iconSize * f.uiScale)).toBeLessThanOrEqual(1);
+    }
+    const all = Object.values(hudBoxes(l, HUD_RESERVE_TEXTS));
+    expect(all).toHaveLength(9);
+    expect(all.every((b) => inside(b, f.width, f.height))).toBe(true);
+    const pairs = all.flatMap((a, i) => all.slice(i + 1).map((b) => overlap(a, b)));
+    expect(pairs.some(Boolean)).toBe(false);
+    expect(Math.abs(HUD_BASE.fontSize * f.uiScale * s - 12)).toBeLessThanOrEqual(0.1);
+    expect(f.uiScale).toBeCloseTo(1.4066, 3);
+    expect(maxUiScale(1385, 640, HUD_METRICS)).toBeCloseTo(1385 / 768, 2);
   });
 });

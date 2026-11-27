@@ -1,3 +1,5 @@
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import guideJson from '../../../content/guide.json';
 import type { RunConfig } from '../../../src/domain/run/RunConfig';
@@ -15,6 +17,8 @@ import { parseGuide } from '../../../src/infrastructure/content/loadGuide';
 import { parseContent } from '../../../src/infrastructure/content/loadRunConfig';
 import { rawContent } from '../../support/builders';
 
+const ROOT = join(import.meta.dirname, '..', '..', '..');
+
 // Spec menu-guide, "Cifras de la guía tomadas del contenido" (change 0028, design §2).
 const defaultConfig = (): RunConfig => {
   const r = parseContent(rawContent());
@@ -30,7 +34,12 @@ const shown = (config: RunConfig): Guide => {
 
 const texts = (g: Guide): string[] => g.pages.flatMap((p) => [p.title, ...p.paragraphs]);
 
-const rawTexts = (): string[] => guideJson.pages.flatMap((p) => [p.title, ...p.paragraphs]);
+// 0036: los textos de la obra (`build`) también son texto crudo de la guía.
+const rawTexts = (): string[] => [
+  ...guideJson.pages.flatMap((p) => [p.title, ...p.paragraphs]),
+  guideJson.build.house,
+  guideJson.build.tower,
+];
 
 /** Texto mostrado del primer párrafo crudo que usa `{key}`, para comprobar su sustitución. */
 function shownWith(g: Guide, key: string): { raw: string; text: string } {
@@ -145,6 +154,23 @@ describe('GUIDE_MARKERS con el contenido', () => {
     expect(text).toContain('cada 22,5 s');
   });
 
+  it('Scenario: La explicación sigue al contenido', () => {
+    const base = defaultConfig();
+    const withIncome = (gold: number, everyTicks: number): RunConfig => ({
+      ...base,
+      buildings: {
+        ...base.buildings,
+        house: { ...base.buildings.house, income: { gold, everyTicks } },
+      },
+    });
+    expect(shown(base).build).toEqual({
+      house: '+1 oro cada 30 s',
+      tower: 'Dispara flechas a los enemigos cercanos',
+    });
+    expect(shown(withIncome(4, 2400)).build.house).toBe('+4 oro cada 40 s');
+    expect(shown(withIncome(1, 1350)).build.house).toBe('+1 oro cada 22,5 s');
+  });
+
   it('Scenario: Marcador sin valor en el contenido (sin goblin-tower)', () => {
     const base = defaultConfig();
     const types = Object.fromEntries(
@@ -181,5 +207,30 @@ describe('content/guide.json', () => {
     expect(icons[2]).toEqual(['xp', 'gold', 'wood', 'meat', 'stone']);
     expect(icons[4]).toEqual(expect.arrayContaining(['wood', 'stone']));
     expect(icons[0]).toEqual([]);
+  });
+});
+
+describe('Textos de la obra y de la tienda (0036)', () => {
+  it('Scenario: Sin textos de la obra en el código', () => {
+    const files = readdirSync(join(ROOT, 'src'), { recursive: true, encoding: 'utf8' }).filter(
+      (f) => /\.(ts|js|css|html)$/.test(f),
+    );
+    expect(files.length).toBeGreaterThan(0);
+    const offending = files.filter((f) => {
+      const text = readFileSync(join(ROOT, 'src', f), 'utf8');
+      return text.includes('oro cada') || text.includes('Dispara flechas');
+    });
+    expect(offending).toEqual([]);
+  });
+
+  it('Scenario: Página de la tienda con la ×', () => {
+    const g = shown(defaultConfig());
+    const castle = g.pages[3];
+    expect(castle?.id).toBe('castle');
+    expect(castle?.paragraphs.at(-1)).toBe(
+      'Con oro mejoras tus armas (6 mejoras en total) o compras una cura por 8 de oro. Sal de la ' +
+        'tienda con la × de su esquina o con Esc.',
+    );
+    expect(texts(g).filter((t) => t.includes('Salir'))).toEqual([]);
   });
 });

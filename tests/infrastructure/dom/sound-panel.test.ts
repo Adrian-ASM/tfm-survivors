@@ -33,7 +33,8 @@ function setup(initial?: { music: number; effects: number; muted: boolean }) {
   const menuRoot = first('menu-panel');
   const pauseRoot = first('pause-panel');
   const buttonIn = (where: FakeElement, label: string): FakeElement => {
-    const b = where.findAll((e) => e.tagName === 'button' && e.textContent === label)[0];
+    // 0036: por nombre accesible (la × se llama `Cerrar` por su aria-label).
+    const b = where.findAll((e) => e.tagName === 'button' && e.accessibleName === label)[0];
     if (!b) throw new Error(`sin botón ${label}`);
     return b;
   };
@@ -72,7 +73,9 @@ function setup(initial?: { music: number; effects: number; muted: boolean }) {
     labels: () =>
       panelRoot
         .findAll((e) => e.tagName === 'span' || e.tagName === 'button' || e.tagName === 'h2')
-        .map((e) => e.textContent),
+        .map((e) => e.accessibleName),
+    /** Texto visible de cada elemento del panel (0036: la × es `×`). */
+    texts: () => panelRoot.findAll(() => true).map((e) => e.textContent),
   };
 }
 
@@ -222,5 +225,53 @@ describe('Panel Sonido (spec audio 0035)', () => {
     const all = [s.panelRoot, ...s.panelRoot.findAll(() => true)];
 
     expect(all.filter((e) => e.getAttribute('style') !== null)).toEqual([]);
+  });
+});
+
+// Spec audio (0036), "Panel Sonido": la × de la esquina sustituye a `Cerrar` de abajo.
+describe('La × del panel Sonido (spec audio 0036)', () => {
+  it('Scenario: Abrir desde el menú y cerrar con Esc (la × visible con nombre Cerrar)', () => {
+    const s = setup();
+    s.menuButton(L.sound).click();
+    const x = s.closeButton();
+    expect([x.textContent, x.getAttribute('aria-label'), x.className]).toEqual([
+      L.close,
+      L.soundClose,
+      'ui-close',
+    ]);
+    expect(isShown(x)).toBe(true);
+    s.key('Escape');
+    expect([isShown(s.panelRoot), s.fakeDoc.activeElement?.textContent]).toEqual([false, L.sound]);
+  });
+
+  it('Scenario: Cerrar con la × desde el menú y desde la pausa', () => {
+    const fromMenu = setup();
+    fromMenu.menuButton(L.sound).click();
+    fromMenu.closeButton().click();
+    expect([isShown(fromMenu.panelRoot), fromMenu.fakeDoc.activeElement?.textContent]).toEqual([
+      false,
+      L.sound,
+    ]);
+    expect([fromMenu.controller.state, fromMenu.controller.takePlay()]).toEqual(['idle', false]);
+
+    const fromPause = setup();
+    fromPause.menu.hide();
+    fromPause.pause.setVisible(true);
+    fromPause.pauseButton(L.sound).click();
+    fromPause.closeButton().click();
+    expect([isShown(fromPause.panelRoot), isShown(fromPause.pauseRoot)]).toEqual([false, true]);
+    expect(fromPause.pauseRoot.contains(fromPause.fakeDoc.activeElement)).toBe(true);
+    expect(fromPause.fakeDoc.activeElement?.textContent).toBe(L.sound);
+    expect(fromPause.pause.takeAction()).toBeNull();
+  });
+
+  it('Scenario: Una sola × y ningún Cerrar visible', () => {
+    const s = setup();
+    s.menuButton(L.sound).click();
+    const buttons = s.panelRoot.findAll((e) => e.tagName === 'button');
+    expect(buttons.filter((b) => b.accessibleName === L.soundClose)).toHaveLength(1);
+    expect(buttons.map((b) => b.textContent)).toEqual([L.close]);
+    expect(s.texts()).not.toContain(L.soundClose);
+    expect(s.panelRoot.byClass('sound-panel__actions')).toEqual([]);
   });
 });
