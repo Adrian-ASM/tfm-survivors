@@ -72,7 +72,12 @@ Tras cada fase, resume al usuario en ≤ 5 líneas: qué se produjo, decisiones 
   grupo de dominio (0031: la búsqueda lineal estimada en < 0,01 ms subía el tick +12–16 % con el tope saturado).
 - **Reglas sobre datos medibles**: si una spec añade una regla sobre valores que salen de assets (colores, márgenes,
   tamaños), pide al `sdd-architect` que la compruebe contra los ficheros reales antes de *tasks* (0032: la tinta
-  `danger` roja con contraste 4,5 era imposible sobre el botón rojo pulsado y se descubrió en apply).
+  `danger` roja con contraste 4,5 era imposible sobre el botón rojo pulsado y se descubrió en apply). Con una
+  pieza 9-slice en un control pequeño, que compruebe también que caja − márgenes × k deja cara visible para el
+  contenido (0036: la × de 48 px con márgenes 20/28 no tenía cara y el glifo no se leía; los tests de centrado
+  pasaban).
+- **¿Estado actual o deseado?**: si una petición describe un comportamiento («no aparece hasta que…»), confirma con
+  el autor si es lo que pasa hoy (bug) o lo que quiere antes de explorarla como bug (0036: era lo deseado).
 - **Sin `--no-verify` tampoco en commits temporales**: al pedir apply, recuerda al `sdd-implementer` que para
   apartar trabajo durante un rebase use un commit WIP con hooks o `git stash push -u -m <tag>` (0032: tres WIP
   con `--no-verify`, ninguno en la rama final).

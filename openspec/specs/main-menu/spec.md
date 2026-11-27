@@ -378,14 +378,16 @@ La vista SHALL centrar en la ventana el menú de inicio (título, sus seis opcio
 `Borrar datos`, la guía, el panel `Sonido` y el overlay de pausa: el centro horizontal de cada uno MUST coincidir con el
 de la ventana (error ≤ 1 px) y su contenido MUST quedar centrado en vertical dentro de la ventana (la distancia de su
 borde superior al de la ventana y la de su borde inferior al de la ventana difieren ≤ 1 px). Con una ventana
-≥ 960 × 540 en ambos ejes, con cualquier escala de UI, todos sus botones y textos (y los deslizadores y la casilla del
-panel `Sonido`) MUST quedar enteros dentro de la ventana y sin solaparse; en la guía, el recuadro, su título de página,
-el indicador y los controles `Anterior`, `Siguiente` y `Cerrar` MUST quedar enteros dentro de la ventana, y el texto de
-la página MUST quedar dentro del recuadro de la guía, visible entero o alcanzable desplazándolo dentro del recuadro. Al
-redimensionar, se reubican desde el primer frame pintado tras el cambio y cada botón MUST responder al clic en su
-posición nueva, sin cambiar el estado: el menú sigue en modo menú, el diálogo sigue abierto, la guía sigue abierta en
-la misma página, el panel `Sonido` sigue abierto con los mismos ajustes y la partida sigue en pausa (ver
-"Redimensionado de la ventana" en `world-camera`). El fondo del menú, si lo hay, MUST cubrir la ventana entera.
+≥ 960 × 540 en ambos ejes, con cualquier escala de UI, todos sus botones y textos (y los deslizadores, la casilla y la ×
+del panel `Sonido`) MUST quedar enteros dentro de la ventana y sin solaparse; en la guía, el recuadro, su título de
+página, el indicador y los controles `Anterior`, `Siguiente` y la × (nombre accesible `Cerrar`) MUST quedar enteros
+dentro de la ventana, y el texto de la página MUST quedar dentro del recuadro de la guía, visible entero o alcanzable
+desplazándolo dentro del recuadro. La × de la guía y la del panel `Sonido` siguen "Botón × de cierre de los modales"
+(`sprite-rendering`). Al redimensionar, se reubican desde el primer frame pintado tras el cambio y cada botón (la ×
+incluida) MUST responder al clic en su posición nueva, sin cambiar el estado: el menú sigue en modo menú, el diálogo
+sigue abierto, la guía sigue abierta en la misma página, el panel `Sonido` sigue abierto con los mismos ajustes y la
+partida sigue en pausa (ver "Redimensionado de la ventana" en `world-camera`). El fondo del menú, si lo hay, MUST
+cubrir la ventana entera.
 
 #### Scenario: Menú centrado en dos ventanas
 - **GIVEN** el menú de inicio con una ventana de 1.280 × 720, y en otra carga con una de 2.560 × 1.440
@@ -423,7 +425,7 @@ la misma página, el panel `Sonido` sigue abierto con los mismos ajustes y la pa
 - **WHEN** se visita cada una de las 7 páginas y se pinta 1 frame en cada una
 - **THEN** en cada página el recuadro de la guía tiene su centro horizontal en x = 480 y x = 960 respectivamente
   (error ≤ 1 px), está centrado en vertical (diferencia ≤ 1 px) y el recuadro, el título, el indicador y los
-  controles visibles están enteros dentro de la ventana y sin solaparse entre sí
+  controles visibles (la × incluida) están enteros dentro de la ventana y sin solaparse entre sí
 - **AND** el texto de la página no sobresale del recuadro de la guía
 
 #### Scenario: Guía abierta al redimensionar
@@ -434,9 +436,15 @@ la misma página, el panel `Sonido` sigue abierto con los mismos ajustes y la pa
 
 #### Scenario: Panel Sonido abierto al redimensionar
 - **GIVEN** el panel `Sonido` abierto desde la pausa con música 30, con una ventana de 1.280 × 720
-- **WHEN** la ventana pasa a 960 × 540, se pinta 1 frame y se pulsa `Cerrar` en su posición nueva
+- **WHEN** la ventana pasa a 960 × 540, se pinta 1 frame y se hace clic en la × (nombre accesible `Cerrar`) en su
+  posición nueva
 - **THEN** antes del clic el panel está centrado en x = 480 (error ≤ 1 px) y muestra `30 %`
 - **AND** tras el clic el panel no es visible y el overlay de pausa sí, con la partida en el mismo tick
+
+#### Scenario: Cerrar la guía con la × tras redimensionar
+- **GIVEN** la guía abierta en la página 2 con una ventana de 1.280 × 720
+- **WHEN** la ventana pasa a 960 × 540, se pinta 1 frame y se hace clic en la × en su posición nueva
+- **THEN** la guía no es visible, el menú está en modo menú, no existe ninguna partida y el foco está en `Cómo jugar`
 
 ### Requirement: Aspecto del menú, la pausa y el diálogo con piezas de UI
 La vista SHALL pintar el menú de inicio (`.menu-panel`), el overlay de pausa (`.pause-panel`) y el diálogo de
@@ -486,3 +494,4 @@ fuente no carga, cada superficie se pinta con su reserva y el flujo menú → `J
 <!-- historial: 0028-menu-guide (2026-11-25) -->
 <!-- historial: 0032-ui-kit (2026-11-26) -->
 <!-- historial: 0035-audio (2026-11-27) -->
+<!-- historial: 0036-ui-polish (2026-11-27) -->
