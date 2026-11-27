@@ -5,9 +5,8 @@
 | | |
 |---|---|
 | **Jugar** | [https://adrian-asm.github.io/tfm-survivors/](https://adrian-asm.github.io/tfm-survivors/) (se publica desde `main`) |
-| **Slides** | _URL pública_ |
-| **Vídeo** | _URL pública (con captura de pantalla)_ |
-| **Usuario de prueba** | No aplica en la fase 1 (sin login). |
+| **Slides** | [PDF](https://github.com/Adrian-ASM/tfm-survivors/blob/main/docs/slides/greentide-vanguard.pdf) |
+| **Vídeo** | [Presentación y demo en directo (Google Drive)](https://drive.google.com/file/d/1xvdbRhJBSkWg55BCcre4glRVFktPRPeb/view?usp=sharing) |
 
 ## 1. Descripción general
 *Greentide Vanguard*: un arquero sobrevive a oleadas de goblins (antorcha, TNT y barril) con armas automáticas.
