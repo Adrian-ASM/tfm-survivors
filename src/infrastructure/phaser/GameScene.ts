@@ -22,8 +22,8 @@ import type { ResultsOverlay, ResultsTexts } from './ResultsOverlay';
 import type { ResultsView } from './resultsText';
 import type { RunLauncher } from './RunLauncher';
 import {
-  counterIcon,
   createHud,
+  hudIcons,
   createJoystickView,
   createResultsOverlay,
   createUpgradeOverlay,
@@ -316,15 +316,13 @@ export class GameScene extends Phaser.Scene {
       mapArt,
       mapLooks,
       layers,
+      // 0036: 4 contadores con icono recortado (la calavera, del cadáver); la piedra usa la roca
+      // `medium` (0025). Lado y paso, de `appearance.json` `hud`.
       hud: createHud(
         this,
         frame,
-        {
-          gold: counterIcon(looks.pickups.gold),
-          wood: counterIcon(looks.pickups.wood),
-          // La piedra usa siempre la roca `medium` (0025).
-          stone: counterIcon(looks.pickups.stone),
-        },
+        hudIcons(appearance, looks, textureFrames(this)),
+        appearance.hud,
         appearance.ui,
       ),
       offer: createUpgradeOverlay(this, frame, appearance.ui, this.deps.iconFor),
@@ -360,7 +358,7 @@ export class GameScene extends Phaser.Scene {
     w.touch?.stick.relayout(frame, cssPerUnit);
     w.touch?.view.relayout(frame, cssPerUnit);
     this.rig?.resize(frame);
-    w.hud.relayout(hudLayout(frame));
+    w.hud.relayout(hudLayout(frame, this.deps.appearance.hud));
     w.offer.relayout(frame);
     const v = veilLayout(frame);
     w.resultsVeil.setPosition(v.x, v.y);

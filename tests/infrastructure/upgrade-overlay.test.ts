@@ -12,6 +12,7 @@ import {
 import { NO_PANEL } from '../../src/infrastructure/phaser/ui/uiPanel';
 import { mobileFrameRule } from '../../src/infrastructure/phaser/ui/mobileFrame';
 import { DEFAULT_UPGRADE_LIST } from '../support/builders';
+import { HUD_METRICS } from '../support/hud';
 
 class FakePart implements OverlayPart {
   visible = false;
@@ -276,7 +277,10 @@ describe('UpgradeOverlay con k fraccionario (0033)', () => {
   it('Scenario: Toque en una carta escalada (centro de la tercera carta → índice 2)', () => {
     const { cards, o } = overlay();
     o.sync(THREE);
-    const frame = mobileFrameRule(12)({ width: 1385.03, height: 640 }, { width: 844, height: 390 });
+    const frame = mobileFrameRule(12, HUD_METRICS)(
+      { width: 1385.03, height: 640 },
+      { width: 844, height: 390 },
+    );
     o.relayout(frame);
     const s = 390 / 640;
     const rects = cardLayout(frame, 3);

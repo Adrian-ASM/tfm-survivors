@@ -6,24 +6,30 @@ import type { ScreenFrame } from './screenFrame';
 /**
  * Medidas del HUD a ×1. 0032: margen y filas desplazadas 8 y 12 px para que el contenido quede a
  * ≥ `panelInset` + margen de la pieza `panel` (16) del borde de la ventana; el anclaje no cambia.
+ * 0036 (design D4): la primera fila baja a 32 (y la XP a 50) para que un icono de 24 quede a
+ * ≥ 20 del borde; el lado de los iconos y el paso entre contadores son datos (`HudMetrics`).
  */
 export const HUD_BASE = {
   margin: 24,
   barWidth: 240,
   barHeight: 10,
-  healthY: 28,
-  xpY: 46,
+  healthY: 32,
+  xpY: 50,
   labelGap: 8,
   fontSize: 14,
-  /** 0022: contadores de oro (fila de la XP) y madera bajo las bajas, a la derecha. */
-  woodY: 64,
-  /** 0025: contador de piedra, tercera fila de contadores bajo la madera. */
-  stoneY: 82,
-  iconSize: 16,
-  iconGap: 4,
+  iconGap: 6,
   /** 0032: separación mínima entre un panel del HUD y el borde de la ventana. */
   panelInset: 4,
 } as const;
+
+/**
+ * Medidas de los contadores del HUD a ×1 (0036, `appearance.json` `hud`): lado de los iconos y
+ * paso vertical entre las filas de bajas, oro, madera y piedra (p ≥ s, lo valida zod).
+ */
+export interface HudMetrics {
+  readonly iconSize: number;
+  readonly pitch: number;
+}
 
 /**
  * Ancho de un carácter de la fuente monoespaciada del HUD, en múltiplos del tamaño de fuente. 0032:
@@ -53,7 +59,8 @@ export interface HudLayout {
   readonly health: { readonly bar: BarAnchor; readonly label: TextAnchor };
   readonly xp: { readonly bar: BarAnchor; readonly label: TextAnchor };
   readonly clock: TextAnchor;
-  readonly kills: TextAnchor;
+  /** 0036: las bajas son un contador más (calavera + número), en la primera fila de la derecha. */
+  readonly kills: CounterAnchor;
   /** Contadores de oro, de madera (0022) y de piedra (0025): icono + número, un solo elemento. */
   readonly gold: CounterAnchor;
   readonly wood: CounterAnchor;
@@ -74,9 +81,9 @@ export interface CounterAnchor {
 }
 
 /** Contador anclado al borde derecho en la fila `y` (todo ×uiScale). */
-function counterAt(frame: ScreenFrame, y: number): CounterAnchor {
+function counterAt(frame: ScreenFrame, y: number, metrics: HudMetrics): CounterAnchor {
   const k = frame.uiScale;
-  const size = HUD_BASE.iconSize * k;
+  const size = metrics.iconSize * k;
   const right = frame.width - HUD_BASE.margin * k;
   return {
     icon: { x: right - size / 2, y, size },
@@ -84,14 +91,18 @@ function counterAt(frame: ScreenFrame, y: number): CounterAnchor {
   };
 }
 
-/** Vida y XP arriba a la izquierda, reloj arriba en el centro y bajas arriba a la derecha. */
-export function hudLayout(frame: ScreenFrame): HudLayout {
+/**
+ * Vida y XP arriba a la izquierda, reloj arriba en el centro y, a la derecha, la columna de bajas,
+ * oro, madera y piedra en las filas `healthY + i·p` (0036).
+ */
+export function hudLayout(frame: ScreenFrame, metrics: HudMetrics): HudLayout {
   const k = frame.uiScale;
   const margin = HUD_BASE.margin * k;
   const barWidth = HUD_BASE.barWidth * k;
   const healthY = HUD_BASE.healthY * k;
   const xpY = HUD_BASE.xpY * k;
   const labelX = margin + barWidth + HUD_BASE.labelGap * k;
+  const pitch = metrics.pitch * k;
   return {
     uiScale: k,
     margin,
@@ -101,10 +112,10 @@ export function hudLayout(frame: ScreenFrame): HudLayout {
     health: { bar: { x: margin, y: healthY }, label: { x: labelX, y: healthY, originX: 0 } },
     xp: { bar: { x: margin, y: xpY }, label: { x: labelX, y: xpY, originX: 0 } },
     clock: { x: frame.width / 2, y: healthY, originX: 0.5 },
-    kills: { x: frame.width - margin, y: healthY, originX: 1 },
-    gold: counterAt(frame, xpY),
-    wood: counterAt(frame, HUD_BASE.woodY * k),
-    stone: counterAt(frame, HUD_BASE.stoneY * k),
+    kills: counterAt(frame, healthY, metrics),
+    gold: counterAt(frame, healthY + pitch, metrics),
+    wood: counterAt(frame, healthY + 2 * pitch, metrics),
+    stone: counterAt(frame, healthY + 3 * pitch, metrics),
   };
 }
 
@@ -164,7 +175,7 @@ export function hudBoxes(l: HudLayout, texts: HudTexts): Record<string, Box> {
     xpBar: barBox(l.xp.bar, l),
     xpLabel: textBox(l.xp.label, texts.level, l.fontSize),
     clock: textBox(l.clock, texts.clock, l.fontSize),
-    kills: textBox(l.kills, texts.kills, l.fontSize),
+    kills: counterBox(l.kills, texts.kills, l.fontSize),
     gold: counterBox(l.gold, texts.gold, l.fontSize),
     wood: counterBox(l.wood, texts.wood, l.fontSize),
     stone: counterBox(l.stone, texts.stone, l.fontSize),
@@ -192,7 +203,8 @@ export const HUD_RESERVE_TEXTS: HudTexts = {
   health: '120/120',
   clock: '00:00',
   level: 'Nv 99',
-  kills: 'Bajas: 12345',
+  // 0036: sin la etiqueta «Bajas: », el número junto a la calavera.
+  kills: '12345',
   gold: '123456',
   wood: '12345',
   stone: '12345',

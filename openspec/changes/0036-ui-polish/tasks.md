@@ -82,7 +82,7 @@
     style», «Construir con las piezas en reserva».
 
 ## 3. HUD (infraestructura + composición)
-- [ ] 3.1 Layout del HUD con métricas de datos (§D4).
+- [x] 3.1 Layout del HUD con métricas de datos (§D4).
   - `HUD_BASE` nuevo (`healthY` 32, `xpY` 50, `iconGap` 6) y `hudLayout(frame, metrics)` con 4 filas
     `healthY + i·p`.
   - `kills` como `CounterAnchor`, `HUD_RESERVE_TEXTS.kills = '12345'`, `killsLabel` = `String(n)`.
@@ -95,7 +95,7 @@
     anclaje con dos ventanas», «Esquina opuesta que sigue a la ventana», «Ventana menor que 960 × 540», «Tres
     paneles con su contenido», «Paneles independientes del snapshot», «Iconos del HUD en modo móvil», «Sin bajas»,
     «Muchas bajas», «Resultados sin cambios».
-- [ ] 3.2 Contadores con icono recortado y calavera (§D5).
+- [x] 3.2 Contadores con icono recortado y calavera (§D5).
   - `cropPose()` puro en `phaser/ui/hudIconPose.ts`.
   - `counterIcon` con recorte; icono de bajas desde `looks.corpse` + `hud.icons.kills`, con reserva si la hoja no
     cargó o `frame ≥ FrameCount`.

@@ -9,6 +9,7 @@ import {
   type ScaleLike,
   type SceneEventsLike,
 } from '../../src/infrastructure/phaser/ui/watchScreen';
+import { HUD_METRICS } from '../support/hud';
 
 /** ScaleManager falso (global del juego): guarda escuchas y emite RESIZE con el gameSize nuevo. */
 class FakeScale implements ScaleLike {
@@ -106,7 +107,12 @@ describe('watchScreen con regla de frame (0033)', () => {
     const scale = new FakeScale();
     scale.resize(1385.03, 640, { width: 844, height: 390 });
     const calls: [ScreenFrame, number][] = [];
-    watchScreen(scale, new FakeSceneEvents(), (f, s) => calls.push([f, s]), mobileFrameRule(12));
+    watchScreen(
+      scale,
+      new FakeSceneEvents(),
+      (f, s) => calls.push([f, s]),
+      mobileFrameRule(12, HUD_METRICS),
+    );
 
     scale.resize(960, 720, { width: 1024, height: 768 });
 
@@ -119,7 +125,12 @@ describe('watchScreen con regla de frame (0033)', () => {
     const scale = new FakeScale();
     scale.resize(1385.03, 640, { width: 844, height: 390 });
     const calls: ScreenFrame[] = [];
-    watchScreen(scale, new FakeSceneEvents(), (f) => calls.push(f), mobileFrameRule(12));
+    watchScreen(
+      scale,
+      new FakeSceneEvents(),
+      (f) => calls.push(f),
+      mobileFrameRule(12, HUD_METRICS),
+    );
 
     scale.resize(1421.36, 640, { width: 915, height: 412 });
 
@@ -129,7 +140,12 @@ describe('watchScreen con regla de frame (0033)', () => {
   it('Scenario: Ventana a cero en móvil (sin errores, k = 1, y vuelta a 844 × 390)', () => {
     const scale = new FakeScale();
     const calls: [ScreenFrame, number][] = [];
-    watchScreen(scale, new FakeSceneEvents(), (f, s) => calls.push([f, s]), mobileFrameRule(12));
+    watchScreen(
+      scale,
+      new FakeSceneEvents(),
+      (f, s) => calls.push([f, s]),
+      mobileFrameRule(12, HUD_METRICS),
+    );
 
     scale.resize(0, 0, { width: 0, height: 0 });
     scale.resize(1385.03, 640, { width: 844, height: 390 });

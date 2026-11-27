@@ -15,15 +15,12 @@ import { planFor } from '../support/mapArt';
 import { fakeUiScene } from '../support/phaserUi';
 import { chooseFirstWhileOpen, startSeededRun } from '../support/runs';
 import { GENERATED_PATHS, SOUND_PATHS } from '../support/generated';
+import { HUD_METRICS, testHudIcons } from '../support/hud';
 
 // Spec sprite-rendering (0032), "La interfaz no cambia la simulación ni el mapa": la sección `ui`
 // es presentación pura (no la lee ningún flujo de azar ni ninguna colocación).
 const REGISTERED = registeredPaths(provenanceJson);
-const ICONS = {
-  gold: { texture: null, frame: 0, color: 0xe8c547 },
-  wood: { texture: null, frame: 0, color: 0x9c6b3c },
-  stone: { texture: null, frame: 0, color: 0x9aa0a6 },
-};
+const ICONS = testHudIcons(['kills', 'gold', 'wood', 'stone']);
 
 /** `ui` válida distinta de la del repositorio: márgenes 0, otros colores y otra familia. */
 function otherUi(): unknown {
@@ -62,7 +59,7 @@ function play(ui: UiAppearance, config: ReturnType<typeof boot>['config']): stri
   const run = startSeededRun(config, 42);
   const { scene } = fakeUiScene({ view: { width: 1280, height: 720 } });
   const frame = screenFrame(1280, 720);
-  const hud = createHud(scene, frame, ICONS, ui);
+  const hud = createHud(scene, frame, ICONS, HUD_METRICS, ui);
   const offer = createUpgradeOverlay(scene, frame, ui);
   const out: string[] = [];
   for (const input of randomInputs(1200, 32)) {

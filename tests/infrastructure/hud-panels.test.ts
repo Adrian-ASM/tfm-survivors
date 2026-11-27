@@ -13,16 +13,13 @@ import { aDefaultConfig } from '../support/builders';
 import { REPO_COMBAT } from '../support/feedback';
 import { fakeUiScene, repoUi, type UiMade } from '../support/phaserUi';
 import { startRun } from '../support/runs';
+import { HUD_METRICS, testHudIcons } from '../support/hud';
 
 // Spec hud (0032), "Paneles del HUD con piezas de UI", y sprite-rendering ("HUD sin textura", "Los
 // números de daño conservan su fuente", "Familia con caída…" en el HUD). Con dobles de Phaser.
 const ui = repoUi();
 const PANEL = ui.pieces.panel.image;
-const ICONS = {
-  gold: { texture: 'Resources/Resources/G_Idle.png', frame: 0, color: 0xe8c547 },
-  wood: { texture: 'Resources/Resources/W_Idle.png', frame: 0, color: 0x9c6b3c },
-  stone: { texture: 'Deco/05.png', frame: 0, color: 0x9aa0a6 },
-};
+const ICONS = testHudIcons();
 const fresh = (): RunSnapshot => startRun(aDefaultConfig()).snapshot();
 const slices = (made: UiMade[]) => made.filter((m) => m.kind === 'nineslice');
 /** Rectángulo en pantalla de un NineSlice (centro y tamaño escalado). */
@@ -33,7 +30,7 @@ const rectOf = (m: UiMade): CenteredRect => ({
   height: m.height * m.scale,
 });
 const expectedPanels = (w: number, h: number) => {
-  const p = hudPanels(hudLayout(screenFrame(w, h)), uiMargins(ui.pieces.panel));
+  const p = hudPanels(hudLayout(screenFrame(w, h), HUD_METRICS), uiMargins(ui.pieces.panel));
   return [p.left, p.center, p.right];
 };
 const near = (a: CenteredRect, b: CenteredRect | undefined) =>
@@ -45,7 +42,7 @@ function hudIn(
   opts: { textures?: (k: string) => boolean; webgl?: boolean } = {},
 ) {
   const { scene, made } = fakeUiScene({ view, ...opts });
-  const hud = createHud(scene, screenFrame(view.width, view.height), ICONS, ui);
+  const hud = createHud(scene, screenFrame(view.width, view.height), ICONS, HUD_METRICS, ui);
   return { hud, made };
 }
 
@@ -95,8 +92,8 @@ describe('Paneles del HUD con piezas de UI (hud 0032)', () => {
     const created = made.length;
     const pieces = slices(made);
     for (let f = 1; f <= 600; f++) {
-      if (f === 200) hud.relayout(hudLayout(screenFrame(2560, 1440)));
-      if (f === 400) hud.relayout(hudLayout(screenFrame(960, 540)));
+      if (f === 200) hud.relayout(hudLayout(screenFrame(2560, 1440), HUD_METRICS));
+      if (f === 400) hud.relayout(hudLayout(screenFrame(960, 540), HUD_METRICS));
       hud.sync({
         ...base,
         tick: f,
@@ -108,6 +105,8 @@ describe('Paneles del HUD con piezas de UI (hud 0032)', () => {
     }
     expect(made.length).toBe(created);
     expect(slices(made)).toEqual(pieces);
+    // 0036: los 4 iconos de contador del primer frame (imágenes recortadas), sin otros nuevos.
+    expect(made.filter((m) => m.kind === 'image')).toHaveLength(4);
     const want = expectedPanels(960, 540);
     pieces.forEach((p, i) => {
       expect(near(rectOf(p), want[i])).toBe(true);
@@ -134,7 +133,7 @@ describe('HUD en reserva (sprite-rendering 0032)', () => {
     expect(slices(made)).toEqual([]);
     const texts = made.filter((m) => m.kind === 'text');
     expect(texts.every((t) => t.style?.color === '#ffffff')).toBe(true);
-    const l = hudLayout(screenFrame(960, 540));
+    const l = hudLayout(screenFrame(960, 540), HUD_METRICS);
     const bars = made.filter((m) => m.kind === 'rectangle');
     const backs = bars.filter((b) => b.fill === 0x2a2a3a);
     expect(backs).toHaveLength(2);

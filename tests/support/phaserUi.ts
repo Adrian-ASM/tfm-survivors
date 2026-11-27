@@ -32,6 +32,10 @@ export interface UiMade {
   slices: [number, number, number, number] | null;
   interactive: boolean;
   handlers: Map<string, () => void>;
+  /** Imagen (0036): frame de la creación, recorte (`setCrop`) y si se le pidió una animación. */
+  frame: number | string | null;
+  crop: [number, number, number, number] | null;
+  played: boolean;
 }
 
 export interface FakeUiSceneOptions {
@@ -64,6 +68,9 @@ function blank(kind: UiMade['kind'], x: number, y: number): UiMade {
     slices: null,
     interactive: false,
     handlers: new Map(),
+    frame: null,
+    crop: null,
+    played: false,
   };
 }
 
@@ -105,6 +112,13 @@ export function fakeUiScene(options: FakeUiSceneOptions): {
             return set(
               (ox: number, oy?: number) => ((target.originX = ox), (target.originY = oy ?? ox)),
             );
+          case 'setCrop':
+            return set(
+              (x: number, y: number, w: number, h: number) => (target.crop = [x, y, w, h]),
+            );
+          case 'play':
+          case 'playAfterDelay':
+            return set(() => (target.played = true));
           case 'setInteractive':
             return set(() => (target.interactive = true));
           case 'on':
@@ -139,9 +153,10 @@ export function fakeUiScene(options: FakeUiSceneOptions): {
         s.originY = 0;
         return wrap(s);
       },
-      image: (x: number, y: number, texture: string) => {
+      image: (x: number, y: number, texture: string, frame?: number | string) => {
         const s = blank('image', x, y);
         s.texture = texture;
+        s.frame = frame ?? null;
         return wrap(s);
       },
       nineslice: (

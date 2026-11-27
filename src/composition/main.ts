@@ -292,6 +292,7 @@ function bootstrap(): void {
     root,
     classes: document.documentElement.classList,
     fullscreen: browserFullscreen(document),
+    hud: appearance.hud,
     mute: { requests: audio.requests, store: audio.store },
   });
   const screens: Screen[] = [];

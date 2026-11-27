@@ -1,5 +1,11 @@
 import type Phaser from 'phaser';
-import type { UiAppearance, UiPieceRole } from '../content/appearanceSchema';
+import {
+  hudIconSheet,
+  type Appearance,
+  type HudLooks,
+  type UiAppearance,
+  type UiPieceRole,
+} from '../content/appearanceSchema';
 import { cssHex, fontStack } from '../dom/uiKit';
 import type { IconChoice } from '../icons/upgradeIcons';
 import { Hud, type HudPlacement } from './Hud';
@@ -14,7 +20,8 @@ import {
 } from './UpgradeOverlay';
 import { XpBar } from './XpBar';
 import { JoystickView } from './touch/JoystickView';
-import type { PickupLook } from './art/looks';
+import type { CorpseLook, FrameCount, Looks, PickupLook } from './art/looks';
+import { cropPose, type CropRect, type FrameSize } from './ui/hudIconPose';
 import { uiMargins } from './ui/nineSlice';
 import type { ScreenFrame } from './ui/screenFrame';
 import {
@@ -24,6 +31,7 @@ import {
   type BarAnchor,
   type CounterAnchor,
   type HudLayout,
+  type HudMetrics,
   type PanelMargins,
   type TextAnchor,
 } from './ui/uiLayout';
@@ -101,33 +109,101 @@ interface HudObjects {
   readonly healthLabel: Txt;
   readonly level: Txt;
   readonly clock: Txt;
-  readonly kills: Txt;
+  readonly kills: Counter;
   readonly gold: Counter;
   readonly wood: Counter;
   readonly stone: Counter;
 }
 
-/** Contador del HUD (0022): icono (imagen o cuadrado de reserva) y número. */
+/**
+ * Contador del HUD (0022): icono (imagen recortada o cuadrado de reserva) y número. `place` lo
+ * recoloca en cada RESIZE sin crear objetos (0036: la imagen cambia de escala, no de tamaño).
+ */
 interface Counter {
   readonly icon: Phaser.GameObjects.Image | Rect;
   readonly label: Txt;
+  place(icon: CounterAnchor['icon']): void;
 }
 
-/** Icono de un contador: hoja y frame del aspecto del recogible, o `null` y su color de reserva. */
+/**
+ * Icono de un contador (0036, design D5): hoja y frame del aspecto, o `null` y su color de reserva,
+ * con el recorte del frame que se ve (`appearance.json` `hud.icons`) y el tamaño del frame.
+ */
 export interface CounterIcon {
   readonly texture: string | null;
   readonly frame: number;
   readonly color: number;
+  readonly crop: CropRect;
+  readonly frameSize: FrameSize;
 }
 
+const sizeOf = (sheet: { frameWidth: number; frameHeight: number }): FrameSize => ({
+  width: sheet.frameWidth,
+  height: sheet.frameHeight,
+});
+
 /** Icono de un contador a partir del aspecto de su recogible: su hoja o, sin ella, su reserva. */
-export const counterIcon = (look: PickupLook): CounterIcon => ({
+export const counterIcon = (
+  look: PickupLook,
+  crop: CropRect,
+  frameSize: FrameSize,
+): CounterIcon => ({
   texture: look.placeholder ? null : look.texture,
   frame: look.idle.frames[0] ?? 0,
   color: look.color,
+  crop,
+  frameSize,
 });
 
-/** Icono y número de un contador, creados una vez (sin errores si la hoja no cargó: reserva). */
+/**
+ * Calavera de las bajas (0036): el frame declarado de la hoja del cadáver, sin animación. Hay arte si
+ * la hoja cargó y el frame existe (`frame < FrameCount`); si no, el cuadrado del color del cadáver.
+ */
+export function killsIcon(
+  look: CorpseLook,
+  kills: HudLooks['icons']['kills'],
+  frameSize: FrameSize,
+  frameCount: number | null,
+): CounterIcon {
+  const painted = !look.placeholder && frameCount !== null && kills.frame < frameCount;
+  return {
+    texture: painted ? look.texture : null,
+    frame: kills.frame,
+    color: look.color,
+    crop: kills.crop,
+    frameSize,
+  };
+}
+
+/** Iconos de los 4 contadores del HUD, de arriba abajo (0036). */
+export interface HudIcons {
+  readonly kills: CounterIcon;
+  readonly gold: CounterIcon;
+  readonly wood: CounterIcon;
+  readonly stone: CounterIcon;
+}
+
+/** Los 4 iconos con los aspectos resueltos y los recortes de `appearance.json` `hud`. */
+export function hudIcons(appearance: Appearance, looks: Looks, frames: FrameCount): HudIcons {
+  const { icons } = appearance.hud;
+  const size = (key: 'kills' | 'gold' | 'wood' | 'stone') => sizeOf(hudIconSheet(appearance, key));
+  return {
+    kills: killsIcon(
+      looks.corpse,
+      icons.kills,
+      size('kills'),
+      frames(appearance.corpse.sheet.file),
+    ),
+    gold: counterIcon(looks.pickups.gold, icons.gold.crop, size('gold')),
+    wood: counterIcon(looks.pickups.wood, icons.wood.crop, size('wood')),
+    stone: counterIcon(looks.pickups.stone, icons.stone.crop, size('stone')),
+  };
+}
+
+/**
+ * Icono y número de un contador, creados una vez (sin errores si la hoja no cargó: reserva). Con
+ * hoja: `setCrop` del frame (una vez), origen en el centro del recorte y escala lado / recorte.
+ */
 function counter(
   scene: Scene,
   l: HudLayout,
@@ -136,11 +212,36 @@ function counter(
   style: TextStyle,
 ): Counter {
   const { x, y, size } = at.icon;
-  const icon = look.texture
-    ? scene.add.image(x, y, look.texture, look.frame).setDisplaySize(size, size)
-    : scene.add.rectangle(x, y, size, size, look.color);
-  icon.setScrollFactor(0).setDepth(HUD_DEPTH);
-  return { icon, label: hudText(scene, l, at.label, style) };
+  const label = hudText(scene, l, at.label, style);
+  if (look.texture) {
+    const { crop } = look;
+    const pose = cropPose(crop, look.frameSize, size);
+    const image = scene.add
+      .image(x, y, look.texture, look.frame)
+      .setCrop(crop.x, crop.y, crop.width, crop.height)
+      .setOrigin(pose.originX, pose.originY)
+      .setScale(pose.scale)
+      .setScrollFactor(0)
+      .setDepth(HUD_DEPTH);
+    return {
+      icon: image,
+      label,
+      place: (a) => {
+        image.setPosition(a.x, a.y).setScale(cropPose(crop, look.frameSize, a.size).scale);
+      },
+    };
+  }
+  const rect = scene.add
+    .rectangle(x, y, size, size, look.color)
+    .setScrollFactor(0)
+    .setDepth(HUD_DEPTH);
+  return {
+    icon: rect,
+    label,
+    place: (a) => {
+      rect.setPosition(a.x, a.y).setDisplaySize(a.size, a.size);
+    },
+  };
 }
 
 /** Los 3 paneles del HUD (0032): piezas de `panel` o, en reserva, ninguno. */
@@ -160,12 +261,13 @@ function placement(o: HudObjects, frames: HudFrames): HudPlacement {
     [o.healthLabel, (l) => l.health.label],
     [o.level, (l) => l.xp.label],
     [o.clock, (l) => l.clock],
-    [o.kills, (l) => l.kills],
+    [o.kills.label, (l) => l.kills.label],
     [o.gold.label, (l) => l.gold.label],
     [o.wood.label, (l) => l.wood.label],
     [o.stone.label, (l) => l.stone.label],
   ];
   const icons: [Counter, (l: HudLayout) => CounterAnchor][] = [
+    [o.kills, (l) => l.kills],
     [o.gold, (l) => l.gold],
     [o.wood, (l) => l.wood],
     [o.stone, (l) => l.stone],
@@ -184,23 +286,25 @@ function placement(o: HudObjects, frames: HudFrames): HudPlacement {
         t.setPosition(a.x, a.y);
         if (rescale) t.setFontSize(l.fontSize);
       }
-      for (const [c, at] of icons) {
-        const { x, y, size } = at(l).icon;
-        c.icon.setPosition(x, y).setDisplaySize(size, size);
-      }
+      for (const [c, at] of icons) c.place(at(l).icon);
     },
   };
 }
 
-/** HUD (spec hud): vida y XP arriba a la izquierda, tiempo arriba en el centro y bajas a la derecha. */
+/**
+ * HUD (spec hud): vida y XP arriba a la izquierda, tiempo arriba en el centro y, a la derecha, los 4
+ * contadores con icono (0036: bajas con calavera, oro, madera y piedra).
+ */
 export function createHud(
   scene: Scene,
   frame: ScreenFrame,
-  icons: { readonly gold: CounterIcon; readonly wood: CounterIcon; readonly stone: CounterIcon },
+  icons: HudIcons,
+  /** Lado de los iconos y paso entre contadores (0036, `appearance.json` `hud`). */
+  metrics: HudMetrics,
   /** Interfaz (0032): 3 paneles de `panel` detrás de los textos y la fuente pixel. */
   ui?: UiAppearance,
 ): Hud {
-  const l = hudLayout(frame);
+  const l = hudLayout(frame, metrics);
   // Paneles antes que el resto: detrás de barras y textos (profundidad HUD − 1).
   // La textura y el renderizador son los mismos para los 3: o hay 3 piezas o ninguna.
   const left = uiPanel(scene, ui, 'panel', HUD_DEPTH - 1);
@@ -220,7 +324,7 @@ export function createHud(
     xp: bar(scene, l, l.xp.bar, XP_FILL),
     level: hudText(scene, l, l.xp.label, style),
     clock: hudText(scene, l, l.clock, style),
-    kills: hudText(scene, l, l.kills, style),
+    kills: counter(scene, l, l.kills, icons.kills, style),
     gold: counter(scene, l, l.gold, icons.gold, style),
     wood: counter(scene, l, l.wood, icons.wood, style),
     stone: counter(scene, l, l.stone, icons.stone, style),
@@ -231,7 +335,7 @@ export function createHud(
     healthFill: o.health.fill,
     healthLabel: o.healthLabel,
     clock: o.clock,
-    kills: o.kills,
+    kills: o.kills.label,
     gold: o.gold.label,
     wood: o.wood.label,
     stone: o.stone.label,

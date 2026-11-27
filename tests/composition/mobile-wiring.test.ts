@@ -11,6 +11,7 @@ import type { FullscreenLike } from '../../src/infrastructure/dom/FullscreenCont
 import { TOUCH_LABELS } from '../../src/infrastructure/dom/TouchBar';
 import { DEFAULT_MOBILE } from '../support/builders';
 import { fakeDom, type FakeElement } from '../support/fakeDom';
+import { HUD_METRICS } from '../support/hud';
 
 // Spec mobile-display y touch-controls (0033), cableado de la composición (design §1, §4 y §5).
 const WITH_API: FullscreenLike = {
@@ -29,6 +30,7 @@ function env(fullscreen = WITH_API) {
     root,
     classes: { toggle: (token, force) => classes.set(token, force) },
     fullscreen,
+    hud: HUD_METRICS,
   };
   return { e, fake, classes };
 }
