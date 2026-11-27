@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import guideJson from '../../../content/guide.json';
 import type { RunConfig } from '../../../src/domain/run/RunConfig';
 import {
+  BUILD_TEXT_MAX,
   GUIDE_BRACE_UNMATCHED,
+  GUIDE_BUILD_DIGITS,
+  GUIDE_BUILD_TOO_LONG,
   GUIDE_ICON_REPEATED,
   GUIDE_MARKER_UNKNOWN,
   GUIDE_PAGE_COUNT,
@@ -155,5 +158,71 @@ describe('parseGuide: marcadores y llaves', () => {
     const g = guide();
     page(g, 7).title = 'Victoria {nada}';
     expect(errorOf(g)).toMatchObject({ field: 'guide.pages.6.title' });
+  });
+});
+
+// Spec build-sites (0036), "Textos de la obra validados": mismo canal y reglas que la guía.
+type WithBuild = RawGuide & { build: Record<string, unknown> };
+const withBuild = (change: (b: Record<string, unknown>) => void): WithBuild => {
+  const g = guide() as WithBuild;
+  change(g.build);
+  return g;
+};
+
+describe('parseGuide: textos de la obra (build-sites 0036)', () => {
+  it('Scenario: Textos de la obra por defecto', () => {
+    const raw = (guideJson as unknown as { build: Record<string, string> }).build;
+    expect(Object.keys(raw)).toEqual(['house', 'tower']);
+    expect(Object.values(raw).some((t) => /[0-9]/.test(t))).toBe(false);
+    expect(raw.house).toContain('{buildings.house.incomeGold}');
+    expect(raw.house).toContain('{buildings.house.incomeSeconds}');
+    const r = parseGuide(guideJson, config());
+    if (!r.ok) throw new Error(r.error.message);
+    expect(Object.isFrozen(r.value.build)).toBe(true);
+  });
+
+  it.each([
+    [
+      'house en blanco',
+      (b: Record<string, unknown>) => (b.house = '  '),
+      'guide.build.house',
+      GUIDE_TEXT_EMPTY,
+    ],
+    [
+      'house con un dígito',
+      (b: Record<string, unknown>) => (b.house = '+1 oro cada {buildings.house.incomeSeconds} s'),
+      'guide.build.house',
+      GUIDE_BUILD_DIGITS,
+    ],
+    [
+      'tower con un marcador fuera del catálogo',
+      (b: Record<string, unknown>) => (b.tower = 'Alcance {buildings.tower.range}'),
+      'guide.build.tower',
+      `${GUIDE_MARKER_UNKNOWN}: buildings.tower.range`,
+    ],
+    [
+      'tower terminado en cada {',
+      (b: Record<string, unknown>) => (b.tower = 'Dispara cada {'),
+      'guide.build.tower',
+      GUIDE_BRACE_UNMATCHED,
+    ],
+    ['sin tower', (b: Record<string, unknown>) => delete b.tower, 'guide.build.tower', null],
+    [
+      'campo barracks',
+      (b: Record<string, unknown>) => (b.barracks = 'x'),
+      'guide.build.barracks',
+      null,
+    ],
+    [
+      'texto mostrado de más de una línea',
+      (b: Record<string, unknown>) => (b.tower = 'a'.repeat(BUILD_TEXT_MAX + 1)),
+      'guide.build.tower',
+      GUIDE_BUILD_TOO_LONG,
+    ],
+  ])('Scenario: Textos de la obra inválidos (%s)', (_name, change, field, message) => {
+    const e = errorOf(withBuild(change));
+    expect(e.field).toBe(field);
+    if (message !== null) expect(e.message).toBe(message);
+    expect(e.message).not.toMatch(/página/);
   });
 });

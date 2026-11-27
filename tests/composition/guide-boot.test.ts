@@ -100,3 +100,36 @@ describe('bootContent con la guía (0028)', () => {
     expect(texts.join(' ')).toContain('10:00');
   });
 });
+
+// Spec build-sites (0036), "Textos de la obra validados": por la misma vía que la guía.
+describe('bootContent con los textos de la obra (0036)', () => {
+  const withBuild = (change: (b: Record<string, unknown>) => void): unknown => {
+    const g = structuredClone(guideJson) as unknown as { build: Record<string, unknown> };
+    change(g.build);
+    return g;
+  };
+
+  it.each([
+    ['house en blanco', withBuild((b) => (b.house = '  ')), 'guide.build.house'],
+    [
+      'tower desconocido',
+      withBuild((b) => (b.tower = '{buildings.tower.range}')),
+      'guide.build.tower',
+    ],
+    ['sin tower', withBuild((b) => delete b.tower), 'guide.build.tower'],
+    ['campo barracks', withBuild((b) => (b.barracks = 'x')), 'guide.build.barracks'],
+  ])('Scenario: Textos de la obra inválidos (%s): no se crea el menú', (_name, guide, field) => {
+    const { booted, errors } = boot(guide);
+    expect(booted).toBeNull();
+    expect(errors.map((e) => e.field)).toEqual([field]);
+  });
+
+  it('Scenario: Textos de la obra por defecto (booted.guide.build interpolado)', () => {
+    const { booted, errors } = boot(guideJson);
+    expect(errors).toEqual([]);
+    expect(booted?.guide.build).toEqual({
+      house: '+1 oro cada 30 s',
+      tower: 'Dispara flechas a los enemigos cercanos',
+    });
+  });
+});

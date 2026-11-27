@@ -8,7 +8,7 @@
      de tiempo. -->
 
 ## 1. Contenido y esquemas (infraestructura + contenido)
-- [ ] 1.1 Datos de los contadores del HUD (§D4, §D5).
+- [x] 1.1 Datos de los contadores del HUD (§D4, §D5).
   - Bloque obligatorio `hud` en `content/appearance.json`, en el esquema y en `rawAppearance()` de
     `tests/support/appearance.ts`: `iconSize` 24, `pitch` 30 e `icons.kills` (`frame` 5 + `crop`), más
     `gold`/`wood`/`stone` (`crop`).
@@ -22,7 +22,7 @@
       896 × 256; el frame 5 está entre 0 y 13 y tiene alfa > 0; cada recorte contiene la caja con alfa y su lado es
       ≤ max(w, h) + 8.
   - Escenarios (`sprite-rendering`): «Datos de los contadores del repositorio», «Datos de los contadores inválidos».
-- [ ] 1.2 Textos de la obra y texto de la tienda en la guía (§D7).
+- [x] 1.2 Textos de la obra y texto de la tienda en la guía (§D7).
   - En `content/guide.json`, bloque `build` (`house` y `tower` con los textos de la spec) y párrafo nuevo de la
     página 4.
   - En `GuideSchema`, `build` estricto, ≤ `BUILD_TEXT_MAX` y sin dígitos (`GUIDE_BUILD_DIGITS`).

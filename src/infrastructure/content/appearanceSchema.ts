@@ -725,6 +725,46 @@ export const IconsSchema = z.strictObject({
   byId: z.record(z.string().min(1), IconFile),
 });
 
+export const HUD_SIZE_MUST_BE_INTEGER = 'El lado y el paso del HUD son enteros ≥ 1.';
+export const HUD_PITCH_BELOW_ICON = 'El paso entre filas del HUD es ≥ el lado de sus iconos.';
+export const HUD_ICON_CROP_NOT_SQUARE = 'El recorte de un icono del HUD es cuadrado.';
+export const HUD_ICON_CROP_OUTSIDE = 'El recorte de un icono del HUD cabe en el frame de su hoja.';
+
+/** Iconos de los contadores del HUD, de arriba abajo (0036). */
+export const HUD_COUNTER_ICONS = ['kills', 'gold', 'wood', 'stone'] as const;
+export type HudCounterIcon = (typeof HUD_COUNTER_ICONS)[number];
+
+const HudCrop = z.strictObject({ crop: RectSchema });
+
+/**
+ * Contadores del HUD (0036, design D4/D5): lado `iconSize` y paso `pitch` a ×1 (p ≥ s) y el recorte
+ * cuadrado de cada icono dentro de su frame. La calavera de bajas declara además el frame de la hoja
+ * del cadáver (sin ruta propia: la nota de procedencia no cambia). Presentación pura.
+ */
+export const HudLooksSchema = z
+  .strictObject({
+    iconSize: IntAtLeast(1, HUD_SIZE_MUST_BE_INTEGER),
+    pitch: IntAtLeast(1, HUD_SIZE_MUST_BE_INTEGER),
+    icons: z.strictObject({
+      kills: z.strictObject({ frame: FrameIndex, crop: RectSchema }),
+      gold: HudCrop,
+      wood: HudCrop,
+      stone: HudCrop,
+    }),
+  })
+  .superRefine((hud, ctx) => {
+    if (hud.pitch < hud.iconSize) {
+      ctx.addIssue({ code: 'custom', path: ['pitch'], message: HUD_PITCH_BELOW_ICON });
+    }
+    for (const key of HUD_COUNTER_ICONS) {
+      const { crop } = hud.icons[key];
+      if (crop.width !== crop.height) {
+        const path = ['icons', key, 'crop'];
+        ctx.addIssue({ code: 'custom', path, message: HUD_ICON_CROP_NOT_SQUARE });
+      }
+    }
+  });
+
 const AppearanceShape = z.strictObject({
   maxCorpses: z
     .number()
@@ -769,7 +809,31 @@ const AppearanceShape = z.strictObject({
    * cobertura de los 16 ids la exige el test de contenido, no el esquema.
    */
   icons: IconsSchema,
+  /** Contadores del HUD (0036): lado, paso y recortes de los iconos, y el frame de la calavera. */
+  hud: HudLooksSchema,
 });
+
+/** Hoja de la que sale cada icono del HUD (design 0036 D5). */
+export function hudIconSheet(
+  a: z.output<typeof AppearanceShape>,
+  key: HudCounterIcon,
+): { frameWidth: number; frameHeight: number } {
+  if (key === 'kills') return a.corpse.sheet;
+  if (key === 'stone') return a.pickups.stone.rocks.medium.sheet;
+  return a.pickups[key].sheet;
+}
+
+/** Cada recorte del HUD dentro del `frameWidth × frameHeight` de su hoja (0036). */
+function checkHudCrops(a: z.output<typeof AppearanceShape>, ctx: z.RefinementCtx): void {
+  for (const key of HUD_COUNTER_ICONS) {
+    const { crop } = a.hud.icons[key];
+    const sheet = hudIconSheet(a, key);
+    if (crop.x + crop.width > sheet.frameWidth || crop.y + crop.height > sheet.frameHeight) {
+      const path = ['hud', 'icons', key, 'crop'];
+      ctx.addIssue({ code: 'custom', path, message: HUD_ICON_CROP_OUTSIDE });
+    }
+  }
+}
 
 /**
  * Hojas de la decoración (0029): distintas entre sí (la hoja identifica el aspecto) y ninguna de una
@@ -795,6 +859,7 @@ export const AppearanceSchema = AppearanceShape.superRefine((a, ctx) => {
   checkResourceColors(a, ctx);
   checkSiteColors(a, ctx);
   checkDecorSheets(a, ctx);
+  checkHudCrops(a, ctx);
 });
 
 export type Appearance = z.output<typeof AppearanceSchema>;
@@ -809,6 +874,8 @@ export type UiAppearance = z.output<typeof UiSchema>;
 export type UiPiece = UiAppearance['pieces'][UiPieceRole];
 /** Iconos de mejora (0034): reservas por categoría y fichero por id. */
 export type IconsAppearance = z.output<typeof IconsSchema>;
+/** Contadores del HUD (0036). */
+export type HudLooks = z.output<typeof HudLooksSchema>;
 export type UiInk = UiPiece['ink'];
 export type MapAppearance = z.output<typeof MapAppearanceSchema>;
 /** Decoración del mapa generado (0029). */

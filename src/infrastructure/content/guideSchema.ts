@@ -43,9 +43,26 @@ const Page = z.strictObject({
   icons: z.array(z.enum(GUIDE_ICONS)).optional(),
 });
 
+/** Largo máximo de la explicación de un edificio del panel de obra (0036): una línea. */
+export const BUILD_TEXT_MAX = 64;
+export const GUIDE_BUILD_TOO_LONG = `La explicación de un edificio tiene como mucho ${String(
+  BUILD_TEXT_MAX,
+)} caracteres.`;
+export const GUIDE_BUILD_DIGITS =
+  'La explicación de un edificio no lleva cifras escritas a mano: van en marcadores.';
+
+/**
+ * Explicación cruda de un edificio (0036, design D7): no vacía y sin dígitos. El tope de una línea
+ * (`BUILD_TEXT_MAX`) se mide sobre el texto mostrado, ya interpolado (`parseGuide`): el crudo con
+ * sus marcadores es más largo que lo que se ve.
+ */
+const BuildText = Text.regex(/^[^0-9]*$/, { error: GUIDE_BUILD_DIGITS });
+
 export const GuideSchema = z
   .strictObject({
     pages: z.array(Page).length(GUIDE_PAGE_IDS.length, { error: GUIDE_PAGE_COUNT }),
+    /** Explicaciones del panel de obra (0036), interpoladas como las páginas. */
+    build: z.strictObject({ house: BuildText, tower: BuildText }),
   })
   .superRefine((guide, ctx) => {
     guide.pages.forEach((page, i) => {
@@ -69,6 +86,13 @@ export interface GuidePage {
   readonly icons: readonly GuideIcon[];
 }
 
+/** Explicación ya interpolada de cada edificio del panel de obra (0036). */
+export interface BuildTexts {
+  readonly house: string;
+  readonly tower: string;
+}
+
 export interface Guide {
   readonly pages: readonly GuidePage[];
+  readonly build: BuildTexts;
 }
