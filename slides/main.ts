@@ -4,7 +4,7 @@ import 'reveal.js/reset.css';
 import 'reveal.js/reveal.css';
 import './slides.css';
 import { BALANCE, BALANCE_BAND, FIGURES, LINKS, STAGES } from './data.ts';
-import { checkImport, LAYERS, type LayerId } from './layers.ts';
+import { LAYERS, type LayerId } from './layers.ts';
 import { mountIcons, mountSprites, paintBackdrops } from './sprites.ts';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -68,67 +68,6 @@ function mountLayers(root: HTMLElement): void {
   }
   root.append(stack, detail);
   select('domain');
-}
-
-/** "Prueba el guardarraíl": simula la regla de capas del hook sobre un import escrito a mano. */
-function mountGuard(root: HTMLElement): void {
-  const form = el('form', 'guard-form');
-  const file = el('select');
-  for (const layer of LAYERS) file.append(new Option(`${layer.path}x.ts`, layer.id));
-  const input = el('input');
-  file.value = 'domain';
-  input.value = 'const roll = Math.random();';
-  input.spellcheck = false;
-  const run = el('button', undefined, 'Escribir');
-  run.type = 'submit';
-  const out = el('pre', 'guard-out');
-
-  const presets = el('div', 'guard-presets');
-  const samples = [
-    "import Phaser from 'phaser';",
-    'const roll = Math.random();',
-    "import { Run } from '../domain/Run';",
-    "localStorage.setItem('k', 'v');",
-  ];
-  for (const sample of samples) {
-    const chip = el('button', 'chip', sample);
-    chip.type = 'button';
-    chip.addEventListener('click', () => {
-      input.value = sample;
-      form.requestSubmit();
-    });
-    presets.append(chip);
-  }
-
-  // Escenario: el barril explota si el hook bloquea; el arquero dispara si la escritura pasa.
-  const stage = el('div', 'guard-stage');
-  const boom = el('div', 'boom');
-  boom.dataset['sprite'] = 'explosion';
-  boom.dataset['scale'] = '1.3';
-  const archer = el('div', 'shooter');
-  archer.dataset['sprite'] = 'archer-shoot';
-  archer.dataset['scale'] = '0.75';
-  stage.append(boom, archer);
-
-  form.addEventListener('submit', (event) => {
-    event.preventDefault();
-    const verdict = checkImport(file.value as LayerId, input.value);
-    stage.classList.toggle('is-blocked', !verdict.ok);
-
-    out.className = `guard-out ${verdict.ok ? 'is-ok' : 'is-blocked'}`;
-    out.textContent = verdict.ok
-      ? '✓ Escritura permitida'
-      : [
-          `✗ Guardarraíl de arquitectura: escritura bloqueada en ${file.selectedOptions[0]?.text ?? ''}`,
-          ...verdict.reasons.map((reason) => `  - ${reason}`),
-        ].join('\n');
-  });
-
-  form.append(file, input, run);
-  const result = el('div', 'guard-result');
-  result.append(out, stage);
-  root.append(form, presets, result);
-  form.requestSubmit();
 }
 
 /** Gráfica de victorias del bot por change, con la banda objetivo. */
@@ -239,7 +178,6 @@ function mountFigures(root: HTMLElement): void {
 
 const MOUNTS: Record<string, (root: HTMLElement) => void> = {
   layers: mountLayers,
-  guard: mountGuard,
   balance: mountBalance,
   figures: mountFigures,
 };

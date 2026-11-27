@@ -230,43 +230,6 @@ body {
   content: '○ ';
 }
 
-/* Flujo SDD y guardarraíles */
-.flow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.35em;
-  margin: 0.4em 0 0.8em;
-  font-size: 0.75em;
-}
-
-.flow .step,
-.flow .gate {
-  padding: 0.35em 0.75em;
-  border-radius: 999px;
-  font-family: var(--mono);
-}
-
-.flow .step {
-  border: 1px solid var(--line);
-  background: var(--surface);
-}
-
-.flow .gate {
-  border: 2px dashed var(--accent);
-  color: var(--accent);
-  font-weight: 700;
-}
-
-.flow.small {
-  font-size: 0.65em;
-}
-
-.reveal ul.fragment,
-.reveal .flow + ul {
-  font-size: 0.8em;
-}
-
 /* Tabla de agentes */
 .agents {
   width: 100%;
@@ -373,73 +336,6 @@ body {
 .layers-detail .rule::before {
   content: '✓ ';
   color: var(--accent-2);
-}
-
-/* Widget: guardarraíl */
-.guard-form {
-  display: flex;
-  gap: 0.4em;
-  font-size: 0.55em;
-}
-
-.guard-form select,
-.guard-form input,
-.guard-form button,
-.chip {
-  padding: 0.45em 0.7em;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface);
-  color: var(--text);
-  font-family: var(--mono);
-  font-size: 1em;
-}
-
-.guard-form input {
-  flex: 1;
-  min-width: 0;
-}
-
-.guard-form button {
-  background: var(--accent);
-  color: var(--bg);
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.guard-presets {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35em;
-  margin: 0.4em 0;
-  font-size: 0.45em;
-}
-
-.chip {
-  cursor: pointer;
-}
-
-.chip:hover {
-  border-color: var(--accent);
-}
-
-.guard-out {
-  margin: 0;
-  padding: 0.7em 1em;
-  border-radius: 8px;
-  background: var(--bg-2);
-  font-size: 0.5em;
-  white-space: pre-wrap;
-}
-
-.guard-out.is-ok {
-  border-left: 4px solid var(--accent-2);
-  color: var(--accent-2);
-}
-
-.guard-out.is-blocked {
-  border-left: 4px solid var(--danger);
-  color: var(--danger);
 }
 
 /* Widget: balance */
@@ -912,38 +808,6 @@ body {
   color: var(--accent);
 }
 
-/* Escenario del guardarraíl */
-.guard-result {
-  display: grid;
-  grid-template-columns: 1fr 200px;
-  gap: 0.6em;
-  align-items: center;
-}
-
-.guard-stage {
-  position: relative;
-  height: 180px;
-}
-
-.guard-stage .sprite {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  translate: -50% -50%;
-}
-
-.guard-stage .boom {
-  display: none;
-}
-
-.guard-stage.is-blocked .boom {
-  display: block;
-}
-
-.guard-stage.is-blocked .shooter {
-  display: none;
-}
-
 /* Gráfica de balance en oro y hierba */
 .balance-chart .bar {
   fill: var(--accent);
@@ -996,4 +860,52 @@ body {
 
 .cards.provenance {
   grid-template-columns: repeat(4, 1fr);
+}
+
+/* Guardarraíles: una tarjeta por capa */
+.guard-layers {
+  margin-top: 1em;
+}
+
+.guard-layers .card {
+  display: flex;
+  flex-direction: column;
+}
+
+.guard-layers .card {
+  font-size: 0.95em;
+}
+
+.guard-layers .card p {
+  flex: 1;
+  font-size: 0.7em;
+  line-height: 1.35;
+}
+
+.guard-layers .card > code {
+  align-self: flex-start;
+  margin-top: 0.6em;
+  font-size: 0.6em;
+}
+
+.reveal ul.guard-rules {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6em;
+  margin: 0.8em 0 0;
+  font-size: 0.62em;
+}
+
+.guard-rules li {
+  margin: 0;
+  padding: 0.5em 0.8em;
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.guard-rules b {
+  display: block;
+  color: var(--accent);
 }

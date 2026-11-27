@@ -256,20 +256,39 @@ tfm-survivors.worktrees/
         <!-- 9 · Guardarraíles -->
         <section>
           <h2>Guardarraíles en 3 capas</h2>
-          <div class="flow small">
-            <span class="step">1 · Hook del agente</span>
-            <span class="step">2 · pre-commit</span>
-            <span class="step">3 · CI</span>
+          <div class="cards guard-layers">
+            <div class="card card--blue">
+              <div class="card-art"><div data-sprite="archer-shoot" data-scale="1.1"></div></div>
+              <h3>1 · Hook del agente</h3>
+              <p>El agente comprueba las reglas antes de escribir cada fichero. Si una falla, se bloquea y explica cómo corregirlo.</p>
+              <code>.claude/hooks/</code>
+            </div>
+            <div class="card card--gold">
+              <div class="card-art"><div data-sprite="castle" data-scale="0.38"></div></div>
+              <h3>2 · Pre-commit</h3>
+              <p>Para cualquier autor, persona u otro agente: ESLint y los mismos hooks sobre lo que se va a commitear.</p>
+              <code>.husky/pre-commit</code>
+            </div>
+            <div class="card card--red">
+              <div class="card-art"><div data-sprite="tower" data-scale="0.6"></div></div>
+              <h3>3 · CI</h3>
+              <p>Las reglas sobre todo el repo en cada PR. Sin el check <code>quality</code> en verde no entra en main.</p>
+              <code>npm run verify</code>
+            </div>
           </div>
-          <p class="note">Una sola fuente de reglas (<code>.claude/hooks/</code>) para cualquier autor: persona o IA.</p>
-          <div class="widget" data-widget="guard"></div>
+          <ul class="guard-rules">
+            <li><b>Capas</b> El dominio no importa el motor ni usa <code>Math.random</code>: el azar llega por un puerto.</li>
+            <li><b>Secretos</b> Nada de claves ni ficheros <code>.env</code> en el código.</li>
+            <li><b>Procedencia</b> Ninguna imagen, audio o fuente sin su licencia registrada.</li>
+          </ul>
           <aside class="notes">
-            Las reglas de arquitectura no dependen de que la IA se porte bien. Hay tres capas: un hook que bloquea al
-            agente antes de escribir, un pre-commit para cualquier autor y el CI. Las tres usan las mismas reglas.
-            Probemos: [Elegir src/domain y pulsar Math.random] si un agente intenta usar Math.random en el dominio, se
-            bloquea y le dice qué hacer: usar el puerto RandomGenerator. [Pulsar el import de Phaser] Lo mismo con el
-            motor. En infraestructura, en cambio, está permitido. Cuando el hook salta, se anota en el diario de IA
-            como evidencia.
+            Las reglas de arquitectura no dependen de que la IA se porte bien. Hay tres capas. La primera es un hook
+            del agente: antes de escribir un fichero comprueba las reglas y, si el agente intenta, por ejemplo,
+            usar Math.random en el dominio, lo bloquea y le dice qué hacer, usar el puerto RandomGenerator. La segunda
+            es el pre-commit, que vale para cualquier autor, yo incluido u otro agente distinto. Y la tercera es el CI,
+            que pasa todo sobre el repo entero en cada PR; sin ese check en verde no se puede fusionar. Las tres
+            usan exactamente las mismas reglas: capas de la arquitectura, nada de secretos y procedencia de los
+            assets. Cuando un hook salta, se anota en el diario de IA como evidencia.
           </aside>
         </section>
 

@@ -1,6 +1,5 @@
-// Capas de Clean Architecture para la presentación y una réplica, solo para la demo, de las reglas
-// de `.claude/hooks/guard-architecture.mjs` (el hook real usa Node y no se puede cargar en el navegador).
-// Si cambian las reglas del hook, cambia también estas.
+// Capas de Clean Architecture para el diagrama interactivo de la presentación.
+// Resumen de AGENTS.md §3; las reglas reales viven en .claude/hooks/guard-architecture.mjs.
 
 export type LayerId = 'domain' | 'application' | 'infrastructure' | 'composition';
 
@@ -54,57 +53,3 @@ export const LAYERS: readonly Layer[] = [
     ],
   },
 ];
-
-const ENGINE = String.raw`(phaser|kaplay)(\/[^'"]*)?`;
-const SOURCE = String.raw`(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)['"]`;
-const importOf = (target: string): RegExp => new RegExp(String.raw`${SOURCE}${target}['"]`);
-const layerImport = (layers: string): RegExp =>
-  new RegExp(String.raw`${SOURCE}[^'"]*\/(${layers})(\/|['"])`);
-
-interface Rule {
-  readonly re: RegExp;
-  readonly msg: string;
-}
-
-const LAYER_RULES: Partial<Record<LayerId, readonly Rule[]>> = {
-  domain: [
-    { re: importOf(ENGINE), msg: 'El dominio no puede importar el motor de juego.' },
-    {
-      re: layerImport('application|infrastructure|composition'),
-      msg: 'El dominio no depende de ninguna otra capa.',
-    },
-  ],
-  application: [
-    { re: importOf(ENGINE), msg: 'La aplicación no puede importar el motor de juego.' },
-    {
-      re: layerImport('infrastructure|composition'),
-      msg: 'La aplicación solo depende del dominio y de sus puertos.',
-    },
-  ],
-};
-
-const IMPURE: readonly Rule[] = [
-  {
-    re: /\bMath\s*(\?\.|\.)\s*random\b/,
-    msg: 'Math.random rompe el determinismo: usa el puerto RandomGenerator.',
-  },
-  { re: /\bDate\s*(\?\.|\.)\s*now\b/, msg: 'Date.now rompe el determinismo: usa el puerto Clock.' },
-  { re: /\bnew\s+Date\s*\(\s*\)/, msg: 'new Date() rompe el determinismo: usa el puerto Clock.' },
-  {
-    re: /\b(window|document|localStorage|sessionStorage|indexedDB)\s*(\?\.|\.|\[)/,
-    msg: 'APIs del navegador solo en infrastructure.',
-  },
-];
-
-export interface Verdict {
-  readonly ok: boolean;
-  readonly reasons: readonly string[];
-}
-
-/** Lo que diría el hook si un agente escribiera `code` en un fichero de la capa `layer`. */
-export function checkImport(layer: LayerId, code: string): Verdict {
-  const rules = LAYER_RULES[layer];
-  if (!rules) return { ok: true, reasons: [] };
-  const reasons = [...rules, ...IMPURE].filter(({ re }) => re.test(code)).map(({ msg }) => msg);
-  return { ok: reasons.length === 0, reasons };
-}
