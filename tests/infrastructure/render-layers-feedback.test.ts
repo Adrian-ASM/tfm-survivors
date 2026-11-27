@@ -72,7 +72,14 @@ const numbersSum = (l: RenderLayers): number => {
   return d.enemy + d.structure + d.sheep + d.player;
 };
 
-const intact = (s: RunSnapshot) => s.structures.filter((x) => !x.destroyed).length;
+/**
+ * 0036: estructuras dañadas (vida < máxima en algún snapshot pintado de la partida) y no destruidas;
+ * `seen` acumula los ids dañados desde el primer frame.
+ */
+const damagedNotRuined = (s: RunSnapshot, seen: Set<number>): number => {
+  for (const x of s.structures) if (!x.destroyed && x.health < x.maxHealth) seen.add(x.id);
+  return s.structures.filter((x) => !x.destroyed && seen.has(x.id)).length;
+};
 
 /** Juega `n` ticks con inputs fijos y la política de elección fija, pintando cada snapshot. */
 function playPainted(run: Run, n: number, paint: (s: RunSnapshot) => void): RunSnapshot[] {
@@ -137,13 +144,15 @@ describe('Capa de combate en las capas de la partida (sprite-rendering 0031)', (
   it('Scenario: R y menú con números de daño y barras', () => {
     const { layer } = layers();
     const s42 = startSeededRun(aDefaultConfig(), 42).snapshot();
-    const ruined = s42.structures.map((x, i) =>
-      i === 0 ? { ...x, health: 0, destroyed: true } : x,
-    );
+    // 1 casa destruida y otras 2 estructuras dañadas con barra (0036).
+    const ruined = s42.structures.map((x, i) => {
+      if (i === 0) return { ...x, health: 0, destroyed: true };
+      return i <= 2 ? { ...x, health: x.maxHealth - 5 } : x;
+    });
     const hits = [0, 1, 2, 3, 4].map((i) => aHit(i, 'enemy', 6));
     layer.render({ ...s42, status: 'over', outcome: 'lost', structures: ruined, hits });
     expect(numbersSum(layer)).toBe(5);
-    expect(layer.counts.healthBars).toBe(s42.structures.length - 1);
+    expect(layer.counts.healthBars).toBe(2);
     layer.clear();
     const s43Run = startSeededRun(aDefaultConfig(), 43);
     const s43 = s43Run.snapshot();
@@ -155,7 +164,7 @@ describe('Capa de combate en las capas de la partida (sprite-rendering 0031)', (
       player: 0,
       created: 0,
     });
-    expect(layer.counts.healthBars).toBe(s43.structures.length);
+    expect(layer.counts.healthBars).toBe(0);
     layer.render({ ...s43, tick: 1, hits: [aHit(0, 'enemy', 6)] });
     expect(layer.counts.damageNumbers.created).toBe(1);
     // Menú: la sonda usa los recuentos vacíos en todos sus frames.
@@ -170,16 +179,41 @@ describe('Capa de combate en las capas de la partida (sprite-rendering 0031)', (
     const { layer } = layers();
     let created = 0;
     const run = startSeededRun(aDefaultConfig(), 42);
+    const seen = new Set<number>();
+    const bars: number[] = [];
     const frames = playPainted(run, 600, (s) => {
       layer.advance(TICK_MS, false);
       layer.render(s);
-      expect(layer.counts.healthBars).toBe(intact(s));
+      bars.push(layer.counts.healthBars);
+      expect(layer.counts.healthBars).toBe(damagedNotRuined(s, seen));
       expect(numbersSum(layer)).toBeLessThanOrEqual(48);
       expect(layer.counts.damageNumbers.created).toBeGreaterThanOrEqual(created);
       created = layer.counts.damageNumbers.created;
     });
     expect(frames).toHaveLength(600);
     expect(created).toBeGreaterThan(0);
+    // En el primer frame de la semilla 42 ninguna está dañada: 7 estructuras y 0 barras.
+    expect([frames[0]?.structures.length, bars[0]]).toEqual([7, 0]);
+  });
+
+  it('Scenario: Partida nueva sin barras (R y Volver al menú → Jugar con la semilla 42)', () => {
+    const { layer } = layers();
+    const s42 = startSeededRun(aDefaultConfig(), 42).snapshot();
+    const hurt = s42.structures.map((x, i) => (i < 2 ? { ...x, health: x.maxHealth - 10 } : x));
+    // R: `clear` y la partida nueva con los mismos ids.
+    layer.render({ ...s42, structures: hurt });
+    expect(layer.counts.healthBars).toBe(2);
+    layer.clear();
+    layer.render(startSeededRun(aDefaultConfig(), 42).snapshot());
+    expect(layer.counts.healthBars).toBe(0);
+    // Menú → Jugar: `clear` al volver y `paintMap` (setCellSize) de la partida nueva.
+    layer.render({ ...s42, structures: hurt });
+    expect(layer.counts.healthBars).toBe(2);
+    layer.clear();
+    const fresh = startSeededRun(aDefaultConfig(), 42);
+    layer.paintMap(noCanvas, planFor(fresh.map, 42));
+    layer.render(fresh.snapshot());
+    expect(layer.counts.healthBars).toBe(0);
   });
 
   it('Scenario: Los números siguen a la cámara, no al objetivo', () => {

@@ -113,7 +113,7 @@
   - Escenario (`sprite-rendering`): «Los datos del HUD no cambian la simulación ni el mapa».
 
 ## 4. Barras de vida (infraestructura)
-- [ ] 4.1 Memoria de «estructura dañada» en `HealthBarLayer` (§D3).
+- [x] 4.1 Memoria de «estructura dañada» en `HealthBarLayer` (§D3).
   - `damaged: Set<number>` por id, que se borra en `forget()` (`clear` y `setCellSize`).
   - `drawn` = dañadas y no en ruina.
   - Tests:
