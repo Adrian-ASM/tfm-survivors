@@ -332,3 +332,81 @@ describe('Panel Sonido desde el menú (spec audio y menu-guide 0035)', () => {
     expect(s.operative()).toEqual(MENU_ORDER);
   });
 });
+
+// Spec menu-guide (0036), "Cerrar la guía": la × de la esquina (nombre accesible `Cerrar`).
+describe('La × de la guía (spec menu-guide 0036)', () => {
+  const closeX = (s: ReturnType<typeof setup>): FakeElement => {
+    const xs = s.read.root.findAll((e) => e.tagName === 'button' && e.textContent === L.close);
+    expect(xs).toHaveLength(1);
+    return xs[0] as FakeElement;
+  };
+
+  it('Scenario: Cerrar con el botón (la × de la página 4)', () => {
+    const s = setup();
+    openGuideAt(s, 4);
+    const x = closeX(s);
+    expect(x.getAttribute('aria-label')).toBe(L.guideClose);
+    x.click();
+    expect(s.read.visible).toBe(false);
+    expect(isShown(s.menu)).toBe(true);
+    expect(s.operative()).toEqual(MENU_ORDER);
+    expect(s.focusedLabel()).toBe(L.guide);
+    expect(s.played()).toBe(false);
+  });
+
+  it('Scenario: Una sola × en cada página', () => {
+    const s = setup();
+    openGuideAt(s, 1);
+    for (let n = 1; n <= 7; n += 1) {
+      expect(s.read.indicator).toBe(`${String(n)} de 7`);
+      const named = s.read.root.findAll(
+        (e) => e.tagName === 'button' && isShown(e) && e.accessibleName === L.guideClose,
+      );
+      expect(named.map((b) => b.textContent)).toEqual([L.close]);
+      expect(s.read.root.findAll((e) => isShown(e) && e.textContent === L.guideClose)).toEqual([]);
+      expect(s.read.labels).not.toContain(L.guideClose);
+      if (n < 7) s.read.control(L.guideNext).click();
+    }
+  });
+
+  it('Scenario: La × y Esc dejan el mismo estado', () => {
+    const state = (s: ReturnType<typeof setup>) => ({
+      visible: s.read.visible,
+      menu: isShown(s.menu),
+      operative: s.operative(),
+      listeners: s.listeners(),
+      focus: s.focusedLabel(),
+      played: s.played(),
+    });
+    const withX = setup();
+    openGuideAt(withX, 3);
+    closeX(withX).click();
+    const withEsc = setup();
+    openGuideAt(withEsc, 3);
+    withEsc.key('Escape');
+    expect(state(withX)).toEqual(state(withEsc));
+    expect(state(withX)).toEqual({
+      visible: false,
+      menu: true,
+      operative: MENU_ORDER,
+      listeners: 0,
+      focus: L.guide,
+      played: false,
+    });
+    for (const s of [withX, withEsc]) {
+      s.menuButton(L.guide).click();
+      expect(s.read.indicator).toBe('1 de 7');
+    }
+  });
+
+  it('Scenario: × con la pieza en reserva (sin variables del kit: el clic cierra igual)', () => {
+    // En Node no hay hoja de estilos: es el caso de la pieza sin cargar. La × es un `button` más.
+    const s = setup();
+    openGuideAt(s, 2);
+    expect(() => {
+      closeX(s).click();
+    }).not.toThrow();
+    expect(s.read.visible).toBe(false);
+    expect(s.focusedLabel()).toBe(L.guide);
+  });
+});

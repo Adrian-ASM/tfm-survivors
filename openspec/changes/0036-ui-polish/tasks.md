@@ -37,7 +37,7 @@
   - Escenario (`menu-guide`): «Página de la tienda con la ×».
 
 ## 2. Paneles DOM (infraestructura + composición)
-- [ ] 2.1 La × de los cuatro modales (§D1).
+- [x] 2.1 La × de los cuatro modales (§D1).
   - `closeButton()` en `dom/button.ts` y `MENU_LABELS.close`.
   - La × sustituye a `*__leave` en `ShopPanel`/`BuildPanel`, a `Cerrar` en `GuideModal` y a
     `.sound-panel__actions` en `SoundPanel`.
@@ -53,7 +53,7 @@
     estado».
   - Escenarios (`audio`): «Abrir desde el menú y cerrar con Esc», «Cerrar con la × desde el menú y desde la
     pausa», «Una sola × y ningún Cerrar visible».
-- [ ] 2.2 Hoja de estilos (§D1, §D2, §D4).
+- [x] 2.2 Hoja de estilos (§D1, §D2, §D4).
   - Regla `.ui-close` (top/right 16k, 48k, padding de margen × k, `unsafe center`, 44 × 44 en móvil) y reservas de
     cabecera de 56k (h2 de la tienda y la obra; `padding` de las cabeceras de la guía y Sonido).
   - Reglas de fila acotadas a `.shop-panel__product` y `.build-panel__option`, y `text-align: center` en la regla
@@ -67,7 +67,7 @@
   - Escenarios (`build-sites`): «Iconos de recurso mayores», «Panel entero dentro del marco».
   - Escenarios (`castle-shop`): «Tienda con desplazamiento interno a ×1 en 1.280 × 720» (reglas), «Tienda entera
     a ×2».
-- [ ] 2.3 Filas de la obra con edificio y explicación (§D6).
+- [x] 2.3 Filas de la obra con edificio y explicación (§D6).
   - `buildingIcons()` en `resourceIcons.ts`.
   - 4.º parámetro `BuildAbout` de `BuildPanel`: imagen con `width`/`height` del frame, `alt=""` y `hidden` con
     `error`; explicación en `.build-panel__about`.

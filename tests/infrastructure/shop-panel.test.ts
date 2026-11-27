@@ -51,7 +51,7 @@ function panel() {
 const text = (el: FakeElement | undefined, cls: string) => el?.byClass(cls)[0]?.textContent;
 
 describe('ShopPanel', () => {
-  it('Scenario: Overlay con oro justo (oro 12, 7 filas, Salir; fast-ci con Oro insuficiente)', () => {
+  it('Scenario: Overlay con oro justo (oro 12, 7 filas, la ×; fast-ci con Oro insuficiente)', () => {
     const { paint, section, row, shop } = panel();
     paint(inShop().snapshot());
 
@@ -59,7 +59,18 @@ describe('ShopPanel', () => {
     expect(section().getAttribute('role')).toBe('dialog');
     expect(text(section(), 'shop-panel__gold')).toBe(`${MENU_LABELS.shopGoldLabel}: 12`);
     expect(section().findAll((e) => e.dataset.product !== undefined)).toHaveLength(7);
-    expect(text(section(), 'shop-panel__leave')).toBe(MENU_LABELS.shopLeave);
+    // 0036: 1 botón con nombre accesible `Salir` (la ×) y ningún texto visible `Salir`.
+    const leave = section().findAll((e) => e.accessibleName === MENU_LABELS.shopLeave);
+    expect(leave.map((b) => [b.tagName, b.textContent, b.className])).toEqual([
+      ['button', MENU_LABELS.close, 'ui-close'],
+    ]);
+    expect(section().findAll((e) => e.textContent === MENU_LABELS.shopLeave)).toEqual([]);
+    expect(section().children.at(-1)).toBe(leave[0]);
+    expect(
+      section().findAll(
+        (e) => e.dataset.product !== undefined && !!e.byClass('shop-panel__icon')[0],
+      ),
+    ).toHaveLength(7);
     expect(row('strict-rules')?.className).toBe('shop-panel__product');
     expect(text(row('strict-rules'), 'shop-panel__notice')).toBe('');
     expect(row('fast-ci')?.getAttribute('aria-disabled')).toBe('true');
@@ -107,7 +118,7 @@ describe('ShopPanel', () => {
     expect(section().hidden).toBe(false);
   });
 
-  it('Salir deja la acción leave; producto al máximo muestra Máximo; vida llena en la curación', () => {
+  it('la × deja la acción leave; producto al máximo muestra Máximo; vida llena en la curación', () => {
     const { paint, section, row, shop } = panel();
     const run = startAtDoor(
       {
@@ -119,7 +130,7 @@ describe('ShopPanel', () => {
     untilShopping(run, 1);
     paint(run.snapshot());
 
-    section().byClass('shop-panel__leave')[0]?.click();
+    section().byClass('ui-close')[0]?.click();
 
     expect(shop.takeAction()).toEqual({ kind: 'leave' });
     expect(text(row('coverage'), 'shop-panel__price')).toBe('Máximo');

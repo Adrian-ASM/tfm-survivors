@@ -1,5 +1,5 @@
 import type { Guide } from '../content/guideSchema';
-import { button, setPanelHidden } from './button';
+import { button, closeButton, setPanelHidden } from './button';
 import { GUIDE_ICON_ALT, MENU_LABELS, guidePage } from './menuText';
 import type { ResourceIcons } from './resourceIcons';
 
@@ -20,7 +20,7 @@ const KEYS = new Set(['Escape', 'ArrowRight', 'ArrowLeft']);
 
 /**
  * Guía «Cómo jugar» del menú (change 0028, design §3 y §5): una página a la vez con título,
- * indicador «n de total», iconos de recurso y párrafos; `Anterior`, `Siguiente` y `Cerrar`, y
+ * indicador «n de total», iconos de recurso y párrafos; `Anterior`, `Siguiente` y la × (`Cerrar`), y
  * Esc y flechas solo entre `open()` y `close()` (una escucha en el documento). Solo
  * `createElement`, `textContent`, atributos, clases y `hidden` (CSP estricta). El foco va al
  * recuadro (`tabindex="-1"`) al abrir y tras cambiar de página; sin focus trap.
@@ -69,14 +69,15 @@ export class GuideModal {
       this.turn(1);
       this.root.focus();
     });
-    const closeButton = button(doc, MENU_LABELS.guideClose, () => {
-      this.close();
-    });
     const actions = doc.createElement('div');
     actions.className = 'guide-modal__actions';
-    actions.append(this.prevButton, this.nextButton, closeButton);
+    actions.append(this.prevButton, this.nextButton);
+    // 0036: la × de la esquina (nombre accesible `Cerrar`), último hijo del recuadro.
+    const close = closeButton(doc, MENU_LABELS.guideClose, () => {
+      this.close();
+    });
 
-    this.root.append(header, this.body, actions);
+    this.root.append(header, this.body, actions, close);
     parent.append(this.root);
   }
 

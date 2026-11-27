@@ -11,7 +11,7 @@ import { bootContent } from '../../src/composition/contentBoot';
 import { PlayerInput } from '../../src/domain/player/PlayerInput';
 import { repositoryContent } from '../../src/infrastructure/content/loadRunConfig';
 import { BuildPanel } from '../../src/infrastructure/dom/BuildPanel';
-import { resourceIcons } from '../../src/infrastructure/dom/resourceIcons';
+import { buildingIcons, resourceIcons } from '../../src/infrastructure/dom/resourceIcons';
 import { BuildGate } from '../../src/infrastructure/phaser/BuildGate';
 import { TICK_MS } from '../support/builders';
 import { fakeDom, type FakeElement } from '../support/fakeDom';
@@ -55,11 +55,34 @@ describe('Torre construible con el contenido real (regresión 0027 §3.4)', () =
     expect([opened.status, opened.build.siteId]).toEqual(['building', first.id]);
 
     const { doc, root, fake } = fakeDom();
-    const icons = resourceIcons(appearance, (file) => assetUrl('/tfm-survivors/', file));
-    const panel = new BuildPanel(doc, root, icons);
+    const sheetUrl = (file: string) => assetUrl('/tfm-survivors/', file);
+    const icons = resourceIcons(appearance, sheetUrl);
+    // 0036: como main.ts, con la imagen de cada edificio y la explicación de guide.json.
+    const panel = new BuildPanel(doc, root, icons, {
+      icons: buildingIcons(appearance, sheetUrl),
+      texts: booted.guide.build,
+    });
     panel.sync(opened);
     panel.setVisible(true);
     const rows = (fake.children[0] as FakeElement).findAll((e) => e.dataset.building !== undefined);
+    // Spec build-sites 0036, "Filas con icono y explicación", con el contenido por defecto.
+    const shown = rows.map((r) => [
+      r.byClass('build-panel__icon')[0]?.getAttribute('src'),
+      r.byClass('build-panel__icon')[0]?.getAttribute('height'),
+      r.byClass('build-panel__about')[0]?.textContent.trim(),
+    ]);
+    expect(shown).toEqual([
+      [
+        '/tfm-survivors/assets/tiny-swords/Factions/Knights/Buildings/House/House_Blue.png',
+        '192',
+        '+1 oro cada 30 s',
+      ],
+      [
+        '/tfm-survivors/assets/tiny-swords/Factions/Knights/Buildings/Tower/Tower_Blue.png',
+        '256',
+        'Dispara flechas a los enemigos cercanos',
+      ],
+    ]);
     const tower = rows.find((r) => r.dataset.building === 'tower');
     expect(rows.map((r) => r.dataset.building)).toEqual(['house', 'tower']);
     expect(tower?.getAttribute('disabled')).toBeNull();

@@ -13,7 +13,10 @@ export const MENU_MESSAGES: Readonly<Record<MenuMessage, string>> = {
   'clear-failed': 'El progreso guardado no se ha podido borrar',
 };
 
-/** Etiquetas visibles exactas (spec main-menu). */
+/**
+ * Etiquetas visibles exactas (spec main-menu). 0036: `shopLeave`/`buildLeave` y
+ * `guideClose`/`soundClose` son el nombre accesible de la × (`close`), no texto visible.
+ */
 export const MENU_LABELS = {
   play: 'Jugar',
   guide: 'Cómo jugar',
@@ -48,6 +51,8 @@ export const MENU_LABELS = {
   soundEffects: 'Efectos',
   soundMute: 'Silenciar todo',
   soundClose: 'Cerrar',
+  /** Glifo de la × de cierre de los modales (U+00D7). */
+  close: '×',
 } as const;
 
 /** Valor visible de un deslizador del panel Sonido (spec audio): «N %». */

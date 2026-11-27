@@ -48,3 +48,31 @@ export function resourceIcons(
     stone: assetUrl(stone.rocks.medium.sheet.file),
   });
 }
+
+/** Imagen de un edificio del panel de obra (0036): URL y tamaño de su frame (la proporción). */
+export interface BuildingIcon {
+  readonly url: string;
+  readonly width: number;
+  readonly height: number;
+}
+
+/**
+ * Imagen de la casa y de la torre del panel de obra (0036, design D6): la hoja con la que se pinta el
+ * edificio construido (`sites.house` y `sites.tower`, `House_Blue` y `Tower_Blue`), con la URL que
+ * carga `BootScene` y el tamaño de su frame. Función pura.
+ */
+export function buildingIcons(
+  appearance: Pick<Appearance, 'sites'>,
+  assetUrl: (file: string) => string,
+): Readonly<Record<'house' | 'tower', BuildingIcon>> {
+  const icon = ({ sheet }: Appearance['sites']['house']): BuildingIcon =>
+    Object.freeze({
+      url: assetUrl(sheet.file),
+      width: sheet.frameWidth,
+      height: sheet.frameHeight,
+    });
+  return Object.freeze({
+    house: icon(appearance.sites.house),
+    tower: icon(appearance.sites.tower),
+  });
+}

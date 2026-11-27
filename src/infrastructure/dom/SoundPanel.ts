@@ -1,5 +1,5 @@
 import type { AudioSettings } from '../audio/audioVolumes';
-import { button, setPanelHidden } from './button';
+import { closeButton, setPanelHidden } from './button';
 import { MENU_LABELS, soundPercent } from './menuText';
 
 /** Paso de los deslizadores (spec audio, convenciones): constante de interfaz, no de contenido. */
@@ -38,9 +38,9 @@ interface Slider {
 
 /**
  * Panel modal `Sonido` (spec audio 0035, design D10), con el patrón de `GuideModal`: deslizadores
- * `Música` y `Efectos` (0..100, paso 5, con su `N %`), la casilla `Silenciar todo` y `Cerrar`. El
- * `input` aplica al instante (`preview`) y el `change` guarda (`commit`): 1 escritura por flecha o
- * por arrastre soltado. Refleja cualquier cambio de los ajustes (M, botón táctil). Solo
+ * `Música` y `Efectos` (0..100, paso 5, con su `N %`), la casilla `Silenciar todo` y la ×
+ * (`Cerrar`). El `input` aplica al instante (`preview`) y el `change` guarda (`commit`): 1 escritura
+ * por flecha o por arrastre soltado. Refleja cualquier cambio de los ajustes (M, botón táctil). Solo
  * `textContent`, atributos, clases, `hidden` y `addEventListener` (CSP estricta, sin `style`).
  */
 export class SoundPanel {
@@ -90,15 +90,12 @@ export class SoundPanel {
     muteRow.append(this.mute, muteText);
     body.append(musicRow, effectsRow, muteRow);
 
-    const actions = doc.createElement('div');
-    actions.className = 'sound-panel__actions';
-    actions.append(
-      button(doc, MENU_LABELS.soundClose, () => {
-        this.close();
-      }),
-    );
+    // 0036: la × de la esquina (nombre accesible `Cerrar`) sustituye a `.sound-panel__actions`.
+    const close = closeButton(doc, MENU_LABELS.soundClose, () => {
+      this.close();
+    });
 
-    this.root.append(header, body, actions);
+    this.root.append(header, body, close);
     parent.append(this.root);
     store.subscribe((s) => {
       this.sync(s);

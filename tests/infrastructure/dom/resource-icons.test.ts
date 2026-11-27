@@ -9,7 +9,11 @@ import {
   registeredPaths,
   parseAppearance,
 } from '../../../src/infrastructure/content/loadAppearance';
-import { gemShapeUrl, resourceIcons } from '../../../src/infrastructure/dom/resourceIcons';
+import {
+  buildingIcons,
+  gemShapeUrl,
+  resourceIcons,
+} from '../../../src/infrastructure/dom/resourceIcons';
 import { MENU_LABELS, buildMissing } from '../../../src/infrastructure/dom/menuText';
 import { GENERATED_PATHS } from '../../support/generated';
 
@@ -120,5 +124,34 @@ describe('resourceIcons (panel de obra 0027 y guía 0028)', () => {
   it('textos del panel: alternativas en minúscula y «faltan N»', () => {
     expect([MENU_LABELS.buildWood, MENU_LABELS.buildStone]).toEqual(['madera', 'piedra']);
     expect(buildMissing(5)).toBe('faltan 5');
+  });
+});
+
+// Spec build-sites (0036), "Explicación de los edificios en el panel de obra": la hoja del edificio
+// construido (`sites.house`/`sites.tower`), del mismo origen, con el tamaño de su frame.
+describe('buildingIcons (0036)', () => {
+  it('Scenario: Filas con icono y explicación (URL de House_Blue y Tower_Blue bajo la base)', () => {
+    const icons = buildingIcons(appearance, (file) => assetUrl('/tfm-survivors/', file));
+    expect(icons.house).toEqual({
+      url: '/tfm-survivors/assets/tiny-swords/Factions/Knights/Buildings/House/House_Blue.png',
+      width: 128,
+      height: 192,
+    });
+    expect(icons.tower).toEqual({
+      url: '/tfm-survivors/assets/tiny-swords/Factions/Knights/Buildings/Tower/Tower_Blue.png',
+      width: 128,
+      height: 256,
+    });
+    for (const { url } of [icons.house, icons.tower]) {
+      expect(url).not.toMatch(/^(https?:|\/\/|data:|blob:)/);
+    }
+    expect(Object.isFrozen(icons)).toBe(true);
+  });
+
+  it('la proporción del frame es la del PNG (frame 0 de una hoja de una fila)', () => {
+    for (const { sheet } of [appearance.sites.house, appearance.sites.tower]) {
+      expect(pngSize(sheet.file).height).toBe(sheet.frameHeight);
+      expect(REGISTERED).toContain(ASSET_DIR + sheet.file);
+    }
   });
 });

@@ -311,3 +311,20 @@ describe('Iconos de recurso en la guía', () => {
     expect(read.controls).toEqual([PREV, NEXT, CLOSE]);
   });
 });
+
+// Spec menu-guide (0036), "Aspecto de la guía con piezas de UI": la × es el último hijo del
+// recuadro, fuera del cuerpo que se desplaza y de las acciones.
+describe('La × de la guía en el DOM (0036)', () => {
+  it('Scenario: Guía dentro del marco a ×1 y a ×2 (la × fuera del cuerpo que se desplaza)', () => {
+    const { read, openAt } = setup();
+    openAt(3);
+    const x = read.control(CLOSE);
+    const body = read.root.byClass('guide-modal__body')[0];
+    const actions = read.root.byClass('guide-modal__actions')[0];
+    expect([x.textContent, x.className]).toEqual([MENU_LABELS.close, 'ui-close']);
+    expect(read.root.children.at(-1)).toBe(x);
+    expect(body?.contains(x)).toBe(false);
+    expect(actions?.contains(x)).toBe(false);
+    expect(read.labels).toEqual([PREV, NEXT, MENU_LABELS.close]);
+  });
+});

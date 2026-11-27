@@ -1,8 +1,8 @@
 import type { BuildOptionSnapshot, RunSnapshot } from '../../domain/run/RunSnapshot';
 import type { BuildAction } from '../phaser/BuildGate';
-import { button, setPanelHidden } from './button';
+import { button, closeButton, setPanelHidden } from './button';
 import { MENU_LABELS, buildMissing } from './menuText';
-import type { ResourceIcons } from './resourceIcons';
+import type { BuildingIcon, ResourceIcons } from './resourceIcons';
 
 /** Opción del panel (sonda E2E): tipo, coste, si es asequible y lo que falta (0027). */
 export interface BuildOptionView {
@@ -32,9 +32,25 @@ const ALT: Readonly<Record<Resource, string>> = {
 const RESOURCES: readonly Resource[] = ['wood', 'stone'];
 
 /**
+ * Imagen y explicación de cada edificio del panel (0036, design D6): la imagen del frame de su hoja
+ * (`buildingIcons`) y el texto ya interpolado de `guide.json` (`Guide.build`).
+ */
+export interface BuildAbout {
+  readonly icons: Readonly<Record<'house' | 'tower', BuildingIcon>>;
+  readonly texts: Readonly<Record<'house' | 'tower', string>>;
+}
+
+const NO_BUILDING_ICON: BuildingIcon = Object.freeze({ url: '', width: 0, height: 0 });
+/** Sin imagen ni explicación: la imagen va oculta y sin `src`, y el texto vacío. */
+export const NO_BUILD_ABOUT: BuildAbout = Object.freeze({
+  icons: Object.freeze({ house: NO_BUILDING_ICON, tower: NO_BUILDING_ICON }),
+  texts: Object.freeze({ house: '', tower: '' }),
+});
+
+/**
  * Panel DOM de obra (spec build-sites 0027, "Panel de obra"; patrón `ShopPanel`): saldo de madera y
- * piedra con sus iconos, siempre las dos filas (casa y torre) con nombre y coste en elementos
- * distintos (un coste 0 no se pinta) y `Salir`. Una fila no asequible va atenuada y desactivada, con
+ * piedra con sus iconos, siempre las dos filas (casa y torre) con imagen, nombre, explicación y
+ * coste en elementos distintos (un coste 0 no se pinta; 0036) y la × (`Salir`). Una fila no asequible va atenuada y desactivada, con
  * el recurso que no alcanza en rojo y «faltan N»; un clic en ella no deja acción. Los clics dejan una
  * acción que la escena consume con `takeAction`; las reglas (Esc, construir, salir) están en
  * `BuildGate` y en los casos de uso. Se reconstruye solo al cambiar la oferta o los recursos. Solo
@@ -52,6 +68,8 @@ export class BuildPanel {
     private readonly doc: Document,
     parent: HTMLElement,
     private readonly icons: Pick<ResourceIcons, 'wood' | 'stone'>,
+    /** Imagen y explicación de cada edificio (0036); sin ellas, imagen oculta y texto vacío. */
+    private readonly about: BuildAbout = NO_BUILD_ABOUT,
   ) {
     this.root = doc.createElement('section');
     this.root.className = 'build-panel';
@@ -64,10 +82,10 @@ export class BuildPanel {
     this.stock.className = 'build-panel__stock';
     this.list = doc.createElement('ul');
     this.list.className = 'build-panel__options';
-    const leave = button(doc, MENU_LABELS.buildLeave, () => {
+    // 0036: la × de la esquina (nombre accesible `Salir`), último hijo del recuadro.
+    const leave = closeButton(doc, MENU_LABELS.buildLeave, () => {
       this.action = { kind: 'leave' };
     });
-    leave.className = 'build-panel__leave';
     this.root.append(title, this.stock, this.list, leave);
     parent.append(this.root);
   }
@@ -111,14 +129,40 @@ export class BuildPanel {
     const name = this.doc.createElement('span');
     name.className = 'build-panel__name';
     name.textContent = NAMES[o.kind];
+    // 0036: explicación del edificio, con un espacio delante (el texto no queda «Casa+1»).
+    const about = this.doc.createElement('span');
+    about.className = 'build-panel__about';
+    about.textContent = ` ${this.about.texts[o.kind]}`;
     const cost = this.doc.createElement('span');
     cost.className = 'build-panel__cost';
     // Un espacio de texto antes de las cifras: el texto de la fila no queda «Casa15».
     cost.textContent = ' ';
     for (const r of RESOURCES) if (o[r] > 0) cost.append(this.amount(r, o[r], o.missing[r]));
-    b.append(name, cost);
+    b.append(this.building(o.kind), name, about, cost);
     item.append(b);
     return item;
+  }
+
+  /**
+   * Imagen decorativa del edificio (0036, design D6): `alt` vacío, `width`/`height` del frame (la
+   * proporción antes de cargar), sin `style`. Sin URL, o si no carga, queda `hidden`.
+   */
+  private building(kind: 'house' | 'tower'): HTMLImageElement {
+    const { url, width, height } = this.about.icons[kind];
+    const img = this.doc.createElement('img');
+    img.className = 'build-panel__icon';
+    img.alt = '';
+    img.setAttribute('width', String(width));
+    img.setAttribute('height', String(height));
+    if (url === '') {
+      img.hidden = true;
+      return img;
+    }
+    img.addEventListener('error', () => {
+      img.hidden = true;
+    });
+    img.setAttribute('src', url);
+    return img;
   }
 
   /** Icono y cifra de un recurso; con `missing` > 0, en rojo (`.is-short`) y «faltan N». */

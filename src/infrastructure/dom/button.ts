@@ -1,3 +1,5 @@
+import { MENU_LABELS } from './menuText';
+
 /**
  * Botón DOM que suelta el foco tras pulsarlo, para que Espacio o Intro no lo vuelvan a activar y
  * las teclas del juego (R, Esc) sigan yendo al juego (design 0009, "Foco del teclado"). Solo
@@ -11,6 +13,18 @@ export function button(doc: Document, label: string, onClick: () => void): HTMLB
     onClick();
     b.blur();
   });
+  return b;
+}
+
+/**
+ * La × de cierre de los modales (0036, design D1): un `button` con el glifo `×` como texto visible,
+ * clase `ui-close` y el nombre accesible de antes en `aria-label` (`Salir` o `Cerrar`). Hereda el
+ * `blur()` tras el clic de `button`.
+ */
+export function closeButton(doc: Document, label: string, onClick: () => void): HTMLButtonElement {
+  const b = button(doc, MENU_LABELS.close, onClick);
+  b.className = 'ui-close';
+  b.setAttribute('aria-label', label);
   return b;
 }
 

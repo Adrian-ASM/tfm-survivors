@@ -168,3 +168,103 @@ describe('BuildGate con ⏸ (0033)', () => {
     expect(pause.paused).toBe(true);
   });
 });
+
+// Spec build-sites (0036), "Panel de obra" y "Explicación de los edificios en el panel de obra": la
+// × y las filas del panel real pasan por `BuildGate` como en la escena. Sin hoja de estilos en Node
+// (piezas en reserva).
+describe('La × y el icono del edificio en la obra (build-sites 0036)', () => {
+  const ABOUT = {
+    icons: {
+      house: { url: '/tfm-survivors/assets/h.png', width: 128, height: 192 },
+      tower: { url: '/tfm-survivors/assets/t.png', width: 128, height: 256 },
+    },
+    texts: { house: '+1 oro cada 30 s', tower: 'Dispara flechas a los enemigos cercanos' },
+  };
+
+  function withPanel(wood = 30, stone = 15) {
+    const s = scene(wood, stone);
+    const { doc, root, fake, fakeDoc } = fakeDom();
+    const panel = new BuildPanel(doc, root, { wood: 'w.png', stone: 's.png' }, ABOUT);
+    const paint = (snap: RunSnapshot) => {
+      panel.sync(snap);
+      panel.setVisible(buildVisible(snap.status, s.pause.paused));
+    };
+    paint(s.first);
+    const section = fake.byClass('build-panel')[0] as FakeElement;
+    const row = (kind: string) =>
+      section.findAll((e) => e.dataset.building === kind)[0] as FakeElement;
+    const frame = (esc = false) => {
+      const snap = s.frame(esc, panel.takeAction());
+      paint(snap);
+      return snap;
+    };
+    const x = () => section.byClass('ui-close')[0] as FakeElement;
+    return { ...s, panel, section, row, frame, x, fakeDoc };
+  }
+
+  it('Scenario: Salir con Esc o con la × (mismo snapshot campo a campo)', () => {
+    const esc = withPanel();
+    const byEsc = esc.frame(true);
+    const click = withPanel();
+    click.x().click();
+    const byX = click.frame();
+
+    expect(byX).toEqual(byEsc);
+    expect([byX.status, byX.tick, byX.sites[0]?.state]).toEqual([
+      'running',
+      click.first.tick + 1,
+      'free',
+    ]);
+    expect([click.section.hidden, click.screens.includes('paused')]).toEqual([true, false]);
+    expect(click.section.contains(click.fakeDoc.activeElement)).toBe(false);
+  });
+
+  it('Scenario: Panel sin nada asequible (la × está activa y sale de la obra)', () => {
+    const s = withPanel(10, 0);
+    expect(['house', 'tower'].map((k) => s.row(k).getAttribute('disabled'))).toEqual(['', '']);
+    expect(s.x().getAttribute('disabled')).toBeNull();
+    s.x().click();
+    const snap = s.frame();
+    expect([snap.status, snap.sites[0]?.state, s.section.hidden]).toEqual([
+      'running',
+      'free',
+      true,
+    ]);
+  });
+
+  it('Scenario: Clic en el icono de la casa (construye: casa y tick n + 1)', () => {
+    const s = withPanel();
+    s.row('house').byClass('build-panel__icon')[0]?.clickBubbling();
+    const snap = s.frame();
+    expect([s.section.hidden, snap.sites[0]?.state, snap.tick]).toEqual([
+      true,
+      'house',
+      s.first.tick + 1,
+    ]);
+  });
+
+  it('Scenario: Explicación en una fila no asequible (clic en imagen y explicación de la torre)', () => {
+    const s = withPanel(10, 0);
+    const tower = s.row('tower');
+    tower.byClass('build-panel__icon')[0]?.clickBubbling();
+    tower.byClass('build-panel__about')[0]?.clickBubbling();
+    expect(s.panel.takeAction()).toBeNull();
+    const snap = s.frame();
+    expect([snap.status, snap.tick, snap.sites[0]?.state]).toEqual([
+      'building',
+      s.first.tick,
+      'free',
+    ]);
+  });
+
+  it('Scenario: Construir con las piezas en reserva (clic en la casa y 1 frame)', () => {
+    const s = withPanel();
+    s.row('house').click();
+    const snap = s.frame();
+    expect([s.section.hidden, snap.sites[0]?.state, snap.tick]).toEqual([
+      true,
+      'house',
+      s.first.tick + 1,
+    ]);
+  });
+});

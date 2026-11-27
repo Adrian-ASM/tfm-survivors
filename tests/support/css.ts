@@ -97,6 +97,13 @@ function term(t: string, env: CssEnv): number {
   const calc = /^calc\((.*)\)$/.exec(s);
   if (calc) {
     const inner = calc[1] ?? '';
+    // 0036: un producto más o menos una constante en px (`calc(16px * k - 1px)`).
+    const offset = /^(.*\S)\s+([+-])\s+(-?[\d.]+px)$/.exec(inner);
+    if (offset) {
+      const base = term(`calc(${offset[1] ?? ''})`, env);
+      const px = term(offset[3] ?? '0', env);
+      return offset[2] === '+' ? base + px : base - px;
+    }
     const sum = /^\((.*)\)\s*\*\s*(.*)$/.exec(inner);
     if (sum) {
       const parts = splitTop(sum[1] ?? '', '+').map((p) => term(p, env));

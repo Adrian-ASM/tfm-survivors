@@ -35,6 +35,11 @@ export class FakeElement {
     this.children.length = 0;
   }
 
+  /** Nombre accesible (0036): `aria-label` si lo tiene (la ×) y, si no, su texto. */
+  get accessibleName(): string {
+    return this.getAttribute('aria-label') ?? this.textContent;
+  }
+
   setAttribute(name: string, value: string): void {
     this.attributes.set(name, value);
   }
