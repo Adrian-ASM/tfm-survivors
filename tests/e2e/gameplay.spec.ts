@@ -933,15 +933,28 @@ test('Solares: recoger madera, tocar el solar más cercano y construir una casa'
   expect(corner.overlaps).toEqual([]);
   const leaveOffset = await faceCenterOffset(leave);
   expect([leaveOffset.dx <= 1, leaveOffset.dy <= 1]).toEqual([true, true]);
-  const gaps = await page.locator('.build-panel__option').evaluateAll((rows) =>
+  // Nombre, explicación y coste en tres líneas sin solaparse; la explicación en una sola línea.
+  const lines = await page.locator('.build-panel__option').evaluateAll((rows) =>
     rows.map((r) => {
       const name = r.querySelector('.build-panel__name')?.getBoundingClientRect();
-      const cost = r.querySelector('.build-panel__amount')?.getBoundingClientRect();
-      return name && cost ? cost.left - name.right : -1;
+      const about = r.querySelector('.build-panel__about');
+      const box = about?.getBoundingClientRect();
+      const cost = r.querySelector('.build-panel__cost')?.getBoundingClientRect();
+      const css = about ? getComputedStyle(about) : null;
+      // `line-height: normal` no da px: se toma 1,4 × el tamaño de letra.
+      const lineH = css
+        ? Number.parseFloat(css.lineHeight) || Number.parseFloat(css.fontSize) * 1.4
+        : 0;
+      return name && box && cost
+        ? { stacked: name.bottom <= box.top + 1 && box.bottom <= cost.top + 1, h: box.height, lineH }
+        : null;
     }),
   );
-  expect(gaps).toHaveLength(2);
-  for (const g of gaps) expect(g).toBeGreaterThanOrEqual(8);
+  expect(lines).toHaveLength(2);
+  for (const l of lines) {
+    expect(l?.stacked).toBe(true);
+    expect(l?.h ?? Infinity).toBeLessThan((l?.lineH ?? 0) * 1.5);
+  }
   const wood = snap?.resources.wood ?? 0;
 
   await page.locator('[data-building="house"]').click();

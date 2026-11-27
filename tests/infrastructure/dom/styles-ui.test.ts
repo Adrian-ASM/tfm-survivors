@@ -364,7 +364,10 @@ describe('La × y el centrado en la hoja de estilos (0036)', () => {
     const m = buttonMargins;
     for (const k of [1, 2]) {
       const want = [m.top * k, m.right * k, m.bottom * k, m.left * k];
-      expect(boxSides(declOf(rules, CLOSE, 'padding'), buttonEnv(k, 16))).toEqual(want);
+      // La × pinta las esquinas a media escala: relleno = ancho pintado = margen × k / 2.
+      const half = want.map((v) => v / 2);
+      expect(boxSides(declOf(rules, CLOSE, 'padding'), buttonEnv(k, 16))).toEqual(half);
+      expect(boxSides(declOf(rules, CLOSE, 'border-image-width'), buttonEnv(k, 16))).toEqual(half);
       for (const p of PANELS) {
         const pad = boxSides(declOf(rules, `${p} button`, 'padding'), buttonEnv(k, FONT_PX[p]));
         expect(pad, `${p} ×${String(k)}`).toEqual(want);
@@ -395,13 +398,15 @@ describe('La × y el centrado en la hoja de estilos (0036)', () => {
       const side = evalLength(declOf(rules, CLOSE, 'width'), env);
       expect(side).toBe(48 * k + 2);
       expect(evalLength(declOf(rules, CLOSE, 'height'), env)).toBe(side);
-      // Cara visible = caja − márgenes de la pieza: el centro de la caja de contenido es el suyo.
+      // Cara visible = caja − esquinas pintadas (márgenes de la pieza × k / 2 en la ×): el centro
+      // de la caja de contenido es el suyo.
       const pad = boxSides(declOf(rules, CLOSE, 'padding'), env);
       const content = { w: side - 2 - pad[1] - pad[3], h: side - 2 - pad[0] - pad[2] };
       const contentCenter = { x: 1 + pad[3] + content.w / 2, y: 1 + pad[0] + content.h / 2 };
+      const h = k / 2;
       const face = {
-        x: buttonMargins.left * k + (side - (buttonMargins.left + buttonMargins.right) * k) / 2,
-        y: buttonMargins.top * k + (side - (buttonMargins.top + buttonMargins.bottom) * k) / 2,
+        x: buttonMargins.left * h + (side - (buttonMargins.left + buttonMargins.right) * h) / 2,
+        y: buttonMargins.top * h + (side - (buttonMargins.top + buttonMargins.bottom) * h) / 2,
       };
       expect(contentCenter).toEqual(face);
     }
@@ -490,9 +495,12 @@ describe('La × y el centrado en la hoja de estilos (0036)', () => {
     expect(declOf(rules, DISABLED, '--ui-b-muted')).toBe(
       'var(--ui-button-disabled-on-muted, #c8c8d8)',
     );
-    // La explicación va en su propia celda de la rejilla, distinta del nombre y del coste.
-    expect(declOf(rules, '.build-panel__about', 'grid-row')).toBe('2');
+    // La explicación va en su propia celda de la rejilla, distinta del nombre y del coste: nombre,
+    // explicación y coste en tres líneas de la misma columna (el coste no estrecha el texto).
     expect(declOf(rules, '.build-panel__name', 'grid-row')).toBe('1');
-    expect(declOf(rules, '.build-panel__cost', 'grid-column')).toBe('3');
+    expect(declOf(rules, '.build-panel__about', 'grid-row')).toBe('2');
+    expect(declOf(rules, '.build-panel__cost', 'grid-row')).toBe('3');
+    expect(declOf(rules, '.build-panel__cost', 'grid-column')).toBe('2');
+    expect(() => declOf(rules, '.build-panel__about', 'overflow-wrap')).toThrow();
   });
 });

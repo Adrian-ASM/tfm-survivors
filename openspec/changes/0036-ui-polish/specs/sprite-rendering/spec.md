@@ -31,7 +31,9 @@ los cuatro modales, con escala de UI DOM k:
 - MUST NOT solaparse con el título del modal, con ningún otro control ni con ningún texto, y MUST quedar fuera de
   cualquier zona que se desplace dentro del modal (lista de la tienda, cuerpo de la guía);
 - usa las piezas de botón de "Piezas de UI en los paneles DOM" (`button`, `buttonHover` con el puntero o con foco
-  visible y un contorno de 2 px, `buttonPressed` al pulsarla) y su glifo cumple "Texto centrado en los botones DOM";
+  visible y un contorno de 2 px, `buttonPressed` al pulsarla) con sus márgenes pintados a **media escala** (margen ×
+  k / 2: a escala k las esquinas de la pieza llenarían la ×, sin cara visible para el glifo) y su glifo cumple "Texto
+  centrado en los botones DOM";
 - se alcanza con el tabulador y se activa con Intro o Espacio, como cualquier `button`;
 - tras activarla con el ratón, ningún elemento del modal cerrado conserva el foco (en la guía y en `Sonido` el foco va
   al botón que los abrió, como con Esc);
@@ -78,7 +80,8 @@ La vista SHALL centrar en horizontal y en vertical el texto de cada **botón de 
 contenido es un único texto, es decir, los del menú, la pausa, el diálogo y los resultados, `Anterior` y `Siguiente`
 de la guía y las cuatro ×. Las filas de producto de la tienda y las filas de edificio de la obra no son botones de una
 sola etiqueta y conservan su disposición interna. La **cara visible** de un botón es su caja menos los márgenes de su
-pieza (l·k, t·k, r·k, b·k), con k la escala de UI DOM; con la pieza en reserva, su caja interior sin el borde. En los
+pieza tal como se pintan (l·k, t·k, r·k, b·k, con k la escala de UI DOM; la mitad en las ×); con la pieza en
+reserva, su caja interior sin el borde. En los
 estados normal, con el puntero encima y con foco, el centro de la caja del texto (la del nodo de texto, no la del
 botón) MUST estar a ≤ 1 px del centro de la cara visible en x y en y. Centrar MUST NOT cambiar los textos, el orden ni
 los tamaños mínimos de los botones de "Piezas de UI en los paneles DOM".
@@ -89,6 +92,7 @@ los tamaños mínimos de los botones de "Piezas de UI en los paneles DOM".
   la obra incluidas)
 - **THEN** ninguna los alinea a la izquierda ni reparte su contenido a los extremos (`text-align: left`,
   `justify-content: space-between` o `flex-start`), y su relleno interior es el margen de su pieza × k en cada lado
+  (× k / 2 en las ×, igual que el ancho pintado de sus esquinas)
 
 #### Scenario: Centrado medido en el navegador [E2E]
 - **GIVEN** la build de producción sin `?e2e` con una ventana de 1.280 × 720 (k = 1), en el test de humo del menú
@@ -97,7 +101,7 @@ los tamaños mínimos de los botones de "Piezas de UI en los paneles DOM".
 - **WHEN** se miden la caja del nodo de texto y la del botón de los 6 botones del menú, de `Siguiente` y la × de la
   guía, de la × de la tienda y de la × de la obra
 - **THEN** en cada uno el centro del texto está a ≤ 1 px del centro de la cara visible (caja del botón menos 20, 20, 28
-  y 20 px arriba, derecha, abajo e izquierda con los datos del repositorio) en x y en y
+  y 20 px arriba, derecha, abajo e izquierda con los datos del repositorio; 10, 10, 14 y 10 px en las ×) en x y en y
 
 ### Requirement: Datos de aspecto de los contadores del HUD
 El sistema SHALL definir en los datos de aspecto (`content/appearance.json`), validados con zod en el arranque con las

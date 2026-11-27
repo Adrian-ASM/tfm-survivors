@@ -829,7 +829,13 @@ export const faceCenterOffset = (target: Locator): Promise<FaceOffset> =>
     const style = getComputedStyle(el);
     const num = (name: string) => Number.parseFloat(style.getPropertyValue(name)) || 0;
     const k = num('--ui-scale') || 1;
-    const [t, r, b, l] = ['--ui-b-t', '--ui-b-r', '--ui-b-b', '--ui-b-l'].map((n) => num(n) * k);
+    // Ancho real de las esquinas del 9-slice si es en px (la × lo pinta a media escala); si no, los
+    // márgenes de la pieza × k.
+    const drawn = style.borderImageWidth.split(' ').map((v) => (v.endsWith('px') ? parseFloat(v) : NaN));
+    const [dt, dr = dt, db = dt, dl = dr] = drawn;
+    const [t, r, b, l] = [dt, dr, db, dl].every((v) => v !== undefined && Number.isFinite(v))
+      ? [dt, dr, db, dl]
+      : ['--ui-b-t', '--ui-b-r', '--ui-b-b', '--ui-b-l'].map((n) => num(n) * k);
     const box = el.getBoundingClientRect();
     const pieced = (t ?? 0) + (r ?? 0) + (b ?? 0) + (l ?? 0) > 0;
     const inset = pieced

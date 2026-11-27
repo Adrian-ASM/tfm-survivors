@@ -363,11 +363,14 @@ body {
   gap: 1.25em;
 }
 
-/* 0036 (design D2 y D6): imagen | nombre y explicación | coste, solo en las filas de edificio. */
+/* 0036 (design D2 y D6): imagen | nombre, explicación y coste en tres líneas, solo en las filas de
+   edificio. El coste va bajo la explicación para que una fila con dos recursos no estreche el
+   texto hasta partirlo sílaba a sílaba. */
 .build-panel .build-panel__option {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr;
   column-gap: 1.25em;
+  row-gap: 0.2em;
   align-items: center;
   width: 100%;
   text-align: left;
@@ -376,7 +379,7 @@ body {
 /* Imagen del edificio (0036): alto ≥ el del icono de recurso (3em) y proporción del frame por sus
    atributos width/height (casa 128 × 192, torre 128 × 256), sin suavizado. */
 .build-panel__icon {
-  grid-row: 1 / span 2;
+  grid-row: 1 / span 3;
   grid-column: 1;
   width: auto;
   height: 3.5em;
@@ -399,12 +402,12 @@ body {
   font-size: 0.85em;
   color: var(--ui-b-muted, #c8c8d8);
   text-align: left;
-  overflow-wrap: anywhere;
 }
 
 .build-panel__cost {
-  grid-row: 1 / span 2;
-  grid-column: 3;
+  grid-row: 3;
+  grid-column: 2;
+  flex-wrap: wrap;
 }
 
 .build-panel__cost {
@@ -424,6 +427,7 @@ body {
 
 .build-panel__missing {
   margin-left: 0.25em;
+  white-space: nowrap;
   font-size: 0.85em;
 }
 
@@ -820,11 +824,20 @@ body {
   place-items: unsafe center;
   width: calc(48px * var(--ui-scale, 1) + 2px);
   height: calc(48px * var(--ui-scale, 1) + 2px);
-  padding: calc(var(--ui-b-t) * var(--ui-scale, 1) * 1px)
-    calc(var(--ui-b-r) * var(--ui-scale, 1) * 1px) calc(var(--ui-b-b) * var(--ui-scale, 1) * 1px)
-    calc(var(--ui-b-l) * var(--ui-scale, 1) * 1px);
+  /* Las esquinas del 9-slice a media escala (10/10/14/10 × k): a escala 1 ocupan las 48 × k de la
+     caja, no queda cara visible y el glifo se pierde entre los bordes. Relleno igual, así el glifo
+     sigue centrado en la cara. */
+  border-image-width: calc(var(--ui-b-t) * var(--ui-scale, 1) * 0.5px)
+    calc(var(--ui-b-r) * var(--ui-scale, 1) * 0.5px)
+    calc(var(--ui-b-b) * var(--ui-scale, 1) * 0.5px)
+    calc(var(--ui-b-l) * var(--ui-scale, 1) * 0.5px);
+  padding: calc(var(--ui-b-t) * var(--ui-scale, 1) * 0.5px)
+    calc(var(--ui-b-r) * var(--ui-scale, 1) * 0.5px)
+    calc(var(--ui-b-b) * var(--ui-scale, 1) * 0.5px)
+    calc(var(--ui-b-l) * var(--ui-scale, 1) * 0.5px);
   font-family: inherit;
-  font-size: calc(24px * var(--ui-scale, 1));
+  font-size: calc(28px * var(--ui-scale, 1));
+  font-weight: bold;
   line-height: 1;
   text-align: center;
   cursor: pointer;
