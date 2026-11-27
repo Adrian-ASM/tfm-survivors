@@ -814,6 +814,9 @@ body {
   top: calc(16px * var(--ui-scale, 1) - 1px);
   right: calc(16px * var(--ui-scale, 1) - 1px);
   display: grid;
+  /* La pista de la rejilla (ancho del glifo > caja de contenido) también se centra, no solo el
+     glifo dentro de ella: sin esto la pista desborda solo por la derecha. */
+  place-content: unsafe center;
   place-items: unsafe center;
   width: calc(48px * var(--ui-scale, 1) + 2px);
   height: calc(48px * var(--ui-scale, 1) + 2px);

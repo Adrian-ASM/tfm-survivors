@@ -127,7 +127,7 @@
     barras».
 
 ## 5. E2E ampliados y documentación
-- [ ] 5.1 Se amplían los E2E de humo, sin crear ninguno nuevo. Primero, el helper `faceCenterOffset` en
+- [x] 5.1 Se amplían los E2E de humo, sin crear ninguno nuevo. Primero, el helper `faceCenterOffset` en
   `tests/e2e/probe.ts` (§D2).
   - `smoke.spec`, recorrido de la guía y Sonido:
     - 5 iconos de la página 3 > 32 px y sin solapes.
@@ -153,7 +153,7 @@
     «× en móvil» (lo cubre la regla CSS de 2.2), «Panel centrado» de audio y los escenarios de `main-menu`, cuyas
     reglas ya existen con la × añadida a la lista.
   - Ejecuta `npm run test:e2e` completo.
-- [ ] 5.2 Documentación.
+- [x] 5.2 Documentación.
   - `AGENTS.md` §1: un párrafo de 0036 con:
     - la × y su nombre accesible;
     - el centrado;

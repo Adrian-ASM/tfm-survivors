@@ -261,6 +261,18 @@ El jugador solo se mueve; las armas disparan solas; las oleadas crecen; al subir
   README; `kenney.nl`/`opengameart.org`/`freesound.org`, `public/assets/audio/`) y
   `tests/guardrails/audio-files.test.ts` (uso y ≤ 6 MiB; `.ogg/.mp3/.wav/.flac`). Sonda `__sprint.audio`; E2E de
   escritorio y de arranque ampliados. Núcleo, balance y firmas intactos.
+  Pulido de la UI (change 0036, sin ADR): la tienda, la obra, la guía y Sonido se cierran con una **×**
+  (`closeButton`, clase `ui-close`, texto `×`, `aria-label` `Salir` o `Cerrar`: los E2E siguen buscando por rol) en
+  la esquina superior derecha, a margen de panel × k, con la pieza `button` y el mismo camino que Esc; los títulos
+  dejan sitio con `--ui-close-room`. Botones de una sola etiqueta centrados (`text-align: center` común; las reglas
+  de fila acotadas a `.shop-panel__product` y `.build-panel__option`); E2E con `faceCenterOffset` y `closeCorner`
+  (`tests/e2e/probe.ts`). Barras de vida solo de las estructuras **dañadas** alguna vez y no en ruina (memoria por
+  id en `HealthBarLayer`, se olvida con R/menú): `sprites.healthBars` vale 0 al empezar. HUD con 4 contadores a la
+  derecha (bajas con calavera, oro, madera y piedra) con `appearance.json` `hud` (s 24, p 30, filas
+  `healthY + i·p` desde 32, recorte cuadrado por icono con `setCrop` y `cropPose`, calavera = frame 5 de
+  `Dead.png`); `HudMetrics` entra en `hudLayout` y en `mobileFrameRule`; bajas sin «Bajas: » (resultados igual).
+  `.resource-icon` a 3em. Obra con imagen de `House_Blue`/`Tower_Blue` (`buildingIcons`) y explicación de
+  `guide.json` `build` (interpolada, sin dígitos; ≤ 64 caracteres mostrados). Balance, firmas y 820/904 intactos.
   Fuente de verdad del comportamiento: `openspec/specs/`.
 
 ## 2. Comandos

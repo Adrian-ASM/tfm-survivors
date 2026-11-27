@@ -62,6 +62,20 @@ describe('Datos de aspecto de los contadores del HUD (sprite-rendering 0036)', (
     );
   });
 
+  it('menu-guide · Scenario: Sin assets nuevos (la nota de procedencia no gana entradas)', () => {
+    // 0036 no añade ficheros gráficos: la calavera, la casa y la torre son hojas ya registradas
+    // (`npm run guard:all` comprueba en `verify` que todo gráfico versionado figura en la nota).
+    expect(provenance.files).toHaveLength(PROVENANCE_FILES_BEFORE);
+    const paths = new Set(provenance.files.map((f) => f.path));
+    for (const file of [
+      'Factions/Knights/Troops/Dead/Dead.png',
+      'Factions/Knights/Buildings/House/House_Blue.png',
+      'Factions/Knights/Buildings/Tower/Tower_Blue.png',
+    ]) {
+      expect(paths.has(`public/assets/tiny-swords/${file}`), file).toBe(true);
+    }
+  });
+
   it.each([
     ['frame −1', (h: Hud) => (kills(h).frame = -1), 'hud.icons.kills.frame', null],
     ['frame 2,5', (h: Hud) => (kills(h).frame = 2.5), 'hud.icons.kills.frame', null],

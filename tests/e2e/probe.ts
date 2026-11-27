@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 /**
  * Velocidad de simulación de los E2E que juegan hasta un evento lejano (design 0008): 8 avances
@@ -810,3 +810,80 @@ export const sampleNumbers = (page: Page, n: number): Promise<SpritesView['damag
     }
     return out;
   }, n);
+
+/** Desfase del centro del texto respecto al de la cara visible de un botón DOM (0036, design D2). */
+export interface FaceOffset {
+  readonly dx: number;
+  readonly dy: number;
+}
+
+/**
+ * Centro del texto de un botón frente al centro de su **cara visible** (spec sprite-rendering 0036,
+ * "Texto centrado en los botones DOM"): la cara es la caja del botón menos los márgenes de su pieza
+ * × k (`--ui-b-t/r/b/l` × `--ui-scale`, 20/20/28/20 a ×1 con los datos del repositorio) o, con la
+ * pieza en reserva (márgenes 0), la caja interior sin el borde. El texto se mide con un `Range`
+ * sobre sus nodos de texto (la caja del glifo, no la del botón). Devuelve |Δx| y |Δy| en px.
+ */
+export const faceCenterOffset = (target: Locator): Promise<FaceOffset> =>
+  target.evaluate((el) => {
+    const style = getComputedStyle(el);
+    const num = (name: string) => Number.parseFloat(style.getPropertyValue(name)) || 0;
+    const k = num('--ui-scale') || 1;
+    const [t, r, b, l] = ['--ui-b-t', '--ui-b-r', '--ui-b-b', '--ui-b-l'].map((n) => num(n) * k);
+    const box = el.getBoundingClientRect();
+    const pieced = (t ?? 0) + (r ?? 0) + (b ?? 0) + (l ?? 0) > 0;
+    const inset = pieced
+      ? { t: t ?? 0, r: r ?? 0, b: b ?? 0, l: l ?? 0 }
+      : {
+          t: el.clientTop,
+          l: el.clientLeft,
+          r: box.width - el.clientLeft - el.clientWidth,
+          b: box.height - el.clientTop - el.clientHeight,
+        };
+    const face = {
+      x: box.left + inset.l + (box.width - inset.l - inset.r) / 2,
+      y: box.top + inset.t + (box.height - inset.t - inset.b) / 2,
+    };
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const text = range.getBoundingClientRect();
+    return {
+      dx: Math.abs(text.left + text.width / 2 - face.x),
+      dy: Math.abs(text.top + text.height / 2 - face.y),
+    };
+  });
+
+/** Distancias de la × a la esquina superior derecha de su recuadro y cajas para los solapes (0036). */
+export interface CloseCornerView {
+  readonly top: number;
+  readonly right: number;
+  readonly inside: boolean;
+  readonly overlaps: readonly string[];
+}
+
+/**
+ * La × de un modal frente a su recuadro (spec sprite-rendering 0036, "Botón × de cierre de los
+ * modales"): distancia de su borde superior y derecho a los del recuadro, si está entera dentro y
+ * con qué selectores del recuadro se solapa su caja (de los dados).
+ */
+export const closeCorner = (panel: Locator, others: readonly string[]): Promise<CloseCornerView> =>
+  panel.evaluate((root, sels) => {
+    const x = root.querySelector(':scope > .ui-close');
+    if (!x) throw new Error('sin ×');
+    const p = root.getBoundingClientRect();
+    const c = x.getBoundingClientRect();
+    const hit = (o: DOMRect) =>
+      c.left < o.right && o.left < c.right && c.top < o.bottom && o.top < c.bottom;
+    const overlaps = sels.filter((sel) =>
+      [...root.querySelectorAll(sel)].some((e) => {
+        const r = e.getBoundingClientRect();
+        return r.width > 0 && r.height > 0 && hit(r);
+      }),
+    );
+    return {
+      top: c.top - p.top,
+      right: p.right - c.right,
+      inside: c.left >= p.left && c.top >= p.top && c.right <= p.right && c.bottom <= p.bottom,
+      overlaps,
+    };
+  }, others);

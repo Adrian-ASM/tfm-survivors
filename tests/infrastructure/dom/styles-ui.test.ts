@@ -407,6 +407,7 @@ describe('La × y el centrado en la hoja de estilos (0036)', () => {
     }
     expect(declOf(rules, CLOSE, 'position')).toBe('absolute');
     expect(declOf(rules, CLOSE, 'place-items')).toBe('unsafe center');
+    expect(declOf(rules, CLOSE, 'place-content')).toBe('unsafe center');
     for (const p of MODALS) expect(declOf(rules, p, 'position')).toBe('relative');
   });
 

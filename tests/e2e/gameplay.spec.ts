@@ -7,10 +7,12 @@ import combat from '../../content/combat.json' with { type: 'json' };
 import { MAP_GOLDEN, signatureOf } from '../support/mapGolden';
 import { expect, test } from './fixtures';
 import {
+  closeCorner,
   collect,
   cspState,
   DESKTOP_VIEWPORT_EXTRA,
   expectManual,
+  faceCenterOffset,
   focusGame,
   gameUrl,
   holdKey,
@@ -25,6 +27,7 @@ import {
   backToMenu,
   stopSpriteSampler,
   waitForRun,
+  waitFrames,
   watchCsp,
   pauseOverlay,
   type AudioProbeView,
@@ -669,13 +672,19 @@ test('Recursos: el HUD muestra el oro, la madera y la piedra del snapshot mientr
 // es 0 a esa altura (precondición comprobada), así que el clic en el producto más barato no compra.
 // 0034, sprite-rendering "Iconos en la oferta y en la tienda [E2E]": las 7 filas y, tras salir, las cartas de
 // la primera oferta con su icono (painted), y 0 violaciones de CSP.
-test('Tienda: se abre al volver a la puerta, un clic sin oro no compra y Esc sale sin pausa', async ({
+// 0036: sprite-rendering "Barras a 0 al empezar en el navegador", "× en la esquina en el navegador" y
+// "Centrado medido en el navegador", y castle-shop "La × no pisa el título en la ventana mínima": la
+// tienda se cierra con la × (el camino de Esc; Esc en la tienda lo usa el test de los solares).
+test('Tienda: se abre al volver a la puerta, un clic sin oro no compra y la × sale sin pausa', async ({
   page,
 }) => {
   slowMapRealOnCi();
   const problems = collect(page, ['pageerror', 'error']);
   await watchCsp(page);
   await openGame(page, gameUrl({ seed: 42, manual: true, map: 'real' }));
+  const start = await probe(page);
+  expect(start?.sprites?.healthBars).toBe(0);
+  expect(start?.snapshot?.structures.filter((x) => !x.destroyed)).toHaveLength(7);
   const read = async () => {
     const s = await snapshotOf(page);
     if (!s) throw new Error('sin snapshot');
@@ -717,15 +726,39 @@ test('Tienda: se abre al volver a la puerta, un clic sin oro no compra y Esc sal
     false,
   ]);
 
-  await focusGame(page);
-  await page.keyboard.press('Escape');
-  await expect.poll(async () => (await probe(page))?.shop?.visible).toBe(false);
+  const panel = page.locator('.shop-panel');
+  const close = panel.getByRole('button', { name: 'Salir', exact: true });
+  await expect(close).toHaveCount(1);
+  await expect(close).toHaveText('×');
+  await expect(panel.getByText('Salir', { exact: true })).toHaveCount(0);
+  const shopParts = ['h2', '.shop-panel__gold', '.shop-panel__products'];
+  for (const size of [
+    { width: 960, height: 540 },
+    { width: 1280, height: 720 },
+  ]) {
+    await page.setViewportSize(size);
+    await waitFrames(page, 2);
+    const corner = await closeCorner(panel, shopParts);
+    expect(corner.inside).toBe(true);
+    expect(Math.abs(corner.top - 16)).toBeLessThanOrEqual(1);
+    expect(Math.abs(corner.right - 16)).toBeLessThanOrEqual(1);
+    expect(corner.overlaps).toEqual([]);
+  }
+  const centered = await faceCenterOffset(close);
+  expect([centered.dx <= 1, centered.dy <= 1]).toEqual([true, true]);
+
   const tick = (await read()).tick;
+  await close.click();
+  await expect.poll(async () => (await probe(page))?.shop?.visible).toBe(false);
+  const focusInPanel = await panel.evaluate((el) => el.contains(document.activeElement));
+  expect(focusInPanel).toBe(false);
   expect(await step(page, 1)).toBe(1);
-  expect((await read()).tick).toBe(tick + 1);
+  const left = await read();
+  expect([left.status, left.tick]).toEqual(['running', tick + 1]);
   const seen = (await probe(page))?.screens ?? [];
   expect(seen).toContain('shop');
   expect(seen).not.toContain('paused');
+  await focusGame(page);
 
   // 0034: tras salir, hasta la primera oferta; cada carta con su icono (painted) y su id.
   const offered = await stepUntil(page, (s) => s.offer.length > 0, FIRST_OFFER_LIMIT);
@@ -862,9 +895,44 @@ test('Solares: recoger madera, tocar el solar más cercano y construir una casa'
   for (const box of await icons.evaluateAll((els) =>
     els.map((e) => e.getBoundingClientRect().toJSON() as { width: number; height: number }),
   )) {
-    expect(box.width).toBeGreaterThanOrEqual(20);
-    expect(box.height).toBeGreaterThanOrEqual(20);
+    // 0036: más que los 2em (28 px) de antes del change con la letra de 14 px de la fila.
+    expect(box.width).toBeGreaterThan(28);
+    expect(box.height).toBeGreaterThan(28);
   }
+  // 0036: cada fila con su imagen de edificio cargada y su explicación visible.
+  const rows = await page.locator('.build-panel__option').evaluateAll((list) =>
+    list.map((r) => {
+      const img = r.querySelector('img.build-panel__icon');
+      const about = r.querySelector('.build-panel__about');
+      return {
+        natural: img instanceof HTMLImageElement ? img.naturalWidth : 0,
+        about: about?.textContent.trim() ?? '',
+        shown: about ? about.getBoundingClientRect().height > 0 : false,
+      };
+    }),
+  );
+  expect(rows).toHaveLength(2);
+  for (const r of rows) {
+    expect(r.natural).toBeGreaterThan(0);
+    expect([r.about !== '', r.shown]).toEqual([true, true]);
+  }
+  // 0036: 1 botón `Salir` (la ×), en la misma esquina que en la tienda, y centrado.
+  const buildPanel = page.locator('.build-panel');
+  const leave = buildPanel.getByRole('button', { name: 'Salir', exact: true });
+  await expect(leave).toHaveCount(1);
+  await expect(leave).toHaveText('×');
+  await expect(buildPanel.getByText('Salir', { exact: true })).toHaveCount(0);
+  const corner = await closeCorner(buildPanel, [
+    'h2',
+    '.build-panel__stock',
+    '.build-panel__option',
+  ]);
+  expect(corner.inside).toBe(true);
+  expect(Math.abs(corner.top - 16)).toBeLessThanOrEqual(1);
+  expect(Math.abs(corner.right - 16)).toBeLessThanOrEqual(1);
+  expect(corner.overlaps).toEqual([]);
+  const leaveOffset = await faceCenterOffset(leave);
+  expect([leaveOffset.dx <= 1, leaveOffset.dy <= 1]).toEqual([true, true]);
   const gaps = await page.locator('.build-panel__option').evaluateAll((rows) =>
     rows.map((r) => {
       const name = r.querySelector('.build-panel__name')?.getBoundingClientRect();
