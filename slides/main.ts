@@ -5,7 +5,7 @@ import 'reveal.js/reveal.css';
 import './slides.css';
 import { BALANCE, BALANCE_BAND, FIGURES, LINKS, STAGES } from './data.ts';
 import { checkImport, LAYERS, type LayerId } from './layers.ts';
-import { mountSprites, paintBackdrops } from './sprites.ts';
+import { mountIcons, mountSprites, paintBackdrops } from './sprites.ts';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -225,7 +225,12 @@ function mountFigures(root: HTMLElement): void {
     sprite.dataset['scale'] = String(stage.scale);
     icon.append(sprite);
     const pills = el('div', 'pills');
-    for (const id of stage.ids) pills.append(el('span', 'pill', id));
+    const first = stage.ids[0] ?? '';
+    const last = stage.ids[stage.ids.length - 1] ?? '';
+    pills.append(
+      el('span', 'pill', first === last ? first : `${first}–${last}`),
+      el('span', 'pill-count', `${String(stage.ids.length)} changes`),
+    );
     card.append(icon, el('h3', undefined, stage.name), el('p', undefined, stage.summary), pills);
     stages.append(card);
   }
@@ -244,6 +249,7 @@ for (const root of document.querySelectorAll<HTMLElement>('[data-widget]')) {
   MOUNTS[root.dataset['widget'] ?? '']?.(root);
 }
 mountSprites();
+mountIcons();
 // Los fondos se pintan antes de arrancar reveal (que lee data-background-image al iniciar).
 // Si una hoja no carga, las slides siguen con el color de fondo.
 await paintBackdrops().catch((error: unknown) => {

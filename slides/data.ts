@@ -13,9 +13,9 @@ export interface Figure {
 }
 
 export const FIGURES: readonly Figure[] = [
-  { value: '21', label: 'changes SDD archivados' },
-  { value: '20', label: 'ADRs' },
-  { value: '216', label: 'ficheros de tests unitarios' },
+  { value: '36', label: 'changes SDD archivados' },
+  { value: '31', label: 'ADRs' },
+  { value: '371', label: 'ficheros de tests unitarios' },
   { value: '6', label: 'subagentes con rol propio' },
   { value: '3', label: 'capas de guardarraíles' },
   { value: '50', label: 'semillas en el test de balance' },
@@ -59,6 +59,20 @@ export const STAGES: readonly Stage[] = [
     ids: ['0019', '0020', '0021'],
     summary: 'Campo de flujo, barril y TNT, casas y torres goblin',
   },
+  {
+    name: 'Economía y construcción',
+    sprite: 'house-blue',
+    scale: 0.55,
+    ids: ['0022', '0023', '0024', '0025', '0026', '0027'],
+    summary: 'Oro, madera, piedra, ovejas, tienda del castillo y solares de obra',
+  },
+  {
+    name: 'Pulido y plataformas',
+    sprite: 'sheep-bounce',
+    scale: 0.8,
+    ids: ['0028', '0029', '0030', '0031', '0032', '0033', '0034', '0035', '0036'],
+    summary: 'Guía, mapa vivo, daño visible, kit de UI, móvil, iconos y sonido',
+  },
 ];
 
 /** Victorias del bot de referencia sobre las semillas 1..50 tras cada change que tocó el balance. */
@@ -75,6 +89,10 @@ export const BALANCE: readonly {
   { change: '0019', wins: 26, note: 'Campo de flujo, curva de XP' },
   { change: '0020', wins: 27, note: 'Barril y TNT, bot v3' },
   { change: '0021', wins: 27, note: 'Casas y torres goblin' },
+  { change: '0023', wins: 28, note: 'Ovejas y carne que cura' },
+  { change: '0024', wins: 30, note: 'Tienda del castillo, bot v4 que compra' },
+  { change: '0026', wins: 29, note: 'Solares de obra, bot v5 que construye' },
+  { change: '0027', wins: 34, note: 'Solar bloqueante y oferta por contacto' },
 ];
 
 export const BALANCE_BAND = { min: 25, max: 35, seeds: 50 } as const;

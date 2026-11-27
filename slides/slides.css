@@ -520,7 +520,7 @@ body {
 /* Etapas del proyecto (bloques de changes, sin fechas) */
 .stages {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 0.6em;
   margin-top: 0.8em;
 }
@@ -667,7 +667,7 @@ body {
 /* Reparto del juego */
 .cast {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 0.4em;
 }
 
@@ -881,7 +881,7 @@ body {
 /* Hoja de ruta */
 .roadmap {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 0.6em;
   margin-top: 0.4em;
 }
@@ -952,4 +952,48 @@ body {
 /* PDF (?print-pdf): sin pistas de interacción */
 .print-pdf .no-print {
   display: none;
+}
+
+.pill-count {
+  align-self: center;
+  font-size: 0.42em;
+  color: var(--muted);
+}
+
+/* Procedencia de assets: cuatro tipos y la tira de iconos generados con IA */
+.provenance .card p {
+  min-height: 3.6em;
+}
+
+.provenance .card code {
+  font-size: 0.85em;
+}
+
+.icon-strip {
+  display: flex;
+  justify-content: center;
+  gap: 0.5em;
+  margin-top: 0.7em;
+}
+
+.icon-strip [data-icon] {
+  padding: 6px;
+  border-radius: 10px;
+  background: var(--surface);
+  line-height: 0;
+}
+
+.icon-strip img {
+  width: 64px;
+  height: 64px;
+  margin: 0;
+  image-rendering: pixelated;
+}
+
+.cast figure.neutral {
+  border-bottom-color: var(--accent-2);
+}
+
+.cards.provenance {
+  grid-template-columns: repeat(4, 1fr);
 }
