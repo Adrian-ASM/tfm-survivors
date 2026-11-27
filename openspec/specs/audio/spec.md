@@ -467,26 +467,29 @@ NOT aparecer en el fichero exportado.
 ### Requirement: Panel Sonido
 El sistema SHALL abrir el panel `Sonido` al pulsar el botón `Sonido` del menú de inicio (ver `main-menu`) o del overlay
 de pausa, mostrando los ajustes en uso. Mover un deslizador cambia su ajuste en pasos de 5 dentro de 0..100 y su valor
-visible `N %`; marcar o desmarcar `Silenciar todo` cambia el silencio. Se cierra con `Cerrar` o con una pulsación de
-Esc (también ⏸ en modo móvil, que equivale a Esc); al cerrarse, el foco queda en el botón `Sonido` que lo abrió y se
-vuelve exactamente a la pantalla de antes: el menú en modo menú o la partida en pausa con su overlay. Al abrirse, el
-foco queda dentro del panel. Mientras está abierto:
+visible `N %`; marcar o desmarcar `Silenciar todo` cambia el silencio. Se cierra con la × de su esquina superior
+derecha (nombre accesible `Cerrar`, ver "Botón × de cierre de los modales" en `sprite-rendering`) o con una pulsación
+de Esc (también ⏸ en modo móvil, que equivale a Esc), y los dos gestos producen exactamente el mismo resultado; el panel
+MUST NOT tener ningún otro botón ni texto visible `Cerrar`. Al cerrarse, el foco queda en el botón `Sonido` que lo abrió
+y se vuelve exactamente a la pantalla de antes: el menú en modo menú o la partida en pausa con su overlay. Al abrirse,
+el foco queda dentro del panel. Mientras está abierto:
 - solo hay 1 panel `Sonido` visible;
 - los botones del menú o de la pausa que quedan debajo MUST NOT tener efecto, y R, 1, 2, 3 y el input de movimiento
   tampoco;
 - abrirlo, usarlo y cerrarlo MUST NOT crear partida, ejecutar ticks, quitar la pausa ni cambiar el progreso.
 
 El panel se pinta con las piezas de "Piezas de UI en los paneles DOM" (`sprite-rendering`): marco de `panel`, título con
-`header`, `Cerrar` con las piezas de botón y textos con la fuente pixel, con reserva si una pieza no carga. Va centrado
-en la ventana como "Menú y pausa centrados en la ventana" (`main-menu`) y, en modo móvil, a escala 1 y desplazable
-(ver "Paneles DOM en modo móvil" en `mobile-display`). Ningún elemento del panel MUST tener atributo `style` ni
-provocar violaciones de la CSP.
+`header`, la × con las piezas de botón y textos con la fuente pixel, con reserva si una pieza no carga. La × no se
+solapa con el título, los deslizadores ni la casilla. Va centrado en la ventana como "Menú y pausa centrados en la
+ventana" (`main-menu`) y, en modo móvil, a escala 1 y desplazable (ver "Paneles DOM en modo móvil" en
+`mobile-display`). Ningún elemento del panel MUST tener atributo `style` ni provocar violaciones de la CSP.
 
 #### Scenario: Abrir desde el menú y cerrar con Esc
 - **GIVEN** el modo menú
 - **WHEN** se pulsa `Sonido`, se pulsa Esc y se pulsa `Jugar`
-- **THEN** tras `Sonido` el panel es visible con `Música`, `Efectos`, `Silenciar todo` y `Cerrar`, y el foco está
-  dentro; tras Esc no es visible, el foco está en `Sonido` y no existe partida; tras `Jugar` hay 1 partida en curso
+- **THEN** tras `Sonido` el panel es visible con `Música`, `Efectos`, `Silenciar todo` y la × (nombre accesible
+  `Cerrar`, texto visible `×`), y el foco está dentro; tras Esc no es visible, el foco está en `Sonido` y no existe
+  partida; tras `Jugar` hay 1 partida en curso
 
 #### Scenario: Abrir desde la pausa
 - **GIVEN** una partida en pausa en el tick 500
@@ -508,7 +511,20 @@ provocar violaciones de la CSP.
 - **GIVEN** el panel abierto con una ventana de 1.280 × 720 y, en otra carga, de 960 × 540
 - **WHEN** se pinta 1 frame
 - **THEN** su centro horizontal está en x = 640 y x = 480 respectivamente (error ≤ 1 px), está centrado en vertical
-  (diferencia ≤ 1 px) y sus controles están enteros dentro de la ventana y sin solaparse
+  (diferencia ≤ 1 px) y sus controles (la × incluida) están enteros dentro de la ventana y sin solaparse
+
+#### Scenario: Cerrar con la × desde el menú y desde la pausa
+- **GIVEN** el panel abierto desde el menú y, en otro caso, desde una partida en pausa en el tick 500
+- **WHEN** se hace clic en la × y se pintan 60 frames
+- **THEN** el panel no es visible y el foco está en el botón `Sonido` que lo abrió
+- **AND** en el primer caso el menú sigue en modo menú sin partida; en el segundo la partida sigue en pausa en el tick
+  500 con el overlay de pausa visible, y una pulsación de Esc quita la pausa
+
+#### Scenario: Una sola × y ningún Cerrar visible
+- **GIVEN** el panel abierto desde el menú
+- **WHEN** se cuentan sus botones
+- **THEN** hay exactamente 1 botón con nombre accesible `Cerrar`, con texto visible `×`, y ningún elemento del panel
+  tiene el texto visible `Cerrar`
 
 ### Requirement: Tecla M
 El sistema SHALL conmutar el silencio general con cada pulsación de M, en cualquier pantalla: menú (con o sin la guía,
@@ -632,3 +648,4 @@ El sistema SHALL funcionar en la build de producción con la CSP actual (ver "Po
   `sprint-survivors/audio` tiene música 40 y no hay errores no capturados ni eventos `securitypolicyviolation`
 
 <!-- historial: 0035-audio (2026-11-27) -->
+<!-- historial: 0036-ui-polish (2026-11-27) -->
