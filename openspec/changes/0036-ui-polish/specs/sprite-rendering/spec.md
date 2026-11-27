@@ -193,7 +193,8 @@ la vista, sin tocar el núcleo, y MUST NOT cambiar la simulación.
   tick n
 - **WHEN** se pintan los snapshots de n a n + 60
 - **THEN** en el frame del tick n hay 1 número `4` del color de `structure` en (1.260, 670) y la casa no tiene barra
-- **AND** en ninguno de los frames de n − 1 a n + 60 se ve la barra de la casa
+- **AND** en el frame del tick n − 1 la casa (ya dañada: vida 4 de 60) tiene su barra, y en ninguno de los frames de
+  n a n + 60 se ve
 
 #### Scenario: Torre dañada y sin barras en otros objetivos
 - **GIVEN** una torre explícita con vida 63 y vida máxima 90, una casa explícita con vida 60 y vida máxima 60, un
