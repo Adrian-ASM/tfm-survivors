@@ -316,7 +316,9 @@ body {
   align-items: stretch;
   gap: 0.5em;
   min-width: 18em;
-  max-width: 28em;
+  /* 0036: ancho para la explicación de la torre en una línea con la imagen del edificio al lado
+     (a 28em cabía justa en local y se partía en el CI con otra métrica de fuente). */
+  max-width: 34em;
   padding: max(1em, calc(var(--ui-panel-t, 0) * var(--ui-scale, 1) * 1px))
     max(1.5em, calc(var(--ui-panel-r, 0) * var(--ui-scale, 1) * 1px))
     max(1em, calc(var(--ui-panel-b, 0) * var(--ui-scale, 1) * 1px))
